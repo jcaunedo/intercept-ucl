@@ -2,6 +2,8 @@ name: Publish package
 
 # Publishes only when the version in package.json changes on main.
 # Normal merges release nothing; a release is `npm run release:*` + push.
+# Never publishes while package.json has "private": true (the unconfigured
+# template) or on a first commit with no previous version to compare.
 # Registry: GitHub Packages by default. `ucl-setup` updates registry-url and
 # the package scope for the project.
 
@@ -25,8 +27,15 @@ jobs:
         id: check
         run: |
           CURRENT=$(node -p "require('./package.json').version")
+          PRIVATE=$(node -p "require('./package.json').private === true")
           PREVIOUS=$(git show HEAD~1:package.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version" 2>/dev/null || echo "")
-          if [ "$CURRENT" != "$PREVIOUS" ]; then
+          if [ "$PRIVATE" = "true" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "package.json is private (unconfigured template); not publishing. Run ucl-setup first."
+          elif [ -z "$PREVIOUS" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No previous package.json (first commit); not publishing. Release with npm run release:*."
+          elif [ "$CURRENT" != "$PREVIOUS" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
             echo "Version changed: $PREVIOUS -> $CURRENT"

@@ -69,7 +69,7 @@ Then set every "Default" in CLAUDE.md → "Stack" to "Set", with the chosen valu
 
 ## 4. Apply the project details
 
-- **`package.json`:** `name`, `description` ("React component library for <Project>"), `repository` (if given), `publishConfig.registry`.
+- **`package.json`:** `name`, `description` ("React component library for <Project>"), `repository` (if given), `publishConfig.registry`. Remove `"private": true`: the template sets it so its publish workflow never runs. The first release then comes from `npm run release:*`, never from the first push.
 - **`.npmrc`:** keep `include=dev`. Add the scope line for the registry, with the token read from the environment, never a literal secret:
   ```
   @<org>:registry=https://npm.pkg.github.com
