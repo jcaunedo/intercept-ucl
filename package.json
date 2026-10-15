@@ -1,0 +1,79 @@
+{
+	"name": "ucl",
+	"version": "0.1.0",
+	"type": "module",
+	"description": "React component library",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./styles": "./dist/styles.css"
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": [
+		"**/*.css"
+	],
+	"scripts": {
+		"build": "tsup && cp src/styles/theme.css dist/styles.css && node scripts/add-use-client.mjs",
+		"dev": "tsup --watch",
+		"storybook": "storybook dev -p 6006",
+		"build-storybook": "storybook build",
+		"lint": "tsc --noEmit",
+		"clean": "rm -rf dist",
+		"preversion": "npm run lint",
+		"postversion": "npm run build",
+		"release:patch": "npm version patch",
+		"release:minor": "npm version minor",
+		"release:major": "npm version major"
+	},
+	"peerDependencies": {
+		"@hookform/resolvers": "^5.2.2",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"react-hook-form": "^7.71.2",
+		"zod": "^4.3.6"
+	},
+	"dependencies": {
+		"@radix-ui/react-slot": "^1.2.4",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"lucide-react": "^1.16.0",
+		"motion": "^12.43.0",
+		"tailwind-merge": "^3.6.0"
+	},
+	"devDependencies": {
+		"@hookform/resolvers": "^5.2.2",
+		"@storybook/addon-docs": "^10.4.1",
+		"@storybook/react-vite": "^10.4.1",
+		"@tailwindcss/vite": "^4.3.0",
+		"@types/react": "^19.2.15",
+		"@types/react-dom": "^19.2.3",
+		"@vitejs/plugin-react": "^5.2.0",
+		"react": "^19.2.6",
+		"react-dom": "^19.2.6",
+		"react-hook-form": "^7.71.2",
+		"storybook": "^10.4.1",
+		"tailwindcss": "^4.3.0",
+		"tsup": "^9.0.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.0.14",
+		"zod": "^4.3.6"
+	},
+	"peerDependenciesMeta": {
+		"@hookform/resolvers": {
+			"optional": true
+		},
+		"react-hook-form": {
+			"optional": true
+		},
+		"zod": {
+			"optional": true
+		}
+	}
+}

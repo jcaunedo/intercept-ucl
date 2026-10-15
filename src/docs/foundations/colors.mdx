@@ -1,0 +1,105 @@
+import { Meta, ColorPalette, ColorItem } from "@storybook/addon-docs/blocks";
+
+<Meta title='Foundations/Colors' />
+
+# Colors
+
+Colors are semantic tokens defined in `src/styles/theme.css`. Each token is a CSS variable, such as `--primary`, and a Tailwind utility, such as `bg-primary` or `text-primary-foreground`.
+
+Pair each surface token with its `-foreground` token, so text always has enough contrast. The swatches below read the live variables, so they always match the theme.
+
+<ColorPalette>
+	<ColorItem
+		title='Base'
+		subtitle='Page background and default text'
+		colors={{
+			background: "var(--background)",
+			foreground: "var(--foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Primary'
+		subtitle='Main actions and brand emphasis'
+		colors={{
+			primary: "var(--primary)",
+			"primary-foreground": "var(--primary-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Secondary'
+		subtitle='Supporting actions'
+		colors={{
+			secondary: "var(--secondary)",
+			"secondary-foreground": "var(--secondary-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Accent'
+		subtitle='Hover and selected states'
+		colors={{
+			accent: "var(--accent)",
+			"accent-foreground": "var(--accent-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Muted'
+		subtitle='Subdued surfaces and secondary text'
+		colors={{
+			muted: "var(--muted)",
+			"muted-foreground": "var(--muted-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Destructive'
+		subtitle='Errors and irreversible actions'
+		colors={{
+			destructive: "var(--destructive)",
+			"destructive-foreground": "var(--destructive-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Card & Popover'
+		subtitle='Raised surfaces'
+		colors={{
+			card: "var(--card)",
+			"card-foreground": "var(--card-foreground)",
+			popover: "var(--popover)",
+			"popover-foreground": "var(--popover-foreground)",
+		}}
+	/>
+	<ColorItem
+		title='Lines & Focus'
+		subtitle='Borders, input outlines, and focus rings'
+		colors={{
+			border: "var(--border)",
+			input: "var(--input)",
+			ring: "var(--ring)",
+		}}
+	/>
+</ColorPalette>
+
+## Radius
+
+All corner radii derive from one `--radius` token (`0.5rem`). Change it to adjust every component at once.
+
+<div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "1.5rem 0" }}>
+	{[
+		["rounded-sm", "calc(var(--radius) - 4px)"],
+		["rounded-md", "calc(var(--radius) - 2px)"],
+		["rounded-lg", "var(--radius)"],
+	].map(([name, value]) => (
+		<div key={name} style={{ textAlign: "center", fontSize: "0.8125rem" }}>
+			<div
+				style={{
+					width: 96,
+					height: 64,
+					borderRadius: value,
+					background: "var(--secondary)",
+					border: "1px solid var(--border)",
+					marginBottom: 8,
+				}}
+			/>
+			<code>{name}</code>
+		</div>
+	))}
+</div>

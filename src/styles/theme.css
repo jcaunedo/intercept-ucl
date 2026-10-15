@@ -1,0 +1,84 @@
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+}
+
+/* ---------- Breakpoints ----------
+   Each breakpoint's layout covers widths up to and including its frame width
+   (sm 640, md 768, lg 1024, xl 1280, 2xl 1536, 3xl 1920): the lg frame at
+   exactly 1024px gets the "lg and below" layout. So each Tailwind breakpoint
+   starts 1px past its frame width: `lg:` = above 1024, `max-lg:` = 1024 and
+   below. Keep in sync with `src/lib/breakpoints.ts` (for JS media queries). */
+@theme {
+	--breakpoint-sm: 641px;
+	--breakpoint-md: 769px;
+	--breakpoint-lg: 1025px;
+	--breakpoint-xl: 1281px;
+	--breakpoint-2xl: 1537px;
+	--breakpoint-3xl: 1921px;
+}
+
+:root {
+	--radius: 0.5rem;
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.17 0.01 260);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.17 0.01 260);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.17 0.01 260);
+	--primary: oklch(0.52 0.14 155);
+	--primary-foreground: oklch(0.98 0.01 155);
+	--secondary: oklch(0.95 0.02 155);
+	--secondary-foreground: oklch(0.28 0.06 155);
+	--muted: oklch(0.96 0.005 260);
+	--muted-foreground: oklch(0.5 0.02 260);
+	--accent: oklch(0.95 0.02 155);
+	--accent-foreground: oklch(0.28 0.06 155);
+	--destructive: oklch(0.58 0.22 27);
+	--destructive-foreground: oklch(0.98 0.01 27);
+	--border: oklch(0.9 0.01 260);
+	--input: oklch(0.9 0.01 260);
+	--ring: oklch(0.52 0.14 155);
+}
+
+.dark {
+	--background: oklch(0.17 0.01 260);
+	--foreground: oklch(0.98 0.005 260);
+	--card: oklch(0.21 0.015 260);
+	--card-foreground: oklch(0.98 0.005 260);
+	--popover: oklch(0.21 0.015 260);
+	--popover-foreground: oklch(0.98 0.005 260);
+	--primary: oklch(0.72 0.14 155);
+	--primary-foreground: oklch(0.18 0.04 155);
+	--secondary: oklch(0.28 0.03 260);
+	--secondary-foreground: oklch(0.98 0.005 260);
+	--muted: oklch(0.28 0.02 260);
+	--muted-foreground: oklch(0.7 0.02 260);
+	--accent: oklch(0.28 0.03 260);
+	--accent-foreground: oklch(0.98 0.005 260);
+	--destructive: oklch(0.55 0.2 27);
+	--destructive-foreground: oklch(0.98 0.01 27);
+	--border: oklch(1 0 0 / 12%);
+	--input: oklch(1 0 0 / 16%);
+	--ring: oklch(0.72 0.14 155);
+}

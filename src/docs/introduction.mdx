@@ -1,0 +1,58 @@
+import { Meta, Source } from "@storybook/addon-docs/blocks";
+
+<Meta title='Introduction' />
+
+# UCL
+
+The React component library. Components are built with React 19, Tailwind CSS 4, and Radix UI, and follow shadcn/ui conventions.
+
+## Installation
+
+<Source language='bash' code={`npm install ucl`} />
+
+`react` and `react-dom` 19 are peer dependencies.
+
+## Set up styles
+
+The package ships its design tokens in `ucl/styles`. Import them after Tailwind in your global stylesheet, and point Tailwind at the package so it generates the classes the components use.
+
+<Source
+	language='css'
+	code={`@import "tailwindcss";
+@import "ucl/styles";
+
+@source "../node_modules/ucl/dist";`}
+/>
+
+Adjust the `@source` path so it is relative to your stylesheet.
+
+## Use a component
+
+<Source
+	language='tsx'
+	code={`import { Button } from "ucl";
+
+export function Example() {
+  return <Button>Continue</Button>;
+}`}
+/>
+
+## Dark mode
+
+Add the `dark` class to a parent element, usually `<html>`, to switch every token to its dark value.
+
+## Merging classes
+
+Every component accepts `className`. Use the exported `cn()` helper to merge classes in your own components. It resolves Tailwind conflicts, so the last class wins.
+
+<Source
+	language='tsx'
+	code={`import { cn } from "ucl";
+
+<div className={cn("p-4", isActive && "bg-accent")} />`}
+/>
+
+## What's here
+
+- **Foundations** — the color and radius tokens every component uses.
+- **Components** — grouped by category (Buttons, Forms, Cards…). Each page has live examples, props, and usage guidance.

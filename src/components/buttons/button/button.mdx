@@ -1,0 +1,66 @@
+import { Meta, Canvas, Controls, Source } from "@storybook/addon-docs/blocks";
+
+import * as ButtonStories from "./button.stories";
+
+<Meta of={ButtonStories} />
+
+# Button
+
+Triggers an action or event, such as submitting a form, opening a dialog, or moving to the next step.
+
+<Canvas of={ButtonStories.Default} />
+
+<Controls of={ButtonStories.Default} />
+
+## Usage
+
+<Source
+	language='tsx'
+	code={`import { Button } from "ucl";
+
+<Button onClick={handleContinue}>Continue</Button>`}
+/>
+
+## Variants
+
+Use one `default` button per view for the primary action. Use `secondary`, `outline`, or `ghost` for supporting actions. Use `destructive` only for actions that delete or cannot be undone.
+
+<Canvas of={ButtonStories.AllVariants} />
+
+| Variant       | When to use                                         |
+| ------------- | --------------------------------------------------- |
+| `default`     | The main action in a view                           |
+| `secondary`   | A supporting action next to a primary button        |
+| `outline`     | A neutral action that needs a visible boundary      |
+| `ghost`       | Low-emphasis actions in toolbars and dense layouts  |
+| `link`        | An action that should read like inline text         |
+| `destructive` | Delete, remove, or other irreversible actions       |
+
+## Sizes
+
+<Canvas of={ButtonStories.Sizes} />
+
+`size="icon"` renders a square button. It has no visible label, so always set `aria-label`.
+
+## With an icon
+
+Place icons from `lucide-react` as children. The button sizes them to 16px automatically. Mark decorative icons with `aria-hidden="true"`.
+
+<Canvas of={ButtonStories.WithIcon} />
+
+## Disabled
+
+<Canvas of={ButtonStories.Disabled} />
+
+## As a link
+
+Set `asChild` to render the button styles on the child element instead of a `<button>`. Use this for navigation, so the element stays a real link.
+
+<Canvas of={ButtonStories.AsLink} />
+
+## Accessibility
+
+- Renders a native `<button>`, so keyboard and screen reader support work out of the box.
+- The focus ring uses the `--ring` token and appears only on keyboard focus.
+- Icon-only buttons need an `aria-label`.
+- Use `asChild` with an `<a>` for navigation. Do not use a button with an `onClick` that changes the URL.
