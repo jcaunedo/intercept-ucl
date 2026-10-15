@@ -85,7 +85,7 @@ Then set every "Default" in CLAUDE.md → "Stack" to "Set", with the chosen valu
   - Anything still unknown stays marked ⚠️.
 - **DESIGN.md:** fill "Brand names" and "Brand voice" with what the user gave. Leave the ⚠️ placeholder for anything not given yet. Replace "every product" in the quality bar with the project name if the user wants.
 - **Docs:** `src/docs/introduction.mdx` (title, package name in every snippet) and `src/components/buttons/button/button.mdx` (import line).
-- **README:** title "`<Project>` UCL". Replace the "Start a new project" section with a short "Getting started" (`npm install`, `npm run storybook`). Keep the rest.
+- **README:** title "`<Project>` UCL". Replace the "Start a new project" section with a short "Getting started" (`npm install`, `npm run storybook`). In "Using UCL in an App", replace `@your-org/ucl` and `@your-org` with the real package and scope, and delete the ℹ️ placeholder note. If the registry isn't GitHub Packages, rewrite step 1 for it (in the README and `introduction.mdx`). Keep the rest.
 - **`.claude/commands/`:** if it contains account- or person-specific commands, ask whether this project's team should get them; remove them if not.
 - **Delete the "⚠️ Setup required" section from CLAUDE.md last**, so an interrupted setup is still visible as unfinished.
 
