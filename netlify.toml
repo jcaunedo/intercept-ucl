@@ -1,0 +1,13 @@
+# Netlify hosts the static Storybook site (docs + component workbench).
+[build]
+	command = "npm run build-storybook"
+	publish = "storybook-static"
+
+[build.environment]
+	NODE_VERSION = "22"
+
+# Storybook's bundled assets have hashed filenames, so they can be cached forever.
+[[headers]]
+	for = "/assets/*"
+	[headers.values]
+		Cache-Control = "public, max-age=31536000, immutable"

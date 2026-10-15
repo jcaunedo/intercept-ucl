@@ -107,5 +107,6 @@ Summarize:
 - The project details applied.
 - The files changed.
 - Every ⚠️ item still open, with where it lives.
+- Storybook hosting: `netlify.toml` is ready. To publish the Storybook site, add the repo as a new site in Netlify (it reads the build settings from the file). If the project hosts Storybook somewhere else, delete the file.
 
 Suggest committing. Don't commit or push unless the user asks.

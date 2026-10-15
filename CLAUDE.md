@@ -286,6 +286,7 @@ After motion work, check that:
 | `components.json`         | shadcn CLI configuration                                      |
 | `tsup.config.ts`          | Library build configuration                                   |
 | `.storybook/`             | Storybook setup, Tailwind plugin, `@/` alias, sidebar order   |
+| `netlify.toml`            | Netlify hosting for the static Storybook site                 |
 
 ## Release & Publishing
 
