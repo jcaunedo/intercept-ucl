@@ -1,226 +1,85 @@
-import { Meta, Source } from "@storybook/addon-docs/blocks";
-import * as React from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { Meta } from "@storybook/addon-docs/blocks";
 
-import {
-	confirmPattern,
-	enterTransition,
-	exitTransition,
-	layoutSpring,
-	liftPattern,
-	motionDistance,
-	motionDuration,
-	motionRotation,
-	motionScale,
-	motionStagger,
-	pressPattern,
-	responsiveSpring,
-	revealVariants,
-	standardTransition,
-	subtleSpring,
-	useMotionPreference,
-} from "@/lib/motion";
+import tokensSource from "../../lib/motion/tokens.ts?raw";
+import transitionsSource from "../../lib/motion/transitions.ts?raw";
+import variantsSource from "../../lib/motion/variants.ts?raw";
+import patternsSource from "../../lib/motion/patterns.ts?raw";
+import { MotionDemos, MotionExports, MotionTokens, MotionTransitions } from "./motion-tokens";
 
 <Meta title='Foundations/Motion' />
 
-export const TokenTable = ({ name, tokens, format }) => (
-	<table>
-		<thead>
-			<tr>
-				<th>Token</th>
-				<th>Value</th>
-			</tr>
-		</thead>
-		<tbody>
-			{Object.entries(tokens).map(([key, value]) => (
-				<tr key={key}>
-					<td>
-						<code>
-							{name}.{key}
-						</code>
-					</td>
-					<td>{format(value)}</td>
-				</tr>
-			))}
-		</tbody>
-	</table>
-);
-
-export const describeTransition = (transition) =>
-	transition.type === "spring"
-		? `spring · stiffness ${transition.stiffness} · damping ${transition.damping}`
-		: `${Math.round(transition.duration * 1000)} ms · cubic-bezier(${transition.ease.join(", ")})`;
-
-export const DemoSurface = ({ children, ...props }) => (
-	<motion.div
-		{...props}
-		style={{
-			width: 160,
-			padding: "1.25rem",
-			borderRadius: "var(--radius)",
-			border: "1px solid var(--border)",
-			background: "var(--card)",
-			color: "var(--card-foreground)",
-			fontSize: "0.875rem",
-			textAlign: "center",
-			cursor: "pointer",
-			userSelect: "none",
-		}}
-	>
-		{children}
-	</motion.div>
-);
-
-export const GestureDemos = () => {
-	const { prefersReducedMotion, resolve } = useMotionPreference();
-	const [confirmKey, setConfirmKey] = React.useState(0);
-	return (
-		<div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "1.5rem 0" }}>
-			<DemoSurface {...(prefersReducedMotion ? {} : liftPattern)}>Lift: hover me</DemoSurface>
-			<DemoSurface whileTap={pressPattern.whileTap} transition={resolve(pressPattern.transition)}>
-				Press: click me
-			</DemoSurface>
-			<DemoSurface
-				key={confirmKey}
-				animate={prefersReducedMotion ? undefined : confirmPattern.animate}
-				transition={confirmPattern.transition}
-				onClick={() => setConfirmKey((key) => key + 1)}
-			>
-				Confirm: click me
-			</DemoSurface>
-		</div>
-	);
-};
-
-export const RevealDemo = () => {
-	const { resolve } = useMotionPreference();
-	const [shown, setShown] = React.useState(true);
-	return (
-		<div style={{ margin: "1.5rem 0" }}>
-			<button
-				type='button'
-				onClick={() => setShown((value) => !value)}
-				style={{
-					padding: "0.375rem 0.75rem",
-					borderRadius: "var(--radius)",
-					border: "1px solid var(--border)",
-					background: "var(--background)",
-					fontSize: "0.875rem",
-					cursor: "pointer",
-				}}
-			>
-				{shown ? "Hide" : "Show"}
-			</button>
-			<div style={{ minHeight: 80, marginTop: "1rem" }}>
-				<AnimatePresence>
-					{shown && (
-						<motion.div
-							key='reveal'
-							variants={revealVariants}
-							initial='initial'
-							animate='animate'
-							exit='exit'
-							transition={resolve(enterTransition)}
-							style={{
-								width: 240,
-								padding: "1rem",
-								borderRadius: "var(--radius)",
-								background: "var(--secondary)",
-								color: "var(--secondary-foreground)",
-								fontSize: "0.875rem",
-							}}
-						>
-							Reveal: fades in and rises {motionDistance.subtle}px. Leaves faster than it arrives.
-						</motion.div>
-					)}
-				</AnimatePresence>
-			</div>
-		</div>
-	);
-};
-
 # Motion
 
-Motion explains a change in state, keeps spatial continuity and makes the interface feel responsive. It is never decoration. The personality is **calm, refined, natural and responsive**: never bouncy, cartoonish, mechanical or distracting. When unsure, choose the more subtle option.
+Motion explains a change: it gives feedback, keeps track of where things came from, and makes the interface feel
+responsive. It should feel calm, refined, and quick. Never bouncy, and never decoration for its own sake. When in
+doubt, choose the subtler option. The full principles live in `MOTION.md`, and how to apply them per component is in
+[Guidelines → Motion](?path=/docs/guidelines-motion--docs).
 
-The rules are in `MOTION.md`. The values on this page are read from `src/lib/motion/`, so they always match the code.
+Every value on this page comes from `src/lib/motion/`, which the library exports:
 
-<Source
-	language='tsx'
-	code={`import { motion } from "motion/react";
-import { pressPattern, useMotionPreference } from "@jcaunedo/intercept-ucl";
+```tsx
+import { motion } from "motion/react";
+import { liftPattern, revealVariants, motionDuration } from "@jcaunedo/intercept-ucl";
 
-const { resolve } = useMotionPreference();
+<motion.div {...liftPattern}>…</motion.div>;
+```
 
-<motion.button whileTap={pressPattern.whileTap} transition={resolve(pressPattern.transition)} />`}
-/>
+## Rules of thumb
 
-Never write a raw duration, easing, distance or scale in a component. Use these exports, and add any new value to `tokens.ts` with a comment saying what it's for.
+- **Use the presets.** Reach for a pattern or variant below before writing an animation, and never put raw durations,
+  curves, or distances in a component. If something new is needed, add it as a token in `src/lib/motion/`.
+- **Exits are shorter than entrances.** One documented exception: `expandVariants` closes its height on the same curve
+  as the open, because an ease-in collapse reads as a hard stop.
+- **Respect reduced motion.** Components read `useMotionPreference()` and pass their transitions through its
+  `resolve`, which swaps in a near-instant one. Movement goes away; the state change stays visible.
+- **Animate `opacity` and `transform`.** Prefer Motion's `layout` for size and position changes over animating
+  `height`, `top`, or `margin` by hand.
 
-## Try it
+## Patterns in action
 
-<GestureDemos />
+Live demos built from the real presets. With reduced motion turned on in your OS, they fade instead of moving.
 
-<RevealDemo />
+<MotionDemos />
 
-With reduced motion turned on in your operating system, Lift and Confirm stop moving and Press and Reveal become near-instant. The feedback stays; only the movement goes.
+## Tokens
 
-## Durations
+The raw values every preset is built from. Components use the presets, not these numbers directly.
 
-Nothing goes past `deliberate`. Exits are shorter than entrances.
+### Duration
 
-<TokenTable name='motionDuration' tokens={motionDuration} format={(value) => `${Math.round(value * 1000)} ms`} />
+<MotionTokens source={tokensSource} group='motionDuration' />
+
+### Distance
+
+<MotionTokens source={tokensSource} group='motionDistance' />
+
+### Scale
+
+<MotionTokens source={tokensSource} group='motionScale' />
+
+### Rotation
+
+<MotionTokens source={tokensSource} group='motionRotation' />
+
+### Stagger
+
+<MotionTokens source={tokensSource} group='motionStagger' />
 
 ## Transitions
 
-| Transition           | Value                                         | Use                                         |
-| -------------------- | --------------------------------------------- | ------------------------------------------- |
-| `standardTransition` | {describeTransition(standardTransition)}      | Common UI changes                           |
-| `enterTransition`    | {describeTransition(enterTransition)}         | Elements arriving: quick start, gentle finish |
-| `exitTransition`     | {describeTransition(exitTransition)}          | Elements leaving: short and decisive        |
-| `subtleSpring`       | {describeTransition(subtleSpring)}            | Small, contained motion (press, indicators) |
-| `responsiveSpring`   | {describeTransition(responsiveSpring)}        | Direct manipulation that should feel snappy |
-| `layoutSpring`       | {describeTransition(layoutSpring)}            | Layout and shared-element movement          |
+Timing presets, picked by intent: `standardTransition` for most changes, `enterTransition` for arrivals,
+`exitTransition` for departures, and springs for direct manipulation and layout.
 
-Springs are heavily damped, so they never visibly bounce.
+<MotionTransitions source={transitionsSource} />
 
-## Distances
+## Variants
 
-<TokenTable name='motionDistance' tokens={motionDistance} format={(value) => `${value} px`} />
+`initial` / `animate` / `exit` states for elements that mount and unmount. Use them with `AnimatePresence`.
 
-## Scales
+<MotionExports source={variantsSource} pattern='Variants$' />
 
-<TokenTable name='motionScale' tokens={motionScale} format={(value) => `× ${value}`} />
+## Gesture patterns
 
-## Rotation and stagger
+Prop bundles to spread onto a `motion.*` element for hover, press, and navigation feedback.
 
-Keep rotation under 2° and use it sparingly. Keep stagger intervals short.
-
-<TokenTable name='motionRotation' tokens={motionRotation} format={(value) => `${value}°`} />
-
-<TokenTable name='motionStagger' tokens={motionStagger} format={(value) => `${Math.round(value * 1000)} ms`} />
-
-## Patterns
-
-Use a named pattern before inventing new motion.
-
-| Pattern | Use for                                  | Implementation                                          |
-| ------- | ---------------------------------------- | ------------------------------------------------------- |
-| Lift    | Hoverable cards and surfaces             | `liftPattern`, `liftWithMediaPattern`                   |
-| Press   | Buttons, cards, direct interactions      | `pressPattern`                                          |
-| Reveal  | Content appearing in context             | `revealVariants`                                        |
-| Expand  | A region opening or closing in place     | `expandVariants` + `useExpandClip()`                    |
-| Connect | Shared-element transitions               | `layoutId` + `layoutSpring`                             |
-| Flow    | Small groups entering together           | `staggerContainerVariants` + children `revealVariants`  |
-| Glide   | Directional navigation                   | `slideVariants`, `glidePattern`                         |
-| Dismiss | Content removed or closed                | `dismissVariants`; table and list rows: `rowRemoveVariants` |
-| Confirm | Lightweight success feedback             | `confirmPattern`                                        |
-| Pending | Work in progress on an element's behalf  | `pendingIconVariants`, `pendingSurfaceVariants`         |
-
-Also available: `fadeVariants`, `overlayVariants` for scrims, and `panelVariants` for drawers.
-
-## Accessibility
-
-- Always respect reduced motion with `useMotionPreference()` and its `resolve()` helper.
-- Under reduced motion, remove nonessential movement and prefer opacity. State-change feedback stays, but becomes near-instant.
-- Motion is never the only signal of a change. Keyboard behavior, focus order and visible focus must survive every animation.
+<MotionExports source={patternsSource} pattern='Pattern$' />

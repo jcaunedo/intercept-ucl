@@ -1,0 +1,90 @@
+import { Meta, Source } from "@storybook/addon-docs/blocks";
+
+<Meta title='Guidelines/Motion' />
+
+# Motion
+
+Motion explains a change in state, keeps spatial continuity and makes the interface feel responsive. It is never decoration. If an animation doesn't improve clarity, feedback, orientation or perceived speed, leave it out. When unsure, choose the more subtle option.
+
+These guidelines follow `MOTION.md`, which is the source of truth for the rules.
+
+## Personality
+
+Calm, refined, natural, responsive. Never bouncy, cartoonish, mechanical or distracting.
+
+| Prefer                                              | Use sparingly                        | Avoid unless asked                      |
+| --------------------------------------------------- | ------------------------------------ | --------------------------------------- |
+| Fade, soft scale, gentle elevation                  | Rotation under 2°                    | Bounce, shake, spin                     |
+| Short directional slide, crossfade                  | Parallax, scroll-linked movement     | Elastic overshoot, dramatic zoom        |
+| Shared-element and smooth layout transitions        | Expressive springs                   | Full-screen wipes, long travel          |
+| Subtle stagger                                      |                                      |                                         |
+
+## See it
+
+Live demos of Lift, Press and Reveal are on [Foundations → Motion](?path=/docs/foundations-motion--docs), along with every token, transition and preset.
+
+## Use the shared values
+
+Import Motion from `motion/react` and every value from UCL. Never write a raw duration, easing, distance or scale in a component. A new value goes in `src/lib/motion/tokens.ts` with a comment saying what it's for.
+
+<Source
+	language='tsx'
+	code={`import { motion } from "motion/react";
+import { pressPattern, useMotionPreference } from "@jcaunedo/intercept-ucl";
+
+const { resolve } = useMotionPreference();
+
+<motion.button whileTap={pressPattern.whileTap} transition={resolve(pressPattern.transition)} />`}
+/>
+
+## Patterns
+
+Use a named pattern before inventing new motion.
+
+| Pattern | Use for                                  | Implementation                                          |
+| ------- | ---------------------------------------- | ------------------------------------------------------- |
+| Lift    | Hoverable cards and surfaces             | `liftPattern`, `liftWithMediaPattern`                   |
+| Press   | Buttons, cards, direct interactions      | `pressPattern`                                          |
+| Reveal  | Content appearing in context             | `revealVariants`                                        |
+| Expand  | A region opening or closing in place     | `expandVariants` + `useExpandClip()`                    |
+| Connect | Shared-element transitions               | `layoutId` + `layoutSpring`                             |
+| Flow    | Small groups entering together           | `staggerContainerVariants` + children `revealVariants`  |
+| Glide   | Directional navigation                   | `slideVariants`, `glidePattern`                         |
+| Dismiss | Content removed or closed                | `dismissVariants`; table and list rows: `rowRemoveVariants` |
+| Confirm | Lightweight success feedback             | `confirmPattern`                                        |
+| Pending | Work in progress on an element's behalf  | `pendingIconVariants`, `pendingSurfaceVariants`         |
+
+Also available: `fadeVariants`, `overlayVariants` for scrims, and `panelVariants` for drawers.
+
+## By component
+
+- **Buttons:** Press at 0.98 with a fast release. Never delay the action for the animation. Never animate the button's size.
+- **Cards:** Lift on hover, with media inside scaling up to 1.03. Cards that aren't interactive don't move.
+- **Inputs:** motion clarifies focus, validation and conditional fields. Keep the layout stable. No shake on errors.
+- **Menus and dropdowns:** a short fade plus a small movement from the trigger.
+- **Dialogs and overlays:** the overlay fades and the surface moves a little. The exit is shorter than the entrance, and the dialog is usable immediately.
+- **Tabs:** the active indicator moves with a shared `layoutId`.
+- **Lists:** stable unique keys, never the index. Don't replay entrances on routine data updates.
+- **Loading:** a subtle opacity pulse. No aggressive or high-contrast loaders.
+
+## Layout and presence
+
+- Use `layout` for size and position changes, and `layoutId` for shared elements. Don't hand-compute positions Motion can manage.
+- Use `AnimatePresence` only for mount and unmount. Its direct children need stable unique keys.
+- Animate `opacity` and `transform`. Avoid continuously animating `top`, `left`, `margin`, `padding` or `box-shadow`.
+- Never animate the same property with CSS and Motion at once.
+
+## Accessibility
+
+- Always respect reduced motion with `useMotionPreference()` and its `resolve()` helper.
+- Under reduced motion, remove nonessential movement and prefer opacity. State-change feedback stays, but becomes near-instant.
+- Motion is never the only signal of a change. Keyboard behavior, focus order and visible focus must survive every animation.
+
+## Before you ship
+
+- The build passes.
+- There's no flash or layout shift.
+- Exits complete.
+- Rapid repeated interaction doesn't break state.
+- Reduced motion works.
+- Nothing blocks clicks, scrolling or navigation.

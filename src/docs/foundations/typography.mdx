@@ -1,84 +1,62 @@
-import { Meta, Source, Unstyled } from "@storybook/addon-docs/blocks";
+import { Meta } from "@storybook/addon-docs/blocks";
 
-import { Typography } from "@/components/typography/typography";
+import tailwindThemeCss from "tailwindcss/theme.css?raw";
+import themeCss from "../../styles/theme.css?raw";
+import { FontFamilies, FontWeights, HeadingDefinitions, TypeScale } from "./type-scale";
 
 <Meta title='Foundations/Typography' />
 
+export const typeCss = `${tailwindThemeCss}\n${themeCss}`;
+
 # Typography
 
-Type is set with Tailwind's font and text-size tokens. The `Typography` component maps them to one scale, so use it for text instead of writing `text-*` and `font-*` classes by hand. Its props are on the [Typography component page](?path=/docs/typography-typography--docs).
+UCL sets text with the `Typography` component, whose `size` and `weight` props map to the type tokens. Use `Typography`
+(or its `typographyVariants` classes) rather than raw `text-*`/`font-*` utilities, so text stays on the scale. See
+[Typography → Docs](?path=/docs/typography-typography--docs) for its props, and
+[Guidelines → Typography](?path=/docs/guidelines-typography--docs) for how to choose sizes and headings.
 
-## Font families
+Every table on this page is generated: Tailwind's default type tokens first, then any token `src/styles/theme.css`
+defines on top. When the `intercept` text styles are synced from archielabs.ds, their values replace the defaults here
+automatically.
 
-| Token            | Utility        | Used for                                         |
-| ---------------- | -------------- | ------------------------------------------------ |
-| `--font-sans`    | `font-sans`    | Body text and sizes up to `lg`                   |
-| `--font-display` | `font-display` | Sizes `xl` and up. Defaults to `--font-sans`     |
-| `--font-mono`    | `font-mono`    | Code and tabular identifiers                     |
+## Font
 
-`--font-display` is mapped in `src/styles/theme.css`. Point it at Intercept's headline family when the design system defines one. UCL declares the font tokens but doesn't load the webfonts: each app loads them (see Introduction → "Load the fonts").
+There are two family tokens: sizes up to `lg` use `font-sans` (body), and `xl` and larger use `font-display`
+(headlines). `--font-display` points at `--font-sans` until the design system defines a headline family.
 
-<Unstyled>
-<div style={{ display: "grid", gap: "0.75rem", margin: "1.5rem 0" }}>
-	<div className='font-sans text-2xl'>Sans: The quick brown fox jumps over the lazy dog</div>
-	<div className='font-display text-2xl'>Display: The quick brown fox jumps over the lazy dog</div>
-	<div className='font-mono text-lg'>Mono: const answer = 42;</div>
-</div>
-</Unstyled>
+<FontFamilies css={typeCss} />
 
-## Type scale
-
-`size` sets the font size and line height together. Sizes up to `lg` use `font-sans`, and `xl` and up use `font-display`.
-
-<Unstyled>
-<div style={{ display: "grid", gap: "0.5rem", margin: "1.5rem 0" }}>
-	{["7xl", "6xl", "5xl", "4xl", "3xl", "2xl", "xl", "lg", "base", "sm", "xs"].map((size) => (
-		<div
-			key={size}
-			style={{ display: "grid", gridTemplateColumns: "4rem 1fr", alignItems: "baseline", gap: "1rem" }}
-		>
-			<code>{size}</code>
-			<Typography size={size} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-				Almost before we knew it, we had left the ground
-			</Typography>
-		</div>
-	))}
-</div>
-</Unstyled>
-
-## Weights
-
-<Unstyled>
-<div style={{ display: "grid", gap: "0.5rem", margin: "1.5rem 0" }}>
-	{["regular", "medium", "semibold", "bold", "black"].map((weight) => (
-		<div
-			key={weight}
-			style={{ display: "grid", gridTemplateColumns: "6rem 1fr", alignItems: "baseline", gap: "1rem" }}
-		>
-			<code>{weight}</code>
-			<Typography size='xl' weight={weight}>
-				Almost before we knew it, we had left the ground
-			</Typography>
-		</div>
-	))}
-</div>
-</Unstyled>
+ℹ️ The font tokens are declared but no webfont is loaded yet, so text renders in the system font stack. Once Intercept's
+family is set, Storybook loads it in `globals.css` and apps load it themselves (see the
+[Introduction](?path=/docs/introduction--docs)).
 
 ## Headings
 
-`h1`–`h4` have a default size and weight, so the element alone sets the look. `h1` is also the page and modal title.
+Choose the heading level with `as`, for document structure and screen readers. `h1`–`h4` without `size`/`weight`
+render their definition (`typographyHeadings`), shown here as rendered:
 
-| Element | `size` / `weight`   | Font           |
-| ------- | ------------------- | -------------- |
-| `h1`    | `2xl` / `semibold`  | `font-display` |
-| `h2`    | `xl` / `semibold`   | `font-display` |
-| `h3`    | `lg` / `semibold`   | `font-sans`    |
-| `h4`    | `base` / `semibold` | `font-sans`    |
+<HeadingDefinitions />
 
-<Source
-	language='tsx'
-	code={`<Typography as="h1">Projects</Typography>
-<Typography as="h2">Recent activity</Typography>`}
-/>
+```tsx
+<Typography as='h1'>Projects</Typography>
+```
 
-Choose the heading element by document structure, not by how big it should look. When a design needs a different size, keep the element and override `size`.
+`h1` is also the page and modal title. Pass `size` or `weight` only when a specific Figma frame binds something else;
+that value wins for that instance.
+
+⚠️ **Decision needed:** these heading definitions are the template defaults. Confirm them against the `intercept` text
+styles in Figma during the first design system sync (DESIGN.md "Heading element → `Typography` `size` pairing").
+
+## Type scale
+
+Each size sets both font size and line height. The `Typography` column shows what the `size` prop adds beyond the base:
+the display font from `xl` up and 1% tracking at `lg` and `xl`. Sizes marked "Not in `Typography`" exist as tokens but
+aren't a `Typography` size.
+
+<TypeScale css={typeCss} />
+
+## Weights
+
+`Typography` offers `regular`, `medium`, `semibold`, `bold`, and `black`; the other weights are tokens only.
+
+<FontWeights css={typeCss} />

@@ -1,0 +1,71 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title='Guidelines/Content & Voice' />
+
+# Content & Voice
+
+How Intercept's interface talks to people. The same rules apply to copy in stories, docs and layouts.
+
+> ⚠️ **Brand voice isn't defined yet.** The audiences, voice and terminology go in `DESIGN.md` → "Brand voice" and "Brand names". Until then, use the general rules below.
+
+## Priorities
+
+When rules compete, follow this order:
+
+1. Accuracy and safety
+2. Clarity
+3. User confidence and control
+4. Actionability
+5. Brevity and scanability
+6. Personality
+
+Never make copy about compliance, payments, security, legal terms, errors or data loss playful. Never use aspirational language to hide conditions or consequences.
+
+## Writing rules
+
+- Be clear before being clever.
+- Describe the outcome, not the implementation.
+- Use sentence case everywhere, including headings and buttons.
+- Use contractions naturally: "can't", "you'll".
+- Avoid exclamation marks unless the moment really earns one.
+- Use the same word for the same thing everywhere. Distinguish states precisely, such as "Saved" and "Published".
+- Don't expose technical terms unless the reader is technical.
+
+## Buttons and links
+
+Name the action and its result. Use a generic label only when the destination isn't known.
+
+| Do                   | Don't       |
+| -------------------- | ----------- |
+| Create project       | Submit      |
+| Invite teammate      | Continue    |
+| Save changes         | OK          |
+| Delete               | Yes         |
+
+## Forms
+
+- Keep labels short in dense forms. Use question-style labels in guided flows.
+- Add helper text only to prevent confusion, explain a requirement or say who can see the answer.
+- Make it clear which fields are required and which are optional.
+
+## States
+
+| State                     | What it says                                                     | Example                                                       |
+| ------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| Empty                     | What's missing, why it matters, what to do next                  | No projects yet. Create one to start building.               |
+| Error                     | What went wrong and how to recover, without blame                | We couldn't save your changes. Check your connection and try again. |
+| Success                   | Exactly what changed and, when useful, who can see it            | Project shared with 3 teammates.                              |
+| Warning                   | The consequence, before the action                               | Changing the plan removes access for 2 members.               |
+| Destructive confirmation  | The object and the consequence. The button names the action      | Delete "Q3 report"? This can't be undone. **Delete**          |
+| AI-assisted draft         | The draft is editable and the user owns it                       | Review the draft, then save.                                  |
+
+## Before you ship
+
+- People know where they are, what to do, why it matters and what happens next.
+- Required and optional details are easy to tell apart.
+- Every button names a real outcome.
+- The tone fits the audience and the risk.
+- The copy doesn't promise anything the product can't guarantee.
+- Terms and product names match `DESIGN.md`.
+
+The `ucl-ux-copywriter` skill applies these rules. Ask Claude to review or write copy and it uses them, plus the brand voice once it's defined.

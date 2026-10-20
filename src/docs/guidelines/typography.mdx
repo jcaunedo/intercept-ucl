@@ -1,0 +1,66 @@
+import { Meta, Source } from "@storybook/addon-docs/blocks";
+
+<Meta title='Guidelines/Typography' />
+
+# Typography
+
+How to set text in Intercept. The scale, fonts and weights are on [Foundations → Typography](?path=/docs/foundations-typography--docs), and the component API is on [Typography → Docs](?path=/docs/typography-typography--docs).
+
+## Use the `Typography` component
+
+Set every heading, paragraph and label with `Typography`. It keeps size, line height, font and weight in step. Don't hand-write `text-*` and `font-*` classes for text.
+
+| Do                                                  | Don't                                                     |
+| --------------------------------------------------- | --------------------------------------------------------- |
+| `<Typography as="h2">Recent activity</Typography>`  | `<h2 className="text-xl font-semibold">Recent activity</h2>` |
+| `<Typography size="sm">Updated 2h ago</Typography>` | `<p className="text-[13px]">Updated 2h ago</p>`           |
+
+## Choose headings by structure
+
+The heading element describes where the text sits in the page outline. Its look comes from the default size and weight for that element.
+
+- Use one `h1` per page or modal. It's the page or modal title.
+- Don't skip levels. An `h2` is followed by an `h3`, not an `h4`.
+- When a design shows a heading at a different size, keep the element and override `size` or `weight`.
+- Don't use a heading element to make text bold. Use `weight` on a `<p>` or `<span>`.
+
+<Source
+	language='tsx'
+	code={`// A section heading that the design shows smaller than the default h2
+<Typography as="h2" size="lg">Members</Typography>
+
+// Bold inline text that isn't a heading
+<Typography as="span" weight="semibold">3 pending invites</Typography>`}
+/>
+
+## Choose sizes by role
+
+| Size         | Role                                       |
+| ------------ | ------------------------------------------ |
+| `xs`         | Captions, fine print, metadata             |
+| `sm`         | Secondary text, helper text, dense tables  |
+| `base`       | Body text (default)                        |
+| `lg`         | Lead paragraphs, `h3`                      |
+| `xl`–`2xl`   | Section and page headings                  |
+| `3xl` and up | Display text on marketing and empty states |
+
+Use `base` for body text unless the design calls for something else. When a Figma text style doesn't match a size, ask before adding a new one.
+
+## Weights
+
+- `regular` for body text.
+- `medium` for labels and emphasis inside body text.
+- `semibold` for headings and the labels of controls.
+- `bold` and `black` only for display text.
+
+## Color
+
+`Typography` inherits its color. Set it with token utilities, never raw colors:
+
+- `text-foreground` for primary text (the default on the page background).
+- `text-muted-foreground` for secondary text, such as descriptions and metadata.
+- On a colored surface, use that surface's `-foreground` token, such as `text-primary-foreground` on `bg-primary`.
+
+## Writing
+
+Headings and labels use sentence case: "Recent activity", not "Recent Activity". The rest of the writing rules are in [Guidelines → Content & Voice](?path=/docs/guidelines-content-voice--docs).

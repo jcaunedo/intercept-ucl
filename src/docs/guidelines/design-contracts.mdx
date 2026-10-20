@@ -1,0 +1,59 @@
+import { Meta, Source } from "@storybook/addon-docs/blocks";
+
+<Meta title='Guidelines/Design Contracts' />
+
+# Design Contracts
+
+Rules about why things are built the way they are. Each one prevents a mistake that looks reasonable, builds without errors and is easy to "fix" back to a worse state. `DESIGN.md` is the source of truth and has the full reasoning for each rule.
+
+## One quality bar
+
+Internal tools and customer-facing screens are designed to the same standard: intuitive, efficient and human. Don't skip states, motion or copy quality because a screen is internal.
+
+## Spacing matches Figma's literal value
+
+When a Figma gap, margin or padding doesn't match a step on the spacing scale, use the literal value as an arbitrary class. Don't round it to a nearby token.
+
+| Do                                              | Don't                                                  |
+| ----------------------------------------------- | ------------------------------------------------------ |
+| `gap-[2px]` when Figma says 2px                 | `gap-2` (8px) "for consistency" with a sibling variant |
+| Keep different values across variants if Figma has them | Pick one value for every variant                |
+
+Take the value from the exact node, per variant and state. If a difference looks like a Figma mistake, ask which value wins.
+
+## Icons use the instance size
+
+Render an icon at the size of its Figma instance, such as 24×24. A smaller shape inside the instance is how the asset was drawn, not an instruction to shrink it. If a nested shape seems to disagree, ask.
+
+## Composed components are black boxes
+
+A parent never reaches into a child component's markup. Style slots for direct children only.
+
+| Do                                     | Don't                                                     |
+| -------------------------------------- | --------------------------------------------------------- |
+| `[&>svg]:size-12`                      | `[&_svg]:size-12`, which also hits icons inside child components |
+| Add a prop or variant to the child     | Override the child's styles from the parent               |
+
+`Button` styles the icons passed directly into it with `[&_svg]`. Check this before nesting a component that renders its own SVG inside a `Button`.
+
+## Breakpoints include their own width
+
+The `lg` frame at exactly 1024px shows the "`lg` and below" layout. Write the usual `lg:` and `max-lg:` classes; `theme.css` already places each boundary 1px past the frame width. Details are on [Foundations → Breakpoints](?path=/docs/foundations-breakpoints--docs).
+
+## Removed rows fade, then the gap closes
+
+When a row leaves a table or list, it fades out first, then the rows below glide up. Use `rowRemoveVariants` with `AnimatePresence initial={false}` and `layout="position"` on each row.
+
+- Opacity only. No vertical nudge, which would overlap the next row's border.
+- Never `mode="popLayout"` on table rows. The exiting row loses its table layout and its cells collapse.
+- Keys are record ids, never the array index.
+
+## Headings pair with a size
+
+`<Typography as="h1">` to `h4` render a default size and weight. Choose the element by structure; override `size` when a design differs. See [Guidelines → Typography](?path=/docs/guidelines-typography--docs).
+
+> ⚠️ **Decision needed:** the heading sizes are the template defaults. They'll be confirmed against the `intercept` text styles in Figma during the first design system sync.
+
+## Adding a contract
+
+Add a rule to `DESIGN.md` when a fix took real iteration to land on, or when two pieces of code must change together in a way that isn't obvious from either one. Say what the rule is, why it exists and how to apply it. Then add a short version here.

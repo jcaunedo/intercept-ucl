@@ -1,0 +1,66 @@
+import { Meta, Source } from "@storybook/addon-docs/blocks";
+
+<Meta title='Guidelines/Accessibility' />
+
+# Accessibility
+
+Every component and layout works with a keyboard, a screen reader and reduced motion. Accessibility is part of done, not a later pass. Check new work against WCAG 2.1 AA.
+
+## Color and contrast
+
+- Pair every surface token with its `-foreground` token: `bg-primary` with `text-primary-foreground`, `bg-muted` with `text-muted-foreground`. The pairs are on [Foundations → Colors](?path=/docs/foundations-colors--docs).
+- Body text needs a contrast ratio of at least 4.5:1, and large text and icons at least 3:1.
+- Never use color as the only signal. An error has a message, not just a red border. A status has a label, not just a dot.
+
+## Keyboard and focus
+
+- Everything you can click, you can reach with Tab and use with Enter or Space.
+- Focus is always visible. Components show a ring in the `--ring` token on keyboard focus (`focus-visible`). Never remove it without a replacement.
+- Focus order follows the reading order. Don't reorder content with CSS in a way that breaks it.
+- Dialogs and menus move focus in when they open, keep it inside while open, and return it to the trigger when they close.
+
+## Semantics
+
+- Use the native element for the job: `<button>` for actions, `<a>` for navigation. For a link styled as a button, use `Button` with `asChild`.
+- Headings follow the page outline: one `h1`, no skipped levels. See [Guidelines → Typography](?path=/docs/guidelines-typography--docs).
+- Every form field has a visible label. Placeholder text isn't a label.
+- Errors are linked to their field and announced, not just shown.
+
+<Source
+	language='tsx'
+	code={`// Navigation keeps a real link
+<Button asChild>
+	<a href="/projects/new">New project</a>
+</Button>`}
+/>
+
+## Icons and images
+
+- Icon-only buttons need an `aria-label` that names the action.
+- Decorative icons next to text get `aria-hidden="true"`.
+- Images that carry meaning have `alt` text. Decorative images have `alt=""`.
+
+<Source
+	language='tsx'
+	code={`<Button size="icon" aria-label="Delete project">
+	<Trash2 aria-hidden="true" />
+</Button>`}
+/>
+
+## Motion
+
+- Respect reduced motion with `useMotionPreference()`. Feedback stays, movement goes.
+- Motion is never the only signal of a state change.
+- Details are in [Guidelines → Motion](?path=/docs/guidelines-motion--docs).
+
+## Touch and pointer
+
+- Interactive targets are at least 24×24px, and 44×44px where the design allows it.
+- Don't rely on hover alone. Anything shown on hover is also reachable with focus or a tap.
+
+## Checking your work
+
+- Tab through the page with no mouse.
+- Try it with a screen reader (VoiceOver on macOS: Cmd + F5).
+- Turn on reduced motion in your operating system and repeat.
+- Zoom to 200% and check that nothing is cut off or overlaps.

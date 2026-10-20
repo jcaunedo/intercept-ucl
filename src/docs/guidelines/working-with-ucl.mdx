@@ -1,0 +1,80 @@
+import { Meta, Source } from "@storybook/addon-docs/blocks";
+
+<Meta title='Guidelines/Working with UCL' />
+
+# Working with UCL
+
+How design moves from Figma into UCL, and from UCL into the apps.
+
+## Where things come from
+
+| Source                                                                                       | What it holds                                         |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [archielabs.ds](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds) in Figma | Tokens, text styles and components. Use the `intercept` mode. |
+| `CLAUDE.md`                                                                                  | How things are built: stack, structure, conventions   |
+| `DESIGN.md`                                                                                  | Design contracts, brand names and voice               |
+| `MOTION.md`                                                                                  | Motion rules                                          |
+| This Storybook                                                                               | The current state of every token and component        |
+
+The design system file is shared across brands. Always read values from the `intercept` variable mode. Intercept is light only for now; a dark mode will be added in Figma later.
+
+## From Figma to code
+
+Work with Claude Code in this repo. Share a Figma link and say what you need; the matching skill runs.
+
+| You want to…                                    | Skill                    | Share                              |
+| ----------------------------------------------- | ------------------------ | ---------------------------------- |
+| Update tokens, colors or text styles            | `ucl-ds-sync`            | A link to the variables or styles  |
+| Build or update one component                   | `ucl-generate-component` | A link to the component            |
+| Build or update a full screen                   | `ucl-generate-layout`    | A link to the screen or frame      |
+| Write or review interface copy                  | `ucl-ux-copywriter`      | The screen or the strings          |
+
+Components link to a single component in Figma, not to a page or a frame that contains one.
+
+## Components
+
+Each component lives in its own folder, grouped by category:
+
+<Source
+	language='text'
+	code={`src/components/<category>/<name>/
+  <name>.tsx            # the component
+  <name>.stories.tsx    # one story per variant and state, plus AllVariants
+  <name>.mdx            # optional docs page with usage guidance
+  index.ts              # re-exports the component, variants and types`}
+/>
+
+Categories are `buttons`, `forms`, `cards`, `data-display`, `feedback`, `overlays`, `navigation` and `typography`. Every public component is also exported from `src/index.ts`.
+
+When a component has the same concept as an existing one, reuse its prop names. For example, use `variant` and `size` with the same values as `Button`.
+
+## Layouts and sample data
+
+Layouts are full-page reference screens under `src/layouts/<app>/`. The apps rebuild them with real data, so mock data stays separate from the UI:
+
+- Mock data lives in typed `sample-*.ts` files next to the screen that uses it.
+- Screens take their data through props and never import a `sample-*` file.
+- Stories pass the samples in.
+
+Everything in a `sample-*` file gets replaced with API data. Everything else is code to keep.
+
+## Releasing
+
+UCL is published as `@jcaunedo/intercept-ucl` to GitHub Packages.
+
+| Change                                             | Version |
+| -------------------------------------------------- | ------- |
+| Fixes and visual tweaks                            | Patch   |
+| New components, optional props, variants or tokens | Minor   |
+| Removing or renaming a component, prop or token, or changing a default | Major |
+
+Below 1.0.0, package managers treat a minor bump as breaking.
+
+<Source
+	language='bash'
+	code={`# with your work committed
+npm run release:patch   # or release:minor / release:major
+git push && git push --tags`}
+/>
+
+Pushing a new version to `main` publishes it. Normal merges release nothing. To use UCL in an app, see the [Introduction](?path=/docs/introduction--docs).
