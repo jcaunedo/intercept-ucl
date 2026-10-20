@@ -4,8 +4,7 @@ name: Publish package
 # Normal merges release nothing; a release is `npm run release:*` + push.
 # Never publishes while package.json has "private": true (the unconfigured
 # template) or on a first commit with no previous version to compare.
-# Registry: GitHub Packages by default. `ucl-setup` updates registry-url and
-# the package scope for the project.
+# Registry: GitHub Packages (@jcaunedo scope).
 
 on:
   push:

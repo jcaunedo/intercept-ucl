@@ -1,10 +1,6 @@
-# UCL (Unified Component Library)
+# Intercept UCL (Unified Component Library)
 
-Shared React component library for a project's frontend applications. Built with React 19, Tailwind CSS 4 and TypeScript, on the base component library chosen in "Stack" (shadcn/ui by default).
-
-## ⚠️ Setup required
-
-This repo is the **unconfigured UCL template**. Before doing any other task, run the `ucl-setup` skill (`/ucl-setup`). It asks for the stack first (base component library, icons, forms), then the project details (name, package, registry, Figma file, apps), and updates dependencies, build config and docs to match. When setup finishes, it deletes this section.
+Shared React component library for Intercept's frontend applications. Built with React 19, Tailwind CSS 4 and TypeScript, on shadcn/ui (Radix).
 
 ## Project
 
@@ -12,10 +8,11 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 
 | Item         | Value                                                        |
 | ------------ | ------------------------------------------------------------ |
-| Project      | ⚠️ Not set (run `ucl-setup`)                                 |
-| Package      | `ucl` (placeholder, e.g. `@your-org/ucl`)                    |
-| Registry     | GitHub Packages (default)                                    |
-| Apps         | ⚠️ Not defined. List the apps that consume UCL (used for `src/layouts/<app>/`) |
+| Project      | Intercept                                                    |
+| Package      | `@jcaunedo/intercept-ucl`                                    |
+| Registry     | GitHub Packages, `@jcaunedo` scope (`https://npm.pkg.github.com`) |
+| Repository   | https://github.com/jcaunedo/intercept-ucl                    |
+| Apps         | ⚠️ Not defined yet. List the apps that consume UCL (used for `src/layouts/<app>/`) |
 | Brand        | DESIGN.md → "Brand names", "Brand voice"                     |
 
 ## How the rules work
@@ -40,17 +37,17 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 
 ## Stack
 
-The stack is set per project so UCL matches what the project's dev team ships. It's the first thing `ucl-setup` asks for. The values below are the template defaults. Change a row only after agreeing it with the dev team, then update every section below that depends on it.
+The stack is set per project so UCL matches what the project's dev team ships. It's the first thing `ucl-setup` asks for. Change a row only after agreeing it with the dev team, then update every section below that depends on it.
 
 | Concern              | Choice                                                     | Status                     |
 | -------------------- | ---------------------------------------------------------- | -------------------------- |
 | Framework            | React 19 (`react`, `react-dom` as peer dependencies)       | Set                        |
-| Base components      | shadcn/ui on Radix (`@radix-ui/react-*`)                   | Default                    |
+| Base components      | shadcn/ui on Radix (`@radix-ui/react-*`)                   | Set                        |
 | Styling              | Tailwind CSS 4, tokens in `src/styles/theme.css` (oklch)   | Set                        |
 | Variants             | `class-variance-authority` (`cva`) + `cn()`                | Set                        |
-| Icons                | `lucide-react`                                             | Default                    |
+| Icons                | `lucide-react`                                             | Set                        |
 | Motion               | `motion` (`motion/react`)                                  | Set                        |
-| Forms                | `react-hook-form` + `zod`, optional peer dependencies      | Default                    |
+| Forms                | `react-hook-form` + `zod`, optional peer dependencies      | Set                        |
 | App rendering        | Bundle marked `"use client"` after build (works for client-only and Next.js apps) | Set |
 | Build                | tsup, ESM only                                             | Set                        |
 | Workbench            | Storybook 10 (`@storybook/react-vite`, `addon-docs`)       | Set                        |
@@ -62,14 +59,15 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 
 | Item                    | Value                                     |
 | ----------------------- | ----------------------------------------- |
-| Design system file      | ⚠️ Not set. Add the name and `fileKey`    |
-| Modes                   | ⚠️ Not set. Light only, or light + dark?  |
+| Design system file      | ⚠️ Not set yet. Add the name and `fileKey` |
+| Modes                   | ⚠️ Not set yet. Light only, or light + dark? |
+| Figma MCP account       | 8base                                     |
 
 Skills compare every Figma URL's `fileKey` against this table. Until it's set, they ask for the file before syncing tokens.
 
 ## Architecture
 
-- **Package:** the name in "Project", ESM-only (see "Release & Publishing").
+- **Package:** `@jcaunedo/intercept-ucl`, ESM-only (see "Release & Publishing").
 - **Build:** tsup bundles `src/index.ts` → `dist/index.js` + `dist/index.d.ts`. `src/styles/theme.css` is copied raw to `dist/styles.css`.
 - **Styling:** two CSS files.
   - `src/styles/theme.css`: design tokens, `@theme inline` mappings, breakpoints, `:root` and `.dark` variables. Ships to consumers as `<package>/styles`.
@@ -237,25 +235,25 @@ The motion rules live in [MOTION.md](MOTION.md): principles, personality, the na
 Apps need a `.npmrc` scoping the package to the registry, plus a read-only token:
 
 ```
-@your-org:registry=https://npm.pkg.github.com
+@jcaunedo:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${NPM_TOKEN}
 ```
 
 ```bash
-npm install @your-org/ucl
+npm install @jcaunedo/intercept-ucl
 ```
 
 ```css
 /* In the consuming app's global CSS */
 @import "tailwindcss";
-@import "@your-org/ucl/styles";
-@source "../node_modules/@your-org/ucl/dist";
+@import "@jcaunedo/intercept-ucl/styles";
+@source "../node_modules/@jcaunedo/intercept-ucl/dist";
 ```
 
 `@source` makes Tailwind scan UCL's bundled JS for class names. Without it, component styles silently go missing.
 
 ```tsx
-import { Button } from "@your-org/ucl";
+import { Button } from "@jcaunedo/intercept-ucl";
 ```
 
 ## product-specs writing conventions

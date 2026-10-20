@@ -1,9 +1,15 @@
 {
-	"name": "ucl",
-	"private": true,
+	"name": "@jcaunedo/intercept-ucl",
 	"version": "0.1.0",
 	"type": "module",
-	"description": "React component library",
+	"description": "React component library for Intercept",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jcaunedo/intercept-ucl.git"
+	},
+	"publishConfig": {
+		"registry": "https://npm.pkg.github.com"
+	},
 	"main": "./dist/index.js",
 	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",

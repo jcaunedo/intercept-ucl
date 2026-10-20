@@ -2,19 +2,19 @@ import { Meta, Source } from "@storybook/addon-docs/blocks";
 
 <Meta title='Introduction' />
 
-# UCL
+# Intercept UCL
 
-The React component library. Components are built with React 19, Tailwind CSS 4, and Radix UI, and follow shadcn/ui conventions.
+The React component library for Intercept. Components are built with React 19, Tailwind CSS 4, and Radix UI, and follow shadcn/ui conventions.
 
 ## Use UCL in an app
 
 ### 1. Point the app at GitHub Packages
 
-UCL is published to GitHub Packages, not the public npm registry. Add an `.npmrc` at the app's root so npm fetches the `@your-org` scope from there:
+UCL is published to GitHub Packages, not the public npm registry. Add an `.npmrc` at the app's root so npm fetches the `@jcaunedo` scope from there:
 
 <Source
 	language='ini'
-	code={`@your-org:registry=https://npm.pkg.github.com
+	code={`@jcaunedo:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=\${NPM_TOKEN}`}
 />
 
@@ -25,20 +25,20 @@ UCL is published to GitHub Packages, not the public npm registry. Add an `.npmrc
 
 ### 2. Install
 
-<Source language='bash' code={`npm install @your-org/ucl`} />
+<Source language='bash' code={`npm install @jcaunedo/intercept-ucl`} />
 
 `react` and `react-dom` 19 are peer dependencies: the app provides them, so it doesn't get two copies of React. Form components also need `react-hook-form`, `zod` and `@hookform/resolvers`, which are optional peer dependencies.
 
 ### 3. Import the styles
 
-The package ships its design tokens in `@your-org/ucl/styles`. Import them after Tailwind in the app's global stylesheet, and point Tailwind at the package so it generates the classes the components use.
+The package ships its design tokens in `@jcaunedo/intercept-ucl/styles`. Import them after Tailwind in the app's global stylesheet, and point Tailwind at the package so it generates the classes the components use.
 
 <Source
 	language='css'
 	code={`@import "tailwindcss";
-@import "@your-org/ucl/styles";
+@import "@jcaunedo/intercept-ucl/styles";
 
-@source "../node_modules/@your-org/ucl/dist";`}
+@source "../node_modules/@jcaunedo/intercept-ucl/dist";`}
 />
 
 Adjust the `@source` path so it's relative to the stylesheet. **Without it, component styles go missing without any error.**
@@ -51,7 +51,7 @@ UCL declares the font tokens (`--font-sans`, `--font-mono` in `theme.css`) but d
 
 <Source
 	language='tsx'
-	code={`import { Button } from "@your-org/ucl";
+	code={`import { Button } from "@jcaunedo/intercept-ucl";
 
 export function Example() {
   return <Button>Continue</Button>;
@@ -68,7 +68,7 @@ Every component accepts `className`. Use the exported `cn()` helper to merge cla
 
 <Source
 	language='tsx'
-	code={`import { cn } from "@your-org/ucl";
+	code={`import { cn } from "@jcaunedo/intercept-ucl";
 
 <div className={cn("p-4", isActive && "bg-accent")} />`}
 />
