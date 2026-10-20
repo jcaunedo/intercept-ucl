@@ -21,7 +21,6 @@ const WEIGHTS = ["regular", "medium", "semibold", "bold", "black"] as const;
 const meta = {
 	title: "Typography/Typography",
 	component: Typography,
-	tags: ["autodocs"],
 	argTypes: {
 		size: {
 			control: "select",

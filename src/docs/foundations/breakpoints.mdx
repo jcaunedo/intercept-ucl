@@ -1,0 +1,96 @@
+import { Meta, Source } from "@storybook/addon-docs/blocks";
+
+import { breakpoints, mediaAbove } from "@/lib/breakpoints";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
+
+<Meta title='Foundations/Breakpoints' />
+
+export const CurrentBreakpoint = () => {
+	const names = Object.keys(breakpoints);
+	const matches = names.map((name) => useMediaQuery(mediaAbove(name)));
+	const index = matches.lastIndexOf(true);
+	const label =
+		index === -1
+			? `sm (${breakpoints.sm}px) and below`
+			: index === names.length - 1
+				? `above 3xl (${breakpoints["3xl"]}px)`
+				: `${names[index + 1]}: above ${names[index]}, up to ${breakpoints[names[index + 1]]}px`;
+	return (
+		<div
+			style={{
+				padding: "0.75rem 1rem",
+				margin: "1.5rem 0",
+				borderRadius: "var(--radius)",
+				border: "1px solid var(--border)",
+				background: "var(--muted)",
+				fontSize: "0.875rem",
+			}}
+		>
+			Current layout: <strong>{label}</strong>
+		</div>
+	);
+};
+
+# Breakpoints
+
+Each breakpoint matches a design frame width. A breakpoint's layout covers widths **up to and including** its frame width, so the `lg` frame at exactly 1024px shows the "`lg` and below" layout, and the next layout starts at 1025px.
+
+<CurrentBreakpoint />
+
+{/* Rows come from src/lib/breakpoints.ts, so the table stays in sync with the code. */}
+
+<table>
+	<thead>
+		<tr>
+			<th>Name</th>
+			<th>Frame width</th>
+			<th>
+				<code>name:</code> applies
+			</th>
+			<th>
+				<code>max-name:</code> applies
+			</th>
+		</tr>
+	</thead>
+	<tbody>
+		{Object.entries(breakpoints).map(([name, width]) => (
+			<tr key={name}>
+				<td>
+					<code>{name}</code>
+				</td>
+				<td>{width}px</td>
+				<td>above {width}px</td>
+				<td>{width}px and below</td>
+			</tr>
+		))}
+	</tbody>
+</table>
+
+`2.5xl` is a custom breakpoint halfway between `2xl` and `3xl`.
+
+## In CSS
+
+Write the usual Tailwind variants. `theme.css` registers each one 1px past its frame width, so `lg:` already means "above 1024".
+
+<Source
+	language='tsx'
+	code={`<div className="grid grid-cols-1 lg:grid-cols-3">…</div>
+<nav className="max-lg:hidden">…</nav>`}
+/>
+
+Don't write arbitrary queries such as `min-[1025px]:`. These boundaries ship in `@jcaunedo/intercept-ucl/styles`, so the apps' own `sm:`–`3xl:` classes follow them too.
+
+## In JavaScript
+
+Inside UCL, use `mediaAbove()` from `@/lib/breakpoints` with `useMediaQuery()` from `@/lib/hooks/use-media-query`. Never write `(min-width: …)` by hand.
+
+<Source
+	language='tsx'
+	code={`const isDesktop = useMediaQuery(mediaAbove("lg")); // above 1024px`}
+/>
+
+## Describing breakpoints
+
+Say "at `lg` (1024) and below" or "above `lg`". Avoid "below `lg`" and "from `lg`", which leave the boundary width ambiguous.
+
+When a breakpoint changes, update `src/styles/theme.css` and `src/lib/breakpoints.ts` together. The full rule is in DESIGN.md → "Breakpoints include their own width".

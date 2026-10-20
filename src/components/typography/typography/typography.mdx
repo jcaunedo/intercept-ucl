@@ -1,0 +1,71 @@
+import { Meta, Canvas, Controls, Source } from "@storybook/addon-docs/blocks";
+
+import * as TypographyStories from "./typography.stories";
+
+<Meta of={TypographyStories} />
+
+# Typography
+
+Renders text on the type scale. Use it for every heading, paragraph and label, so text sizes and weights stay consistent across screens.
+
+<Canvas of={TypographyStories.Default} />
+
+<Controls of={TypographyStories.Default} />
+
+## Usage
+
+<Source
+	language='tsx'
+	code={`import { Typography } from "@jcaunedo/intercept-ucl";
+
+<Typography as="h1">Projects</Typography>
+<Typography className="text-muted-foreground">Everything your team is building.</Typography>`}
+/>
+
+It renders a `<p>` by default. Set `as` to render another element, such as `h2`, `span` or `label`.
+
+## Headings
+
+`as="h1"` to `as="h4"` set a default size and weight, so the element alone is enough. `h1` is also the page and modal title.
+
+<Canvas of={TypographyStories.Headings} />
+
+| Element | `size` / `weight`   |
+| ------- | ------------------- |
+| `h1`    | `2xl` / `semibold`  |
+| `h2`    | `xl` / `semibold`   |
+| `h3`    | `lg` / `semibold`   |
+| `h4`    | `base` / `semibold` |
+
+When a design needs a different look, keep the element and override `size` or `weight`. The element carries the meaning; the props carry the look.
+
+## Sizes
+
+`size` sets the font size and line height together. Sizes up to `lg` use the body font (`font-sans`). `xl` and up use the display font (`font-display`).
+
+<Canvas of={TypographyStories.AllVariants} />
+
+| Size            | When to use                                 |
+| --------------- | ------------------------------------------- |
+| `xs`            | Captions, fine print, metadata              |
+| `sm`            | Secondary text, helper text, dense tables   |
+| `base`          | Body text (default)                         |
+| `lg`            | Lead paragraphs, `h3`                       |
+| `xl`–`2xl`      | Section and page headings                   |
+| `3xl` and up    | Display text on marketing and empty states  |
+
+## Weights
+
+<Canvas of={TypographyStories.Weights} />
+
+Use `regular` for body text and `semibold` for headings and labels. Keep `bold` and `black` for display text.
+
+## Color
+
+`Typography` doesn't set a color, so text inherits it from its parent. Add a token utility through `className`, such as `text-muted-foreground` for secondary text.
+
+## Accessibility
+
+- Pick heading elements by document structure, not by size. Don't skip levels, such as an `h2` followed by an `h4`.
+- Use one `h1` per page or modal.
+- Don't use a heading element just to make text bold. Use `weight` on a `<p>` or `<span>` instead.

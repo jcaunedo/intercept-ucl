@@ -78,28 +78,4 @@ Pair each surface token with its `-foreground` token, so text always has enough 
 	/>
 </ColorPalette>
 
-## Radius
-
-All corner radii derive from one `--radius` token (`0.5rem`). Change it to adjust every component at once.
-
-<div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "1.5rem 0" }}>
-	{[
-		["rounded-sm", "calc(var(--radius) - 4px)"],
-		["rounded-md", "calc(var(--radius) - 2px)"],
-		["rounded-lg", "var(--radius)"],
-	].map(([name, value]) => (
-		<div key={name} style={{ textAlign: "center", fontSize: "0.8125rem" }}>
-			<div
-				style={{
-					width: 96,
-					height: 64,
-					borderRadius: value,
-					background: "var(--secondary)",
-					border: "1px solid var(--border)",
-					marginBottom: 8,
-				}}
-			/>
-			<code>{name}</code>
-		</div>
-	))}
-</div>
+Corner radius tokens are on the Spacing & Radius page.
