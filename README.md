@@ -111,7 +111,8 @@ src/
         index.ts            # Re-exports the component, variants and types
 CLAUDE.md                   # How things are built here (stack, conventions)
 DESIGN.md                   # Design contracts and brand rules
+MOTION.md                   # Motion system rules
 netlify.toml                # Hosts the Storybook site on Netlify
 ```
 
-The rules for building components, motion, tokens and releases are in [CLAUDE.md](CLAUDE.md) and [DESIGN.md](DESIGN.md). The skills read both before they start.
+The rules for building components, tokens and releases are in [CLAUDE.md](CLAUDE.md) and [DESIGN.md](DESIGN.md), and the motion rules are in [MOTION.md](MOTION.md). The skills read CLAUDE.md and DESIGN.md before they start, plus MOTION.md when the work involves animation.

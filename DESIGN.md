@@ -93,6 +93,7 @@ Each entry says what the rule is, why it exists, and how to apply it. Don't rest
 | `lg`  | 1024        |
 | `xl`  | 1280        |
 | `2xl` | 1536        |
+| `2.5xl` | 1728      |
 | `3xl` | 1920        |
 
 So the lg frame at exactly 1024px gets the "lg and below" layout, and the next layout starts at 1025px.
@@ -102,6 +103,7 @@ So the lg frame at exactly 1024px gets the "lg and below" layout, and the next l
 **How to apply:**
 
 - `theme.css` registers each Tailwind breakpoint 1px past its frame width (`--breakpoint-lg: 1025px`). `lg:` means above 1024 and `max-lg:` means 1024 and below. Write the usual `lg:`/`xl:` classes, never an arbitrary `min-[1025px]:`.
+- `2.5xl` (1728, custom, halfway between `2xl` and `3xl`) is registered as `--breakpoint-2\.5xl`. The dot has to be escaped, because Tailwind turns `--breakpoint-2_5xl` into `max-2.5xl:` only, with no `2.5xl:`.
 - JS media queries use `mediaAbove("lg")` from `@/lib/breakpoints` with `useMediaQuery` from `@/lib/hooks/use-media-query`, never a hand-written `(min-width: …)`.
 - Keep `theme.css` and `src/lib/breakpoints.ts` in sync when a breakpoint changes.
 - Describe breakpoints as "at `lg` (1024) and below" / "above `lg`", not "below `lg`" / "from `lg`".
@@ -148,3 +150,26 @@ const { resolve } = useMotionPreference();
 ⚠️ **Constraint:** never `mode="popLayout"` on table rows. It pulls the exiting row out with `position: absolute`, and a `<tr>` loses its table layout: its cells collapse while it fades.
 
 ⚠️ **Constraint:** keys are the record id, never the array index, or the wrong row fades out.
+
+---
+
+## Heading element → `Typography` `size` pairing (`src/components/typography/typography/typography.tsx`)
+
+**Rule:** `<Typography as="h1">`–`h4` without `size`/`weight` render these defaults (`typographyHeadings`):
+
+| Element | `size` / `weight`   | Font           |
+| ------- | ------------------- | -------------- |
+| `h1`    | `2xl` / `semibold`  | `font-display` |
+| `h2`    | `xl` / `semibold`   | `font-display` |
+| `h3`    | `lg` / `semibold`   | `font-sans`    |
+| `h4`    | `base` / `semibold` | `font-sans`    |
+
+`h1` is also the page and modal title.
+
+**Why:** the element carries the semantics and the map carries the look, so screens get a consistent heading scale without repeating `size`/`weight` on every heading, and the document outline stays correct.
+
+**How to apply:**
+
+- Pick the element for the document outline, not for its size. If a Figma frame binds a different text style to a heading, keep the element and pass `size`/`weight` explicitly.
+- ⚠️ **Decision needed:** these are the template defaults. Confirm them against the project's Figma text styles during `ucl-setup` or `ucl-ds-sync`, and update the table and `typographyHeadings` together.
+

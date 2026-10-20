@@ -9,6 +9,7 @@ const breakpoints = {
   lg: 1024,
   xl: 1280,
   "2xl": 1536,
+  "2.5xl": 1728,
   "3xl": 1920,
 } as const;
 

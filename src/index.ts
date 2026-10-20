@@ -51,3 +51,17 @@ export {
 	buttonVariants,
 	type ButtonProps,
 } from "@/components/buttons/button";
+
+/* -------------------------------------------------------------------------- */
+/* Typography                                                                 */
+/* -------------------------------------------------------------------------- */
+
+export {
+	Typography,
+	typographyVariants,
+	typographyHeadings,
+	type TypographyHeading,
+	type TypographyProps,
+	type TypographySize,
+	type TypographyWeight,
+} from "@/components/typography/typography";

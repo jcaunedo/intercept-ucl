@@ -21,20 +21,26 @@
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
+	/* Display font for `Typography` sizes xl and up. Defaults to the body font;
+	   point it at the project's headline family when there is one. */
+	--font-display: var(--font-sans);
 }
 
 /* ---------- Breakpoints ----------
    Each breakpoint's layout covers widths up to and including its frame width
-   (sm 640, md 768, lg 1024, xl 1280, 2xl 1536, 3xl 1920): the lg frame at
+   (sm 640, md 768, lg 1024, xl 1280, 2xl 1536, 2.5xl 1728, 3xl 1920): the lg frame at
    exactly 1024px gets the "lg and below" layout. So each Tailwind breakpoint
    starts 1px past its frame width: `lg:` = above 1024, `max-lg:` = 1024 and
-   below. Keep in sync with `src/lib/breakpoints.ts` (for JS media queries). */
+   below. Keep in sync with `src/lib/breakpoints.ts` (for JS media queries).
+   `2.5xl` (custom, halfway between 2xl and 3xl) needs its dot escaped in the
+   key: `--breakpoint-2_5xl` would only generate `max-2.5xl:`, not `2.5xl:`. */
 @theme {
 	--breakpoint-sm: 641px;
 	--breakpoint-md: 769px;
 	--breakpoint-lg: 1025px;
 	--breakpoint-xl: 1281px;
 	--breakpoint-2xl: 1537px;
+	--breakpoint-2\.5xl: 1729px;
 	--breakpoint-3xl: 1921px;
 }
 

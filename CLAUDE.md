@@ -20,9 +20,10 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 
 ## How the rules work
 
-- **CLAUDE.md** (this file): how things are built here. Covers the stack, folder structure, component and story conventions, the motion system and theme tokens.
+- **CLAUDE.md** (this file): how things are built here. Covers the stack, folder structure, component and story conventions and theme tokens.
+- **[MOTION.md](MOTION.md)**: the motion system. Covers principles, the named patterns, component guidance, accessibility and validation. Read it before any animation work. The values live in `src/lib/motion/`.
 - **[DESIGN.md](DESIGN.md)**: design contracts. Covers why a component is built the way it is, rules that a future edit or Figma/shadcn resync could silently break, and the brand voice.
-- **Skills** in `.claude/skills/` (`ucl-setup`, `ucl-ds-sync`, `ucl-generate-component`, `ucl-generate-layout`, `ucl-ux-copywriter`) are project-agnostic. They read both files before they start and take every project value (package, Figma file, categories, apps, component APIs, voice) from them. **When a skill and these files disagree, these files win.**
+- **Skills** in `.claude/skills/` (`ucl-setup`, `ucl-ds-sync`, `ucl-generate-component`, `ucl-generate-layout`, `ucl-ux-copywriter`) are project-agnostic. They read CLAUDE.md and DESIGN.md before they start (plus MOTION.md when the work involves animation) and take every project value (package, Figma file, categories, apps, component APIs, voice) from them. **When a skill and these files disagree, these files win.**
 - **Not defined here?** Ask, then record the answer in the right file so the next run doesn't have to ask again.
 
 ## Quick Reference
@@ -80,7 +81,7 @@ Skills compare every Figma URL's `fileKey` against this table. Until it's set, t
   - optional `<name>.mdx` docs page
 
   Categories: `buttons`, `forms`, `cards`, `data-display`, `feedback`, `overlays`, `navigation`, `typography`. Create a category folder when its first component arrives. Don't invent a category that isn't listed here without asking.
-- **Layouts:** full-page reference compositions under `src/layouts/<app>/<name>/`, previewed in Storybook and **not** exported from `src/index.ts`. Layouts used by more than one app go in `src/layouts/shared/`. Apps are listed in "Project". Screens in a multi-screen flow nest under `src/layouts/<app>/<flow>/`; list each flow here when it's created.
+- **Layouts:** full-page reference compositions under `src/layouts/<app>/<name>/`, previewed in Storybook and **not** exported from `src/index.ts`. Layouts used by more than one app go in `src/layouts/shared/`. Apps are listed in "Project". Screens in a multi-screen flow nest under `src/layouts/<app>/<flow>/`; list each flow here when it's created. Mock data goes in `sample-*` files, never in the screen (see "Sample Data").
 - **Lib:** `src/lib/`
   - `utils.ts`: `cn()`
   - `breakpoints.ts`: `breakpoints`, `mediaAbove()`
@@ -164,6 +165,25 @@ Mirror these names when a new component has the same concept. Keep this list cur
   - `variant`: `default` | `secondary` | `outline` | `ghost` | `link` | `destructive`
   - `size`: `default` | `sm` | `lg` | `icon`
   - `asChild` renders the button styles on its child (use for links)
+- **Typography** (`typography/typography`):
+  - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`xl` and up use `font-display`)
+  - `weight`: `regular` | `medium` | `semibold` | `bold` | `black`
+  - `as` sets the element; `h1`–`h4` default `size`/`weight` from `typographyHeadings`
+
+## Sample Data
+
+Layouts are reference implementations that the apps rebuild with their own data, so mock data stays separate from the UI. Every developer handoff relies on this: everything in a `sample-*` file gets replaced with API data, and everything else is code to keep.
+
+- **Samples live in typed `sample-*.ts` files** beside the screen or step that uses them (e.g. `<flow>/steps/pricing/sample-pricing.ts`). Use `.tsx` only when the sample renders JSX. Type every sample with the type its screen exports (`export const samplePricing: PricingAnswers = { … }`). Never JSON.
+- **Screens and steps take their data through props** and never import a `sample-*` file, not even as a default value (`listings = sampleListings` is not allowed). Data props are required, or default to an empty value (`""`, `[]`, `{}`) that represents real, empty data.
+- **Stories pass the samples in**, through `args` or the story's render function (`args: { listings: sampleListings }`).
+- **Shared samples:**
+  - Data used by several steps of one flow goes in that flow's `shared/sample-*.ts` (e.g. `src/layouts/<app>/<flow>/shared/sample-listing.ts`).
+  - Data shared across screens of one app goes in `src/layouts/<app>/sample-data/`.
+  - Data shared across apps goes in `src/layouts/shared/sample-data/`.
+  - Create these folders only once they're needed.
+- **What isn't sample data:** product content stays in the screen. That covers option lists (`ageOptions`, `durationOptions`), navigation items, artwork, and Figma copy for labels or step titles. A sample is made-up data that a user or the API would supply: records, answers, profiles, photos, prices.
+- **Exceptions:** a flow component that stitches steps into a clickable prototype may seed itself from `sample-*` files. List each exception here when it's created, and don't add others without agreeing them first.
 
 ## Theme & Tokens
 
@@ -180,99 +200,11 @@ To add a token, add it to `:root` and `.dark`, then map it in `@theme inline`. A
 
 ## Motion System
 
-Use Motion for React from `motion/react`. All motion values come from `src/lib/motion/`. Use those exports; don't write raw durations, easings or distances in components.
+The motion rules live in [MOTION.md](MOTION.md): principles, personality, the named patterns (Lift, Press, Reveal…), component guidance, accessibility and the validation checklist. **Read it before adding or changing any animation.**
 
-Motion explains a change in state, preserves spatial continuity and keeps the interface responsive. Don't animate for decoration. If an animation doesn't improve clarity, feedback, orientation or perceived speed, leave it out. When unsure, choose the more subtle option.
-
-### Personality
-
-Calm, refined, natural, responsive. Never bouncy, cartoonish, mechanical or distracting.
-
-- **Prefer:** fade, soft scale, gentle elevation, short directional slide, crossfade, shared-element transition, smooth layout transition, subtle stagger.
-- **Use sparingly:** rotation under 2°, parallax, scroll-linked movement, expressive springs.
-- **Avoid unless asked:** bounce, shake, spin, elastic overshoot, full-screen wipes, dramatic zoom, long travel.
-
-### Tokens (`src/lib/motion/tokens.ts`)
-
-| Token                         | Value  | Use                                    |
-| ----------------------------- | ------ | -------------------------------------- |
-| `motionDuration.instant`      | 120 ms | Instant feedback                       |
-| `motionDuration.fast`         | 160 ms | Hover/press feedback, exits            |
-| `motionDuration.normal`       | 300 ms | Standard UI transitions                |
-| `motionDuration.slow`         | 500 ms | Panels, overlays, entrances            |
-| `motionDuration.deliberate`   | 600 ms | Page-level transitions, auto-scroll    |
-| `motionDistance.hover`        | 3 px   | Lift                                   |
-| `motionDistance.subtle`       | 8 px   | Reveal                                 |
-| `motionDistance.small`        | 12 px  | Component transitions                  |
-| `motionDistance.medium`       | 24 px  | Panels, Glide                          |
-| `motionDistance.large`        | 40 px  | Page transitions                       |
-| `motionScale.press`           | 0.98   | Press                                  |
-| `motionScale.mediaHover`      | 1.03   | Media inside a Lift card               |
-
-Don't go past `deliberate` (600 ms). A new value goes in `tokens.ts` with a comment saying what it's for, never inline in a component.
-
-### Transitions (`transitions.ts`)
-
-- `standardTransition`: common UI changes. Smooth acceleration, controlled deceleration, no overshoot.
-- `enterTransition`: elements arriving. Quick start, gentle finish.
-- `exitTransition`: elements leaving. Shorter than enter, decisive.
-- `subtleSpring` / `responsiveSpring` / `layoutSpring`: press, direct manipulation, layout and shared-element movement. High damping, no visible bounce.
-
-### Vocabulary
-
-Use these named patterns before inventing new motion. Gesture patterns live in `patterns.ts`, presence patterns in `variants.ts`.
-
-| Pattern  | Use for                                | Implementation                                  |
-| -------- | -------------------------------------- | ----------------------------------------------- |
-| Lift     | Hoverable cards and surfaces           | `liftPattern`, `liftWithMediaPattern`           |
-| Press    | Buttons, cards, direct interactions    | `pressPattern`                                  |
-| Reveal   | Content appearing in context           | `revealVariants`                                |
-| Expand   | A region opening/closing in place      | `expandVariants` + `useExpandClip()`            |
-| Connect  | Shared-element transitions             | `layoutId` + `layoutSpring`                     |
-| Flow     | Small groups entering together         | `staggerContainerVariants` + children `revealVariants` |
-| Glide    | Directional navigation                 | `slideVariants` (`custom={1 \| -1}`), `glidePattern` |
-| Dismiss  | Content removed or closed              | `dismissVariants`; table/list rows: `rowRemoveVariants` |
-| Confirm  | Lightweight success feedback           | `confirmPattern`                                |
-| Pending  | Work in progress on an element's behalf | `pendingIconVariants`, `pendingSurfaceVariants` |
-
-Plus `fadeVariants`, `overlayVariants` (scrims), `panelVariants` (drawers) and `iconSwapVariants` (one small element replacing another in place).
-
-### Component guidance
-
-- **Buttons:** press scale 0.98, fast release, never delay the action for the animation, never animate dimensions.
-- **Cards:** Lift on hover, media scale up to 1.03, no motion on non-interactive cards.
-- **Inputs:** motion clarifies focus, validation and conditional fields. Keep layout stable. No shake.
-- **Menus/dropdowns:** short fade plus a small movement from the trigger.
-- **Dialogs/overlays:** `AnimatePresence`, overlay fade, small surface movement, exit shorter than entrance. Usable immediately.
-- **Tabs:** active indicator via shared `layoutId`.
-- **Lists:** `AnimatePresence` with stable unique keys (never the index). Don't replay entrances on routine data updates.
-- **Loading:** subtle opacity pulse. No aggressive or high-contrast loaders.
-
-### Layout and presence
-
-- Use `layout` for size/position changes and `layoutId` for shared elements. Don't hand-compute positions Motion can manage.
-- Use `AnimatePresence` only for mount/unmount. Its direct children need stable unique keys.
-- Animate `opacity` and `transform` by preference. Avoid continuously animating `top`/`left`/`margin`/`padding`/`box-shadow`.
-- Never animate the same property with CSS and Motion at once.
-
-### Accessibility
-
-Always respect reduced motion: use `useMotionPreference()` and its `resolve()` helper. Under reduced motion:
-- Remove nonessential transforms, parallax and large movement.
-- Prefer opacity.
-- Keep state-change feedback: it becomes near-instant (`reducedMotionTransition`), it doesn't disappear.
-
-Motion is never the only signal of a state change. Keyboard behavior, focus order and visible focus must survive every animation.
-
-### Validation
-
-After motion work, check that:
-- The build passes.
-- There's no flash or layout shift.
-- Exits complete.
-- Rapid repeated interaction doesn't break state.
-- Reduced motion works.
-- Nothing blocks clicks, scrolling or navigation.
+- Import Motion APIs from `motion/react`.
+- Take every duration, easing, spring, distance and variant from `src/lib/motion/`. Never write raw motion values in a component.
+- Respect reduced motion with `useMotionPreference()` and its `resolve()` helper.
 
 ## Key Files
 

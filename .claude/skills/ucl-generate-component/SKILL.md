@@ -21,7 +21,7 @@ Both workflows are deliberate about two things the user cares about:
 
 ## Project rules come first
 
-Before anything else, read the repo's `CLAUDE.md` and `DESIGN.md`. They hold everything specific to this project: package name, stack, the Figma design system file, component categories, current component APIs, tokens and design contracts. **When this skill and those files disagree, the files win.** If a value this skill needs isn't defined there, ask the user, then record the answer in the right file.
+Before anything else, read the repo's `CLAUDE.md` and `DESIGN.md`. They hold everything specific to this project: package name, stack, the Figma design system file, component categories, current component APIs, tokens and design contracts. If the work involves animation, also read `MOTION.md`. **When this skill and those files disagree, the files win.** If a value this skill needs isn't defined there, ask the user, then record the answer in the right file.
 
 ## Where the component goes & what it's named
 
