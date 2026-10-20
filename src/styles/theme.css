@@ -21,9 +21,19 @@
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
-	/* Display font for `Typography` sizes xl and up. Defaults to the body font;
-	   point it at the project's headline family when there is one. */
-	--font-display: var(--font-sans);
+}
+
+/* ---------- Font families ----------
+   From archielabs.ds, `intercept` mode: `font-family/bodytext` → --font-sans,
+   `font-family/headline` → --font-display (`Typography` xl and up),
+   `font-family/code` → --font-mono. Non-inline `@theme`, so the variables
+   reach `:root` and --font-sans feeds the base font. Tokens only: UCL doesn't
+   load the webfonts (Storybook loads them in `.storybook/preview-head.html`,
+   apps load them themselves). */
+@theme {
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+	--font-display: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+	--font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* ---------- Breakpoints ----------

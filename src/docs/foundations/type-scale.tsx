@@ -171,7 +171,7 @@ function FontWeights({ css }: { css: string }) {
 	);
 }
 
-/** The `--font-sans` and `--font-display` stacks, each with a sample set in it. */
+/** The `--font-sans`, `--font-display` and `--font-mono` stacks, each with a sample set in it. */
 function FontFamilies({ css }: { css: string }) {
 	const families = readTokens(css, "font");
 	return (
@@ -181,7 +181,7 @@ function FontFamilies({ css }: { css: string }) {
 				<col />
 			</colgroup>
 			<tbody>
-				{["sans", "display"].map((name) => (
+				{["sans", "display", "mono"].map((name) => (
 					<tr key={name}>
 						<td className={`${cell} font-mono align-top`}>font-{name}</td>
 						<td className={cell}>

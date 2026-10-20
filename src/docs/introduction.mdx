@@ -45,7 +45,16 @@ Adjust the `@source` path so it's relative to the stylesheet. **Without it, comp
 
 ### 4. Load the fonts
 
-UCL declares the font tokens (`--font-sans`, `--font-mono` in `theme.css`) but doesn't load the webfonts. Each app loads the fonts those tokens name, for example with `next/font/google` or a Google Fonts `<link>`. Without them, text falls back to the system font.
+UCL declares the font tokens in `theme.css` but doesn't load the webfonts. Intercept uses **Figtree** for body text and headlines (`--font-sans`, `--font-display`) and **Roboto Mono** for code (`--font-mono`). Each app loads them, for example with a Google Fonts `<link>` in the document `<head>`:
+
+<Source
+	language='html'
+	code={`<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=Roboto+Mono:wght@100..700&display=swap" />`}
+/>
+
+Next.js apps can use `next/font/google` instead (`Figtree`, `Roboto_Mono`). Keep the family names as they are, because the tokens refer to them by name. Without the fonts, text falls back to the system font.
 
 ### 5. Use a component
 

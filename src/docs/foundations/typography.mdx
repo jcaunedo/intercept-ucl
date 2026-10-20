@@ -21,13 +21,14 @@ automatically.
 
 ## Font
 
-There are two family tokens: sizes up to `lg` use `font-sans` (body), and `xl` and larger use `font-display`
-(headlines). `--font-display` points at `--font-sans` until the design system defines a headline family.
+There are two family tokens, both **Figtree** in archielabs.ds `intercept` mode: sizes up to `lg` use `font-sans`
+(Figma's `font-family/bodytext`), and `xl` and larger use `font-display` (`font-family/headline`). Code uses
+`font-mono`, **Roboto Mono** (`font-family/code`).
 
 <FontFamilies css={typeCss} />
 
-ℹ️ The font tokens are declared but no webfont is loaded yet, so text renders in the system font stack. Once Intercept's
-family is set, Storybook loads it in `globals.css` and apps load it themselves (see the
+ℹ️ `theme.css` declares the font tokens but doesn't load the webfonts. Storybook loads them in
+`.storybook/preview-head.html`; apps load them in their document `<head>` (see the
 [Introduction](?path=/docs/introduction--docs)).
 
 ## Headings

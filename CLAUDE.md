@@ -253,6 +253,8 @@ npm install @jcaunedo/intercept-ucl
 
 `@source` makes Tailwind scan UCL's bundled JS for class names. Without it, component styles silently go missing.
 
+Apps also load the webfonts the font tokens name, because `theme.css` declares tokens only: **Figtree** (`--font-sans`, `--font-display`) and **Roboto Mono** (`--font-mono`), from archielabs.ds `intercept` mode. Storybook loads them in `.storybook/preview-head.html`; the README shows the `<link>` for apps.
+
 ```tsx
 import { Button } from "@jcaunedo/intercept-ucl";
 ```
