@@ -171,7 +171,7 @@ function FontWeights({ css }: { css: string }) {
 	);
 }
 
-/** The `--font-sans`, `--font-display` and `--font-mono` stacks, each with a sample set in it. */
+/** The `--font-sans`, `--font-display` and `--font-mono` stacks, e.g. `"Figtree", ui-sans-serif, …`. */
 function FontFamilies({ css }: { css: string }) {
 	const families = readTokens(css, "font");
 	return (
@@ -183,11 +183,8 @@ function FontFamilies({ css }: { css: string }) {
 			<tbody>
 				{["sans", "display", "mono"].map((name) => (
 					<tr key={name}>
-						<td className={`${cell} font-mono align-top`}>font-{name}</td>
-						<td className={cell}>
-							<div className={`font-${name} text-xl text-foreground`}>{SAMPLE}</div>
-							<div className='mt-1 font-mono text-xs text-muted-foreground'>{families.get(name)}</div>
-						</td>
+						<td className={`${cell} font-mono`}>font-{name}</td>
+						<td className={`${cell} font-mono text-xs text-muted-foreground`}>{families.get(name)}</td>
 					</tr>
 				))}
 			</tbody>
