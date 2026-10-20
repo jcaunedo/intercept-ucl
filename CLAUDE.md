@@ -59,8 +59,9 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 
 | Item                    | Value                                     |
 | ----------------------- | ----------------------------------------- |
-| Design system file      | ⚠️ Not set yet. Add the name and `fileKey` |
-| Modes                   | ⚠️ Not set yet. Light only, or light + dark? |
+| Design system file      | [archielabs.ds](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds), `fileKey` `w8YHn6HqwgvKEyFOYkDFmW` |
+| Modes                   | `intercept`. The file is shared and holds a variable mode per brand. Read and sync token values from the `intercept` mode only. |
+| Dark mode               | ⚠️ Not confirmed. Light only, or does `intercept` have a dark variant? |
 | Figma MCP account       | 8base                                     |
 
 Skills compare every Figma URL's `fileKey` against this table. Until it's set, they ask for the file before syncing tokens.
