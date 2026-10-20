@@ -6,3 +6,16 @@
 	rel="stylesheet"
 	href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=Roboto+Mono:wght@100..700&display=swap"
 />
+
+<!-- Docs pages are dark (`.storybook/theme.ts`). Storybook stripes every other markdown table row with a light tint,
+     which drops light text below readable contrast; use the intercept `--veil-soft` tint instead. -->
+<style>
+	.sbdocs-content table tr:nth-of-type(2n) {
+		background-color: oklch(1 0 0 / 4%);
+	}
+	.sbdocs-content table tr,
+	.sbdocs-content table th,
+	.sbdocs-content table td {
+		border-color: #31373f;
+	}
+</style>

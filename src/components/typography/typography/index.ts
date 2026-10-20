@@ -1,7 +1,7 @@
 export {
 	Typography,
-	typographyVariants,
 	typographyHeadings,
+	typographyVariants,
 	type TypographyHeading,
 	type TypographyProps,
 	type TypographySize,

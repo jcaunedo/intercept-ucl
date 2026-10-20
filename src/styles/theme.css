@@ -1,4 +1,11 @@
+/* Tokens synced from the archielabs.ds Figma file, "intercept" mode (a dark
+   theme, and Intercept's only mode). DESIGN.md → "Figma → theme.css token map"
+   lists the Figma variable behind every token and the decisions behind the
+   mapping. Same structure as archie-ucl, which syncs the "Archie" modes of the
+   same file. */
+
 @theme inline {
+	/* shadcn roles */
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -18,22 +25,101 @@
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+
+	/* Surfaces, text and lines beyond shadcn's set */
+	--color-on-foreground: var(--on-foreground);
+	--color-foreground-subtle: var(--foreground-subtle);
+	--color-background-subtle: var(--background-subtle);
+	--color-background-defined: var(--background-defined);
+	--color-card-subtle: var(--card-subtle);
+	--color-card-muted: var(--card-muted);
+	--color-card-defined: var(--card-defined);
+	--color-border-subtle: var(--border-subtle);
+	--color-border-muted: var(--border-muted);
+	--color-modal: var(--modal);
+	--color-input-disabled: var(--input-disabled);
+	--color-input-ring: var(--input-ring);
+	--color-ring-outside: var(--ring-outside);
+
+	/* Icons */
+	--color-icon: var(--icon);
+	--color-icon-muted: var(--icon-muted);
+	--color-icon-subtle: var(--icon-subtle);
+	--color-icon-brand: var(--icon-brand);
+	--color-icon-on-brand: var(--icon-on-brand);
+
+	/* Tones */
+	--color-brand: var(--brand);
+	--color-brand-foreground: var(--brand-foreground);
+	--color-brand-subtle: var(--brand-subtle);
+	--color-brand-muted: var(--brand-muted);
+	--color-brand-defined: var(--brand-defined);
+	--color-tone-accent: var(--tone-accent);
+	--color-tone-accent-foreground: var(--tone-accent-foreground);
+	--color-tone-accent-subtle: var(--tone-accent-subtle);
+	--color-tone-accent-muted: var(--tone-accent-muted);
+	--color-tone-accent-defined: var(--tone-accent-defined);
+	--color-emphasis: var(--emphasis);
+	--color-emphasis-foreground: var(--emphasis-foreground);
+	--color-emphasis-subtle: var(--emphasis-subtle);
+	--color-emphasis-muted: var(--emphasis-muted);
+	--color-emphasis-defined: var(--emphasis-defined);
+	--color-neutral: var(--neutral);
+	--color-neutral-foreground: var(--neutral-foreground);
+	--color-neutral-subtle: var(--neutral-subtle);
+	--color-neutral-muted: var(--neutral-muted);
+	--color-neutral-defined: var(--neutral-defined);
+	--color-info: var(--info);
+	--color-info-subtle: var(--info-subtle);
+	--color-info-muted: var(--info-muted);
+	--color-success: var(--success);
+	--color-success-subtle: var(--success-subtle);
+	--color-success-muted: var(--success-muted);
+	--color-warning: var(--warning);
+	--color-warning-subtle: var(--warning-subtle);
+	--color-warning-muted: var(--warning-muted);
+	--color-destructive-subtle: var(--destructive-subtle);
+	--color-destructive-muted: var(--destructive-muted);
+
+	/* States */
+	--color-link: var(--link);
+	--color-active: var(--active);
+	--color-active-alt: var(--active-alt);
+	--color-highlight: var(--highlight);
+	--color-disabled: var(--disabled);
+	--color-veil: var(--veil);
+	--color-veil-soft: var(--veil-soft);
+
+	/* Charts */
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+
+	/* Sidebar */
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-foreground-active: var(--sidebar-foreground-active);
+	--color-sidebar-icon: var(--sidebar-icon);
+	--color-sidebar-icon-active: var(--sidebar-icon-active);
+	--color-sidebar-hover: var(--sidebar-hover);
+	--color-sidebar-active: var(--sidebar-active);
+
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
 	--radius-lg: var(--radius);
-}
+	/* Component radii that differ from --radius in intercept mode (DESIGN.md "Figma → theme.css token map"). */
+	--radius-input: 0.625rem; /* radius/input: 10px */
+	--radius-menu: 1rem; /* radius/menu/container: 16px */
 
-/* ---------- Font families ----------
-   From archielabs.ds, `intercept` mode: `font-family/bodytext` → --font-sans,
-   `font-family/headline` → --font-display (`Typography` xl and up),
-   `font-family/code` → --font-mono. Non-inline `@theme`, so the variables
-   reach `:root` and --font-sans feeds the base font. Tokens only: UCL doesn't
-   load the webfonts (Storybook loads them in `.storybook/preview-head.html`,
-   apps load them themselves). */
-@theme {
-	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-	--font-display: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-	--font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	/* Figma effect styles shadow-xs … shadow-2xl. */
+	--shadow-xs: 0 1px 2px 0 var(--shadow-color-sm);
+	--shadow-sm: 0 2px 4px 0 var(--shadow-color-sm);
+	--shadow-md: 0 2px 4px -2px var(--shadow-color-md), 0 2px 4px 1px var(--shadow-color-sm);
+	--shadow-lg: 0 10px 16px 0 var(--shadow-color-sm), 0 3px 8px 0 var(--shadow-color-sm);
+	--shadow-xl: 0 8px 10px -6px var(--shadow-color-md), 0 6px 17px 0 var(--shadow-color-md);
+	--shadow-2xl: 0 16px 50px -12px var(--shadow-color-lg);
 }
 
 /* ---------- Breakpoints ----------
@@ -54,47 +140,270 @@
 	--breakpoint-3xl: 1921px;
 }
 
-:root {
-	--radius: 0.5rem;
-	--background: oklch(1 0 0);
-	--foreground: oklch(0.17 0.01 260);
-	--card: oklch(1 0 0);
-	--card-foreground: oklch(0.17 0.01 260);
-	--popover: oklch(1 0 0);
-	--popover-foreground: oklch(0.17 0.01 260);
-	--primary: oklch(0.52 0.14 155);
-	--primary-foreground: oklch(0.98 0.01 155);
-	--secondary: oklch(0.95 0.02 155);
-	--secondary-foreground: oklch(0.28 0.06 155);
-	--muted: oklch(0.96 0.005 260);
-	--muted-foreground: oklch(0.5 0.02 260);
-	--accent: oklch(0.95 0.02 155);
-	--accent-foreground: oklch(0.28 0.06 155);
-	--destructive: oklch(0.58 0.22 27);
-	--destructive-foreground: oklch(0.98 0.01 27);
-	--border: oklch(0.9 0.01 260);
-	--input: oklch(0.9 0.01 260);
-	--ring: oklch(0.52 0.14 155);
+/* ---------- Typography ----------
+   Fonts: `font-family/bodytext` → --font-sans, `font-family/headline` →
+   --font-display (`Typography` 2xl and up, as in Figma), `font-family/code` →
+   --font-mono. Non-inline `@theme`, so the variables reach `:root` and
+   --font-sans feeds the base font. Tokens only: UCL doesn't load the webfonts
+   (Storybook loads them in `.storybook/preview-head.html`, apps load them
+   themselves). Sizes and paired line heights: Figma `font-size/*` and
+   `line-height/*`. Font weights (`font-weight/*`, intercept mode) are 300–900,
+   Tailwind's defaults, so they aren't redefined. No letter spacing at any size. */
+@theme {
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+	--font-display: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+	--font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+	--text-xs: 0.75rem;
+	--text-xs--line-height: 1.125rem;
+	--text-sm: 0.875rem;
+	--text-sm--line-height: 1.25rem;
+	--text-base: 1rem;
+	--text-base--line-height: 1.5rem;
+	--text-lg: 1.125rem;
+	--text-lg--line-height: 1.75rem;
+	--text-xl: 1.25rem;
+	--text-xl--line-height: 1.875rem;
+	--text-2xl: 1.5rem;
+	--text-2xl--line-height: 2rem;
+	--text-3xl: 1.875rem;
+	--text-3xl--line-height: 2.25rem;
+	--text-4xl: 2.25rem;
+	--text-4xl--line-height: 3.375rem;
+	--text-5xl: 3rem;
+	--text-5xl--line-height: 4rem;
+	--text-6xl: 4rem;
+	--text-6xl--line-height: 6rem;
+	--text-7xl: 5rem;
+	--text-7xl--line-height: 7.5rem;
 }
 
-.dark {
-	--background: oklch(0.17 0.01 260);
-	--foreground: oklch(0.98 0.005 260);
-	--card: oklch(0.21 0.015 260);
-	--card-foreground: oklch(0.98 0.005 260);
-	--popover: oklch(0.21 0.015 260);
-	--popover-foreground: oklch(0.98 0.005 260);
-	--primary: oklch(0.72 0.14 155);
-	--primary-foreground: oklch(0.18 0.04 155);
-	--secondary: oklch(0.28 0.03 260);
-	--secondary-foreground: oklch(0.98 0.005 260);
-	--muted: oklch(0.28 0.02 260);
-	--muted-foreground: oklch(0.7 0.02 260);
-	--accent: oklch(0.28 0.03 260);
-	--accent-foreground: oklch(0.98 0.005 260);
-	--destructive: oklch(0.55 0.2 27);
-	--destructive-foreground: oklch(0.98 0.01 27);
-	--border: oklch(1 0 0 / 12%);
-	--input: oklch(1 0 0 / 16%);
-	--ring: oklch(0.72 0.14 155);
+:root {
+	--radius: 0.5rem; /* radius/default: 8px */
+
+	/* ---------- Primitives (Figma "primitives" collection) ---------- */
+	--white: oklch(1 0 0);
+	--black: oklch(0 0 0);
+
+	--gray-50: oklch(0.973 0.002 247.84);
+	--gray-100: oklch(0.951 0.005 258.32);
+	--gray-200: oklch(0.912 0.006 264.53);
+	--gray-300: oklch(0.84 0.011 256.7);
+	--gray-400: oklch(0.707 0.018 259.42);
+	--gray-500: oklch(0.541 0.023 264.36);
+	--gray-600: oklch(0.436 0.022 258.37);
+	--gray-700: oklch(0.334 0.016 255.63);
+	--gray-800: oklch(0.282 0.022 254.18);
+	--gray-900: oklch(0.247 0.025 263.97);
+	--gray-950: oklch(0.185 0.035 265.25);
+
+	--indigo-50: oklch(0.945 0.023 296.73);
+	--indigo-100: oklch(0.875 0.054 297.01);
+	--indigo-200: oklch(0.754 0.11 294.95);
+	--indigo-300: oklch(0.633 0.166 291.86);
+	--indigo-400: oklch(0.522 0.211 287.42);
+	--indigo-500: oklch(0.473 0.22 284.33);
+	--indigo-600: oklch(0.446 0.225 282.47);
+	--indigo-700: oklch(0.38 0.188 282.92);
+	--indigo-800: oklch(0.314 0.149 283.85);
+	--indigo-900: oklch(0.243 0.109 285.78);
+	--indigo-950: oklch(0.19 0.076 288.1);
+
+	--info-50: oklch(0.951 0.018 250.59);
+	--info-100: oklch(0.9 0.034 245.49);
+	--info-200: oklch(0.8 0.07 246.12);
+	--info-300: oklch(0.703 0.108 247.66);
+	--info-400: oklch(0.61 0.142 249.79);
+	--info-500: oklch(0.563 0.159 251);
+	--info-600: oklch(0.525 0.172 254.89);
+	--info-700: oklch(0.451 0.145 254.37);
+	--info-800: oklch(0.369 0.115 253.45);
+	--info-900: oklch(0.286 0.084 251.24);
+	--info-950: oklch(0.214 0.059 249.31);
+
+	--success-50: oklch(0.959 0.021 158.59);
+	--success-100: oklch(0.917 0.045 157.49);
+	--success-200: oklch(0.836 0.089 156.01);
+	--success-300: oklch(0.759 0.131 153.95);
+	--success-400: oklch(0.69 0.166 151.03);
+	--success-500: oklch(0.657 0.178 150.15);
+	--success-600: oklch(0.636 0.181 148.68);
+	--success-700: oklch(0.541 0.153 148.98);
+	--success-800: oklch(0.44 0.122 149.62);
+	--success-900: oklch(0.335 0.091 150.79);
+	--success-950: oklch(0.246 0.064 152.85);
+
+	--warning-50: oklch(0.963 0.019 60.17);
+	--warning-100: oklch(0.912 0.048 65.13);
+	--warning-200: oklch(0.859 0.076 61.35);
+	--warning-300: oklch(0.798 0.113 64.11);
+	--warning-400: oklch(0.733 0.148 61.19);
+	--warning-500: oklch(0.698 0.162 58.23);
+	--warning-600: oklch(0.67 0.166 55.1);
+	--warning-700: oklch(0.569 0.141 55.12);
+	--warning-800: oklch(0.464 0.113 56.39);
+	--warning-900: oklch(0.352 0.083 58.84);
+	--warning-950: oklch(0.267 0.061 63.27);
+
+	--destructive-50: oklch(0.942 0.023 17.57);
+	--destructive-100: oklch(0.88 0.046 18.07);
+	--destructive-200: oklch(0.759 0.093 19.45);
+	--destructive-300: oklch(0.645 0.142 21.81);
+	--destructive-400: oklch(0.549 0.184 25.69);
+	--destructive-500: oklch(0.534 0.214 28.71);
+	--destructive-600: oklch(0.531 0.218 29.23);
+	--destructive-700: oklch(0.449 0.184 29.23);
+	--destructive-800: oklch(0.364 0.149 29.23);
+	--destructive-900: oklch(0.275 0.113 29.23);
+	--destructive-950: oklch(0.202 0.083 29.23);
+
+	/* ---------- Semantic: intercept mode ----------
+	   Intercept has one mode, and it's dark. There's no `.dark` block: the
+	   `dark` class changes nothing until Figma adds a second mode. */
+
+	/* shadcn roles */
+	--background: var(--gray-950);
+	--foreground: var(--gray-100);
+	--card: var(--gray-950);
+	--card-foreground: var(--foreground);
+	--popover: var(--gray-800);
+	--popover-foreground: var(--foreground);
+	--primary: var(--brand);
+	--primary-foreground: var(--brand-foreground);
+	--secondary: var(--brand-subtle);
+	--secondary-foreground: var(--brand);
+	--muted: var(--gray-900);
+	--muted-foreground: var(--gray-400);
+	--accent: var(--gray-800);
+	--accent-foreground: var(--foreground);
+	--destructive: var(--destructive-300);
+	--destructive-foreground: var(--brand-foreground);
+	--border: var(--gray-700);
+	--input: var(--gray-600);
+	--ring: var(--gray-200);
+
+	/* Surfaces, text and lines */
+	--on-foreground: var(--gray-800);
+	--foreground-subtle: var(--gray-500);
+	--background-subtle: var(--gray-800);
+	--background-defined: var(--gray-700);
+	--card-subtle: var(--gray-900);
+	--card-muted: var(--gray-800);
+	--card-defined: var(--gray-700);
+	--border-subtle: var(--gray-800);
+	--border-muted: var(--gray-900);
+	--modal: var(--gray-950);
+	--input-disabled: var(--gray-900);
+	--input-ring: var(--indigo-400);
+	--ring-outside: var(--gray-800);
+
+	/* Icons */
+	--icon: var(--gray-100);
+	--icon-muted: var(--gray-400);
+	--icon-subtle: var(--gray-500);
+	--icon-brand: var(--gray-200);
+	--icon-on-brand: var(--gray-50);
+
+	/* Tones */
+	--brand: var(--indigo-400);
+	--brand-foreground: var(--gray-50);
+	--brand-subtle: var(--indigo-900);
+	--brand-muted: var(--indigo-800);
+	--brand-defined: var(--indigo-800);
+	--tone-accent: var(--gray-200);
+	--tone-accent-foreground: var(--gray-950);
+	--tone-accent-subtle: var(--gray-800);
+	--tone-accent-muted: var(--gray-900);
+	--tone-accent-defined: var(--gray-900);
+	--emphasis: var(--gray-950);
+	--emphasis-foreground: var(--gray-950);
+	--emphasis-subtle: var(--gray-950);
+	--emphasis-muted: var(--gray-950);
+	--emphasis-defined: var(--gray-950);
+	--neutral: var(--gray-200);
+	--neutral-foreground: var(--gray-950);
+	--neutral-subtle: var(--gray-800);
+	--neutral-muted: var(--gray-900);
+	--neutral-defined: var(--gray-700);
+	--info: var(--info-500);
+	--info-subtle: var(--info-800);
+	--info-muted: var(--info-700);
+	--success: var(--success-600);
+	--success-subtle: var(--success-50);
+	--success-muted: var(--success-100);
+	--warning: var(--warning-400);
+	--warning-subtle: var(--warning-800);
+	--warning-muted: var(--warning-900);
+	--destructive-subtle: var(--destructive-900);
+	--destructive-muted: var(--destructive-800);
+
+	/* States */
+	--link: oklch(0.738 0.142 296.23);
+	--active: var(--gray-700);
+	--active-alt: var(--indigo-800);
+	--highlight: oklch(0.565 0.202 257.17 / 15%);
+	--disabled: var(--gray-50);
+	--veil: oklch(1 0 0 / 2%);
+	--veil-soft: oklch(1 0 0 / 8%);
+
+	/* Charts */
+	--chart-1: oklch(0.738 0.142 296.23);
+	--chart-2: oklch(0.779 0.179 322.66);
+	--chart-3: oklch(0.787 0.133 231.38);
+	--chart-4: oklch(0.904 0.142 93.42);
+	--chart-5: oklch(0.836 0.157 155.26);
+
+	/* Sidebar */
+	--sidebar: var(--gray-900);
+	--sidebar-foreground: var(--gray-200);
+	--sidebar-foreground-active: var(--indigo-200);
+	--sidebar-icon: var(--white);
+	--sidebar-icon-active: var(--indigo-200);
+	--sidebar-hover: var(--white);
+	--sidebar-active: oklch(0.738 0.142 296.23 / 20%);
+
+	/* Shadow colors */
+	--shadow-color-sm: oklch(0 0 0 / 30%);
+	--shadow-color-md: oklch(0 0 0 / 60%);
+	--shadow-color-lg: oklch(0 0 0 / 80%);
+}
+
+/* ---------- Global interaction affordance ----------
+   Tailwind v4's preflight sets `cursor: default` on <button> (v3 used
+   `pointer`). This restores the pointer cursor on every clickable element, once,
+   so new components get it for free; disabled controls get `not-allowed`.
+   Covers native controls plus the ARIA roles Radix/shadcn render (tabs, menu
+   items, options, checkboxes, radios, switches). Shipped to consumers, so the
+   apps' own buttons and links follow it too. Utilities in a component still
+   win (`@layer base`), e.g. `cursor-text` on a text-entry combobox.
+   See DESIGN.md "Every clickable element shows the pointer cursor". */
+@layer base {
+	button:not(:disabled):not([aria-disabled="true"]),
+	[role="button"]:not([aria-disabled="true"]),
+	a[href]:not([aria-disabled="true"]),
+	label[for],
+	summary,
+	select:not(:disabled),
+	input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="reset"], [type="file"]):not(:disabled),
+	:is(
+			[role="checkbox"],
+			[role="radio"],
+			[role="switch"],
+			[role="tab"],
+			[role="option"],
+			[role="menuitem"],
+			[role="menuitemcheckbox"],
+			[role="menuitemradio"]
+		):not([aria-disabled="true"]):not([data-disabled]) {
+		cursor: pointer;
+	}
+
+	button:disabled,
+	button[aria-disabled="true"],
+	[role="button"][aria-disabled="true"],
+	a[href][aria-disabled="true"],
+	select:disabled,
+	input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="reset"], [type="file"]):disabled {
+		cursor: not-allowed;
+	}
 }

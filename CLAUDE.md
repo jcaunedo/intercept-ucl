@@ -61,7 +61,7 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 | ----------------------- | ----------------------------------------- |
 | Design system file      | [archielabs.ds](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds), `fileKey` `w8YHn6HqwgvKEyFOYkDFmW` |
 | Modes                   | `intercept`. The file is shared and holds a variable mode per brand. Read and sync token values from the `intercept` mode only. |
-| Dark mode               | Light only for now. A dark mode will be added to Figma later. Until then, `.dark` values in `theme.css` aren't synced from Figma. |
+| Dark mode               | `intercept` is Intercept's only mode, and it's a dark theme: its values are in `:root`. There's no `.dark` block until Figma adds a second mode. |
 | Figma MCP account       | 8base                                     |
 
 Skills compare every Figma URL's `fileKey` against this table. Until it's set, they ask for the file before syncing tokens.
@@ -71,7 +71,7 @@ Skills compare every Figma URL's `fileKey` against this table. Until it's set, t
 - **Package:** `@jcaunedo/intercept-ucl`, ESM-only (see "Release & Publishing").
 - **Build:** tsup bundles `src/index.ts` → `dist/index.js` + `dist/index.d.ts`. `src/styles/theme.css` is copied raw to `dist/styles.css`.
 - **Styling:** two CSS files.
-  - `src/styles/theme.css`: design tokens, `@theme inline` mappings, breakpoints, `:root` and `.dark` variables. Ships to consumers as `<package>/styles`.
+  - `src/styles/theme.css`: design tokens, `@theme inline` mappings, breakpoints, `:root` variables. Ships to consumers as `<package>/styles`.
   - `src/styles/globals.css`: imports Tailwind + `theme.css`. Used only by Storybook.
 - **Components:** one folder per component, grouped by category under `src/components/<category>/<name>/`. Each folder holds:
   - `<name>.tsx`
@@ -165,9 +165,15 @@ Mirror these names when a new component has the same concept. Keep this list cur
   - `size`: `default` | `sm` | `lg` | `icon`
   - `asChild` renders the button styles on its child (use for links)
 - **Typography** (`typography/typography`):
-  - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`xl` and up use `font-display`)
+  - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`2xl` and up use `font-display`, as in Figma)
   - `weight`: `regular` | `medium` | `semibold` | `bold` | `black`
-  - `as` sets the element; `h1`–`h4` default `size`/`weight` from `typographyHeadings`
+  - `as` sets the element; `h1`–`h4` default to `2xl`/`xl`/`lg`/`base` `bold` (`typographyHeadings`). Page title: `as="h1" size="3xl"`
+- **Input** and **Textarea** (`forms/input`, `forms/textarea`): `size`: `default` (36px) | `lg` (40px). States are native/ARIA (`aria-invalid`, `readOnly`, `disabled`), not variants
+- **Checkbox**, **RadioGroup** + **RadioGroupItem**, **Switch** (`forms/…`): Radix primitives. Switch `size`: `default` | `sm`
+- **Label** (`forms/label`), and **Field** with `FieldSet`, `FieldLegend` (`variant`: `legend` | `label`), `FieldGroup`, `FieldContent`, `FieldLabel`, `FieldTitle`, `FieldDescription`, `FieldError` (`forms/field`). Field `orientation`: `vertical` | `horizontal` | `responsive`
+- **Tooltip** with `TooltipProvider`, `TooltipTrigger`, `TooltipContent` (`overlays/tooltip`). Content `size`: `default` | `sm`
+
+Forms, Overlays and Typography were ported from archie-ucl (same Figma file, Archie modes). Keep them in step with it where the Figma design is shared; values that differ by mode come from `theme.css`.
 
 ## Sample Data
 
@@ -188,14 +194,14 @@ Layouts are reference implementations that the apps rebuild with their own data,
 
 All tokens live in `src/styles/theme.css`:
 
-- **`@theme inline`:** maps Tailwind utilities to the CSS variables (`--color-primary: var(--primary)`), so `.dark` overrides work.
+- **`@theme inline`:** maps Tailwind utilities to the CSS variables (`--color-primary: var(--primary)`), so a future second mode can override them.
 - **`@theme` breakpoints:** set 1px past each frame width. See DESIGN.md "Breakpoints include their own width".
-- **`:root`:** light values. **`.dark`:** dark values. Colors are written in `oklch`. Don't mix formats.
-- **Semantic roles** use shadcn names: `background`, `foreground`, `card`, `popover`, `primary`, `secondary`, `muted`, `accent`, `destructive` (each with `-foreground`), and `border`, `input`, `ring`.
-- **Radius:** one `--radius` (0.5rem). `rounded-sm/md/lg` derive from it.
+- **`:root`:** primitives (Figma `primitives`), then semantic tokens (Figma `semantic`, `intercept` mode). Colors are written in `oklch`. Don't mix formats. DESIGN.md → "Figma → theme.css token map" lists the Figma variable behind every token.
+- **Semantic roles** use shadcn names: `background`, `foreground`, `card`, `popover`, `primary`, `secondary`, `muted`, `accent`, `destructive` (each with `-foreground`), and `border`, `input`, `ring`. Beyond those, the Figma tone system: surfaces (`background-subtle`, `card-muted`…), tones (`brand`, `neutral`, `info`, `success`, `warning`, `destructive`, each with `-subtle`/`-muted`), icons, states, charts and sidebar.
+- **Radius:** `--radius` (0.5rem, Figma `radius/default`); `rounded-sm/md/lg` derive from it. Component radii that differ get their own token: `rounded-input` (10px) and `rounded-menu` (16px).
 - **Spacing:** Tailwind's default 4px scale. Don't redefine it.
 
-To add a token, add it to `:root` and `.dark`, then map it in `@theme inline`. Adding a token is a minor version; renaming or removing one is breaking.
+To add a token, add it to `:root`, then map it in `@theme inline`. Adding a token is a minor version; renaming or removing one is breaking.
 
 ## Motion System
 

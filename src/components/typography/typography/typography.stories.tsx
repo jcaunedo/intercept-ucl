@@ -1,111 +1,127 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { Typography } from "./typography";
+import { Typography, type TypographySize, type TypographyWeight } from "./typography";
 
-const SIZES = [
-	"7xl",
-	"6xl",
-	"5xl",
-	"4xl",
-	"3xl",
-	"2xl",
-	"xl",
-	"lg",
-	"base",
-	"sm",
-	"xs",
-] as const;
-
-const WEIGHTS = ["regular", "medium", "semibold", "bold", "black"] as const;
+const sizes: TypographySize[] = ["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl"];
+const weights: TypographyWeight[] = ["regular", "medium", "semibold", "bold", "black"];
+/** The numeric value of each `weight` (Tailwind's defaults, Figma `font-weight/*` in intercept mode). */
+const weightValues: Record<TypographyWeight, number> = {
+	regular: 400,
+	medium: 500,
+	semibold: 600,
+	bold: 700,
+	black: 900,
+};
 
 const meta = {
 	title: "Typography/Typography",
 	component: Typography,
+	parameters: {
+		layout: "padded",
+	},
 	argTypes: {
-		size: {
-			control: "select",
-			options: [...SIZES].reverse(),
-		},
-		weight: {
-			control: "select",
-			options: WEIGHTS,
-		},
-		as: {
-			control: "text",
-			description: "Override the rendered HTML element (e.g. h1, span)",
-		},
+		size: { control: "select", options: sizes },
+		weight: { control: "select", options: weights },
+		as: { control: "select", options: ["p", "span", "h1", "h2", "h3", "h4", "label"] },
+	},
+	args: {
+		children: "Almost before we knew it, we had left the ground.",
 	},
 } satisfies Meta<typeof Typography>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-	args: {
-		children: "The quick brown fox jumps over the lazy dog",
-	},
-};
+/** A paragraph: `base` regular, Figma `base/base`. */
+export const Default: Story = {};
 
-export const Display: Story = {
-	args: {
-		size: "5xl",
-		weight: "bold",
-		as: "h1",
-		children: "Display heading",
-	},
-};
-
-/**
- * Heading definitions: `as` alone sets the size and weight. h1 = 2xl semibold (also page and
- * modal titles), h2 = xl semibold, h3 = lg semibold, h4 = base semibold.
- */
-export const Headings: Story = {
+/** Every size at regular weight, with its font size and line height. */
+export const Sizes: Story = {
 	render: () => (
-		<div className='space-y-3'>
-			<Typography as='h1'>h1 — Page title</Typography>
-			<Typography as='h2'>h2 — Section heading</Typography>
-			<Typography as='h3'>h3 — Subsection heading</Typography>
-			<Typography as='h4'>h4 — Group heading</Typography>
-		</div>
-	),
-};
-
-export const Body: Story = {
-	args: {
-		size: "base",
-		weight: "regular",
-		children:
-			"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-	},
-};
-
-export const Caption: Story = {
-	args: {
-		size: "xs",
-		weight: "medium",
-		children: "Caption / fine print",
-	},
-};
-
-export const AllVariants: Story = {
-	render: () => (
-		<div className='space-y-2'>
-			{SIZES.map((size) => (
-				<Typography key={size} size={size} weight='medium'>
-					{size} — Almost before we knew it, we had left the ground
-				</Typography>
+		<div className='flex flex-col gap-4'>
+			{sizes.map((size) => (
+				<div key={size} className='flex items-baseline gap-6'>
+					<Typography as='span' size='xs' className='w-24 shrink-0 font-mono text-muted-foreground'>
+						{size}
+					</Typography>
+					<Typography size={size} className='truncate'>
+						Almost before we knew it
+					</Typography>
+				</div>
 			))}
 		</div>
 	),
 };
 
+/** Every weight at `base`, with its value. */
 export const Weights: Story = {
 	render: () => (
-		<div className='space-y-2'>
-			{WEIGHTS.map((weight) => (
-				<Typography key={weight} size='2xl' weight={weight}>
-					{weight}
-				</Typography>
+		<div className='flex flex-col gap-2'>
+			{weights.map((weight) => {
+				return (
+					<div key={weight} className='flex items-baseline gap-6'>
+						<Typography as='span' size='xs' className='w-48 shrink-0 font-mono text-muted-foreground'>
+							{weight} · {weightValues[weight]}
+						</Typography>
+						<Typography weight={weight}>Save changes</Typography>
+					</div>
+				);
+			})}
+		</div>
+	),
+};
+
+/** `h1`–`h4` without `size`/`weight` use the heading defaults. */
+export const Headings: Story = {
+	render: () => (
+		<div className='flex flex-col gap-3'>
+			<Typography as='h1'>h1 · 2xl bold · Inventory tracker</Typography>
+			<Typography as='h2'>h2 · xl bold · Modules</Typography>
+			<Typography as='h3'>h3 · lg bold · User types</Typography>
+			<Typography as='h4'>h4 · base bold · Permissions</Typography>
+		</div>
+	),
+};
+
+/** Figma "Page Title" (`3xl/3xl -bold`): still an `h1`, one size larger. */
+export const PageTitle: Story = {
+	render: () => (
+		<div className='flex flex-col gap-2'>
+			<Typography as='h1' size='3xl'>
+				Projects
+			</Typography>
+			<Typography className='text-muted-foreground'>Everything your team is working on.</Typography>
+		</div>
+	),
+};
+
+/** Color isn't part of Typography: pass a text token through `className`. */
+export const WithColor: Story = {
+	render: () => (
+		<div className='flex flex-col gap-1'>
+			<Typography weight='medium'>Project ready</Typography>
+			<Typography size='sm' className='text-muted-foreground'>
+				4 members, 3 open tasks.
+			</Typography>
+		</div>
+	),
+};
+
+/** Every Figma text style: 11 sizes × 5 weights. */
+export const AllVariants: Story = {
+	render: () => (
+		<div className='flex flex-col gap-3'>
+			{sizes.map((size) => (
+				<div key={size} className='flex items-baseline gap-6'>
+					<Typography as='span' size='xs' className='w-10 shrink-0 font-mono text-muted-foreground'>
+						{size}
+					</Typography>
+					{weights.map((weight) => (
+						<Typography key={weight} as='span' size={size} weight={weight} className='whitespace-nowrap'>
+							Aa
+						</Typography>
+					))}
+				</div>
 			))}
 		</div>
 	),

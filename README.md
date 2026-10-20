@@ -80,7 +80,7 @@ export function Example() {
 }
 ```
 
-Add the `dark` class to a parent element (usually `<html>`) to switch every token to its dark value.
+Intercept's design system has one mode, and it's dark: the tokens are its values, with no class to add. Give the page `bg-background text-foreground`, usually on `<body>`.
 
 ## Commands
 

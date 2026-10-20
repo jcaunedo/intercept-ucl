@@ -59,7 +59,7 @@ const head = `${cell} text-xs font-semibold text-muted-foreground`;
 
 /**
  * One row per `--text-*` size: its token, px size / line height, what `Typography`'s `size` adds on top (font family,
- * tracking), and a sample.
+ * tracking, if any), and a sample.
  */
 function TypeScale({ css }: { css: string }) {
 	const text = readTokens(css, "text");
