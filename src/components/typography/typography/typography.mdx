@@ -24,7 +24,7 @@ Text in Intercept's type scale. Choose the element for meaning with `as`, and th
 	language='tsx'
 	code={`import { Typography } from "@jcaunedo/intercept-ucl";
 
-<Typography as='h1' size='3xl'>Projects</Typography>
+<Typography as='h1' size='3xl' weight='bold'>Projects</Typography>
 <Typography className='text-muted-foreground'>Everything your team is working on.</Typography>`}
 />
 
@@ -75,14 +75,14 @@ Typography has no `light` weight because Figma has no light text style; use `fon
 
 | Element | `size` / `weight` | Figma |
 | --- | --- | --- |
-| `h1` | `2xl` / `bold` | `2xl/2xl -bold`, "h1, Modal Title" |
-| `h2` | `xl` / `bold` | Not tagged yet (product decision, shared with archie-ucl) |
-| `h3` | `lg` / `bold` | Not tagged yet (product decision) |
-| `h4` | `base` / `bold` | Not tagged yet (product decision) |
+| `h1` | `2xl` / `semibold` | `2xl/2xl -semibold`, "h1 / Modal Title" |
+| `h2` | `xl` / `semibold` | `xl/xl -semibold`, "h2" |
+| `h3` | `lg` / `semibold` | `lg/lg -semibold`, "h3" |
+| `h4` | `base` / `semibold` | `base/base -semibold`, "h4" |
 
 <Canvas of={TypographyStories.Headings} />
 
-A page title is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page's `h1`, one size larger:
+A page title is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page's `h1`, one size larger and bold: `as='h1' size='3xl' weight='bold'`.
 
 <Canvas of={TypographyStories.PageTitle} />
 

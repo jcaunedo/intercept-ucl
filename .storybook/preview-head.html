@@ -7,3 +7,11 @@
 	href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=Roboto+Mono:wght@100..700&display=swap"
 />
 
+
+<!-- Tailwind's preflight (globals.css) removes list markers. Storybook restores bullets on docs pages but not
+     numbers, so numbered lists in MDX lose their numbers without this. -->
+<style>
+	.sbdocs-content ol {
+		list-style: decimal;
+	}
+</style>

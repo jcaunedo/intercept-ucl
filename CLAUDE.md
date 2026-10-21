@@ -167,7 +167,7 @@ Mirror these names when a new component has the same concept. Keep this list cur
 - **Typography** (`typography/typography`):
   - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`2xl` and up use `font-display`, as in Figma)
   - `weight`: `regular` | `medium` | `semibold` | `bold` | `black`
-  - `as` sets the element; `h1`–`h4` default to `2xl`/`xl`/`lg`/`base` `bold` (`typographyHeadings`). Page title: `as="h1" size="3xl"`
+  - `as` sets the element; `h1`–`h4` default to `2xl`/`xl`/`lg`/`base` `semibold` (`typographyHeadings`). Page title: `as="h1" size="3xl" weight="bold"`
 - **Input** and **Textarea** (`forms/input`, `forms/textarea`): `size`: `default` (36px) | `lg` (40px). States are native/ARIA (`aria-invalid`, `readOnly`, `disabled`), not variants
 - **Checkbox**, **RadioGroup** + **RadioGroupItem**, **Switch** (`forms/…`): Radix primitives. Switch `size`: `default` | `sm`
 - **Label** (`forms/label`), and **Field** with `FieldSet`, `FieldLegend` (`variant`: `legend` | `label`), `FieldGroup`, `FieldContent`, `FieldLabel`, `FieldTitle`, `FieldDescription`, `FieldError` (`forms/field`). Field `orientation`: `vertical` | `horizontal` | `responsive`

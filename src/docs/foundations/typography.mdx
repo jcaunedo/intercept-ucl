@@ -45,9 +45,9 @@ render their definition (`typographyHeadings`), shown here as rendered:
 `h1` is also the page and modal title. Pass `size` or `weight` only when a specific Figma frame binds something else;
 that value wins for that instance.
 
-ℹ️ `h1` is Figma's `2xl/2xl -bold` (tagged "h1, Modal Title"). A page title is `3xl/3xl -bold` ("Page Title"): write
-`<Typography as='h1' size='3xl'>`. `h2`–`h4` step down one size at the same weight (DESIGN.md "Heading element →
-Typography pairing").
+ℹ️ Each heading is tagged in its Figma text style: `h1` is `2xl/2xl -semibold` ("h1 / Modal Title"), `h2` `xl`, `h3`
+`lg` and `h4` `base`, all semibold. A page title is `3xl/3xl -bold` ("Page Title"): write
+`<Typography as='h1' size='3xl' weight='bold'>` (DESIGN.md "Heading element → Typography pairing").
 
 ## Type scale
 

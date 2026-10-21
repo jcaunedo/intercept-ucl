@@ -247,20 +247,20 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 
 | Element | `size` / `weight` | Figma text style | Metrics | Source |
 | --- | --- | --- | --- | --- |
-| `h1` | `2xl` / `bold` | `2xl/2xl -bold` | 24/32 | Figma description "h1, Modal Title" |
-| `h2` | `xl` / `bold` | `xl/xl -bold` | 20/30 | ⚠️ Product decision (archie-ucl, Oct 20, 2026) |
-| `h3` | `lg` / `bold` | `lg/lg -bold` | 18/28 | ⚠️ Product decision (archie-ucl, Oct 20, 2026) |
-| `h4` | `base` / `bold` | `base/base -bold` | 16/24 | ⚠️ Product decision (archie-ucl, Oct 20, 2026) |
+| `h1` | `2xl` / `semibold` | `2xl/2xl -semibold` | 24/32 | Figma description "h1 / Modal Title" |
+| `h2` | `xl` / `semibold` | `xl/xl -semibold` | 20/30 | Figma description "h2" |
+| `h3` | `lg` / `semibold` | `lg/lg -semibold` | 18/28 | Figma description "h3" |
+| `h4` | `base` / `semibold` | `base/base -semibold` | 16/24 | Figma description "h4" |
 
-A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page's `h1`: write `<Typography as="h1" size="3xl">`. A modal title uses the plain `h1` default.
+A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page's `h1`: write `<Typography as="h1" size="3xl" weight="bold">`. A modal title uses the plain `h1` default.
 
-**Why:** Figma tags only `h1` and the page title. Without set defaults, every heading picks a plausible size by eye. The levels below `h1` keep its bold weight and step down one size each.
+**Why:** the Figma text style descriptions are the source. Without set defaults, every heading picks a plausible size by eye. ✅ **Resolved in Figma (Oct 20, 2026):** the designer tagged all four levels, at semibold. They had been a product decision at bold (only `h1` was tagged, as `2xl/2xl -bold`), so the sync moved every default from bold to semibold. The page title stays bold.
 
 **How to apply:**
 
-- Write `<Typography as="h2">` and let the default apply. Pass `size`/`weight` only when a Figma frame binds something else.
+- Write `<Typography as="h2">` and let the default apply. Pass `size`/`weight` only when a specific Figma frame binds something else; that value wins for that instance.
 - Pick the element for meaning (heading level), not for looks.
-- ⚠️ **Decision needed (designer):** tag `xl/xl -bold`, `lg/lg -bold` and `base/base -bold` as h2, h3 and h4 in their Figma descriptions.
+- On each sync, read the text style descriptions: a moved tag moves the default here, in `typography.tsx`, `typography.mdx` and Foundations/Typography together ("Typography specs live in three places").
 
 ℹ️ Sizes up to `xl` use `font-sans` and `2xl` and up use `font-display`, because the Figma text styles bind `font-family/bodytext` and `/headline` that way. Both are Figtree in intercept mode. There's no letter spacing at any size.
 

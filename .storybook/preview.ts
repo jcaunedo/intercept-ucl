@@ -55,7 +55,6 @@ const preview: Preview = {
 						"Accessibility",
 						"Content & Voice",
 						"Design Contracts",
-						"Working with UCL",
 					],
 				],
 			},

@@ -75,19 +75,19 @@ export const Weights: Story = {
 export const Headings: Story = {
 	render: () => (
 		<div className='flex flex-col gap-3'>
-			<Typography as='h1'>h1 · 2xl bold · Inventory tracker</Typography>
-			<Typography as='h2'>h2 · xl bold · Modules</Typography>
-			<Typography as='h3'>h3 · lg bold · User types</Typography>
-			<Typography as='h4'>h4 · base bold · Permissions</Typography>
+			<Typography as='h1'>h1 · 2xl semibold · Inventory tracker</Typography>
+			<Typography as='h2'>h2 · xl semibold · Modules</Typography>
+			<Typography as='h3'>h3 · lg semibold · User types</Typography>
+			<Typography as='h4'>h4 · base semibold · Permissions</Typography>
 		</div>
 	),
 };
 
-/** Figma "Page Title" (`3xl/3xl -bold`): still an `h1`, one size larger. */
+/** Figma "Page Title" (`3xl/3xl -bold`): still an `h1`, one size larger and bold. */
 export const PageTitle: Story = {
 	render: () => (
 		<div className='flex flex-col gap-2'>
-			<Typography as='h1' size='3xl'>
+			<Typography as='h1' size='3xl' weight='bold'>
 				Projects
 			</Typography>
 			<Typography className='text-muted-foreground'>Everything your team is working on.</Typography>

@@ -39,8 +39,8 @@ import { cn } from "@/lib/utils";
  * | `bold`     | `font-bold`     | 700   | `-bold`         |
  * | `black`    | `font-black`    | 900   | `-black`        |
  *
- * Headings (`typographyHeadings`, below): `h1` 2xl bold ("h1, Modal Title"), `h2` xl bold, `h3` lg bold, `h4` base
- * bold. Page title: `as="h1" size="3xl"` (Figma "Page Title", 3xl bold).
+ * Headings (`typographyHeadings`, below): `h1` 2xl semibold ("h1 / Modal Title"), `h2` xl semibold, `h3` lg semibold,
+ * `h4` base semibold, each tagged in Figma. Page title: `as="h1" size="3xl" weight="bold"` (Figma "Page Title", 3xl bold).
  *
  * Color is never part of Typography: pass a text token in `className` (`text-muted-foreground`).
  */
@@ -84,15 +84,15 @@ type TypographySize = NonNullable<VariantProps<typeof typographyVariants>["size"
 type TypographyWeight = NonNullable<VariantProps<typeof typographyVariants>["weight"]>;
 
 /**
- * Heading defaults. `h1` is Figma's `2xl/2xl -bold` ("h1, Modal Title"). `h2`–`h4` aren't tagged in Figma yet: they
- * step down one size each at the same weight (product decision in archie-ucl, Oct 20, 2026, same Figma file). Page titles are Figma's
- * `3xl/3xl -bold` ("Page Title"): write `as="h1" size="3xl"`. See DESIGN.md "Heading element → Typography pairing".
+ * Heading defaults, from the Figma text style descriptions: `h1` is `2xl/2xl -semibold` ("h1 / Modal Title"), `h2`
+ * `xl/xl -semibold`, `h3` `lg/lg -semibold`, `h4` `base/base -semibold`. Page titles are Figma's `3xl/3xl -bold`
+ * ("Page Title"): write `as="h1" size="3xl" weight="bold"`. See DESIGN.md "Heading element → Typography pairing".
  */
 const typographyHeadings = {
-	h1: { size: "2xl", weight: "bold" },
-	h2: { size: "xl", weight: "bold" },
-	h3: { size: "lg", weight: "bold" },
-	h4: { size: "base", weight: "bold" },
+	h1: { size: "2xl", weight: "semibold" },
+	h2: { size: "xl", weight: "semibold" },
+	h3: { size: "lg", weight: "semibold" },
+	h4: { size: "base", weight: "semibold" },
 } as const satisfies Record<string, { size: TypographySize; weight: TypographyWeight }>;
 
 type TypographyHeading = keyof typeof typographyHeadings;

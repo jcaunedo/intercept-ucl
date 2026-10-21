@@ -12,7 +12,7 @@ Set every heading, paragraph and label with `Typography`. It keeps size, line he
 
 | Do                                                  | Don't                                                     |
 | --------------------------------------------------- | --------------------------------------------------------- |
-| `<Typography as="h2">Recent activity</Typography>`  | `<h2 className="text-xl font-bold">Recent activity</h2>` |
+| `<Typography as="h2">Recent activity</Typography>`  | `<h2 className="text-xl font-semibold">Recent activity</h2>` |
 | `<Typography size="sm">Updated 2h ago</Typography>` | `<p className="text-[13px]">Updated 2h ago</p>`           |
 
 ## Choose headings by structure
@@ -50,8 +50,8 @@ Use `base` for body text unless the design calls for something else. When a Figm
 
 - `regular` for body text.
 - `medium` for field labels (`Label` uses it) and emphasis inside body text.
-- `semibold` for emphasis that needs more than `medium`.
-- `bold` for headings: the `h1`–`h4` defaults and page titles.
+- `semibold` for headings (the `h1`–`h4` defaults) and emphasis that needs more than `medium`.
+- `bold` for page titles (`as="h1" size="3xl" weight="bold"`).
 - `black` only for display text.
 
 ## Color
