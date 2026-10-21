@@ -13,6 +13,8 @@ const config: StorybookConfig = {
 				mdxPluginOptions: { mdxCompileOptions: { remarkPlugins: [remarkGfm] } },
 			},
 		},
+		"@storybook/addon-vitest",
+		"@chromatic-com/storybook",
 	],
 	framework: {
 		name: "@storybook/react-vite",

@@ -373,12 +373,13 @@
 	--veil: oklch(0 0 0 / 2%);
 	--veil-soft: oklch(0 0 0 / 8%);
 
-	/* Charts */
-	--chart-1: oklch(0.738 0.142 296.23);
-	--chart-2: oklch(0.779 0.179 322.66);
-	--chart-3: oklch(0.787 0.133 231.38);
-	--chart-4: oklch(0.904 0.142 93.42);
-	--chart-5: oklch(0.836 0.157 155.26);
+	/* Charts: series identity only. No red, orange or green, which are kept
+	   for clinical status (DESIGN.md "Chart colors"). */
+	--chart-1: var(--catalina-500);
+	--chart-2: var(--elf-500);
+	--chart-3: oklch(0.45 0.17 325); /* plum */
+	--chart-4: oklch(0.66 0.17 290); /* violet */
+	--chart-5: var(--corn-600);
 
 	/* Sidebar */
 	--sidebar: var(--background);
@@ -463,6 +464,8 @@
 	--disabled: var(--gray-800);
 	--veil: oklch(1 0 0 / 2%);
 	--veil-soft: oklch(1 0 0 / 8%);
+
+	--chart-3: oklch(0.55 0.17 325); /* plum, lighter for 3:1 on the dark card */
 
 	--sidebar-hover: var(--accent);
 	--sidebar-active: oklch(0.651 0.166 268.78 / 20%); /* catalina-400 at 20% */

@@ -344,6 +344,36 @@ Storybook's own theme (sidebar, docs pages) takes hex values, not CSS variables.
 
 ---
 
+## Chart colors: brand hues, never status hues (`--chart-*` in `src/styles/theme.css`, Figma `chart/*`)
+
+**Rule:** the five chart colors are for series identity only (which patient, metric or group). They come from Intercept's palettes and avoid red, orange and green, so a data series never reads as a clinical state. Set from UCL on Oct 21, 2026, at the user's request, in both `intercept` and `intercept-dark`.
+
+| Token | Hue | intercept | intercept-dark | Contrast (white / gray-900 card) |
+| --- | --- | --- | --- | --- |
+| `chart-1` | brand indigo | catalina-500 | catalina-500 | 5.33 / 3.03 |
+| `chart-2` | teal (accent) | elf-500 | elf-500 | 3.37 / 4.79 |
+| `chart-3` | plum | oklch(0.45 0.17 325) | oklch(0.55 0.17 325) | 8.18 / 3.03 |
+| `chart-4` | violet | oklch(0.66 0.17 290) | oklch(0.66 0.17 290) | 3.28 / 4.91 |
+| `chart-5` | gold (emphasis) | corn-600 | corn-600 | 3.48 / 4.63 |
+
+**Why:**
+
+- In a clinical interface red, amber and green already mean critical, caution and normal (`destructive`, `warning`, `success`). A series in one of those hues would make a healthy trend look like an alarm, or the reverse. The old palette (violet, magenta, sky, yellow, light green) had a green series and no link to the brand.
+- Plum and violet are new hues with no primitive ramp. They are raw values, like the other chart variables in this shared file, and fill the gap between catalina and the status hues.
+- The order was picked by running the dataviz validator (OKLab ΔE ×100, Machado 2009 simulation) on every ordering. In both modes every adjacent pair clears ΔE 8 for color-blind vision (worst 8.7, plum ↔ elf in dark) and ΔE 15 for normal vision, every color is at least 3:1 on its surface, and the first three slots also pass when any two can touch (scatter plots).
+- The dark mode keeps catalina-500 rather than the dark brand (catalina-400): at 400 the brand and violet slots are too close to tell apart. Only plum gets a lighter dark step, to reach 3:1 on the gray-900 card.
+
+**How to apply:**
+
+- Assign slots in order (`chart-1`, then `chart-2`…) and keep a series on its color when filters change the count. A sixth series becomes "Other" or a second chart, never a new color.
+- Clinical states (out-of-range values, alerts, threshold bands) use the status tokens, always with an icon or label, never a chart slot. Reference ranges and baselines use neutral grays.
+- ⚠️ **Constraint:** `chart-5` (gold) sits close to `warning` (ΔE 8.4 in light). Use it only when a chart needs five series, and always direct-label it. In scatter plots and small multiples, keep to the first three slots.
+- ⚠️ **Accessibility:** never rely on color alone. Charts carry a legend (two or more series), direct labels where they fit, and a table view.
+- ⚠️ **Decision needed (designer):** UCL's proposal, not a designer's. When the designer changes a value in Figma, run `ucl-ds-sync`; Figma wins.
+- In Figma, `colors/charts/chart-1`, `-2` and `-5` alias `palettes/catalina/500`, `elf/500` and `corn/600` in both intercept modes; `chart-3` and `-4` are raw. Only the two intercept modes were written. ℹ️ The variables are still `ALL_SCOPES` with no code syntax; scopes are per variable, not per mode, so changing them would also touch the Archie and Itopia modes.
+
+---
+
 ## Semantic tokens are declared on `:root, .dark` (`src/styles/theme.css`)
 
 **Rule:** the intercept (light) semantic block uses the selector `:root, .dark`, not just `:root`. The `.dark` block after it overrides only the values that differ.

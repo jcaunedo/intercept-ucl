@@ -31,6 +31,7 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 | `npm run dev`             | Watch mode build                             |
 | `npm run storybook`       | Launch Storybook on port 6006                |
 | `npm run build-storybook` | Build static Storybook site                  |
+| `npm test`                | Run every story as a test (Vitest, headless Chromium) |
 | `npm run lint`            | Type-check with `tsc --noEmit`               |
 
 `.npmrc` sets `include=dev`, so installs keep dev dependencies even when `NODE_ENV=production` is set in the environment.
@@ -51,6 +52,8 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 | App rendering        | Bundle marked `"use client"` after build (works for client-only and Next.js apps) | Set |
 | Build                | tsup, ESM only                                             | Set                        |
 | Workbench            | Storybook 10 (`@storybook/react-vite`, `addon-docs`)       | Set                        |
+| Tests                | `@storybook/addon-vitest`: Vitest 5 in Playwright Chromium; `vitest.config.ts` | Set     |
+| Visual tests         | `@chromatic-com/storybook` (Chromatic, an external service; needs a Chromatic account and project) | Installed, not connected |
 
 - **Forms:** the forms library is an optional peer dependency, so apps that use it don't get two copies and apps that don't aren't forced to install it. Form components keep the library out of primitives (`Input`, `Select`…) and add connected fields next to them.
 - **Server rendering:** `scripts/add-use-client.mjs` prepends `"use client"` to `dist/index.js` after the build, so apps can import UCL from a Next.js Server Component. Client-only apps ignore it.

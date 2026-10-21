@@ -33,6 +33,20 @@ primitive it points to in that mode and the color it renders as. The Figma varia
 
 <ColorTokens css={themeCss} />
 
+## Chart colors
+
+`chart-1` to `chart-5` tell data series apart, nothing else. They use Intercept's brand hues (catalina, elf, corn) plus
+plum and violet, and avoid red, orange and green, which mean critical, caution and normal in a clinical interface.
+
+- Assign them in order and keep a series on its color when filters change. Past five series, group into "Other".
+- Show clinical states (out-of-range values, alerts, thresholds) with the status tokens plus an icon or label, never
+  with a chart color. Reference ranges and baselines are neutral gray.
+- Never rely on color alone: add a legend, direct labels where they fit, and a table view.
+
+⚠️ **Constraint:** `chart-5` (gold) is close to `warning`. Use it only for a fifth series, and label it directly.
+
+See DESIGN.md → "Chart colors" for the validation behind the order.
+
 ## Primitive ramps
 
 Declared as `:root` variables (`var(--catalina-500)`), not as Tailwind colors. Reach for one only when no semantic

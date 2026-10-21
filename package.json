@@ -31,6 +31,7 @@
 		"dev": "tsup --watch",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build",
+		"test": "vitest run",
 		"lint": "tsc --noEmit",
 		"clean": "rm -rf dist",
 		"preversion": "npm run lint",
@@ -60,13 +61,18 @@
 		"tailwind-merge": "^3.6.0"
 	},
 	"devDependencies": {
+		"@chromatic-com/storybook": "^5.6.0",
 		"@hookform/resolvers": "^5.2.2",
 		"@storybook/addon-docs": "^10.4.1",
+		"@storybook/addon-vitest": "^10.6.3",
 		"@storybook/react-vite": "^10.4.1",
 		"@tailwindcss/vite": "^4.3.0",
 		"@types/react": "^19.2.15",
 		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^5.2.0",
+		"@vitest/browser-playwright": "^5.0.5",
+		"@vitest/coverage-v8": "^5.0.5",
+		"playwright": "^1.64.1",
 		"react": "^19.2.6",
 		"react-dom": "^19.2.6",
 		"react-hook-form": "^7.71.2",
@@ -76,6 +82,7 @@
 		"tsup": "^9.0.0",
 		"typescript": "^6.0.3",
 		"vite": "^8.0.14",
+		"vitest": "^5.0.5",
 		"zod": "^4.3.6"
 	},
 	"peerDependenciesMeta": {
