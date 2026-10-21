@@ -60,8 +60,8 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 | Item                    | Value                                     |
 | ----------------------- | ----------------------------------------- |
 | Design system file      | [archielabs.ds](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds), `fileKey` `w8YHn6HqwgvKEyFOYkDFmW` |
-| Modes                   | `intercept`. The file is shared and holds a variable mode per brand. Read and sync token values from the `intercept` mode only. |
-| Dark mode               | None yet. `intercept` is Intercept's only mode, and it's a light theme: its values are in `:root`. There's no `.dark` block until Figma adds a second mode. |
+| Modes                   | `intercept` (light) and `intercept-dark`. The file is shared and holds variable modes per brand. Read and sync only these two. |
+| Dark mode               | `intercept-dark` → `.dark` in `theme.css`. Created from UCL on Oct 20, 2026 (DESIGN.md "intercept-dark mode"). |
 | Figma MCP account       | 8base                                     |
 
 Skills compare every Figma URL's `fileKey` against this table. Until it's set, they ask for the file before syncing tokens.
@@ -194,14 +194,14 @@ Layouts are reference implementations that the apps rebuild with their own data,
 
 All tokens live in `src/styles/theme.css`:
 
-- **`@theme inline`:** maps Tailwind utilities to the CSS variables (`--color-primary: var(--primary)`), so a future second mode can override them.
+- **`@theme inline`:** maps Tailwind utilities to the CSS variables (`--color-primary: var(--primary)`), so `.dark` overrides work.
 - **`@theme` breakpoints:** set 1px past each frame width. See DESIGN.md "Breakpoints include their own width".
-- **`:root`:** primitives (Figma `primitives`), then semantic tokens (Figma `semantic`, `intercept` mode). Colors are written in `oklch`. Don't mix formats. DESIGN.md → "Figma → theme.css token map" lists the Figma variable behind every token.
+- **`:root`:** primitives (Figma `primitives`). **`:root, .dark`:** semantic tokens, `intercept` mode. **`.dark`:** only the `intercept-dark` values that differ. Colors are written in `oklch`. Don't mix formats. DESIGN.md → "Figma → theme.css token map" lists the Figma variable behind every token.
 - **Semantic roles** use shadcn names: `background`, `foreground`, `card`, `popover`, `primary`, `secondary`, `muted`, `accent`, `destructive` (each with `-foreground`), and `border`, `input`, `ring`. Beyond those, the Figma tone system: surfaces (`background-subtle`, `card-muted`…), tones (`brand`, `neutral`, `info`, `success`, `warning`, `destructive`, each with `-subtle`/`-muted`), icons, states, charts and sidebar.
 - **Radius:** `--radius` (0.5rem, Figma `radius/default`); `rounded-sm/md/lg` derive from it. Component radii that differ get their own token: `rounded-input` (10px) and `rounded-menu` (16px).
 - **Spacing:** Tailwind's default 4px scale. Don't redefine it.
 
-To add a token, add it to `:root`, then map it in `@theme inline`. Adding a token is a minor version; renaming or removing one is breaking.
+To add a semantic token, add it to `:root, .dark` (and to `.dark` when its dark value differs), then map it in `@theme inline`. Adding a token is a minor version; renaming or removing one is breaking.
 
 ## Motion System
 

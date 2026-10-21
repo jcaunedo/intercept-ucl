@@ -1,5 +1,5 @@
-/* Tokens synced from the archielabs.ds Figma file, "intercept" mode (a light
-   theme, and Intercept's only mode). DESIGN.md → "Figma → theme.css token map"
+/* Tokens synced from the archielabs.ds Figma file, "intercept" (:root) and
+   "intercept-dark" (.dark) modes. DESIGN.md → "Figma → theme.css token map"
    lists the Figma variable behind every token and the decisions behind the
    mapping. Same structure as archie-ucl, which syncs the "Archie" modes of the
    same file. */
@@ -232,7 +232,6 @@
 	--corn-800: oklch(0.448 0.09 74.06);
 	--corn-900: oklch(0.397 0.077 71.83);
 	--corn-950: oklch(0.27 0.053 68.66);
-
 	--info-50: oklch(0.951 0.018 250.59);
 	--info-100: oklch(0.9 0.034 245.49);
 	--info-200: oklch(0.8 0.07 246.12);
@@ -281,10 +280,14 @@
 	--destructive-900: oklch(0.275 0.113 29.23);
 	--destructive-950: oklch(0.202 0.083 29.23);
 
-	/* ---------- Semantic: intercept mode ----------
-	   Intercept has one mode, and it's light. There's no `.dark` block: the
-	   `dark` class changes nothing until Figma adds a second mode. */
+}
 
+/* ---------- Semantic: intercept mode ----------
+   Declared on `.dark` too, so aliases such as `--primary: var(--brand)`
+   re-resolve wherever `.dark` is applied, including on a wrapper below <html>.
+   See DESIGN.md → "Semantic tokens are declared on `:root, .dark`". */
+:root,
+.dark {
 	/* shadcn roles */
 	--background: var(--white);
 	--foreground: var(--gray-800);
@@ -390,6 +393,83 @@
 	--shadow-color-sm: oklch(0 0 0 / 5%);
 	--shadow-color-md: oklch(0 0 0 / 10%);
 	--shadow-color-lg: oklch(0 0 0 / 25%);
+}
+
+/* ---------- Semantic: intercept-dark mode ----------
+   Only tokens whose value differs from intercept. A token that is var(--x) in
+   both modes needs no override: it follows --x. */
+.dark {
+	--background: var(--gray-950);
+	--foreground: var(--gray-200);
+	--card: var(--gray-900);
+	--popover: var(--gray-800);
+	--muted: var(--gray-800);
+	--accent: var(--gray-800);
+	--destructive: var(--destructive-300);
+	--border: var(--gray-700);
+	--input: var(--gray-500);
+	--ring: var(--catalina-300);
+
+	--on-foreground: var(--gray-950);
+	--background-subtle: var(--gray-900);
+	--background-defined: var(--gray-700);
+	--card-subtle: var(--gray-900);
+	--card-muted: var(--gray-800);
+	--card-defined: var(--gray-700);
+	--border-subtle: var(--gray-900);
+	--border-muted: var(--gray-800);
+	--modal: var(--gray-900);
+	--input-disabled: var(--gray-800);
+	--ring-outside: var(--catalina-900);
+
+	--icon: var(--gray-300);
+	--icon-muted: var(--gray-400);
+	--icon-subtle: var(--gray-500);
+	--icon-on-brand: var(--gray-950);
+
+	--brand: var(--catalina-400);
+	--brand-foreground: var(--gray-950);
+	--brand-subtle: var(--catalina-900);
+	--brand-muted: var(--catalina-800);
+	--brand-defined: var(--catalina-600);
+	--tone-accent: var(--elf-400);
+	--tone-accent-foreground: var(--gray-950);
+	--tone-accent-subtle: var(--elf-950);
+	--tone-accent-muted: var(--elf-900);
+	--tone-accent-defined: var(--elf-700);
+	--emphasis-foreground: var(--gray-950);
+	--emphasis-subtle: var(--corn-950);
+	--emphasis-muted: var(--corn-900);
+	--emphasis-defined: var(--corn-700);
+	--neutral: var(--gray-200);
+	--neutral-foreground: var(--gray-950);
+	--neutral-subtle: var(--gray-900);
+	--neutral-muted: var(--gray-800);
+	--neutral-defined: var(--gray-700);
+	--info: var(--info-400);
+	--info-subtle: var(--info-950);
+	--info-muted: var(--info-900);
+	--success: var(--success-500);
+	--success-subtle: var(--success-950);
+	--success-muted: var(--success-900);
+	--warning-subtle: var(--warning-950);
+	--destructive-subtle: var(--destructive-950);
+	--destructive-muted: var(--destructive-900);
+
+	--link: var(--catalina-300);
+	--active: var(--gray-800);
+	--active-alt: var(--gray-800);
+	--highlight: oklch(0.651 0.166 268.78 / 15%); /* catalina-400 at 15% */
+	--disabled: var(--gray-800);
+	--veil: oklch(1 0 0 / 2%);
+	--veil-soft: oklch(1 0 0 / 8%);
+
+	--sidebar-hover: var(--accent);
+	--sidebar-active: oklch(0.651 0.166 268.78 / 20%); /* catalina-400 at 20% */
+
+	--shadow-color-sm: oklch(0 0 0 / 30%);
+	--shadow-color-md: oklch(0 0 0 / 60%);
+	--shadow-color-lg: oklch(0 0 0 / 80%);
 }
 
 /* ---------- Global interaction affordance ----------

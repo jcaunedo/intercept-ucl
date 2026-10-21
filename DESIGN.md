@@ -206,7 +206,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 - **Font size:** `text-base md:text-sm`. Figma draws 14px, used above `md`. Below it, 16px stops iOS Safari from zooming into a focused field.
 - **Textarea** copies Input's state classes. Keep the two in sync. Its `size` is a minimum height, and `field-sizing-content` grows it.
 
-⚠️ **Accessibility:** the placeholder is `muted-foreground` (`foreground/muted`, gray-400), 2.6:1 on white, under 4.5:1. The Default border (`input/border`, gray-200) is 1.3:1, under WCAG's 3:1 for a control's boundary; archie-ucl's Archie mode has the same border. The Error text (destructive-500 on destructive-50) passes at 4.84:1. UCL mirrors Figma. ⚠️ **Decision needed (designer):** see "Intercept mode values that look like Figma slips" in the token map.
+⚠️ **Accessibility (light mode):** the placeholder is `muted-foreground` (`foreground/muted`, gray-400), 2.6:1 on white, under 4.5:1. The Default border (`input/border`, gray-200) is 1.3:1, under WCAG's 3:1 for a control's boundary; archie-ucl's Archie mode has the same border. The Error text (destructive-500 on destructive-50) passes at 4.84:1. UCL mirrors Figma. ⚠️ **Decision needed (designer):** see "Intercept mode values that look like Figma slips" in the token map. In dark mode all three pass: placeholder 7.18:1, border (gray-500) 3.7:1, error 5.22:1.
 
 ---
 
@@ -268,7 +268,7 @@ A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page'
 
 ## Figma → theme.css token map (`src/styles/theme.css`)
 
-**Rule:** `theme.css` mirrors the `semantic` collection of archielabs.ds in the `intercept` mode, in `:root`. Primitives come from the `primitives` collection. The mapping is the same as archie-ucl's, so the two libraries share token names. A resync keeps these decisions, not "fixing" them back to shadcn defaults or to a literal Figma name.
+**Rule:** `theme.css` mirrors the `semantic` collection of archielabs.ds: the `intercept` mode in `:root, .dark` and `intercept-dark` in `.dark`. Primitives come from the `primitives` collection. The mapping is the same as archie-ucl's, so the two libraries share token names. A resync keeps these decisions, not "fixing" them back to shadcn defaults or to a literal Figma name.
 
 **Why:** the Figma file uses a tone system (`tone/<tone>/<step>`, surfaces with `subtle`/`muted`/`defined`), not shadcn's role names. Several shadcn roles have no Figma variable of their own. They map to the variable the matching Figma component binds, which is invisible from either file alone.
 
@@ -277,6 +277,7 @@ A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page'
 - Naming: drop `colors/`, join the path with `-`, and drop the repeated last segment (`colors/tone/brand/brand` → `--brand`, `colors/card/subtle` → `--card-subtle`). `on-<tone>` becomes `--<tone>-foreground`.
 - Diff every mapped variable on each sync against the resolved `theme.css` value. The first sync (Oct 20, 2026) took 127 semantic variables in intercept mode and 68 primitive colors (57 of them match archie-ucl's exactly; indigo is new).
 - **Second sync (Oct 20, 2026):** intercept mode had been redesigned as a light theme. 199 values checked (90 semantic tokens, 68 primitives, 35 type, radius and font values, 6 shadows): 72 semantic colors and the 3 shadow colors drifted, and the type, radius and font tokens matched. The brand moved from indigo to `catalina` (catalina-800), the accent tone to `elf` and emphasis to `corn`; indigo is no longer referenced and was removed. A re-run after the update found 0 drift.
+- **intercept-dark (Oct 20, 2026):** created from UCL (see "intercept-dark mode" below) and synced into `.dark`. All 90 mapped tokens checked against the new mode: 0 drift.
 - ℹ️ False alarms to skip on the next sync: `success-500`, `elf-500`, `elf-600` and `corn-400` (and the tokens that alias them, `tone-accent` and `emphasis`) differ by 1–3 in one 8-bit channel when `theme.css`'s oklch is converted back to RGB. Figma's exact 8-bit values convert to the same oklch strings that `theme.css` has; it's 3-decimal rounding on saturated colors.
 - ℹ️ `states/highlight` and `sidebar/active` use Figma's alias-with-opacity format (`{ color: alias, opacity }`): catalina-100 at 15% and catalina-50 at 20%. A resolver that only follows `VARIABLE_ALIAS` reads them as unresolved; resolve `value.color`, then apply `opacity`.
 
@@ -311,8 +312,42 @@ A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page'
 - **Dark steps on a light theme:** `tone/info/subtle` and `/muted` are info-800 and -700, and `tone/warning/subtle` and `/muted` are warning-800 and -900. Every other tone uses its 50 and 100 steps, as the Archie mode does for info and warning.
 - ⚠️ **Accessibility:** `input/border` (gray-200) is 1.3:1 on white, under 3:1 for a control's boundary. It also colors the Switch's off track. Same value as Archie mode.
 - ✅ **Resolved in Figma:** the earlier slips are gone. Emphasis is set (corn), success, disabled and sidebar-hover now suit a light theme, `icon/brand` is the brand color, and all three button labels pass (primary 13.3:1, secondary 11.88:1, destructive 5.78:1).
-- **No second mode:** there's no `.dark` block. When Figma adds a dark intercept mode, follow archie-ucl's "Semantic tokens are declared on `:root, .dark`" pattern.
 
 ### Storybook chrome (`.storybook/theme.ts`)
 
-Storybook's own theme (sidebar, docs pages) takes hex values, not CSS variables. `.storybook/theme.ts` copies the intercept values of `--background`, `--background-subtle`, `--foreground`, `--foreground-subtle`, `--border`, `--input`, `--brand` and `--link`. Change them together.
+Storybook's own theme (sidebar, docs pages) takes hex values, not CSS variables. `.storybook/theme.ts` copies the intercept values of `--background`, `--background-subtle`, `--foreground`, `--foreground-subtle`, `--border`, `--input`, `--brand` and `--link`. Change them together. The toolbar's Theme switch previews stories in `intercept-dark`; the Storybook chrome stays light.
+
+---
+
+## intercept-dark mode (Figma `semantic` collection, `.dark` in `src/styles/theme.css`)
+
+**Rule:** `intercept-dark` was created from UCL on Oct 20, 2026, at the user's request, in the shared archielabs.ds file. It follows Archie-dark's structure for neutrals and surfaces, recolors the tones with Intercept's palettes, and copies every non-color variable (radius, font, weight, breakpoint) from `intercept`. Every color aliases a primitive, except where the other modes use raw values too (charts, code, gradients, veils, shadows, highlight).
+
+| Role | intercept-dark | Contrast |
+| --- | --- | --- |
+| Page / text / muted text | gray-950 / gray-200 / gray-400 | 14.41 / 7.18 |
+| Surfaces | `subtle` gray-900, `muted` gray-800, `defined` gray-700; card gray-900, popover gray-800 | |
+| Brand (primary button) | catalina-400 with a gray-950 label (`on-brand`) | 5.64, fill 5.64 on the page |
+| Secondary button | catalina-400 on catalina-900 | 4.74 |
+| Destructive button / error text | destructive-300 with gray-950 label / on destructive-950 | 5.3 / 5.22 |
+| Input border / focus ring | gray-500 / catalina-300 | 3.7 / 8.75 |
+| Accent (elf), emphasis (corn), neutral | elf-400, corn-400, gray-200, each with gray-950 text; `subtle` 950, `muted` 900, `defined` 700 | 8.38 / 10.85 / 14.41 |
+| Info, success, warning | info-400, success-500, warning-400; `subtle` 950, `muted` 900 | 4.94 / 6.4 / 7.6 |
+
+**Why:** Intercept's light brand (catalina-800) is too dark to see on a dark page, so the dark brand steps up to catalina-400 with a dark label, as Archie-dark does with `on-brand` gray-950. Archie-dark's slips were not copied: `active-alt` is gray-800 (not white), `icon/brand` is the brand color, and every tone's `subtle` → `muted` → `defined` gets lighter in the same direction.
+
+**How to apply:**
+
+- ⚠️ **Decision needed (designer):** review the mode in Figma. These are UCL's proposal, not a designer's. When the designer changes a value, run `ucl-ds-sync`; Figma wins.
+- `states/highlight` and `sidebar/active` are raw catalina-400 at 15% and 20%. The Plugin API can't write Figma's alias-with-opacity format, which the light mode uses.
+- A new semantic variable needs an `intercept-dark` value in Figma and, if it differs from light, a line in `.dark`.
+
+---
+
+## Semantic tokens are declared on `:root, .dark` (`src/styles/theme.css`)
+
+**Rule:** the intercept (light) semantic block uses the selector `:root, .dark`, not just `:root`. The `.dark` block after it overrides only the values that differ.
+
+**Why:** many tokens are aliases, such as `--primary: var(--brand)`. A custom property's `var()` resolves on the element that declares it, and descendants inherit the result. If the aliases were declared only on `:root` and `.dark` were applied to a wrapper below `<html>` (a Storybook preview, a dark section, the Colors page's dark column), `--primary` would keep the light brand inside it. Redeclaring the aliases on `.dark` makes them resolve against the dark values there. Same rule as archie-ucl.
+
+**How to apply:** add new semantic tokens to the `:root, .dark` block. Add them to `.dark` too only when the dark value differs. Keep `.dark` after the shared block, because both selectors have the same specificity. Primitives stay in plain `:root`.

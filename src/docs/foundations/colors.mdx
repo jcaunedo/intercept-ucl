@@ -1,81 +1,41 @@
-import { Meta, ColorPalette, ColorItem } from "@storybook/addon-docs/blocks";
+import { Meta } from "@storybook/addon-docs/blocks";
+
+import themeCss from "../../styles/theme.css?raw";
+import { ColorTokens, PrimitiveRamps } from "./color-tokens";
 
 <Meta title='Foundations/Colors' />
 
 # Colors
 
-Colors are semantic tokens defined in `src/styles/theme.css`. Each token is a CSS variable, such as `--primary`, and a Tailwind utility, such as `bg-primary` or `text-primary-foreground`.
+Every color in UCL is a token in `src/styles/theme.css`, synced from the archielabs.ds Figma file: the `intercept` mode
+in `:root` and `intercept-dark` in `.dark`. Use tokens through their Tailwind utilities, never as raw values: a token
+named `background-subtle` is `bg-background-subtle`, `text-background-subtle`, `border-background-subtle`, and so on.
 
-Pair each surface token with its `-foreground` token, so text always has enough contrast. The swatches below read the live variables, so they always match the theme.
+## How tokens are named
 
-<ColorPalette>
-	<ColorItem
-		title='Base'
-		subtitle='Page background and default text'
-		colors={{
-			background: "var(--background)",
-			foreground: "var(--foreground)",
-		}}
-	/>
-	<ColorItem
-		title='Primary'
-		subtitle='Main actions and brand emphasis'
-		colors={{
-			primary: "var(--primary)",
-			"primary-foreground": "var(--primary-foreground)",
-		}}
-	/>
-	<ColorItem
-		title='Secondary'
-		subtitle='Supporting actions'
-		colors={{
-			secondary: "var(--secondary)",
-			"secondary-foreground": "var(--secondary-foreground)",
-		}}
-	/>
-	<ColorItem
-		title='Accent'
-		subtitle='Hover and selected states'
-		colors={{
-			accent: "var(--accent)",
-			"accent-foreground": "var(--accent-foreground)",
-		}}
-	/>
-	<ColorItem
-		title='Muted'
-		subtitle='Subdued surfaces and secondary text'
-		colors={{
-			muted: "var(--muted)",
-			"muted-foreground": "var(--muted-foreground)",
-		}}
-	/>
-	<ColorItem
-		title='Destructive'
-		subtitle='Errors and irreversible actions'
-		colors={{
-			destructive: "var(--destructive)",
-			"destructive-foreground": "var(--destructive-foreground)",
-		}}
-	/>
-	<ColorItem
-		title='Card & Popover'
-		subtitle='Raised surfaces'
-		colors={{
-			card: "var(--card)",
-			"card-foreground": "var(--card-foreground)",
-			popover: "var(--popover)",
-			"popover-foreground": "var(--popover-foreground)",
-		}}
-	/>
-	<ColorItem
-		title='Lines & Focus'
-		subtitle='Borders, input outlines, and focus rings'
-		colors={{
-			border: "var(--border)",
-			input: "var(--input)",
-			ring: "var(--ring)",
-		}}
-	/>
-</ColorPalette>
+- **Two tiers.** Primitive ramps (`gray`, `catalina`, `elf`, `corn` and the status ramps) hold the raw colors.
+  Semantic tokens (`primary`, `foreground`, `border`, `brand-subtle`) point at them and name what the color does.
+  Components use semantic tokens only; the primitives aren't Tailwind colors.
+- **shadcn roles first.** `background`, `foreground`, `card`, `popover`, `primary`, `secondary`, `muted`, `accent`,
+  `destructive`, `border`, `input` and `ring` keep shadcn's names, so shadcn components work unchanged.
+- **Tones come in steps.** Each tone (`brand`, `tone-accent`, `emphasis`, `neutral`, `info`, `success`, `warning`,
+  `destructive`) has `-subtle`, `-muted` and, for most, `-defined` steps, plus a `-foreground` for text on it.
+- **`accent` isn't the accent color.** shadcn's `accent` is the hover surface. Figma's accent tone (elf) is
+  `tone-accent`.
+- **Pair every surface with its foreground** (`bg-primary text-primary-foreground`), so text keeps its contrast in
+  both modes.
 
-Corner radius tokens are on the Spacing & Radius page.
+The tables are generated from `theme.css`: a token added there appears here with no doc change. Each value shows the
+primitive it points to in that mode and the color it renders as. The Figma variable behind every token is in DESIGN.md
+→ "Figma → theme.css token map".
+
+## Semantic tokens
+
+<ColorTokens css={themeCss} />
+
+## Primitive ramps
+
+Declared as `:root` variables (`var(--catalina-500)`), not as Tailwind colors. Reach for one only when no semantic
+token fits, and add a semantic token if the need repeats.
+
+<PrimitiveRamps css={themeCss} />
