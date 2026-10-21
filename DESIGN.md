@@ -252,9 +252,9 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 | `h3` | `lg` / `semibold` | `lg/lg -semibold` | 18/28 | Figma description "h3" |
 | `h4` | `base` / `semibold` | `base/base -semibold` | 16/24 | Figma description "h4" |
 
-A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page's `h1`: write `<Typography as="h1" size="3xl" weight="bold">`. A modal title uses the plain `h1` default.
+A **page title** is Figma's `3xl/3xl -semibold` ("Page Title"). It's still the page's `h1`: write `<Typography as="h1" size="3xl">`, which keeps `h1`'s semibold. A modal title uses the plain `h1` default.
 
-**Why:** the Figma text style descriptions are the source. Without set defaults, every heading picks a plausible size by eye. ✅ **Resolved in Figma (Oct 20, 2026):** the designer tagged all four levels, at semibold. They had been a product decision at bold (only `h1` was tagged, as `2xl/2xl -bold`), so the sync moved every default from bold to semibold. The page title stays bold.
+**Why:** the Figma text style descriptions are the source. Without set defaults, every heading picks a plausible size by eye. ✅ **Resolved in Figma (Oct 20, 2026):** the designer tagged all four levels, at semibold. They had been a product decision at bold (only `h1` was tagged, as `2xl/2xl -bold`), so the sync moved every default from bold to semibold. The "Page Title" tag then moved from `3xl/3xl -bold` to `3xl/3xl -semibold` too, so a page title needs no `weight`.
 
 **How to apply:**
 

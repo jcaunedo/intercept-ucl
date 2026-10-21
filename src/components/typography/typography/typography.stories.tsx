@@ -83,11 +83,11 @@ export const Headings: Story = {
 	),
 };
 
-/** Figma "Page Title" (`3xl/3xl -bold`): still an `h1`, one size larger and bold. */
+/** Figma "Page Title" (`3xl/3xl -semibold`): still an `h1`, one size larger. */
 export const PageTitle: Story = {
 	render: () => (
 		<div className='flex flex-col gap-2'>
-			<Typography as='h1' size='3xl' weight='bold'>
+			<Typography as='h1' size='3xl'>
 				Projects
 			</Typography>
 			<Typography className='text-muted-foreground'>Everything your team is working on.</Typography>

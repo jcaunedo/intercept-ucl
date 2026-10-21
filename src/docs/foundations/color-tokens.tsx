@@ -3,7 +3,7 @@ import * as React from "react";
 /**
  * Docs-only blocks for the Foundations/Colors page. They read `theme.css` itself (passed in as raw text by the MDX
  * page), so every color token appears here as soon as it's added: nothing to keep in sync. Semantic tokens show both
- * modes side by side; the dark swatch sits inside a `.dark` wrapper, which re-resolves the tokens there (DESIGN.md
+ * modes side by side; the dark swatch's fill carries the `.dark` class, which re-resolves the tokens there (DESIGN.md
  * "Semantic tokens are declared on `:root, .dark`").
  */
 
@@ -63,8 +63,11 @@ function toHex(color: string) {
 	return a < 255 ? `${hex} · ${Math.round((a / 255) * 100)}%` : hex;
 }
 
-/** A swatch that reports the color it actually renders, so the hex is what the token resolves to in its mode. */
-function Swatch({ cssVar, alias }: { cssVar: string; alias: string }) {
+/**
+ * A swatch that reports the color it actually renders, so the hex is what the token resolves to in its mode. `dark`
+ * scopes `.dark` to the color fill only, so the swatch's border and labels look the same in both columns.
+ */
+function Swatch({ cssVar, alias, dark = false }: { cssVar: string; alias: string; dark?: boolean }) {
 	const ref = React.useRef<HTMLDivElement>(null);
 	const [hex, setHex] = React.useState("");
 	React.useEffect(() => {
@@ -72,11 +75,9 @@ function Swatch({ cssVar, alias }: { cssVar: string; alias: string }) {
 	}, [cssVar]);
 	return (
 		<div className='flex items-center gap-2'>
-			<div
-				ref={ref}
-				className='size-9 shrink-0 rounded-md border border-border'
-				style={{ background: `var(--${cssVar})` }}
-			/>
+			<div className='size-9 shrink-0 overflow-hidden rounded-md border border-border'>
+				<div ref={ref} className={`size-full ${dark ? "dark" : ""}`} style={{ background: `var(--${cssVar})` }} />
+			</div>
 			<div className='min-w-0 font-mono text-[11px] leading-tight'>
 				<div className='truncate text-foreground'>{alias}</div>
 				<div className='text-muted-foreground'>{hex}</div>
@@ -108,9 +109,7 @@ function ColorTokens({ css }: { css: string }) {
 							<tr>
 								<th className={head}>Token</th>
 								<th className={head}>Light (intercept)</th>
-								<th className={`${head} dark bg-background text-muted-foreground`}>
-									<span className='pl-2'>Dark (intercept-dark)</span>
-								</th>
+								<th className={head}>Dark (intercept-dark)</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -120,10 +119,8 @@ function ColorTokens({ css }: { css: string }) {
 									<td className={cell}>
 										<Swatch cssVar={token} alias={describe(light.get(token))} />
 									</td>
-									<td className={`${cell} dark bg-background`}>
-										<div className='pl-2'>
-											<Swatch cssVar={token} alias={describe(dark.get(token) ?? light.get(token))} />
-										</div>
+									<td className={cell}>
+										<Swatch cssVar={token} alias={describe(dark.get(token) ?? light.get(token))} dark />
 									</td>
 								</tr>
 							))}

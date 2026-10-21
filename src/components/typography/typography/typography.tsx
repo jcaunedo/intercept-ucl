@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
  * | `black`    | `font-black`    | 900   | `-black`        |
  *
  * Headings (`typographyHeadings`, below): `h1` 2xl semibold ("h1 / Modal Title"), `h2` xl semibold, `h3` lg semibold,
- * `h4` base semibold, each tagged in Figma. Page title: `as="h1" size="3xl" weight="bold"` (Figma "Page Title", 3xl bold).
+ * `h4` base semibold, each tagged in Figma. Page title: `as="h1" size="3xl"` (Figma "Page Title", 3xl semibold).
  *
  * Color is never part of Typography: pass a text token in `className` (`text-muted-foreground`).
  */
@@ -85,8 +85,8 @@ type TypographyWeight = NonNullable<VariantProps<typeof typographyVariants>["wei
 
 /**
  * Heading defaults, from the Figma text style descriptions: `h1` is `2xl/2xl -semibold` ("h1 / Modal Title"), `h2`
- * `xl/xl -semibold`, `h3` `lg/lg -semibold`, `h4` `base/base -semibold`. Page titles are Figma's `3xl/3xl -bold`
- * ("Page Title"): write `as="h1" size="3xl" weight="bold"`. See DESIGN.md "Heading element → Typography pairing".
+ * `xl/xl -semibold`, `h3` `lg/lg -semibold`, `h4` `base/base -semibold`. Page titles are Figma's `3xl/3xl -semibold`
+ * ("Page Title"): write `as="h1" size="3xl"`. See DESIGN.md "Heading element → Typography pairing".
  */
 const typographyHeadings = {
 	h1: { size: "2xl", weight: "semibold" },
