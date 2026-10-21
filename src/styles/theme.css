@@ -1,4 +1,4 @@
-/* Tokens synced from the archielabs.ds Figma file, "intercept" mode (a dark
+/* Tokens synced from the archielabs.ds Figma file, "intercept" mode (a light
    theme, and Intercept's only mode). DESIGN.md → "Figma → theme.css token map"
    lists the Figma variable behind every token and the decisions behind the
    mapping. Same structure as archie-ucl, which syncs the "Archie" modes of the
@@ -197,17 +197,41 @@
 	--gray-900: oklch(0.247 0.025 263.97);
 	--gray-950: oklch(0.185 0.035 265.25);
 
-	--indigo-50: oklch(0.945 0.023 296.73);
-	--indigo-100: oklch(0.875 0.054 297.01);
-	--indigo-200: oklch(0.754 0.11 294.95);
-	--indigo-300: oklch(0.633 0.166 291.86);
-	--indigo-400: oklch(0.522 0.211 287.42);
-	--indigo-500: oklch(0.473 0.22 284.33);
-	--indigo-600: oklch(0.446 0.225 282.47);
-	--indigo-700: oklch(0.38 0.188 282.92);
-	--indigo-800: oklch(0.314 0.149 283.85);
-	--indigo-900: oklch(0.243 0.109 285.78);
-	--indigo-950: oklch(0.19 0.076 288.1);
+	--catalina-50: oklch(0.961 0.018 269.09);
+	--catalina-100: oklch(0.929 0.034 271.04);
+	--catalina-200: oklch(0.859 0.069 270.49);
+	--catalina-300: oklch(0.765 0.119 269.23);
+	--catalina-400: oklch(0.651 0.166 268.78);
+	--catalina-500: oklch(0.539 0.196 268);
+	--catalina-600: oklch(0.46 0.2 266.17);
+	--catalina-700: oklch(0.39 0.182 265.22);
+	--catalina-800: oklch(0.319 0.162 264.9);
+	--catalina-900: oklch(0.265 0.12 265.26);
+	--catalina-950: oklch(0.189 0.076 266.45);
+
+	--elf-50: oklch(0.98 0.016 196.9);
+	--elf-100: oklch(0.946 0.036 198.68);
+	--elf-200: oklch(0.892 0.065 199.65);
+	--elf-300: oklch(0.822 0.097 200.41);
+	--elf-400: oklch(0.737 0.115 201.48);
+	--elf-500: oklch(0.628 0.105 201.38);
+	--elf-600: oklch(0.535 0.09 202.88);
+	--elf-700: oklch(0.457 0.075 204.84);
+	--elf-800: oklch(0.386 0.061 206.12);
+	--elf-900: oklch(0.328 0.05 207.3);
+	--elf-950: oklch(0.24 0.037 210.16);
+
+	--corn-50: oklch(0.987 0.021 95.28);
+	--corn-100: oklch(0.962 0.064 95.9);
+	--corn-200: oklch(0.928 0.117 95.47);
+	--corn-300: oklch(0.886 0.157 91.66);
+	--corn-400: oklch(0.826 0.168 89.49);
+	--corn-500: oklch(0.743 0.152 85.98);
+	--corn-600: oklch(0.635 0.131 81.73);
+	--corn-700: oklch(0.521 0.107 77.65);
+	--corn-800: oklch(0.448 0.09 74.06);
+	--corn-900: oklch(0.397 0.077 71.83);
+	--corn-950: oklch(0.27 0.053 68.66);
 
 	--info-50: oklch(0.951 0.018 250.59);
 	--info-100: oklch(0.9 0.034 245.49);
@@ -258,73 +282,73 @@
 	--destructive-950: oklch(0.202 0.083 29.23);
 
 	/* ---------- Semantic: intercept mode ----------
-	   Intercept has one mode, and it's dark. There's no `.dark` block: the
+	   Intercept has one mode, and it's light. There's no `.dark` block: the
 	   `dark` class changes nothing until Figma adds a second mode. */
 
 	/* shadcn roles */
-	--background: var(--gray-950);
-	--foreground: var(--gray-100);
-	--card: var(--gray-950);
+	--background: var(--white);
+	--foreground: var(--gray-800);
+	--card: var(--white);
 	--card-foreground: var(--foreground);
-	--popover: var(--gray-800);
+	--popover: var(--white);
 	--popover-foreground: var(--foreground);
 	--primary: var(--brand);
 	--primary-foreground: var(--brand-foreground);
 	--secondary: var(--brand-subtle);
 	--secondary-foreground: var(--brand);
-	--muted: var(--gray-900);
+	--muted: var(--gray-100);
 	--muted-foreground: var(--gray-400);
-	--accent: var(--gray-800);
+	--accent: var(--gray-50);
 	--accent-foreground: var(--foreground);
-	--destructive: var(--destructive-300);
+	--destructive: var(--destructive-500);
 	--destructive-foreground: var(--brand-foreground);
-	--border: var(--gray-700);
-	--input: var(--gray-600);
-	--ring: var(--gray-200);
+	--border: var(--gray-200);
+	--input: var(--gray-200);
+	--ring: var(--catalina-800);
 
 	/* Surfaces, text and lines */
-	--on-foreground: var(--gray-800);
+	--on-foreground: var(--white);
 	--foreground-subtle: var(--gray-500);
-	--background-subtle: var(--gray-800);
-	--background-defined: var(--gray-700);
-	--card-subtle: var(--gray-900);
-	--card-muted: var(--gray-800);
-	--card-defined: var(--gray-700);
-	--border-subtle: var(--gray-800);
-	--border-muted: var(--gray-900);
-	--modal: var(--gray-950);
-	--input-disabled: var(--gray-900);
-	--input-ring: var(--indigo-400);
-	--ring-outside: var(--gray-800);
+	--background-subtle: var(--gray-50);
+	--background-defined: var(--gray-200);
+	--card-subtle: var(--gray-50);
+	--card-muted: var(--gray-100);
+	--card-defined: var(--gray-200);
+	--border-subtle: var(--gray-50);
+	--border-muted: var(--gray-100);
+	--modal: var(--white);
+	--input-disabled: var(--gray-100);
+	--input-ring: var(--gray-400);
+	--ring-outside: var(--catalina-200);
 
 	/* Icons */
-	--icon: var(--gray-100);
-	--icon-muted: var(--gray-400);
-	--icon-subtle: var(--gray-500);
-	--icon-brand: var(--gray-200);
-	--icon-on-brand: var(--gray-50);
+	--icon: var(--gray-700);
+	--icon-muted: var(--gray-500);
+	--icon-subtle: var(--gray-400);
+	--icon-brand: var(--brand);
+	--icon-on-brand: var(--white);
 
 	/* Tones */
-	--brand: var(--indigo-400);
-	--brand-foreground: var(--gray-50);
-	--brand-subtle: var(--indigo-900);
-	--brand-muted: var(--indigo-800);
-	--brand-defined: var(--indigo-800);
-	--tone-accent: var(--gray-200);
-	--tone-accent-foreground: var(--gray-950);
-	--tone-accent-subtle: var(--gray-800);
-	--tone-accent-muted: var(--gray-900);
-	--tone-accent-defined: var(--gray-900);
-	--emphasis: var(--gray-950);
-	--emphasis-foreground: var(--gray-950);
-	--emphasis-subtle: var(--gray-950);
-	--emphasis-muted: var(--gray-950);
-	--emphasis-defined: var(--gray-950);
-	--neutral: var(--gray-200);
-	--neutral-foreground: var(--gray-950);
-	--neutral-subtle: var(--gray-800);
-	--neutral-muted: var(--gray-900);
-	--neutral-defined: var(--gray-700);
+	--brand: var(--catalina-800);
+	--brand-foreground: var(--white);
+	--brand-subtle: var(--catalina-50);
+	--brand-muted: var(--catalina-100);
+	--brand-defined: var(--catalina-500);
+	--tone-accent: var(--elf-600);
+	--tone-accent-foreground: var(--white);
+	--tone-accent-subtle: var(--elf-50);
+	--tone-accent-muted: var(--elf-100);
+	--tone-accent-defined: var(--elf-400);
+	--emphasis: var(--corn-400);
+	--emphasis-foreground: var(--foreground);
+	--emphasis-subtle: var(--corn-50);
+	--emphasis-muted: var(--corn-100);
+	--emphasis-defined: var(--corn-300);
+	--neutral: var(--gray-800);
+	--neutral-foreground: var(--white);
+	--neutral-subtle: var(--gray-50);
+	--neutral-muted: var(--gray-100);
+	--neutral-defined: var(--gray-200);
 	--info: var(--info-500);
 	--info-subtle: var(--info-800);
 	--info-muted: var(--info-700);
@@ -334,17 +358,17 @@
 	--warning: var(--warning-400);
 	--warning-subtle: var(--warning-800);
 	--warning-muted: var(--warning-900);
-	--destructive-subtle: var(--destructive-900);
-	--destructive-muted: var(--destructive-800);
+	--destructive-subtle: var(--destructive-50);
+	--destructive-muted: var(--destructive-100);
 
 	/* States */
-	--link: oklch(0.738 0.142 296.23);
-	--active: var(--gray-700);
-	--active-alt: var(--indigo-800);
-	--highlight: oklch(0.565 0.202 257.17 / 15%);
+	--link: var(--catalina-500);
+	--active: var(--gray-50);
+	--active-alt: var(--gray-50);
+	--highlight: oklch(0.929 0.034 271.04 / 15%); /* catalina-100 at 15% */
 	--disabled: var(--gray-50);
-	--veil: oklch(1 0 0 / 2%);
-	--veil-soft: oklch(1 0 0 / 8%);
+	--veil: oklch(0 0 0 / 2%);
+	--veil-soft: oklch(0 0 0 / 8%);
 
 	/* Charts */
 	--chart-1: oklch(0.738 0.142 296.23);
@@ -354,18 +378,18 @@
 	--chart-5: oklch(0.836 0.157 155.26);
 
 	/* Sidebar */
-	--sidebar: var(--gray-900);
-	--sidebar-foreground: var(--gray-200);
-	--sidebar-foreground-active: var(--indigo-200);
-	--sidebar-icon: var(--white);
-	--sidebar-icon-active: var(--indigo-200);
+	--sidebar: var(--background);
+	--sidebar-foreground: var(--foreground);
+	--sidebar-foreground-active: var(--foreground);
+	--sidebar-icon: var(--icon-muted);
+	--sidebar-icon-active: var(--icon);
 	--sidebar-hover: var(--white);
-	--sidebar-active: oklch(0.738 0.142 296.23 / 20%);
+	--sidebar-active: oklch(0.961 0.018 269.09 / 20%); /* catalina-50 at 20% */
 
 	/* Shadow colors */
-	--shadow-color-sm: oklch(0 0 0 / 30%);
-	--shadow-color-md: oklch(0 0 0 / 60%);
-	--shadow-color-lg: oklch(0 0 0 / 80%);
+	--shadow-color-sm: oklch(0 0 0 / 5%);
+	--shadow-color-md: oklch(0 0 0 / 10%);
+	--shadow-color-lg: oklch(0 0 0 / 25%);
 }
 
 /* ---------- Global interaction affordance ----------

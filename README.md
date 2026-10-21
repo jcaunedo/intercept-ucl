@@ -80,7 +80,7 @@ export function Example() {
 }
 ```
 
-Intercept's design system has one mode, and it's dark: the tokens are its values, with no class to add. Give the page `bg-background text-foreground`, usually on `<body>`.
+Intercept's design system has one mode, and it's light: the tokens are its values, with no class to add. Give the page `bg-background text-foreground`, usually on `<body>`.
 
 ## Commands
 

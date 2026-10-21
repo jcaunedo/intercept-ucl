@@ -195,7 +195,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 | State | Border | Fill | Text |
 | --- | --- | --- | --- |
 | Default / HasValue | `input` | `background`, `shadow-xs` | `foreground`, placeholder `muted-foreground` |
-| Hover | `input-ring` (`input/ring`: indigo-400 in intercept mode) | | |
+| Hover | `input-ring` (`input/ring`: gray-400), lighter than Focus | | |
 | Focus | `ring` + 3px `ring-outside` halo, no shadow | | |
 | Error (`aria-invalid`) | `destructive` | `destructive-subtle` | `destructive` |
 | Read-only | `input-disabled` | `background-subtle`, no shadow | `foreground` |
@@ -206,7 +206,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 - **Font size:** `text-base md:text-sm`. Figma draws 14px, used above `md`. Below it, 16px stops iOS Safari from zooming into a focused field.
 - **Textarea** copies Input's state classes. Keep the two in sync. Its `size` is a minimum height, and `field-sizing-content` grows it.
 
-⚠️ **Accessibility:** in intercept mode the Default border (`input/border`, gray-600) is 2.37:1 against the background, under WCAG's 3:1 for a control's boundary, and the Error text (`destructive`, destructive-300) is 4.38:1 on its `destructive-subtle` fill, just under 4.5:1. UCL mirrors Figma. ⚠️ **Decision needed (designer):** raise `input/border` and the error pair in the `intercept` mode.
+⚠️ **Accessibility:** the placeholder is `muted-foreground` (`foreground/muted`, gray-400), 2.6:1 on white, under 4.5:1. The Default border (`input/border`, gray-200) is 1.3:1, under WCAG's 3:1 for a control's boundary; archie-ucl's Archie mode has the same border. The Error text (destructive-500 on destructive-50) passes at 4.84:1. UCL mirrors Figma. ⚠️ **Decision needed (designer):** see "Intercept mode values that look like Figma slips" in the token map.
 
 ---
 
@@ -227,7 +227,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 
 - **No arrow:** Figma draws none, so `sideOffset` defaults to 4px. ⚠️ **Decision needed:** Figma doesn't specify the gap; 4px is a placeholder.
 - **Motion from `src/lib/motion`:** the surface fades in and moves `motionDistance.subtle` from the trigger's side with `enterTransition`. Reduced motion keeps only the fade. Radix unmounts it on close, so the exit is instant.
-- **Sizes:** Figma Medium → `size="default"` (`sm/sm`, 6 × 14 padding), Small → `size="sm"` (`xs/xs`, 4 × 8). Colors are `foreground` / `background`, so in intercept mode it's a light tooltip on the dark page. Radius is `rounded-menu` (`radius/menu/container`, 16px in intercept mode).
+- **Sizes:** Figma Medium → `size="default"` (`sm/sm`, 6 × 14 padding), Small → `size="sm"` (`xs/xs`, 4 × 8). Colors are `foreground` / `background`, so in intercept mode it's a dark (gray-800) tooltip on the white page. Radius is `rounded-menu` (`radius/menu/container`, 16px in intercept mode).
 
 **How to apply:** wrap the app once in `TooltipProvider`. Put interactive triggers in `TooltipTrigger asChild`. The tooltip becomes the trigger's accessible description, so it says what the control does, not repeat its label.
 
@@ -276,6 +276,9 @@ A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page'
 
 - Naming: drop `colors/`, join the path with `-`, and drop the repeated last segment (`colors/tone/brand/brand` → `--brand`, `colors/card/subtle` → `--card-subtle`). `on-<tone>` becomes `--<tone>-foreground`.
 - Diff every mapped variable on each sync against the resolved `theme.css` value. The first sync (Oct 20, 2026) took 127 semantic variables in intercept mode and 68 primitive colors (57 of them match archie-ucl's exactly; indigo is new).
+- **Second sync (Oct 20, 2026):** intercept mode had been redesigned as a light theme. 199 values checked (90 semantic tokens, 68 primitives, 35 type, radius and font values, 6 shadows): 72 semantic colors and the 3 shadow colors drifted, and the type, radius and font tokens matched. The brand moved from indigo to `catalina` (catalina-800), the accent tone to `elf` and emphasis to `corn`; indigo is no longer referenced and was removed. A re-run after the update found 0 drift.
+- ℹ️ False alarms to skip on the next sync: `success-500`, `elf-500`, `elf-600` and `corn-400` (and the tokens that alias them, `tone-accent` and `emphasis`) differ by 1–3 in one 8-bit channel when `theme.css`'s oklch is converted back to RGB. Figma's exact 8-bit values convert to the same oklch strings that `theme.css` has; it's 3-decimal rounding on saturated colors.
+- ℹ️ `states/highlight` and `sidebar/active` use Figma's alias-with-opacity format (`{ color: alias, opacity }`): catalina-100 at 15% and catalina-50 at 20%. A resolver that only follows `VARIABLE_ALIAS` reads them as unresolved; resolve `value.color`, then apply `opacity`.
 
 ### Mapping decisions
 
@@ -296,7 +299,7 @@ A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page'
 
 ### Deliberately not mirrored
 
-- **Primitives as utilities:** only the palettes intercept mode references (gray, indigo, info, success, warning, destructive) are declared, as `:root` variables, not as Tailwind colors.
+- **Primitives as utilities:** only the palettes intercept mode references (gray, catalina, elf, corn, info, success, warning, destructive) are declared, as `:root` variables, not as Tailwind colors.
 - **Font weights:** `font-weight/*` in intercept mode are 300–900, Tailwind's defaults, so they aren't redefined.
 - **Not synced yet:** `code/*`, `decorative/decorative-1`, `linear-1A/1B`, the `components` collection, the other `radius/*` component radii (button 10px, card 12px, badge and chip full), the `Sonner` effect style, `paragraph-gap/*` and `breakpoint/width|height`. Add each with the component that needs it.
 
@@ -304,12 +307,12 @@ A **page title** is Figma's `3xl/3xl -bold` ("Page Title"). It's still the page'
 
 ⚠️ **Decision needed (designer):** mirrored as Figma has them:
 
-- **Emphasis tone is unset:** every `tone/emphasis/*` step, including `on-emphasis`, is gray-950, the same as the background.
-- **Light values on a dark theme:** `tone/success/subtle` and `/muted` are success-50 and -100, `states/disabled` is gray-50, and `sidebar/hover` is white. archie-ucl had the same slips in Archie-dark and fixed them in Figma.
-- **`icon/brand` is gray-200**, not the brand color.
-- ⚠️ **Accessibility:** the Secondary button label (`tone/brand/brand` on `tone/brand/subtle`) is 2.81:1 and the Destructive one (`on-brand` on destructive-300) is 3.26:1, both under 4.5:1. The Primary label is 5.54:1. Input is covered in its own section.
-- **No second mode:** there's no `.dark` block. If Figma adds a light (or second) intercept mode, follow archie-ucl's "Semantic tokens are declared on `:root, .dark`" pattern.
+- **`foreground/muted` and `/subtle` look swapped:** muted is gray-400 and subtle gray-500. The Archie modes have the reverse. ⚠️ **Accessibility:** gray-400 is 2.6:1 on white, so every `text-muted-foreground` (descriptions, helper text, placeholders) fails 4.5:1. gray-500 would pass at 5.05:1.
+- **Dark steps on a light theme:** `tone/info/subtle` and `/muted` are info-800 and -700, and `tone/warning/subtle` and `/muted` are warning-800 and -900. Every other tone uses its 50 and 100 steps, as the Archie mode does for info and warning.
+- ⚠️ **Accessibility:** `input/border` (gray-200) is 1.3:1 on white, under 3:1 for a control's boundary. It also colors the Switch's off track. Same value as Archie mode.
+- ✅ **Resolved in Figma:** the earlier slips are gone. Emphasis is set (corn), success, disabled and sidebar-hover now suit a light theme, `icon/brand` is the brand color, and all three button labels pass (primary 13.3:1, secondary 11.88:1, destructive 5.78:1).
+- **No second mode:** there's no `.dark` block. When Figma adds a dark intercept mode, follow archie-ucl's "Semantic tokens are declared on `:root, .dark`" pattern.
 
 ### Storybook chrome (`.storybook/theme.ts`)
 
-Storybook's own theme (sidebar, docs pages) takes hex values, not CSS variables. `.storybook/theme.ts` copies the intercept values of `--background`, `--foreground`, `--muted-foreground`, `--border`, `--input`, `--brand` and `--sidebar`. Change them together.
+Storybook's own theme (sidebar, docs pages) takes hex values, not CSS variables. `.storybook/theme.ts` copies the intercept values of `--background`, `--background-subtle`, `--foreground`, `--foreground-subtle`, `--border`, `--input`, `--brand` and `--link`. Change them together.
