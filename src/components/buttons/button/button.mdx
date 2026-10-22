@@ -40,11 +40,13 @@ Use one `default` button per view for the primary action. Use `secondary`, `outl
 
 <Canvas of={ButtonStories.Sizes} />
 
-`size="icon"` renders a square button. It has no visible label, so always set `aria-label`.
+Sizes follow the control size scale: `xs` 24px, `sm` 32px, `md` 36px (the default), `lg` 40px. The classes are shadcn/ui's; UCL calls its 36px step `md` where shadcn says `default`. Use `md` unless a dense toolbar or inline action needs a smaller one. `xs` also shrinks the text and icon to 12px.
+
+`icon-xs`, `icon-sm`, `icon-md` and `icon-lg` render a square button at each height. It has no visible label, so always set `aria-label`.
 
 ## With an icon
 
-Place icons from `lucide-react` as children. The button sizes them to 16px automatically. Mark decorative icons with `aria-hidden="true"`.
+Place icons from `lucide-react` as children. The button sizes them to 16px (12px at `xs`) unless the icon sets its own `size-*` class, and trims the side padding. Mark decorative icons with `aria-hidden="true"`.
 
 <Canvas of={ButtonStories.WithIcon} />
 

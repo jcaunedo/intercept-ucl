@@ -4,8 +4,12 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+// The md sizes, shared with their deprecated aliases (`default`, `icon`) so the two never drift apart.
+const mdSize = "h-9 px-4 py-2 has-[>svg]:px-3";
+const iconMdSize = "size-9";
+
 const buttonVariants = cva(
-	"inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+	"inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 	{
 		variants: {
 			variant: {
@@ -19,16 +23,27 @@ const buttonVariants = cva(
 				ghost: "hover:bg-accent hover:text-accent-foreground",
 				link: "text-primary underline-offset-4 hover:underline",
 			},
+			// The control size scale (SIZE-SCALE.md): xs 24, sm 32, md 36, lg 40, and an icon-only square at each height.
+			// Classes are shadcn's, value for value; UCL names its 36px step `md` where shadcn says `default`. A button
+			// with an icon child gets less side padding.
 			size: {
-				default: "h-9 px-4 py-2",
-				sm: "h-8 rounded-md px-3 text-xs",
-				lg: "h-10 rounded-md px-6",
-				icon: "size-9",
+				xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
+				sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
+				md: mdSize,
+				lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+				"icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
+				"icon-sm": "size-8",
+				"icon-md": iconMdSize,
+				"icon-lg": "size-10",
+				/** @deprecated Use `md`. */
+				default: mdSize,
+				/** @deprecated Use `icon-md`. */
+				icon: iconMdSize,
 			},
 		},
 		defaultVariants: {
 			variant: "default",
-			size: "default",
+			size: "md",
 		},
 	},
 );
@@ -42,7 +57,7 @@ type ButtonProps = React.ComponentProps<"button"> &
 function Button({
 	className,
 	variant = "default",
-	size = "default",
+	size = "md",
 	asChild = false,
 	...props
 }: ButtonProps) {
@@ -52,7 +67,8 @@ function Button({
 		<Component
 			data-slot='button'
 			data-variant={variant}
-			data-size={size}
+			// Deprecated aliases report their current name, so styling hooks only need `md` / `icon-md`.
+			data-size={size === "default" ? "md" : size === "icon" ? "icon-md" : size}
 			className={cn(buttonVariants({ variant, size, className }))}
 			{...props}
 		/>

@@ -23,7 +23,7 @@ const meta = {
 		},
 		size: {
 			control: "select",
-			options: ["default", "sm", "lg", "icon"],
+			options: ["xs", "sm", "md", "lg", "icon-xs", "icon-sm", "icon-md", "icon-lg"],
 		},
 	},
 } satisfies Meta<typeof Button>;
@@ -52,13 +52,38 @@ export const AllVariants: Story = {
 
 export const Sizes: Story = {
 	render: () => (
-		<div className='flex flex-wrap items-center gap-3'>
-			<Button size='sm'>Small</Button>
-			<Button>Default</Button>
-			<Button size='lg'>Large</Button>
-			<Button size='icon' aria-label='Continue'>
-				<ArrowRight aria-hidden='true' />
-			</Button>
+		<div className='flex flex-col gap-4'>
+			<div className='flex flex-wrap items-center gap-3'>
+				<Button size='xs'>Extra small</Button>
+				<Button size='sm'>Small</Button>
+				<Button size='md'>Medium</Button>
+				<Button size='lg'>Large</Button>
+			</div>
+			<div className='flex flex-wrap items-center gap-3'>
+				<Button size='xs'>
+					Continue
+					<ArrowRight aria-hidden='true' />
+				</Button>
+				<Button size='sm'>
+					Continue
+					<ArrowRight aria-hidden='true' />
+				</Button>
+				<Button>
+					Continue
+					<ArrowRight aria-hidden='true' />
+				</Button>
+				<Button size='lg'>
+					Continue
+					<ArrowRight aria-hidden='true' />
+				</Button>
+			</div>
+			<div className='flex flex-wrap items-center gap-3'>
+				{(["icon-xs", "icon-sm", "icon-md", "icon-lg"] as const).map((size) => (
+					<Button key={size} size={size} variant='outline' aria-label='Continue'>
+						<ArrowRight aria-hidden='true' />
+					</Button>
+				))}
+			</div>
 		</div>
 	),
 };

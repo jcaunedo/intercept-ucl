@@ -20,14 +20,16 @@ const inputVariants = cva(
 	{
 		variants: {
 			size: {
-				// Figma Size=lg · 36
-				default: "h-9",
-				// Figma Size=xl · 40
+				// Figma Size=md (was lg · 36)
+				md: "h-9",
+				// Figma Size=lg (was xl · 40)
 				lg: "h-10",
+				/** @deprecated Use `md`. */
+				default: "h-9",
 			},
 		},
 		defaultVariants: {
-			size: "default",
+			size: "md",
 		},
 	},
 );
@@ -36,12 +38,12 @@ const inputVariants = cva(
 type InputProps = Omit<React.ComponentProps<"input">, "size"> & VariantProps<typeof inputVariants>;
 
 /** A single-line text field. Pair it with a label; set `aria-invalid` for the error state. */
-function Input({ className, type, size = "default", ...props }: InputProps) {
+function Input({ className, type, size = "md", ...props }: InputProps) {
 	return (
 		<input
 			type={type}
 			data-slot='input'
-			data-size={size}
+			data-size={size === "default" ? "md" : size}
 			className={cn(inputVariants({ size, className }))}
 			{...props}
 		/>

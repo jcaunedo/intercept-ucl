@@ -19,14 +19,16 @@ const textareaVariants = cva(
 	{
 		variants: {
 			size: {
-				// Figma Size=lg · 36
-				default: "min-h-9",
-				// Figma Size=xl · 40
+				// Figma Size=md (was lg · 36)
+				md: "min-h-9",
+				// Figma Size=lg (was xl · 40)
 				lg: "min-h-10",
+				/** @deprecated Use `md`. */
+				default: "min-h-9",
 			},
 		},
 		defaultVariants: {
-			size: "default",
+			size: "md",
 		},
 	},
 );
@@ -34,11 +36,11 @@ const textareaVariants = cva(
 type TextareaProps = React.ComponentProps<"textarea"> & VariantProps<typeof textareaVariants>;
 
 /** A multi-line text field that grows with its content. Pair it with a label; set `aria-invalid` for the error state. */
-function Textarea({ className, size = "default", ...props }: TextareaProps) {
+function Textarea({ className, size = "md", ...props }: TextareaProps) {
 	return (
 		<textarea
 			data-slot='textarea'
-			data-size={size}
+			data-size={size === "default" ? "md" : size}
 			className={cn(textareaVariants({ size, className }))}
 			{...props}
 		/>

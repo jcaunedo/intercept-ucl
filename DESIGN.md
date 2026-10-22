@@ -178,6 +178,8 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 
 **Rule:** these components were ported from archie-ucl on Oct 20, 2026. archie-ucl builds from the same archielabs.ds file in its Archie modes, so component structure and Figma bindings are shared, and only mode values differ. Those come from `theme.css`, never from a hard-coded value in the component.
 
+ℹ️ Since Oct 21, 2026 the form controls' source is their copy in intercept.ds (CLAUDE.md "Figma"): Input `1018:8360` (Textfield and Textarea), Checkbox `1018:9305`, Radio Button `1018:9320`, Switch `1018:9286`. The copies were checked against the built components on that date and match, state by state. Tooltip and Typography still point at archielabs.ds.
+
 **Why:** two libraries built from one Figma file should only differ where the modes differ. Porting the components, then re-pointing their tokens, keeps fixes portable both ways.
 
 **How to apply:**
@@ -190,7 +192,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 
 ## Input and Textarea: how Figma's Textfield maps to tokens (`src/components/forms/input/input.tsx`)
 
-**Rule:** `Input` follows Figma's "Input" set (archielabs.ds, node `61:133`), Type=Textfield. Every state is a straight copy of its Figma bindings:
+**Rule:** `Input` follows Figma's "Input" set (intercept.ds, node `1018:8360`; archielabs.ds `61:133` before Oct 21, 2026), Type=Textfield. Every state is a straight copy of its Figma bindings:
 
 | State | Border | Fill | Text |
 | --- | --- | --- | --- |
@@ -201,7 +203,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 | Read-only | `input-disabled` | `background-subtle`, no shadow | `foreground` |
 | Disabled | `input-disabled` | `background-subtle`, no shadow | `foreground-subtle` |
 
-- **Sizes:** Figma `lg · 36` → `size="default"` (`h-9`), `xl · 40` → `size="lg"` (`h-10`), mirroring Button's names.
+- **Sizes:** `size="md"` (`h-9`, 36px, default) and `size="lg"` (`h-10`, 40px), the control size scale (SIZE-SCALE.md). Figma drew them as `lg · 36` and `xl · 40` before adopting the same names.
 - **Radius:** `rounded-input`, Figma `radius/input` (10px in intercept mode).
 - **Font size:** `text-base md:text-sm`. Figma draws 14px, used above `md`. Below it, 16px stops iOS Safari from zooming into a focused field.
 - **Textarea** copies Input's state classes. Keep the two in sync. Its `size` is a minimum height, and `field-sizing-content` grows it.
@@ -212,7 +214,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 
 ## Checkbox, Radio Group and Switch (`src/components/forms/{checkbox,radio-group,switch}`)
 
-**Rule:** the three controls follow Figma's "Checkbox" (`662:123`), "Radio Button" (`662:157`) and "Switch" (`295:2020`) sets:
+**Rule:** the three controls follow Figma's "Checkbox" (intercept.ds `1018:9305`), "Radio Button" (`1018:9320`) and "Switch" (`1018:9286`) sets (archielabs.ds `662:123`, `662:157` and `295:2020` before Oct 21, 2026):
 
 - **Colors:** checkbox and radio have a `foreground` border on `background` with `shadow-xs`; selected, they fill with `neutral` and a `neutral-foreground` mark. The switch is `neutral` when on and `input` when off, with a `background` thumb. Disabled uses `foreground-subtle` and `shadow-sm`; selected + disabled isn't drawn, so it fades to 50%.
 - **Focus and error aren't in Figma.** Focus uses Button's ring (`ring-2 ring-ring ring-offset-2`). Error uses Input's `destructive` border.
@@ -230,6 +232,22 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 - **Sizes:** Figma Medium → `size="default"` (`sm/sm`, 6 × 14 padding), Small → `size="sm"` (`xs/xs`, 4 × 8). Colors are `foreground` / `background`, so in intercept mode it's a dark (gray-800) tooltip on the white page. Radius is `rounded-menu` (`radius/menu/container`, 16px in intercept mode).
 
 **How to apply:** wrap the app once in `TooltipProvider`. Put interactive triggers in `TooltipTrigger asChild`. The tooltip becomes the trigger's accessible description, so it says what the control does, not repeat its label.
+
+---
+
+## Sidebar: intercept.ds look, bethere-ucl behavior (`src/components/navigation/sidebar/sidebar.tsx`)
+
+**Rule:** the Sidebar, SidebarMenuButton, SidebarTooltip and Logo follow intercept.ds (nodes `1001:544`, `1001:501`, `1003:1512`) for layout and tokens, and bethere-ucl's Sidebar for behavior and motion. Built Oct 21, 2026.
+
+- **Behavior (from bethere-ucl):** the width animates 280 ↔ 72px on `enterTransition`. Clicking the rail's empty space toggles it. Hovering the collapsed rail swaps the mark for an expand icon (`iconSwapVariants`). Collapsed items show their label in a SidebarTooltip, which glides 8px out from the trigger. The wordmark goes to the first item. Collapsed state and active item work controlled or uncontrolled.
+- **Label color is `foreground` (gray-800), not intercept.ds's #31373f (gray-700).** intercept.ds `colors/foreground/foreground` is gray-700, but archielabs.ds (the token source) is gray-800. `theme.css` wins. The tooltip fill is `foreground` for the same reason. Every other bound value matches `theme.css`: `states/active` → `bg-active`, `icon/foreground` → `text-icon`, `input/border` → `bg-input`, `sidebar/background` → `bg-sidebar`.
+- **States (Figma, Oct 21, 2026):** Default has a `foreground-subtle` label and `icon-muted` icon (both gray-500). Hover adds the `bg-active` fill, and the label and icon go to `foreground` and `icon`. Active has no fill, a `foreground` label at semibold weight, and the item's `activeIcon` (a solid icon from archielabs.ds, `src/components/icons/`) in `icon`. Labels are base (16px on a 24px line) since the Oct 21 revision; Active is semibold again, now drawn that way in Figma. Figma binds the Hover label to `icon/foreground`; UCL uses `foreground` so Hover and Active labels match.
+- **Rows hug their content** (Figma, Oct 21, 2026): 36px tall (6px vertical padding around the 24px label line), 8px horizontal padding. Collapsed, they're 36px squares in a 36px column. ⚠️ **Gap:** Figma still draws the collapsed footer buttons 32px wide; UCL makes them 36px squares like the rest.
+- **Items without a solid icon** (Documentation, Support) keep their outline icon when active. Add the solid icon to `icons/` when Figma draws one.
+- **The right stroke is a pseudo-element**, not a border, so rows keep Figma's 248px width.
+- **Not built:** sidebar-menu-button's hidden "+" button and "Icon Right" slots. Add them when a design shows them.
+- **Collapse button:** the panel icon is `icon-subtle` (Figma `colors/icon/subtle`, gray-400). Hover is Button's ghost hover (`bg-accent`, `text-accent-foreground`). The collapse and expand buttons show the pointer cursor; only the rail's empty space shows the resize cursors.
+- **Logo wordmark is outlined text.** In Figma (Logo `1001:82`, last revised Oct 21, 2026) "intercept" (Space Grotesk Bold, -4% tracking) and "live" (Space Grotesk Light, -6%) are live text, which UCL doesn't load. `logo.tsx` holds them as paths outlined from Space Grotesk 700 and 300 (fontsource 5.2.10) at Figma's size, tracking and baseline (Figma trims the text boxes to cap height, so the baseline is the box top plus the 700-unit cap height: 96.2), checked against Figma's render (best overlap at zero offset; an overlay shows no doubled edges). The viewBox is the component's 774 width, because "live" runs past the 743 inner frame; in the Sidebar it renders 199.95 × 31. When the wordmark changes in Figma, re-outline it the same way, or outline the text in Figma and copy the vector export. The mark is Figma's vector; Logo and Logo Symbol share its 120-unit frame.
 
 ---
 
@@ -296,6 +314,8 @@ A **page title** is Figma's `3xl/3xl -semibold` ("Page Title"). It's still the p
 | `--tone-accent*` | `tone/accent/*` | Prefixed: Figma's "accent" tone is not shadcn's `--accent` |
 | `--veil`, `--veil-soft` | `base/opacity-veil`, `base/opacity-soft` | |
 | `--shadow-color-sm/md/lg` | `shadow/sm/md/lg` | Colors for the `shadow-*` scale, which mirrors the effect styles |
+| `--shadow-card` | effect style `shadow/card` (intercept.ds) | 0 4px 30px, black 8%. Raw value, as in Figma; SidebarTooltip. ⚠️ **Gap:** effect styles belong in archielabs.ds; this one was found in intercept.ds |
+| `--badge-<tone>` / `-foreground` (`blue`, `green`, `sky`, `purple`, `red`) | `colors/badge/<tone>/background` / `colors/badge/<tone>/foreground` | Badge category tones, created in archielabs.ds Oct 21, 2026 (web code syntax set). Light modes (intercept, Archie, Itopia) alias the 50 fill and 700 label; dark modes the 950 fill and 300 label. Primitives `--<color>-50/300/700/950` = `palettes/<color>/<step>`: blue, green, purple and red are Tailwind's (new); sky is the file's existing `palettes/sky`, so the Sky badge differs slightly from the first drawn hex. All pairs ≥ 4.5:1. ⚠️ **Gap:** the intercept.ds badge set still uses raw hex until archielabs.ds is republished and the tones are bound |
 | `--radius`, `--radius-input`, `--radius-menu` | `radius/default`, `radius/input`, `radius/menu/container` | Only the component radii a built component uses |
 
 ### Deliberately not mirrored

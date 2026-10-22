@@ -20,6 +20,9 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 - **CLAUDE.md** (this file): how things are built here. Covers the stack, folder structure, component and story conventions and theme tokens.
 - **[MOTION.md](MOTION.md)**: the motion system. Covers principles, the named patterns, component guidance, accessibility and validation. Read it before any animation work. The values live in `src/lib/motion/`.
 - **[DESIGN.md](DESIGN.md)**: design contracts. Covers why a component is built the way it is, rules that a future edit or Figma/shadcn resync could silently break, and the brand voice.
+- **[prds/](prds/)**: everything about the product's content, kept apart from the code: PRDs, definitions, context and what we're building. New product docs go here, never in the repo root or next to code.
+  - **Tables over heading-and-paragraph lists:** when a doc lists items that each have a name and a short description (users, use cases, states, fields, terms), write them as a table, not as a bold heading followed by a paragraph per item.
+  - **[prds/glossary.md](prds/glossary.md)**: every project term (product, clinical, platform, design system) with its source. Use its terms in specs, PRDs, stories and UI copy, and add new terms in the same change that introduces them.
 - **Skills** in `.claude/skills/` (`ucl-setup`, `ucl-ds-sync`, `ucl-generate-component`, `ucl-generate-layout`, `ucl-ux-copywriter`) are project-agnostic. They read CLAUDE.md and DESIGN.md before they start (plus MOTION.md when the work involves animation) and take every project value (package, Figma file, categories, apps, component APIs, voice) from them. **When a skill and these files disagree, these files win.**
 - **Not defined here?** Ask, then record the answer in the right file so the next run doesn't have to ask again.
 
@@ -62,12 +65,13 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 
 | Item                    | Value                                     |
 | ----------------------- | ----------------------------------------- |
-| Design system file      | [archielabs.ds](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds), `fileKey` `w8YHn6HqwgvKEyFOYkDFmW` |
-| Modes                   | `intercept` (light) and `intercept-dark`. The file is shared and holds variable modes per brand. Read and sync only these two. |
+| Design system file      | [archielabs.ds](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds), `fileKey` `w8YHn6HqwgvKEyFOYkDFmW`. The **foundations** source: variables (tokens), text styles, effect styles, color styles and icons. |
+| Components file         | [intercept.ds](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds), `fileKey` `dl8m89yfeRZ5uMXnEvdgpY`. The **components** source: every UCL component is built from its set here (Oct 21, 2026), using archielabs.ds foundations. Where a value here disagrees with archielabs.ds, `theme.css` (archielabs.ds) wins (DESIGN.md "Sidebar"). |
+| Modes                   | `intercept` (light) and `intercept-dark`. archielabs.ds is shared and holds variable modes per brand. Read and sync only these two. |
 | Dark mode               | `intercept-dark` → `.dark` in `theme.css`. Created from UCL on Oct 20, 2026 (DESIGN.md "intercept-dark mode"). |
-| Figma MCP account       | 8base                                     |
+| Figma MCP account       | 8base. The cloud Figma MCP has no access to either file; read them through the Figma desktop MCP, with the file as the active tab. |
 
-Skills compare every Figma URL's `fileKey` against this table. Until it's set, they ask for the file before syncing tokens.
+Skills compare every Figma URL's `fileKey` against this table: token, style and icon syncs read archielabs.ds; component builds and refines read intercept.ds. Until a file is set, they ask for it before syncing.
 
 ## Architecture
 
@@ -82,7 +86,7 @@ Skills compare every Figma URL's `fileKey` against this table. Until it's set, t
   - `index.ts` barrel
   - optional `<name>.mdx` docs page
 
-  Categories: `buttons`, `forms`, `cards`, `data-display`, `feedback`, `overlays`, `navigation`, `typography`. Create a category folder when its first component arrives. Don't invent a category that isn't listed here without asking.
+  Categories: `buttons`, `forms`, `cards`, `data-display`, `feedback`, `icons`, `overlays`, `navigation`, `typography`. Create a category folder when its first component arrives. `icons` holds custom SVG icons that lucide-react doesn't have (e.g. the solid Active-state icons): one folder per icon with the `.tsx` and `index.ts`, and a single `icons.stories.tsx` gallery for the category. Don't invent a category that isn't listed here without asking.
 - **Layouts:** full-page reference compositions under `src/layouts/<app>/<name>/`, previewed in Storybook and **not** exported from `src/index.ts`. Layouts used by more than one app go in `src/layouts/shared/`. Apps are listed in "Project". Screens in a multi-screen flow nest under `src/layouts/<app>/<flow>/`; list each flow here when it's created. Mock data goes in `sample-*` files, never in the screen (see "Sample Data").
 - **Lib:** `src/lib/`
   - `utils.ts`: `cn()`
@@ -165,16 +169,24 @@ Mirror these names when a new component has the same concept. Keep this list cur
 
 - **Button** (`buttons/button`):
   - `variant`: `default` | `secondary` | `outline` | `ghost` | `link` | `destructive`
-  - `size`: `default` | `sm` | `lg` | `icon`
+  - `size`: `xs` | `sm` | `md` (default) | `lg` | `icon-xs` | `icon-sm` | `icon-md` | `icon-lg`: 24 / 32 / 36 / 40px, shadcn's classes (SIZE-SCALE.md). `default` and `icon` are deprecated aliases of `md` and `icon-md`
   - `asChild` renders the button styles on its child (use for links)
 - **Typography** (`typography/typography`):
   - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`2xl` and up use `font-display`, as in Figma)
   - `weight`: `regular` | `medium` | `semibold` | `bold` | `black`
   - `as` sets the element; `h1`–`h4` default to `2xl`/`xl`/`lg`/`base` `semibold` (`typographyHeadings`). Page title: `as="h1" size="3xl"`
-- **Input** and **Textarea** (`forms/input`, `forms/textarea`): `size`: `default` (36px) | `lg` (40px). States are native/ARIA (`aria-invalid`, `readOnly`, `disabled`), not variants
+- **Input** and **Textarea** (`forms/input`, `forms/textarea`): `size`: `md` (36px, default) | `lg` (40px); `default` is a deprecated alias of `md`. States are native/ARIA (`aria-invalid`, `readOnly`, `disabled`), not variants
 - **Checkbox**, **RadioGroup** + **RadioGroupItem**, **Switch** (`forms/…`): Radix primitives. Switch `size`: `default` | `sm`
 - **Label** (`forms/label`), and **Field** with `FieldSet`, `FieldLegend` (`variant`: `legend` | `label`), `FieldGroup`, `FieldContent`, `FieldLabel`, `FieldTitle`, `FieldDescription`, `FieldError` (`forms/field`). Field `orientation`: `vertical` | `horizontal` | `responsive`
 - **Tooltip** with `TooltipProvider`, `TooltipTrigger`, `TooltipContent` (`overlays/tooltip`). Content `size`: `default` | `sm`
+- **Badge** (`data-display/badge`): `variant`: `default` | `secondary` | `destructive` | `outline` | `ghost` | `link` (same names as Button), plus the category tones `blue` | `green` | `sky` | `purple` | `red` (Figma Style=Flat; `badge-*` tokens). Figma Style × Tone pairs, see badge.tsx. `size`: `xs` | `sm` | `md` (default) | `lg` (24 / 32 / 36 / 40px). `asChild` renders it as a link, which turns on hover. A 12px icon goes first in the children
+- **Logo** and **LogoSymbol** (`data-display/logo`): the Intercept Live wordmark and its mark, 31px tall by default
+- **Sidebar** with `SidebarMenuButton`, `SidebarDivider` and the `SidebarNavItem` type (`navigation/sidebar`):
+  - `groups` (nav items, a divider between groups), `footerItems`
+  - `collapsed` / `defaultCollapsed` / `onCollapsedChange`, `activeItem` / `defaultActiveItem` / `onNavigate`
+  - Item: `icon`, `activeIcon`, `label`, `suffix`, `onClick`, `navigateTo`. SidebarMenuButton adds `active` and `collapsed`
+- **Solid icons** (`icons/<name>-solid-icon`): `SquareActivitySolidIcon`, `LayoutGridSolidIcon`, `BoxSolidIcon`, `CircleUserSolidIcon`, `EyeSolidIcon`, `TriangleAlertSolidIcon`, `MessageCircleMoreSolidIcon`, `HeartCrackSolidIcon`, `ShieldSolidIcon`, `ChartColumnSolidIcon`, `HomeSolidIcon`. Pass one as a nav item's `activeIcon`. They fill with `currentColor`
+- **SidebarTooltip** (`overlays/sidebar-tooltip`): `label`, `side` (default `right`), `disabled`, `defaultOpen`. Wraps one trigger element
 
 Forms, Overlays and Typography were ported from archie-ucl (same Figma file, Archie modes). Keep them in step with it where the Figma design is shared; values that differ by mode come from `theme.css`.
 
