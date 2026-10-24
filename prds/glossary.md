@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 22, 2026
+Last updated: Oct 23, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -9,6 +9,8 @@ Purpose: One shared vocabulary for design, product, engineering and clinical rev
 # Glossary
 
 The terms used in the Intercept Live project, grouped by domain. Inside each group, terms are alphabetical.
+
+Design system and UCL terms (tokens, components, Figma files, Storybook) are in Storybook's Glossary page (`src/docs/glossary.mdx`).
 
 Each table has three columns: the term, its definition, and the document it comes from.
 
@@ -24,7 +26,7 @@ Each table has three columns: the term, its definition, and the document it come
 
 - One meaning per term. If two documents use a term differently, the entry says so with ⚠️ and the conflict is listed in "Open naming conflicts" at the end.
 - PRD vocabulary marked *proposed* is not approved by Intercept's clinical or product leadership. Don't present it as final in screens or external material.
-- When a new spec, PRD or component introduces a term, add it here in the same change and update `Last updated:`.
+- When a new spec or PRD introduces a term, add it here in the same change and update `Last updated:`. A new design system or UCL term goes in `src/docs/glossary.mdx` instead.
 
 ---
 
@@ -225,24 +227,36 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | Term | Definition | Source |
 | --- | --- | --- |
 | **Acuity score** | A number for patient severity or care needs from an approved scoring method, with its scoring system, timestamp and source. *Proposed* categories: Low, Moderate, High, Critical, Unknown. High acuity is not the same as an active critical alert. | PRD PC-030 |
+| **Acuity change** | The difference between the current acuity score and the score 24 hours earlier (the default comparison window), shown as e.g. `▲ +3 in 24 h`. Shown instead of a status word like "Stable". | PRD PC-030 |
+| **Acuity level** | The patient's measured severity at the last calculation, on one named score (e.g. `SOFA 6 · Low`), with the time it was calculated. A measurement, not an overall condition. Placeholder `{acuity-level}`. | PRD PC-030 |
 | **Alert** | A clinical or operational event from Clinical Alerting & Events. Origins: physiological thresholds, derived acuity, protocols, sepsis screening, vent-order mismatch, Clinician Intuition Alerts and operational events (census change, handoff due). | Spec §5.6, PRD §10.1 |
+| **Alert category** | *Proposed* grouping of alerts by kind: Clinical, Operational, Administrative. Separate from severity. ⚠️ **Decision needed:** OD-15. | PRD §15.1 |
 | **Alert lifecycle** | *Proposed* UI states. **Active:** unresolved. **Acknowledged:** an authorized clinician has seen it. **Escalated:** routed for more clinical attention. **Resolved:** has a documented resolution. Acknowledging doesn't resolve an alert, escalating doesn't close it, and resolved alerts stay in history. | PRD PC-071 |
 | **Alert severity** | *Proposed* taxonomy: Critical, High, Medium, Low. ⚠️ **Decision needed:** final names, ordering and clinical behaviors (OD-05). | PRD PC-070 |
+| **Alert source** | *Proposed* origin shown on an alert: AI agent (agent chip), Device (e.g. "Bedside monitor"), Rule ("Protocol"), Manual ("Flagged by…", a Clinician Intuition Alert) or System. ⚠️ **Decision needed:** OD-15. | PRD §15.1 |
+| **Avatar (patient)** | The initials avatar next to the patient's name on the Patient card (e.g. JS). A generic icon when the name is missing or restricted. Decorative colors only, never status tones. | PRD PC-010 |
 | **Clinical trajectory** | The change in a patient's condition over a defined period. *Proposed* statuses: Improving, Relatively stable, Deteriorating, Insufficient data. Never inferred from a single observation. Observed trends must stay distinct from predictions. | PRD PC-031 |
 | **Clinician Intuition Alert** | A human-generated alert raised by an on-shift clinician whose judgment flags a concern no machine threshold has caught yet. Carries a rationale, watch-list category, monitoring focus and suggested timeline. Persists across shifts. ⚠️ **Gap:** the spec glossary says "Clinical Intuition Alert"; spec §5.6 and the PRD say "Clinician Intuition Alert". | Spec §5.6, PRD PC-073 |
 | **Compact / Expanded (Patient card)** | The two Patient card variants. **Compact:** high-density census views. **Expanded:** surveillance dashboards, adding acuity, trajectory, respiratory and sepsis context. Both read the same data model, and switching variants never changes clinical state. | PRD §3.1 |
 | **Configured limits** | Thresholds from approved clinical configuration, never hard-coded in the UI or the design system. *Proposed* observation states: Within configured limits, Outside configured limits, Critical threshold triggered, Stale, Unavailable, Invalid / questionable. A value within limits is not proof the patient is stable. | PRD §7.2, PC-044 |
+| **Direction indicators** | Two shapes with one meaning each. **▲ ▼ triangle:** change over time, before the change it describes (`▼ −1`), never alone next to a value; a negative value can still trend up (`RASS −1   ▲ +1 in 24 h`). **↑ ↓ arrow:** value out of its configured range, after the value (`SpO₂ 82 ↓`). Never swapped. | PRD PC-144 |
 | **Freshness state** | How current a piece of data is. *Proposed*: **Current**, **Stale** (older than its freshness interval), **Unavailable**, **Reconnecting**, **Partial** (only part of the data set), **Invalid** (a known quality problem). Each observation keeps its own timestamp. ⚠️ **Decision needed:** freshness intervals (OD-06). | PRD PC-090 |
 | **Highest-priority unresolved alert** | The one alert a Patient card shows in its summary, with the rest behind an accessible count. ⚠️ **Decision needed:** ordering rules (OD-05). | PRD PC-072 |
 | **Machine-generated alert** | An alert from telemetry thresholds, derived scores, protocols, AI agents or operational events. Must always be distinguishable from clinician-created concerns. | Spec §5.6 |
 | **Observation** | One physiological measurement (HR, BP, MAP, SpO₂, RR, temperature) with value, unit, timestamp, source, quality, freshness and alert status. Missing values show as unavailable, never zero. | PRD PC-040, PC-041 |
+| **Overall condition** | A clinical judgment of how the patient is doing, e.g. Stable, Unstable, Guarded. Not shown on the Patient card; at most a clinician-set, attributed status. ⚠️ **Decision needed:** OD-17, to discuss with the client. | PRD PC-031 |
+| **Overdue (alert)** | An active alert past its response target, shown as "Active · 32 min · Overdue". A display modifier of Active, not a lifecycle state. ⚠️ **Gap:** response targets aren't defined. | PRD §15.1 S3 |
 | **Partial data** | Some observations are available and others are missing. Available values stay visible and missing ones are clearly marked. | PRD PC-127 |
+| **Patient location** | Where the patient is, read from broad to specific: hospital (PC-013), unit, room and bed (PC-014), e.g. CVMC · MICU · Bed 9. Room and bed show only when the hospital supplies them. | PRD PC-013, PC-014 |
 | **Progressive disclosure** | Showing detail (provenance, extra alerts, measurement source) on demand instead of growing the card. | PRD PC-112 |
 | **Provenance** | Where a data item came from: originating tenant, source system or device, observation and ingestion timestamps, quality metadata and supporting evidence. | PRD PC-092 |
+| **Quick view** | The button on a Patient card's alert line, shown with two or more active alerts. Opens a popover listing them without leaving the census. | PRD PC-101 |
 | **Respiratory support** | The type of breathing assistance. *Proposed*: Room air, Supplemental oxygen, Noninvasive ventilation, Invasive mechanical ventilation, Unknown/unavailable. | PRD PC-050 |
+| **Scenario layers** | The Patient card scenarios, grouped into layers that combine on one card: alert slot (A), status modifier (S), multiple alerts (M), content edge cases (C), vitals (V), patient context (P), card-level state (K). | PRD §15.1 |
 | **Sepsis bundle tracking states** | *Proposed* Patient card summary: On track, Off track, Awaiting required information, Tracking completed. | PRD PC-083 |
 | **Sepsis screening states** | *Proposed*: No candidate identified, Candidate identified, Awaiting validation, Insufficient data, Excluded. A negative screen does not mean sepsis is ruled out. | PRD PC-080 |
 | **Sepsis validation states** | *Proposed*: Pending review, Confirmed, Rejected, Excluded following adjudication. A screening candidate is never shown as a confirmed case. | PRD PC-081 |
+| **Snoozed (alert)** | *Proposed* status that collapses an alert to a one-liner until a set time ("Snoozed until 14:30"). Not in the PC-071 lifecycle. ⚠️ **Decision needed:** whether it exists and whether Critical alerts can be snoozed (OD-15). | PRD §15.1 S6 |
 | **Stale** | Data older than its configured freshness interval. Last-known values stay visible with an explicit stale indicator and timestamp. | PRD PC-126 |
 | **Vent-order mismatch states** | *Proposed*: No mismatch detected, Mismatch detected, Review required, Comparison unavailable. Unavailable ventilator data never means "no mismatch". | PRD PC-052 |
 
@@ -255,35 +269,55 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **ABCDEF Bundle** | ICU care bundle: Assessment of pain, Both spontaneous awakening and breathing trials, Choice of analgesia and sedation, Delirium monitoring, Early mobility, Family engagement. | Spec Appendix A |
 | **Admission / encounter** | A patient's hospital stay, with admission time, encounter identifier and status. | PRD PC-015 |
 | **ADT (Admission, Discharge, Transfer)** | The HL7v2 message family hospitals use for patient movement. Keeps the census aligned with the hospital. Real-time in Integrated mode, manually reconciled in Overlay. | Spec §7.12 |
+| **APACHE II / IV (Acute Physiology and Chronic Health Evaluation)** | ICU severity score calculated once, in the first 24 hours of an ICU stay, to predict mortality and benchmark units. APACHE II runs 0–71; higher is sicker. Philips eICU uses APACHE IV. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **ARDS (Acute Respiratory Distress Syndrome)** | Acute hypoxemic respiratory failure with bilateral infiltrates not explained by cardiac failure or fluid overload, defined by the **Berlin criteria**. Roadmap protocol (Virtual ARDS). | Spec Appendix A |
 | **BP / MAP** | Blood pressure (systolic/diastolic, mmHg) / mean arterial pressure (mmHg). | PRD §7.1 |
 | **Bundle** | A set of evidence-based interventions to complete within a time window (e.g. SEP-1's 3- and 6-hour bundles). | Spec §5.9 |
 | **CAM-ICU** | Confusion Assessment Method for the ICU. A bedside delirium screen. | Spec Appendix A |
+| **CCU** | Coronary Care Unit, the ICU for acute heart conditions. Some hospitals use it for Critical Care Unit instead. | General, PRD §15.1 P5 |
 | **Census** | The set of patients a clinician or unit is currently responsible for. *Proposed* census states: Admitted, Transferred, Discharged, Pending reconciliation, Unknown. A transfer is never read as a discharge. | PRD §5 |
+| **Code status (DNR / DNI)** | The patient's documented resuscitation wishes. DNR: Do Not Resuscitate (no CPR). DNI: Do Not Intubate. Shown as a badge on the Patient card. ⚠️ **Gap:** not in the data model yet (OD-16). | General, PRD §15.1 P3 |
 | **Critical care** | The specialty that manages life-threatening conditions needing organ support and invasive monitoring. Intercept's v1 clinical anchor. | Spec Appendix A |
+| **CVICU** | Cardiovascular Intensive Care Unit. The ICU for patients with heart and major-vessel conditions, often after cardiac surgery. A unit code shown in the Patient card location. | General, PRD PC-014 |
+| **ECMO** | Extracorporeal Membrane Oxygenation. A machine that oxygenates the blood outside the body when the heart or lungs can't. | General, PRD §15.1 P1 |
 | **ED / ICU** | Emergency Department / Intensive Care Unit. | General |
+| **Epic Deterioration Index** | Epic's proprietary deterioration score, 0–100 (higher is sicker), recalculated about every 15 minutes. Only at Epic hospitals. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **FiO₂** | Fraction of inspired oxygen, a ventilator setting. | General, PRD PC-051 |
+| **Gender identity** | How the patient identifies. Used for respectful care (how staff address the patient), usually with pronouns and a name to use. A different data item from sex; not used for clinical calculations. | General, PRD PC-012 |
 | **Handoff** | The structured transfer of patient-care responsibility at shift change. Unresolved alerts and Clinician Intuition Alerts carry over to the incoming clinician. | Spec Appendix A, PRD PC-132 |
 | **HR / RR / SpO₂** | Heart rate (bpm) / respiratory rate (breaths/min) / peripheral oxygen saturation (%). | PRD §7.1 |
 | **Inpatient status / Observation status** | Admitted care expected to span two or more midnights / hospital-bed care billed as outpatient, typically under two midnights. See Two-Midnight Rule. | Spec Appendix A |
+| **Isolation precautions** | Infection-control measures for a patient, e.g. contact or droplet isolation. Shown as a safety tag. | General, PRD §15.1 P2 |
 | **Lactate** | A blood marker of tissue hypoperfusion. Measured and repeated as SEP-1 bundle elements. | Spec §8.2 |
+| **MICU** | Medical Intensive Care Unit. The ICU for critically ill adults with medical (non-surgical) problems such as respiratory failure, sepsis or organ failure. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **MRN (Medical Record Number)** | A hospital-specific patient identifier. Scoped to its tenant, never a global patient ID. | PRD PC-011 |
+| **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. A candidate acuity score (OD-02). | General, PRD PC-030 |
+| **NICU** | Neonatal Intensive Care Unit. The ICU for premature or critically ill newborns. A unit code shown in the Patient card location. | General, PRD PC-014 |
+| **NIV (Noninvasive ventilation)** | Breathing support through a mask (BiPAP or CPAP), with no tube in the windpipe. Shown as an "NIV" pill on the Patient card, never as "Ventilated". | General, PRD PC-050, §15.1 P1 |
 | **OB exclusion** | Pregnant patients are screened for sepsis under different criteria. | Spec Appendix A |
 | **PAD (Pain, Agitation, Delirium)** | ICU framework for sedation depth, agitation and delirium. | Spec Appendix A |
 | **PEEP** | Positive end-expiratory pressure, a ventilator setting. | General, PRD PC-051 |
 | **Plateau pressure** | Ventilator measurement of alveolar pressure at the end-inspiratory pause. Kept under about 30 cmH₂O in ARDS. | Spec Appendix A |
+| **Pressors (vasopressors)** | Drugs given by continuous infusion to raise blood pressure. "On pressors" is a therapy tag. | General, PRD PC-060, §15.1 P1 |
 | **Procalcitonin** | A bacterial-infection biomarker. An example of a hospital-specific bundle element added on top of SEP-1. | Spec Appendix A |
 | **Prone positioning** | Placing a severe-ARDS patient face-down to improve oxygenation. | Spec Appendix A |
 | **RASS** | Richmond Agitation-Sedation Scale. A bedside sedation-depth score. | Spec Appendix A |
+| **RN / RT** | Registered Nurse / Respiratory Therapist. | General |
+| **Rothman Index** | Proprietary score of overall condition, up to 100, calculated continuously from EMR data. Runs in reverse: lower is sicker. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **SAT / SBT** | Spontaneous Awakening Trial / Spontaneous Breathing Trial. Daily ventilator-liberation steps in the ABCDEF bundle. | Spec Appendix A |
 | **SEP-1** | CMS's Severe Sepsis and Septic Shock Early Management Bundle, with 3-hour and 6-hour requirements. The regulatory baseline for Virtual Sepsis. Must stay logically separate from hospital-specific protocol compliance. | Spec Appendix A, PRD PC-084 |
 | **Sepsis candidate** | A patient whose screening criteria suggest possible sepsis and who is pending clinician review. Not a diagnosis. | PRD PC-123 |
+| **Sex (sex for clinical use)** | Biological attributes relevant to care. Drives lab reference ranges, drug dosing, eGFR and ventilator settings (predicted body weight). The Patient card shows sex, not gender. Not the same as FHIR's `Patient.gender`, which is administrative gender. | General, PRD PC-012 |
 | **Shift summary** | A structured digest of a clinician's shift, reviewed and signed at shift end and handed to the incoming clinician. | Spec §6.21 |
+| **SICU** | Surgical Intensive Care Unit. The ICU for critically ill patients before or after surgery, or after trauma. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **SIRS** | Systemic Inflammatory Response Syndrome. Criteria based on temperature, heart rate, respiratory rate and white blood cell count, used in sepsis screening. | Spec Appendix A |
+| **SOFA (Sequential Organ Failure Assessment)** | ICU score of organ dysfunction, 0–24 (higher is sicker): six organ systems (lungs, blood clotting, liver, heart and circulation, brain, kidneys) scored 0–4 each. A rise of 2 or more is part of the sepsis definition. The leading candidate acuity score (OD-02). | General, PRD PC-030 |
 | **Tele-critical care** | Delivering critical care remotely: an intensivist or APP manages ICU patients through camera, monitor and EMR access. The model the platform is built around. | Spec Appendix A |
 | **Telemetry** | Continuous device data from bedside monitors, ventilators, infusion pumps and wearables. | Spec §6.6 |
 | **Two-Midnight Rule** | Medicare guidance that inpatient admission is generally appropriate when care is expected to span two midnights. | Spec Appendix A |
+| **Unit (hospital)** | A department inside a hospital with its own care team, e.g. MICU, SICU, ED. Contains rooms and beds; not a room itself. Location reads hospital → unit → room → bed. Not the same as a unit of measurement (bpm, mmHg) on an observation. | General, PRD PC-014 |
 | **VAE (Ventilator-Associated Event)** | CDC-NHSN surveillance category covering VAC, IVAC and VAP. Roadmap protocol. | Spec Appendix A |
+| **Ventilated** | On invasive mechanical ventilation: a ventilator breathes for the patient through a tube in the windpipe or a tracheostomy. Shown as a "Ventilated" pill on the Patient card. Required for ventilator settings (PC-051) and vent-order mismatch alerts. | General, PRD PC-050, §15.1 P1 |
 | **Ventilator liberation** | Weaning a patient off mechanical ventilation. Roadmap protocol. | Spec Appendix A |
 
 ---
@@ -359,41 +393,14 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 
 ---
 
-## 14. Design system and UCL
-
-| Term | Definition | Source |
-| --- | --- | --- |
-| **archie-ucl / bethere-ucl** | Sibling UCL libraries. Forms, Overlays and Typography were ported from archie-ucl; the Sidebar's behavior and motion come from bethere-ucl. | DESIGN.md |
-| **archielabs.ds** | The shared Figma file that is the **foundations** source: variables (tokens), text styles, effect and color styles, icons. Holds a mode per brand. | CLAUDE.md "Figma" |
-| **`asChild`** | Prop that renders a component's styles on its child element (e.g. a Button as a link), through Radix `Slot`. | CLAUDE.md |
-| **Category (component)** | The folder a component lives in: `buttons`, `forms`, `cards`, `data-display`, `feedback`, `icons`, `overlays`, `navigation`, `typography`. | CLAUDE.md |
-| **Component** | A reusable UI building block in `src/components/<category>/<name>/`, exported from the package. | CLAUDE.md |
-| **Control size scale** | Shared control heights: `xs` 24px, `sm` 32px, `md` 36px (default), `lg` 40px. Same names in Figma and code. | SIZE-SCALE.md |
-| **Figma mode** | A variable mode in archielabs.ds. Intercept uses `intercept` (light) and `intercept-dark` (dark, `.dark` in `theme.css`). | CLAUDE.md, DESIGN.md |
-| **intercept.ds** | The Figma file that is the **components** source. Every UCL component is built from its set there. Where it disagrees with archielabs.ds, `theme.css` (archielabs.ds) wins. | CLAUDE.md "Figma" |
-| **Layout** | A full-page reference composition in `src/layouts/<app>/<name>/`, previewed in Storybook and not exported from the package. | CLAUDE.md |
-| **Motion patterns** | The named motion vocabulary: **Lift** (hoverable surfaces), **Press** (direct interaction), **Reveal** (content appearing), **Expand** (region opening in place), **Connect** (shared element), **Flow** (group entering), **Glide** (directional navigation), **Dismiss** (removal), **Confirm** (light success), **Pending** (work in progress). Values live in `src/lib/motion/`. | MOTION.md |
-| **Primitive (component)** | A low-level shadcn/Radix component (Input, Select, Checkbox) that composed components build on. | CLAUDE.md |
-| **Primitive (token)** | A raw color or value from Figma's `primitives` collection, declared on `:root` (e.g. `gray-800`). Semantic tokens alias primitives. ⚠️ Same word as a component primitive, so say "token primitive" or "component primitive" when it's ambiguous. | CLAUDE.md "Theme & Tokens" |
-| **Reduced motion** | The user's OS preference to minimize animation. Respected through `useMotionPreference()`. | MOTION.md |
-| **Sample data** | Typed mock data in `sample-*.ts` files beside a layout. Screens take data only through props, so everything in a sample file gets replaced with API data in production. Always synthetic for this project. | CLAUDE.md "Sample Data" |
-| **Semantic token** | A role-named design token (`background`, `primary`, `destructive`, `brand-subtle`, `chart-1`) that maps to a primitive per mode. Used through Tailwind utilities, never raw hex. | CLAUDE.md "Theme & Tokens" |
-| **shadcn/ui** | The open-source component collection (on Radix) that UCL primitives start from. | CLAUDE.md |
-| **Solid icon** | A custom filled SVG icon (e.g. `HomeSolidIcon`) used as a nav item's active state, since lucide-react has none. | CLAUDE.md |
-| **Story / Storybook** | A rendered example of a component state / the workbench that hosts them. Stories also run as tests. | CLAUDE.md |
-| **`theme.css`** | `src/styles/theme.css`. Holds every design token and breakpoint, shipped to apps as `@jcaunedo/intercept-ucl/styles`. | CLAUDE.md |
-| **UCL (Unified Component Library)** | This repository: Intercept's shared React component library (`@jcaunedo/intercept-ucl`), built on React 19, Tailwind CSS 4 and shadcn/ui. | CLAUDE.md |
-| **Variant (component)** | A named style option set through `cva` (e.g. Button `variant="secondary"`, `size="sm"`). Renaming or removing one is a breaking change. Not the same as a Patient card variant (Compact/Expanded), which is a product-level layout choice. | CLAUDE.md |
-
----
-
-## 15. Spec document conventions
+## 14. Spec document conventions
 
 | Term | Definition | Source |
 | --- | --- | --- |
 | **AC-xx** | An acceptance criterion in a PRD, written Given/then. | PRD §21 |
 | **OD-xx** | An open decision, with its owner. | PRD §23 |
 | **PC-xxx** | A numbered Patient card requirement. | PRD |
+| **Scenario ID** | A Patient card scenario code: a layer letter plus a number (A4, S3, V2). Combined to describe one card state, e.g. A4 + S3 + V2. | PRD §15.1 |
 | **Status labels** | In `product-specs/` docs, inline notes start with an emoji and a bold label: ⚠️ for unresolved (**Gap:**, **Decision needed:**, **Risk:**), ✅ for resolved (**Resolved:**, **Confirmed in Figma:**), ℹ️ for information, with no label. | CLAUDE.md |
 | **UC-xx** | A numbered use case. | PRD §2.2 |
 

@@ -22,7 +22,7 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 - **[DESIGN.md](DESIGN.md)**: design contracts. Covers why a component is built the way it is, rules that a future edit or Figma/shadcn resync could silently break, and the brand voice.
 - **[prds/](prds/)**: everything about the product's content, kept apart from the code: PRDs, definitions, context and what we're building. New product docs go here, never in the repo root or next to code.
   - **Tables over heading-and-paragraph lists:** when a doc lists items that each have a name and a short description (users, use cases, states, fields, terms), write them as a table, not as a bold heading followed by a paragraph per item.
-  - **[prds/glossary.md](prds/glossary.md)**: every project term (product, clinical, platform, design system) with its source. Use its terms in specs, PRDs, stories and UI copy, and add new terms in the same change that introduces them.
+  - **[prds/glossary.md](prds/glossary.md)**: every product, clinical and platform term with its source. Design system and UCL terms live in Storybook's Glossary page ([src/docs/glossary.mdx](src/docs/glossary.mdx)). Use these terms in specs, PRDs, stories and UI copy, and add new terms to the right one in the same change that introduces them.
 - **Skills** in `.claude/skills/` (`ucl-setup`, `ucl-ds-sync`, `ucl-generate-component`, `ucl-generate-layout`, `ucl-ux-copywriter`) are project-agnostic. They read CLAUDE.md and DESIGN.md before they start (plus MOTION.md when the work involves animation) and take every project value (package, Figma file, categories, apps, component APIs, voice) from them. **When a skill and these files disagree, these files win.**
 - **Not defined here?** Ask, then record the answer in the right file so the next run doesn't have to ask again.
 
@@ -95,7 +95,7 @@ Skills compare every Figma URL's `fileKey` against this table: token, style and 
   - `motion/`: tokens, transitions, variants, patterns, reduced-motion and scroll helpers
   - `relative-date.ts`: `formatRelativeDate()`
 - **Imports:** use the `@/` alias (`@/lib/utils`, `@/components/<category>/<name>`). Import another component through its folder `index.ts`, never a deep relative path.
-- **Docs:** Storybook MDX pages live in `src/docs/` (Introduction, Foundations). Sidebar order is Introduction → Foundations → component categories.
+- **Docs:** Storybook MDX pages live in `src/docs/` (Introduction, Glossary, Foundations, Guidelines). Sidebar order is Introduction → Glossary → Foundations → Guidelines → component categories.
 
 ## Code style
 

@@ -1,0 +1,33 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title='Glossary' />
+
+# Glossary
+
+The terms used in UCL, Storybook and the design system Figma files. Product, clinical and platform terms are in `prds/glossary.md`.
+
+| Term | Definition | Source |
+| --- | --- | --- |
+| **archie-ucl / bethere-ucl** | Sibling UCL libraries. Forms, Overlays and Typography were ported from archie-ucl; the Sidebar's behavior and motion come from bethere-ucl. | DESIGN.md |
+| **archielabs.ds** | The shared Figma file that is the **foundations** source: variables (tokens), text styles, effect and color styles, icons. Holds a mode per brand. | CLAUDE.md "Figma" |
+| **`asChild`** | Prop that renders a component's styles on its child element (e.g. a Button as a link), through Radix `Slot`. | CLAUDE.md |
+| **Category (component)** | The folder a component lives in: `buttons`, `forms`, `cards`, `data-display`, `feedback`, `icons`, `overlays`, `navigation`, `typography`. | CLAUDE.md |
+| **Component** | A reusable UI building block in `src/components/<category>/<name>/`, exported from the package. | CLAUDE.md |
+| **Control size scale** | Shared control heights: `xs` 24px, `sm` 32px, `md` 36px (default), `lg` 40px. Same names in Figma and code. | SIZE-SCALE.md |
+| **Data field** | One named value a component displays, from the patient data model (e.g. `hospitalCode`, `unitCode`, `bed`). Listed in the PRD next to the requirement that uses it. Not a "data point", which is one measurement over time (see Observation). | PRD PC-013, PC-014 |
+| **Field placeholder** | The `{…}` text in a Figma component that stands in for a data field's value, e.g. `{hospital-code}` · `{unit-code}` · Bed `{bed}`. Uses the data field's words in kebab-case (`{hospital-code}` ↔ `hospitalCode`). Don't call it a token, variable or slot; those already mean something else here. | PRD PC-014 |
+| **Figma mode** | A variable mode in archielabs.ds. Intercept uses `intercept` (light) and `intercept-dark` (dark, `.dark` in `theme.css`). | CLAUDE.md, DESIGN.md |
+| **intercept.ds** | The Figma file that is the **components** source. Every UCL component is built from its set there. Where it disagrees with archielabs.ds, `theme.css` (archielabs.ds) wins. | CLAUDE.md "Figma" |
+| **Layout** | A full-page reference composition in `src/layouts/<app>/<name>/`, previewed in Storybook and not exported from the package. | CLAUDE.md |
+| **Motion patterns** | The named motion vocabulary: **Lift** (hoverable surfaces), **Press** (direct interaction), **Reveal** (content appearing), **Expand** (region opening in place), **Connect** (shared element), **Flow** (group entering), **Glide** (directional navigation), **Dismiss** (removal), **Confirm** (light success), **Pending** (work in progress). Values live in `src/lib/motion/`. | MOTION.md |
+| **Primitive (component)** | A low-level shadcn/Radix component (Input, Select, Checkbox) that composed components build on. | CLAUDE.md |
+| **Primitive (token)** | A raw color or value from Figma's `primitives` collection, declared on `:root` (e.g. `gray-800`). Semantic tokens alias primitives. ⚠️ Same word as a component primitive, so say "token primitive" or "component primitive" when it's ambiguous. | CLAUDE.md "Theme & Tokens" |
+| **Reduced motion** | The user's OS preference to minimize animation. Respected through `useMotionPreference()`. | MOTION.md |
+| **Sample data** | Typed mock data in `sample-*.ts` files beside a layout. Screens take data only through props, so everything in a sample file gets replaced with API data in production. Always synthetic for this project. | CLAUDE.md "Sample Data" |
+| **Semantic token** | A role-named design token (`background`, `primary`, `destructive`, `brand-subtle`, `chart-1`) that maps to a primitive per mode. Used through Tailwind utilities, never raw hex. | CLAUDE.md "Theme & Tokens" |
+| **shadcn/ui** | The open-source component collection (on Radix) that UCL primitives start from. | CLAUDE.md |
+| **Solid icon** | A custom filled SVG icon (e.g. `HomeSolidIcon`) used as a nav item's active state, since lucide-react has none. | CLAUDE.md |
+| **Story / Storybook** | A rendered example of a component state / the workbench that hosts them. Stories also run as tests. | CLAUDE.md |
+| **`theme.css`** | `src/styles/theme.css`. Holds every design token and breakpoint, shipped to apps as `@jcaunedo/intercept-ucl/styles`. | CLAUDE.md |
+| **UCL (Unified Component Library)** | This repository: Intercept's shared React component library (`@jcaunedo/intercept-ucl`), built on React 19, Tailwind CSS 4 and shadcn/ui. | CLAUDE.md |
+| **Variant (component)** | A named style option set through `cva` (e.g. Button `variant="secondary"`, `size="sm"`). Renaming or removing one is a breaking change. Not the same as a Patient card variant (Compact/Expanded), which is a product-level layout choice. | CLAUDE.md |
