@@ -17,9 +17,9 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 
 ## How the rules work
 
-- **CLAUDE.md** (this file): how things are built here. Covers the stack, folder structure, component and story conventions and theme tokens.
+- **CLAUDE.md** (this file): operational instructions, how things are built here. Covers the stack, folder structure, component and story conventions and theme tokens.
 - **[MOTION.md](MOTION.md)**: the motion system. Covers principles, the named patterns, component guidance, accessibility and validation. Read it before any animation work. The values live in `src/lib/motion/`.
-- **[DESIGN.md](DESIGN.md)**: design contracts. Covers why a component is built the way it is, rules that a future edit or Figma/shadcn resync could silently break, and the brand voice.
+- **[DESIGN.md](DESIGN.md)**: design contracts and decisions. Covers why a component is built the way it is, rules that a future edit or Figma/shadcn resync could silently break, the record of Figma ↔ code discrepancies (resolved and pending), and the brand voice.
 - **[prds/](prds/)**: everything about the product's content, kept apart from the code: PRDs, definitions, context and what we're building. New product docs go here, never in the repo root or next to code.
   - **Tables over heading-and-paragraph lists:** when a doc lists items that each have a name and a short description (users, use cases, states, fields, terms), write them as a table, not as a bold heading followed by a paragraph per item.
   - **[prds/glossary.md](prds/glossary.md)**: every product, clinical and platform term with its source. Design system and UCL terms live in Storybook's Glossary page ([src/docs/glossary.mdx](src/docs/glossary.mdx)). Use these terms in specs, PRDs, stories and UI copy, and add new terms to the right one in the same change that introduces them.
@@ -69,9 +69,35 @@ The stack is set per project so UCL matches what the project's dev team ships. I
 | Components file         | [intercept.ds](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds), `fileKey` `dl8m89yfeRZ5uMXnEvdgpY`. The **components** source: every UCL component is built from its set here (Oct 21, 2026), using archielabs.ds foundations. Where a value here disagrees with archielabs.ds, `theme.css` (archielabs.ds) wins (DESIGN.md "Sidebar"). |
 | Modes                   | `intercept` (light) and `intercept-dark`. archielabs.ds is shared and holds variable modes per brand. Read and sync only these two. |
 | Dark mode               | `intercept-dark` → `.dark` in `theme.css`. Created from UCL on Oct 20, 2026 (DESIGN.md "intercept-dark mode"). |
-| Figma MCP account       | 8base. The cloud Figma MCP has no access to either file; read them through the Figma desktop MCP, with the file as the active tab. |
+| Figma MCP account       | 8base. The cloud Figma MCP read intercept.ds on Oct 25, 2026 (the Sidebar resync); archielabs.ds is untested there. If the cloud MCP can't open a file, read it through the Figma desktop MCP, with the file as the active tab. |
 
 Skills compare every Figma URL's `fileKey` against this table: token, style and icon syncs read archielabs.ds; component builds and refines read intercept.ds. Until a file is set, they ask for it before syncing.
+
+## Figma workflow
+
+How Figma designs become code. The decisions themselves live in DESIGN.md.
+
+### Figma and code
+
+- **Figma is the starting point** for layout, typography, spacing and component states. Align the code with it.
+- **The component library is the implementation source of truth** (`src/components/`): APIs, architecture, behavior and business logic.
+- **Code can be ahead of Figma**, e.g. a state, an accessibility fix or a behavior Figma doesn't draw yet. Keep the code and record the gap so Figma can catch up. Never revert working code only to match a visual.
+- **Figma changes don't reach code on their own.** On a resync, diff Figma against the code and patch only what changed.
+
+### Component reuse
+
+- Before creating or changing a UI component, inspect the existing library: "Current Component APIs" (below) and the exports in `src/index.ts`.
+- Prefer existing components and APIs over new ones. Check props, variants and behavior against the implementation, not against Figma's layer names.
+- If nothing suitable exists, create the component as "Creating a Custom Component" describes.
+
+### When Figma and code disagree
+
+- Identify the discrepancy, propose a resolution and get approval before applying it.
+- Record the agreed resolution in DESIGN.md, in the component's entry (add one if there's none). Name the component file, the Figma file and node id, and the date:
+  - ✅ **Resolved:** the decision and how it's implemented.
+  - ⚠️ **Pending:** the discrepancy and the action it needs.
+- Before a Figma sync, read the component's DESIGN.md entry. Don't reopen a resolved decision unless the user asks.
+- When a pending item is settled, change it to ✅ **Resolved** in place.
 
 ## Architecture
 

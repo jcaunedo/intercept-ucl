@@ -5,7 +5,8 @@ Durable, team-visible rules about *why* things are built the way they are. Witho
 Add an entry when a fix or convention:
 
 - took real iteration to land on and could plausibly be "fixed" back to a worse state by someone who doesn't know the history, or
-- is a contract between two pieces of code (e.g. two rules that must change together) that isn't obvious from reading either one alone.
+- is a contract between two pieces of code (e.g. two rules that must change together) that isn't obvious from reading either one alone, or
+- settles a discrepancy between Figma and the code, or leaves one pending (CLAUDE.md → "Figma workflow").
 
 Each entry says what the rule is, why it exists, and how to apply it. Don't restate what the code already makes obvious. Name the file it governs in the heading when there is one.
 
@@ -174,6 +175,30 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 
 ---
 
+## Text rendering: antialiased, kerned, no faux styles (`src/styles/theme.css`)
+
+**Rule:** one global `@layer base` rule on `html` at the end of `theme.css` sets how every app renders text. Added Oct 25, 2026.
+
+| Property | Value | Effect |
+| --- | --- | --- |
+| `-webkit-font-smoothing` / `-moz-osx-font-smoothing` | `antialiased` / `grayscale` | macOS only (Chrome, Safari, Firefox): thinner, crisper text than the platform's heavier default smoothing. Same as Tailwind's `antialiased`. No effect on Windows or Linux |
+| `font-kerning` | `normal` | The font's kerning at every size, not only where the browser decides |
+| `font-synthesis` | `none` | The browser never fakes bold or italic. A weight an app didn't load falls back to a loaded weight instead of a blurry smeared one |
+| `-webkit-text-size-adjust` / `text-size-adjust` | `100%` | iOS doesn't enlarge text after rotation |
+
+**Why:** browser defaults rendered Figtree heavier on macOS than Figma draws it, and a missing webfont weight would show as faux bold. UCL declares the fonts but doesn't load them (CLAUDE.md "Consumer Integration"), so `font-synthesis: none` protects apps that load fewer weights than the components use.
+
+**How to apply:**
+
+- Don't add `antialiased` or these properties to a component. The global rule covers it.
+- `text-rendering: optimizeLegibility` is deliberately not set globally: modern browsers already kern and apply ligatures, and on long pages it can slow rendering. Use it per element only if a specific heading needs it.
+- Apps load Figtree's full weight range (300–900, as the README's `<link>` and `.storybook/preview-head.html` do), since Typography goes up to `black` (900). A weight that isn't loaded falls back to the nearest loaded one.
+- Digits that line up in columns use `tabular-nums` per element. That's a typographic choice, not part of this rule.
+
+⚠️ **Constraint:** `theme.css` ships to consumers, so every app's text renders this way, including text outside UCL components. `antialiased` makes text look slightly lighter on macOS: compare it with Figma before changing font weights to make up for it.
+
+---
+
 ## Forms, Overlays and Typography come from archie-ucl (`src/components/{forms,overlays,typography}`)
 
 **Rule:** these components were ported from archie-ucl on Oct 20, 2026. archie-ucl builds from the same archielabs.ds file in its Archie modes, so component structure and Figma bindings are shared, and only mode values differ. Those come from `theme.css`, never from a hard-coded value in the component.
@@ -243,6 +268,13 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 - **Label color is `foreground` (gray-800), not intercept.ds's #31373f (gray-700).** intercept.ds `colors/foreground/foreground` is gray-700, but archielabs.ds (the token source) is gray-800. `theme.css` wins. The tooltip fill is `foreground` for the same reason. Every other bound value matches `theme.css`: `states/active` → `bg-active`, `icon/foreground` → `text-icon`, `input/border` → `bg-input`, `sidebar/background` → `bg-sidebar`.
 - **States (Figma, Oct 21, 2026):** Default has a `foreground-subtle` label and `icon-muted` icon (both gray-500). Hover adds the `bg-active` fill, and the label and icon go to `foreground` and `icon`. Active has no fill, a `foreground` label at semibold weight, and the item's `activeIcon` (a solid icon from archielabs.ds, `src/components/icons/`) in `icon`. Labels are base (16px on a 24px line) since the Oct 21 revision; Active is semibold again, now drawn that way in Figma. Figma binds the Hover label to `icon/foreground`; UCL uses `foreground` so Hover and Active labels match.
 - **Rows hug their content** (Figma, Oct 21, 2026): 36px tall (6px vertical padding around the 24px label line), 8px horizontal padding. Collapsed, they're 36px squares in a 36px column. ⚠️ **Gap:** Figma still draws the collapsed footer buttons 32px wide; UCL makes them 36px squares like the rest.
+- **Icons are 20px** (Figma, Oct 25, 2026; 18px before), in every state and in both rail modes.
+- **Resync, Oct 25, 2026** (intercept.ds `sidebar` `1001:544`: New Default `1001:545`, New Collapsed `1001:610`): Figma's nav set is now Search, Ask Intercept / Surveillance, Alert Queue, Messages, Virtual Sepsis / Census, Marketplace, Administration / Compliance, Analytics. The stories follow it. Discrepancies, `sidebar.tsx` and `sidebar.stories.tsx`:
+  - ✅ **Resolved (Oct 25, 2026):** in New Default, Search and Ask Intercept use the Active variant while Surveillance is the current page. Treated as a Figma slip: UCL renders them as Default rows, and only the current page is Active.
+  - ✅ **Resolved (Oct 25, 2026):** New Collapsed fills the rail with `background/subtle` and drops the right stroke. Treated as a Figma slip: UCL keeps `bg-sidebar` and the stroke in both modes, so the width animation doesn't change color.
+  - ✅ **Resolved (Oct 25, 2026):** New Collapsed still has the Oct 21 nav order. New Default is the source.
+  - ⚠️ **Pending:** the wordmark goes to the first item, which is now Search, an action rather than a page. Action: decide whether the app puts a page first, or the Sidebar takes an optional `homeItem` (a label) that defaults to the first item (a minor version).
+  - ⚠️ **Pending:** Ask Intercept's Figma icon is `AI-Outline` (`1042:2068`), which lucide doesn't have. The stories use Sparkles. Action: add it to `icons/` from archielabs.ds if the apps need the exact glyph.
 - **Items without a solid icon** (Documentation, Support) keep their outline icon when active. Add the solid icon to `icons/` when Figma draws one.
 - **The right stroke is a pseudo-element**, not a border, so rows keep Figma's 248px width.
 - **Not built:** sidebar-menu-button's hidden "+" button and "Icon Right" slots. Add them when a design shows them.

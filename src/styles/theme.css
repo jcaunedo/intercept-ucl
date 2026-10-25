@@ -580,3 +580,20 @@
 		cursor: not-allowed;
 	}
 }
+
+/* ---------- Text rendering ----------
+   Grayscale antialiasing on macOS (the platform default is heavier subpixel
+   smoothing), kerning at every size, no faux bold or italic when an app hasn't
+   loaded a weight, and no automatic text enlarging on iOS. Set on `html` so it
+   inherits everywhere, and shipped to consumers like the cursor rule above.
+   See DESIGN.md "Text rendering". */
+@layer base {
+	html {
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		font-kerning: normal;
+		font-synthesis: none;
+		-webkit-text-size-adjust: 100%;
+		text-size-adjust: 100%;
+	}
+}

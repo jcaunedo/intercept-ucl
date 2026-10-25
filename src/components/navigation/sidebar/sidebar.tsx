@@ -74,9 +74,9 @@ function SidebarMenuButton({
 				className={cn(
 					// Figma: row hugs its content (36px: 6px vertical padding around the 24px line), radius/menu/item (8px), 8px
 					// horizontal padding, 10px gap,
-					// 18px icon, base/medium label (16px on a 24px line).
+					// 20px icon (Figma, Oct 25, 2026), base/medium label (16px on a 24px line).
 					"flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-base font-medium outline-none",
-					"[&_svg]:size-[18px] [&_svg]:shrink-0",
+					"[&_svg]:size-5 [&_svg]:shrink-0",
 					// Fill, label and icon color fade over motionDuration.fast (160ms).
 					"transition-[background-color,color] duration-160 ease-in-out [&_svg]:transition-colors [&_svg]:duration-160 [&_svg]:ease-in-out",
 					"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
