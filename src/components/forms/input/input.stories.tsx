@@ -26,10 +26,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma State=Default: empty, showing the placeholder. */
+/** Empty, showing the placeholder. */
 export const Default: Story = {};
 
-/** Figma Size: `default` is 36px, `lg` is 40px. */
+/** `md` is 36px (the default), `lg` is 40px. */
 export const Sizes: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-3'>
@@ -39,18 +39,17 @@ export const Sizes: Story = {
 	),
 };
 
-/** Figma State=HasValue. */
 export const WithValue: Story = {
 	args: { defaultValue: "Inventory tracker" },
 };
 
-/** Figma State=Focus. Click or tab into the field to see it; `autoFocus` shows it on load. */
+/** Click or tab into the field to see it; `autoFocus` shows it on load. */
 export const Focus: Story = {
 	args: { autoFocus: true },
 };
 
 /**
- * Figma State=Error. Set `aria-invalid` and point `aria-describedby` at the message.
+ * Set `aria-invalid` and point `aria-describedby` at the message.
  * Test: the field is marked invalid and its error is its accessible description.
  */
 export const Invalid: Story = {
@@ -69,7 +68,7 @@ export const Invalid: Story = {
 	},
 };
 
-/** Figma State=Read-only: the value can be selected and copied, not changed. Test: typing leaves the value as it was. */
+/** The value can be selected and copied, not changed. Test: typing leaves the value as it was. */
 export const ReadOnly: Story = {
 	args: { readOnly: true, defaultValue: "inventory-tracker" },
 	play: async ({ canvas, userEvent }) => {
@@ -79,7 +78,6 @@ export const ReadOnly: Story = {
 	},
 };
 
-/** Figma State=Disabled. */
 export const Disabled: Story = {
 	args: { disabled: true },
 };
@@ -90,7 +88,7 @@ export const File: Story = {
 
 export const AllVariants: Story = {
 	render: (args) => (
-		<div className='grid grid-cols-[auto_15rem_15rem] items-center gap-x-6 gap-y-3 text-sm text-muted-foreground'>
+		<div className='grid grid-cols-[auto_15rem_15rem] items-center gap-x-6 gap-y-3 text-sm text-foreground-subtle'>
 			<span />
 			<span>default · 36</span>
 			<span>lg · 40</span>

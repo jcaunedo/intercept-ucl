@@ -22,15 +22,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma Property 1=Default. */
 export const Default: Story = {};
 
-/** Figma Property 1=Selected. */
 export const Checked: Story = {
 	args: { defaultChecked: true },
 };
 
-/** Figma Property 1=Partial: some, not all, of a group is selected. Test: it's announced as "mixed". */
+/** Some, not all, of a group is selected. Test: it's announced as "mixed". */
 export const Indeterminate: Story = {
 	args: { defaultChecked: "indeterminate" },
 	play: async ({ canvas }) => {
@@ -38,12 +36,11 @@ export const Indeterminate: Story = {
 	},
 };
 
-/** Figma Property 1=Disabled. */
 export const Disabled: Story = {
 	args: { disabled: true },
 };
 
-/** Figma's option label: regular weight, 8px from the box, `muted` when disabled. */
+/** An option label: regular weight, 8px from the box, `muted` when disabled. */
 export const WithLabel: Story = {
 	render: () => (
 		<div className='flex flex-col gap-3'>

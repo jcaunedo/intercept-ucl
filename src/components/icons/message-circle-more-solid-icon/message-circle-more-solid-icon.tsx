@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid message-circle-more icon: the Active-state counterpart of lucide's `message-circle-more` in a SidebarMenuButton. Figma: archielabs.ds
- * `message-circle-more-solid` (node 6158:10444). Fills with `currentColor`, so it takes the item's color.
+ * Solid message-circle-more icon: the Active-state counterpart of lucide's `message-circle-more` in a
+ * SidebarMenuButton. Fills with `currentColor`, so it takes the item's color.
+ *
+ * Figma: [archielabs.ds › message-circle-more-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6158-10444)
  */
 function MessageCircleMoreSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

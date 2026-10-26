@@ -38,10 +38,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma Size=Medium. */
 export const Default: Story = {};
 
-/** Figma Size=Small. */
 export const Small: Story = {
 	args: { size: "sm" },
 };

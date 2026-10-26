@@ -26,7 +26,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma's Input with "Show Label" on. */
+/** A label above the control. */
 export const Default: Story = {
 	render: () => (
 		<Field>
@@ -36,7 +36,7 @@ export const Default: Story = {
 	),
 };
 
-/** Figma's Input with "Show Helper" on. */
+/** Helper text under the control. */
 export const WithDescription: Story = {
 	render: () => (
 		<Field>
@@ -48,7 +48,7 @@ export const WithDescription: Story = {
 };
 
 /**
- * Figma State=Error. `data-invalid` on the Field, `aria-invalid` on the control, and the message in FieldError.
+ * `data-invalid` on the Field, `aria-invalid` on the control, and the message in FieldError.
  * Test: the field is named by its label, marked invalid, described by the error, and the error is announced.
  */
 export const Invalid: Story = {
@@ -90,7 +90,7 @@ export const MultipleErrors: Story = {
 	},
 };
 
-/** Figma State=Disabled: the label keeps its color. */
+/** The label keeps its color. */
 export const Disabled: Story = {
 	render: () => (
 		<Field data-disabled='true'>

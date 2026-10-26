@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 type CheckboxProps = React.ComponentProps<typeof CheckboxPrimitive.Root>;
 
 /**
- * A checkbox. Figma "Checkbox": Default, Selected (`checked`), Partial (`checked="indeterminate"`) and Disabled.
- * Put a Label right after it for Figma's option label. Figma has no Focus or Error state: focus uses Button's ring,
- * error uses Input's `destructive` border.
+ * A checkbox. `checked="indeterminate"` shows the partial state. Put a Label right after it. Focus uses Button's ring
+ * and error (`aria-invalid`) uses Input's `destructive` border.
+ *
+ * Figma: [intercept.ds › Checkbox](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1018-9305)
  */
 function Checkbox({ className, ...props }: CheckboxProps) {
 	return (
@@ -23,8 +24,8 @@ function Checkbox({ className, ...props }: CheckboxProps) {
 				"aria-invalid:border-destructive",
 				"data-[state=checked]:border-neutral data-[state=checked]:bg-neutral data-[state=checked]:text-neutral-foreground",
 				"data-[state=indeterminate]:border-neutral data-[state=indeterminate]:bg-neutral data-[state=indeterminate]:text-neutral-foreground",
-				// Figma Disabled is unchecked: `foreground-subtle` border, `shadow-sm`. Checked and disabled isn't drawn, so it fades.
-				"disabled:cursor-not-allowed disabled:border-foreground-subtle disabled:shadow-sm disabled:data-[state=checked]:opacity-50 disabled:data-[state=indeterminate]:opacity-50",
+				// Checked and disabled has no design of its own, so it fades.
+				"disabled:cursor-not-allowed disabled:border-muted-foreground disabled:shadow-sm disabled:data-[state=checked]:opacity-50 disabled:data-[state=indeterminate]:opacity-50",
 				className,
 			)}
 			{...props}

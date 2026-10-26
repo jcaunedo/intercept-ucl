@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid square-activity icon: the Active-state counterpart of lucide's `square-activity` in a SidebarMenuButton. Figma: archielabs.ds
- * `square-activity-solid` (node 6158:10433). Fills with `currentColor`, so it takes the item's color.
+ * Solid square-activity icon: the Active-state counterpart of lucide's `square-activity` in a SidebarMenuButton. Fills
+ * with `currentColor`, so it takes the item's color.
+ *
+ * Figma: [archielabs.ds › square-activity-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6158-10433)
  */
 function SquareActivitySolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

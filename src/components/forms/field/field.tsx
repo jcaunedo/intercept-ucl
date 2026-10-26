@@ -6,9 +6,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Label } from "@/components/forms/label";
 import { cn } from "@/lib/utils";
 
-// Structure follows shadcn's Field. Figma's Input set supplies the skin: 8px between label, control and helper text;
-// helper text in `xs` `muted-foreground`, red (`destructive`) when it's an error; the label keeps `foreground` in the
-// Error and Disabled states. Spacing Figma doesn't draw (FieldSet, FieldGroup, FieldContent) keeps shadcn's values.
+// Structure follows shadcn's Field; the label, helper text and spacing match Input. The label keeps `foreground` when
+// the field is invalid or disabled. FieldSet, FieldGroup and FieldContent keep shadcn's spacing.
 
 /** Groups related fields, such as an address, under one legend. */
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
@@ -64,7 +63,7 @@ function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
 const fieldVariants = cva("group/field flex w-full gap-2", {
 	variants: {
 		orientation: {
-			// Figma's Input: label above the control.
+			// Label above the control.
 			vertical: ["flex-col [&>*]:w-full [&>.sr-only]:w-auto"],
 			// Checkbox, radio and switch rows: control and label side by side.
 			horizontal: [
@@ -87,7 +86,11 @@ const fieldVariants = cva("group/field flex w-full gap-2", {
 
 type FieldProps = React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>;
 
-/** One form field: a label, its control, and optional helper or error text. Set `data-invalid` when it has an error. */
+/**
+ * One form field: a label, its control, and optional helper or error text. Set `data-invalid` when it has an error.
+ *
+ * Figma: [intercept.ds › Input](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1018-8360), Show Label and Show Helper
+ */
 function Field({ className, orientation = "vertical", ...props }: FieldProps) {
 	return (
 		<div
@@ -138,13 +141,13 @@ function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
 	);
 }
 
-/** Helper text under the control. Figma's "Helper" layer (text style `xs/xs`). */
+/** Helper text under the control. */
 function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
 	return (
 		<p
 			data-slot='field-description'
 			className={cn(
-				"text-xs font-normal text-muted-foreground group-has-[[data-orientation=horizontal]]/field:text-balance",
+				"text-xs font-normal text-foreground-subtle group-has-[[data-orientation=horizontal]]/field:text-balance",
 				"[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary",
 				className,
 			)}

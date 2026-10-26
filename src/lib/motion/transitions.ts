@@ -71,6 +71,16 @@ const layoutSpring: Transition = {
 	damping: 35,
 };
 
+/**
+ * A quick spring that lands exactly on its target, with no overshoot (Urgency pattern): critically damped (damping =
+ * 2√stiffness), so it moves with spring physics but never bounces past the end.
+ */
+const settleSpring: Transition = {
+	type: "spring",
+	stiffness: 420,
+	damping: 41,
+};
+
 export {
 	standardTransition,
 	enterTransition,
@@ -80,4 +90,5 @@ export {
 	subtleSpring,
 	responsiveSpring,
 	layoutSpring,
+	settleSpring,
 };

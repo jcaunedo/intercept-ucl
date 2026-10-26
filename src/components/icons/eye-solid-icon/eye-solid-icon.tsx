@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid eye icon: the Active-state counterpart of lucide's `eye` in a SidebarMenuButton. Figma: archielabs.ds
- * `eye-solid` (node 6158:10405). Fills with `currentColor`, so it takes the item's color.
+ * Solid eye icon: the Active-state counterpart of lucide's `eye` in a SidebarMenuButton. Fills with `currentColor`, so
+ * it takes the item's color.
+ *
+ * Figma: [archielabs.ds › eye-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6158-10405)
  */
 function EyeSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

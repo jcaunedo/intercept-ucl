@@ -48,14 +48,14 @@ function variantClasses(axis: "size" | "weight", value: string, expectedClass: s
 
 function NotInTypography() {
 	return (
-		<span className='text-muted-foreground'>
+		<span className='text-foreground-subtle'>
 			Not in <code>Typography</code>
 		</span>
 	);
 }
 
 const cell = "border-b border-border py-3 pr-4 align-middle";
-const head = `${cell} text-xs font-semibold text-muted-foreground`;
+const head = `${cell} text-xs font-semibold text-foreground-subtle`;
 
 /**
  * One row per `--text-*` size: its token, px size / line height, what `Typography`'s `size` adds on top (font family,
@@ -91,12 +91,12 @@ function TypeScale({ css }: { css: string }) {
 					return (
 						<tr key={name}>
 							<td className={`${cell} font-mono`}>{name}</td>
-							<td className={`${cell} font-mono whitespace-nowrap text-muted-foreground`}>
+							<td className={`${cell} font-mono whitespace-nowrap text-foreground-subtle`}>
 								{formatPx(sizePx)} / {formatPx(linePx)}
 							</td>
 							<td className={cell}>
 								{extra ? (
-									<span className='font-mono text-xs text-muted-foreground'>
+									<span className='font-mono text-xs text-foreground-subtle'>
 										<span className='text-primary'>size="{name}"</span>
 										{extra.length > 0 && ` · ${extra.join(" ")}`}
 									</span>
@@ -152,7 +152,7 @@ function FontWeights({ css }: { css: string }) {
 					return (
 						<tr key={name}>
 							<td className={`${cell} font-mono`}>{name}</td>
-							<td className={`${cell} font-mono text-muted-foreground`}>{value}</td>
+							<td className={`${cell} font-mono text-foreground-subtle`}>{value}</td>
 							<td className={cell}>
 								{accepted ? (
 									<span className='font-mono text-xs text-primary'>weight="{prop}"</span>
@@ -184,7 +184,7 @@ function FontFamilies({ css }: { css: string }) {
 				{["sans", "display", "mono"].map((name) => (
 					<tr key={name}>
 						<td className={`${cell} font-mono`}>font-{name}</td>
-						<td className={`${cell} font-mono text-xs text-muted-foreground`}>{families.get(name)}</td>
+						<td className={`${cell} font-mono text-xs text-foreground-subtle`}>{families.get(name)}</td>
 					</tr>
 				))}
 			</tbody>
@@ -198,7 +198,7 @@ function HeadingDefinitions() {
 		<div className='sb-unstyled flex flex-col gap-4'>
 			{Object.entries(typographyHeadings).map(([element, { size, weight }]) => (
 				<div key={element} className='flex items-baseline gap-6 border-b border-border pb-4'>
-					<div className='w-44 shrink-0 font-mono text-xs text-muted-foreground'>
+					<div className='w-44 shrink-0 font-mono text-xs text-foreground-subtle'>
 						{element} · {size} {weight}
 					</div>
 					<Typography as={element as React.ElementType} className='min-w-0 truncate text-foreground'>
@@ -207,7 +207,7 @@ function HeadingDefinitions() {
 				</div>
 			))}
 			<div className='flex items-baseline gap-6'>
-				<div className='w-44 shrink-0 font-mono text-xs text-muted-foreground'>p · base regular</div>
+				<div className='w-44 shrink-0 font-mono text-xs text-foreground-subtle'>p · base regular</div>
 				<Typography className='min-w-0 truncate text-foreground'>{SAMPLE}</Typography>
 			</div>
 		</div>

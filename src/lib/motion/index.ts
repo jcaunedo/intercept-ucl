@@ -1,4 +1,4 @@
-export { motionDuration, motionDistance, motionScale, motionRotation, motionStagger } from "./tokens";
+export { motionDuration, motionDistance, motionScale, motionRotation, motionStagger, motionBlur } from "./tokens";
 
 export {
   standardTransition,
@@ -9,6 +9,7 @@ export {
   subtleSpring,
   responsiveSpring,
   layoutSpring,
+  settleSpring,
 } from "./transitions";
 
 export {
@@ -26,6 +27,9 @@ export {
   pendingIconVariants,
   pendingIconReducedVariants,
   pendingSurfaceVariants,
+  liveDotVariants,
+  liveHaloVariants,
+  urgencyRingVariants,
 } from "./variants";
 
 export {
@@ -40,6 +44,8 @@ export {
 export { scrollContainerOf, scrollIntoViewSmoothly, scrollMetrics } from "./scroll";
 
 export { useExpandClip } from "./expand-clip";
+
+export { useUrgencyPhase, type UrgencyPhase } from "./urgency";
 
 export {
   reducedMotionTransition,

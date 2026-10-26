@@ -53,11 +53,60 @@ export {
 } from "@/components/buttons/button";
 
 /* -------------------------------------------------------------------------- */
+/* Cards                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export {
+	PatientCard,
+	PatientCardAlert,
+	PatientCardMetric,
+	patientCardAlertVariants,
+	patientCardMetricVariants,
+	type PatientCardAlertProps,
+	type PatientCardAcuityLevel,
+	type PatientCardAlertStatus,
+	type PatientCardAlertVariant,
+	type PatientCardMetricProps,
+	type PatientCardProps,
+	type PatientCardTag,
+	type PatientCardVital,
+} from "@/components/cards/patient-card";
+export {
+	defaultMonitorLimits,
+	PatientMonitoringCard,
+	type MonitorLimits,
+	type MonitorVitals,
+	type PatientMonitoringCardProps,
+} from "@/components/cards/patient-monitoring-card";
+
+/* -------------------------------------------------------------------------- */
 /* Data Display                                                               */
 /* -------------------------------------------------------------------------- */
 
+export {
+	Avatar,
+	AvatarAdd,
+	AvatarBadge,
+	AvatarFallback,
+	AvatarGroup,
+	AvatarImage,
+	avatarAddVariants,
+	avatarFallbackVariants,
+	avatarVariants,
+	type AvatarAddProps,
+	type AvatarFallbackProps,
+	type AvatarProps,
+} from "@/components/data-display/avatar";
 export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display/badge";
+export { Counter, counterVariants, type CounterProps } from "@/components/data-display/counter";
+export { HospitalSectionHeader, type HospitalSectionHeaderProps } from "@/components/data-display/hospital-section-header";
 export { Logo, LogoSymbol, type LogoProps, type LogoSymbolProps } from "@/components/data-display/logo";
+
+/* -------------------------------------------------------------------------- */
+/* Feedback                                                                   */
+/* -------------------------------------------------------------------------- */
+
+export { EmptyState, type EmptyStateProps } from "@/components/feedback/empty-state";
 
 /* -------------------------------------------------------------------------- */
 /* Forms                                                                    */
@@ -87,6 +136,20 @@ export {
 	type RadioGroupItemProps,
 	type RadioGroupProps,
 } from "@/components/forms/radio-group";
+export {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectScrollDownButton,
+	SelectScrollUpButton,
+	SelectSeparator,
+	SelectTrigger,
+	SelectValue,
+	selectTriggerVariants,
+	type SelectTriggerProps,
+} from "@/components/forms/select";
 export { Switch, switchVariants, type SwitchProps } from "@/components/forms/switch";
 export { Textarea, textareaVariants, type TextareaProps } from "@/components/forms/textarea";
 
@@ -102,6 +165,7 @@ export { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
 export { HomeSolidIcon } from "@/components/icons/home-solid-icon";
 export { LayoutGridSolidIcon } from "@/components/icons/layout-grid-solid-icon";
 export { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
+export { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
 export { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 export { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
@@ -110,6 +174,7 @@ export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-
 /* Navigation                                                                 */
 /* -------------------------------------------------------------------------- */
 
+export { AppHeader, type AppHeaderPerson, type AppHeaderProps, type AppHeaderUser } from "@/components/navigation/app-header";
 export {
 	Sidebar,
 	SidebarDivider,
@@ -118,6 +183,18 @@ export {
 	type SidebarNavItem,
 	type SidebarProps,
 } from "@/components/navigation/sidebar";
+export {
+	Tabs,
+	TabsContent,
+	TabsList,
+	TabsTrigger,
+	tabsListVariants,
+	tabsTriggerVariants,
+	type TabsContentProps,
+	type TabsListProps,
+	type TabsProps,
+	type TabsTriggerProps,
+} from "@/components/navigation/tabs";
 
 /* -------------------------------------------------------------------------- */
 /* Overlays                                                                   */

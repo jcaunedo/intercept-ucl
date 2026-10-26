@@ -23,7 +23,7 @@ const options = [
 	["api", "Backend only"],
 ] as const;
 
-/** Figma Default and Selected. Arrow keys move the selection. */
+/** Arrow keys move the selection. */
 export const Default: Story = {
 	render: () => (
 		<RadioGroup defaultValue='web' aria-label='App type'>
@@ -37,7 +37,7 @@ export const Default: Story = {
 	),
 };
 
-/** Figma Disabled, for one option and for the whole group. */
+/** Disabled, for one option and for the whole group. */
 export const Disabled: Story = {
 	render: () => (
 		<div className='flex gap-12'>

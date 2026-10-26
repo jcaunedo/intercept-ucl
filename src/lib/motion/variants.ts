@@ -1,7 +1,7 @@
 import type { Variants } from "motion/react";
 
-import { motionDistance, motionDuration, motionScale, motionStagger } from "./tokens";
-import { enterTransition, exitTransition, standardTransition, swapEnterTransition } from "./transitions";
+import { motionBlur, motionDistance, motionDuration, motionScale, motionStagger } from "./tokens";
+import { enterTransition, exitTransition, settleSpring, standardTransition, swapEnterTransition } from "./transitions";
 import { reducedMotionTransition } from "./reduced-motion";
 
 /**
@@ -184,6 +184,56 @@ const pendingSurfaceVariants: Variants = {
   pending: { opacity: [1, 0.5, 1], transition: pendingLoop },
 };
 
+/**
+ * Live: a status that is ongoing right now (e.g. a connection that's up). A slow loop on a small dot, for as long as
+ * the status holds. Put both on `animate="live"`:
+ * - `liveDotVariants` — the dot grows from `motionScale.liveDotMin` to full size over the first half of the beat and
+ *   shrinks back over the second, at constant speed with no hold.
+ * - `liveHaloVariants` — a blurred copy of the dot's ring fades in as the dot grows, then spreads out from it,
+ *   softening and fading, as the dot shrinks. The two read as one beat.
+ * Under reduced motion, render the dot still and leave the halo out: a continuous loop is nonessential motion.
+ */
+// Linear throughout: constant speed, no acceleration or overshoot.
+const liveLoop = { duration: motionDuration.liveLoop, repeat: Infinity, ease: "linear" } as const;
+
+// Half the beat growing, half shrinking: no hold, so the motion never stops dead.
+const liveBeatTimes = [0, 0.5, 1];
+
+const liveDotVariants: Variants = {
+  live: {
+    scale: [motionScale.liveDotMin, 1, motionScale.liveDotMin],
+    transition: { ...liveLoop, times: liveBeatTimes },
+  },
+};
+
+const liveHaloVariants: Variants = {
+  live: {
+    scale: [1, 1, motionScale.liveHalo],
+    opacity: [0, 0.9, 0],
+    filter: [
+      `blur(${motionBlur.liveHaloStart}px)`,
+      `blur(${motionBlur.liveHaloStart}px)`,
+      `blur(${motionBlur.liveHaloEnd}px)`,
+    ],
+    transition: { ...liveLoop, times: liveBeatTimes },
+  },
+};
+
+/**
+ * Urgency: draws the eye to something that needs attention until it's addressed, e.g. a card with an active alert.
+ * A 2px colored ring over the element's 1px border fades in on a spring that settles without overshooting
+ * (`settleSpring`), so the border reads as going from 1px to 2px in its color. Only opacity moves: animating the
+ * width would step a whole pixel at a time and jump. After `motionDuration.urgencyRest` it fades back to `calm`
+ * (`standardTransition`) and pulses again. Drive `animate` with
+ * `useUrgencyPhase(active)`: one shared clock, so every element pulses at the same time. It stops at `urgent` once the
+ * cause is addressed (e.g. the alert is acknowledged). Use `initial={false}`; under reduced motion pass
+ * `active: false`, so the ring sits at `urgent` and never pulses.
+ */
+const urgencyRingVariants: Variants = {
+  calm: { opacity: 0, transition: standardTransition },
+  urgent: { opacity: 1, transition: settleSpring },
+};
+
 export {
   fadeVariants,
   rowRemoveVariants,
@@ -199,4 +249,7 @@ export {
   pendingIconVariants,
   pendingIconReducedVariants,
   pendingSurfaceVariants,
+  liveDotVariants,
+  liveHaloVariants,
+  urgencyRingVariants,
 };

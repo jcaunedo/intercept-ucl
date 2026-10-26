@@ -4,7 +4,7 @@ import { Typography, type TypographySize, type TypographyWeight } from "./typogr
 
 const sizes: TypographySize[] = ["xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "6xl", "7xl"];
 const weights: TypographyWeight[] = ["regular", "medium", "semibold", "bold", "black"];
-/** The numeric value of each `weight` (Tailwind's defaults, Figma `font-weight/*` in intercept mode). */
+/** The numeric value of each `weight` (Tailwind's defaults). */
 const weightValues: Record<TypographyWeight, number> = {
 	regular: 400,
 	medium: 500,
@@ -32,7 +32,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** A paragraph: `base` regular, Figma `base/base`. */
+/** A paragraph: `base` regular. */
 export const Default: Story = {};
 
 /** Every size at regular weight, with its font size and line height. */
@@ -41,7 +41,7 @@ export const Sizes: Story = {
 		<div className='flex flex-col gap-4'>
 			{sizes.map((size) => (
 				<div key={size} className='flex items-baseline gap-6'>
-					<Typography as='span' size='xs' className='w-24 shrink-0 font-mono text-muted-foreground'>
+					<Typography as='span' size='xs' className='w-24 shrink-0 font-mono text-foreground-subtle'>
 						{size}
 					</Typography>
 					<Typography size={size} className='truncate'>
@@ -60,7 +60,7 @@ export const Weights: Story = {
 			{weights.map((weight) => {
 				return (
 					<div key={weight} className='flex items-baseline gap-6'>
-						<Typography as='span' size='xs' className='w-48 shrink-0 font-mono text-muted-foreground'>
+						<Typography as='span' size='xs' className='w-48 shrink-0 font-mono text-foreground-subtle'>
 							{weight} · {weightValues[weight]}
 						</Typography>
 						<Typography weight={weight}>Save changes</Typography>
@@ -83,14 +83,14 @@ export const Headings: Story = {
 	),
 };
 
-/** Figma "Page Title" (`3xl/3xl -semibold`): still an `h1`, one size larger. */
+/** A page title (3xl semibold): still an `h1`, one size larger. */
 export const PageTitle: Story = {
 	render: () => (
 		<div className='flex flex-col gap-2'>
 			<Typography as='h1' size='3xl'>
 				Projects
 			</Typography>
-			<Typography className='text-muted-foreground'>Everything your team is working on.</Typography>
+			<Typography className='text-foreground-subtle'>Everything your team is working on.</Typography>
 		</div>
 	),
 };
@@ -100,20 +100,20 @@ export const WithColor: Story = {
 	render: () => (
 		<div className='flex flex-col gap-1'>
 			<Typography weight='medium'>Project ready</Typography>
-			<Typography size='sm' className='text-muted-foreground'>
+			<Typography size='sm' className='text-foreground-subtle'>
 				4 members, 3 open tasks.
 			</Typography>
 		</div>
 	),
 };
 
-/** Every Figma text style: 11 sizes × 5 weights. */
+/** Every text style: 11 sizes × 5 weights. */
 export const AllVariants: Story = {
 	render: () => (
 		<div className='flex flex-col gap-3'>
 			{sizes.map((size) => (
 				<div key={size} className='flex items-baseline gap-6'>
-					<Typography as='span' size='xs' className='w-10 shrink-0 font-mono text-muted-foreground'>
+					<Typography as='span' size='xs' className='w-10 shrink-0 font-mono text-foreground-subtle'>
 						{size}
 					</Typography>
 					{weights.map((weight) => (

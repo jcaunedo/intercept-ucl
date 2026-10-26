@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid house icon: the Active-state counterpart of lucide's `house` in a SidebarMenuButton. Figma: archielabs.ds
- * `home-line-solid` (node 6156:10348). Fills with `currentColor`, so it takes the item's color.
+ * Solid house icon: the Active-state counterpart of lucide's `house` in a SidebarMenuButton. Fills with `currentColor`,
+ * so it takes the item's color.
+ *
+ * Figma: [archielabs.ds › home-line-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6156-10348)
  */
 function HomeSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

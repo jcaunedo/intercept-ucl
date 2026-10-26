@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid chart-column icon: the Active-state counterpart of lucide's `chart-column` in a SidebarMenuButton. Figma: archielabs.ds
- * `chart-column-01-solid` (node 6158:10478). Fills with `currentColor`, so it takes the item's color.
+ * Solid chart-column icon: the Active-state counterpart of lucide's `chart-column` in a SidebarMenuButton. Fills with
+ * `currentColor`, so it takes the item's color.
+ *
+ * Figma: [archielabs.ds › chart-column-01-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6158-10478)
  */
 function ChartColumnSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

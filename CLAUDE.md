@@ -12,7 +12,7 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 | Package      | `@jcaunedo/intercept-ucl`                                    |
 | Registry     | GitHub Packages, `@jcaunedo` scope (`https://npm.pkg.github.com`) |
 | Repository   | https://github.com/jcaunedo/intercept-ucl                    |
-| Apps         | ⚠️ Not defined yet. List the apps that consume UCL (used for `src/layouts/<app>/`) |
+| Apps         | `intercept-live`: Intercept Live, the clinical surveillance app ([Figma](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live), `fileKey` `EKg9ovtsHlQoK3DAS0F5IM`). Layouts in `src/layouts/intercept-live/` |
 | Brand        | DESIGN.md → "Brand names", "Brand voice"                     |
 
 ## How the rules work
@@ -113,11 +113,11 @@ How Figma designs become code. The decisions themselves live in DESIGN.md.
   - optional `<name>.mdx` docs page
 
   Categories: `buttons`, `forms`, `cards`, `data-display`, `feedback`, `icons`, `overlays`, `navigation`, `typography`. Create a category folder when its first component arrives. `icons` holds custom SVG icons that lucide-react doesn't have (e.g. the solid Active-state icons): one folder per icon with the `.tsx` and `index.ts`, and a single `icons.stories.tsx` gallery for the category. Don't invent a category that isn't listed here without asking.
-- **Layouts:** full-page reference compositions under `src/layouts/<app>/<name>/`, previewed in Storybook and **not** exported from `src/index.ts`. Layouts used by more than one app go in `src/layouts/shared/`. Apps are listed in "Project". Screens in a multi-screen flow nest under `src/layouts/<app>/<flow>/`; list each flow here when it's created. Mock data goes in `sample-*` files, never in the screen (see "Sample Data").
+- **Layouts:** full-page reference compositions under `src/layouts/<app>/<name>/`, previewed in Storybook and **not** exported from `src/index.ts`. Layouts used by more than one app go in `src/layouts/shared/`. Apps are listed in "Project". Screens in a multi-screen flow nest under `src/layouts/<app>/<flow>/`; list each flow here when it's created. Mock data goes in `sample-*` files, never in the screen (see "Sample Data"). Intercept Live's shell (Sidebar, sticky AppHeader, page switching) is `src/layouts/intercept-live/intercept-live.tsx` (`InterceptLive`, with `pages` per Sidebar item); parts shared by its screens (the patient filter bar, sort orders, grid) are in `src/layouts/intercept-live/shared/`. Screens: `census/`, `monitoring/`; each screen's content is a `<name>-panel.tsx`, and both layouts render both pages, so the Sidebar moves between them.
 - **Lib:** `src/lib/`
   - `utils.ts`: `cn()`
   - `breakpoints.ts`: `breakpoints`, `mediaAbove()`
-  - `hooks/use-media-query.ts`
+  - `hooks/use-media-query.ts`, `hooks/use-current-minute.ts` (the current time, updating on each minute boundary; `null` on the server)
   - `motion/`: tokens, transitions, variants, patterns, reduced-motion and scroll helpers
   - `relative-date.ts`: `formatRelativeDate()`
 - **Imports:** use the `@/` alias (`@/lib/utils`, `@/components/<category>/<name>`). Import another component through its folder `index.ts`, never a deep relative path.
@@ -129,6 +129,8 @@ How Figma designs become code. The decisions themselves live in DESIGN.md.
 - React 19: `ref` is a regular prop. Don't use `React.forwardRef`.
 - Props are typed as `React.ComponentProps<"el"> & VariantProps<typeof <name>Variants> & { …extras }`.
 - Named exports only, collected at the bottom of the file: `export { Button, buttonVariants };`.
+- **Comments are for developers.** Explain behavior, accessibility and any non-obvious *why*. Don't label classes with their Figma variant, layer or token names, and don't restate what a class already says (`px-3` needs no "12px padding"). Figma mapping, deviations and history go in DESIGN.md.
+- **One Figma reference per component:** the last line of the exported component's JSDoc links its Figma node, `Figma: [intercept.ds › <set name>](<node URL>)`. Storybook autodocs shows it as a link, so designers find the source from there. Mention Figma anywhere else only when the code can't be understood without it, e.g. Badge variant names that differ from Figma's Style × Tone names.
 
 ## Adding a shadcn Primitive (scaffold → relocate)
 
@@ -156,8 +158,8 @@ Create `src/components/<category>/<name>/` with these files (use `buttons/button
 - `cva` for variants, with `defaultVariants` set. `cn()` from `@/lib/utils` to merge classes.
 - Default `variant`/`size` in the parameter list, and set `data-slot='<name>'`, `data-variant` and `data-size` on the root element.
 - Use `asChild` (`Slot` from `@radix-ui/react-slot`) when the component should be able to render as a link or other element.
-- Use tokens through Tailwind utilities (`bg-primary`, `text-muted-foreground`, `rounded-md`). Never raw hex.
-- A one-line JSDoc on the exported component.
+- Use tokens through Tailwind utilities (`bg-primary`, `text-foreground-subtle`, `rounded-md`). Never raw hex.
+- A one-line JSDoc on the exported component, ending with its Figma reference (see "Code style").
 
 ### `<name>.stories.tsx`
 
@@ -195,23 +197,38 @@ Mirror these names when a new component has the same concept. Keep this list cur
 
 - **Button** (`buttons/button`):
   - `variant`: `default` | `secondary` | `outline` | `ghost` | `link` | `destructive`
-  - `size`: `xs` | `sm` | `md` (default) | `lg` | `icon-xs` | `icon-sm` | `icon-md` | `icon-lg`: 24 / 32 / 36 / 40px, shadcn's classes (SIZE-SCALE.md). `default` and `icon` are deprecated aliases of `md` and `icon-md`
+  - `size`: `xs` | `sm` | `md` (default) | `lg` | `icon-xs` | `icon-sm` | `icon-md` | `icon-lg`: 24 / 32 / 36 / 40px (SIZE-SCALE.md). `md` follows intercept.ds lg · 36 (10px radius `rounded-button-md`, semibold label, 6px icon gap); the other sizes still use shadcn's classes. `default` and `icon` are deprecated aliases of `md` and `icon-md`
   - `asChild` renders the button styles on its child (use for links)
 - **Typography** (`typography/typography`):
   - `size`: `xs` | `sm` | `base` | `lg` | `xl` | `2xl` | `3xl` | `4xl` | `5xl` | `6xl` | `7xl` (`2xl` and up use `font-display`, as in Figma)
   - `weight`: `regular` | `medium` | `semibold` | `bold` | `black`
   - `as` sets the element; `h1`–`h4` default to `2xl`/`xl`/`lg`/`base` `semibold` (`typographyHeadings`). Page title: `as="h1" size="3xl"`
 - **Input** and **Textarea** (`forms/input`, `forms/textarea`): `size`: `md` (36px, default) | `lg` (40px); `default` is a deprecated alias of `md`. States are native/ARIA (`aria-invalid`, `readOnly`, `disabled`), not variants
-- **Checkbox**, **RadioGroup** + **RadioGroupItem**, **Switch** (`forms/…`): Radix primitives. Switch `size`: `default` | `sm`
+- **Select** with `SelectTrigger`, `SelectValue`, `SelectContent`, `SelectItem`, `SelectGroup`, `SelectLabel`, `SelectSeparator` (`forms/select`): shadcn's API on Radix. SelectTrigger `size`: `sm` | `md` (default) | `lg` (32 / 36 / 40px; `default` is a deprecated alias of `md`), styled like Input. SelectContent `position`: `item-aligned` (default) | `popper`
+- **Checkbox**, **RadioGroup** + **RadioGroupItem**, **Switch** (`forms/…`): Radix primitives. Switch `size`: `default` | `sm`, `label` (built in: medium, muted off / `foreground` on) and `labelSide` (`right` default | `left`)
 - **Label** (`forms/label`), and **Field** with `FieldSet`, `FieldLegend` (`variant`: `legend` | `label`), `FieldGroup`, `FieldContent`, `FieldLabel`, `FieldTitle`, `FieldDescription`, `FieldError` (`forms/field`). Field `orientation`: `vertical` | `horizontal` | `responsive`
+- **EmptyState** (`feedback/empty-state`): a centered message for a view with nothing to show. `title`, `description?`, `icon?`, `buttonLabel?` + `buttonIcon?` + `buttonProps?` (a primary `lg` Button), `headingLevel` (`h2` default | `h3`). Ported from bethere-ucl; same API there and in verita-ai
 - **Tooltip** with `TooltipProvider`, `TooltipTrigger`, `TooltipContent` (`overlays/tooltip`). Content `size`: `default` | `sm`
-- **Badge** (`data-display/badge`): `variant`: `default` | `secondary` | `destructive` | `outline` | `ghost` | `link` (same names as Button), plus the category tones `blue` | `green` | `sky` | `purple` | `red` (Figma Style=Flat; `badge-*` tokens). Figma Style × Tone pairs, see badge.tsx. `size`: `xs` | `sm` | `md` (default) | `lg` (24 / 32 / 36 / 40px). `asChild` renders it as a link, which turns on hover. A 12px icon goes first in the children
-- **Logo** and **LogoSymbol** (`data-display/logo`): the Intercept Live wordmark and its mark, 31px tall by default
+- **Badge** (`data-display/badge`): `variant`: `default` | `secondary` | `neutral` | `destructive` | `outline` | `ghost` | `link` (Button's names, plus `neutral` for Solid · Neutral), plus the category tones `blue` | `green` | `sky` | `purple` | `red` | `yellow` | `amber` (Figma Style=Flat; `badge-*` tokens). Figma Style × Tone pairs, see badge.tsx. `size`: `xs` | `xs-alt` | `sm` | `md` (default) | `lg` (20 / 24 / 32 / 36 / 40px; `xs-alt` has a 14px label, `md`/`lg` 16px). `asChild` renders it as a link, which turns on hover. An icon goes first in the children (sized by the badge: 12px, 16px at `md`, 14px at `lg`)
+- **Counter** (`data-display/counter`): `variant`: `default` | `neutral` | `secondary` | `outline` (Badge's names; Figma Solid / Solid · Neutral / Flat / Outlined) | `critical` | `high` | `medium` | `low` | `resolved` (PatientCardAlert's severities). `size`: `xxs` (20px, default) | `xs` (24px). `count` + optional `max` ("99+"); without `count` it shows `children`
+- **Avatar** with `AvatarImage`, `AvatarFallback`, `AvatarBadge`, `AvatarGroup`, `AvatarAdd` (`data-display/avatar`): shadcn's API on Radix. Avatar `size`: `xs` | `sm` (default) | `md` | `lg` (24 / 32 / 36 / 40px). AvatarFallback `tone`: `none` (default, neutral) | `1`–`10` (initials colors). AvatarBadge is the online dot. AvatarGroup overlaps its avatars, first on top. AvatarAdd is an add button (`label`, `size`)
+- **HospitalSectionHeader** (`data-display/hospital-section-header`): heads one hospital's group of patients. `name`, `patientCount`, `alertCount` (0 shows "No alerts"), `headingLevel` (`h2` default | `h3` | `h4`), `icon` (lucide, default hospital)
+- **Logo** and **LogoSymbol** (`data-display/logo`): the intercept wordmark with its mark, and the mark alone, 31px tall by default
 - **Sidebar** with `SidebarMenuButton`, `SidebarDivider` and the `SidebarNavItem` type (`navigation/sidebar`):
   - `groups` (nav items, a divider between groups), `footerItems`
   - `collapsed` / `defaultCollapsed` / `onCollapsedChange`, `activeItem` / `defaultActiveItem` / `onNavigate`
   - Item: `icon`, `activeIcon`, `label`, `suffix`, `onClick`, `navigateTo`. SidebarMenuButton adds `active` and `collapsed`
-- **Solid icons** (`icons/<name>-solid-icon`): `SquareActivitySolidIcon`, `LayoutGridSolidIcon`, `BoxSolidIcon`, `CircleUserSolidIcon`, `EyeSolidIcon`, `TriangleAlertSolidIcon`, `MessageCircleMoreSolidIcon`, `HeartCrackSolidIcon`, `ShieldSolidIcon`, `ChartColumnSolidIcon`, `HomeSolidIcon`. Pass one as a nav item's `activeIcon`. They fill with `currentColor`
+- **Solid icons** (`icons/<name>-solid-icon`): `SquareActivitySolidIcon`, `LayoutGridSolidIcon`, `BoxSolidIcon`, `CircleUserSolidIcon`, `EyeSolidIcon`, `TriangleAlertSolidIcon`, `MessageCircleMoreSolidIcon`, `HeartCrackSolidIcon`, `ShieldSolidIcon`, `ChartColumnSolidIcon`, `HomeSolidIcon`. Pass one as a nav item's `activeIcon`. They fill with `currentColor`. `MessageCircleSolidIcon` is the "message" PatientCardAlert's icon
+- **PatientCard** with `PatientCardAlert` and `PatientCardMetric` (`cards/patient-card`):
+  - Card data: `lastName`, `firstName`, `mrn`, `sex`, `age`, `hospital`, `unit`, `room`, `bed`, `alert` (`{ variant, count?, label? }`), `acuity` (`{ label, score, level }`; `level`: `low` | `moderate` | `high` | `critical` | `unknown`, shown as "Low risk" … "Critical risk" / "Unknown"; no score means Unknown), `trajectory` and `vitals[]` (metric props), `tags[]` (`{ label, variant }`, Badge `outline` by default). Every part is optional except the name
+  - Interaction: `onOpen` or `href` makes the whole card one click target; on hover it lifts, takes a 2px `foreground` border and `shadow-lg`; `onMoreActions` shows the "…" button
+  - An `alert` of `critical` | `high` | `medium` | `low` gives the card a 2px ring in that severity's color, over a 5% tint, which pulses (Urgency motion pattern, in step with every other card) until the card is clicked or `alert.status` is `acknowledged` / `escalated`; a new severity pulses again. Static under reduced motion
+  - `variant`: `compact` (default since Oct 26, 2026: vitals as one line under the location, using each vital's optional `shortLabel`, e.g. "HR") | `expanded` (vitals as metrics in their own row)
+  - PatientCardAlert `variant`: `critical` (default) | `high` | `medium` | `low` | `resolved` | `message`; `count` (shown as "· 3" only when 2 or more); `children` replaces the label
+  - PatientCardMetric `variant`: `default` | `destructive` | `success` | `missing`; `label`, `value`, `trend` (`up` | `down`, ▲▼) with `trendVariant` (`critical` | `success`) coloring the arrow only, `range` (`above` | `below`, ↑↓)
+- **AppHeader** (`navigation/app-header`): Intercept Live's top bar. `clock`, `unreadMessages`, `team` and `user` (`AppHeaderPerson`: `name`, `initials`, `src?`, `tone?`; the user adds `shiftEnds`), and `onSearch`, `onOpenMessages`, `onToggleTheme`, `onOpenTeam`, `onOpenUserMenu`. `theme` (`light` default | `dark`) picks the theme button's icon and label (moon → "Switch to dark mode", sun → "Switch to light mode"); `compact` animates the vertical padding from 16 to 8px (for a sticky header while the page scrolls). The Online dot uses the Live motion pattern
+- **PatientMonitoringCard** (`cards/patient-monitoring-card`, draft): PatientCard's identity, location and alert pill over a live bedside monitor. `vitals` (`hr`, `spo2`, `systolic`, `diastolic`, `map`, `rr`; missing shows "--"), `limits` (alarm `[low, high]` per `hr`, `spo2`, `systolic`, `rr`; adult ICU defaults), `expanded` / `defaultExpanded` / `onExpandedChange` (condensed ECG strip + four numerics ↔ full four-lane monitor). Waveforms sweep at the patient's HR / RR; still under reduced motion. `alert`, `onOpen` and `href` behave as on PatientCard (pulsing alert ring until clicked or addressed; whole card opens the patient). `defaultMonitorLimits` exports the default limits, so a page can filter on the same ones
+- **Tabs** with `TabsList`, `TabsTrigger`, `TabsContent` (`navigation/tabs`): shadcn's API on Radix. Tabs `value` / `defaultValue` / `onValueChange`, `orientation`. TabsList `variant`: `default` | `line`; `size`: `md` (default) | `lg` (36 / 40px), which also sets the triggers' padding and label size (`tabsTriggerVariants`)
 - **SidebarTooltip** (`overlays/sidebar-tooltip`): `label`, `side` (default `right`), `disabled`, `defaultOpen`. Wraps one trigger element
 
 Forms, Overlays and Typography were ported from archie-ucl (same Figma file, Archie modes). Keep them in step with it where the Figma design is shared; values that differ by mode come from `theme.css`.

@@ -15,8 +15,10 @@ function RadioGroup({ className, ...props }: RadioGroupProps) {
 type RadioGroupItemProps = React.ComponentProps<typeof RadioGroupPrimitive.Item>;
 
 /**
- * One option. Figma "Radio Button": Default, Selected (`checked`) and Disabled. Put a Label right after it.
- * Figma has no Focus or Error state: focus uses Button's ring, error uses Input's `destructive` border.
+ * One option. Put a Label right after it. Focus uses Button's ring and error (`aria-invalid`) uses Input's
+ * `destructive` border.
+ *
+ * Figma: [intercept.ds › Radio Button](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1018-9320)
  */
 function RadioGroupItem({ className, ...props }: RadioGroupItemProps) {
 	return (
@@ -27,14 +29,13 @@ function RadioGroupItem({ className, ...props }: RadioGroupItemProps) {
 				"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
 				"aria-invalid:border-destructive",
 				"data-[state=checked]:border-neutral",
-				// Figma Disabled is unselected: `foreground-subtle` border, `shadow-sm`. Selected and disabled isn't drawn, so it fades.
-				"disabled:cursor-not-allowed disabled:border-foreground-subtle disabled:shadow-sm disabled:data-[state=checked]:opacity-50",
+				// Selected and disabled has no design of its own, so it fades.
+				"disabled:cursor-not-allowed disabled:border-muted-foreground disabled:shadow-sm disabled:data-[state=checked]:opacity-50",
 				className,
 			)}
 			{...props}
 		>
 			<RadioGroupPrimitive.Indicator data-slot='radio-group-indicator' className='flex size-full items-center justify-center'>
-				{/* Figma draws a 10.2px dot (a scaled 9px); 10px is the nearest whole size. */}
 				<span className='size-2.5 rounded-full bg-neutral' />
 			</RadioGroupPrimitive.Indicator>
 		</RadioGroupPrimitive.Item>

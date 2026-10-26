@@ -8,14 +8,11 @@ import { motion } from "motion/react";
 import { enterTransition, motionDistance, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-// Figma "Tooltip" (archielabs.ds, Feedback page): `foreground` surface, `background` text, `radius/menu/container`
-// (`rounded-menu`, 16px in intercept mode), no arrow.
+// Inverted colors (`foreground` surface, `background` text) and no arrow.
 const tooltipContentVariants = cva("z-50 w-fit rounded-menu bg-foreground text-balance text-background", {
 	variants: {
 		size: {
-			// Figma Size=Medium: 6 × 14 padding, text style `sm/sm`
 			default: "px-3.5 py-1.5 text-sm",
-			// Figma Size=Small: 4 × 8 padding, text style `xs/xs`
 			sm: "px-2 py-1 text-xs",
 		},
 	},
@@ -61,7 +58,11 @@ function TooltipSurface(props: React.ComponentProps<typeof motion.div> & { "data
 
 type TooltipContentProps = React.ComponentProps<typeof TooltipPrimitive.Content> & VariantProps<typeof tooltipContentVariants>;
 
-/** The tooltip itself. `size` follows Figma's Medium (`default`) and Small (`sm`). */
+/**
+ * The tooltip itself. `size`: `default` or `sm`.
+ *
+ * Figma: [archielabs.ds › Tooltip](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=1172-2290)
+ */
 function TooltipContent({ className, size = "default", sideOffset = 4, children, ...props }: TooltipContentProps) {
 	return (
 		<TooltipPrimitive.Portal>

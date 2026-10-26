@@ -27,10 +27,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma State=Default. Starts one line tall and grows as you type. */
+/** Starts one line tall and grows as you type. */
 export const Default: Story = {};
 
-/** Figma Size: minimum height `default` 36px, `lg` 40px. */
+/** Minimum height: `md` 36px (the default), `lg` 40px. */
 export const Sizes: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-3'>
@@ -40,7 +40,7 @@ export const Sizes: Story = {
 	),
 };
 
-/** Figma State=HasValue, with several lines. */
+/** Several lines of text. */
 export const WithValue: Story = {
 	args: {
 		defaultValue:
@@ -53,22 +53,18 @@ export const WithRows: Story = {
 	args: { rows: 4 },
 };
 
-/** Figma State=Focus. */
 export const Focus: Story = {
 	args: { autoFocus: true },
 };
 
-/** Figma State=Error. */
 export const Invalid: Story = {
 	args: { "aria-invalid": true, defaultValue: "Inventory" },
 };
 
-/** Figma State=Read-only. */
 export const ReadOnly: Story = {
 	args: { readOnly: true, defaultValue: "Generated from the blueprint on Oct 20, 2026." },
 };
 
-/** Figma State=Disabled. */
 export const Disabled: Story = {
 	args: { disabled: true },
 };
@@ -85,7 +81,7 @@ export const InField: Story = {
 
 export const AllVariants: Story = {
 	render: (args) => (
-		<div className='grid grid-cols-[auto_15rem_15rem] items-start gap-x-6 gap-y-3 text-sm text-muted-foreground'>
+		<div className='grid grid-cols-[auto_15rem_15rem] items-start gap-x-6 gap-y-3 text-sm text-foreground-subtle'>
 			<span />
 			<span>default · 36</span>
 			<span>lg · 40</span>

@@ -4,9 +4,11 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-// The md sizes, shared with their deprecated aliases (`default`, `icon`) so the two never drift apart.
-const mdSize = "h-9 px-4 py-2 has-[>svg]:px-3";
-const iconMdSize = "size-9";
+// The md sizes, shared with their deprecated aliases (`default`, `icon`) so the two never drift apart. md follows
+// intercept.ds Button lg · 36: 10px radius, 14px semibold label, 6px between icon and label, 14px to the label's side
+// and 10px to an icon's (the outline variant's 1px border is inside those, see compoundVariants).
+const mdSize = "h-9 gap-1.5 rounded-button-md px-3.5 font-semibold has-[>svg]:pl-2.5";
+const iconMdSize = "size-9 rounded-button-md";
 
 const buttonVariants = cva(
 	"inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -17,7 +19,7 @@ const buttonVariants = cva(
 				destructive:
 					"bg-destructive text-destructive-foreground hover:bg-destructive/90",
 				outline:
-					"border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+					"border border-input bg-background shadow-xs hover:bg-accent hover:text-accent-foreground",
 				secondary:
 					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
 				ghost: "hover:bg-accent hover:text-accent-foreground",
@@ -41,6 +43,8 @@ const buttonVariants = cva(
 				icon: iconMdSize,
 			},
 		},
+		// The outline border takes 1px of the padding, so its label and icon land where the other variants' do.
+		compoundVariants: [{ variant: "outline", size: ["md", "default"], className: "px-[13px] has-[>svg]:pl-[9px]" }],
 		defaultVariants: {
 			variant: "default",
 			size: "md",

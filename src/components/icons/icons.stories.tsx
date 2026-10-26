@@ -7,6 +7,7 @@ import {
 	HeartCrackIcon,
 	HouseIcon,
 	LayoutGridIcon,
+	MessageCircleIcon,
 	MessageCircleMoreIcon,
 	ShieldIcon,
 	SquareActivityIcon,
@@ -21,11 +22,13 @@ import { HeartCrackSolidIcon } from "./heart-crack-solid-icon";
 import { HomeSolidIcon } from "./home-solid-icon";
 import { LayoutGridSolidIcon } from "./layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "./message-circle-more-solid-icon";
+import { MessageCircleSolidIcon } from "./message-circle-solid-icon";
 import { ShieldSolidIcon } from "./shield-solid-icon";
 import { SquareActivitySolidIcon } from "./square-activity-solid-icon";
 import { TriangleAlertSolidIcon } from "./triangle-alert-solid-icon";
 
-// Each solid icon beside the lucide outline it replaces while a SidebarMenuButton is active.
+// Each solid icon beside its lucide outline. Most replace the outline while a SidebarMenuButton is active;
+// message-circle is the "message" PatientCardAlert's icon.
 const pairs = [
 	["square-activity", SquareActivityIcon, SquareActivitySolidIcon],
 	["layout-grid", LayoutGridIcon, LayoutGridSolidIcon],
@@ -34,6 +37,7 @@ const pairs = [
 	["eye", EyeIcon, EyeSolidIcon],
 	["triangle-alert", TriangleAlertIcon, TriangleAlertSolidIcon],
 	["message-circle-more", MessageCircleMoreIcon, MessageCircleMoreSolidIcon],
+	["message-circle", MessageCircleIcon, MessageCircleSolidIcon],
 	["heart-crack", HeartCrackIcon, HeartCrackSolidIcon],
 	["shield", ShieldIcon, ShieldSolidIcon],
 	["chart-column", ChartColumnIcon, ChartColumnSolidIcon],
@@ -62,8 +66,8 @@ export const AllVariants: Story = {
 	render: () => (
 		<div className='grid grid-cols-[auto_repeat(4,2rem)] items-center gap-x-4 gap-y-3 text-sm text-foreground'>
 			<span />
-			<span className='col-span-2 text-xs text-muted-foreground'>18px</span>
-			<span className='col-span-2 text-xs text-muted-foreground'>24px</span>
+			<span className='col-span-2 text-xs text-foreground-subtle'>18px</span>
+			<span className='col-span-2 text-xs text-foreground-subtle'>24px</span>
 			{pairs.map(([name, Outline, Solid]) => (
 				<div key={name} className='contents'>
 					<span>{name}</span>

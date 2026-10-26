@@ -47,7 +47,7 @@ function Prose({ text }: { text: string }) {
 }
 
 const cell = "border-b border-border py-3 pr-4 align-top text-sm";
-const head = "border-b border-border py-2 pr-4 text-left text-xs font-semibold text-muted-foreground";
+const head = "border-b border-border py-2 pr-4 text-left text-xs font-semibold text-foreground-subtle";
 
 /** Fixed column widths (px; `undefined` takes the rest), so every table on the page lines up. */
 function Table({ widths, children }: { widths: (number | undefined)[]; children: React.ReactNode }) {
@@ -91,7 +91,7 @@ function MotionTokens({ source, group }: { source: string; group: keyof typeof t
 						<td className={`${cell} font-mono break-words`}>
 							{group}.{key}
 						</td>
-						<td className={`${cell} font-mono whitespace-nowrap text-muted-foreground`}>{format(value)}</td>
+						<td className={`${cell} font-mono whitespace-nowrap text-foreground-subtle`}>{format(value)}</td>
 						<td className={`${cell} text-foreground`}>
 							<Prose text={docs.get(key) ?? ""} />
 						</td>
@@ -151,7 +151,7 @@ function MotionTransitions({ source }: { source: string }) {
 					return (
 						<tr key={name}>
 							<td className={`${cell} font-mono break-words`}>{name}</td>
-							<td className={`${cell} text-muted-foreground`}>
+							<td className={`${cell} text-foreground-subtle`}>
 								<div className='flex items-center gap-3'>
 									{ease && <EasingCurve ease={ease} />}
 									<div className='font-mono text-xs whitespace-nowrap'>
@@ -229,7 +229,7 @@ function MotionDemos() {
 					<motion.div {...motionSystem.liftPattern} className={`${demoSurface} transition-shadow hover:shadow-md`}>
 						Hover me
 					</motion.div>
-					<figcaption className='text-xs text-muted-foreground'>
+					<figcaption className='text-xs text-foreground-subtle'>
 						Lift · <code>liftPattern</code>
 					</figcaption>
 				</figure>
@@ -237,7 +237,7 @@ function MotionDemos() {
 					<motion.div {...motionSystem.pressPattern} className={`${demoSurface} select-none`} role='button' tabIndex={0}>
 						Press and hold
 					</motion.div>
-					<figcaption className='text-xs text-muted-foreground'>
+					<figcaption className='text-xs text-foreground-subtle'>
 						Press · <code>pressPattern</code>
 					</figcaption>
 				</figure>
@@ -256,7 +256,7 @@ function MotionDemos() {
 							</motion.div>
 						</AnimatePresence>
 					</div>
-					<figcaption className='flex items-center gap-2 text-xs text-muted-foreground'>
+					<figcaption className='flex items-center gap-2 text-xs text-foreground-subtle'>
 						Reveal · <code>revealVariants</code>
 						<Button variant='link' size='sm' className='h-auto px-0' onClick={() => setRevealKey((key) => key + 1)}>
 							Replay

@@ -31,7 +31,7 @@ export const WithInput: Story = {
 	),
 };
 
-/** The label keeps its color next to a disabled field, as in Figma. */
+/** The label keeps its color next to a disabled field. */
 export const WithDisabledInput: Story = {
 	render: (args) => (
 		<div className='flex w-60 flex-col gap-2'>

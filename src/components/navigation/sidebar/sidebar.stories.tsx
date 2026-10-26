@@ -29,28 +29,25 @@ import { SquareActivitySolidIcon } from "@/components/icons/square-activity-soli
 import { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
 import { Sidebar, SidebarMenuButton, type SidebarNavItem } from "./sidebar";
 
-// The Figma nav set (intercept.ds `sidebar`, Property 1=New Default, Oct 25, 2026). Solid icons from archielabs.ds show
-// while an item is active. Search, Ask Intercept and the footer items have none yet, so they keep their outline icon.
-// Figma's Ask Intercept icon is `ai-outline`, which lucide doesn't have; Sparkles stands in.
+// Solid icons show while an item is active. Search, Ask Intercept and the footer items have none yet, so they keep
+// their outline icon. lucide has no AI icon for Ask Intercept; Sparkles stands in.
 const groups: SidebarNavItem[][] = [
 	[
 		{ icon: SearchIcon, label: "Search" },
 		{ icon: SparklesIcon, label: "Ask Intercept" },
 	],
 	[
-		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Surveillance" },
+		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census" },
+		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring" },
 		{ icon: TriangleAlertIcon, activeIcon: TriangleAlertSolidIcon, label: "Alert Queue" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis" },
 	],
 	[
-		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census" },
-		{ icon: BoxIcon, activeIcon: BoxSolidIcon, label: "Marketplace" },
-		{ icon: LayoutGridIcon, activeIcon: LayoutGridSolidIcon, label: "Administration" },
-	],
-	[
 		{ icon: ShieldIcon, activeIcon: ShieldSolidIcon, label: "Compliance" },
 		{ icon: ChartColumnIcon, activeIcon: ChartColumnSolidIcon, label: "Analytics" },
+		{ icon: BoxIcon, activeIcon: BoxSolidIcon, label: "Marketplace" },
+		{ icon: LayoutGridIcon, activeIcon: LayoutGridSolidIcon, label: "Administration" },
 	],
 ];
 
@@ -71,11 +68,11 @@ const meta = {
 	args: {
 		groups,
 		footerItems,
-		// Figma's current page. The first item (Search) is an action, not a page.
-		defaultActiveItem: "Surveillance",
+		// The first item (Search) is an action, not a page.
+		defaultActiveItem: "Monitoring",
 	},
 	decorators: [
-		// The rail fills the viewport height, as in Figma (Sidebar is `h-screen`).
+		// The rail fills the viewport height (Sidebar is `h-screen`).
 		(Story) => (
 			<div className='flex h-screen bg-background-subtle'>
 				<Story />
@@ -87,17 +84,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma Property 1=New Default. Click the collapse button, or anywhere on the rail's empty space, to collapse it. */
+/** Click the collapse button, or anywhere on the rail's empty space, to collapse it. */
 export const Default: Story = {
 	args: { className: "h-full" },
 };
 
-/** Figma Property 1=New Collapsed. Hover the rail to swap the mark for the expand icon; hover an item for its label. */
+/** Hover the rail to swap the mark for the expand icon; hover an item for its label. */
 export const Collapsed: Story = {
 	args: { className: "h-full", defaultCollapsed: true },
 };
 
-/** An active item other than the first, with a trailing suffix (Figma "Suffix"). */
+/** An active item other than the first, with a trailing suffix. */
 export const ActiveItemAndSuffix: Story = {
 	args: {
 		className: "h-full",
@@ -134,7 +131,7 @@ export const Controlled: Story = {
 	},
 };
 
-/** Figma `sidebar-menu-button`: Property 1=Default, Hover (the hover fill, held on) and Active, plus collapsed. */
+/** SidebarMenuButton: default, hover (the hover fill, held on) and active, plus collapsed. */
 export const MenuButtonStates: Story = {
 	render: () => (
 		<div className='flex flex-col gap-4 bg-sidebar p-4'>
@@ -155,7 +152,7 @@ export const MenuButtonStates: Story = {
 	),
 };
 
-/** Both Figma variants side by side. */
+/** Expanded and collapsed side by side. */
 export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex h-full gap-8'>

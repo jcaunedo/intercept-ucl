@@ -94,7 +94,7 @@ See [references/ucl-conventions.md](references/ucl-conventions.md) for the full 
 - `cva` for variants, `cn()` from `@/lib/utils` to merge, `defaultVariants` set.
 - Type props as `React.ComponentProps<"el"> & VariantProps<typeof variants> & { ...extras }`.
 - Add `data-slot="<name>"` and `data-variant`/`data-size` attributes like Button does, for styling hooks and consistency.
-- **Semantics:** add the accessibility and documentation meaning the raw Figma lacks — correct element (`button`/`a`/`nav`/`ul`…), `aria-*` for state, `role` where needed, and a one-line JSDoc on the exported component plus brief comments labeling each variant with its Figma name. Add semantic descriptions wherever a reader would otherwise have to guess intent.
+- **Semantics:** add the accessibility and documentation meaning the raw Figma lacks — correct element (`button`/`a`/`nav`/`ul`…), `aria-*` for state, `role` where needed, and a one-line JSDoc on the exported component that ends with its Figma reference (CLAUDE.md → "Code style"). Comment behavior and non-obvious intent only: don't label classes with Figma variant, layer or token names (those go in DESIGN.md).
 - **Reuse props:** match existing prop names/shapes across the library. A new prop is fine when the design truly needs it — but if it overlaps an existing concept under a different name, prefer the existing name; if unsure whether to add one, **ask**.
 
 ### A6. Verify full state coverage before wiring up exports

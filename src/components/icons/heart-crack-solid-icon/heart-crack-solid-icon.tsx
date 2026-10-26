@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid heart-crack icon: the Active-state counterpart of lucide's `heart-crack` in a SidebarMenuButton. Figma: archielabs.ds
- * `heart-crack-solid` (node 6158:10422). Fills with `currentColor`, so it takes the item's color.
+ * Solid heart-crack icon: the Active-state counterpart of lucide's `heart-crack` in a SidebarMenuButton. Fills with
+ * `currentColor`, so it takes the item's color.
+ *
+ * Figma: [archielabs.ds › heart-crack-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6158-10422)
  */
 function HeartCrackSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

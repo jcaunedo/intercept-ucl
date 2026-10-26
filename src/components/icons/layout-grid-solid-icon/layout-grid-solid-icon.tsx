@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid layout-grid icon: the Active-state counterpart of lucide's `layout-grid` in a SidebarMenuButton. Figma: archielabs.ds
- * `layout-grid-solid` (node 6158:10400). Fills with `currentColor`, so it takes the item's color.
+ * Solid layout-grid icon: the Active-state counterpart of lucide's `layout-grid` in a SidebarMenuButton. Fills with
+ * `currentColor`, so it takes the item's color.
+ *
+ * Figma: [archielabs.ds › layout-grid-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6158-10400)
  */
 function LayoutGridSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

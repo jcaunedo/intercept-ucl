@@ -12,7 +12,7 @@ const theme = create({
 	fontBase: '"Figtree", ui-sans-serif, system-ui, sans-serif',
 	fontCode: '"Roboto Mono", ui-monospace, monospace',
 
-	colorPrimary: "#082383", // --brand (catalina-800)
+	colorPrimary: "#1160e8", // --brand (denim-500)
 	colorSecondary: "#3f60de", // --link (catalina-500)
 
 	appBg: "#f5f6f7", // --background-subtle (gray-50)
@@ -21,18 +21,18 @@ const theme = create({
 	appBorderColor: "#e0e2e6", // --border (gray-200)
 	appBorderRadius: 8, // --radius
 
-	textColor: "#222a34", // --foreground (gray-800)
+	textColor: "#31373f", // --foreground (gray-700)
 	textInverseColor: "#ffffff",
-	textMutedColor: "#686f7d", // --foreground-subtle (gray-500)
+	textMutedColor: "#686f7d", // --muted-foreground (gray-500)
 
 	barBg: "#ffffff",
 	barTextColor: "#686f7d",
-	barSelectedColor: "#082383",
-	barHoverColor: "#082383",
+	barSelectedColor: "#1160e8",
+	barHoverColor: "#1160e8",
 
 	inputBg: "#ffffff",
 	inputBorder: "#e0e2e6", // --input (gray-200)
-	inputTextColor: "#222a34",
+	inputTextColor: "#31373f",
 	inputBorderRadius: 10, // --radius-input
 });
 

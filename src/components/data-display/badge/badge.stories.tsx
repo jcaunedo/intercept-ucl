@@ -3,9 +3,9 @@ import { BadgeCheckIcon } from "lucide-react";
 
 import { Badge } from "./badge";
 
-const variants = ["default", "secondary", "destructive", "outline", "ghost", "link"] as const;
-const tones = ["blue", "green", "sky", "purple", "red"] as const;
-const sizes = ["xs", "sm", "md", "lg"] as const;
+const variants = ["default", "secondary", "neutral", "destructive", "outline", "ghost", "link"] as const;
+const tones = ["blue", "green", "sky", "purple", "red", "yellow", "amber"] as const;
+const sizes = ["xs", "xs-alt", "sm", "md", "lg"] as const;
 
 const meta = {
 	title: "Data Display/Badge",
@@ -22,35 +22,29 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma Style=Solid, Tone=Brand. */
 export const Default: Story = {};
 
-/** Figma Style=Flat, Tone=Neutral. */
 export const Secondary: Story = {
 	args: { variant: "secondary" },
 };
 
-/** Figma Style=Solid, Tone=Destructive. */
 export const Destructive: Story = {
 	args: { variant: "destructive" },
 };
 
-/** Figma Style=Outline, Tone=Neutral. */
 export const Outline: Story = {
 	args: { variant: "outline" },
 };
 
-/** Figma Style=Ghost, Tone=Neutral. */
 export const Ghost: Story = {
 	args: { variant: "ghost" },
 };
 
-/** Figma Style=Link, Tone=Brand. */
 export const Link: Story = {
 	args: { variant: "link" },
 };
 
-/** Figma Style=Flat, Tone=Blue / Green / Sky / Purple / Red: category colors, in light and dark. */
+/** Category colors, in light and dark. */
 export const Tones: Story = {
 	render: () => (
 		<div className='flex flex-col gap-4'>
@@ -72,7 +66,7 @@ export const Tones: Story = {
 	),
 };
 
-/** Figma's optional leading icon (`showIcon`): any 12px icon as the first child. */
+/** An optional leading icon: any 12px icon as the first child. */
 export const WithIcon: Story = {
 	render: (args) => (
 		<Badge {...args}>
@@ -95,7 +89,7 @@ export const AsLink: Story = {
 	),
 };
 
-/** Figma Size: xs (24px), sm (32px), md (36px, the default) and lg (40px). */
+/** xs (24px), sm (32px), md (36px, the default) and lg (40px). */
 export const Sizes: Story = {
 	render: () => (
 		<div className='flex items-center gap-4'>
@@ -108,7 +102,7 @@ export const Sizes: Story = {
 	),
 };
 
-/** Every variant at every size, with and without an icon, as in Figma's set. */
+/** Every variant at every size, with and without an icon. */
 export const AllVariants: Story = {
 	render: () => (
 		<div className='flex flex-col gap-4'>

@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid box icon: the Active-state counterpart of lucide's `box` in a SidebarMenuButton. Figma: archielabs.ds
- * `box-solid` (node 6158:10399). Fills with `currentColor`, so it takes the item's color.
+ * Solid box icon: the Active-state counterpart of lucide's `box` in a SidebarMenuButton. Fills with `currentColor`, so
+ * it takes the item's color.
+ *
+ * Figma: [archielabs.ds › box-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6158-10399)
  */
 function BoxSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

@@ -6,12 +6,10 @@ import { cn } from "@/lib/utils";
 /**
  * Intercept's typography spec. This comment, the Storybook pages "Typography/Typography" (`typography.mdx`) and
  * "Foundations/Typography" are the full record; change all three with any type token (DESIGN.md "Typography specs
- * live in three places"). Source: Figma `archielabs.ds` text styles `<size>/<size> -<weight>`, `intercept` mode,
- * values in `theme.css`.
+ * live in three places"). Values live in `theme.css`.
  *
- * Fonts: Figtree for all interface text, Roboto Mono (`font-mono`) for code. Sizes up to `xl` use `font-sans`
- * (Figma `font-family/bodytext`) and `2xl` and up use `font-display` (`font-family/headline`), as the Figma text
- * styles bind them. Both are Figtree today. No letter spacing at any size.
+ * Fonts: Figtree for all interface text, Roboto Mono (`font-mono`) for code. Sizes up to `xl` use `font-sans` and
+ * `2xl` and up use `font-display`. Both are Figtree today. No letter spacing at any size.
  *
  * Sizes (`size`, the `--text-*` tokens). Font size / line height in px:
  *
@@ -29,31 +27,31 @@ import { cn } from "@/lib/utils";
  * | `6xl`  | 64 / 96                 |
  * | `7xl`  | 80 / 120                |
  *
- * Weights (`weight`): Tailwind's defaults, which match Figma `font-weight/*` in intercept mode:
+ * Weights (`weight`): Tailwind's defaults.
  *
- * | `weight`   | Utility         | Value | Figma           |
- * | ---------- | --------------- | ----- | --------------- |
- * | `regular`  | `font-normal`   | 400   | `<size>/<size>` |
- * | `medium`   | `font-medium`   | 500   | `-medium`       |
- * | `semibold` | `font-semibold` | 600   | `-semibold`     |
- * | `bold`     | `font-bold`     | 700   | `-bold`         |
- * | `black`    | `font-black`    | 900   | `-black`        |
+ * | `weight`   | Utility         | Value |
+ * | ---------- | --------------- | ----- |
+ * | `regular`  | `font-normal`   | 400   |
+ * | `medium`   | `font-medium`   | 500   |
+ * | `semibold` | `font-semibold` | 600   |
+ * | `bold`     | `font-bold`     | 700   |
+ * | `black`    | `font-black`    | 900   |
  *
- * Headings (`typographyHeadings`, below): `h1` 2xl semibold ("h1 / Modal Title"), `h2` xl semibold, `h3` lg semibold,
- * `h4` base semibold, each tagged in Figma. Page title: `as="h1" size="3xl"` (Figma "Page Title", 3xl semibold).
+ * Headings (`typographyHeadings`, below): `h1` 2xl semibold, `h2` xl semibold, `h3` lg semibold, `h4` base semibold.
+ * Page title: `as="h1" size="3xl"` (3xl semibold).
  *
- * Color is never part of Typography: pass a text token in `className` (`text-muted-foreground`).
+ * Color is never part of Typography: pass a text token in `className` (`text-foreground-subtle`).
+ *
+ * Figma: [archielabs.ds › text styles](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds)
  */
 const typographyVariants = cva("", {
 	variants: {
 		size: {
-			// Figma `font-family/bodytext`
 			xs: "font-sans text-xs",
 			sm: "font-sans text-sm",
 			base: "font-sans text-base",
 			lg: "font-sans text-lg",
 			xl: "font-sans text-xl",
-			// Figma `font-family/headline`
 			"2xl": "font-display text-2xl",
 			"3xl": "font-display text-3xl",
 			"4xl": "font-display text-4xl",
@@ -62,15 +60,10 @@ const typographyVariants = cva("", {
 			"7xl": "font-display text-7xl",
 		},
 		weight: {
-			// Figma `<size>/<size>`: 400
 			regular: "font-normal",
-			// Figma `-medium`: 500
 			medium: "font-medium",
-			// Figma `-semibold`: 600
 			semibold: "font-semibold",
-			// Figma `-bold`: 700
 			bold: "font-bold",
-			// Figma `-black`: 900
 			black: "font-black",
 		},
 	},
@@ -84,9 +77,8 @@ type TypographySize = NonNullable<VariantProps<typeof typographyVariants>["size"
 type TypographyWeight = NonNullable<VariantProps<typeof typographyVariants>["weight"]>;
 
 /**
- * Heading defaults, from the Figma text style descriptions: `h1` is `2xl/2xl -semibold` ("h1 / Modal Title"), `h2`
- * `xl/xl -semibold`, `h3` `lg/lg -semibold`, `h4` `base/base -semibold`. Page titles are Figma's `3xl/3xl -semibold`
- * ("Page Title"): write `as="h1" size="3xl"`. See DESIGN.md "Heading element → Typography pairing".
+ * Heading defaults for `as="h1"`–`"h4"`. Page titles are one size up: write `as="h1" size="3xl"`. See DESIGN.md
+ * "Heading element → Typography pairing".
  */
 const typographyHeadings = {
 	h1: { size: "2xl", weight: "semibold" },

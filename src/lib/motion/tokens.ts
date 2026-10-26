@@ -18,6 +18,12 @@ const motionDuration = {
 	deliberate: 0.6,
 	/** One cycle of a looping "working on it" pulse (Pending pattern). */
 	pendingLoop: 1.2,
+	/** How long an Urgency ring rests at full strength after fading in, before it fades back to calm. */
+	urgencyRest: 1.4,
+	/** How long an Urgency ring stays calm (faded out) before the next pulse. Includes the fade-out. */
+	urgencyCalm: 0.4,
+	/** One beat of a live status indicator (Live pattern): slower and calmer than Pending. */
+	liveLoop: 1,
 } as const;
 
 /** Pixels. */
@@ -58,6 +64,17 @@ const motionScale = {
 	drag: 1.03,
 	/** Peak of a small trigger icon's Pending pulse (e.g. an AI mark while it generates). */
 	pendingIcon: 1.3,
+	/** Smallest point of a live status dot's pulse; it grows back to full size (Live pattern). */
+	liveDotMin: 0.5,
+	/** How far a live status dot's halo spreads before it fades (Live pattern). */
+	liveHalo: 2.2,
+} as const;
+
+/** Pixels of blur. */
+const motionBlur = {
+	/** A live status dot's halo: soft as it leaves the dot, softer as it spreads (Live pattern). */
+	liveHaloStart: 1,
+	liveHaloEnd: 6,
 } as const;
 
 /** Degrees. Keep rotation under 2 degrees and use it sparingly. */
@@ -73,4 +90,4 @@ const motionStagger = {
 	normal: 0.06,
 } as const;
 
-export { motionDuration, motionDistance, motionScale, motionRotation, motionStagger };
+export { motionDuration, motionDistance, motionScale, motionRotation, motionStagger, motionBlur };

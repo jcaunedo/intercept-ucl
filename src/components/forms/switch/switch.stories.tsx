@@ -26,15 +26,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Figma State=OFF, Size=Default. */
 export const Default: Story = {};
 
-/** Figma State=ON. */
 export const Checked: Story = {
 	args: { defaultChecked: true },
 };
 
-/** Figma Size: `default` 36 × 20, `sm` 28 × 16. */
+/** `default` 36 × 20, `sm` 28 × 16. */
 export const Sizes: Story = {
 	render: (args) => (
 		<div className='flex items-center gap-4'>
@@ -44,8 +42,25 @@ export const Sizes: Story = {
 	),
 };
 
-/** Figma's "Show Label Right". */
+/**
+ * The built-in label (Figma's Show Label Right / Left): medium weight, muted while off, `foreground` while on. 16px at
+ * the default size, 14px at `sm`. Clicking it toggles the switch.
+ */
 export const WithLabel: Story = {
+	render: () => (
+		<div className='flex flex-col gap-3'>
+			<Switch label='My Patients' />
+			<Switch label='Alerts only' defaultChecked />
+			<Switch label='Label on the left' labelSide='left' defaultChecked />
+			<Switch label='Small' size='sm' />
+			<Switch label='Small, on' size='sm' defaultChecked />
+			<Switch label='Disabled' disabled />
+		</div>
+	),
+};
+
+/** Your own Label right after the switch, e.g. inside a custom layout. */
+export const WithOwnLabel: Story = {
 	render: () => (
 		<div className='flex flex-col gap-3'>
 			<div className='flex items-center gap-2'>
@@ -84,7 +99,7 @@ export const Disabled: Story = {
 
 export const AllVariants: Story = {
 	render: (args) => (
-		<div className='grid grid-cols-[auto_auto_auto] items-center gap-x-6 gap-y-3 text-sm text-muted-foreground'>
+		<div className='grid grid-cols-[auto_auto_auto] items-center gap-x-6 gap-y-3 text-sm text-foreground-subtle'>
 			<span />
 			<span>Off</span>
 			<span>On</span>

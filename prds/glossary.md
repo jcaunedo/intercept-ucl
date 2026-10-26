@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 23, 2026
+Last updated: Oct 26, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -154,7 +154,7 @@ Each table has three columns: the term, its definition, and the document it come
 | **Provider Onboarding** | Recruitment, screening and pre-credentialing intake, through the CLP interview and contract. Deferred this phase. | Spec §5.13 |
 | **Scheduling & Coverage** | Eligibility-aware shift construction and coverage publication. Replaces QGenda plus the Green Sheet. Deferred this phase. | Spec §5.15 |
 | **System Administration** | Intercept-only platform administration: tenant lifecycle, global rules, AI agent governance, integration health and cross-tenant audit. | Spec §5.7 |
-| **Tele-Critical Care Clinical Surveillance** ★ | The continuous monitoring surface where clinicians watch their patient panel, evaluate alerts, control bedside cameras and decide when to escalate. | Spec §5.2 |
+| **Tele-Critical Care Clinical Surveillance** ★ | The continuous monitoring surface where clinicians watch their patient panel, evaluate alerts, control bedside cameras and decide when to escalate. Shown to clinicians as **Monitoring** (Sidebar item and page name, Oct 26, 2026). | Spec §5.2 |
 | **Virtual Sepsis** ★ | The first protocol-driven Intelligence-layer module. Screens for sepsis on the CMS SEP-1 baseline, tracks the 3- and 6-hour bundles, and reports compliance, with tenant-specific protocol additions. | Spec §5.9 |
 
 ---
@@ -273,6 +273,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **ARDS (Acute Respiratory Distress Syndrome)** | Acute hypoxemic respiratory failure with bilateral infiltrates not explained by cardiac failure or fluid overload, defined by the **Berlin criteria**. Roadmap protocol (Virtual ARDS). | Spec Appendix A |
 | **BP / MAP** | Blood pressure (systolic/diastolic, mmHg) / mean arterial pressure (mmHg). | PRD §7.1 |
 | **Bundle** | A set of evidence-based interventions to complete within a time window (e.g. SEP-1's 3- and 6-hour bundles). | Spec §5.9 |
+| **Burn ICU** | Intensive care unit for patients with severe burns. A unit code in the Census unit menu. | General |
 | **CAM-ICU** | Confusion Assessment Method for the ICU. A bedside delirium screen. | Spec Appendix A |
 | **CCU** | Coronary Care Unit, the ICU for acute heart conditions. Some hospitals use it for Critical Care Unit instead. | General, PRD §15.1 P5 |
 | **Census** | The set of patients a clinician or unit is currently responsible for. *Proposed* census states: Admitted, Transferred, Discharged, Pending reconciliation, Unknown. A transfer is never read as a discharge. | PRD §5 |
@@ -291,11 +292,16 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Lactate** | A blood marker of tissue hypoperfusion. Measured and repeated as SEP-1 bundle elements. | Spec §8.2 |
 | **MICU** | Medical Intensive Care Unit. The ICU for critically ill adults with medical (non-surgical) problems such as respiratory failure, sepsis or organ failure. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **MRN (Medical Record Number)** | A hospital-specific patient identifier. Scoped to its tenant, never a global patient ID. | PRD PC-011 |
+| **Neuro ICU** | Neurocritical care unit for patients with stroke, brain injury, seizures or after neurosurgery. A unit code in the Census unit menu. | General |
 | **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **NICU** | Neonatal Intensive Care Unit. The ICU for premature or critically ill newborns. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **NIV (Noninvasive ventilation)** | Breathing support through a mask (BiPAP or CPAP), with no tube in the windpipe. Shown as an "NIV" pill on the Patient card, never as "Ventilated". | General, PRD PC-050, §15.1 P1 |
+| **Numerics** | The large numeric readings on a patient monitor (HR, SpO₂, BP, RR…), as opposed to waveforms and trends. On the Surveillance page, HR, SpO₂, BP and RR are the primary numerics. | General, PRD Monitoring SV-071 |
 | **OB exclusion** | Pregnant patients are screened for sepsis under different criteria. | Spec Appendix A |
+| **OB-ICU** | Obstetric intensive care: critically ill pregnant or postpartum patients. A unit code in the Census unit menu. | General |
 | **PAD (Pain, Agitation, Delirium)** | ICU framework for sedation depth, agitation and delirium. | Spec Appendix A |
+| **Parameter color** | The one color a physiological parameter keeps everywhere (number, waveform, label, trend). Kept apart from alarm severity colors and never the only signal. ⚠️ **Decision needed:** the palette (SV-OD-10). | General, PRD Monitoring SV-072 |
+| **PCU (Progressive Care Unit)** | A step-down unit between the ICU and a general ward, for patients who need closer monitoring than a ward gives but no longer need intensive care. | General |
 | **PEEP** | Positive end-expiratory pressure, a ventilator setting. | General, PRD PC-051 |
 | **Plateau pressure** | Ventilator measurement of alveolar pressure at the end-inspiratory pause. Kept under about 30 cmH₂O in ARDS. | Spec Appendix A |
 | **Pressors (vasopressors)** | Drugs given by continuous infusion to raise blood pressure. "On pressors" is a therapy tag. | General, PRD PC-060, §15.1 P1 |
@@ -314,11 +320,13 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **SOFA (Sequential Organ Failure Assessment)** | ICU score of organ dysfunction, 0–24 (higher is sicker): six organ systems (lungs, blood clotting, liver, heart and circulation, brain, kidneys) scored 0–4 each. A rise of 2 or more is part of the sepsis definition. The leading candidate acuity score (OD-02). | General, PRD PC-030 |
 | **Tele-critical care** | Delivering critical care remotely: an intensivist or APP manages ICU patients through camera, monitor and EMR access. The model the platform is built around. | Spec Appendix A |
 | **Telemetry** | Continuous device data from bedside monitors, ventilators, infusion pumps and wearables. | Spec §6.6 |
+| **Trauma ICU** | Intensive care unit for patients with severe injuries. A unit code in the Census unit menu. | General |
 | **Two-Midnight Rule** | Medicare guidance that inpatient admission is generally appropriate when care is expected to span two midnights. | Spec Appendix A |
 | **Unit (hospital)** | A department inside a hospital with its own care team, e.g. MICU, SICU, ED. Contains rooms and beds; not a room itself. Location reads hospital → unit → room → bed. Not the same as a unit of measurement (bpm, mmHg) on an observation. | General, PRD PC-014 |
 | **VAE (Ventilator-Associated Event)** | CDC-NHSN surveillance category covering VAC, IVAC and VAP. Roadmap protocol. | Spec Appendix A |
 | **Ventilated** | On invasive mechanical ventilation: a ventilator breathes for the patient through a tube in the windpipe or a tracheostomy. Shown as a "Ventilated" pill on the Patient card. Required for ventilator settings (PC-051) and vent-order mismatch alerts. | General, PRD PC-050, §15.1 P1 |
 | **Ventilator liberation** | Weaning a patient off mechanical ventilation. Roadmap protocol. | Spec Appendix A |
+| **Waveform** | A continuous trace of a physiological signal from a bedside device, e.g. ECG lead II, SpO₂ pleth, arterial pressure, respiration or capnography. | General, PRD Monitoring SV-070 |
 
 ---
 
@@ -387,9 +395,14 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Density model** | How much information a surface shows per area. Part of the design system deliverable. Surveillance and Credentialing have very different density needs. | Brief, Spec §9.2 |
 | **Design tensions** | Four to resolve up front: information density without clutter, honest data provenance, visible AI activity, and graceful degradation when hospital data is thin or stale. | Brief |
 | **Fighter-Jet HUD** | Shorthand for the multi-monitor, high-density, layered workspace the Provider Desktop should feel like. | Spec Appendix A |
+| **Focus view** | *Proposed* side sheet on the Monitoring page with one patient's trends, respiratory and infusion context, alerts, bedside camera and actions, opened over the live panel. ⚠️ **Decision needed:** side sheet or full page (SV-OD-06). | PRD Monitoring SV-030 |
 | **Graceful degradation** | The UI stays useful and honest when data is missing, delayed or stale, without passing off old values as live. | Brief, PRD §12 |
+| **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
+| **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (SV-OD-01). | Spec §5.2, PRD Monitoring SV-010 |
 | **Single Pane of Glass** | The Provider Desktop's promise: one workspace replacing 10–12 applications per shift. | Spec §5.1 |
+| **Telemetry-and-camera fusion** | Live drips, vent settings and pump rates overlaid on the bedside camera feed (the spec's "fighter-jet HUD" for the camera). | Spec §5.2, PRD Monitoring SV-031 |
 | **Three-cell-phone problem** | Clinicians carry up to three phones because desktop notifications (especially Epic Haiku) are unreliable. The reason the mobile companion exists. | Spec §6.10, §9.3 |
+| **Triage queue** | The Monitoring page's rail of active alerts for the panel, highest priority first, with Open, Acknowledge, Escalate and Resolve. The Alert Queue page is the full alert surface. ⚠️ **Decision needed:** whether both exist in v1 (SV-OD-03). | Spec §5.2, PRD Monitoring SV-020 |
 
 ---
 

@@ -80,14 +80,14 @@ function Swatch({ cssVar, alias, dark = false }: { cssVar: string; alias: string
 			</div>
 			<div className='min-w-0 font-mono text-[11px] leading-tight'>
 				<div className='truncate text-foreground'>{alias}</div>
-				<div className='text-muted-foreground'>{hex}</div>
+				<div className='text-foreground-subtle'>{hex}</div>
 			</div>
 		</div>
 	);
 }
 
 const cell = "border-b border-border py-2 pr-3 align-middle";
-const head = "border-b border-border py-2 pr-3 text-left text-xs font-semibold text-muted-foreground";
+const head = "border-b border-border py-2 pr-3 text-left text-xs font-semibold text-foreground-subtle";
 
 /** Every semantic color token, grouped as in `theme.css`, with its light (intercept) and dark (intercept-dark) value. */
 function ColorTokens({ css }: { css: string }) {
@@ -171,7 +171,7 @@ function RampStep({ name, step }: { name: string; step: string }) {
 		<div className='min-w-0 flex-1 text-center'>
 			<div ref={ref} className='h-10 rounded-sm border border-border' style={{ background: `var(--${name})` }} />
 			<div className='mt-1 font-mono text-xs text-foreground'>{step}</div>
-			<div className='truncate font-mono text-[10px] text-muted-foreground'>{hex}</div>
+			<div className='truncate font-mono text-[10px] text-foreground-subtle'>{hex}</div>
 		</div>
 	);
 }

@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid circle-user icon: the Active-state counterpart of lucide's `circle-user` in a SidebarMenuButton. Figma: archielabs.ds
- * `circle-user-solid` (node 6158:10398). Fills with `currentColor`, so it takes the item's color.
+ * Solid circle-user icon: the Active-state counterpart of lucide's `circle-user` in a SidebarMenuButton. Fills with
+ * `currentColor`, so it takes the item's color.
+ *
+ * Figma: [archielabs.ds › circle-user-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6158-10398)
  */
 function CircleUserSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

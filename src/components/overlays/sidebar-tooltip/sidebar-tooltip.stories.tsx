@@ -33,12 +33,12 @@ const trigger = (
 	</button>
 );
 
-/** Figma intercept.ds `sidebar-tooltip`. Hover or focus the trigger. */
+/** Hover or focus the trigger. */
 export const Default: Story = {
 	render: (args) => <SidebarTooltip {...args}>{trigger}</SidebarTooltip>,
 };
 
-/** Shown open, as in Figma. */
+/** Shown open. */
 export const Open: Story = {
 	render: (args) => (
 		<SidebarTooltip {...args} defaultOpen>

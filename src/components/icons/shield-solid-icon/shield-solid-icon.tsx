@@ -1,8 +1,10 @@
 import * as React from "react";
 
 /**
- * Solid shield icon: the Active-state counterpart of lucide's `shield` in a SidebarMenuButton. Figma: archielabs.ds
- * `shield-solid` (node 6160:10569). Fills with `currentColor`, so it takes the item's color.
+ * Solid shield icon: the Active-state counterpart of lucide's `shield` in a SidebarMenuButton. Fills with
+ * `currentColor`, so it takes the item's color.
+ *
+ * Figma: [archielabs.ds › shield-solid](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6160-10569)
  */
 function ShieldSolidIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (

@@ -1,7 +1,7 @@
 <!--
 Created: Oct 21, 2026
 Created by: Julio Caunedo
-Last updated: Oct 21, 2026
+Last updated: Oct 26, 2026
 Scope: the `size` prop and heights of interactive controls in UCL (buttons, inputs, and future selects, pills, toggles, button groups, segmented controls).
 Purpose: keep control heights aligned across components, with shadcn/ui and with Figma, under one set of size names.
 -->
@@ -34,7 +34,9 @@ Use `md` unless a density requirement forces otherwise. Don't mix sizes within o
 | `Button`   | `xs` · `sm` · `md` · `lg` · `icon-xs` · `icon-sm` · `icon-md` · `icon-lg` | `md`    | shadcn's classes. `xs` uses 12px text and a 12px icon; the others 14px and 16px |
 | `Input`    | `md` · `lg`                                                               | `md`    | shadcn's Input has no `size` prop (always 36px); `lg` comes from Figma |
 | `Textarea` | `md` · `lg`                                                               | `md`    | Heights are minimums (`min-h-9`, `min-h-10`); it grows with its text |
-| `Badge`    | `xs` · `sm` · `md` · `lg`                                                 | `md`    | 12px label at `xs`, 14px above; 12px icon at every size. shadcn's Badge has no `size` prop |
+| `Select`   | `sm` · `md` · `lg`                                                        | `md`    | The trigger. shadcn's has `sm` · `default` (32 / 36px); `lg` matches Input |
+| `Avatar`   | `xs` · `sm` · `md` · `lg`                                                 | `sm`    | Not a control, but the same heights. Defaults to 32px, Figma's and shadcn's default |
+| `Badge`    | `xs` · `xs-alt` · `sm` · `md` · `lg`                                      | `md`    | `xs` is 20px, below the scale (Figma, Oct 26, 2026); `xs-alt` is 24px with a 14px label. 12px label at `xs`, 14px at `xs-alt`/`sm`, 16px at `md`/`lg`; icon 12 / 12 / 12 / 16 / 14px. shadcn's Badge has no `size` prop |
 
 `default` (and Button's `icon`) still work on all three as deprecated aliases. `data-size` always reports the current name (`md`, `icon-md`).
 

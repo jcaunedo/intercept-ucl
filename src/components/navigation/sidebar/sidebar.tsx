@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 type SidebarIcon = React.ComponentType<{ className?: string }>;
 
-/** Panel-left with a short divider: the expanded Sidebar's collapse button. Figma `panel-left-alt` (intercept.ds). */
+/** Panel-left with a short divider: the expanded Sidebar's collapse button. Not in lucide. */
 function PanelLeftAltIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (
 		<svg
@@ -35,12 +35,12 @@ function PanelLeftAltIcon(props: React.SVGProps<SVGSVGElement>) {
 type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 	/** Leading icon, e.g. a lucide-react icon component. */
 	icon: SidebarIcon;
-	/** Solid icon for the Active state (Figma swaps e.g. square-activity for square-activity-solid). Optional: without it the outline `icon` stays. */
+	/** Solid icon for the active state, e.g. `SquareActivitySolidIcon`. Optional: without it the outline `icon` stays. */
 	activeIcon?: SidebarIcon;
 	label: string;
-	/** Trailing text after the label (Figma "Suffix"), e.g. a count. */
+	/** Trailing text after the label, e.g. a count. */
 	suffix?: React.ReactNode;
-	/** Marks the item as the current page (Figma Property 1=Active). */
+	/** Marks the item as the current page. */
 	active?: boolean;
 	/**
 	 * Icon-only layout for the collapsed Sidebar. The label stays for screen readers (`aria-label`) and shows in a
@@ -50,7 +50,9 @@ type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 };
 
 /**
- * One row in the sidebar's nav. Figma: intercept.ds `sidebar-menu-button`, Property 1=Default, Hover, Active.
+ * One row in the sidebar's nav.
+ *
+ * Figma: [intercept.ds › sidebar-menu-button](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1001-501)
  */
 function SidebarMenuButton({
 	icon: Icon,
@@ -72,22 +74,19 @@ function SidebarMenuButton({
 				aria-current={active ? "page" : undefined}
 				aria-label={collapsed ? label : undefined}
 				className={cn(
-					// Figma: row hugs its content (36px: 6px vertical padding around the 24px line), radius/menu/item (8px), 8px
-					// horizontal padding, 10px gap,
-					// 20px icon (Figma, Oct 25, 2026), base/medium label (16px on a 24px line).
-					"flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-base font-medium outline-none",
-					"[&_svg]:size-5 [&_svg]:shrink-0",
+					// The row hugs its content: 32px tall (6px vertical padding around the 20px label line).
+					"flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium outline-none",
+					"[&_svg]:size-4.5 [&_svg]:shrink-0",
 					// Fill, label and icon color fade over motionDuration.fast (160ms).
 					"transition-[background-color,color] duration-160 ease-in-out [&_svg]:transition-colors [&_svg]:duration-160 [&_svg]:ease-in-out",
 					"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
 					active
-						? // Property 1=Active: no fill; base/semibold label in foreground/foreground, solid icon in icon/foreground.
+						? // Active has no fill; the weight and the solid icon mark it.
 							"font-semibold text-foreground [&_svg]:text-icon"
-						: // Property 1=Default: label foreground/subtle, icon icon/muted. Property 1=Hover: states/active fill;
-							// label and icon go to #31373f (Figma binds the label to icon/foreground; UCL uses `foreground`,
-							// like Active).
-							"text-foreground-subtle hover:bg-active hover:text-foreground [&_svg]:text-icon-muted hover:[&_svg]:text-icon",
-					collapsed ? "size-9 shrink-0 justify-center p-0" : "w-full",
+						: // Hover darkens the label to the Active color, so the two states match.
+							"text-muted-foreground hover:bg-active hover:text-foreground [&_svg]:text-icon-muted hover:[&_svg]:text-icon",
+					// The collapsed rail is `background-subtle`, the same as `bg-active`, so its hover fill is `sidebar-hover`.
+					collapsed ? "size-8 shrink-0 justify-center p-0 hover:bg-sidebar-hover" : "w-full",
 					className,
 				)}
 				{...props}
@@ -97,7 +96,6 @@ function SidebarMenuButton({
 					<>
 						<span className='min-w-0 flex-1 truncate text-left'>{label}</span>
 						{suffix !== undefined ? (
-							// Figma "Suffix": sm/regular in foreground/muted.
 							<span data-slot='sidebar-menu-button-suffix' className='shrink-0 text-sm font-normal text-muted-foreground'>
 								{suffix}
 							</span>
@@ -109,7 +107,7 @@ function SidebarMenuButton({
 	);
 }
 
-/** Line between nav groups. Figma "divider": an 8px row with a 1px input/border line centered. */
+/** Line between nav groups: an 8px row with a 1px line centered. */
 function SidebarDivider({ className, ...props }: React.ComponentProps<"div">) {
 	return (
 		<div
@@ -127,7 +125,7 @@ type SidebarNavItem = {
 	/** Solid icon shown while the item is active. */
 	activeIcon?: SidebarIcon;
 	label: string;
-	/** Trailing text after the label (Figma "Suffix"). */
+	/** Trailing text after the label, e.g. a count. */
 	suffix?: React.ReactNode;
 	/** Action for items that don't route. Wins over `navigateTo` when both are set. */
 	onClick?: () => void;
@@ -139,9 +137,9 @@ type SidebarProps = Omit<
 	React.ComponentProps<"div">,
 	"onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart" | "onAnimationEnd"
 > & {
-	/** Nav items in groups, with a divider between groups (Figma: three groups). */
+	/** Nav items in groups, with a divider between groups. */
 	groups: SidebarNavItem[][];
-	/** Items pinned to the bottom of the rail (Figma: Documentation, Support). */
+	/** Items pinned to the bottom of the rail, e.g. Documentation and Support. */
 	footerItems?: SidebarNavItem[];
 	/**
 	 * Which item is active on first render (its label). Defaults to the first item. The Sidebar owns the active state
@@ -155,7 +153,7 @@ type SidebarProps = Omit<
 	activeItem?: string;
 	/** Called with a clicked item's `navigateTo`. Items without one never fire it. */
 	onNavigate?: (navigateTo: string) => void;
-	/** Controlled collapsed state (icon rail, Figma "New Collapsed"). Pass it with `onCollapsedChange`. */
+	/** Controlled collapsed state (the 64px icon rail). Pass it with `onCollapsedChange`. */
 	collapsed?: boolean;
 	/** Whether the Sidebar starts collapsed when uncontrolled. Defaults to expanded. */
 	defaultCollapsed?: boolean;
@@ -164,9 +162,10 @@ type SidebarProps = Omit<
 };
 
 /**
- * The app's navigation rail. Figma: intercept.ds `sidebar`, Property 1=New Default (280px) and New Collapsed (72px).
- * Behavior and motion match bethere-ucl's Sidebar: the width animates on `enterTransition`, clicking anywhere on the
- * rail's empty space toggles it, and hovering the collapsed rail swaps the mark for an expand icon.
+ * The app's navigation rail, 280px expanded and 64px collapsed. The width animates on `enterTransition`, clicking
+ * anywhere on the rail's empty space toggles it, and hovering the collapsed rail swaps the mark for an expand icon.
+ *
+ * Figma: [intercept.ds › sidebar](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1001-544)
  */
 function Sidebar({
 	groups,
@@ -224,15 +223,15 @@ function Sidebar({
 			// `initial={false}`: mount at the target width. Without it Motion animates from the natural width on every
 			// mount, so the rail would slide in on each page load.
 			initial={false}
-			// Figma widths: New Collapsed 72px, New Default 280px.
-			animate={{ width: collapsed ? 72 : 280 }}
+			animate={{ width: collapsed ? 64 : 280 }}
 			transition={resolve(enterTransition)}
 			className={cn(
-				"relative flex h-screen shrink-0 flex-col justify-between overflow-hidden bg-sidebar",
-				// Figma's 1px input/border right stroke doesn't take layout space, so it's drawn over the edge instead of
-				// as a border (which would narrow the rows to 247px).
-				"after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-input",
-				// Figma: collapsed 8px sides / 16px top and bottom; expanded spacing/4 (16px) all round.
+				// Collapsed, the rail takes the page's subtle fill. The fill change runs with the width (motionDuration.slow).
+				"relative flex h-screen shrink-0 flex-col justify-between overflow-hidden transition-[background-color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+				collapsed ? "bg-background-subtle" : "bg-sidebar",
+				// Expanded only: the 1px right stroke, drawn over the edge rather than as a border so it doesn't narrow the
+				// rows to 247px. The collapsed rail has none; its subtle fill separates it from the page.
+				!collapsed && "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-input",
 				collapsed ? "items-center px-2 py-4" : "items-start p-4",
 				className,
 			)}
@@ -250,13 +249,11 @@ function Sidebar({
 				className={cn("absolute inset-0 z-0 outline-none", collapsed ? "cursor-e-resize" : "cursor-w-resize")}
 			/>
 
-			{/* Figma "Content-Top": logo, then the nav, 16px apart. Collapsed it's a 36px column. */}
 			<div
 				data-slot='sidebar-header'
 				className={cn("relative z-10 flex flex-col gap-4", collapsed ? "w-9 items-center" : "w-full items-start")}
 			>
 				{collapsed ? (
-					// Figma "Logo Container", collapsed: 48px tall, the mark centered.
 					<div className='flex h-12 items-center'>
 						<button
 							type='button'
@@ -290,7 +287,6 @@ function Sidebar({
 						</button>
 					</div>
 				) : (
-					// Figma "Logo Container", expanded: 48px tall, 2px left / 4px right / 8px vertical padding.
 					<div className='flex h-12 w-full items-center justify-between py-2 pr-1 pl-0.5'>
 						{homeItem ? (
 							<button
@@ -305,8 +301,7 @@ function Sidebar({
 						) : (
 							<Logo />
 						)}
-						{/* Figma "Button / Icon": 24px, panel-left-alt 16px in icon/subtle. Hover is Button's ghost hover
-						    (`accent` fill, `accent-foreground` icon). Pointer cursor, from the global button rule. */}
+						{/* Hover matches Button's ghost variant. */}
 						<button
 							type='button'
 							data-slot='sidebar-collapse'
@@ -319,8 +314,7 @@ function Sidebar({
 					</div>
 				)}
 
-				{/* Figma "Primary Navigation": items and dividers 12px apart (spacing/3). */}
-				<nav aria-label='Main' className={cn("flex w-full flex-col gap-3", collapsed ? "items-center" : "items-start")}>
+				<nav aria-label='Main' className={cn("flex w-full flex-col gap-2.5", collapsed ? "items-center" : "items-start")}>
 					{groups.map((group, index) => (
 						<React.Fragment key={group[0]?.label ?? index}>
 							{index > 0 ? <SidebarDivider /> : null}
@@ -331,7 +325,6 @@ function Sidebar({
 			</div>
 
 			{footerItems.length > 0 ? (
-				// Figma "Footer": 12px apart, pinned to the bottom.
 				<div
 					data-slot='sidebar-footer'
 					className={cn("relative z-10 flex w-full flex-col gap-3", collapsed ? "items-center" : "items-start")}

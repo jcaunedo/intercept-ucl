@@ -69,12 +69,14 @@
 	--color-neutral-subtle: var(--neutral-subtle);
 	--color-neutral-muted: var(--neutral-muted);
 	--color-neutral-defined: var(--neutral-defined);
+	--color-neutral-prominent: var(--neutral-prominent);
 	--color-info: var(--info);
 	--color-info-subtle: var(--info-subtle);
 	--color-info-muted: var(--info-muted);
 	--color-success: var(--success);
 	--color-success-subtle: var(--success-subtle);
 	--color-success-muted: var(--success-muted);
+	--color-success-glow: var(--success-glow);
 	--color-warning: var(--warning);
 	--color-warning-subtle: var(--warning-subtle);
 	--color-warning-muted: var(--warning-muted);
@@ -117,6 +119,34 @@
 	--color-badge-purple-foreground: var(--badge-purple-foreground);
 	--color-badge-red: var(--badge-red);
 	--color-badge-red-foreground: var(--badge-red-foreground);
+	--color-badge-yellow: var(--badge-yellow);
+	--color-badge-yellow-foreground: var(--badge-yellow-foreground);
+	--color-badge-amber: var(--badge-amber);
+	--color-badge-amber-foreground: var(--badge-amber-foreground);
+	--color-avatar-1: var(--avatar-1);
+	--color-avatar-2: var(--avatar-2);
+	--color-avatar-3: var(--avatar-3);
+	--color-avatar-4: var(--avatar-4);
+	--color-avatar-5: var(--avatar-5);
+	--color-avatar-6: var(--avatar-6);
+	--color-avatar-7: var(--avatar-7);
+	--color-avatar-8: var(--avatar-8);
+	--color-avatar-9: var(--avatar-9);
+	--color-avatar-10: var(--avatar-10);
+
+	/* Alert severity */
+	--color-severity-critical: var(--severity-critical);
+	--color-severity-high: var(--severity-high);
+	--color-severity-medium: var(--severity-medium);
+	--color-severity-low: var(--severity-low);
+	--color-severity-foreground: var(--severity-foreground);
+	--color-monitor: var(--monitor);
+	--color-monitor-grid: var(--monitor-grid);
+	--color-monitor-foreground: var(--monitor-foreground);
+	--color-monitor-ecg: var(--monitor-ecg);
+	--color-monitor-spo2: var(--monitor-spo2);
+	--color-monitor-abp: var(--monitor-abp);
+	--color-monitor-resp: var(--monitor-resp);
 
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
@@ -124,15 +154,17 @@
 	/* Component radii that differ from --radius in intercept mode (DESIGN.md "Figma → theme.css token map"). */
 	--radius-input: 0.625rem; /* radius/input: 10px */
 	--radius-menu: 1rem; /* radius/menu/container: 16px */
+	--radius-card: 1rem; /* radius/card: 16px */
+	--radius-button-md: 0.625rem; /* radius/button/lg: 10px, the 36px button (Figma's lg · 36 is UCL's md) */
 
-	/* Figma effect styles shadow-xs … shadow-2xl. */
+	/* Effect styles shadow-xs … shadow-2xl. */
 	--shadow-xs: 0 1px 2px 0 var(--shadow-color-sm);
 	--shadow-sm: 0 2px 4px 0 var(--shadow-color-sm);
 	--shadow-md: 0 2px 4px -2px var(--shadow-color-md), 0 2px 4px 1px var(--shadow-color-sm);
 	--shadow-lg: 0 10px 16px 0 var(--shadow-color-sm), 0 3px 8px 0 var(--shadow-color-sm);
 	--shadow-xl: 0 8px 10px -6px var(--shadow-color-md), 0 6px 17px 0 var(--shadow-color-md);
 	--shadow-2xl: 0 16px 50px -12px var(--shadow-color-lg);
-	/* Figma effect style shadow/card (intercept.ds): a soft lift for floating labels, e.g. SidebarTooltip. */
+	/* shadow/card: a soft lift for floating labels, e.g. SidebarTooltip. */
 	--shadow-card: 0 4px 30px 0 oklch(0 0 0 / 8%);
 }
 
@@ -156,11 +188,11 @@
 
 /* ---------- Typography ----------
    Fonts: `font-family/bodytext` → --font-sans, `font-family/headline` →
-   --font-display (`Typography` 2xl and up, as in Figma), `font-family/code` →
+   --font-display (`Typography` 2xl and up), `font-family/code` →
    --font-mono. Non-inline `@theme`, so the variables reach `:root` and
    --font-sans feeds the base font. Tokens only: UCL doesn't load the webfonts
    (Storybook loads them in `.storybook/preview-head.html`, apps load them
-   themselves). Sizes and paired line heights: Figma `font-size/*` and
+   themselves). Sizes and paired line heights: `font-size/*` and
    `line-height/*`. Font weights (`font-weight/*`, intercept mode) are 300–900,
    Tailwind's defaults, so they aren't redefined. No letter spacing at any size. */
 @theme {
@@ -175,9 +207,9 @@
 	--text-base: 1rem;
 	--text-base--line-height: 1.5rem;
 	--text-lg: 1.125rem;
-	--text-lg--line-height: 1.75rem;
+	--text-lg--line-height: 1.625rem;
 	--text-xl: 1.25rem;
-	--text-xl--line-height: 1.875rem;
+	--text-xl--line-height: 1.75rem;
 	--text-2xl: 1.5rem;
 	--text-2xl--line-height: 2rem;
 	--text-3xl: 1.875rem;
@@ -195,7 +227,7 @@
 :root {
 	--radius: 0.5rem; /* radius/default: 8px */
 
-	/* ---------- Primitives (Figma "primitives" collection) ---------- */
+	/* ---------- Primitives ("primitives" collection) ---------- */
 	--white: oklch(1 0 0);
 	--black: oklch(0 0 0);
 
@@ -210,6 +242,18 @@
 	--gray-800: oklch(0.282 0.022 254.18);
 	--gray-900: oklch(0.247 0.025 263.97);
 	--gray-950: oklch(0.185 0.035 265.25);
+	/* graphite: gray's lightness steps at a quarter of its chroma, a near-neutral gray for intercept-dark surfaces. */
+	--graphite-50: oklch(0.973 0.0005 247.84);
+	--graphite-100: oklch(0.951 0.0013 258.32);
+	--graphite-200: oklch(0.912 0.0015 264.53);
+	--graphite-300: oklch(0.84 0.0027 256.7);
+	--graphite-400: oklch(0.707 0.0045 259.42);
+	--graphite-500: oklch(0.541 0.0057 264.36);
+	--graphite-600: oklch(0.436 0.0055 258.37);
+	--graphite-700: oklch(0.334 0.004 255.63);
+	--graphite-800: oklch(0.282 0.0055 254.18);
+	--graphite-900: oklch(0.247 0.0063 263.97);
+	--graphite-950: oklch(0.185 0.0088 265.25);
 
 	--catalina-50: oklch(0.961 0.018 269.09);
 	--catalina-100: oklch(0.929 0.034 271.04);
@@ -275,7 +319,7 @@
 	--warning-200: oklch(0.859 0.076 61.35);
 	--warning-300: oklch(0.798 0.113 64.11);
 	--warning-400: oklch(0.733 0.148 61.19);
-	--warning-500: oklch(0.698 0.162 58.23);
+	--warning-500: oklch(0.706 0.179 53.13); /* #f37a00 */
 	--warning-600: oklch(0.67 0.166 55.1);
 	--warning-700: oklch(0.569 0.141 55.12);
 	--warning-800: oklch(0.464 0.113 56.39);
@@ -294,7 +338,7 @@
 	--destructive-900: oklch(0.275 0.113 29.23);
 	--destructive-950: oklch(0.202 0.083 29.23);
 
-	/* Badge palettes: the steps the badge tones use. Figma: palettes/<color>/<step>. Blue, green, purple and red are
+	/* Badge palettes: the steps the badge tones use (palettes/<color>/<step>). Blue, green, purple and red are
 	   Tailwind's; sky is archielabs.ds's own palettes/sky (it existed before the badges). */
 	--blue-50: oklch(0.970 0.014 254.60); /* #eff6ff */
 	--blue-300: oklch(0.809 0.096 251.81); /* #93c5fd */
@@ -321,6 +365,42 @@
 	--red-700: oklch(0.505 0.190 27.52); /* #b91c1c */
 	--red-950: oklch(0.258 0.089 26.04); /* #450a0a */
 
+	--denim-50: oklch(0.972 0.012 259.82); /* #f1f6fe */
+	--denim-100: oklch(0.941 0.025 263.33); /* #e3ecfd */
+	--denim-200: oklch(0.872 0.055 261.22); /* #c1d6fa */
+	--denim-300: oklch(0.777 0.101 261.10); /* #92b7f7 */
+	--denim-400: oklch(0.655 0.162 260.55); /* #548ef2 */
+	--denim-500: oklch(0.534 0.218 261.15); /* #1160e8 */
+	--denim-600: oklch(0.477 0.192 261.11); /* #0f52c6 */
+	--denim-700: oklch(0.415 0.165 261.11); /* #0c43a3 */
+	--denim-800: oklch(0.353 0.135 260.97); /* #0a3580 */
+	--denim-900: oklch(0.290 0.107 260.80); /* #07275f */
+	--denim-950: oklch(0.217 0.071 259.52); /* #04183a */
+
+	--amber-50: oklch(0.970 0.020 70.00); /* #fef3e7 */
+	--amber-100: oklch(0.925 0.049 68.14); /* #fde1c4 */
+	--amber-200: oklch(0.867 0.095 71.13); /* #fbc98d */
+	--amber-300: oklch(0.810 0.135 69.16); /* #f9b057 */
+	--amber-400: oklch(0.773 0.152 64.32); /* #f79e3b */
+	--amber-500: oklch(0.746 0.165 60.62); /* #f69021 */
+	--amber-600: oklch(0.674 0.156 58.67); /* #db7a10 */
+	--amber-700: oklch(0.572 0.136 56.71); /* #b25f0a */
+	--amber-800: oklch(0.476 0.112 56.90); /* #8a4908 */
+	--amber-900: oklch(0.373 0.085 58.17); /* #613305 */
+	--amber-950: oklch(0.277 0.060 61.01); /* #3d2003 */
+
+	--flamingo-50: oklch(0.976 0.015 61.35); /* #fff5ed */
+	--flamingo-100: oklch(0.943 0.036 59.21); /* #ffe7d5 */
+	--flamingo-200: oklch(0.884 0.073 55.80); /* #ffcdab */
+	--flamingo-300: oklch(0.812 0.119 51.63); /* #ffab78 */
+	--flamingo-400: oklch(0.740 0.159 46.77); /* #fa874a */
+	--flamingo-500: oklch(0.674 0.188 42.32); /* #f16521 */
+	--flamingo-600: oklch(0.600 0.184 39.09); /* #d64c12 */
+	--flamingo-700: oklch(0.513 0.165 36.15); /* #b13711 */
+	--flamingo-800: oklch(0.440 0.134 35.32); /* #8d2e15 */
+	--flamingo-900: oklch(0.384 0.109 35.36); /* #722815 */
+	--flamingo-950: oklch(0.252 0.073 33.31); /* #3e1108 */
+
 
 }
 
@@ -332,7 +412,7 @@
 .dark {
 	/* shadcn roles */
 	--background: var(--white);
-	--foreground: var(--gray-800);
+	--foreground: var(--gray-700);
 	--card: var(--white);
 	--card-foreground: var(--foreground);
 	--popover: var(--white);
@@ -342,7 +422,7 @@
 	--secondary: var(--brand-subtle);
 	--secondary-foreground: var(--brand);
 	--muted: var(--gray-100);
-	--muted-foreground: var(--gray-400);
+	--muted-foreground: var(--gray-500);
 	--accent: var(--gray-50);
 	--accent-foreground: var(--foreground);
 	--destructive: var(--destructive-500);
@@ -353,7 +433,7 @@
 
 	/* Surfaces, text and lines */
 	--on-foreground: var(--white);
-	--foreground-subtle: var(--gray-500);
+	--foreground-subtle: var(--gray-400);
 	--background-subtle: var(--gray-50);
 	--background-defined: var(--gray-200);
 	--card-subtle: var(--gray-50);
@@ -374,11 +454,11 @@
 	--icon-on-brand: var(--white);
 
 	/* Tones */
-	--brand: var(--catalina-800);
+	--brand: var(--denim-500);
 	--brand-foreground: var(--white);
-	--brand-subtle: var(--catalina-50);
-	--brand-muted: var(--catalina-100);
-	--brand-defined: var(--catalina-500);
+	--brand-subtle: var(--denim-50);
+	--brand-muted: var(--denim-100);
+	--brand-defined: var(--denim-300);
 	--tone-accent: var(--elf-600);
 	--tone-accent-foreground: var(--white);
 	--tone-accent-subtle: var(--elf-50);
@@ -393,16 +473,17 @@
 	--neutral-foreground: var(--white);
 	--neutral-subtle: var(--gray-50);
 	--neutral-muted: var(--gray-100);
-	--neutral-defined: var(--gray-200);
+	--neutral-defined: var(--gray-400);
+	--neutral-prominent: var(--gray-600);
 	--info: var(--info-500);
-	--info-subtle: var(--info-800);
-	--info-muted: var(--info-700);
+	--info-subtle: var(--info-50);
+	--info-muted: var(--info-100);
 	--success: var(--success-600);
 	--success-subtle: var(--success-50);
 	--success-muted: var(--success-100);
-	--warning: var(--warning-400);
-	--warning-subtle: var(--warning-800);
-	--warning-muted: var(--warning-900);
+	--warning: var(--warning-500);
+	--warning-subtle: var(--amber-50);
+	--warning-muted: var(--amber-100);
 	--destructive-subtle: var(--destructive-50);
 	--destructive-muted: var(--destructive-100);
 
@@ -437,7 +518,7 @@
 	--shadow-color-md: oklch(0 0 0 / 10%);
 	--shadow-color-lg: oklch(0 0 0 / 25%);
 
-	/* Badge tones (Figma badge/<tone>/background, /foreground): 50 fill, 700 label. */
+	/* Badge tones (badge/<tone>/background, /foreground): 50 fill, 700 label. */
 	--badge-blue: var(--blue-50);
 	--badge-blue-foreground: var(--blue-700);
 	--badge-green: var(--green-50);
@@ -448,74 +529,118 @@
 	--badge-purple-foreground: var(--purple-700);
 	--badge-red: var(--red-50);
 	--badge-red-foreground: var(--red-700);
+	/* Yellow and Amber use a 100 fill, as Figma binds them. */
+	--badge-yellow: var(--corn-100);
+	--badge-yellow-foreground: var(--corn-800);
+	--badge-amber: var(--flamingo-100);
+	--badge-amber-foreground: var(--flamingo-700);
+
+	/* Avatar initials fills (intercept.ds avatar i1–i10). Raw values in Figma, no variables yet; white initials on each.
+	   Same in both modes. */
+	--avatar-1: oklch(0.502 0.146 262.28);
+	--avatar-2: oklch(0.691 0.146 157.47);
+	--avatar-3: oklch(0.534 0.208 319.6);
+	--avatar-4: oklch(0.737 0.153 104.9);
+	--avatar-5: oklch(0.587 0.124 48.59);
+	--avatar-6: oklch(0.643 0.12 223.24);
+	--avatar-7: oklch(0.663 0.207 333.08);
+	--avatar-8: oklch(0.563 0.178 141.06);
+	--avatar-9: oklch(0.533 0.191 25.81);
+	--avatar-10: oklch(0.671 0.183 248.48);
+	/* The ring around AppHeader's Online dot. Raw value in Figma, no variable yet. */
+	--success-glow: oklch(0.886 0.215 149.32);
+
+	/* Alert severity (PatientCardAlert). Critical, High and Low are raw values in intercept.ds with no variable, so
+	   they hold the same value in both modes (DESIGN.md "Patient card"). Medium follows `warning`. */
+	--severity-critical: oklch(0.598 0.245 29.23); /* #ef0000 */
+	--severity-high: oklch(0.674 0.218 37.74); /* #ff530b */
+	--severity-medium: var(--warning);
+	--severity-low: oklch(0.652 0.135 233.13); /* #029cd4 */
+	--severity-foreground: var(--white);
+
+	/* Bedside monitor screen (PatientMonitoringCard). Always dark, the same in both modes. Parameter colors avoid the
+	   alert hues (red, orange, amber, blue) so a colored number never reads as an alarm (PRD Monitoring SV-073).
+	   ⚠️ Draft palette, pending SV-OD-10; no Figma variables yet. */
+	--monitor: var(--graphite-950);
+	--monitor-grid: oklch(1 0 0 / 8%);
+	--monitor-foreground: var(--graphite-300);
+	--monitor-ecg: oklch(0.83 0.2 145); /* ECG / HR: green */
+	--monitor-spo2: oklch(0.83 0.12 185); /* SpO₂ pleth: teal */
+	--monitor-abp: oklch(0.75 0.15 305); /* arterial pressure: violet */
+	--monitor-resp: oklch(0.93 0.07 100); /* respiration: warm white */
 }
 
 /* ---------- Semantic: intercept-dark mode ----------
    Only tokens whose value differs from intercept. A token that is var(--x) in
    both modes needs no override: it follows --x. */
 .dark {
-	--background: var(--gray-950);
-	--foreground: var(--gray-200);
-	--card: var(--gray-900);
-	--popover: var(--gray-800);
-	--muted: var(--gray-800);
-	--accent: var(--gray-800);
+	--background: var(--graphite-950);
+	--foreground: var(--graphite-200);
+	--muted-foreground: var(--graphite-400);
+	--foreground-subtle: var(--graphite-500);
+	--card: var(--graphite-900);
+	--popover: var(--graphite-800);
+	--muted: var(--graphite-800);
+	--accent: var(--graphite-800);
 	--destructive: var(--destructive-300);
-	--border: var(--gray-700);
-	--input: var(--gray-500);
+	--border: var(--graphite-700);
+	--input: var(--graphite-500);
+	--input-ring: var(--graphite-400);
 	--ring: var(--catalina-300);
 
-	--on-foreground: var(--gray-950);
-	--background-subtle: var(--gray-900);
-	--background-defined: var(--gray-700);
-	--card-subtle: var(--gray-900);
-	--card-muted: var(--gray-800);
-	--card-defined: var(--gray-700);
-	--border-subtle: var(--gray-900);
-	--border-muted: var(--gray-800);
-	--modal: var(--gray-900);
-	--input-disabled: var(--gray-800);
+	--on-foreground: var(--graphite-950);
+	--background-subtle: var(--graphite-900);
+	--background-defined: var(--graphite-700);
+	--card-subtle: var(--graphite-900);
+	--card-muted: var(--graphite-800);
+	--card-defined: var(--graphite-700);
+	--border-subtle: var(--graphite-900);
+	--border-muted: var(--graphite-800);
+	--modal: var(--graphite-900);
+	--input-disabled: var(--graphite-800);
 	--ring-outside: var(--catalina-900);
 
-	--icon: var(--gray-300);
-	--icon-muted: var(--gray-400);
-	--icon-subtle: var(--gray-500);
-	--icon-on-brand: var(--gray-950);
+	--icon: var(--graphite-300);
+	--icon-muted: var(--graphite-400);
+	--icon-subtle: var(--graphite-500);
+	--icon-on-brand: var(--graphite-950);
 
-	--brand: var(--catalina-400);
-	--brand-foreground: var(--gray-950);
-	--brand-subtle: var(--catalina-900);
-	--brand-muted: var(--catalina-800);
-	--brand-defined: var(--catalina-600);
+	--brand: var(--denim-400);
+	--brand-subtle: var(--denim-900);
+	--brand-muted: var(--denim-800);
+	--brand-defined: var(--denim-600);
 	--tone-accent: var(--elf-400);
-	--tone-accent-foreground: var(--gray-950);
+	--tone-accent-foreground: var(--graphite-950);
 	--tone-accent-subtle: var(--elf-950);
 	--tone-accent-muted: var(--elf-900);
 	--tone-accent-defined: var(--elf-700);
-	--emphasis-foreground: var(--gray-950);
+	--emphasis-foreground: var(--graphite-950);
 	--emphasis-subtle: var(--corn-950);
 	--emphasis-muted: var(--corn-900);
 	--emphasis-defined: var(--corn-700);
-	--neutral: var(--gray-200);
-	--neutral-foreground: var(--gray-950);
-	--neutral-subtle: var(--gray-900);
-	--neutral-muted: var(--gray-800);
-	--neutral-defined: var(--gray-700);
+	--neutral: var(--graphite-200);
+	--neutral-foreground: var(--graphite-950);
+	--neutral-subtle: var(--graphite-900);
+	--neutral-muted: var(--graphite-800);
+	--neutral-defined: var(--graphite-700);
+	--neutral-prominent: var(--graphite-700);
 	--info: var(--info-400);
 	--info-subtle: var(--info-950);
 	--info-muted: var(--info-900);
 	--success: var(--success-500);
 	--success-subtle: var(--success-950);
 	--success-muted: var(--success-900);
+	--warning: var(--warning-400);
 	--warning-subtle: var(--warning-950);
+	--warning-muted: var(--warning-900);
 	--destructive-subtle: var(--destructive-950);
 	--destructive-muted: var(--destructive-900);
 
 	--link: var(--catalina-300);
-	--active: var(--gray-800);
-	--active-alt: var(--gray-800);
+	--active: var(--graphite-800);
+	--active-alt: var(--graphite-800);
 	--highlight: oklch(0.651 0.166 268.78 / 15%); /* catalina-400 at 15% */
-	--disabled: var(--gray-800);
+	--disabled: var(--graphite-800);
 	--veil: oklch(1 0 0 / 2%);
 	--veil-soft: oklch(1 0 0 / 8%);
 
@@ -539,6 +664,21 @@
 	--badge-purple-foreground: var(--purple-300);
 	--badge-red: var(--red-950);
 	--badge-red-foreground: var(--red-300);
+	--badge-yellow: var(--corn-950);
+	--badge-yellow-foreground: var(--corn-300);
+	--badge-amber: var(--flamingo-950);
+	--badge-amber-foreground: var(--flamingo-300);
+}
+
+/* ---------- Color scheme ----------
+   Tells the browser which mode is on, so native parts (scrollbars, form controls, autofill) match it. */
+@layer base {
+	:root {
+		color-scheme: light;
+	}
+	.dark {
+		color-scheme: dark;
+	}
 }
 
 /* ---------- Global interaction affordance ----------
