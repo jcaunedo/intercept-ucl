@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
+	BellRingIcon,
 	BookOpenTextIcon,
 	BoxIcon,
 	ChartColumnIcon,
@@ -14,7 +15,6 @@ import {
 	ShieldIcon,
 	SparklesIcon,
 	SquareActivityIcon,
-	TriangleAlertIcon,
 } from "lucide-react";
 
 import { BoxSolidIcon } from "@/components/icons/box-solid-icon";
@@ -26,7 +26,6 @@ import { LayoutGridSolidIcon } from "@/components/icons/layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
 import { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
-import { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
 import { Sidebar, SidebarMenuButton, type SidebarNavItem } from "./sidebar";
 
 // Solid icons show while an item is active. Search, Ask Intercept and the footer items have none yet, so they keep
@@ -39,7 +38,7 @@ const groups: SidebarNavItem[][] = [
 	[
 		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census" },
 		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring" },
-		{ icon: TriangleAlertIcon, activeIcon: TriangleAlertSolidIcon, label: "Alert Queue" },
+		{ icon: BellRingIcon, label: "Alert Queue" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis" },
 	],

@@ -93,8 +93,8 @@ const settleSpring: Transition = {
 };
 
 /**
- * A resolved alert's pill fading out (`motionDuration.resolvedFade`) on the standard curve: slow enough to be seen
- * before its card moves to a new place.
+ * A resolved alert's pill fading out (`motionDuration.resolvedFade`) on the standard curve, once its card has moved to
+ * its new place: slow enough to be seen.
  */
 const resolvedFadeTransition: Transition = {
 	duration: motionDuration.resolvedFade,

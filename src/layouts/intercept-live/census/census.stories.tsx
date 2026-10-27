@@ -1,5 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, screen, waitFor } from "storybook/test";
+import { expect, fn, screen, waitFor, within } from "storybook/test";
+
+// Story-only helper, not part of the card's public API.
+import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
@@ -12,11 +15,15 @@ const meta = {
 	parameters: {
 		layout: "fullscreen",
 	},
+	// The Monitoring page's monitors are live here too (`useLivePatients`).
+	render: function Render(args) {
+		return <Census {...args} monitoringPatients={useLivePatients(args.monitoringPatients ?? [])} />;
+	},
 	args: {
 		hospitals: sampleHospitals,
 		patients: samplePatients,
 		monitoringPatients: sampleMonitoringPatients,
-		monitoringAlerts: sampleMonitoringAlerts,
+		alerts: sampleMonitoringAlerts,
 		escalationTargets: sampleEscalationTargets,
 		user: sampleUser,
 		shiftEndsAt: sampleShiftEndsAt,
@@ -24,6 +31,8 @@ const meta = {
 		unreadMessages: 3,
 		onOpenPatient: fn(),
 		onPatientActions: fn(),
+		onAlertAction: fn(),
+		onOpenLiveFeed: fn(),
 	},
 } satisfies Meta<typeof Census>;
 
@@ -57,6 +66,22 @@ export const AskIntercept: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Close Ask Intercept Live" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Ask Intercept Live" })).not.toBeInTheDocument());
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+	},
+};
+
+/**
+ * The hospital bar's Live feed opens the live feed panel right of the canvas, as on Monitoring: the triage queue of the
+ * census's alerts, highest priority first. The grid drops a column for the room it takes; Live feed again closes it.
+ */
+export const LiveFeed: Story = {
+	play: async ({ args, canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: /^Live feed/ }));
+		const panel = await canvas.findByRole("complementary", { name: "Live feed" });
+		await expect(args.onOpenLiveFeed).toHaveBeenCalled();
+		const queue = within(panel);
+		await userEvent.click(queue.getAllByRole("button", { name: "Acknowledge" })[0]);
+		await expect(args.onAlertAction).toHaveBeenCalledWith("a2", { type: "acknowledge" });
+		await expect(queue.getByText(/Acknowledged by you/)).toBeVisible();
 	},
 };
 

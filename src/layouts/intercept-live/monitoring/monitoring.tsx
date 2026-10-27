@@ -12,7 +12,7 @@ import {
 
 type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 	MonitoringPanelProps & {
-		/** The census's patients. With them, the Sidebar's Census opens the Census page. */
+		/** The census's patients. With them, the Sidebar's Census opens the Census page, with the same live feed. */
 		censusPatients?: CensusPatient[];
 		/** The Census card's "…" button. */
 		onPatientActions?: (patientId: string) => void;
@@ -31,6 +31,8 @@ function Monitoring({
 	alerts,
 	escalationTargets,
 	onAlertAction,
+	liveFeed,
+	onOpenLiveFeed,
 	censusPatients,
 	onOpenPatient,
 	onPatientActions,
@@ -50,6 +52,8 @@ function Monitoring({
 						escalationTargets={escalationTargets}
 						onOpenPatient={onOpenPatient}
 						onAlertAction={onAlertAction}
+						liveFeed={liveFeed}
+						onOpenLiveFeed={onOpenLiveFeed}
 					/>
 				),
 				Census: censusPatients ? (
@@ -58,6 +62,11 @@ function Monitoring({
 						patients={censusPatients}
 						onOpenPatient={onOpenPatient}
 						onPatientActions={onPatientActions}
+						alerts={alerts}
+						escalationTargets={escalationTargets}
+						onAlertAction={onAlertAction}
+						liveFeed={liveFeed}
+						onOpenLiveFeed={onOpenLiveFeed}
 					/>
 				) : undefined,
 			}}

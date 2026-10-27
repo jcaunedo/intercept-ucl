@@ -41,7 +41,7 @@ type MonitorVitals = {
 };
 
 /**
- * The last hour of each primary numeric, oldest first, for the condensed monitor's `trends` view. Points are spread
+ * The last hour of each primary numeric, oldest first, for the monitor's `trends` plot. Points are spread
  * evenly, so any interval works (one a minute is typical); a missing series shows no sparkline.
  */
 type MonitorTrends = Partial<Record<"hr" | "spo2" | "systolic" | "rr", number[]>>;
@@ -59,14 +59,17 @@ const defaultMonitorLimits: MonitorLimits = { hr: [50, 120], spo2: [90, 100], sy
 
 type ParameterKey = "hr" | "spo2" | "bp" | "rr";
 
-// One color per parameter, everywhere (PRD Monitoring SV-072), with its waveform.
-const parameters: Record<ParameterKey, { label: string; wave: string; unit: string; color: string; kind: WaveformKind }> =
-	{
-		hr: { label: "HR", wave: "II", unit: "bpm", color: "text-monitor-ecg", kind: "ecg" },
-		spo2: { label: "SpO₂", wave: "Pleth", unit: "%", color: "text-monitor-spo2", kind: "pleth" },
-		bp: { label: "ABP", wave: "ABP", unit: "mmHg", color: "text-monitor-abp", kind: "abp" },
-		rr: { label: "RR", wave: "Resp", unit: "rpm", color: "text-monitor-resp", kind: "resp" },
-	};
+// One color per parameter, everywhere (PRD Monitoring SV-072), with its waveform and its trend's lane label (ABP's
+// trend is the systolic).
+const parameters: Record<
+	ParameterKey,
+	{ label: string; wave: string; trend: string; unit: string; color: string; kind: WaveformKind }
+> = {
+	hr: { label: "HR", wave: "II", trend: "HR · 1 h", unit: "bpm", color: "text-monitor-ecg", kind: "ecg" },
+	spo2: { label: "SpO₂", wave: "Pleth", trend: "SpO₂ · 1 h", unit: "%", color: "text-monitor-spo2", kind: "pleth" },
+	bp: { label: "ABP", wave: "ABP", trend: "Sys · 1 h", unit: "mmHg", color: "text-monitor-abp", kind: "abp" },
+	rr: { label: "RR", wave: "Resp", trend: "RR · 1 h", unit: "rpm", color: "text-monitor-resp", kind: "resp" },
+};
 const parameterOrder: ParameterKey[] = ["hr", "spo2", "bp", "rr"];
 
 /** Which side of its alarm limits a value is on, if it's outside them. */
@@ -125,11 +128,14 @@ type PatientMonitoringCardProps = Omit<
 		/** Alarm limits; defaults to common adult ICU limits. */
 		limits?: Partial<MonitorLimits>;
 		/**
-		 * What the condensed monitor shows above the numerics: the live ECG strip (`waveform`, default) or a 1-hour
-		 * sparkline under each numeric (`trends`, from `trends`). The full monitor always shows the waveforms.
+		 * What the monitor plots, condensed or full: live waveforms (`waveform`, default) or each parameter's last hour
+		 * (`trends`, from `trends`). Condensed, that's the ECG strip or a sparkline under each numeric; full, a waveform
+		 * or a trend line in each lane.
 		 */
+		plot?: "waveform" | "trends";
+		/** @deprecated Use `plot`, which now applies to the full monitor too. */
 		condensedView?: "waveform" | "trends";
-		/** The last hour of HR, SpO₂, systolic and RR, for the `trends` view. */
+		/** The last hour of HR, SpO₂, systolic and RR, for the `trends` plot. */
 		trends?: MonitorTrends;
 		/** Controlled: the full monitor (all waveforms) instead of the condensed one. */
 		expanded?: boolean;
@@ -242,9 +248,17 @@ function MonitorLane({ parameter, vitals, className }: { parameter: ParameterKey
 
 /**
  * A parameter's last hour as a line in its color, scaled to its own range (at least 4 units tall, so a steady value
- * stays flat instead of magnifying noise). Decorative: the number above it carries the value.
+ * stays flat instead of magnifying noise). Decorative: the number beside it carries the value.
  */
-function MonitorSparkline({ parameter, values }: { parameter: ParameterKey; values?: number[] }) {
+function MonitorSparkline({
+	parameter,
+	values,
+	className,
+}: {
+	parameter: ParameterKey;
+	values?: number[];
+	className?: string;
+}) {
 	if (!values || values.length < 2) return <span className='h-6 shrink-0' />;
 	const low = Math.min(...values);
 	const high = Math.max(...values);
@@ -263,7 +277,7 @@ function MonitorSparkline({ parameter, values }: { parameter: ParameterKey; valu
 			aria-hidden='true'
 			viewBox='0 0 100 24'
 			preserveAspectRatio='none'
-			className={cn("h-6 w-full shrink-0 px-2", parameters[parameter].color)}
+			className={cn("h-6 w-full shrink-0 px-2", parameters[parameter].color, className)}
 		>
 			<polyline
 				points={points}
@@ -277,10 +291,24 @@ function MonitorSparkline({ parameter, values }: { parameter: ParameterKey; valu
 	);
 }
 
+/** The full monitor's lane for the `trends` plot: the parameter's last hour across the lane, labeled like a waveform. */
+function MonitorTrendLane({ parameter, values }: { parameter: ParameterKey; values?: number[] }) {
+	const { trend, color } = parameters[parameter];
+
+	return (
+		<div className='relative min-h-0 min-w-0 flex-1'>
+			<span className={cn("absolute top-0.5 left-2 text-xs font-semibold", color)}>{trend}</span>
+			<div className='absolute inset-x-0 top-4 bottom-1'>
+				<MonitorSparkline parameter={parameter} values={values} className='h-full' />
+			</div>
+		</div>
+	);
+}
+
 /**
  * A patient's identity and location over a live bedside monitor. Condensed by default (an ECG strip and HR, SpO₂, BP and
- * RR, or 1-hour sparklines with `condensedView="trends"`); expands to the full monitor, one waveform lane per parameter
- * with its numbers and alarm limits. `size="sm"` is the compact card. An alert behaves
+ * RR, or 1-hour sparklines with `plot="trends"`); expands to the full monitor, one lane per parameter (its waveform, or
+ * its last hour with `plot="trends"`) with its numbers and alarm limits. `size="sm"` is the compact card. An alert behaves
  * as on PatientCard (a ring that pulses until the card is clicked or the alert is addressed), and with `onOpen` or
  * `href` the whole card opens the patient. Draft: the monitor follows PRD Monitoring §3.3, not a Figma design yet.
  *
@@ -300,7 +328,8 @@ function PatientMonitoringCard({
 	size = "md",
 	vitals = {},
 	limits: limitsProp,
-	condensedView = "waveform",
+	plot: plotProp,
+	condensedView,
 	trends = {},
 	expanded: expandedProp,
 	defaultExpanded = false,
@@ -319,6 +348,7 @@ function PatientMonitoringCard({
 	const monitorId = React.useId();
 	const limits = { ...defaultMonitorLimits, ...limitsProp };
 	const cardSize = size ?? "md";
+	const plot = plotProp ?? condensedView ?? "waveform";
 
 	const name = `${lastName}, ${firstName}`;
 	const demographics = [sex, age].filter((part) => part !== undefined && part !== "").join(", ");
@@ -383,7 +413,7 @@ function PatientMonitoringCard({
 					) : null}
 				</div>
 				{/* The pill fades in when an alert appears and out when it's removed, with the Dismiss pattern's exit; a
-				    "Resolved" pill fades slowly (`resolvedFadeTransition`), so it's seen leaving before the card moves. A
+				    "Resolved" pill fades slowly (`resolvedFadeTransition`), so it's seen leaving. A
 				    severity change recolors it in place. */}
 				<AnimatePresence initial={false}>
 					{alert ? (
@@ -469,7 +499,14 @@ function PatientMonitoringCard({
 						>
 							{parameterOrder.map((parameter) => (
 								<div key={parameter} className='flex min-h-0'>
-									<MonitorLane parameter={parameter} vitals={vitals} />
+									{plot === "trends" ? (
+										<MonitorTrendLane
+											parameter={parameter}
+											values={trends[parameter === "bp" ? "systolic" : parameter]}
+										/>
+									) : (
+										<MonitorLane parameter={parameter} vitals={vitals} />
+									)}
 									<div
 										className={cn(
 											"flex shrink-0 border-l border-monitor-grid py-0.5",
@@ -491,7 +528,7 @@ function PatientMonitoringCard({
 							style={{ height: condensedHeight[cardSize] }}
 							className='flex flex-col'
 						>
-							{condensedView === "trends" ? (
+							{plot === "trends" ? (
 								// Each numeric over its last hour.
 								<div className={cn("grid h-full divide-x divide-monitor-grid py-1.5", condensedColumns[cardSize])}>
 									{parameterOrder.map((parameter) => (

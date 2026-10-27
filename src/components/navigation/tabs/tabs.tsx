@@ -115,8 +115,6 @@ const tabsTriggerVariants = cva(
 		"focus-visible:not-data-pointer-focus:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none",
 		"group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start",
 		"[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-		// An outlined Counter in the tab follows its state: muted until the tab is active (hover doesn't change it).
-		"[&_[data-slot=counter][data-variant=outline]]:text-muted-foreground data-[state=active]:[&_[data-slot=counter][data-variant=outline]]:text-foreground",
 	],
 	{
 		variants: {

@@ -118,25 +118,22 @@ export const IconOnly: Story = {
 	},
 };
 
-/**
- * An outlined Counter after the label, as Figma's Line tabs draw it. Its number follows the tab: muted, then
- * `foreground` on the active tab.
- */
+/** A Counter after the label, as Figma's Line tabs draw it: Solid · Default (`default`), the same in every state. */
 export const WithCounters: Story = {
 	render: (args) => (
 		<Tabs {...args}>
 			<TabsList variant='line'>
 				<TabsTrigger value='account'>
 					Account
-					<Counter variant='outline' count={3} />
+					<Counter count={3} />
 				</TabsTrigger>
 				<TabsTrigger value='password'>
 					Password
-					<Counter variant='outline' count={12} />
+					<Counter count={12} />
 				</TabsTrigger>
 				<TabsTrigger value='settings'>
 					Settings
-					<Counter variant='outline' count={0} />
+					<Counter count={0} />
 				</TabsTrigger>
 			</TabsList>
 		</Tabs>

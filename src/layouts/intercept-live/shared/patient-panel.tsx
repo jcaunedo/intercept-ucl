@@ -153,12 +153,11 @@ const patientScopes: { id: PatientScope; label: string; icon: LucideIcon }[] = [
 	{ id: "mine", label: "My patients", icon: UserIcon },
 ];
 
-/** A quick view: one chip in the row, matching a subset of patients. `showCount` adds " · n" after its label (Badge's `count`). */
+/** A quick view: one chip in the row, matching a subset of patients. */
 type QuickView<Patient> = {
 	id: string;
 	label: string;
 	icon: LucideIcon;
-	showCount?: boolean;
 	matches: (patient: Patient) => boolean;
 };
 
@@ -166,7 +165,11 @@ type QuickView<Patient> = {
 /* Filter bar parts                                                           */
 /* -------------------------------------------------------------------------- */
 
-/** Hospital tabs: All hospitals, then one per hospital, each with its patient count in the color of its worst alert. */
+/**
+ * Hospital tabs: All hospitals, then one per hospital in alphabetical order (as Sort by Location groups them), each
+ * with its patient count in the color of its worst alert. Fills the page's hospital bar: 40px tall, the active tab's
+ * underline over the bar's bottom border.
+ */
 function HospitalTabs({
 	hospitals,
 	patients,
@@ -179,14 +182,16 @@ function HospitalTabs({
 	value: string;
 	onValueChange: (value: string) => void;
 }) {
+	const alphabetical = [...hospitals].sort((a, b) => a.name.localeCompare(b.name));
+
 	return (
-		<Tabs value={value} onValueChange={onValueChange}>
-			<TabsList variant='line' size='lg' aria-label='Hospital'>
+		<Tabs value={value} onValueChange={onValueChange} className='shrink-0'>
+			<TabsList variant='line' size='lg' aria-label='Hospital' className='-mb-px'>
 				<TabsTrigger value='all'>
 					All hospitals
 					<Counter variant='neutral' count={patients.length} />
 				</TabsTrigger>
-				{hospitals.map((hospital) => {
+				{alphabetical.map((hospital) => {
 					const hospitalPatients = patients.filter((patient) => patient.hospitalId === hospital.id);
 					return (
 						<TabsTrigger key={hospital.id} value={hospital.id}>
@@ -237,7 +242,11 @@ function PatientScopeSelect({ value, onValueChange }: { value: PatientScope; onV
 	);
 }
 
-/** The quick-view chips: toggle buttons, at most one pressed; pressing the pressed one turns it off (`null`). */
+/**
+ * The quick-view chips: toggle buttons, at most one pressed; pressing the pressed one turns it off (`null`). Every chip
+ * shows how many patients it matches (" · n", Badge's `count`) among `patients`, so the counts follow the hospital tab,
+ * the unit and the patient scope.
+ */
 function QuickViewChips<Patient>({
 	views,
 	value,
@@ -247,7 +256,7 @@ function QuickViewChips<Patient>({
 	views: readonly QuickView<Patient>[];
 	value: string | null;
 	onValueChange: (value: string | null) => void;
-	/** The patients a chip's count counts. */
+	/** The patients a chip's count counts: the page's patients in the current hospital, unit and scope. */
 	patients: Patient[];
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
@@ -264,7 +273,7 @@ function QuickViewChips<Patient>({
 						key={view.id}
 						asChild
 						variant={pressed ? "neutral" : "secondary"}
-						count={view.showCount ? patients.filter(view.matches).length : undefined}
+						count={patients.filter(view.matches).length}
 						className={cn(
 							"transition-[color,background-color,border-color,box-shadow] duration-160 ease-out motion-reduce:transition-none",
 							!pressed && "hover:border-foreground hover:bg-background",

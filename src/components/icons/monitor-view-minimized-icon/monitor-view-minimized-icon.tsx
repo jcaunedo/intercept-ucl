@@ -1,7 +1,7 @@
 import * as React from "react";
 
 /**
- * A monitor with a half-height block: the condensed monitor view (ECG strip and numerics). Pairs with
+ * A monitor with a short block along its bottom: the condensed monitor view (ECG strip and numerics). Pairs with
  * MonitorViewExpandedIcon. The outline and block take `currentColor`, so it follows its button's color.
  *
  * Figma: [archielabs.ds › monitor-view-minimized](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6234-10234)
@@ -16,7 +16,7 @@ function MonitorViewMinimizedIcon(props: React.SVGProps<SVGSVGElement>) {
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
-			<rect x="5.01831" y="6.93646" width="13.9635" height="5.06354" fill="currentColor" />
+			<rect x="5.01831" y="13.9365" width="13.9635" height="3.06354" fill="currentColor" />
 		</svg>
 	);
 }

@@ -427,7 +427,8 @@
 	--secondary-foreground: var(--brand);
 	--muted: var(--gray-100);
 	--muted-foreground: var(--gray-500);
-	--accent: var(--gray-50);
+	/* states/hover: foreground at 6%, an overlay that darkens whatever surface it's on. */
+	--accent: color-mix(in oklab, var(--foreground) 6%, transparent);
 	--accent-foreground: var(--foreground);
 	--destructive: var(--destructive-500);
 	--destructive-foreground: var(--brand-foreground);

@@ -24,6 +24,8 @@ import {
 	type QuickView,
 	type SortOrderId,
 } from "../shared/patient-panel";
+import { LiveFeed, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
+import type { EscalationTarget, TriageAlert, TriageAlertAction } from "../monitoring/triage-queue";
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -47,6 +49,17 @@ type CensusPanelProps = {
 	patients: CensusPatient[];
 	onOpenPatient?: (patientId: string) => void;
 	onPatientActions?: (patientId: string) => void;
+	/** Every alert on the census, for the live feed panel's triage queue. Resolved and declined ones show under Resolved. */
+	alerts?: TriageAlert[];
+	/** Who the queue's Escalate can send an alert to. Without any, rows don't offer Escalate. */
+	escalationTargets?: EscalationTarget[];
+	/** An action on an alert in the queue. The layout applies it at once; the app sends it to Clinical Alerting. */
+	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
+	/** The latest change from the live feed, e.g. "Moore worsens: Medium becomes Critical". Shown at the right of the
+	 * hospital bar as "Live feed: …"; just "Live feed" without it. */
+	liveFeed?: string;
+	/** Called when the hospital bar's "Live feed" opens or closes the live feed panel (the triage queue). */
+	onOpenLiveFeed?: () => void;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -64,10 +77,10 @@ const hasDataGap = (patient: CensusPatient) =>
 const quickViews: QuickView<CensusPatient>[] = [
 	// Every patient with an active alert, any severity (resolved alerts and messages don't count). The only alert filter:
 	// an "Alerts only" switch did the same and was removed (Oct 27, 2026).
-	{ id: "alerts", label: "With alerts", icon: BellRingIcon, showCount: true, matches: hasActiveAlert },
+	{ id: "alerts", label: "With alerts", icon: BellRingIcon, matches: hasActiveAlert },
 	// Any vital the card marks outside its normal range (↑ / ↓), alert or not: the card's own wording. Not "Outside
 	// limits", which Monitoring's alarm limits use.
-	{ id: "range", label: "Out of range", icon: GaugeIcon, showCount: true, matches: isOutOfRange },
+	{ id: "range", label: "Out of range", icon: GaugeIcon, matches: isOutOfRange },
 	{ id: "rising", label: "Rising acuity", icon: TriangleIcon, matches: hasRisingAcuity },
 	{ id: "organ", label: "Organ support", icon: HandHeartIcon, matches: hasOrganSupport },
 	{ id: "sepsis", label: "Sepsis watch", icon: GermIcon, matches: (patient) => Boolean(patient.sepsisWatch) },
@@ -78,8 +91,21 @@ const quickViews: QuickView<CensusPatient>[] = [
 /* Census                                                                     */
 /* -------------------------------------------------------------------------- */
 
-/** The Census page's content: every patient across the user's hospitals as cards, with its filter bar. */
-function CensusPanel({ hospitals, patients: patientsProp, onOpenPatient, onPatientActions }: CensusPanelProps) {
+/**
+ * The Census page's content: every patient across the user's hospitals as cards, with its filter bar, and the live feed
+ * panel of their alerts.
+ */
+function CensusPanel({
+	hospitals,
+	patients: patientsProp,
+	onOpenPatient,
+	onPatientActions,
+	alerts: alertsProp = [],
+	escalationTargets = [],
+	onAlertAction,
+	liveFeed,
+	onOpenLiveFeed,
+}: CensusPanelProps) {
 	// Alerts resolved in this session: opening a card with an active alert resolves it (prototype behavior; an app
 	// resolves through Clinical Alerting). Applied before filtering, so counters and filters see it.
 	const [resolvedIds, setResolvedIds] = React.useState<ReadonlySet<string>>(() => new Set());
@@ -99,6 +125,9 @@ function CensusPanel({ hospitals, patients: patientsProp, onOpenPatient, onPatie
 	const [scope, setScope] = React.useState<PatientScope>("all");
 	const [unit, setUnit] = React.useState("all");
 	const [sortBy, setSortBy] = React.useState<SortOrderId>("alert");
+	// The live feed panel, right of the canvas: the triage queue, as on Monitoring. The cards keep their own alert pills.
+	const [feedOpen, setFeedOpen] = React.useState(false);
+	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 
 	// The scope narrows everything below it, the tab counters included. The other filters run on both scopes, so the
 	// title can say "6 of 14 patients": the user's own among everyone the filters match.
@@ -124,13 +153,23 @@ function CensusPanel({ hospitals, patients: patientsProp, onOpenPatient, onPatie
 
 	return (
 		<>
-			<div className='mt-2 mb-4'>
-				<div className='flex items-center justify-between gap-4 px-6 py-2'>
-					<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
-				</div>
+			{/* The hospital bar, right under the header (Intercept-Live Census `83:2515`), with the live feed's latest change
+			    at its right (`141:22191`), which opens the live feed panel. The tabs keep their width; a long change
+			    truncates. */}
+			<div className='flex items-center justify-between gap-6 border-b border-border px-4'>
+				<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
+				<LiveFeed
+					change={liveFeed}
+					open={feedOpen}
+					onOpen={() => {
+						setFeedOpen((open) => !open);
+						onOpenLiveFeed?.();
+					}}
+				/>
 			</div>
 
-			<main className='flex flex-1 flex-col gap-6 px-6 pb-6'>
+			{/* A size container, so the grid's columns follow the room the live feed panel leaves. */}
+			<main className='@container flex flex-1 flex-col gap-6 p-6'>
 				<div className='flex flex-col gap-4'>
 					<Typography as='h1' size='2xl' weight='regular' aria-live='polite'>
 						{/* "6 of 14 patients" with My patients: the user's own among everyone the other filters match. */}
@@ -161,7 +200,8 @@ function CensusPanel({ hospitals, patients: patientsProp, onOpenPatient, onPatie
 					patients={visible}
 					hospitals={hospitals}
 					grouped={sortBy === "location"}
-					className='md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
+					// The columns the md, xl and 2xl breakpoints gave beside the collapsed rail, measured inside the page's padding.
+					className='@min-[41rem]:grid-cols-2 @min-[73rem]:grid-cols-3 @min-[89rem]:grid-cols-4'
 					renderCard={({ id, hospitalId: _hospitalId, mine: _mine, sepsisWatch: _sepsisWatch, ...card }) => (
 						<PatientCard
 							{...card}
@@ -191,6 +231,16 @@ function CensusPanel({ hospitals, patients: patientsProp, onOpenPatient, onPatie
 					</PanelEmpty>
 				) : null}
 			</main>
+
+			<LiveFeedPanel
+				open={feedOpen}
+				onOpenChange={setFeedOpen}
+				alerts={alerts}
+				patients={patients}
+				escalationTargets={escalationTargets}
+				onOpenPatient={onOpenPatient}
+				onAlertAction={handleAlertAction}
+			/>
 		</>
 	);
 }

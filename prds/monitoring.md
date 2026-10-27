@@ -202,14 +202,14 @@ Two controls at the end of the toolbar, after Unit and Sort by, change how the p
 | Control | Behavior |
 |---|---|
 | **Density** | A segmented control with an icon for each option, named by a tooltip (and for screen readers): **Comfortable** (default), **Compact**, **List** (SV-012). One option is pressed at a time. Switching reflows the panel in place; the order and the scope stay the same. |
-| **Card monitor** | A segmented control like Density, with icon and label, just left of it: **ECG strip** (default) or **1 h trends**, which puts a sparkline under each numeric instead of the waveform (SV-014, SV-OD-12). Disabled in List. Moved out of the View menu on Oct 27, 2026. |
+| **Card monitor** | A segmented control like Density, with icon and label, just left of it: **ECG strip** (default) or **1 h trends**, which puts a sparkline under each numeric instead of the waveform, and in full monitors draws each lane's last hour instead of its waveform (SV-014, SV-OD-12). Disabled in List. Moved out of the View menu on Oct 27, 2026. |
 | **Monitor view** | Two icon buttons with tooltips, **Condensed monitors** / **Full monitors**, between Card monitor and Density: every card's monitor condensed, or all four lanes (Comfortable and Compact). Each card's own button still toggles it alone; while cards are mixed, neither is pressed. Disabled in List. Replaced the View menu on Oct 27, 2026. |
 
 - Neither control appears on the Census: densities and monitors are Monitoring's own (filters in context, SV-010).
 - Values outside their limits aren't a View option: the card always marks them (SV-014). The exploration's "Mark values outside limits" switch was dropped when that became the default.
 - **Accessibility:** every view option is a toggle button with `aria-pressed`; the icon-only ones (Monitor view, Density) take their accessible name from the tooltip's text.
 - ⚠️ **Decision needed:** whether view settings persist per clinician across sessions and devices, or reset each shift.
-- ✅ **Built (Oct 27, 2026):** the UCL layout has both: the density control, a View DropdownMenu, the compact card (`PatientMonitoringCard` `size="sm"`), the trends view (`condensedView="trends"`) and the List table. Which densities ship still waits on SV-OD-04.
+- ✅ **Built (Oct 27, 2026):** the UCL layout has both: the density control, a View DropdownMenu, the compact card (`PatientMonitoringCard` `size="sm"`), the trends view (`plot="trends"`, condensed and full) and the List table. Which densities ship still waits on SV-OD-04.
 
 ---
 
@@ -389,7 +389,7 @@ An interactive page covering this whole PRD: [Intercept Live Monitoring](https:/
 | **Page header** | Hospital tabs with counts (a warning icon on a hospital whose feed is down), Alerts only and My Patients, the summary ("14 patients · 8 active alerts") and a privilege note ("2 patients at Mercy West Hospital hidden by your privileges"). | §3.1, SV-010, SV-051, SV-OD-02 |
 | **Filters** | The Census's quick views tuned for monitoring (All Patients, Needs attention, Outside limits, Rising acuity, Organ support, Data gap), Unit, Sort by (Alert, Acuity, Acuity change, Name, Location; Location groups by hospital). | SV-010, SV-013, AC-11 |
 | **Density** | Comfortable, Compact and List side by side. List shows the vitals as columns, in the parameter colors. | SV-012 |
-| **View options** | Card monitor: ECG strip or 1 h trends (a sparkline under each numeric). Full monitors (Comfortable only). Mark values outside limits: off by default, as in UCL; on, a small ↑/↓ tag beside the number that keeps the parameter color. | SV-014, SV-073, SV-OD-12 |
+| **View options** | Card monitor: ECG strip or 1 h trends (a sparkline under each numeric; in full monitors, a trend line per lane). Full monitors (Comfortable only). Mark values outside limits: off by default, as in UCL; on, a small ↑/↓ tag beside the number that keeps the parameter color. | SV-014, SV-073, SV-OD-12 |
 | **Panel cards** | `PatientMonitoringCard` imitated: identity, alert pill, location, live monitor with waveforms ported from UCL. Alert ring pulses until the card is opened or the alert is addressed. Stale cards dim their numbers and freeze their waveforms, with a "Stale" tag. | SV-011, SV-014, SV-050 |
 | **Reorder** | Cards keep their place when alerts change; a "Panel order changed" bar offers Update order. | SV-013, AC-08 |
 | **Triage queue** | Right rail, collapsible, Active and Resolved tabs. Rows: severity pill, title, age, patient, source chip (AI · agent name, Device · Monitor, Rule · Hemodynamics, Clinician concern), Overdue, "Carried over from night shift". AI rows have a dashed border, a "Recommendation" line and Show evidence. | SV-020, SV-021, SV-023 |

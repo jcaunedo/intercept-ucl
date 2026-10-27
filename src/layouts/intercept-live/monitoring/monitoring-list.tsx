@@ -87,7 +87,7 @@ function ListRow({ patient, onOpenPatient }: { patient: MonitoringListPatient; o
 				<div className='text-xs text-muted-foreground'>{patient.hospital}</div>
 			</td>
 			<td className='px-4 py-2.5'>
-				{/* As on the cards, a "Resolved" pill fades out slowly before the row moves; the dash follows it. */}
+				{/* As on the cards, a "Resolved" pill moves with its row, then fades out slowly; the dash follows it. */}
 				<AnimatePresence initial={false} mode='wait'>
 					{patient.alert ? (
 						<motion.div

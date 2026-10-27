@@ -1,8 +1,8 @@
 import * as React from "react";
 
 /**
- * A monitor with a full-height block: the full monitor view (every waveform lane). Pairs with MonitorViewMinimizedIcon.
- * The outline and block take `currentColor`, so it follows its button's color.
+ * A monitor with a tall block rising from its bottom: the full monitor view (every waveform lane). Pairs with
+ * MonitorViewMinimizedIcon. The outline and block take `currentColor`, so it follows its button's color.
  *
  * Figma: [archielabs.ds › monitor-view-expanded](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6234-10235)
  */
@@ -16,7 +16,7 @@ function MonitorViewExpandedIcon(props: React.SVGProps<SVGSVGElement>) {
 				strokeLinecap="round"
 				strokeLinejoin="round"
 			/>
-			<rect x="5.0365" y="6.93646" width="13.9635" height="10.0635" fill="currentColor" />
+			<rect x="5.0365" y="8.93646" width="13.9635" height="8.06354" fill="currentColor" />
 		</svg>
 	);
 }

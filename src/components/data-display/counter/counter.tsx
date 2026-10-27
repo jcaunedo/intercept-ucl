@@ -13,7 +13,7 @@ const counterVariants = cva(
 			variant: {
 				// Solid · Default
 				default: "bg-primary text-primary-foreground",
-				// Solid · Neutral (Badge's `neutral`)
+				// Solid · Neutral (Badge's `neutral`), no longer in Figma's set (DESIGN.md "Counter")
 				neutral: "bg-neutral text-neutral-foreground",
 				// Flat · Default, and Flat · Message
 				secondary: "bg-neutral-muted text-foreground",

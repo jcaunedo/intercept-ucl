@@ -2,7 +2,13 @@ import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 
-import { PatientMonitoringCard, type MonitorTrends, type MonitorVitals } from "./patient-monitoring-card";
+import {
+	PatientMonitoringCard,
+	type MonitorTrends,
+	type MonitorVitals,
+	type PatientMonitoringCardProps,
+} from "./patient-monitoring-card";
+import { useLiveVitals } from "./use-live-vitals";
 
 // Synthetic patient (PRD PC-180).
 const stable: MonitorVitals = { hr: 86, spo2: 97, systolic: 118, diastolic: 72, map: 87, rr: 16 };
@@ -21,9 +27,18 @@ const deterioratingHour: MonitorTrends = {
 	rr: hour(22, 31, 1),
 };
 
+/**
+ * The card with live numbers: they vary as on a bedside monitor, without crossing an alarm limit (`useLiveVitals`),
+ * and the waveforms follow the heart and breathing rates. Every story uses it.
+ */
+function LiveCard(props: PatientMonitoringCardProps) {
+	return <PatientMonitoringCard {...props} vitals={useLiveVitals(props.vitals, props.limits)} />;
+}
+
 const meta = {
 	title: "Cards/PatientMonitoringCard",
 	component: PatientMonitoringCard,
+	render: (args) => <LiveCard {...args} />,
 	parameters: {
 		layout: "centered",
 	},
@@ -77,13 +92,13 @@ export const AcknowledgedAlert: Story = {
 	args: { vitals: deteriorating, alert: { variant: "high", status: "acknowledged" } },
 };
 
-/** As on the Census prototype: opening the card resolves its alert; the pill turns Resolved and the ring fades out. */
+/** As on the Census prototype: opening the card resolves its alert; the pill turns Resolved and the ring blinks green once. */
 export const ClickToResolve: Story = {
 	args: { vitals: deteriorating },
 	render: function Render(args) {
 		const [resolved, setResolved] = React.useState(false);
 		return (
-			<PatientMonitoringCard
+			<LiveCard
 				{...args}
 				alert={resolved ? { variant: "resolved" } : { variant: "critical", count: 3 }}
 				onOpen={() => setResolved(true)}
@@ -95,39 +110,6 @@ export const ClickToResolve: Story = {
 /** Missing values show "--", never zero; a parameter without a rate draws a flat line. */
 export const MissingValues: Story = {
 	args: { vitals: { hr: 92, systolic: 110, diastolic: 70, map: 83 }, defaultExpanded: true },
-};
-
-// Drifts each value by a small step every 2s, like a live feed, for the Live story.
-function useDriftingVitals(start: MonitorVitals) {
-	const [vitals, setVitals] = React.useState(start);
-	React.useEffect(() => {
-		const drift = (value: number | undefined, step: number, min: number, max: number) =>
-			value === undefined ? undefined : Math.min(max, Math.max(min, value + Math.round((Math.random() - 0.5) * 2 * step)));
-		const timer = window.setInterval(() => {
-			setVitals((current) => {
-				const systolic = drift(current.systolic, 2, 105, 128);
-				const diastolic = drift(current.diastolic, 1, 66, 78);
-				return {
-					hr: drift(current.hr, 2, 80, 94),
-					spo2: drift(current.spo2, 1, 95, 99),
-					systolic,
-					diastolic,
-					map: systolic !== undefined && diastolic !== undefined ? Math.round((systolic + 2 * diastolic) / 3) : current.map,
-					rr: drift(current.rr, 1, 14, 18),
-				};
-			});
-		}, 2000);
-		return () => window.clearInterval(timer);
-	}, []);
-	return vitals;
-}
-
-/** A live feed: the numbers drift slightly every 2 seconds and the waveforms follow the heart and breathing rates. */
-export const Live: Story = {
-	render: function Render(args) {
-		const vitals = useDriftingVitals(stable);
-		return <PatientMonitoringCard {...args} vitals={vitals} defaultExpanded />;
-	},
 };
 
 /** Compact (`size="sm"`), for the Compact panel: four a row at 1728. Smaller type, tighter padding, a shorter monitor. */
@@ -142,17 +124,28 @@ export const Small: Story = {
 	],
 };
 
-/** The 1-hour trends view: a sparkline under each numeric instead of the ECG strip, here a patient drifting worse. */
+/** The 1-hour trends plot: a sparkline under each numeric instead of the ECG strip, here a patient drifting worse. */
 export const Trends: Story = {
 	args: {
 		vitals: deteriorating,
 		trends: deterioratingHour,
-		condensedView: "trends",
+		plot: "trends",
 		alert: { variant: "critical", count: 3 },
 	},
 };
 
-/** Condensed and expanded, stable and alarming; then the trends view and the compact size. */
+/** The full monitor with the trends plot: each lane is the parameter's last hour, beside its numbers and limits. */
+export const FullTrends: Story = {
+	args: {
+		vitals: deteriorating,
+		trends: deterioratingHour,
+		plot: "trends",
+		defaultExpanded: true,
+		alert: { variant: "critical", count: 3 },
+	},
+};
+
+/** Condensed and expanded, stable and alarming; then the trends plot, condensed and full, and the compact size. */
 export const AllVariants: Story = {
 	decorators: [
 		(Story) => (
@@ -163,14 +156,15 @@ export const AllVariants: Story = {
 	],
 	render: (args) => (
 		<div className='grid grid-cols-2 items-start gap-4'>
-			<PatientMonitoringCard {...args} />
-			<PatientMonitoringCard {...args} vitals={deteriorating} alert={{ variant: "critical", count: 3 }} />
-			<PatientMonitoringCard {...args} defaultExpanded />
-			<PatientMonitoringCard {...args} vitals={deteriorating} alert={{ variant: "critical", count: 3 }} defaultExpanded />
-			<PatientMonitoringCard {...args} vitals={deteriorating} trends={deterioratingHour} condensedView='trends' />
+			<LiveCard {...args} />
+			<LiveCard {...args} vitals={deteriorating} alert={{ variant: "critical", count: 3 }} />
+			<LiveCard {...args} defaultExpanded />
+			<LiveCard {...args} vitals={deteriorating} alert={{ variant: "critical", count: 3 }} defaultExpanded />
+			<LiveCard {...args} vitals={deteriorating} trends={deterioratingHour} plot='trends' />
+			<LiveCard {...args} vitals={deteriorating} trends={deterioratingHour} plot='trends' defaultExpanded />
 			<div className='col-span-2 grid grid-cols-[300px_300px] items-start gap-3'>
-				<PatientMonitoringCard {...args} size='sm' />
-				<PatientMonitoringCard {...args} size='sm' vitals={deteriorating} trends={deterioratingHour} condensedView='trends' />
+				<LiveCard {...args} size='sm' />
+				<LiveCard {...args} size='sm' vitals={deteriorating} trends={deterioratingHour} plot='trends' />
 			</div>
 		</div>
 	),

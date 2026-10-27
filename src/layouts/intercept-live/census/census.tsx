@@ -1,10 +1,5 @@
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps } from "../intercept-live";
-import {
-	MonitoringPanel,
-	type EscalationTarget,
-	type MonitoringPatient,
-	type TriageAlert,
-} from "../monitoring/monitoring-panel";
+import { MonitoringPanel, type MonitoringPatient } from "../monitoring/monitoring-panel";
 import {
 	CensusPanel,
 	type CensusHospital,
@@ -15,26 +10,28 @@ import {
 
 type CensusProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 	CensusPanelProps & {
-		/** The panel's patients with their live values. With them, the Sidebar's Monitoring opens the Monitoring page. */
+		/**
+		 * The panel's patients with their live values. With them, the Sidebar's Monitoring opens the Monitoring page, which
+		 * takes the same `alerts` for its triage queue and its cards' alert pills.
+		 */
 		monitoringPatients?: MonitoringPatient[];
-		/** The Monitoring page's alerts, for its triage queue and the cards' alert pills. */
-		monitoringAlerts?: TriageAlert[];
-		/** Who the Monitoring page's queue can escalate to. */
-		escalationTargets?: EscalationTarget[];
 		/** The page shown first. The Sidebar switches between the Census, Monitoring and the pages that aren't built. */
 		defaultPage?: InterceptLivePage;
 	};
 
 /**
  * The Census screen of Intercept Live: every patient across the user's hospitals as cards, filtered by hospital,
- * assignment and quick view. Figma origin: Intercept-Live › Census (1:350).
+ * assignment and quick view, with the live feed panel of their alerts. Figma origin: Intercept-Live › Census (1:350).
  */
 function Census({
 	hospitals,
 	patients,
 	monitoringPatients,
-	monitoringAlerts,
+	alerts,
 	escalationTargets,
+	onAlertAction,
+	liveFeed,
+	onOpenLiveFeed,
 	onOpenPatient,
 	onPatientActions,
 	defaultPage = "Census",
@@ -51,15 +48,23 @@ function Census({
 						patients={patients}
 						onOpenPatient={onOpenPatient}
 						onPatientActions={onPatientActions}
+						alerts={alerts}
+						escalationTargets={escalationTargets}
+						onAlertAction={onAlertAction}
+						liveFeed={liveFeed}
+						onOpenLiveFeed={onOpenLiveFeed}
 					/>
 				),
 				Monitoring: monitoringPatients ? (
 					<MonitoringPanel
 						hospitals={hospitals}
 						patients={monitoringPatients}
-						alerts={monitoringAlerts}
+						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onOpenPatient={onOpenPatient}
+						onAlertAction={onAlertAction}
+						liveFeed={liveFeed}
+						onOpenLiveFeed={onOpenLiveFeed}
 					/>
 				) : undefined,
 			}}

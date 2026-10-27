@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+	BellRingIcon,
 	BookOpenTextIcon,
 	BoxIcon,
 	ChartColumnIcon,
@@ -12,7 +13,6 @@ import {
 	ShieldIcon,
 	SparklesIcon,
 	SquareActivityIcon,
-	TriangleAlertIcon,
 } from "lucide-react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
 
@@ -24,7 +24,6 @@ import { LayoutGridSolidIcon } from "@/components/icons/layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
 import { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
-import { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { AppHeader, type AppHeaderPerson, type AppHeaderUser } from "@/components/navigation/app-header";
 import { Sidebar, type SidebarNavItem } from "@/components/navigation/sidebar";
@@ -33,6 +32,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
 import { AskInterceptPanel } from "./ask-intercept-panel";
+import { PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
@@ -49,7 +49,7 @@ const navGroups: SidebarNavItem[][] = [
 	[
 		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census", navigateTo: "Census" },
 		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring", navigateTo: "Monitoring" },
-		{ icon: TriangleAlertIcon, activeIcon: TriangleAlertSolidIcon, label: "Alert Queue", navigateTo: "Alert Queue" },
+		{ icon: BellRingIcon, label: "Alert Queue", navigateTo: "Alert Queue" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages", navigateTo: "Messages" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis", navigateTo: "Virtual Sepsis" },
 	],
@@ -168,7 +168,10 @@ type InterceptLiveProps = {
 	/** The clinicians on shift with the user. */
 	team: AppHeaderPerson[];
 	unreadMessages: number;
-	/** The content of each page the layout builds. The Sidebar's other pages show their title and an empty state. */
+	/**
+	 * The content of each page the layout builds. The Sidebar's other pages show their title and an empty state. A page
+	 * can open its own side panel right of the canvas with PagePanel (e.g. Monitoring's live feed).
+	 */
 	pages: Partial<Record<InterceptLivePage, React.ReactNode>>;
 	/** The page shown first. */
 	defaultPage?: InterceptLivePage;
@@ -191,6 +194,10 @@ function InterceptLive({
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
 	// Ask Intercept is an action, not a page: it toggles the chat panel and leaves the current page as it is.
 	const [chatOpen, setChatOpen] = React.useState(false);
+	// Where the current page's side panel renders (PagePanel).
+	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);
+	// Kept here, so the chat reopens at the width it was left at.
+	const [chatWidth, setChatWidth] = React.useState<number>(sidePanelWidth.default);
 	const groups = React.useMemo(
 		() =>
 			navGroups.map((group) =>
@@ -216,72 +223,84 @@ function InterceptLive({
 			: user;
 
 	return (
-		<div className='flex h-screen bg-background-subtle'>
-			<Sidebar
-				groups={groups}
-				footerItems={navFooter}
-				activeItem={page}
-				onNavigate={(navigateTo) => setPage(navigateTo as InterceptLivePage)}
-				collapsed={sidebarCollapsed}
-				onCollapsedChange={setSidebarCollapsed}
-				className='h-full'
-			/>
-
-			{/* Global: opens on every page, between the Sidebar and the page. */}
-			<AskInterceptPanel open={chatOpen} onOpenChange={setChatOpen} carded={sidebarCollapsed} />
-
-			{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
-			    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's width.
-			    `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail instead of
-			    under it. layoutScroll: the cards' layout animations measure against this scroll container, so they stay right
-			    when it's scrolled. */}
-			<motion.div
-				ref={canvasRef}
-				layoutScroll
-				className={cn(
-					"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-					// With the chat open the chat takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
-					// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
-					chatOpen
-						? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
-						: sidebarCollapsed
-							? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
-							: "rounded-none shadow-none",
-				)}
-			>
-				{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). */}
-				<AppHeader
-					clock={shownClock}
-					user={shownUser}
-					team={team}
-					unreadMessages={unreadMessages}
-					compact={headerCompact}
-					theme={theme}
-					onToggleTheme={toggleTheme}
-					// A subtle shadow while the page scrolls under it, fading with the padding (same 300ms and curve as
-					// standardTransition).
-					className={cn(
-						"sticky top-0 z-20 bg-background transition-shadow duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
-						headerCompact ? "shadow-sm" : "shadow-none",
-					)}
+		<PagePanelSlotProvider value={panelSlot}>
+			<div className='flex h-screen bg-background-subtle'>
+				<Sidebar
+					groups={groups}
+					footerItems={navFooter}
+					activeItem={page}
+					onNavigate={(navigateTo) => setPage(navigateTo as InterceptLivePage)}
+					collapsed={sidebarCollapsed}
+					onCollapsedChange={setSidebarCollapsed}
+					className='h-full'
 				/>
 
-				{pages[page] ?? (
-					// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area below
-					// the header.
-					<main className='relative flex flex-1 flex-col p-6'>
-						<Typography as='h1' size='2xl' weight='bold'>
-							{page}
-						</Typography>
-						<EmptyState
-							className='absolute inset-0 px-6'
-							title={emptyPages[page].title}
-							description={emptyPages[page].description}
-						/>
-					</main>
-				)}
-			</motion.div>
-		</div>
+				{/* Global: opens on every page, between the Sidebar and the page. */}
+				<AskInterceptPanel
+					open={chatOpen}
+					onOpenChange={setChatOpen}
+					carded={sidebarCollapsed}
+					width={chatWidth}
+					onWidthChange={setChatWidth}
+				/>
+
+				{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
+				    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
+				    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
+				    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
+				    stay right when it's scrolled. */}
+				<motion.div
+					ref={canvasRef}
+					layoutScroll
+					className={cn(
+						"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+						// With the chat open the chat takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
+						// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
+						chatOpen
+							? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+							: sidebarCollapsed
+								? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+								: "rounded-none shadow-none",
+					)}
+				>
+					{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). */}
+					<AppHeader
+						clock={shownClock}
+						user={shownUser}
+						team={team}
+						unreadMessages={unreadMessages}
+						compact={headerCompact}
+						theme={theme}
+						onToggleTheme={toggleTheme}
+						// A subtle shadow while the page scrolls under it, fading with the padding (same 300ms and curve as
+						// standardTransition).
+						className={cn(
+							"sticky top-0 z-20 bg-background transition-shadow duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
+							headerCompact ? "shadow-sm" : "shadow-none",
+						)}
+					/>
+
+					{pages[page] ?? (
+						// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area below
+						// the header.
+						<main className='relative flex flex-1 flex-col p-6'>
+							<Typography as='h1' size='2xl' weight='bold'>
+								{page}
+							</Typography>
+							<EmptyState
+								className='absolute inset-0 px-6'
+								title={emptyPages[page].title}
+								description={emptyPages[page].description}
+							/>
+						</main>
+					)}
+				</motion.div>
+
+				{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
+				    `contents`, so the panel is a flex item of this row. */}
+				<div ref={setPanelSlot} className='contents' />
+			</div>
+		</PagePanelSlotProvider>
 	);
 }
 

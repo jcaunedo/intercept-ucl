@@ -8,8 +8,6 @@ import {
 	CircleCheckIcon,
 	ClockIcon,
 	ListChecksIcon,
-	PanelRightCloseIcon,
-	PanelRightOpenIcon,
 	RepeatIcon,
 	ServerIcon,
 	SparklesIcon,
@@ -327,6 +325,7 @@ function TriageQueueRow({
 	onFormChange,
 	onOpenPatient,
 	onAction,
+	order,
 	ref,
 }: {
 	alert: TriageAlert;
@@ -337,6 +336,8 @@ function TriageQueueRow({
 	onFormChange: (form: OpenForm) => void;
 	onOpenPatient?: (patientId: string) => void;
 	onAction: (alertId: string, action: TriageAlertAction) => void;
+	/** The list's order (its alert ids). The row glides only when it changes, not when the panel is resized. */
+	order: string;
 	ref?: React.Ref<HTMLLIElement>;
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
@@ -359,6 +360,7 @@ function TriageQueueRow({
 		<motion.li
 			ref={ref}
 			layout='position'
+			layoutDependency={order}
 			variants={prefersReducedMotion ? reducedRowVariants : rowVariants}
 			initial='initial'
 			animate='animate'
@@ -509,29 +511,17 @@ type TriageQueueProps = {
 	alerts: TriageAlert[];
 	patients: TriageQueuePatient[];
 	escalationTargets: EscalationTarget[];
-	collapsed: boolean;
-	onCollapsedChange: (collapsed: boolean) => void;
 	onOpenPatient?: (patientId: string) => void;
 	onAction: (alertId: string, action: TriageAlertAction) => void;
 };
 
-// Sticky under the header once it's compact (64px), with its own scroll, so the queue stays in view as the panel scrolls.
-const railClassName = "sticky top-16 flex h-[calc(100vh-4rem)] shrink-0 self-start border-l border-border bg-background-subtle";
-
 /**
- * The panel's active alerts in a right-hand rail, highest priority first (PRD Monitoring SV-020–SV-023): Active, and
- * Resolved for the alerts addressed this shift. Each row opens the patient, and acknowledges, escalates and resolves
- * (or declines an AI recommendation) in place. Collapses to a slim rail with the active count.
+ * The panel's alerts, highest priority first (PRD Monitoring SV-020–SV-023): Active, and Resolved for the alerts
+ * addressed this shift. Each row opens the patient, and acknowledges, escalates and resolves (or declines an AI
+ * recommendation) in place. Fills the side panel it sits in (the Monitoring live feed panel), each tab scrolling on
+ * its own.
  */
-function TriageQueue({
-	alerts,
-	patients,
-	escalationTargets,
-	collapsed,
-	onCollapsedChange,
-	onOpenPatient,
-	onAction,
-}: TriageQueueProps) {
+function TriageQueue({ alerts, patients, escalationTargets, onOpenPatient, onAction }: TriageQueueProps) {
 	const now = useCurrentMinute();
 	const [tab, setTab] = React.useState("active");
 	const [form, setForm] = React.useState<OpenForm>(null);
@@ -542,101 +532,71 @@ function TriageQueue({
 	const lastFired = alerts.reduce<string | undefined>((latest, alert) => (!latest || alert.firedAt > latest ? alert.firedAt : latest), undefined);
 	const patientById = (id: string) => patients.find((patient) => patient.id === id);
 
-	if (collapsed) {
+	const list = (items: TriageAlert[]) => {
+		const order = items.map((alert) => alert.id).join();
 		return (
-			<aside aria-label='Triage queue' className={cn(railClassName, "w-14 flex-col items-center gap-3 pt-4")}>
-				<Button
-					variant='ghost'
-					size='icon-md'
-					aria-label={`Show triage queue, ${active.length} active ${active.length === 1 ? "alert" : "alerts"}`}
-					onClick={() => onCollapsedChange(false)}
-				>
-					<PanelRightOpenIcon />
-				</Button>
-				<Counter variant={active[0]?.severity ?? "secondary"} count={active.length} aria-hidden='true' />
-				<span aria-hidden='true' className='rotate-180 text-sm font-semibold text-foreground [writing-mode:vertical-rl]'>
-					Triage queue
-				</span>
-			</aside>
+			// popLayout takes a leaving row out of the flow at once (the list is `relative` for it), so the rest glide up.
+			<ul className='relative flex flex-col gap-2'>
+				<AnimatePresence initial={false} mode='popLayout'>
+					{items.map((alert) => (
+						<TriageQueueRow
+							key={alert.id}
+							order={order}
+							alert={alert}
+							patient={patientById(alert.patientId)}
+							now={now}
+							targets={escalationTargets}
+							form={form}
+							onFormChange={setForm}
+							onOpenPatient={onOpenPatient}
+							onAction={onAction}
+						/>
+					))}
+				</AnimatePresence>
+			</ul>
 		);
-	}
-
-	const list = (items: TriageAlert[]) => (
-		// popLayout takes a leaving row out of the flow at once (the list is `relative` for it), so the rest glide up.
-		<ul className='relative flex flex-col gap-2'>
-			<AnimatePresence initial={false} mode='popLayout'>
-				{items.map((alert) => (
-					<TriageQueueRow
-						key={alert.id}
-						alert={alert}
-						patient={patientById(alert.patientId)}
-						now={now}
-						targets={escalationTargets}
-						form={form}
-						onFormChange={setForm}
-						onOpenPatient={onOpenPatient}
-						onAction={onAction}
-					/>
-				))}
-			</AnimatePresence>
-		</ul>
-	);
+	};
 
 	return (
-		<aside aria-label='Triage queue' className={cn(railClassName, "w-90 flex-col")}>
-			<Tabs value={tab} onValueChange={setTab} className='flex min-h-0 flex-1 flex-col gap-0'>
-				<div className='flex flex-col gap-3 border-b border-border px-4 pt-4 pb-3'>
-					<div className='flex items-center gap-2'>
-						<h2 className='text-base font-bold text-foreground'>Triage queue</h2>
-						<span className='text-sm text-muted-foreground'>{active.length} active</span>
-						<Button
-							variant='ghost'
-							size='icon-sm'
-							aria-label='Hide triage queue'
-							onClick={() => onCollapsedChange(true)}
-							className='ml-auto text-icon-muted'
-						>
-							<PanelRightCloseIcon />
-						</Button>
-					</div>
-					<TabsList className='w-full'>
-						<TabsTrigger value='active' className='flex-1'>
-							Active
-							<Counter variant='neutral' count={active.length} />
-						</TabsTrigger>
-						<TabsTrigger value='resolved' className='flex-1'>
-							Resolved
-							<Counter variant='neutral' count={history.length} />
-						</TabsTrigger>
-					</TabsList>
-				</div>
-				<TabsContent value='active' className='min-h-0 flex-1 overflow-y-auto p-3'>
-					{active.length ? (
-						list(active)
-					) : (
-						<EmptyState
-							className='py-12'
-							headingLevel='h3'
-							icon={<CircleCheckIcon aria-hidden='true' />}
-							title='No active alerts'
-							description={lastFired ? `Last alert at ${formatTime(lastFired)}.` : "New alerts for your panel will appear here."}
-						/>
-					)}
-				</TabsContent>
-				<TabsContent value='resolved' className='min-h-0 flex-1 overflow-y-auto p-3'>
-					{history.length ? (
-						list(history)
-					) : (
-						<EmptyState
-							className='py-12'
-							headingLevel='h3'
-							title='Nothing resolved yet'
-							description='Alerts you resolve or decline stay here for the shift.'
-						/>
-					)}
-				</TabsContent>
-			</Tabs>
-		</aside>
+		<Tabs value={tab} onValueChange={setTab} className='flex min-h-0 flex-1 flex-col gap-0'>
+			<div className='border-b border-border px-4 pb-3'>
+				<TabsList className='w-full' aria-label='Alerts'>
+					<TabsTrigger value='active' className='flex-1'>
+						Active
+						<Counter variant='neutral' count={active.length} />
+					</TabsTrigger>
+					<TabsTrigger value='resolved' className='flex-1'>
+						Resolved
+						<Counter variant='neutral' count={history.length} />
+					</TabsTrigger>
+				</TabsList>
+			</div>
+			<TabsContent value='active' className='min-h-0 flex-1 overflow-y-auto p-3'>
+				{active.length ? (
+					list(active)
+				) : (
+					<EmptyState
+						className='py-12'
+						headingLevel='h3'
+						icon={<CircleCheckIcon aria-hidden='true' />}
+						title='No active alerts'
+						description={lastFired ? `Last alert at ${formatTime(lastFired)}.` : "New alerts for your panel will appear here."}
+					/>
+				)}
+			</TabsContent>
+			<TabsContent value='resolved' className='min-h-0 flex-1 overflow-y-auto p-3'>
+				{history.length ? (
+					list(history)
+				) : (
+					<EmptyState
+						className='py-12'
+						headingLevel='h3'
+						title='Nothing resolved yet'
+						description='Alerts you resolve or decline stay here for the shift.'
+					/>
+				)}
+			</TabsContent>
+		</Tabs>
 	);
 }
 

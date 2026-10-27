@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 type PanelDensity = "comfortable" | "compact" | "list";
 
-type CondensedView = "waveform" | "trends";
+type MonitorPlot = "waveform" | "trends";
 
 type ToggleOption<Value extends string> = {
 	id: Value;
@@ -31,7 +31,7 @@ const densities: ToggleOption<PanelDensity>[] = [
 	{ id: "list", label: "List", icon: Rows3Icon },
 ];
 
-const condensedViews: ToggleOption<CondensedView>[] = [
+const monitorPlots: ToggleOption<MonitorPlot>[] = [
 	{ id: "waveform", label: "ECG strip", icon: ActivityIcon },
 	{ id: "trends", label: "1 h trends", icon: ChartSplineIcon },
 ];
@@ -114,22 +114,22 @@ function DensityToggle({ value, onValueChange }: { value: PanelDensity; onValueC
 }
 
 /**
- * What the cards' condensed monitor shows: the ECG strip or 1-hour trends (PRD SV-OD-12), with icon and label. A card
- * option, so it's disabled in List density.
+ * What the cards' monitors plot, condensed or full: live waveforms or 1-hour trends (PRD SV-OD-12), with icon and label.
+ * A card option, so it's disabled in List density.
  */
-function CondensedViewToggle({
+function MonitorPlotToggle({
 	value,
 	onValueChange,
 	density,
 }: {
-	value: CondensedView;
-	onValueChange: (value: CondensedView) => void;
+	value: MonitorPlot;
+	onValueChange: (value: MonitorPlot) => void;
 	density: PanelDensity;
 }) {
 	return (
 		<SegmentedToggle
 			label='Card monitor'
-			options={condensedViews}
+			options={monitorPlots}
 			value={value}
 			onValueChange={onValueChange}
 			disabled={density === "list"}
@@ -170,4 +170,4 @@ function MonitorViewToggle({
 	);
 }
 
-export { CondensedViewToggle, DensityToggle, MonitorViewToggle, type CondensedView, type MonitorView, type PanelDensity };
+export { DensityToggle, MonitorPlotToggle, MonitorViewToggle, type MonitorPlot, type MonitorView, type PanelDensity };

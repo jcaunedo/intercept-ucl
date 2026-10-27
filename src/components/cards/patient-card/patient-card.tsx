@@ -209,20 +209,24 @@ const inlineValueClassNames: Record<NonNullable<PatientCardMetricProps["variant"
 	missing: "text-muted-foreground",
 };
 
-/** The compact card's vitals: "HR: 77 · MAP: 83 · …", with the expanded card's colors and arrows. */
+/**
+ * The compact card's vitals: "HR **77**  ·  MAP **83**  ·  …", labels and separators in `foreground`, values bold, with
+ * the expanded card's colors and arrows. A label stays with its value (a non-breaking space); the line breaks between
+ * readings.
+ */
 function InlineVitals({ vitals }: { vitals: PatientCardVital[] }) {
 	return (
-		<p data-slot='patient-card-vitals' className='flex items-start gap-1 text-sm font-medium'>
+		<p data-slot='patient-card-vitals' className='flex items-start gap-1 text-sm font-medium text-foreground'>
 			<SquareActivityIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-icon-muted' />
 			{/* Wraps rather than truncates, like everything on the card but the hospital name. */}
 			<span className='min-w-0'>
 				{vitals.map(({ label, shortLabel, value, variant = "default", trend, range, trendVariant }, index) => (
 					<React.Fragment key={label}>
-						{index > 0 ? <span className='text-muted-foreground'> · </span> : null}
-						<span className='text-muted-foreground' title={shortLabel ? label : undefined}>
-							{shortLabel ?? label}:{" "}
-						</span>
-						<span className={cn("whitespace-nowrap", inlineValueClassNames[variant ?? "default"])}>
+						{/* Two spaces each side of the dot; the outer ones let the line break between readings. */}
+						{index > 0 ? " \u00a0·\u00a0 " : null}
+						<span title={shortLabel ? label : undefined}>{shortLabel ?? label}</span>
+						{"\u00a0"}
+						<span className={cn("whitespace-nowrap font-bold", inlineValueClassNames[variant ?? "default"])}>
 							{variant === "missing" ? (
 								<>
 									<span aria-hidden='true'>--</span>
@@ -384,8 +388,10 @@ function PatientCard({
 			whileHover={interactive && !prefersReducedMotion ? liftPattern.whileHover : undefined}
 			transition={liftPattern.transition}
 			className={cn(
-				// 15px padding + the 1px border: content sits 16px in, as in Figma, where the stroke is drawn inside.
-				"group/card relative isolate flex flex-col gap-3 rounded-card border border-border bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
+				// 15px padding + the 1px border: content sits 16px in, as in Figma, where the stroke is drawn inside. The
+				// compact card's sections sit closer (10px; 12px on the expanded card).
+				"group/card relative isolate flex flex-col rounded-card border border-border bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
+				compact ? "gap-2.5" : "gap-3",
 				// Hover (interactive cards only): a 2px `foreground` border (the alert ring hides meanwhile) and `shadow-lg`.
 				// The padding drops to 14px so content stays put.
 				interactive && patientCardInteractiveClassName,
@@ -409,7 +415,7 @@ function PatientCard({
 			</div>
 
 			{hospital || placeInHospital || (compact && vitals.length > 0) ? (
-				<div className='flex flex-col gap-1'>
+				<div className='flex flex-col gap-1.5'>
 					{hospital || placeInHospital ? (
 						<p className='flex items-center gap-1 text-sm font-medium text-foreground'>
 							<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
@@ -433,7 +439,7 @@ function PatientCard({
 			{acuity || trajectory || (!compact && vitals.length > 0) ? (
 				<div className='flex flex-col'>
 					{acuity || trajectory ? (
-						<div className='flex border-b border-border-muted px-2 py-3 first:border-t'>
+						<div className={cn("flex border-b border-border-muted px-2 first:border-t", compact ? "py-1.5" : "py-3")}>
 							{acuity ? (
 								<div className='flex min-w-0 flex-1 flex-col whitespace-nowrap'>
 									<span className='text-xs font-medium text-muted-foreground'>{acuity.label}</span>

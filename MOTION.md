@@ -60,7 +60,7 @@ Use these named patterns before inventing new motion. Gesture patterns live in `
 | Dismiss  | Content removed or closed              | `dismissVariants`; table/list rows: `rowRemoveVariants` |
 | Confirm  | Lightweight success feedback           | `confirmPattern`                                |
 | Pending  | Work in progress on an element's behalf | `pendingIconVariants`, `pendingSurfaceVariants` |
-| Urgency  | Draws the eye to something that needs attention until it's addressed (e.g. an active alert's card border) | `urgencyRingVariants` driven by `useUrgencyPhase` (one shared clock: every instance pulses together); opacity only; pulses until addressed, then rests; still under reduced motion. A just-resolved alert's green ring blinks once (one pulse), and its pill fades out on `resolvedFadeTransition` (1 s) before the card moves |
+| Urgency  | Draws the eye to something that needs attention until it's addressed (e.g. an active alert's card border) | `urgencyRingVariants` driven by `useUrgencyPhase` (one shared clock: every instance pulses together); opacity only; pulses until addressed, then rests; still under reduced motion. A just-resolved alert's green ring blinks once (one pulse), and its pill moves with the card, then fades out on `resolvedFadeTransition` (1 s) once it has landed |
 | Live     | An ongoing status (e.g. connected), as a linear looping pulse on a small dot | `liveDotVariants` + `liveHaloVariants`; still under reduced motion |
 
 Plus `fadeVariants`, `overlayVariants` (scrims), `panelVariants` (drawers) and `iconSwapVariants` (one small element replacing another in place).
