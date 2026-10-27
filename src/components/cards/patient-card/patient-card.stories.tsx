@@ -55,26 +55,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Compact, the default. Click anywhere to open the patient; the "…" button is a separate target. Hover lifts the card, darkens its border and deepens its shadow. */
+/**
+ * Compact, the default, for the Census: identity, location, the top alert, acuity and tags, no vitals (the `vitals`
+ * passed here show only on the expanded card). Click anywhere to open the patient; the "…" button is a separate target.
+ * Hover lifts the card, darkens its border and deepens its shadow.
+ */
 export const Default: Story = {};
 
 /** `variant="expanded"`: the vitals get their own row of metrics, for monitoring dashboards. */
 export const Expanded: Story = {
 	args: { variant: "expanded" },
-};
-
-/** Compact with out-of-range and missing readings: the same colors and arrows as the expanded card. */
-export const CompactAbnormal: Story = {
-	args: {
-		variant: "compact",
-		alert: { variant: "high", count: 2 },
-		vitals: [
-			{ label: "Heart Rate", shortLabel: "HR", value: 128, variant: "destructive", range: "above" },
-			{ label: "MAP", value: 58, variant: "destructive", range: "below" },
-			{ label: "SpO₂", value: "90%", variant: "destructive", range: "below" },
-			{ label: "Resp. Rate", shortLabel: "RR", variant: "missing" },
-		],
-	},
 };
 
 /** Opens through a link instead of a handler, for apps that route with URLs. */

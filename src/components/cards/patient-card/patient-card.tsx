@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { BellRingIcon, EllipsisIcon, MapPinIcon, SquareActivityIcon } from "lucide-react";
+import { BellRingIcon, EllipsisIcon, MapPinIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
@@ -195,63 +195,15 @@ function PatientCardMetric({
 
 /** A reading in the card's trajectory or vitals rows. */
 type PatientCardVital = Pick<PatientCardMetricProps, "label" | "value" | "variant" | "trend" | "range" | "trendVariant"> & {
-	/** Abbreviation for the compact card's inline line, e.g. "HR" for Heart Rate. Defaults to `label`. */
+	/**
+	 * Abbreviation, e.g. "HR" for Heart Rate. It was for the compact card's vitals line, which the compact card no longer
+	 * has (Oct 27, 2026), so it has no effect on PatientCard now. Kept so apps that pass it still compile.
+	 */
 	shortLabel?: string;
 };
 
-/** A vital's metric props, without the compact-only `shortLabel`, which isn't a DOM attribute. */
+/** A vital's metric props, without `shortLabel`, which isn't a DOM attribute. */
 const toMetric = ({ shortLabel: _shortLabel, ...metric }: PatientCardVital) => metric;
-
-const inlineValueClassNames: Record<NonNullable<PatientCardMetricProps["variant"]>, string> = {
-	default: "text-foreground",
-	destructive: "text-destructive",
-	success: "text-success",
-	missing: "text-muted-foreground",
-};
-
-/**
- * The compact card's vitals: "HR **77**  ·  MAP **83**  ·  …", labels and separators in `foreground`, values bold, with
- * the expanded card's colors and arrows. A label stays with its value (a non-breaking space); the line breaks between
- * readings.
- */
-function InlineVitals({ vitals }: { vitals: PatientCardVital[] }) {
-	return (
-		<p data-slot='patient-card-vitals' className='flex items-start gap-1 text-sm font-medium text-foreground'>
-			<SquareActivityIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-icon-muted' />
-			{/* Wraps rather than truncates, like everything on the card but the hospital name. */}
-			<span className='min-w-0'>
-				{vitals.map(({ label, shortLabel, value, variant = "default", trend, range, trendVariant }, index) => (
-					<React.Fragment key={label}>
-						{/* Two spaces each side of the dot; the outer ones let the line break between readings. */}
-						{index > 0 ? " \u00a0·\u00a0 " : null}
-						<span title={shortLabel ? label : undefined}>{shortLabel ?? label}</span>
-						{"\u00a0"}
-						<span className={cn("whitespace-nowrap font-bold", inlineValueClassNames[variant ?? "default"])}>
-							{variant === "missing" ? (
-								<>
-									<span aria-hidden='true'>--</span>
-									<span className='sr-only'>Not monitored</span>
-								</>
-							) : (
-								<>
-									{trend ? (
-										<MetricGlyph
-											glyph={trendGlyphs[trend][0]}
-											text={trendGlyphs[trend][1]}
-											className={cn("text-sm", trendVariant ? trendVariantClassNames[trendVariant] : undefined)}
-										/>
-									) : null}
-									{value}
-									{range ? <MetricGlyph glyph={rangeGlyphs[range][0]} text={rangeGlyphs[range][1]} className='text-sm' /> : null}
-								</>
-							)}
-						</span>
-					</React.Fragment>
-				))}
-			</span>
-		</p>
-	);
-}
 
 // A card with an active alert takes a 2px border in the alert's severity color. The padding drops to 14px so the
 // content stays 16px in, as with the 1px border.
@@ -281,8 +233,9 @@ type PatientCardProps = Omit<
 	"children" | "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart" | "onAnimationEnd"
 > & {
 	/**
-	 * `compact` (default) shows the vitals as one line under the location, for dense census views; `expanded` shows
-	 * them as metrics in their own row (PRD §3.1). Both take the same data.
+	 * `compact` (default), for the Census: who the patient is, where, the top alert, acuity and tags, without vitals
+	 * (live values belong on Monitoring). `expanded` adds the vitals as metrics in their own row (PRD §3.1). Both take
+	 * the same data.
 	 */
 	variant?: "expanded" | "compact";
 	lastName: string;
@@ -315,6 +268,7 @@ type PatientCardProps = Omit<
 	};
 	/** Change beside the acuity score, e.g. "Change in last 24 h", ▲ +1. */
 	trajectory?: PatientCardVital;
+	/** Shown on the `expanded` card only; `compact` doesn't show vitals. */
 	vitals?: PatientCardVital[];
 	/** Interventions and context, e.g. Ventilated, Contact isolation. */
 	tags?: PatientCardTag[];
@@ -414,26 +368,21 @@ function PatientCard({
 				{alert ? <PatientCardAlert variant={alert.variant} count={alert.count}>{alert.label}</PatientCardAlert> : null}
 			</div>
 
-			{hospital || placeInHospital || (compact && vitals.length > 0) ? (
-				<div className='flex flex-col gap-1.5'>
-					{hospital || placeInHospital ? (
-						<p className='flex items-center gap-1 text-sm font-medium text-foreground'>
-							<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
-							{/* Only the hospital truncates; unit, room and bed always stay visible. The full name is in `title`. */}
-							<span className='flex min-w-0 flex-1'>
-								{hospital ? (
-									<span title={hospital} className='min-w-0 truncate'>
-										{hospital}
-									</span>
-								) : null}
-								{placeInHospital ? (
-									<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
-								) : null}
+			{hospital || placeInHospital ? (
+				<p className='flex items-center gap-1 text-sm font-medium text-foreground'>
+					<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
+					{/* Only the hospital truncates; unit, room and bed always stay visible. The full name is in `title`. */}
+					<span className='flex min-w-0 flex-1'>
+						{hospital ? (
+							<span title={hospital} className='min-w-0 truncate'>
+								{hospital}
 							</span>
-						</p>
-					) : null}
-					{compact && vitals.length > 0 ? <InlineVitals vitals={vitals} /> : null}
-				</div>
+						) : null}
+						{placeInHospital ? (
+							<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
+						) : null}
+					</span>
+				</p>
 			) : null}
 
 			{acuity || trajectory || (!compact && vitals.length > 0) ? (
