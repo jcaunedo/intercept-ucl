@@ -344,7 +344,7 @@ function PatientCard({
 			className={cn(
 				// 15px padding + the 1px border: content sits 16px in, as in Figma, where the stroke is drawn inside. The
 				// compact card's sections sit closer (10px; 12px on the expanded card).
-				"group/card relative isolate flex flex-col rounded-card border border-border bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
+				"group/card relative isolate flex flex-col rounded-card border border-border-defined bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
 				compact ? "gap-2.5" : "gap-3",
 				// Hover (interactive cards only): a 2px `foreground` border (the alert ring hides meanwhile) and `shadow-lg`.
 				// The padding drops to 14px so content stays put.

@@ -244,10 +244,9 @@ function FilterChip({
 }
 
 /**
- * My patients (Oct 27, 2026; it replaced the All / My patients menu, which had replaced the My Patients switch): a
- * chip like the quick views, off by default, so the page shows everyone. On, it narrows everything below it to the
- * signed-in clinician's patients, the tab counters included. It's its own choice, so it combines with a quick view.
- * `count` is how many of the user's patients are in the current hospital and unit.
+ * My patients: a chip like the quick views, off by default, so the page shows everyone. On, it narrows everything below
+ * it to the signed-in clinician's patients, the tab counters included. It's its own choice, so it combines with a quick
+ * view. `count` is how many of the user's patients are in the current hospital and unit.
  */
 function MyPatientsChip({
 	value,

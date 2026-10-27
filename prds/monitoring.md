@@ -1,7 +1,7 @@
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Oct 27, 2026 (Monitoring exploration recorded: §12.1, its proposals in §15, SV-OD-13 added; filters in context: SV-010, SV-014, SV-051, AC-11; SV-015 view controls, built in UCL)
+Last updated: Oct 27, 2026 (My patients is a chip, off by default: SV-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, SV-OD-13 added; filters in context: SV-010, SV-014, SV-051, AC-11; SV-015 view controls, built in UCL)
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -144,9 +144,9 @@ Adopted from the design references (§1.3). They apply wherever the page shows l
 
 ### SV-010 — Panel membership
 
-The panel shows the patients the clinician is responsible for on this shift: by default every patient assigned to them across the hospitals they cover, narrowed by hospital (tabs), **All / My patients** (a pill opening a menu, replacing the Census's My Patients switch on Oct 27, 2026) and unit. With My patients the summary reads "6 of 14 patients".
+The panel shows the patients the clinician is responsible for on this shift: by default every patient assigned to them across the hospitals they cover, narrowed by hospital (tabs), **My patients** (a chip, off by default) (a pill opening a menu, replacing the Census's My Patients switch on Oct 27, 2026) and unit. With My patients the summary reads "6 of 14 patients".
 
-✅ **Resolved (Oct 27, 2026): filters in context.** Monitoring's filters set the panel's **scope** (hospital, All / My patients, unit), its **order** (Sort by: Alert, Location, Name) and its **view** (Full monitors, densities), and nothing else. The Census's status filters don't repeat here, because other parts of this page already do that job:
+✅ **Resolved (Oct 27, 2026): filters in context.** Monitoring's filters set the panel's **scope** (hospital, My patients, unit), its **order** (Sort by: Alert, Location, Name) and its **view** (Full monitors, densities), and nothing else. The Census's status filters don't repeat here, because other parts of this page already do that job:
 
 | Census filter | On Monitoring |
 |---|---|

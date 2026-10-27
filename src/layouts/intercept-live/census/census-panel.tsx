@@ -73,7 +73,7 @@ const hasDataGap = (patient: CensusPatient) =>
 	patient.acuity?.score === undefined || (patient.vitals ?? []).some((vital) => vital.variant === "missing");
 
 // Quick views. At most one is active; pressing it again turns it off. My patients is its own chip before them, so it
-// combines with any quick view (Oct 27, 2026; it replaced the All / My patients menu).
+// combines with any quick view.
 const quickViews: QuickView<CensusPatient>[] = [
 	// Every patient with an active alert, any severity (resolved alerts and messages don't count). The only alert filter:
 	// an "Alerts only" switch did the same and was removed (Oct 27, 2026).
