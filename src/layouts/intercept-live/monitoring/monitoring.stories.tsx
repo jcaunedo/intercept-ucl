@@ -1,15 +1,13 @@
-import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { samplePatients } from "../census/sample-census";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
-import { Monitoring, type MonitoringProps, type TriageAlert } from "./monitoring";
-import { sampleLiveScenario } from "./sample-live-scenario";
+import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
+import { Monitoring, type MonitoringProps } from "./monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "./sample-monitoring";
 
 const meta = {
@@ -226,57 +224,17 @@ export const OutsideLimitsFilter: Story = {
 	},
 };
 
-// Seconds between feed changes, in turn: an uneven rhythm, as a real feed has, rather than a steady beat.
-const liveFeedDelays = [2, 3, 5, 10];
-
-/**
- * Plays `sampleLiveScenario` into the screen, one step after each delay in `liveFeedDelays` (2, 3, 5, 10 s, then again),
- * and starts over after the last step: vitals change, alerts change severity, fire and resolve. A resolved alert leaves
- * the queue (the feed resolved it, not the clinician).
- */
-function useLiveFeed() {
-	const [step, setStep] = React.useState(0);
-	const [tick, setTick] = React.useState(0);
-	const firedAt = React.useRef<Record<string, string>>({});
-
-	React.useEffect(() => {
-		const timer = window.setTimeout(() => {
-			setStep((current) => (current + 1) % (sampleLiveScenario.length + 1));
-			setTick((current) => current + 1);
-		}, liveFeedDelays[tick % liveFeedDelays.length] * 1000);
-		return () => window.clearTimeout(timer);
-	}, [tick]);
-
-	return React.useMemo(() => {
-		if (step === 0) firedAt.current = {};
-		const vitals: Record<string, Partial<MonitorVitals>> = {};
-		const updates: Record<string, Partial<TriageAlert>> = {};
-		const fired: TriageAlert[] = [];
-		const resolved = new Set<string>();
-		for (const live of sampleLiveScenario.slice(0, step)) {
-			for (const [id, change] of Object.entries(live.vitals ?? {})) vitals[id] = { ...vitals[id], ...change };
-			for (const [id, change] of Object.entries(live.update ?? {})) updates[id] = { ...updates[id], ...change };
-			for (const alert of live.fire ?? []) {
-				firedAt.current[alert.id] ??= new Date().toISOString();
-				fired.push({ ...alert, firedAt: firedAt.current[alert.id] });
-			}
-			for (const id of live.resolve ?? []) resolved.add(id);
-		}
-		return {
-			patients: sampleMonitoringPatients.map((patient) =>
-				vitals[patient.id] ? { ...patient, vitals: { ...patient.vitals, ...vitals[patient.id] } } : patient,
-			),
-			alerts: [...sampleMonitoringAlerts, ...fired]
-				.filter((alert) => !resolved.has(alert.id))
-				.map((alert) => ({ ...alert, ...updates[alert.id] })),
-			caption: step === 0 ? "Start of the shift" : sampleLiveScenario[step - 1].label,
-		};
-	}, [step]);
-}
-
 function LiveMonitoring(props: MonitoringProps) {
-	const { patients: fed, alerts, caption } = useLiveFeed();
+	const { patients: fed, alerts, caption } = useSampleLiveFeed();
 	const patients = useLivePatients(fed);
-	// What the feed just changed shows at the right of the hospital bar.
-	return <Monitoring {...props} patients={patients} alerts={alerts} liveFeed={caption} />;
+	// What the feed just changed shows at the right of the hospital bar. The Census page (Sidebar) follows the same feed.
+	return (
+		<Monitoring
+			{...props}
+			patients={patients}
+			alerts={alerts}
+			liveFeed={caption}
+			censusPatients={props.censusPatients && withFeedAlerts(props.censusPatients, alerts)}
+		/>
+	);
 }

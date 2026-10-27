@@ -1,3 +1,4 @@
+import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
@@ -6,6 +7,7 @@ import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-
 
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Census } from "./census";
 import { samplePatients } from "./sample-census";
 
@@ -39,8 +41,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Hospital tabs, the All / My patients pill and the quick views filter the grid; cards are sorted by alert severity. */
-export const Default: Story = {};
+/**
+ * Hospital tabs, the All / My patients pill and the quick views filter the grid; cards are sorted by alert severity.
+ * The live feed plays as on Monitoring (PRD SV-081): after 2, 3, 5 or 10 s, in turn, an alert fires, changes severity
+ * or resolves. The hospital bar says what changed ("Live feed: …"), the live feed panel's queue follows, and so do the
+ * cards' alert pills (`withFeedAlerts`), so a card moves to its new place. Then it loops.
+ */
+export const Default: Story = {
+	render: (args) => <LiveCensus {...args} />,
+};
+
+/** The same screen without the scripted feed: the sample as it starts, the cards' own alert pills, nothing changing. */
+export const Static: Story = {};
 
 /** My patients: the pill's menu narrows the grid to the user's own, and the title reads "6 of 14 patients". */
 export const MyPatients: Story = {
@@ -113,3 +125,18 @@ export const NoMatches: Story = {
 export const EmptyPage: Story = {
 	args: { defaultPage: "Alert Queue" },
 };
+
+/** Plays the sample live feed into the Census: its alerts, the cards' pills from them, and the Monitoring page's values. */
+function LiveCensus(props: React.ComponentProps<typeof Census>) {
+	const { patients: monitoring, alerts, caption } = useSampleLiveFeed();
+	const monitoringPatients = useLivePatients(monitoring);
+	return (
+		<Census
+			{...props}
+			patients={withFeedAlerts(props.patients, alerts)}
+			monitoringPatients={monitoringPatients}
+			alerts={alerts}
+			liveFeed={caption}
+		/>
+	);
+}
