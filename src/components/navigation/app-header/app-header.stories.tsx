@@ -23,7 +23,6 @@ const meta = {
 			{ name: "Ava Brooks", initials: "AB", tone: 2 },
 		],
 		user: { name: "Joanna Smith", initials: "JS", src: samplePhoto3, tone: 1, shiftEnds: "Shift ends on 3:45" },
-		onSearch: fn(),
 		onOpenMessages: fn(),
 		onToggleTheme: fn(),
 		onOpenTeam: fn(),
@@ -59,6 +58,11 @@ export const InitialsOnly: Story = {
 	},
 };
 
+/** One unread message: the label turns singular. */
+export const OneMessage: Story = {
+	args: { unreadMessages: 1 },
+};
+
 /** A long name and a large unread count. */
 export const LongContent: Story = {
 	args: {
@@ -72,12 +76,13 @@ export const LongContent: Story = {
 	},
 };
 
-/** Every state the header has: photo and initials avatars, short and long content. */
+/** Every state the header has: photo and initials avatars, one and many messages, short and long content. */
 export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-6'>
 			<AppHeader {...args} />
 			<AppHeader {...args} {...InitialsOnly.args} />
+			<AppHeader {...args} {...OneMessage.args} />
 			<AppHeader {...args} {...LongContent.args} />
 		</div>
 	),

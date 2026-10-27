@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronDownIcon, MessageCircleMoreIcon, MoonIcon, SearchIcon, SunIcon } from "lucide-react";
+import { ChevronDownIcon, MessageCircleMoreIcon, MoonIcon, SunIcon } from "lucide-react";
 import { motion } from "motion/react";
 
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
@@ -37,6 +37,10 @@ type AppHeaderProps = React.ComponentProps<"header"> & {
 	team: AppHeaderPerson[];
 	/** The signed-in user. */
 	user: AppHeaderUser;
+	/**
+	 * @deprecated The header no longer has a Search button (search is in the Sidebar). Ignored; removed in the next
+	 * breaking release.
+	 */
 	onSearch?: () => void;
 	onOpenMessages?: () => void;
 	onToggleTheme?: () => void;
@@ -57,10 +61,10 @@ const headerPaddingY = { default: 12, compact: 8 } as const;
 
 const focusClassName = "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
-// Search, Messages and Theme: outlined 36px pills with a raised edge. Figma's paddings include the 1px border (it draws
-// strokes inside), so the side paddings here are 1px less.
+// Messages and Theme: outlined 36px pills with a raised edge. Figma's paddings include the 1px border (it draws strokes
+// inside), so the side paddings here are 1px less.
 const pillClassName = cn(
-	"inline-flex h-9 shrink-0 items-center rounded-full border border-input bg-background text-base font-semibold text-foreground shadow-xs transition-colors hover:bg-accent [&_svg]:size-5",
+	"inline-flex h-9 shrink-0 items-center rounded-full border border-input bg-background text-base font-medium text-foreground shadow-xs transition-colors hover:bg-accent [&_svg]:size-5",
 	focusClassName,
 );
 
@@ -124,8 +128,8 @@ function PersonAvatar({ person }: { person: AppHeaderPerson }) {
 }
 
 /**
- * Intercept Live's top bar: connection status and clock on the left; search, messages, theme, the team on shift and
- * the user's menu on the right. Each button calls its own handler; the header holds no state.
+ * Intercept Live's top bar: connection status and clock on the left; messages, theme, the team on shift and the user's
+ * menu on the right. Each button calls its own handler; the header holds no state.
  *
  * Figma: [intercept.ds › Header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1112-4116)
  */
@@ -134,7 +138,8 @@ function AppHeader({
 	unreadMessages,
 	team,
 	user,
-	onSearch,
+	// Deprecated and ignored; taken out here so it doesn't reach the <header> as a DOM `search` listener.
+	onSearch: _onSearch,
 	onOpenMessages,
 	onToggleTheme,
 	theme = "light",
@@ -146,6 +151,7 @@ function AppHeader({
 }: AppHeaderProps) {
 	const { resolve } = useMotionPreference();
 	const paddingY = compact ? headerPaddingY.compact : headerPaddingY.default;
+	const messagesLabel = `${unreadMessages} ${unreadMessages === 1 ? "message" : "messages"}`;
 
 	return (
 		<header
@@ -162,34 +168,27 @@ function AppHeader({
 				className='flex items-center justify-between'
 			>
 				<div className='flex items-center gap-3'>
-					<span className='inline-flex h-9 items-center gap-1.5 rounded-full border border-transparent bg-success-subtle px-3 text-sm/4.5 font-bold tracking-[0.03em] text-success uppercase'>
+					{/* Figma counts this badge's 1px border in its layout, so the paddings sit inside it. */}
+					<span className='inline-flex h-7 items-center gap-1.5 rounded-full border border-transparent bg-success-subtle pr-3 pl-2.5 text-sm/4.5 font-bold tracking-[0.03em] text-success uppercase'>
 						<LiveDot />
 						Online
 					</span>
-					<Typography as='p' size='xl' weight='semibold' className='tabular-nums'>
+					<Typography as='p' size='xl' weight='medium' className='tabular-nums'>
 						{clock}
 					</Typography>
 				</div>
 
 				<div className='flex items-center gap-4'>
 					<div className='flex items-center gap-3'>
-						<button type='button' onClick={onSearch} className={cn(pillClassName, "gap-2 pr-[15px] pl-[9px]")}>
-							<span className='inline-flex items-center gap-2'>
-								<SearchIcon aria-hidden='true' />
-								Search
-							</span>
-							<kbd className='min-w-[18px] rounded-[3px] border border-border bg-background-subtle px-[3px] text-center font-sans text-xs/4.5 font-medium'>
-								/
-							</kbd>
-						</button>
+						{/* The accessible name starts with the visible label, so voice control users can say what they see. */}
 						<button
 							type='button'
 							onClick={onOpenMessages}
-							aria-label={`Messages, ${unreadMessages} unread`}
+							aria-label={`${messagesLabel} unread`}
 							className={cn(pillClassName, "gap-2 pr-[15px] pl-[9px]")}
 						>
 							<MessageCircleMoreIcon aria-hidden='true' />
-							{unreadMessages}
+							{messagesLabel}
 						</button>
 						<button
 							type='button'
