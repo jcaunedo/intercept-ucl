@@ -14,9 +14,9 @@ import { motionDuration } from "@/lib/motion";
 import {
 	activeAlertCount,
 	HospitalTabs,
+	MyPatientsChip,
 	PanelEmpty,
 	PanelGrid,
-	PatientScopeSelect,
 	QuickViewChips,
 	sortOrderById,
 	SortSelect,
@@ -90,7 +90,7 @@ function alertPill(patientAlerts: TriageAlert[]): PanelPatient["alert"] {
 	return { variant: open[0].severity, count: open.length, status };
 }
 
-// The filters stay in context (Oct 27, 2026): Monitoring narrows the panel's scope (hospital, All / My patients, unit),
+// The filters stay in context (Oct 27, 2026): Monitoring narrows the panel's scope (hospital, My patients, unit),
 // sets how it looks, and has one status filter of its own, Outside limits. What needs attention is the triage queue's
 // job, and acuity and tags aren't on the monitoring card, so the Census's other quick views stay there. Acuity sorts are
 // left out too.
@@ -231,7 +231,7 @@ function MonitoringPanel({
 		return { variant: "resolved" };
 	};
 
-	// Scope only: All / My patients applies to everything below it, the tab counters included; then hospital and unit.
+	// Scope only: My patients applies to everything below it, the tab counters included; then hospital and unit.
 	// Hospital and unit run on both scopes, so the summary can say "6 of 14 patients", as on the Census.
 	const located = (scoped: PanelMonitoringPatient[]) => {
 		const inHospital = hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
@@ -299,7 +299,11 @@ function MonitoringPanel({
 
 						<div className='flex flex-wrap items-center gap-2'>
 							<div className='flex flex-wrap items-center gap-1'>
-								<PatientScopeSelect value={scope} onValueChange={setScope} />
+								<MyPatientsChip
+									value={scope}
+									onValueChange={setScope}
+									count={located(patients).filter((patient) => patient.mine).length}
+								/>
 								<QuickViewChips
 									views={statusFilters}
 									value={statusFilter?.id ?? null}

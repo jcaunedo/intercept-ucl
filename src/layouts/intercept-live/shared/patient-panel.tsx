@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronDownIcon, UserIcon, UsersIcon, type LucideIcon } from "lucide-react";
+import { UserIcon, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, type Transition, type Variants } from "motion/react";
 
 import type { PatientCardAlertVariant, PatientCardProps } from "@/components/cards/patient-card";
@@ -17,13 +17,6 @@ import {
 	SelectValue,
 } from "@/components/forms/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuRadioGroup,
-	DropdownMenuRadioItem,
-	DropdownMenuTrigger,
-} from "@/components/overlays/dropdown-menu";
 import { pressPattern, reducedMotionTransition, reorderSpring, revealVariants, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -148,11 +141,6 @@ const sortOrderById = (id: SortOrderId) => sortOrders.find((order) => order.id =
 /** Whose patients the page shows: everyone's, or the signed-in clinician's (assigned this shift). */
 type PatientScope = "all" | "mine";
 
-const patientScopes: { id: PatientScope; label: string; icon: LucideIcon }[] = [
-	{ id: "all", label: "All patients", icon: UsersIcon },
-	{ id: "mine", label: "My patients", icon: UserIcon },
-];
-
 /** A quick view: one chip in the row, matching a subset of patients. */
 type QuickView<Patient> = {
 	id: string;
@@ -213,46 +201,77 @@ function HospitalTabs({
 }
 
 /**
- * All patients or My patients (Intercept-Live Census, Oct 27, 2026; it replaced the My Patients switch): a dark pill with
- * the scope's icon and a chevron, opening a menu of the two. It narrows everything below it, the tab counters included.
+ * One filter chip: a toggle button with its icon, label and how many patients it matches (" · n", Badge's `count`).
+ * An unpressed chip cross-fades to the outline look, with a `foreground` border, on hover (160ms, the `fast` duration)
+ * and presses on tap (Press). Both are instant under reduced motion.
  */
-function PatientScopeSelect({ value, onValueChange }: { value: PatientScope; onValueChange: (value: PatientScope) => void }) {
-	const current = patientScopes.find((scope) => scope.id === value) ?? patientScopes[0];
-	const Icon = current.icon;
+function FilterChip({
+	icon: Icon,
+	label,
+	count,
+	pressed,
+	onPressedChange,
+}: {
+	icon: LucideIcon;
+	label: string;
+	count: number;
+	pressed: boolean;
+	onPressedChange: (pressed: boolean) => void;
+}) {
+	const { prefersReducedMotion } = useMotionPreference();
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Badge
-					asChild
-					variant='neutral'
-					className='transition-[background-color] duration-160 ease-out hover:bg-neutral/90 motion-reduce:transition-none'
-				>
-					<button type='button'>
-						<Icon aria-hidden='true' />
-						{current.label}
-						<ChevronDownIcon aria-hidden='true' />
-					</button>
-				</Badge>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align='start' className='w-48'>
-				<DropdownMenuRadioGroup value={value} onValueChange={(next) => onValueChange(next as PatientScope)}>
-					{patientScopes.map((scope) => (
-						<DropdownMenuRadioItem key={scope.id} value={scope.id}>
-							<scope.icon aria-hidden='true' />
-							{scope.label}
-						</DropdownMenuRadioItem>
-					))}
-				</DropdownMenuRadioGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+		<Badge
+			asChild
+			variant={pressed ? "neutral" : "secondary"}
+			count={count}
+			className={cn(
+				"transition-[color,background-color,border-color,box-shadow] duration-160 ease-out motion-reduce:transition-none",
+				!pressed && "hover:border-foreground hover:bg-background",
+			)}
+		>
+			<motion.button
+				type='button'
+				aria-pressed={pressed}
+				onClick={() => onPressedChange(!pressed)}
+				{...(prefersReducedMotion ? {} : pressPattern)}
+			>
+				<Icon aria-hidden='true' />
+				{label}
+			</motion.button>
+		</Badge>
+	);
+}
+
+/**
+ * My patients (Oct 27, 2026; it replaced the All / My patients menu, which had replaced the My Patients switch): a
+ * chip like the quick views, off by default, so the page shows everyone. On, it narrows everything below it to the
+ * signed-in clinician's patients, the tab counters included. It's its own choice, so it combines with a quick view.
+ * `count` is how many of the user's patients are in the current hospital and unit.
+ */
+function MyPatientsChip({
+	value,
+	onValueChange,
+	count,
+}: {
+	value: PatientScope;
+	onValueChange: (value: PatientScope) => void;
+	count: number;
+}) {
+	return (
+		<FilterChip
+			icon={UserIcon}
+			label='My patients'
+			count={count}
+			pressed={value === "mine"}
+			onPressedChange={(pressed) => onValueChange(pressed ? "mine" : "all")}
+		/>
 	);
 }
 
 /**
  * The quick-view chips: toggle buttons, at most one pressed; pressing the pressed one turns it off (`null`). Every chip
- * shows how many patients it matches (" · n", Badge's `count`) among `patients`, so the counts follow the hospital tab,
- * the unit and the patient scope.
+ * shows how many patients it matches among `patients`, so the counts follow the hospital tab, the unit and My patients.
  */
 function QuickViewChips<Patient>({
 	views,
@@ -266,38 +285,18 @@ function QuickViewChips<Patient>({
 	/** The patients a chip's count counts: the page's patients in the current hospital, unit and scope. */
 	patients: Patient[];
 }) {
-	const { prefersReducedMotion } = useMotionPreference();
-
 	return (
 		<div role='group' aria-label='Quick views' className='flex flex-wrap gap-1'>
-			{views.map((view) => {
-				const Icon = view.icon;
-				const pressed = value === view.id;
-				return (
-					// An unpressed chip cross-fades to the outline look, with a `foreground` border, on hover (160ms, the `fast`
-					// duration) and presses on tap (Press). Both are instant under reduced motion.
-					<Badge
-						key={view.id}
-						asChild
-						variant={pressed ? "neutral" : "secondary"}
-						count={patients.filter(view.matches).length}
-						className={cn(
-							"transition-[color,background-color,border-color,box-shadow] duration-160 ease-out motion-reduce:transition-none",
-							!pressed && "hover:border-foreground hover:bg-background",
-						)}
-					>
-						<motion.button
-							type='button'
-							aria-pressed={pressed}
-							onClick={() => onValueChange(pressed ? null : view.id)}
-							{...(prefersReducedMotion ? {} : pressPattern)}
-						>
-							<Icon aria-hidden='true' />
-							{view.label}
-						</motion.button>
-					</Badge>
-				);
-			})}
+			{views.map((view) => (
+				<FilterChip
+					key={view.id}
+					icon={view.icon}
+					label={view.label}
+					count={patients.filter(view.matches).length}
+					pressed={value === view.id}
+					onPressedChange={(pressed) => onValueChange(pressed ? view.id : null)}
+				/>
+			))}
 		</div>
 	);
 }
@@ -507,9 +506,9 @@ export {
 	hasOrganSupport,
 	hasRisingAcuity,
 	HospitalTabs,
+	MyPatientsChip,
 	PanelEmpty,
 	PanelGrid,
-	PatientScopeSelect,
 	QuickViewChips,
 	sortOrderById,
 	SortSelect,

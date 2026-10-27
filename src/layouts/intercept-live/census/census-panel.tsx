@@ -12,9 +12,9 @@ import {
 	hasOrganSupport,
 	hasRisingAcuity,
 	HospitalTabs,
+	MyPatientsChip,
 	PanelEmpty,
 	PanelGrid,
-	PatientScopeSelect,
 	QuickViewChips,
 	sortOrderById,
 	SortSelect,
@@ -72,8 +72,8 @@ const isOutOfRange = (patient: CensusPatient) => (patient.vitals ?? []).some((vi
 const hasDataGap = (patient: CensusPatient) =>
 	patient.acuity?.score === undefined || (patient.vitals ?? []).some((vital) => vital.variant === "missing");
 
-// Quick views. At most one is active; pressing it again turns it off. Whose patients (all or mine) is the scope pill
-// before them, not a chip (it replaced the "All Patients" chip and the My Patients switch, Oct 27, 2026).
+// Quick views. At most one is active; pressing it again turns it off. My patients is its own chip before them, so it
+// combines with any quick view (Oct 27, 2026; it replaced the All / My patients menu).
 const quickViews: QuickView<CensusPatient>[] = [
 	// Every patient with an active alert, any severity (resolved alerts and messages don't count). The only alert filter:
 	// an "Alerts only" switch did the same and was removed (Oct 27, 2026).
@@ -129,7 +129,7 @@ function CensusPanel({
 	const [feedOpen, setFeedOpen] = React.useState(false);
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 
-	// The scope narrows everything below it, the tab counters included. The other filters run on both scopes, so the
+	// My patients narrows everything below it, the tab counters included. The other filters run on both scopes, so the
 	// title can say "6 of 14 patients": the user's own among everyone the filters match.
 	const filtered = (scoped: CensusPatient[]) => {
 		const inHospital = hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
@@ -182,7 +182,11 @@ function CensusPanel({
 
 					<div className='flex flex-wrap items-center justify-between gap-4'>
 						<div className='flex flex-wrap items-center gap-1'>
-							<PatientScopeSelect value={scope} onValueChange={setScope} />
+							<MyPatientsChip
+								value={scope}
+								onValueChange={setScope}
+								count={filtered(patients).inUnit.filter((patient) => patient.mine).length}
+							/>
 							<QuickViewChips views={quickViews} value={quickView} onValueChange={setQuickView} patients={inUnit} />
 						</div>
 						<div className='flex items-center gap-2'>

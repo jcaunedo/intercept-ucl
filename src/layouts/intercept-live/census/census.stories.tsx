@@ -42,7 +42,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Hospital tabs, the All / My patients pill and the quick views filter the grid; cards are sorted by alert severity.
+ * Hospital tabs, the My patients chip and the quick views filter the grid; cards are sorted by alert severity.
  * The live feed plays as on Monitoring (PRD SV-081): after 2, 3, 5 or 10 s, in turn, an alert fires, changes severity
  * or resolves. The hospital bar says what changed ("Live feed: …"), the live feed panel's queue follows, and so do the
  * cards' alert pills (`withFeedAlerts`), so a card moves to its new place. Then it loops.
@@ -54,15 +54,24 @@ export const Default: Story = {
 /** The same screen without the scripted feed: the sample as it starts, the cards' own alert pills, nothing changing. */
 export const Static: Story = {};
 
-/** My patients: the pill's menu narrows the grid to the user's own, and the title reads "6 of 14 patients". */
+/**
+ * My patients: a chip like the quick views, off by default, so the grid starts with everyone. Pressed, it narrows the
+ * grid to the user's own and the title reads "6 of 14 patients"; pressed again, everyone is back.
+ */
 export const MyPatients: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: "All patients" }));
-		await userEvent.click(await screen.findByRole("menuitemradio", { name: "My patients" }));
 		const mine = samplePatients.filter((patient) => patient.mine).length;
+		const chip = canvas.getByRole("button", { name: /^My patients/ });
+		await expect(chip).toHaveAttribute("aria-pressed", "false");
+		await expect(chip).toHaveTextContent(new RegExp(`·\\s*${mine}$`));
+		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(`${samplePatients.length} patients`);
+		await userEvent.click(chip);
+		await expect(chip).toHaveAttribute("aria-pressed", "true");
 		await waitFor(() =>
 			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(`${mine} of ${samplePatients.length} patients`),
 		);
+		await userEvent.click(chip);
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).not.toHaveTextContent(" of "));
 	},
 };
 
