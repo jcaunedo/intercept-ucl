@@ -1,5 +1,5 @@
 import * as React from "react";
-import { UserIcon, type LucideIcon } from "lucide-react";
+import { UsersIcon, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, type Transition, type Variants } from "motion/react";
 
 import type { PatientCardAlertVariant, PatientCardProps } from "@/components/cards/patient-card";
@@ -259,7 +259,7 @@ function MyPatientsChip({
 }) {
 	return (
 		<FilterChip
-			icon={UserIcon}
+			icon={UsersIcon}
 			label='My patients'
 			count={count}
 			pressed={value === "mine"}
