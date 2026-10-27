@@ -143,6 +143,13 @@ function CensusPanel({
 	const visible = unsorted.sort(sortOrderById(sortBy).compare);
 	const everyoneCount = scope === "mine" ? filtered(patients).visible.length : visible.length;
 	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
+	// One hospital, picked on its tab or the only one the filters leave, reads by name: "7 patients at CVMC".
+	const singleHospital =
+		hospitalId !== "all"
+			? hospitals.find((hospital) => hospital.id === hospitalId)
+			: hospitalCount === 1
+				? hospitals.find((hospital) => hospital.id === visible[0].hospitalId)
+				: undefined;
 
 	const clearFilters = () => {
 		setHospitalId("all");
@@ -177,7 +184,9 @@ function CensusPanel({
 							{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
 							{everyoneCount === 1 ? "patient" : "patients"}
 						</span>{" "}
-						across {hospitalCount} {hospitalCount === 1 ? "hospital" : "hospitals"}
+						{singleHospital
+							? `at ${singleHospital.name}`
+							: `across ${hospitalCount} ${hospitalCount === 1 ? "hospital" : "hospitals"}`}
 					</Typography>
 
 					<div className='flex flex-wrap items-center justify-between gap-4'>
