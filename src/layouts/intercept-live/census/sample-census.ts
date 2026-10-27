@@ -42,7 +42,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Mercy West Hospital",
 		unit: "MICU",
 		bed: "Bed 3",
-		alert: { variant: "high" },
+		alert: { variant: "low" },
 		acuity: { label: sofa, score: 11, level: "high" },
 		trajectory: { label: change, value: "+3", trend: "up", trendVariant: "critical" },
 		vitals: [

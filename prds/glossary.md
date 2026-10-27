@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 26, 2026
+Last updated: Oct 27, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -394,11 +394,13 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Data-completeness signal** | The Provider Desktop tells the clinician explicitly how deep the data is (Integrated versus Overlay). | Spec §8.7 |
 | **Density model** | How much information a surface shows per area. Part of the design system deliverable. Surveillance and Credentialing have very different density needs. | Brief, Spec §9.2 |
 | **Design tensions** | Four to resolve up front: information density without clutter, honest data provenance, visible AI activity, and graceful degradation when hospital data is thin or stale. | Brief |
+| **Evidence snapshot** | *Proposed* record attached to an escalation: the patient's primary numerics, drips and ventilator settings at the moment of escalating, so the receiver sees what the sender saw. | PRD Monitoring SV-040 |
 | **Fighter-Jet HUD** | Shorthand for the multi-monitor, high-density, layered workspace the Provider Desktop should feel like. | Spec Appendix A |
 | **Focus view** | *Proposed* side sheet on the Monitoring page with one patient's trends, respiratory and infusion context, alerts, bedside camera and actions, opened over the live panel. ⚠️ **Decision needed:** side sheet or full page (SV-OD-06). | PRD Monitoring SV-030 |
 | **Graceful degradation** | The UI stays useful and honest when data is missing, delayed or stale, without passing off old values as live. | Brief, PRD §12 |
 | **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
 | **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (SV-OD-01). | Spec §5.2, PRD Monitoring SV-010 |
+| **Panel order prompt** | *Proposed* "Panel order changed · Update" bar on the Monitoring page. When alerts change priority, cards keep their place until the clinician accepts the new order, so nothing moves under the pointer. ⚠️ **Decision needed:** auto-reorder rules (SV-OD-05). | PRD Monitoring SV-013 |
 | **Single Pane of Glass** | The Provider Desktop's promise: one workspace replacing 10–12 applications per shift. | Spec §5.1 |
 | **Telemetry-and-camera fusion** | Live drips, vent settings and pump rates overlaid on the bedside camera feed (the spec's "fighter-jet HUD" for the camera). | Spec §5.2, PRD Monitoring SV-031 |
 | **Three-cell-phone problem** | Clinicians carry up to three phones because desktop notifications (especially Epic Haiku) are unreliable. The reason the mobile companion exists. | Spec §6.10, §9.3 |

@@ -18,8 +18,17 @@ const sampleUser: AppHeaderUser = {
 	initials: "JS",
 	src: samplePhoto3,
 	tone: 1,
-	shiftEnds: "Shift ends on 3:45",
+	// Shown until the countdown (sampleShiftEndsAt) takes over on the first client render.
+	shiftEnds: "Shift ends at 8:00 PM",
 };
+
+// The user's day shift ends at 8:00 PM: today's, or tomorrow's once today's has passed, so the countdown always runs.
+const sampleShiftEndsAt = (() => {
+	const end = new Date();
+	end.setHours(20, 0, 0, 0);
+	if (end.getTime() <= Date.now()) end.setDate(end.getDate() + 1);
+	return end.toISOString();
+})();
 
 const sampleTeam: AppHeaderPerson[] = [
 	{ name: "Maria Ruiz", initials: "MR", src: samplePhoto2, tone: 3 },
@@ -27,4 +36,4 @@ const sampleTeam: AppHeaderPerson[] = [
 	{ name: "Ava Brooks", initials: "AB", tone: 2 },
 ];
 
-export { sampleHospitals, sampleTeam, sampleUser };
+export { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser };

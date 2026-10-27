@@ -1,10 +1,9 @@
 import * as React from "react";
-import { BadgeCheckIcon, BellRingIcon, FilterXIcon, GermIcon, HandHeartIcon, ListFilterIcon, TriangleIcon, WifiOffIcon } from "lucide-react";
+import { BellRingIcon, FilterXIcon, GaugeIcon, GermIcon, HandHeartIcon, ListFilterIcon, TriangleIcon, WifiOffIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { PatientCard, type PatientCardProps } from "@/components/cards/patient-card";
 import { EmptyState } from "@/components/feedback/empty-state";
-import { Switch } from "@/components/forms/switch";
 import type { AppHeaderUser } from "@/components/navigation/app-header";
 import { Typography } from "@/components/typography/typography";
 
@@ -15,11 +14,13 @@ import {
 	HospitalTabs,
 	PanelEmpty,
 	PanelGrid,
+	PatientScopeSelect,
 	QuickViewChips,
 	sortOrderById,
 	SortSelect,
 	UnitSelect,
 	type PanelHospital,
+	type PatientScope,
 	type QuickView,
 	type SortOrderId,
 } from "../shared/patient-panel";
@@ -52,14 +53,21 @@ type CensusPanelProps = {
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
+/** Whether any vital is outside its normal range, the ↑ / ↓ on the card. */
+const isOutOfRange = (patient: CensusPatient) => (patient.vitals ?? []).some((vital) => vital.range !== undefined);
+
 const hasDataGap = (patient: CensusPatient) =>
 	patient.acuity?.score === undefined || (patient.vitals ?? []).some((vital) => vital.variant === "missing");
 
-// Quick views. One is active at a time; "All Patients" clears the others.
+// Quick views. At most one is active; pressing it again turns it off. Whose patients (all or mine) is the scope pill
+// before them, not a chip (it replaced the "All Patients" chip and the My Patients switch, Oct 27, 2026).
 const quickViews: QuickView<CensusPatient>[] = [
-	{ id: "all", label: "All Patients", icon: BadgeCheckIcon, matches: () => true },
-	// Every patient with an active alert, any severity (resolved alerts and messages don't count).
-	{ id: "attention", label: "Needs attention", icon: BellRingIcon, showCount: true, matches: hasActiveAlert },
+	// Every patient with an active alert, any severity (resolved alerts and messages don't count). The only alert filter:
+	// an "Alerts only" switch did the same and was removed (Oct 27, 2026).
+	{ id: "alerts", label: "With alerts", icon: BellRingIcon, showCount: true, matches: hasActiveAlert },
+	// Any vital the card marks outside its normal range (↑ / ↓), alert or not: the card's own wording. Not "Outside
+	// limits", which Monitoring's alarm limits use.
+	{ id: "range", label: "Out of range", icon: GaugeIcon, showCount: true, matches: isOutOfRange },
 	{ id: "rising", label: "Rising acuity", icon: TriangleIcon, matches: hasRisingAcuity },
 	{ id: "organ", label: "Organ support", icon: HandHeartIcon, matches: hasOrganSupport },
 	{ id: "sepsis", label: "Sepsis watch", icon: GermIcon, matches: (patient) => Boolean(patient.sepsisWatch) },
@@ -87,28 +95,31 @@ function CensusPanel({ hospitals, patients: patientsProp, onOpenPatient, onPatie
 		onOpenPatient?.(patientId);
 	};
 	const [hospitalId, setHospitalId] = React.useState("all");
-	const [quickView, setQuickView] = React.useState("all");
-	const [onlyMine, setOnlyMine] = React.useState(false);
-	const [alertsOnly, setAlertsOnly] = React.useState(false);
+	const [quickView, setQuickView] = React.useState<string | null>(null);
+	const [scope, setScope] = React.useState<PatientScope>("all");
 	const [unit, setUnit] = React.useState("all");
 	const [sortBy, setSortBy] = React.useState<SortOrderId>("alert");
 
-	// My Patients and Alerts only narrow everything below them, the tab counters included.
-	const mine = onlyMine ? patients.filter((patient) => patient.mine) : patients;
-	const assigned = alertsOnly ? mine.filter(hasActiveAlert) : mine;
-	const inHospital = hospitalId === "all" ? assigned : assigned.filter((patient) => patient.hospitalId === hospitalId);
-	// The unit menu always lists the common units; one with no patients here shows the no-matches state.
-	const inUnit = unit === "all" ? inHospital : inHospital.filter((patient) => patient.unit === unit);
-	const activeView = quickViews.find((view) => view.id === quickView) ?? quickViews[0];
-	const visible = inUnit.filter(activeView.matches).sort(sortOrderById(sortBy).compare);
+	// The scope narrows everything below it, the tab counters included. The other filters run on both scopes, so the
+	// title can say "6 of 14 patients": the user's own among everyone the filters match.
+	const filtered = (scoped: CensusPatient[]) => {
+		const inHospital = hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
+		// The unit menu always lists the common units; one with no patients here shows the no-matches state.
+		const inUnit = unit === "all" ? inHospital : inHospital.filter((patient) => patient.unit === unit);
+		const activeView = quickViews.find((view) => view.id === quickView);
+		return { inUnit, visible: activeView ? inUnit.filter(activeView.matches) : inUnit };
+	};
+	const assigned = scope === "mine" ? patients.filter((patient) => patient.mine) : patients;
+	const { inUnit, visible: unsorted } = filtered(assigned);
+	const visible = unsorted.sort(sortOrderById(sortBy).compare);
+	const everyoneCount = scope === "mine" ? filtered(patients).visible.length : visible.length;
 	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
 
 	const clearFilters = () => {
 		setHospitalId("all");
-		setQuickView("all");
+		setQuickView(null);
 		setUnit("all");
-		setOnlyMine(false);
-		setAlertsOnly(false);
+		setScope("all");
 	};
 
 	return (
@@ -116,26 +127,25 @@ function CensusPanel({ hospitals, patients: patientsProp, onOpenPatient, onPatie
 			<div className='mt-2 mb-4'>
 				<div className='flex items-center justify-between gap-4 px-6 py-2'>
 					<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
-					{/* Each label turns `foreground` while its filter is on (Switch's own label), so the state reads from the
-					    text too. */}
-					<div className='flex items-center gap-6'>
-						<Switch label='Alerts only' checked={alertsOnly} onCheckedChange={setAlertsOnly} />
-						<Switch label='My Patients' checked={onlyMine} onCheckedChange={setOnlyMine} />
-					</div>
 				</div>
 			</div>
 
 			<main className='flex flex-1 flex-col gap-6 px-6 pb-6'>
 				<div className='flex flex-col gap-4'>
 					<Typography as='h1' size='2xl' weight='regular' aria-live='polite'>
+						{/* "6 of 14 patients" with My patients: the user's own among everyone the other filters match. */}
 						<span className='font-bold'>
-							{visible.length} {visible.length === 1 ? "patient" : "patients"}
+							{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
+							{everyoneCount === 1 ? "patient" : "patients"}
 						</span>{" "}
 						across {hospitalCount} {hospitalCount === 1 ? "hospital" : "hospitals"}
 					</Typography>
 
 					<div className='flex flex-wrap items-center justify-between gap-4'>
-						<QuickViewChips views={quickViews} value={quickView} onValueChange={setQuickView} patients={inUnit} />
+						<div className='flex flex-wrap items-center gap-1'>
+							<PatientScopeSelect value={scope} onValueChange={setScope} />
+							<QuickViewChips views={quickViews} value={quickView} onValueChange={setQuickView} patients={inUnit} />
+						</div>
 						<div className='flex items-center gap-2'>
 							<UnitSelect value={unit} onValueChange={setUnit} />
 							<SortSelect value={sortBy} onValueChange={setSortBy} />

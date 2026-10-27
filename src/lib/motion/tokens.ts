@@ -22,6 +22,8 @@ const motionDuration = {
 	urgencyRest: 1.4,
 	/** How long an Urgency ring stays calm (faded out) before the next pulse. Includes the fade-out. */
 	urgencyCalm: 0.4,
+	/** A resolved alert's pill fading out: slow, so the change is seen before its card moves (Urgency resolve). */
+	resolvedFade: 1,
 	/** One beat of a live status indicator (Live pattern): slower and calmer than Pending. */
 	liveLoop: 1,
 } as const;

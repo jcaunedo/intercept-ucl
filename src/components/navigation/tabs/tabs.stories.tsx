@@ -1,6 +1,9 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect } from "storybook/test";
 import { KeyRoundIcon, SettingsIcon, UserIcon } from "lucide-react";
+
+import { Counter } from "@/components/data-display/counter";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 
@@ -84,6 +87,56 @@ export const WithIcons: Story = {
 				<TabsTrigger value='settings'>
 					<SettingsIcon />
 					Settings
+				</TabsTrigger>
+			</TabsList>
+		</Tabs>
+	),
+};
+
+/**
+ * Icon only (Figma's Show label off): the same padding, the 16px icon alone. Give each tab an `aria-label`, since there's
+ * no text to name it.
+ */
+export const IconOnly: Story = {
+	render: (args) => (
+		<Tabs {...args}>
+			<TabsList>
+				<TabsTrigger value='account' aria-label='Account'>
+					<UserIcon />
+				</TabsTrigger>
+				<TabsTrigger value='password' aria-label='Password'>
+					<KeyRoundIcon />
+				</TabsTrigger>
+				<TabsTrigger value='settings' aria-label='Settings'>
+					<SettingsIcon />
+				</TabsTrigger>
+			</TabsList>
+		</Tabs>
+	),
+	play: async ({ canvas }) => {
+		await expect(canvas.getByRole("tab", { name: "Password" })).toBeVisible();
+	},
+};
+
+/**
+ * An outlined Counter after the label, as Figma's Line tabs draw it. Its number follows the tab: muted, then
+ * `foreground` on the active tab.
+ */
+export const WithCounters: Story = {
+	render: (args) => (
+		<Tabs {...args}>
+			<TabsList variant='line'>
+				<TabsTrigger value='account'>
+					Account
+					<Counter variant='outline' count={3} />
+				</TabsTrigger>
+				<TabsTrigger value='password'>
+					Password
+					<Counter variant='outline' count={12} />
+				</TabsTrigger>
+				<TabsTrigger value='settings'>
+					Settings
+					<Counter variant='outline' count={0} />
 				</TabsTrigger>
 			</TabsList>
 		</Tabs>

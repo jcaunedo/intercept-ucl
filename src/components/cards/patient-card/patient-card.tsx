@@ -22,7 +22,7 @@ import {
 /* -------------------------------------------------------------------------- */
 
 const patientCardAlertVariants = cva(
-	"inline-flex shrink-0 items-center gap-[7px] rounded-full py-1.5 pr-3 pl-2.5 text-sm font-medium whitespace-nowrap [&>svg]:size-4 [&>svg]:shrink-0",
+	"inline-flex shrink-0 items-center gap-1.5 rounded-full py-1 pr-2.5 pl-2 text-sm font-medium whitespace-nowrap [&>svg]:size-3.5 [&>svg]:shrink-0",
 	{
 		variants: {
 			variant: {
@@ -31,8 +31,8 @@ const patientCardAlertVariants = cva(
 				medium: "bg-severity-medium text-severity-foreground",
 				low: "bg-severity-low text-severity-foreground",
 				resolved: "bg-success text-severity-foreground",
-				// Unread messages, not an alert: a quiet fill so it never reads as a severity.
-				message: "bg-neutral-muted text-neutral-prominent",
+				// Unread messages, not an alert: a quiet fill so it never reads as a severity. Its icon is 16px, the bell 14px.
+				message: "bg-neutral-muted text-neutral-prominent [&>svg]:size-4",
 			},
 		},
 		defaultVariants: {
@@ -61,7 +61,7 @@ type PatientCardAlertProps = React.ComponentProps<"span"> &
  * The patient's highest-priority alert, or their unread messages. Severities show their name unless `children`
  * replaces it; `message` needs `children` (e.g. "1 message").
  *
- * Figma: [intercept.ds › patient-card-alerts-icon](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1060-3605)
+ * Figma: [intercept.ds › patient-card-alerts-badge](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1060-3605)
  */
 function PatientCardAlert({ className, variant = "critical", count, children, ...props }: PatientCardAlertProps) {
 	const resolvedVariant = variant ?? "critical";

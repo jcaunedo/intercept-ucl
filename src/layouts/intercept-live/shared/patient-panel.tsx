@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { LucideIcon } from "lucide-react";
+import { ChevronDownIcon, UserIcon, UsersIcon, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, type Transition, type Variants } from "motion/react";
 
 import type { PatientCardAlertVariant, PatientCardProps } from "@/components/cards/patient-card";
@@ -17,7 +17,14 @@ import {
 	SelectValue,
 } from "@/components/forms/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
-import { layoutSpring, pressPattern, reducedMotionTransition, revealVariants, useMotionPreference } from "@/lib/motion";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
+import { pressPattern, reducedMotionTransition, reorderSpring, revealVariants, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 // The patient list both Census and Monitoring filter, sort and group, so the two pages behave the same (PRD Monitoring
@@ -138,7 +145,15 @@ type SortOrderId = (typeof sortOrders)[number]["id"];
 
 const sortOrderById = (id: SortOrderId) => sortOrders.find((order) => order.id === id) ?? sortOrders[0];
 
-/** A quick view: one chip in the row, matching a subset of patients. `showCount` adds " · n" to its label. */
+/** Whose patients the page shows: everyone's, or the signed-in clinician's (assigned this shift). */
+type PatientScope = "all" | "mine";
+
+const patientScopes: { id: PatientScope; label: string; icon: LucideIcon }[] = [
+	{ id: "all", label: "All patients", icon: UsersIcon },
+	{ id: "mine", label: "My patients", icon: UserIcon },
+];
+
+/** A quick view: one chip in the row, matching a subset of patients. `showCount` adds " · n" after its label (Badge's `count`). */
 type QuickView<Patient> = {
 	id: string;
 	label: string;
@@ -159,7 +174,7 @@ function HospitalTabs({
 	onValueChange,
 }: {
 	hospitals: PanelHospital[];
-	/** The patients the counters count (already narrowed by the switches). */
+	/** The patients the counters count (already narrowed to the patient scope). */
 	patients: PanelPatient[];
 	value: string;
 	onValueChange: (value: string) => void;
@@ -185,7 +200,44 @@ function HospitalTabs({
 	);
 }
 
-/** The quick-view chips: toggle buttons, one pressed at a time. */
+/**
+ * All patients or My patients (Intercept-Live Census, Oct 27, 2026; it replaced the My Patients switch): a dark pill with
+ * the scope's icon and a chevron, opening a menu of the two. It narrows everything below it, the tab counters included.
+ */
+function PatientScopeSelect({ value, onValueChange }: { value: PatientScope; onValueChange: (value: PatientScope) => void }) {
+	const current = patientScopes.find((scope) => scope.id === value) ?? patientScopes[0];
+	const Icon = current.icon;
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Badge
+					asChild
+					variant='neutral'
+					className='transition-[background-color] duration-160 ease-out hover:bg-neutral/90 motion-reduce:transition-none'
+				>
+					<button type='button'>
+						<Icon aria-hidden='true' />
+						{current.label}
+						<ChevronDownIcon aria-hidden='true' />
+					</button>
+				</Badge>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='start' className='w-48'>
+				<DropdownMenuRadioGroup value={value} onValueChange={(next) => onValueChange(next as PatientScope)}>
+					{patientScopes.map((scope) => (
+						<DropdownMenuRadioItem key={scope.id} value={scope.id}>
+							<scope.icon aria-hidden='true' />
+							{scope.label}
+						</DropdownMenuRadioItem>
+					))}
+				</DropdownMenuRadioGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+}
+
+/** The quick-view chips: toggle buttons, at most one pressed; pressing the pressed one turns it off (`null`). */
 function QuickViewChips<Patient>({
 	views,
 	value,
@@ -193,8 +245,8 @@ function QuickViewChips<Patient>({
 	patients,
 }: {
 	views: readonly QuickView<Patient>[];
-	value: string;
-	onValueChange: (value: string) => void;
+	value: string | null;
+	onValueChange: (value: string | null) => void;
 	/** The patients a chip's count counts. */
 	patients: Patient[];
 }) {
@@ -212,6 +264,7 @@ function QuickViewChips<Patient>({
 						key={view.id}
 						asChild
 						variant={pressed ? "neutral" : "secondary"}
+						count={view.showCount ? patients.filter(view.matches).length : undefined}
 						className={cn(
 							"transition-[color,background-color,border-color,box-shadow] duration-160 ease-out motion-reduce:transition-none",
 							!pressed && "hover:border-foreground hover:bg-background",
@@ -220,12 +273,11 @@ function QuickViewChips<Patient>({
 						<motion.button
 							type='button'
 							aria-pressed={pressed}
-							onClick={() => onValueChange(view.id)}
+							onClick={() => onValueChange(pressed ? null : view.id)}
 							{...(prefersReducedMotion ? {} : pressPattern)}
 						>
 							<Icon aria-hidden='true' />
 							{view.label}
-							{view.showCount ? ` · ${patients.filter(view.matches).length}` : null}
 						</motion.button>
 					</Badge>
 				);
@@ -265,8 +317,19 @@ function UnitSelect({ value, onValueChange }: { value: string; onValueChange: (v
 	);
 }
 
-/** The sort menu. Re-sorting reuses the grid's glide: cards are keyed by patient, so they move to their new slots. */
-function SortSelect({ value, onValueChange }: { value: SortOrderId; onValueChange: (value: SortOrderId) => void }) {
+/**
+ * The sort menu. Re-sorting reuses the grid's glide: cards are keyed by patient, so they move to their new slots. A page
+ * can offer only the `orders` that make sense on it (e.g. no acuity sorts where the card doesn't show acuity).
+ */
+function SortSelect({
+	value,
+	onValueChange,
+	orders = sortOrders.map((order) => order.id),
+}: {
+	value: SortOrderId;
+	onValueChange: (value: SortOrderId) => void;
+	orders?: readonly SortOrderId[];
+}) {
 	return (
 		<Select value={value} onValueChange={(next) => onValueChange(next as SortOrderId)}>
 			<SelectTrigger aria-label='Sort by' className={menuTriggerClassName}>
@@ -275,11 +338,13 @@ function SortSelect({ value, onValueChange }: { value: SortOrderId; onValueChang
 				</span>
 			</SelectTrigger>
 			<SelectContent position='popper' align='start'>
-				{sortOrders.map((order) => (
-					<SelectItem key={order.id} value={order.id}>
-						{order.label}
-					</SelectItem>
-				))}
+				{sortOrders
+					.filter((order) => orders.includes(order.id))
+					.map((order) => (
+						<SelectItem key={order.id} value={order.id}>
+							{order.label}
+						</SelectItem>
+					))}
 			</SelectContent>
 		</Select>
 	);
@@ -297,7 +362,10 @@ const cardReducedVariants: Variants = {
 	exit: { opacity: 0, transition: reducedMotionTransition },
 };
 
-/** One grid item, wrapped for the filter motion (Reveal in, fade out, glide between slots). */
+/**
+ * One grid item, wrapped for the filter motion: Reveal in, fade out, and Reorder between slots (the reorder spring, and
+ * while it travels it rises above the other cards with a larger shadow, so crossing cards stay readable).
+ */
 function PanelItem({
 	reducedMotion,
 	layoutTransition,
@@ -311,6 +379,8 @@ function PanelItem({
 	children: React.ReactNode;
 	ref?: React.Ref<HTMLDivElement>;
 }) {
+	const [moving, setMoving] = React.useState(false);
+
 	return (
 		<motion.div
 			ref={ref}
@@ -320,7 +390,11 @@ function PanelItem({
 			animate='animate'
 			exit='exit'
 			transition={{ layout: layoutTransition }}
-			className={className}
+			onLayoutAnimationStart={() => setMoving(true)}
+			onLayoutAnimationComplete={() => setMoving(false)}
+			data-moving={moving ? "" : undefined}
+			// The card is the item's child; its own shadow transition (160ms) eases the lift in and out.
+			className={cn("relative data-moving:z-10 data-moving:*:shadow-lg", className)}
 		>
 			{children}
 		</motion.div>
@@ -347,7 +421,7 @@ function PanelGrid<Patient extends PanelPatient>({
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const reducedMotion = Boolean(prefersReducedMotion);
-	const layoutTransition = resolve(layoutSpring);
+	const layoutTransition = resolve(reorderSpring);
 
 	// A heading goes in wherever the hospital changes.
 	const items = patients.flatMap((patient, index) => {
@@ -419,12 +493,14 @@ export {
 	HospitalTabs,
 	PanelEmpty,
 	PanelGrid,
+	PatientScopeSelect,
 	QuickViewChips,
 	sortOrderById,
 	SortSelect,
 	UnitSelect,
 	type PanelHospital,
 	type PanelPatient,
+	type PatientScope,
 	type QuickView,
 	type SortOrderId,
 };

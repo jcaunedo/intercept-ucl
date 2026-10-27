@@ -13,8 +13,9 @@ function Select(props: React.ComponentProps<typeof SelectPrimitive.Root>) {
 	return <SelectPrimitive.Root data-slot='select' {...props} />;
 }
 
-function SelectGroup(props: React.ComponentProps<typeof SelectPrimitive.Group>) {
-	return <SelectPrimitive.Group data-slot='select-group' {...props} />;
+// Rows inside a group keep the list's 2px gap.
+function SelectGroup({ className, ...props }: React.ComponentProps<typeof SelectPrimitive.Group>) {
+	return <SelectPrimitive.Group data-slot='select-group' className={cn("flex flex-col gap-0.5", className)} {...props} />;
 }
 
 // Radix ignores `className` and `style` on the value. Style it from the trigger instead, e.g.
@@ -98,7 +99,11 @@ function SelectSurface(props: React.ComponentProps<typeof motion.div> & { "data-
 	);
 }
 
-/** The list. Defaults to Radix's `item-aligned` position (over the trigger, on the chosen item), as shadcn does. */
+/**
+ * The list. Defaults to Radix's `item-aligned` position (over the trigger, on the chosen item), as shadcn does.
+ *
+ * Figma: [intercept.ds › Select / Content](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1132-103)
+ */
 function SelectContent({
 	className,
 	children,
@@ -114,7 +119,7 @@ function SelectContent({
 				position={position}
 				align={align}
 				className={cn(
-					"relative z-50 max-h-(--radix-select-content-available-height) min-w-[8rem] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-menu border border-border bg-popover text-popover-foreground shadow-md",
+					"relative z-50 max-h-(--radix-select-content-available-height) min-w-[200px] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-input border border-border bg-popover text-popover-foreground shadow-xl",
 					position === "popper" &&
 						"data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
 					className,
@@ -124,10 +129,11 @@ function SelectContent({
 				<SelectSurface>
 					<SelectScrollUpButton />
 					<SelectPrimitive.Viewport
+						// 2px between rows (labels, items, groups); the separator keeps its own 4px on top.
 						className={cn(
-							"p-1.5",
+							"flex flex-col gap-0.5 p-1",
 							position === "popper" &&
-								"h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width) scroll-my-1.5",
+								"h-(--radix-select-trigger-height) w-full min-w-(--radix-select-trigger-width) scroll-my-1",
 						)}
 					>
 						{children}
@@ -143,20 +149,27 @@ function SelectLabel({ className, ...props }: React.ComponentProps<typeof Select
 	return (
 		<SelectPrimitive.Label
 			data-slot='select-label'
-			className={cn("px-2 py-1.5 text-xs text-muted-foreground", className)}
+			// 28px: the 18px line with 6px above and 4px below.
+			className={cn("px-2 pt-1.5 pb-1 text-xs text-muted-foreground", className)}
 			{...props}
 		/>
 	);
 }
 
-// Items sit 6px inside the 16px list, so their 10px radius stays concentric with it. No `cursor-default` (shadcn's):
-// options are clickable, so they take the global pointer (DESIGN.md "Every clickable element shows the pointer cursor").
+// Items sit 4px inside the 10px list, so their 6px radius stays concentric with it. A leading icon is 16px, like the
+// check. No `cursor-default` (shadcn's): options are clickable, so they take the global pointer
+// (DESIGN.md "Every clickable element shows the pointer cursor").
+/**
+ * One option; a check marks the chosen one.
+ *
+ * Figma: [intercept.ds › Select / Item](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1132-32)
+ */
 function SelectItem({ className, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Item>) {
 	return (
 		<SelectPrimitive.Item
 			data-slot='select-item'
 			className={cn(
-				"relative flex w-full items-center gap-2 rounded-input py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-icon *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+				"relative flex w-full items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-sm font-medium outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-icon *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
 				className,
 			)}
 			{...props}
@@ -175,7 +188,7 @@ function SelectSeparator({ className, ...props }: React.ComponentProps<typeof Se
 	return (
 		<SelectPrimitive.Separator
 			data-slot='select-separator'
-			className={cn("pointer-events-none -mx-1.5 my-1 h-px bg-border", className)}
+			className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}
 			{...props}
 		/>
 	);

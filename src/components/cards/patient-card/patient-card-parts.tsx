@@ -4,10 +4,12 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import {
+	motionDuration,
 	standardTransition,
 	urgencyRingVariants,
 	useMotionPreference,
 	useUrgencyPhase,
+	type UrgencyPhase,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -29,20 +31,36 @@ const patientCardOpenTargetClassName =
  */
 const patientCardInteractiveClassName = "hover:border-2 hover:border-foreground hover:p-[14px] hover:shadow-lg";
 
-// Severity alerts ring the card in their color, over a 5% tint of it; resolved alerts and messages don't.
+// Severity alerts ring the card in their color, over a 5% tint of it, and a just-resolved alert in green; messages
+// don't.
 const alertRingClassNames: Partial<Record<PatientCardAlertVariant, string>> = {
 	critical: "border-severity-critical bg-severity-critical/5",
 	high: "border-severity-high bg-severity-high/5",
 	medium: "border-severity-medium bg-severity-medium/5",
 	low: "border-severity-low bg-severity-low/5",
+	resolved: "border-success bg-success/5",
 };
+
+// One Urgency pulse: fade in, rest, fade back. The same length as a pulse of the shared clock.
+const blinkMs = (motionDuration.slow + motionDuration.urgencyRest) * 1000;
+
+/** The phase for a ring that pulses once when it appears, then stays calm. */
+function useUrgencyBlink(): UrgencyPhase {
+	const [phase, setPhase] = React.useState<UrgencyPhase>("urgent");
+	React.useEffect(() => {
+		const timer = window.setTimeout(() => setPhase("calm"), blinkMs);
+		return () => window.clearTimeout(timer);
+	}, []);
+	return phase;
+}
 
 /**
  * The alert's 2px ring and 5% background tint, drawn over the card's 1px border and white background so nothing
  * shifts, and behind the content (the card is `isolate`, the ring `-z-10`), so text isn't tinted. It pulses (Urgency
  * pattern: fades in on a spring, rests, fades back), in step with every other active ring, while the alert is active,
- * and rests at 2px once it's `addressed`. Hidden while an interactive card is hovered, so the hover border shows. Still
- * under reduced motion.
+ * and rests at 2px once it's `addressed`. A resolved alert's green ring blinks once instead, as its "Resolved" pill
+ * appears. Hidden while an interactive card is hovered, so the hover border shows. Still under reduced motion, except
+ * the resolved ring, which shows at once and fades back.
  */
 function AlertRing({
 	severity,
@@ -54,8 +72,10 @@ function AlertRing({
 	interactive: boolean;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
+	const resolved = severity === "resolved";
 	// One shared clock: every active alert ring on the page pulses at the same time.
-	const phase = useUrgencyPhase(!addressed && !prefersReducedMotion);
+	const pulse = useUrgencyPhase(!resolved && !addressed && !prefersReducedMotion);
+	const blink = useUrgencyBlink();
 
 	return (
 		<span
@@ -66,8 +86,8 @@ function AlertRing({
 			)}
 		>
 			<motion.span
-				initial={false}
-				animate={phase}
+				initial={resolved && !prefersReducedMotion ? "calm" : false}
+				animate={resolved ? blink : pulse}
 				variants={urgencyRingVariants}
 				className={cn("absolute inset-0 rounded-card border-2", alertRingClassNames[severity])}
 			/>
@@ -78,8 +98,8 @@ function AlertRing({
 /**
  * A card's alert ring and its state. Render `ring` first inside the card (which needs `group/card relative isolate`),
  * and call `markSeen` from the card's `onClickCapture`: the ring pulses until the card is clicked or the alert is
- * acknowledged or escalated (a new severity pulses again), and fades out when the alert stops being a severity (e.g.
- * it's resolved).
+ * acknowledged or escalated (a new severity pulses again). When the alert becomes `resolved`, the severity ring fades
+ * out as the green one blinks once.
  */
 function usePatientCardAlertRing({
 	alert,

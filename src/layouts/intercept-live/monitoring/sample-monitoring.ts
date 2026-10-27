@@ -1,14 +1,15 @@
-import type { MonitoringPatient } from "./monitoring";
+import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 
-// Synthetic data (PRD SV-080): the Census's 14 patients on the monitoring panel, with live bedside values. Alerts,
-// acuity and tags match the Census; MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller,
-// Johnson and Walker (with alerts), Moore and Clark (without one, so "Outside limits" finds them first). Carter has no
-// SpO₂ and Whitfield no RR (Data gap).
+// Synthetic data (PRD SV-080): the Census's 14 patients on the monitoring panel, with live bedside values, and the
+// panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
+// match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller, Johnson and
+// Walker (with alerts), Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and
+// Whitfield no RR (Data gap).
 
 const sofa = "SOFA acuity score";
 const change = "Change in last 24 h";
 
-const sampleMonitoringPatients: MonitoringPatient[] = [
+const monitoringPatients: MonitoringPatient[] = [
 	{
 		id: "p1",
 		hospitalId: "hpg",
@@ -21,7 +22,6 @@ const sampleMonitoringPatients: MonitoringPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 11",
-		alert: { variant: "critical", count: 3 },
 		acuity: { label: sofa, score: 13, level: "critical" },
 		trajectory: { label: change, value: "+4", trend: "up" },
 		tags: [{ label: "Ventilated" }, { label: "On pressors" }],
@@ -39,7 +39,6 @@ const sampleMonitoringPatients: MonitoringPatient[] = [
 		hospital: "Mercy West Hospital",
 		unit: "MICU",
 		bed: "Bed 3",
-		alert: { variant: "high" },
 		acuity: { label: sofa, score: 11, level: "high" },
 		trajectory: { label: change, value: "+3", trend: "up" },
 		tags: [{ label: "Ventilated" }],
@@ -73,7 +72,6 @@ const sampleMonitoringPatients: MonitoringPatient[] = [
 		hospital: "CVMC",
 		unit: "CVICU",
 		bed: "Bed 5",
-		alert: { variant: "medium" },
 		acuity: { label: sofa, score: 8, level: "moderate" },
 		trajectory: { label: change, value: "0" },
 		tags: [{ label: "On pressors" }, { label: "DNR" }],
@@ -106,7 +104,6 @@ const sampleMonitoringPatients: MonitoringPatient[] = [
 		hospital: "CVMC",
 		unit: "SICU",
 		bed: "Bed 2",
-		alert: { variant: "low" },
 		acuity: { label: sofa, score: 3, level: "low" },
 		trajectory: { label: change, value: "+1", trend: "up" },
 		tags: [{ label: "Fall risk" }],
@@ -156,7 +153,6 @@ const sampleMonitoringPatients: MonitoringPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 8",
-		alert: { variant: "high" },
 		acuity: { label: sofa, score: 10, level: "high" },
 		trajectory: { label: change, value: "+2", trend: "up" },
 		tags: [{ label: "Ventilated" }],
@@ -222,7 +218,6 @@ const sampleMonitoringPatients: MonitoringPatient[] = [
 		hospital: "CVMC",
 		unit: "CVICU",
 		bed: "Bed 3",
-		alert: { variant: "medium" },
 		acuity: { label: sofa, score: 12, level: "critical" },
 		trajectory: { label: change, value: "+2", trend: "up" },
 		tags: [{ label: "Ventilated" }, { label: "On pressors" }, { label: "ECMO" }],
@@ -245,4 +240,141 @@ const sampleMonitoringPatients: MonitoringPatient[] = [
 	},
 ];
 
-export { sampleMonitoringPatients };
+// The last hour of each primary numeric, one point a minute, ending at the current value: a rising acuity drifts in
+// from better values, a falling one from worse, and every series wobbles a little (deterministic, so screenshots
+// match). Missing values have no series.
+function lastHour(end: number | undefined, worseBy: number, wobble: number, seed: number) {
+	if (end === undefined) return undefined;
+	return Array.from({ length: 60 }, (_, minute) => {
+		const remaining = (59 - minute) / 59;
+		const noise = Math.sin(minute * 0.21 + seed) * wobble + Math.sin(minute * 0.6 + seed * 2) * (wobble / 4);
+		return Math.round((end - worseBy * remaining + (minute === 59 ? 0 : noise)) * 10) / 10;
+	});
+}
+
+const sampleMonitoringPatients: MonitoringPatient[] = monitoringPatients.map((patient, index) => {
+	const { hr, spo2, systolic, rr } = patient.vitals ?? {};
+	const direction = patient.trajectory?.trend === "up" ? 1 : patient.trajectory?.trend === "down" ? -0.5 : 0;
+	return {
+		...patient,
+		trends: {
+			hr: lastHour(hr, 12 * direction, 2, index),
+			// SpO₂ tops out at 100%.
+			spo2: lastHour(spo2, -3 * direction, 0.6, index + 1)?.map((value) => Math.min(100, value)),
+			systolic: lastHour(systolic, -12 * direction, 2.5, index + 2),
+			rr: lastHour(rr, 5 * direction, 1, index + 3),
+		},
+	};
+});
+
+// Times are relative to when the sample loads, so ages ("6 min") and Overdue read the same in every session.
+const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+
+// Ten alerts on eight patients. Six match the Census's pills: Miller Critical · 3, Johnson Low, Harris High, Thompson
+// Medium, Walker Medium, Anderson Low. Two are past their response target (Overdue): Miller's MAP and Harris's PEEP.
+// Walker's is a concern carried over from the night shift. A parameter that stops reporting is a System alert, not a
+// filter (Oct 27, 2026): Carter's SpO₂ and Whitfield's RR, which the Census sample doesn't carry yet.
+const sampleMonitoringAlerts: TriageAlert[] = [
+	{
+		id: "a1",
+		patientId: "p1",
+		severity: "critical",
+		title: "Sepsis candidate",
+		source: { kind: "ai", name: "Sepsis Sniffer" },
+		firedAt: minutesAgo(2),
+		respondBy: minutesAgo(-3),
+		recommendation: "Review against the sepsis bundle.",
+		evidence: ["Lactate 4.1 mmol/L, up from 2.2 at 08:10", "MAP 58 mmHg on norepinephrine 0.22", "Temp 38.9 °C · WBC 17.2"],
+	},
+	{
+		id: "a2",
+		patientId: "p1",
+		severity: "critical",
+		title: "MAP below 65 mmHg",
+		source: { kind: "rule", name: "Hemodynamics" },
+		firedAt: minutesAgo(6),
+		respondBy: minutesAgo(1),
+	},
+	{
+		id: "a3",
+		patientId: "p1",
+		severity: "high",
+		title: "SpO₂ below 90%",
+		source: { kind: "device", name: "Monitor" },
+		firedAt: minutesAgo(11),
+		respondBy: minutesAgo(-4),
+	},
+	{
+		id: "a4",
+		patientId: "p2",
+		severity: "low",
+		title: "SpO₂ below 88% for 5 min",
+		source: { kind: "rule", name: "Oxygenation" },
+		firedAt: minutesAgo(9),
+		respondBy: minutesAgo(-51),
+	},
+	{
+		id: "a5",
+		patientId: "p9",
+		severity: "high",
+		title: "PEEP differs from the active order",
+		source: { kind: "ai", name: "Vent-Order Mismatch" },
+		firedAt: minutesAgo(18),
+		respondBy: minutesAgo(3),
+		recommendation: "Check the ventilator against the order.",
+		evidence: ["Ventilator PEEP 8 cmH₂O", "Active order: PEEP 10 cmH₂O (James Tan, 10:42)", "No setting change since 10:15"],
+	},
+	{
+		id: "a6",
+		patientId: "p4",
+		severity: "medium",
+		title: "Norepinephrine up 2 steps in 1 h",
+		source: { kind: "rule", name: "Vasopressors" },
+		firedAt: minutesAgo(24),
+		respondBy: minutesAgo(-6),
+	},
+	{
+		id: "a7",
+		patientId: "p13",
+		severity: "medium",
+		title: "Concern: lactate after ECMO flow change",
+		source: { kind: "manual", name: "Maria Ruiz" },
+		firedAt: minutesAgo(132),
+		carriedOver: true,
+		rationale: "Flow cut to 3.8 L/min at 05:30, lactate 2.6 → 3.1. Recheck at 08:00 and watch MAP.",
+	},
+	{
+		id: "a9",
+		patientId: "p5",
+		severity: "medium",
+		title: "SpO₂ not reporting",
+		source: { kind: "system", name: "Telemetry" },
+		firedAt: minutesAgo(14),
+		respondBy: minutesAgo(-16),
+	},
+	{
+		id: "a10",
+		patientId: "p12",
+		severity: "low",
+		title: "RR not reporting",
+		source: { kind: "system", name: "Telemetry" },
+		firedAt: minutesAgo(27),
+		respondBy: minutesAgo(-33),
+	},
+	{
+		id: "a8",
+		patientId: "p6",
+		severity: "low",
+		title: "Bed exit alarm",
+		source: { kind: "device", name: "Bed sensor" },
+		firedAt: minutesAgo(41),
+		respondBy: minutesAgo(-19),
+	},
+];
+
+const sampleEscalationTargets: EscalationTarget[] = [
+	{ id: "intensivist", name: "James Tan", description: "Intensivist on call, Tele-ICU" },
+	{ id: "bedside", name: "Bedside charge nurse", description: "The patient's unit, through Messages" },
+];
+
+export { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients };

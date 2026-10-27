@@ -56,7 +56,7 @@ const tabsListVariants = cva(
 	{
 		variants: {
 			variant: {
-				default: "rounded-lg bg-background-subtle p-[3px]",
+				default: "rounded-button-md bg-background-subtle p-[3px]",
 				// No track: the active tab is marked by its underline.
 				line: "gap-1",
 			},
@@ -115,6 +115,8 @@ const tabsTriggerVariants = cva(
 		"focus-visible:not-data-pointer-focus:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none",
 		"group-data-[orientation=vertical]/tabs:w-full group-data-[orientation=vertical]/tabs:justify-start",
 		"[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+		// An outlined Counter in the tab follows its state: muted until the tab is active (hover doesn't change it).
+		"[&_[data-slot=counter][data-variant=outline]]:text-muted-foreground data-[state=active]:[&_[data-slot=counter][data-variant=outline]]:text-foreground",
 	],
 	{
 		variants: {
@@ -144,7 +146,8 @@ const tabsTriggerVariants = cva(
 const tabsIndicatorVariants = cva("absolute", {
 	variants: {
 		variant: {
-			default: "inset-0 rounded-lg bg-background shadow-xs",
+			// Two centered 2px blurs, on the shadow tokens' colors, so the raised tab is outlined on every side.
+			default: "inset-0 rounded-lg bg-background shadow-[0_0_2px_var(--shadow-color-sm),0_0_2px_var(--shadow-color-md)]",
 			line: "bg-foreground group-data-[orientation=horizontal]/tabs:inset-x-0 group-data-[orientation=horizontal]/tabs:-bottom-0.5 group-data-[orientation=horizontal]/tabs:h-0.5 group-data-[orientation=vertical]/tabs:inset-y-0 group-data-[orientation=vertical]/tabs:-right-0.5 group-data-[orientation=vertical]/tabs:w-0.5",
 		},
 	},
@@ -156,7 +159,8 @@ const tabsIndicatorVariants = cva("absolute", {
 type TabsTriggerProps = React.ComponentProps<typeof TabsPrimitive.Trigger>;
 
 /**
- * One tab. Put a 16px icon before the label if needed.
+ * One tab: a label, a 16px icon before it, or the icon alone (then give the tab an `aria-label`). An outlined Counter
+ * can follow the label.
  *
  * Figma: [intercept.ds › Tabs Items](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1090-54)
  */
@@ -216,6 +220,7 @@ export {
 	TabsContent,
 	TabsList,
 	TabsTrigger,
+	tabsIndicatorVariants,
 	tabsListVariants,
 	tabsTriggerVariants,
 	type TabsContentProps,

@@ -1,5 +1,10 @@
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps } from "../intercept-live";
-import { MonitoringPanel, type MonitoringPatient } from "../monitoring/monitoring-panel";
+import {
+	MonitoringPanel,
+	type EscalationTarget,
+	type MonitoringPatient,
+	type TriageAlert,
+} from "../monitoring/monitoring-panel";
 import {
 	CensusPanel,
 	type CensusHospital,
@@ -12,6 +17,10 @@ type CensusProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 	CensusPanelProps & {
 		/** The panel's patients with their live values. With them, the Sidebar's Monitoring opens the Monitoring page. */
 		monitoringPatients?: MonitoringPatient[];
+		/** The Monitoring page's alerts, for its triage queue and the cards' alert pills. */
+		monitoringAlerts?: TriageAlert[];
+		/** Who the Monitoring page's queue can escalate to. */
+		escalationTargets?: EscalationTarget[];
 		/** The page shown first. The Sidebar switches between the Census, Monitoring and the pages that aren't built. */
 		defaultPage?: InterceptLivePage;
 	};
@@ -24,6 +33,8 @@ function Census({
 	hospitals,
 	patients,
 	monitoringPatients,
+	monitoringAlerts,
+	escalationTargets,
 	onOpenPatient,
 	onPatientActions,
 	defaultPage = "Census",
@@ -43,7 +54,13 @@ function Census({
 					/>
 				),
 				Monitoring: monitoringPatients ? (
-					<MonitoringPanel hospitals={hospitals} patients={monitoringPatients} onOpenPatient={onOpenPatient} />
+					<MonitoringPanel
+						hospitals={hospitals}
+						patients={monitoringPatients}
+						alerts={monitoringAlerts}
+						escalationTargets={escalationTargets}
+						onOpenPatient={onOpenPatient}
+					/>
 				) : undefined,
 			}}
 		/>

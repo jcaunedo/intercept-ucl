@@ -41,6 +41,7 @@ Don't go past `deliberate` (600 ms). A new value goes in `tokens.ts` with a comm
 - `enterTransition`: elements arriving. Quick start, gentle finish.
 - `exitTransition`: elements leaving. Shorter than enter, decisive.
 - `subtleSpring` / `responsiveSpring` / `layoutSpring`: press, direct manipulation, layout and shared-element movement. High damping, no visible bounce.
+- `reorderSpring`: items changing place when their data changes (the Reorder pattern). Calmer than `layoutSpring` (about 600ms) and critically damped, so it lands without overshoot and redirects smoothly when a new change interrupts it.
 
 ## Vocabulary
 
@@ -53,12 +54,13 @@ Use these named patterns before inventing new motion. Gesture patterns live in `
 | Reveal   | Content appearing in context           | `revealVariants`                                |
 | Expand   | A region opening/closing in place      | `expandVariants` + `useExpandClip()`            |
 | Connect  | Shared-element transitions             | `layoutId` + `layoutSpring`                     |
+| Reorder  | Items changing place because their data changed (a live feed, a sort or filter) | `layout` with `reorderSpring`; in a grid the moving item rises while it travels (above its neighbors, `shadow-lg`) so crossing items stay readable; instant under reduced motion. Used by the patient grid (Census, Monitoring) and the triage queue |
 | Flow     | Small groups entering together         | `staggerContainerVariants` + children `revealVariants` |
 | Glide    | Directional navigation                 | `slideVariants` (`custom={1 \| -1}`), `glidePattern` |
 | Dismiss  | Content removed or closed              | `dismissVariants`; table/list rows: `rowRemoveVariants` |
 | Confirm  | Lightweight success feedback           | `confirmPattern`                                |
 | Pending  | Work in progress on an element's behalf | `pendingIconVariants`, `pendingSurfaceVariants` |
-| Urgency  | Draws the eye to something that needs attention until it's addressed (e.g. an active alert's card border) | `urgencyRingVariants` driven by `useUrgencyPhase` (one shared clock: every instance pulses together); opacity only; pulses until addressed, then rests; still under reduced motion |
+| Urgency  | Draws the eye to something that needs attention until it's addressed (e.g. an active alert's card border) | `urgencyRingVariants` driven by `useUrgencyPhase` (one shared clock: every instance pulses together); opacity only; pulses until addressed, then rests; still under reduced motion. A just-resolved alert's green ring blinks once (one pulse), and its pill fades out on `resolvedFadeTransition` (1 s) before the card moves |
 | Live     | An ongoing status (e.g. connected), as a linear looping pulse on a small dot | `liveDotVariants` + `liveHaloVariants`; still under reduced motion |
 
 Plus `fadeVariants`, `overlayVariants` (scrims), `panelVariants` (drawers) and `iconSwapVariants` (one small element replacing another in place).

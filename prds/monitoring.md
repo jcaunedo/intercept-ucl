@@ -1,7 +1,7 @@
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Oct 26, 2026 (renamed from Surveillance; design references, monitoring conventions and the draft monitoring card added)
+Last updated: Oct 27, 2026 (Monitoring exploration recorded: §12.1, its proposals in §15, SV-OD-13 added; filters in context: SV-010, SV-014, SV-051, AC-11; SV-015 view controls, built in UCL)
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -14,7 +14,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** October 26, 2026
+**Last updated:** October 27, 2026
 
 ---
 
@@ -42,6 +42,7 @@ Monitoring is not the patient chart and not the intervention workflow. It shows 
 1. Intercept Live — Virtual Care OS System Specification, May 2026 (`docs/Intercept Live - Virtual Care OS - System Specifications.md`).
 2. Intercept Live Design Phase Team Brief, October 20, 2026 (`docs/Intercept Live Design Phase Team Brief.md`).
 3. PRD — Patient card, v0.1 (`prds/patient-card.md`).
+4. Intercept Live Monitoring exploration, October 27, 2026 ([claude.ai artifact](https://claude.ai/artifact/HtZYre6XUQ3vHannnT1nJm), listed in `explorations/index.md`). An interactive page built from this PRD; what it shows and proposes is in §12.1.
 
 Relevant System Specification sections:
 
@@ -143,7 +144,18 @@ Adopted from the design references (§1.3). They apply wherever the page shows l
 
 ### SV-010 — Panel membership
 
-The panel shows the patients the clinician is responsible for on this shift: by default every patient assigned to them across the hospitals they cover, filterable by hospital (tabs), unit, and **My Patients** / **Alerts only** (the Census switches).
+The panel shows the patients the clinician is responsible for on this shift: by default every patient assigned to them across the hospitals they cover, narrowed by hospital (tabs), **All / My patients** (a pill opening a menu, replacing the Census's My Patients switch on Oct 27, 2026) and unit. With My patients the summary reads "6 of 14 patients".
+
+✅ **Resolved (Oct 27, 2026): filters in context.** Monitoring's filters set the panel's **scope** (hospital, All / My patients, unit), its **order** (Sort by: Alert, Location, Name) and its **view** (Full monitors, densities), and nothing else. The Census's status filters don't repeat here, because other parts of this page already do that job:
+
+| Census filter | On Monitoring |
+|---|---|
+| With alerts ("Needs attention" and the Alerts only switch until Oct 27, 2026) | The triage queue (§5) lists exactly these, with the actions |
+| Outside limits | A ↑ / ↓ tag on the value itself (SV-014), so drift shows in place. Also, since Oct 27, 2026, Monitoring's one status filter, **Outside limits**: it keeps the patients who were outside their alarm limits when it was pressed, so cards never come and go as readings move (SV-013); its count stays live |
+| Data gap | A System alert in the queue ("SpO₂ not reporting", SV-051) |
+| Rising acuity, Organ support, acuity sorts | Not on Monitoring: the monitoring card doesn't show acuity or tags. They stay on the Census |
+
+A filter on live status would also add and remove cards as readings change, which SV-013 rules out.
 
 - ⚠️ **Decision needed:** how a panel is defined (shift assignment, a hand-picked watch list, or both) and whether a clinician can add a patient from the Census to their panel (SV-OD-01).
 - ⚠️ **Constraint:** the brief's ground rule "patient data never crosses tenants" applies. A cross-hospital panel may only combine hospitals the clinician's tenant covers, filtered by per-hospital privileges (Spec §5.2 "Cross-hospital surveillance with per-hospital privilege filtering").
@@ -170,6 +182,8 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 Default order is **Alert**, then **Acuity** (the Census's Sort by: Alert, ties broken by acuity, then name). The clinician can switch to Acuity, Acuity change, Name or Location; Location groups the panel into hospital sections (HospitalSectionHeader).
 
 - Cards **never reorder by themselves** while the clinician is looking at them. A new alert moves a card only when the clinician accepts a "Panel order changed · Update" prompt, or after they've been idle for a configured time. ⚠️ **Decision needed:** auto-reorder rules (SV-OD-05); a card jumping under the pointer is a safety risk.
+- ℹ️ The UCL Monitoring Default story (live since Oct 27, 2026; `Static` is the still one) shows the opposite for comparison: a scripted feed raises and lowers alert severities and the cards reorder by themselves, highest first.
+- ℹ️ The exploration (§12.1) shows the prompt as a bar above the panel: "Panel order changed. Alerts changed priority; cards stay put until you update", with Update order. It has no idle auto-update. A filter, sort or density change reorders at once, because the clinician asked for it.
 
 ### SV-014 — Live values
 
@@ -177,9 +191,25 @@ Default order is **Alert**, then **Acuity** (the Census's Sort by: Alert, ties b
 |---|---|
 | Hierarchy | HR, SpO₂, BP and RR lead each card, in the same order on every card (SV-071). |
 | Update | Vitals update in place; the number changes without moving the layout. |
-| Change cue | A value that crosses a range threshold gets its range marker (↑/↓) and destructive color, as on the card today. No flashing. |
+| Change cue | A value outside its alarm limits gets a ↑ / ↓ tag in its label row; the parameter keeps its color (SV-073). No flashing. Replaces a filter for the same thing (SV-010). |
 | Trend | Each vital can show a 1-hour sparkline (Comfortable density). ⚠️ **Decision needed:** trend window (PRD OD-07). |
 | Freshness | Values older than their freshness interval are labeled Stale (SV-050). |
+
+### SV-015 — View controls
+
+Two controls at the end of the toolbar, after Unit and Sort by, change how the panel looks, never who is on it (SV-010). From the exploration (§12.1).
+
+| Control | Behavior |
+|---|---|
+| **Density** | A segmented control with an icon for each option, named by a tooltip (and for screen readers): **Comfortable** (default), **Compact**, **List** (SV-012). One option is pressed at a time. Switching reflows the panel in place; the order and the scope stay the same. |
+| **Card monitor** | A segmented control like Density, with icon and label, just left of it: **ECG strip** (default) or **1 h trends**, which puts a sparkline under each numeric instead of the waveform (SV-014, SV-OD-12). Disabled in List. Moved out of the View menu on Oct 27, 2026. |
+| **Monitor view** | Two icon buttons with tooltips, **Condensed monitors** / **Full monitors**, between Card monitor and Density: every card's monitor condensed, or all four lanes (Comfortable and Compact). Each card's own button still toggles it alone; while cards are mixed, neither is pressed. Disabled in List. Replaced the View menu on Oct 27, 2026. |
+
+- Neither control appears on the Census: densities and monitors are Monitoring's own (filters in context, SV-010).
+- Values outside their limits aren't a View option: the card always marks them (SV-014). The exploration's "Mark values outside limits" switch was dropped when that became the default.
+- **Accessibility:** every view option is a toggle button with `aria-pressed`; the icon-only ones (Monitor view, Density) take their accessible name from the tooltip's text.
+- ⚠️ **Decision needed:** whether view settings persist per clinician across sessions and devices, or reset each shift.
+- ✅ **Built (Oct 27, 2026):** the UCL layout has both: the density control, a View DropdownMenu, the compact card (`PatientMonitoringCard` `size="sm"`), the trends view (`condensedView="trends"`) and the List table. Which densities ship still waits on SV-OD-04.
 
 ---
 
@@ -251,6 +281,7 @@ The bedside camera opens inside the Focus view (Spec §5.2 "Camera control and b
 
 - ⚠️ **Constraint:** the prototype shows a synthetic or placeholder camera feed only (brief: synthetic data only).
 - ⚠️ **Decision needed:** whether the overlay values are positioned on the devices in the image or in a fixed band (SV-OD-07).
+- ℹ️ The exploration (§12.1) draws a synthetic room, labeled "Synthetic feed", and offers both overlay placements behind a switch: a band along the bottom, grouped Monitor / Pump / Ventilator, or a tag on each device that moves with the camera preset (Bed, Monitor, Door). The session shows "In camera" with its duration. Audio starts muted and the clinician presses Talk.
 
 ---
 
@@ -266,10 +297,14 @@ The bedside camera opens inside the Focus view (Spec §5.2 "Camera control and b
 
 - An escalated alert shows "Escalated to {name}" with time and stays visible until resolved (PRD PC-071).
 - ⚠️ **Decision needed:** escalation targets per role and per hospital, and acknowledgment expectations for the receiver (SV-OD-08).
+- ℹ️ The exploration (§12.1) escalates from a dialog. Send to: the intensivist on call, the unit's charge nurse (through Messages), or Start intervention, which is disabled for an RN. Then the alerts to attach (the one it was opened from is checked), an **evidence snapshot** (primary numerics, drips and vent settings at that moment) and an optional note.
 
 ### SV-041 — Clinician Intuition Alert
 
 From any card or the Focus view, "Raise concern" opens a short form: rationale (required), watch-list category, what to monitor, suggested timeline. It joins the queue as a Manual alert and carries over at handoff (Spec §5.6).
+
+- ⚠️ **Decision needed:** a concern's severity. The queue orders by severity, but the Specification doesn't give Clinician Intuition Alerts one. The exploration offers Medium (default) or High (SV-OD-13).
+- ℹ️ In the exploration, a concern's queue row reads "Clinician concern", quotes the rationale, names who raised it and when, and never goes Overdue. A concern carried over from the last shift says so.
 
 ---
 
@@ -288,6 +323,7 @@ Each value follows the Patient card freshness model (PRD PC-090–092): Current,
 | **No matches** | EmptyState with Clear filters (as on the Census) |
 | **Empty queue** | "No active alerts" in the rail, with the time of the last alert |
 | **Feed stale (one patient)** | That card's values marked Stale; a connectivity alert in its alert slot (PRD PC-128) |
+| **Parameter not reporting** | The value shows "--" and a System alert names it ("SpO₂ not reporting") in the queue and the card's alert pill. This replaces a "Data gap" filter (SV-010). ⚠️ **Decision needed:** its severity; the sample uses Medium for a missing SpO₂ and Low for a missing RR |
 | **Hospital feed down** | A banner on that hospital's tab and section: "{Hospital} data is delayed · last update 14:02"; other hospitals unaffected |
 | **Offline** | The header's Online pill turns Offline; all values marked Stale; actions that need the network are disabled with a reason |
 | **Restricted** | Patients the clinician isn't privileged for at a hospital don't appear; a count notes "3 patients hidden by privileges" (⚠️ SV-OD-02) |
@@ -343,6 +379,38 @@ WCAG 2.1 AA (Spec §9.1 Principle 13).
 | **SV-083 Reuse** | Built from existing UCL components: Sidebar, AppHeader, Tabs, Select, Switch, Badge chips, PatientCard (expanded), HospitalSectionHeader, EmptyState, Counter. New components (queue row, focus sheet, trend chart, camera frame) go through `ucl-generate-component` from intercept.ds. |
 | **SV-084 Monitoring card** | A draft `PatientMonitoringCard` (UCL `cards/patient-monitoring-card`, intercept.ds `1125:4328`) applies §3.3: condensed ECG strip + HR · SpO₂ · BP · RR, expandable to a four-lane monitor with limits and alarm marking, on a draft parameter palette (SV-OD-10). |
 
+### 12.1 Exploration (Oct 27, 2026)
+
+An interactive page covering this whole PRD: [Intercept Live Monitoring](https://claude.ai/artifact/HtZYre6XUQ3vHannnT1nJm). It's a standalone claude.ai artifact on synthetic data (the Census's 14 patients from `sample-monitoring.ts`) and Intercept's `theme.css` tokens. It imitates the UCL components; it doesn't use them. The UCL layout (`src/layouts/intercept-live/monitoring/`) has the patient panel and, since Oct 27, 2026, the triage queue (SV-020–SV-023, `triage-queue.tsx`); the focus view, camera and simulator are only in the exploration. The exploration proposes the rest for review; nothing in it is decided.
+
+| Area | What the exploration shows | Requirements |
+|---|---|---|
+| **Shell** | Sidebar rail with Monitoring active, sticky header (clock, Online pill, messages, theme, team, user). Below 1280px the triage queue becomes a drawer opened from the header, with its active count. | §3.1 |
+| **Page header** | Hospital tabs with counts (a warning icon on a hospital whose feed is down), Alerts only and My Patients, the summary ("14 patients · 8 active alerts") and a privilege note ("2 patients at Mercy West Hospital hidden by your privileges"). | §3.1, SV-010, SV-051, SV-OD-02 |
+| **Filters** | The Census's quick views tuned for monitoring (All Patients, Needs attention, Outside limits, Rising acuity, Organ support, Data gap), Unit, Sort by (Alert, Acuity, Acuity change, Name, Location; Location groups by hospital). | SV-010, SV-013, AC-11 |
+| **Density** | Comfortable, Compact and List side by side. List shows the vitals as columns, in the parameter colors. | SV-012 |
+| **View options** | Card monitor: ECG strip or 1 h trends (a sparkline under each numeric). Full monitors (Comfortable only). Mark values outside limits: off by default, as in UCL; on, a small ↑/↓ tag beside the number that keeps the parameter color. | SV-014, SV-073, SV-OD-12 |
+| **Panel cards** | `PatientMonitoringCard` imitated: identity, alert pill, location, live monitor with waveforms ported from UCL. Alert ring pulses until the card is opened or the alert is addressed. Stale cards dim their numbers and freeze their waveforms, with a "Stale" tag. | SV-011, SV-014, SV-050 |
+| **Reorder** | Cards keep their place when alerts change; a "Panel order changed" bar offers Update order. | SV-013, AC-08 |
+| **Triage queue** | Right rail, collapsible, Active and Resolved tabs. Rows: severity pill, title, age, patient, source chip (AI · agent name, Device · Monitor, Rule · Hemodynamics, Clinician concern), Overdue, "Carried over from night shift". AI rows have a dashed border, a "Recommendation" line and Show evidence. | SV-020, SV-021, SV-023 |
+| **Queue actions** | Open (focus view scrolled to that alert), Acknowledge, Escalate, Resolve with a required reason (Treated, Artifact or false alarm, Expected for this patient, Duplicate) and an optional note. AI rows Decline instead of Resolve, with an optional rationale, recorded as "Declined with rationale". Every state shows who and when. New rows reveal at their position, resolved rows fade and the rest glide. New Critical and High alerts are announced once. | SV-022, SV-023, AC-02–AC-04, AC-09, §9, §11 |
+| **Empty queue** | "No active alerts · Last alert at 14:22". | SV-051 |
+| **Focus view** | Side sheet over the queue; the panel stays live. Header: name, alert pill, MRN, location, acuity ("Critical risk · SOFA 13"), 24 h change, code status, tags. Actions: Look in, Message bedside team, Escalate, Raise concern, Open chart. ↑/↓ steps through the panel's order, Esc closes and returns focus to the card. | SV-030, AC-05 |
+| **Focus sections** | Monitor (four lanes, numerics with limits, MAP, then Temp and EtCO₂), Trends (1 h / 6 h / 24 h; ABP as a systolic–diastolic band; out-of-limit zones in a neutral wash, not a severity color), Respiratory labeled Ventilator (the PEEP-versus-order mismatch marked), Infusions labeled Pump, the patient's alerts. | SV-030, SV-071, SV-074, AC-15 |
+| **Camera** | See SV-031. | SV-031, SV-OD-07 |
+| **Escalation** | See SV-040. | SV-040, SV-OD-08 |
+| **Raise concern** | Rationale (required), category, recheck in, what to watch, priority (Medium or High). Joins the queue at once. | SV-041, SV-OD-13 |
+| **Degraded states** | Hospital feed down (banner on the page, the tab and the focus view; only that hospital's patients go stale), Offline (header pill turns Offline, everything stale, Acknowledge / Escalate / Resolve / Raise concern disabled with a reason, Look in disabled), missing values as "--", no filters matched with Clear filters. | SV-050, SV-051, AC-06, AC-07, AC-12 |
+| **Simulator** | Deterioration to escalation (Moore's MAP falls on rising norepinephrine, a Critical alert enters the queue, then a Sepsis Sniffer recommendation; the clinician opens her, looks in and escalates, with each step ticked off), CVMC feed down, Offline, pause, reset. Vitals update every 2 s and trends advance one minute per update. The panel's Open questions tab lists the proposals in §15. | SV-081, SV-082 |
+
+What the exploration assumes beyond this PRD:
+
+- ⚠️ **Overdue:** example response targets of Critical 5 min, High 15, Medium 30, Low 60. Clinician concerns never go Overdue (OD-15).
+- ⚠️ **Parameter colors on light surfaces:** the monitor's green and teal don't reach contrast on white, so List and the focus view's trends use darker inks of the same hues, and the monitor colors in dark mode (SV-OD-10).
+- ⚠️ **Escalation by role:** the signed-in user is a Critical Care RN, so Start intervention is disabled (SV-OD-08).
+- ⚠️ **Concern priority:** Medium or High (SV-OD-13).
+- ⚠️ **Trend limits:** the MAP 65 mmHg rule and the default alarm limits (HR 50–120, SpO₂ 90–100, systolic 90–160, RR 8–30) are examples, not configuration (PRD PC-044).
+
 ---
 
 ## 13. Acceptance criteria
@@ -359,7 +427,7 @@ WCAG 2.1 AA (Spec §9.1 Principle 13).
 | AC-08 | Cards never reorder while the clinician is interacting; a pending reorder is offered, not forced. |
 | AC-09 | AI-sourced alerts show their agent and evidence; declining one records "declined with rationale". |
 | AC-10 | Every interaction works by keyboard, and with reduced motion on. |
-| AC-11 | Filters, sort and hospital tabs behave as on the Census, with the same labels. |
+| AC-11 | The scope filters (hospital tabs, My Patients, Unit) and Sort by behave as on the Census, with the same labels. Monitoring has no status filters (SV-010). |
 | AC-12 | Empty panel, no matches and empty queue each show their empty state. |
 | AC-13 | Every parameter keeps the same color and label on every card, waveform and trend, and no parameter color matches a severity color. |
 | AC-14 | HR, SpO₂, BP and RR are readable at a glance from normal viewing distance, ahead of every secondary value. |
@@ -384,21 +452,24 @@ WCAG 2.1 AA (Spec §9.1 Principle 13).
 
 ## 15. Open decisions
 
-| ID | Decision | Owner |
-|---|---|---|
-| SV-OD-01 | How a panel is defined (shift assignment, watch list or both) and whether clinicians can add patients to it. | Product / Clinical |
-| SV-OD-02 | How privilege-hidden patients are indicated, if at all. | Product / Compliance |
-| SV-OD-03 | Whether the Alert Queue page and Monitoring's triage queue both exist in v1. | Product |
-| SV-OD-04 | Which panel densities ship in v1 (Comfortable, Compact, List). | Design / Clinical |
-| SV-OD-05 | Auto-reorder rules for the panel when alerts change priority. | Clinical / Design |
-| SV-OD-06 | Focus view as a side sheet or a full page. | Design |
-| SV-OD-07 | Placement of the telemetry overlay on the camera feed. | Design / Clinical |
-| SV-OD-08 | Escalation targets per role and hospital, and receiver acknowledgment expectations. | Clinical / Product |
-| SV-OD-09 | Which demo scenarios run on this page. | Product / Project |
-| SV-OD-10 | The parameter color palette (one color per parameter, none in the severity hues), validated for contrast in both modes and for color-vision deficiency. | Design / Clinical |
-| SV-OD-11 | The default waveform set and order per bed type (ventilated, cardiac, general ICU), and which ones a clinician can add or hide. | Clinical / Design |
-| SV-OD-12 | Whether panel cards show a mini waveform, or numerics and trends only (density vs. clarity across a full panel). | Design / Clinical |
-| PRD OD-05, OD-06, OD-07, OD-15, OD-16 | Alert severity and ordering, freshness intervals, trend windows, alert source and Overdue, code status. Shared with the Patient card PRD. | See `prds/patient-card.md` §23 |
+The **Exploration proposal** column is what the Oct 27, 2026 exploration (§12.1) shows for review. None of it is decided.
+
+| ID | Decision | Owner | Exploration proposal |
+|---|---|---|---|
+| SV-OD-01 | How a panel is defined (shift assignment, watch list or both) and whether clinicians can add patients to it. | Product / Clinical | Not explored: the panel is every patient across the three hospitals, narrowed by My Patients. |
+| SV-OD-02 | How privilege-hidden patients are indicated, if at all. | Product / Compliance | A quiet count under the summary, with no names: "2 patients at Mercy West Hospital hidden by your privileges". |
+| SV-OD-03 | Whether the Alert Queue page and Monitoring's triage queue both exist in v1. | Product | A panel-scoped rail here; the Sidebar's Alert Queue stays the full surface. |
+| SV-OD-04 | Which panel densities ship in v1 (Comfortable, Compact, List). | Design / Clinical | All three, as a segmented control next to Sort by. |
+| SV-OD-05 | Auto-reorder rules for the panel when alerts change priority. | Clinical / Design | Never automatic: the "Panel order changed" bar with Update order. No idle auto-update. |
+| SV-OD-06 | Focus view as a side sheet or a full page. | Design | Side sheet over the triage queue; the panel stays live to its left. |
+| SV-OD-07 | Placement of the telemetry overlay on the camera feed. | Design / Clinical | Both, behind a switch: a fixed band, or tags on the devices that follow the camera preset. |
+| SV-OD-08 | Escalation targets per role and hospital, and receiver acknowledgment expectations. | Clinical / Product | Intensivist on call, or the unit's charge nurse through Messages. Start intervention disabled for an RN. Receiver acknowledgment not shown. |
+| SV-OD-09 | Which demo scenarios run on this page. | Product / Project | Deterioration to escalation, hospital feed down and offline. |
+| SV-OD-10 | The parameter color palette (one color per parameter, none in the severity hues), validated for contrast in both modes and for color-vision deficiency. | Design / Clinical | UCL's draft monitor palette on the monitor, plus darker inks of the same hues for light surfaces (List, trends). Not yet checked for contrast or color-vision deficiency. |
+| SV-OD-11 | The default waveform set and order per bed type (ventilated, cardiac, general ICU), and which ones a clinician can add or hide. | Clinical / Design | One set for every bed: II, Pleth, ABP, Resp. |
+| SV-OD-12 | Whether panel cards show a mini waveform, or numerics and trends only (density vs. clarity across a full panel). | Design / Clinical | Both, behind View → Card monitor: the ECG strip (default) or a 1 h sparkline under each numeric. |
+| SV-OD-13 | A Clinician Intuition Alert's severity, which sets its place in the queue (SV-041). | Clinical / Product | The clinician picks Medium (default) or High. Concerns never go Overdue. |
+| PRD OD-05, OD-06, OD-07, OD-15, OD-16 | Alert severity and ordering, freshness intervals, trend windows, alert source and Overdue, code status. Shared with the Patient card PRD. | See `prds/patient-card.md` §23 | Severity, then oldest first. Trend windows 1 h / 6 h / 24 h. Overdue at 5 / 15 / 30 / 60 min by severity. Code status as a chip in the focus view ("Full code", "DNR"). |
 
 ---
 

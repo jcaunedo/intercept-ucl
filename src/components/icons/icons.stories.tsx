@@ -23,6 +23,8 @@ import { HomeSolidIcon } from "./home-solid-icon";
 import { LayoutGridSolidIcon } from "./layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "./message-circle-more-solid-icon";
 import { MessageCircleSolidIcon } from "./message-circle-solid-icon";
+import { MonitorViewExpandedIcon } from "./monitor-view-expanded-icon";
+import { MonitorViewMinimizedIcon } from "./monitor-view-minimized-icon";
 import { ShieldSolidIcon } from "./shield-solid-icon";
 import { SquareActivitySolidIcon } from "./square-activity-solid-icon";
 import { TriangleAlertSolidIcon } from "./triangle-alert-solid-icon";
@@ -75,6 +77,26 @@ export const AllVariants: Story = {
 					<Solid className='size-[18px] text-icon' />
 					<Outline className='size-6 text-icon-muted' />
 					<Solid className='size-6 text-icon' />
+				</div>
+			))}
+		</div>
+	),
+};
+
+/** The monitor-view pair (archielabs.ds, custom): condensed and full monitor, at 16px (in buttons) and 24px. */
+export const MonitorView: Story = {
+	render: () => (
+		<div className='grid grid-cols-[auto_repeat(2,2rem)] items-center gap-x-4 gap-y-3 text-sm text-foreground'>
+			{(
+				[
+					["monitor-view-minimized", MonitorViewMinimizedIcon],
+					["monitor-view-expanded", MonitorViewExpandedIcon],
+				] as const
+			).map(([name, Icon]) => (
+				<div key={name} className='contents'>
+					<span>{name}</span>
+					<Icon className='size-4 text-icon' />
+					<Icon className='size-6 text-icon' />
 				</div>
 			))}
 		</div>

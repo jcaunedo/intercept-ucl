@@ -9,7 +9,9 @@ export {
   subtleSpring,
   responsiveSpring,
   layoutSpring,
+  reorderSpring,
   settleSpring,
+  resolvedFadeTransition,
 } from "./transitions";
 
 export {

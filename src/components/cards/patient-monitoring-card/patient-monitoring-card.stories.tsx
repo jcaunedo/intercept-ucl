@@ -2,11 +2,24 @@ import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 
-import { PatientMonitoringCard, type MonitorVitals } from "./patient-monitoring-card";
+import { PatientMonitoringCard, type MonitorTrends, type MonitorVitals } from "./patient-monitoring-card";
 
 // Synthetic patient (PRD PC-180).
 const stable: MonitorVitals = { hr: 86, spo2: 97, systolic: 118, diastolic: 72, map: 87, rr: 16 };
 const deteriorating: MonitorVitals = { hr: 134, spo2: 86, systolic: 84, diastolic: 48, map: 60, rr: 31 };
+
+// An hour that ends at `end`, drifting from `start`, with a little beat-to-beat wobble.
+const hour = (start: number, end: number, wobble: number) =>
+	Array.from({ length: 60 }, (_, minute) => {
+		const value = start + ((end - start) * minute) / 59 + Math.sin(minute * 1.7) * wobble;
+		return Math.round(minute === 59 ? end : value);
+	});
+const deterioratingHour: MonitorTrends = {
+	hr: hour(104, 134, 2),
+	spo2: hour(94, 86, 0.6),
+	systolic: hour(108, 84, 2),
+	rr: hour(22, 31, 1),
+};
 
 const meta = {
 	title: "Cards/PatientMonitoringCard",
@@ -49,7 +62,7 @@ export const Expanded: Story = {
 
 /**
  * An alert, as on the Census cards: the ring and tint pulse in step with every other alert card until the card is
- * clicked or the alert is acknowledged or escalated. Values outside their alarm limits get no highlight on the monitor.
+ * clicked or the alert is acknowledged or escalated. Values outside their alarm limits get a ↑ / ↓ tag.
  */
 export const Alarm: Story = {
 	args: {
@@ -117,7 +130,29 @@ export const Live: Story = {
 	},
 };
 
-/** Condensed and expanded, stable and alarming. */
+/** Compact (`size="sm"`), for the Compact panel: four a row at 1728. Smaller type, tighter padding, a shorter monitor. */
+export const Small: Story = {
+	args: { size: "sm" },
+	decorators: [
+		(Story) => (
+			<div className='w-[300px]'>
+				<Story />
+			</div>
+		),
+	],
+};
+
+/** The 1-hour trends view: a sparkline under each numeric instead of the ECG strip, here a patient drifting worse. */
+export const Trends: Story = {
+	args: {
+		vitals: deteriorating,
+		trends: deterioratingHour,
+		condensedView: "trends",
+		alert: { variant: "critical", count: 3 },
+	},
+};
+
+/** Condensed and expanded, stable and alarming; then the trends view and the compact size. */
 export const AllVariants: Story = {
 	decorators: [
 		(Story) => (
@@ -132,6 +167,11 @@ export const AllVariants: Story = {
 			<PatientMonitoringCard {...args} vitals={deteriorating} alert={{ variant: "critical", count: 3 }} />
 			<PatientMonitoringCard {...args} defaultExpanded />
 			<PatientMonitoringCard {...args} vitals={deteriorating} alert={{ variant: "critical", count: 3 }} defaultExpanded />
+			<PatientMonitoringCard {...args} vitals={deteriorating} trends={deterioratingHour} condensedView='trends' />
+			<div className='col-span-2 grid grid-cols-[300px_300px] items-start gap-3'>
+				<PatientMonitoringCard {...args} size='sm' />
+				<PatientMonitoringCard {...args} size='sm' vitals={deteriorating} trends={deterioratingHour} condensedView='trends' />
+			</div>
 		</div>
 	),
 };

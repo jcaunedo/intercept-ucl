@@ -24,6 +24,9 @@ const buttonVariants = cva(
 					"bg-secondary text-secondary-foreground hover:bg-secondary/80",
 				ghost: "hover:bg-accent hover:text-accent-foreground",
 				link: "text-primary underline-offset-4 hover:underline",
+				// A white, fully round button for floating over a dark surface (e.g. a monitor), so it keeps the same light
+				// look in both modes. Usually icon only; round at every size (see compoundVariants).
+				circle: "rounded-full bg-(--white) text-(--gray-700) hover:bg-(--gray-100)",
 			},
 			// The control size scale (SIZE-SCALE.md): xs 24, sm 32, md 36, lg 40, and an icon-only square at each height.
 			// Classes are shadcn's, value for value; UCL names its 36px step `md` where shadcn says `default`. A button
@@ -44,7 +47,11 @@ const buttonVariants = cva(
 			},
 		},
 		// The outline border takes 1px of the padding, so its label and icon land where the other variants' do.
-		compoundVariants: [{ variant: "outline", size: ["md", "default"], className: "px-[13px] has-[>svg]:pl-[9px]" }],
+		compoundVariants: [
+			{ variant: "outline", size: ["md", "default"], className: "px-[13px] has-[>svg]:pl-[9px]" },
+			// The sizes set their own radius; the circle stays round at all of them.
+			{ variant: "circle", className: "rounded-full" },
+		],
 		defaultVariants: {
 			variant: "default",
 			size: "md",

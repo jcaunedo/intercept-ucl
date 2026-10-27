@@ -42,17 +42,20 @@ const badgeVariants = cva(
 			// Heights come from the label's line + padding + 1px border; Figma's labels use an auto line height, 14px for
 			// the 12px label and 18px above it. The line height rides on the text class (`text-sm/4.5`): a separate
 			// `leading-*` is dropped by `cn()` when a `text-*` follows. sm–lg follow the control size scale (SIZE-SCALE.md).
+			// With a leading icon (`data-icon-start`, set by Badge), xs–md pad its side 2px less (lg doesn't). The count sits 3px from the label, so it pulls
+			// back by the size's gap minus 3px.
 			size: {
 				// 20px
-				xs: "gap-1 px-2 py-0.5 text-xs/3.5 [&>svg]:size-3",
+				xs: "gap-1 px-2 py-0.5 text-xs/3.5 data-[icon-start]:pl-1.5 [&>svg]:size-3 [&>[data-slot=badge-count]]:-ms-px",
 				// 24px with the larger label, for a badge beside a value (e.g. an acuity category)
-				"xs-alt": "gap-1 px-2 py-0.5 text-sm/4.5 [&>svg]:size-3",
+				"xs-alt":
+					"gap-1 px-2 py-0.5 text-sm/4.5 data-[icon-start]:pl-1.5 [&>svg]:size-3 [&>[data-slot=badge-count]]:-ms-px",
 				// 32px
-				sm: "gap-1 px-2.5 py-1.5 text-sm/4.5 [&>svg]:size-3",
+				sm: "gap-1 px-2.5 py-1.5 text-sm/4.5 data-[icon-start]:pl-2 [&>svg]:size-3.5 [&>[data-slot=badge-count]]:-ms-px",
 				// 36px
-				md: "gap-1.5 px-3 py-2 text-base/4.5 [&>svg]:size-4",
+				md: "gap-1.5 px-3 py-2 text-base/4.5 data-[icon-start]:pl-2.5 [&>svg]:size-4 [&>[data-slot=badge-count]]:-ms-[3px]",
 				// 40px. Figma's lg icon is 14px, smaller than md's (DESIGN.md "Badge").
-				lg: "gap-1.5 px-3.5 py-2.5 text-base/4.5 [&>svg]:size-3.5",
+				lg: "gap-1.5 px-3.5 py-2.5 text-base/4.5 [&>svg]:size-3.5 [&>[data-slot=badge-count]]:-ms-[3px]",
 			},
 		},
 		defaultVariants: {
@@ -65,24 +68,53 @@ const badgeVariants = cva(
 type BadgeProps = React.ComponentProps<"span"> &
 	VariantProps<typeof badgeVariants> & {
 		asChild?: boolean;
+		/** A number after the label, as "Label · 6", in the label's style. Shown whenever it's set, 0 included. */
+		count?: number;
 	};
 
 /**
- * A small label for a status, count or category. Use `asChild` with a link to make it clickable.
+ * A small label for a status, count or category. Use `asChild` with a link to make it clickable. A leading icon goes
+ * first in the children, a trailing one last; `count` adds "· n" after the label, before a trailing icon.
  *
  * Figma: [intercept.ds › badge](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1014-50)
  */
-function Badge({ className, variant = "default", size = "md", asChild = false, ...props }: BadgeProps) {
-	const Component = asChild ? Slot : "span";
+/**
+ * The badge's content in order: a leading icon, the label, the count, then a trailing icon. An element (not text) at
+ * either end of several children is an icon; CSS can't tell, since `:first-child` ignores the label's text node.
+ */
+function arrangeContent(content: React.ReactNode, count: number | undefined) {
+	const items = React.Children.toArray(content);
+	const leadingIcon = items.length > 1 && React.isValidElement(items[0]);
+	const trailingIcon = items.length > 1 && React.isValidElement(items[items.length - 1]) ? items[items.length - 1] : null;
+	const countElement =
+		count !== undefined ? (
+			<span key='badge-count' data-slot='badge-count' className='inline-flex items-center gap-[3px] tabular-nums'>
+				<span aria-hidden='true'>·</span>
+				{count}
+			</span>
+		) : null;
+	return {
+		leadingIcon,
+		content: trailingIcon ? [...items.slice(0, -1), countElement, trailingIcon] : [...items, countElement],
+	};
+}
+
+function Badge({ className, variant = "default", size = "md", asChild = false, count, children, ...props }: BadgeProps) {
+	// With `asChild` the content is the child's (e.g. a link's), so the count and icons are arranged inside it.
+	const child = asChild && React.isValidElement<{ children?: React.ReactNode }>(children) ? children : null;
+	const { leadingIcon, content } = arrangeContent(child ? child.props.children : children, count);
 
 	return (
-		<Component
+		<Slot
 			data-slot='badge'
 			data-variant={variant}
 			data-size={size}
+			data-icon-start={leadingIcon ? "" : undefined}
 			className={cn(badgeVariants({ variant, size, className }))}
 			{...props}
-		/>
+		>
+			{child ? React.cloneElement(child, undefined, content) : <span>{content}</span>}
+		</Slot>
 	);
 }
 

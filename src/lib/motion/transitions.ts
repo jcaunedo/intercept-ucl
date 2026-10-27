@@ -72,6 +72,17 @@ const layoutSpring: Transition = {
 };
 
 /**
+ * Items reordering in a grid or list when their data changes (Reorder pattern): calmer than `layoutSpring`, so a card's
+ * trip across the grid can be followed, and critically damped (damping = 2√stiffness), so it lands without overshoot and
+ * a move interrupted by the next change redirects smoothly. About 600ms, `deliberate`.
+ */
+const reorderSpring: Transition = {
+	type: "spring",
+	stiffness: 170,
+	damping: 26,
+};
+
+/**
  * A quick spring that lands exactly on its target, with no overshoot (Urgency pattern): critically damped (damping =
  * 2√stiffness), so it moves with spring physics but never bounces past the end.
  */
@@ -79,6 +90,15 @@ const settleSpring: Transition = {
 	type: "spring",
 	stiffness: 420,
 	damping: 41,
+};
+
+/**
+ * A resolved alert's pill fading out (`motionDuration.resolvedFade`) on the standard curve: slow enough to be seen
+ * before its card moves to a new place.
+ */
+const resolvedFadeTransition: Transition = {
+	duration: motionDuration.resolvedFade,
+	ease: [0.4, 0, 0.2, 1],
 };
 
 export {
@@ -90,5 +110,7 @@ export {
 	subtleSpring,
 	responsiveSpring,
 	layoutSpring,
+	reorderSpring,
 	settleSpring,
+	resolvedFadeTransition,
 };

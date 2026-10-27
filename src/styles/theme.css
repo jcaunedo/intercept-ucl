@@ -147,6 +147,10 @@
 	--color-monitor-spo2: var(--monitor-spo2);
 	--color-monitor-abp: var(--monitor-abp);
 	--color-monitor-resp: var(--monitor-resp);
+	--color-monitor-ecg-ink: var(--monitor-ecg-ink);
+	--color-monitor-spo2-ink: var(--monitor-spo2-ink);
+	--color-monitor-abp-ink: var(--monitor-abp-ink);
+	--color-monitor-resp-ink: var(--monitor-resp-ink);
 
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
@@ -568,6 +572,12 @@
 	--monitor-spo2: oklch(0.83 0.12 185); /* SpO₂ pleth: teal */
 	--monitor-abp: oklch(0.75 0.15 305); /* arterial pressure: violet */
 	--monitor-resp: oklch(0.93 0.07 100); /* respiration: warm white */
+	/* The same parameter colors as text on the page's own surfaces (Monitoring's List view): darker in light mode, so they
+	   read at 4.5:1 on white; the monitor colors themselves in dark mode. ⚠️ Draft, pending SV-OD-10. */
+	--monitor-ecg-ink: oklch(0.48 0.15 145);
+	--monitor-spo2-ink: oklch(0.48 0.09 190);
+	--monitor-abp-ink: oklch(0.48 0.18 305);
+	--monitor-resp-ink: oklch(0.45 0.03 100);
 }
 
 /* ---------- Semantic: intercept-dark mode ----------
@@ -652,6 +662,11 @@
 	--shadow-color-sm: oklch(0 0 0 / 30%);
 	--shadow-color-md: oklch(0 0 0 / 60%);
 	--shadow-color-lg: oklch(0 0 0 / 80%);
+
+	--monitor-ecg-ink: var(--monitor-ecg);
+	--monitor-spo2-ink: var(--monitor-spo2);
+	--monitor-abp-ink: var(--monitor-abp);
+	--monitor-resp-ink: var(--monitor-resp);
 
 	/* Badge tones: 950 fill, 300 label. */
 	--badge-blue: var(--blue-950);

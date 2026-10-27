@@ -32,14 +32,19 @@ import { Typography } from "@/components/typography/typography";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
+import { AskInterceptPanel } from "./ask-intercept-panel";
+
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
+// The chat's Sidebar item: an action, matched by its label (Oct 27, 2026: "Ask Intercept Live", was "Ask Intercept").
+const askInterceptLabel = "Ask Intercept Live";
+
 const navGroups: SidebarNavItem[][] = [
 	[
 		{ icon: SearchIcon, label: "Search" },
-		{ icon: SparklesIcon, label: "Ask Intercept" },
+		{ icon: SparklesIcon, label: askInterceptLabel },
 	],
 	[
 		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census", navigateTo: "Census" },
@@ -113,6 +118,14 @@ function formatClock(date: Date) {
 	return `${day} · ${time}`;
 }
 
+/** Time left in the shift, "Shift ends in 3h 45m" ("in 45m" under an hour), or "Shift ended" once it's past. */
+function formatShiftRemaining(endsAt: string, now: number) {
+	const minutes = Math.ceil((Date.parse(endsAt) - now) / 60_000);
+	if (minutes <= 0) return "Shift ended";
+	const hours = Math.floor(minutes / 60);
+	return `Shift ends in ${hours ? `${hours}h ` : ""}${minutes % 60}m`;
+}
+
 /**
  * The page's color mode, kept as the `.dark` class on <html> (so portaled menus and tooltips follow it too). It also
  * watches the class, so anything else that changes it (e.g. Storybook's toolbar) stays in sync. An app would usually
@@ -147,6 +160,11 @@ type InterceptLiveProps = {
 	 */
 	clock?: string;
 	user: AppHeaderUser;
+	/**
+	 * When the user's shift ends, ISO 8601. The header counts down to it, updating each minute ("Shift ends in 3h 45m").
+	 * Without it, or before the first client render, `user.shiftEnds` shows as given.
+	 */
+	shiftEndsAt?: string;
 	/** The clinicians on shift with the user. */
 	team: AppHeaderPerson[];
 	unreadMessages: number;
@@ -160,9 +178,28 @@ type InterceptLiveProps = {
  * Intercept Live's Provider Desktop: the Sidebar (collapsed to its rail by default) beside the canvas, with the sticky
  * AppHeader over the current page. Figma origin: Intercept-Live › Census (1:350).
  */
-function InterceptLive({ clock, user, team, unreadMessages, pages, defaultPage = "Census" }: InterceptLiveProps) {
+function InterceptLive({
+	clock,
+	user,
+	shiftEndsAt,
+	team,
+	unreadMessages,
+	pages,
+	defaultPage = "Census",
+}: InterceptLiveProps) {
 	const [sidebarCollapsed, setSidebarCollapsed] = React.useState(true);
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
+	// Ask Intercept is an action, not a page: it toggles the chat panel and leaves the current page as it is.
+	const [chatOpen, setChatOpen] = React.useState(false);
+	const groups = React.useMemo(
+		() =>
+			navGroups.map((group) =>
+				group.map((item) =>
+					item.label === askInterceptLabel ? { ...item, onClick: () => setChatOpen((open) => !open) } : item,
+				),
+			),
+		[],
+	);
 	// The header sticks to the top of the canvas and tightens once the canvas scrolls; back at the top it relaxes.
 	const canvasRef = React.useRef<HTMLDivElement>(null);
 	const { scrollY } = useScroll({ container: canvasRef });
@@ -172,11 +209,16 @@ function InterceptLive({ clock, user, team, unreadMessages, pages, defaultPage =
 	// The user's real date and time unless the app pins one. Empty for the first server render (see useCurrentMinute).
 	const currentMinute = useCurrentMinute();
 	const shownClock = clock ?? (currentMinute === null ? "" : formatClock(new Date(currentMinute)));
+	// The shift countdown ticks on the same minute as the clock.
+	const shownUser =
+		shiftEndsAt && currentMinute !== null
+			? { ...user, shiftEnds: formatShiftRemaining(shiftEndsAt, currentMinute) }
+			: user;
 
 	return (
 		<div className='flex h-screen bg-background-subtle'>
 			<Sidebar
-				groups={navGroups}
+				groups={groups}
 				footerItems={navFooter}
 				activeItem={page}
 				onNavigate={(navigateTo) => setPage(navigateTo as InterceptLivePage)}
@@ -184,6 +226,9 @@ function InterceptLive({ clock, user, team, unreadMessages, pages, defaultPage =
 				onCollapsedChange={setSidebarCollapsed}
 				className='h-full'
 			/>
+
+			{/* Global: opens on every page, between the Sidebar and the page. */}
+			<AskInterceptPanel open={chatOpen} onOpenChange={setChatOpen} carded={sidebarCollapsed} />
 
 			{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
 			    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's width.
@@ -195,13 +240,19 @@ function InterceptLive({ clock, user, team, unreadMessages, pages, defaultPage =
 				layoutScroll
 				className={cn(
 					"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-					sidebarCollapsed ? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]" : "rounded-none shadow-none",
+					// With the chat open the chat takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
+					// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
+					chatOpen
+						? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+						: sidebarCollapsed
+							? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+							: "rounded-none shadow-none",
 				)}
 			>
 				{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). */}
 				<AppHeader
 					clock={shownClock}
-					user={user}
+					user={shownUser}
 					team={team}
 					unreadMessages={unreadMessages}
 					compact={headerCompact}

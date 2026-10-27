@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, waitFor } from "storybook/test";
 
-import { sampleMonitoringPatients } from "../monitoring/sample-monitoring";
-import { sampleHospitals, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { Census } from "./census";
 import { samplePatients } from "./sample-census";
 
@@ -16,7 +16,10 @@ const meta = {
 		hospitals: sampleHospitals,
 		patients: samplePatients,
 		monitoringPatients: sampleMonitoringPatients,
+		monitoringAlerts: sampleMonitoringAlerts,
+		escalationTargets: sampleEscalationTargets,
 		user: sampleUser,
+		shiftEndsAt: sampleShiftEndsAt,
 		team: sampleTeam,
 		unreadMessages: 3,
 		onOpenPatient: fn(),
@@ -27,14 +30,41 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Hospital tabs, My Patients and the quick views filter the grid; cards are sorted by alert severity. */
+/** Hospital tabs, the All / My patients pill and the quick views filter the grid; cards are sorted by alert severity. */
 export const Default: Story = {};
+
+/** My patients: the pill's menu narrows the grid to the user's own, and the title reads "6 of 14 patients". */
+export const MyPatients: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "All patients" }));
+		await userEvent.click(await screen.findByRole("menuitemradio", { name: "My patients" }));
+		const mine = samplePatients.filter((patient) => patient.mine).length;
+		await waitFor(() =>
+			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(`${mine} of ${samplePatients.length} patients`),
+		);
+	},
+};
+
+/**
+ * The Sidebar's Ask Intercept Live opens the chat panel from the left, on any page: the page narrows beside it. Its
+ * close button, Escape or Ask Intercept Live again closes it.
+ */
+export const AskIntercept: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+		const panel = await canvas.findByRole("complementary", { name: "Ask Intercept Live" });
+		await waitFor(() => expect(panel).toHaveStyle({ width: "400px" }));
+		await userEvent.click(canvas.getByRole("button", { name: "Close Ask Intercept Live" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Ask Intercept Live" })).not.toBeInTheDocument());
+		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+	},
+};
 
 /** The Sidebar's Monitoring opens the Monitoring page: the same patients as live monitors. */
 export const GoToMonitoring: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Monitoring" }));
-		await waitFor(() => expect(canvas.getByRole("switch", { name: "Full monitors" })).toBeVisible());
+		await waitFor(() => expect(canvas.getByRole("group", { name: "Density" })).toBeVisible());
 	},
 };
 

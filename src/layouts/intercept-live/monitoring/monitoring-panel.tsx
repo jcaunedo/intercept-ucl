@@ -1,5 +1,5 @@
 import * as React from "react";
-import { BadgeCheckIcon, BellRingIcon, FilterXIcon, GaugeIcon, HandHeartIcon, TriangleIcon, WifiOffIcon } from "lucide-react";
+import { FilterXIcon, GaugeIcon } from "lucide-react";
 
 import {
 	defaultMonitorLimits,
@@ -8,26 +8,36 @@ import {
 	type PatientMonitoringCardProps,
 } from "@/components/cards/patient-monitoring-card";
 import { EmptyState } from "@/components/feedback/empty-state";
-import { Switch } from "@/components/forms/switch";
 import { Typography } from "@/components/typography/typography";
+import { motionDuration } from "@/lib/motion";
 
 import {
 	activeAlertCount,
-	hasActiveAlert,
-	hasOrganSupport,
-	hasRisingAcuity,
 	HospitalTabs,
 	PanelEmpty,
 	PanelGrid,
+	PatientScopeSelect,
 	QuickViewChips,
 	sortOrderById,
 	SortSelect,
 	UnitSelect,
 	type PanelHospital,
 	type PanelPatient,
+	type PatientScope,
 	type QuickView,
 	type SortOrderId,
 } from "../shared/patient-panel";
+import {
+	compareTriageAlerts,
+	isOpenAlert,
+	TriageQueue,
+	type EscalationTarget,
+	type TriageAlert,
+	type TriageAlertAction,
+	type TriageAlertSeverity,
+} from "./triage-queue";
+import { MonitoringList } from "./monitoring-list";
+import { CondensedViewToggle, DensityToggle, MonitorViewToggle, type CondensedView, type PanelDensity } from "./view-controls";
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -36,24 +46,67 @@ import {
 type MonitoringHospital = PanelHospital;
 
 /**
- * A patient on the monitoring panel: the card's identity, location, alert and live values. Acuity, its 24h change and
- * tags aren't on the monitoring card, but the filters and sort orders use them, as on the Census.
+ * A patient on the monitoring panel: the card's identity, location and live values. Acuity, its 24h change and tags
+ * aren't on the monitoring card; acuity only breaks ties in the Alert order. The card's alert pill comes from the
+ * patient's alerts in the triage queue, so the two never disagree.
  */
-type MonitoringPatient = PanelPatient &
-	Pick<PatientMonitoringCardProps, "mrn" | "sex" | "age" | "room" | "vitals" | "limits">;
+type MonitoringPatient = Omit<PanelPatient, "alert"> &
+	Pick<PatientMonitoringCardProps, "mrn" | "sex" | "age" | "room" | "vitals" | "limits" | "trends">;
+
+/** A monitoring patient with the alert pill worked out from their alerts. */
+type PanelMonitoringPatient = MonitoringPatient & Pick<PanelPatient, "alert">;
 
 type MonitoringPanelProps = {
 	hospitals: MonitoringHospital[];
 	patients: MonitoringPatient[];
+	/** Every alert on the panel, for the triage queue. Resolved and declined ones show under Resolved. */
+	alerts?: TriageAlert[];
+	/** Who the queue's Escalate can send an alert to. Without any, rows don't offer Escalate. */
+	escalationTargets?: EscalationTarget[];
 	onOpenPatient?: (patientId: string) => void;
+	/** An action on an alert in the queue. The layout applies it at once; the app sends it to Clinical Alerting. */
+	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
 };
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The card's alert pill from the patient's open alerts: the top severity, how many are open, and whether one at that
+ * severity is still unaddressed (the card's ring pulses until it is).
+ */
+function alertPill(patientAlerts: TriageAlert[]): PanelPatient["alert"] {
+	const open = patientAlerts.filter(isOpenAlert).sort(compareTriageAlerts);
+	if (!open.length) return undefined;
+	const top = open.filter((alert) => alert.severity === open[0].severity);
+	const unaddressed = top.some((alert) => (alert.status ?? "active") === "active");
+	const status = unaddressed ? "active" : top[0].status === "escalated" ? "escalated" : "acknowledged";
+	return { variant: open[0].severity, count: open.length, status };
+}
+
+const appliedAction = (action: TriageAlertAction): Pick<TriageAlert, "status" | "addressed"> => {
+	const at = new Date().toISOString();
+	switch (action.type) {
+		case "acknowledge":
+			return { status: "acknowledged", addressed: { at } };
+		case "escalate":
+			return { status: "escalated", addressed: { at, to: action.targetId, note: action.note || undefined } };
+		case "resolve":
+			return { status: "resolved", addressed: { at, reason: action.reason, note: action.note || undefined } };
+		case "decline":
+			return { status: "declined", addressed: { at, note: action.note || undefined } };
+	}
+};
+
+// The filters stay in context (Oct 27, 2026): Monitoring narrows the panel's scope (hospital, All / My patients, unit),
+// sets how it looks, and has one status filter of its own, Outside limits. What needs attention is the triage queue's
+// job, and acuity and tags aren't on the monitoring card, so the Census's other quick views stay there. Acuity sorts are
+// left out too.
+const sortOrderIds: readonly SortOrderId[] = ["alert", "location", "name"];
+
 /** Whether any primary numeric is outside the patient's alarm limits (the card's own limits, defaults included). */
-const isOutsideLimits = ({ vitals = {}, limits }: MonitoringPatient) => {
+const isOutsideLimits = ({ vitals = {}, limits }: PanelMonitoringPatient) => {
 	const { hr, spo2, systolic, rr }: MonitorLimits = { ...defaultMonitorLimits, ...limits };
 	const outside = (value: number | undefined, [low, high]: [number, number]) =>
 		value !== undefined && (value < low || value > high);
@@ -62,44 +115,153 @@ const isOutsideLimits = ({ vitals = {}, limits }: MonitoringPatient) => {
 	);
 };
 
-/** Whether any primary numeric is missing (the monitor shows "--"). */
-const hasDataGap = ({ vitals = {} }: MonitoringPatient) =>
-	[vitals.hr, vitals.spo2, vitals.systolic, vitals.diastolic, vitals.rr].some((value) => value === undefined);
-
-// Quick views, the Census's set tuned for live monitoring: "Outside limits" finds a patient whose numerics have left
-// their alarm limits before (or without) an alert, and "Data gap" means a missing monitor value. Sepsis watch stays on
-// the Census and Virtual Sepsis.
-const quickViews: QuickView<MonitoringPatient>[] = [
-	{ id: "all", label: "All Patients", icon: BadgeCheckIcon, matches: () => true },
-	{ id: "attention", label: "Needs attention", icon: BellRingIcon, showCount: true, matches: hasActiveAlert },
+// The drift a filter finds better than the card's ↑ / ↓ tags on a large panel. "Limits", not the Census's "Out of
+// range": these are the monitor's alarm limits.
+const statusFilters: QuickView<PanelMonitoringPatient>[] = [
 	{ id: "limits", label: "Outside limits", icon: GaugeIcon, showCount: true, matches: isOutsideLimits },
-	{ id: "rising", label: "Rising acuity", icon: TriangleIcon, matches: hasRisingAcuity },
-	{ id: "organ", label: "Organ support", icon: HandHeartIcon, matches: hasOrganSupport },
-	{ id: "data", label: "Data gap", icon: WifiOffIcon, matches: hasDataGap },
 ];
+
+// Columns follow the page's width (a container query), with a minimum card width per density: ~340px Comfortable,
+// ~272px Compact. With the queue open that's three Comfortable or four Compact cards a row at Figma's 1728 width (PRD
+// SV-012), four or five at 1920. `items-start`: a card showing the full monitor grows on its own, without stretching
+// its row.
+const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
+	comfortable: "items-start @min-[46.5rem]:grid-cols-2 @min-[69rem]:grid-cols-3 @min-[91rem]:grid-cols-4",
+	compact:
+		"items-start gap-3 @min-[38rem]:grid-cols-2 @min-[55.5rem]:grid-cols-3 @min-[73.5rem]:grid-cols-4 @min-[91rem]:grid-cols-5",
+};
+
+// How long a card says "Resolved" (its ring blinks green once meanwhile) after its last alert resolves, before the pill
+// fades out and the card moves.
+const RESOLVED_PILL_MS = 2000;
+// The pill's slow fade (`resolvedFadeTransition`), waited out before the card moves.
+const RESOLVED_FADE_MS = motionDuration.resolvedFade * 1000;
+
+type ResolvedHold = { severity: TriageAlertSeverity; fading: boolean };
+
+/**
+ * Patients whose last open alert just resolved, by id, with the severity they had: held for `RESOLVED_PILL_MS` showing
+ * "Resolved", then `fading` while the pill fades out, then released. Covers resolving in the queue and alerts that
+ * resolve or drop out of the feed.
+ */
+function useResolvedHolds(patients: Pick<PanelMonitoringPatient, "id" | "alert">[]) {
+	const [holds, setHolds] = React.useState<Record<string, ResolvedHold>>({});
+	const previous = React.useRef<Record<string, TriageAlertSeverity> | null>(null);
+	const timers = React.useRef<number[]>([]);
+	const open: Record<string, TriageAlertSeverity> = {};
+	for (const patient of patients) {
+		const variant = patient.alert?.variant;
+		if (variant === "critical" || variant === "high" || variant === "medium" || variant === "low") open[patient.id] = variant;
+	}
+	const openKey = JSON.stringify(open);
+
+	React.useEffect(() => {
+		const before = previous.current;
+		previous.current = open;
+		if (!before) return;
+		const resolved = Object.keys(before).filter((id) => !open[id]);
+		if (!resolved.length) return;
+		const update = (change: (hold: ResolvedHold) => ResolvedHold | null) =>
+			setHolds((current) => {
+				const next = { ...current };
+				for (const id of resolved) {
+					const changed = next[id] ? change(next[id]) : null;
+					if (changed) next[id] = changed;
+					else delete next[id];
+				}
+				return next;
+			});
+		setHolds((current) => ({
+			...current,
+			...Object.fromEntries(resolved.map((id) => [id, { severity: before[id], fading: false }])),
+		}));
+		timers.current.push(
+			window.setTimeout(() => update((hold) => ({ ...hold, fading: true })), RESOLVED_PILL_MS),
+			window.setTimeout(() => update(() => null), RESOLVED_PILL_MS + RESOLVED_FADE_MS),
+		);
+		// Keyed on the open alerts' contents, not the object (a new one every render).
+	}, [openKey]);
+
+	React.useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
+
+	return holds;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Monitoring                                                                 */
 /* -------------------------------------------------------------------------- */
 
-/** The Monitoring page's content: the clinician's panel as live monitoring cards, with its filter bar. */
-function MonitoringPanel({ hospitals, patients, onOpenPatient }: MonitoringPanelProps) {
+/**
+ * The Monitoring page's content: the clinician's panel as live monitoring cards, with its filter bar, beside the triage
+ * queue of the panel's alerts.
+ */
+function MonitoringPanel({
+	hospitals,
+	patients: patientsProp,
+	alerts: alertsProp = [],
+	escalationTargets = [],
+	onOpenPatient,
+	onAlertAction,
+}: MonitoringPanelProps) {
 	const [hospitalId, setHospitalId] = React.useState("all");
-	const [quickView, setQuickView] = React.useState("all");
-	const [onlyMine, setOnlyMine] = React.useState(false);
-	const [alertsOnly, setAlertsOnly] = React.useState(false);
+	const [scope, setScope] = React.useState<PatientScope>("all");
+	// Outside limits keeps the patients who matched when it was pressed: readings move every second, and a live filter
+	// would add and drop cards under the clinician's eyes (PRD SV-013). Its count stays live; pressing it again clears it.
+	const [statusFilter, setStatusFilter] = React.useState<{ id: string; ids: ReadonlySet<string> } | null>(null);
 	const [unit, setUnit] = React.useState("all");
 	const [sortBy, setSortBy] = React.useState<SortOrderId>("alert");
+	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
+	const [condensedView, setCondensedView] = React.useState<CondensedView>("waveform");
 	// Cards showing the full monitor. Each card's own button toggles it; "Full monitors" sets every card.
 	const [expandedIds, setExpandedIds] = React.useState<ReadonlySet<string>>(() => new Set());
+	const [queueCollapsed, setQueueCollapsed] = React.useState(false);
+	// The layout applies queue actions itself, so the prototype responds; an app gets the updated alerts back from its API.
+	// Only the clinician's actions are kept here, over whatever alerts come in, so alerts that change from outside (a live
+	// feed, the Live story) still flow through.
+	const [addressed, setAddressed] = React.useState<Record<string, Pick<TriageAlert, "status" | "addressed">>>({});
+	const alerts = alertsProp.map((alert) => (addressed[alert.id] ? { ...alert, ...addressed[alert.id] } : alert));
+	const withAlerts = patientsProp.map((patient) => ({
+		...patient,
+		alert: alertPill(alerts.filter((alert) => alert.patientId === patient.id)),
+	}));
+	const resolvedHolds = useResolvedHolds(withAlerts);
+	// A patient whose last alert just resolved keeps its old place while its card says "Resolved" and fades the pill out;
+	// only then does it sort as a patient without an alert, so the card moves after the fade. The held severity counts no
+	// alerts (count 0), so the summary already drops them.
+	const patients: PanelMonitoringPatient[] = withAlerts.map((patient) => {
+		const hold = resolvedHolds[patient.id];
+		return hold && !patient.alert ? { ...patient, alert: { variant: hold.severity, count: 0 } } : patient;
+	});
+	/** The pill the card shows: "Resolved" while held, then nothing (it fades out), otherwise the patient's own. */
+	const shownAlert = (patient: PanelMonitoringPatient): PanelMonitoringPatient["alert"] => {
+		const hold = resolvedHolds[patient.id];
+		if (!hold || withAlerts.find((other) => other.id === patient.id)?.alert) return patient.alert;
+		return hold.fading ? undefined : { variant: "resolved" };
+	};
 
-	// Same narrowing as the Census: My Patients and Alerts only apply to everything below them, the tab counters included.
-	const mine = onlyMine ? patients.filter((patient) => patient.mine) : patients;
-	const assigned = alertsOnly ? mine.filter(hasActiveAlert) : mine;
-	const inHospital = hospitalId === "all" ? assigned : assigned.filter((patient) => patient.hospitalId === hospitalId);
-	const inUnit = unit === "all" ? inHospital : inHospital.filter((patient) => patient.unit === unit);
-	const activeView = quickViews.find((view) => view.id === quickView) ?? quickViews[0];
-	const visible = inUnit.filter(activeView.matches).sort(sortOrderById(sortBy).compare);
+	const handleAlertAction = (alertId: string, action: TriageAlertAction) => {
+		setAddressed((current) => ({ ...current, [alertId]: appliedAction(action) }));
+		onAlertAction?.(alertId, action);
+	};
+
+	// Scope only: All / My patients applies to everything below it, the tab counters included; then hospital and unit.
+	// Hospital and unit run on both scopes, so the summary can say "6 of 14 patients", as on the Census.
+	const located = (scoped: PanelMonitoringPatient[]) => {
+		const inHospital = hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
+		return unit === "all" ? inHospital : inHospital.filter((patient) => patient.unit === unit);
+	};
+	const filtered = (scoped: PanelMonitoringPatient[]) =>
+		statusFilter ? located(scoped).filter((patient) => statusFilter.ids.has(patient.id)) : located(scoped);
+	const assigned = scope === "mine" ? patients.filter((patient) => patient.mine) : patients;
+	const visible = [...filtered(assigned)].sort(sortOrderById(sortBy).compare);
+	const everyoneCount = scope === "mine" ? filtered(patients).length : visible.length;
+
+	const pressStatusFilter = (id: string | null) => {
+		const filter = statusFilters.find((view) => view.id === id);
+		setStatusFilter(
+			filter ? { id: filter.id, ids: new Set(patients.filter(filter.matches).map((patient) => patient.id)) } : null,
+		);
+	};
 	const alertCount = activeAlertCount(visible);
 	const allExpanded = visible.length > 0 && visible.every((patient) => expandedIds.has(patient.id));
 
@@ -113,98 +275,136 @@ function MonitoringPanel({ hospitals, patients, onOpenPatient }: MonitoringPanel
 
 	const clearFilters = () => {
 		setHospitalId("all");
-		setQuickView("all");
 		setUnit("all");
-		setOnlyMine(false);
-		setAlertsOnly(false);
+		setScope("all");
+		setStatusFilter(null);
 	};
 
 	return (
-		<>
-			<div className='mt-2 mb-4'>
-				<div className='flex items-center justify-between gap-4 px-6 py-2'>
-					<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
-					<div className='flex items-center gap-6'>
-						<Switch label='Alerts only' checked={alertsOnly} onCheckedChange={setAlertsOnly} />
-						<Switch label='My Patients' checked={onlyMine} onCheckedChange={setOnlyMine} />
+		// The page beside the queue. The page is a size container, so the grid's columns follow the room the queue leaves.
+		<div className='flex flex-1'>
+			<div className='@container flex min-w-0 flex-1 flex-col'>
+				<div className='mt-2 mb-4'>
+					<div className='flex items-center justify-between gap-4 px-6 py-2'>
+						<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
 					</div>
 				</div>
-			</div>
 
-			<main className='flex flex-1 flex-col gap-6 px-6 pb-6'>
-				<div className='flex flex-col gap-4'>
-					{/* The panel summary (PRD Monitoring §3.1): patients shown and their active alerts. */}
-					<Typography as='h1' size='2xl' weight='regular' aria-live='polite'>
-						<span className='font-bold'>
-							{visible.length} {visible.length === 1 ? "patient" : "patients"}
-						</span>{" "}
-						· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
-					</Typography>
+				<main className='flex flex-1 flex-col gap-6 px-6 pb-6'>
+					<div className='flex flex-col gap-4'>
+						{/* The panel summary (PRD Monitoring §3.1): patients shown and their active alerts. */}
+						<Typography as='h1' size='2xl' weight='regular' aria-live='polite'>
+							<span className='font-bold'>
+								{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
+								{everyoneCount === 1 ? "patient" : "patients"}
+							</span>{" "}
+							· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
+						</Typography>
 
-					<div className='flex flex-wrap items-center justify-between gap-4'>
-						<QuickViewChips views={quickViews} value={quickView} onValueChange={setQuickView} patients={inUnit} />
-						<div className='flex items-center gap-2'>
+						<div className='flex flex-wrap items-center gap-2'>
+							<div className='flex flex-wrap items-center gap-1'>
+								<PatientScopeSelect value={scope} onValueChange={setScope} />
+								<QuickViewChips
+									views={statusFilters}
+									value={statusFilter?.id ?? null}
+									onValueChange={pressStatusFilter}
+									patients={located(assigned)}
+								/>
+							</div>
 							<UnitSelect value={unit} onValueChange={setUnit} />
-							<SortSelect value={sortBy} onValueChange={setSortBy} />
-							{/* A view option, not a filter: it changes how much of each monitor shows, not who's on the panel. Set
-							    apart from the menus by the same 24px as the switches above. */}
-							<div className='ml-4 flex'>
-								<Switch
-									label='Full monitors'
-									checked={allExpanded}
-									onCheckedChange={(checked) =>
-										setExpandedIds(checked ? new Set(patients.map((patient) => patient.id)) : new Set())
+							<SortSelect value={sortBy} onValueChange={setSortBy} orders={sortOrderIds} />
+							{/* View controls (PRD SV-015) at the end of the bar: they change how the panel looks, not who's on it. */}
+							<div className='ml-auto flex items-center gap-2'>
+								{/* Card monitor, monitor view, then density: 8px apart, the switches of one view. */}
+								<CondensedViewToggle value={condensedView} onValueChange={setCondensedView} density={density} />
+								<MonitorViewToggle
+									density={density}
+									value={allExpanded ? "full" : expandedIds.size === 0 ? "condensed" : null}
+									onValueChange={(view) =>
+										setExpandedIds(view === "full" ? new Set(patients.map((patient) => patient.id)) : new Set())
 									}
 								/>
+								<DensityToggle value={density} onValueChange={setDensity} />
 							</div>
 						</div>
 					</div>
-				</div>
 
-				{/* Three cards a row at Figma's 1728 width (PRD SV-012, Comfortable), four from 1920. `items-start`: a card
-				    showing the full monitor grows on its own, without stretching its row. */}
-				<PanelGrid
-					patients={visible}
-					hospitals={hospitals}
-					grouped={sortBy === "location"}
-					className='items-start lg:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4'
-					renderCard={({ id, hospitalId: _hospitalId, mine: _mine, acuity: _acuity, trajectory: _trajectory, tags: _tags, ...card }) => (
-						<PatientMonitoringCard
-							{...card}
-							expanded={expandedIds.has(id)}
-							onExpandedChange={(expanded) => setExpanded(id, expanded)}
-							onOpen={onOpenPatient ? () => onOpenPatient(id) : undefined}
+					{density === "list" ? (
+						<MonitoringList
+							patients={visible.map((patient) => ({ ...patient, alert: shownAlert(patient) }))}
+							hospitals={hospitals}
+							grouped={sortBy === "location"}
+							onOpenPatient={onOpenPatient}
+						/>
+					) : (
+						<PanelGrid
+							patients={visible}
+							hospitals={hospitals}
+							grouped={sortBy === "location"}
+							className={gridClassNames[density]}
+							renderCard={({
+								id,
+								hospitalId: _hospitalId,
+								mine: _mine,
+								acuity: _acuity,
+								trajectory: _trajectory,
+								tags: _tags,
+								...card
+							}) => (
+								<PatientMonitoringCard
+									{...card}
+									alert={shownAlert({ id, ...card } as PanelMonitoringPatient)}
+									size={density === "compact" ? "sm" : "md"}
+									condensedView={condensedView}
+									expanded={expandedIds.has(id)}
+									onExpandedChange={(expanded) => setExpanded(id, expanded)}
+									onOpen={onOpenPatient ? () => onOpenPatient(id) : undefined}
+								/>
+							)}
 						/>
 					)}
-				/>
 
-				{/* Nothing to show: an empty panel, or filters that match none (with a way back). */}
-				{visible.length === 0 ? (
-					<PanelEmpty>
-						{patients.length === 0 ? (
-							<EmptyState
-								title='No patients being monitored'
-								description="Patients you're monitoring will appear here, with their live vitals and trends."
-							/>
-						) : (
-							<EmptyState
-								title='No patients match these filters'
-								description='Try another hospital, unit or filter.'
-								buttonLabel='Clear filters'
-								buttonIcon={<FilterXIcon aria-hidden='true' />}
-								buttonProps={{ onClick: clearFilters }}
-							/>
-						)}
-					</PanelEmpty>
-				) : null}
-			</main>
-		</>
+					{/* Nothing to show: an empty panel, or filters that match none (with a way back). */}
+					{visible.length === 0 ? (
+						<PanelEmpty>
+							{patients.length === 0 ? (
+								<EmptyState
+									title='No patients being monitored'
+									description="Patients you're monitoring will appear here, with their live vitals and trends."
+								/>
+							) : (
+								<EmptyState
+									title='No patients match these filters'
+									description='Try another hospital, unit or filter, or show all patients.'
+									buttonLabel='Clear filters'
+									buttonIcon={<FilterXIcon aria-hidden='true' />}
+									buttonProps={{ onClick: clearFilters }}
+								/>
+							)}
+						</PanelEmpty>
+					) : null}
+				</main>
+			</div>
+
+			<TriageQueue
+				alerts={alerts}
+				patients={patients}
+				escalationTargets={escalationTargets}
+				collapsed={queueCollapsed}
+				onCollapsedChange={setQueueCollapsed}
+				onOpenPatient={onOpenPatient}
+				onAction={handleAlertAction}
+			/>
+		</div>
 	);
 }
 
 export {
 	MonitoringPanel,
+	type EscalationTarget,
 	type MonitoringHospital,
 	type MonitoringPanelProps,
 	type MonitoringPatient,
+	type TriageAlert,
+	type TriageAlertAction,
 };

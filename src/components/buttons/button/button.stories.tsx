@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Maximize2 } from "lucide-react";
 
 import { Button } from "./button";
 
@@ -19,6 +19,7 @@ const meta = {
 				"secondary",
 				"ghost",
 				"link",
+				"circle",
 			],
 		},
 		size: {
@@ -35,6 +36,20 @@ export const Default: Story = {
 	args: {
 		children: "Continue",
 	},
+};
+
+/**
+ * The circle variant: a white, round button that floats over a dark surface, the same in light and dark mode. Here at
+ * 32px over a monitor, as PatientMonitoringCard uses it.
+ */
+export const Circle: Story = {
+	render: () => (
+		<div className='relative h-24 w-48 rounded-lg bg-monitor'>
+			<Button variant='circle' size='icon-sm' aria-label='Show full monitor' className='absolute top-2 right-2'>
+				<Maximize2 />
+			</Button>
+		</div>
+	),
 };
 
 export const AllVariants: Story = {

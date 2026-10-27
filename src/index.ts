@@ -74,9 +74,12 @@ export {
 export {
 	defaultMonitorLimits,
 	PatientMonitoringCard,
+	patientMonitoringCardVariants,
 	type MonitorLimits,
+	type MonitorTrends,
 	type MonitorVitals,
 	type PatientMonitoringCardProps,
+	type PatientMonitoringCardSize,
 } from "@/components/cards/patient-monitoring-card";
 
 /* -------------------------------------------------------------------------- */
@@ -166,6 +169,9 @@ export { HomeSolidIcon } from "@/components/icons/home-solid-icon";
 export { LayoutGridSolidIcon } from "@/components/icons/layout-grid-solid-icon";
 export { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
 export { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
+// Monitor view: condensed and full monitor (PatientMonitoringCard), custom in archielabs.ds.
+export { MonitorViewExpandedIcon } from "@/components/icons/monitor-view-expanded-icon";
+export { MonitorViewMinimizedIcon } from "@/components/icons/monitor-view-minimized-icon";
 export { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 export { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
@@ -188,6 +194,7 @@ export {
 	TabsContent,
 	TabsList,
 	TabsTrigger,
+	tabsIndicatorVariants,
 	tabsListVariants,
 	tabsTriggerVariants,
 	type TabsContentProps,
@@ -200,6 +207,23 @@ export {
 /* Overlays                                                                   */
 /* -------------------------------------------------------------------------- */
 
+export {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuPortal,
+	DropdownMenuRadioGroup,
+	DropdownMenuRadioItem,
+	DropdownMenuSeparator,
+	DropdownMenuShortcut,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
 export {
 	SidebarTooltip,
 	type SidebarTooltipProps,

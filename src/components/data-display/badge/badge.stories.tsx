@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { BadgeCheckIcon } from "lucide-react";
+import { BadgeCheckIcon, ChevronDownIcon } from "lucide-react";
 
 import { Badge } from "./badge";
 
@@ -66,13 +66,45 @@ export const Tones: Story = {
 	),
 };
 
-/** An optional leading icon: any 12px icon as the first child. */
+/** An optional leading icon as the first child, sized by the badge (12px, 14px at `sm`, 16px at `md`, 14px at `lg`); its
+ * side's padding is 2px less, as in Figma. */
 export const WithIcon: Story = {
 	render: (args) => (
 		<Badge {...args}>
 			<BadgeCheckIcon />
 			Verified
 		</Badge>
+	),
+};
+
+/** `count` adds "· n" after the label, 3px apart, in the label's style; it works with an icon and with `asChild`. */
+export const WithCount: Story = {
+	render: () => (
+		<div className='flex items-center gap-4'>
+			{sizes.map((size) => (
+				<Badge key={size} size={size} variant='secondary' count={6}>
+					<BadgeCheckIcon />
+					With alerts
+				</Badge>
+			))}
+		</div>
+	),
+};
+
+/**
+ * A trailing icon as the last child (Figma's Icon R, hidden by default there), here with a count: label, count, then the
+ * icon. Sized like the leading icon: 12px at xs and xs-alt, 14px at sm and lg, 16px at md.
+ */
+export const WithTrailingIcon: Story = {
+	render: () => (
+		<div className='flex items-center gap-4'>
+			{sizes.map((size) => (
+				<Badge key={size} size={size} variant='outline' count={3}>
+					Filters
+					<ChevronDownIcon />
+				</Badge>
+			))}
+		</div>
 	),
 };
 
@@ -89,7 +121,7 @@ export const AsLink: Story = {
 	),
 };
 
-/** xs (24px), sm (32px), md (36px, the default) and lg (40px). */
+/** xs (20px), xs-alt (24px), sm (32px), md (36px, the default) and lg (40px). */
 export const Sizes: Story = {
 	render: () => (
 		<div className='flex items-center gap-4'>

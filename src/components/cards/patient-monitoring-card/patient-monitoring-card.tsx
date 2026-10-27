@@ -3,6 +3,7 @@
 import * as React from "react";
 import { MapPinIcon, Maximize2Icon, Minimize2Icon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import { cva, type VariantProps } from "class-variance-authority";
 
 import { Button } from "@/components/buttons/button";
 import {
@@ -12,7 +13,14 @@ import {
 	usePatientCardAlertRing,
 	type PatientCardProps,
 } from "@/components/cards/patient-card";
-import { fadeVariants, liftPattern, standardTransition, useMotionPreference } from "@/lib/motion";
+import {
+	dismissVariants,
+	fadeVariants,
+	liftPattern,
+	resolvedFadeTransition,
+	standardTransition,
+	useMotionPreference,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { MonitorWaveform, type WaveformKind } from "./monitor-waveform";
@@ -31,6 +39,12 @@ type MonitorVitals = {
 	/** Respiratory rate, breaths/min. Also paces the respiration waveform. */
 	rr?: number;
 };
+
+/**
+ * The last hour of each primary numeric, oldest first, for the condensed monitor's `trends` view. Points are spread
+ * evenly, so any interval works (one a minute is typical); a missing series shows no sparkline.
+ */
+type MonitorTrends = Partial<Record<"hr" | "spo2" | "systolic" | "rr", number[]>>;
 
 /** Alarm limits as [low, high]. A value outside them is marked as an alarm. */
 type MonitorLimits = {
@@ -55,8 +69,37 @@ const parameters: Record<ParameterKey, { label: string; wave: string; unit: stri
 	};
 const parameterOrder: ParameterKey[] = ["hr", "spo2", "bp", "rr"];
 
-const outside = (value: number | undefined, [low, high]: [number, number]) =>
-	value !== undefined && (value < low || value > high);
+/** Which side of its alarm limits a value is on, if it's outside them. */
+const alarmSide = (value: number | undefined, [low, high]: [number, number]) =>
+	value === undefined ? undefined : value > high ? "above" : value < low ? "below" : undefined;
+
+// `md` for the Comfortable panel; `sm` for Compact (PRD Monitoring SV-012): tighter padding, smaller type and a shorter
+// condensed monitor, so four fit a row at 1728. Padding is 1px less than the step because the border adds it.
+const patientMonitoringCardVariants = cva(
+	"group/card relative isolate flex flex-col rounded-card border border-border bg-card text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
+	{
+		variants: {
+			size: {
+				md: "gap-3 p-[15px]",
+				sm: "gap-2 p-[11px]",
+			},
+		},
+		defaultVariants: {
+			size: "md",
+		},
+	},
+);
+
+type PatientMonitoringCardSize = NonNullable<VariantProps<typeof patientMonitoringCardVariants>["size"]>;
+
+// The condensed monitor's height per size; the full monitor is 240px at both.
+const condensedHeight: Record<PatientMonitoringCardSize, number> = { md: 120, sm: 104 };
+
+// The condensed numerics' columns. The compact card gives ABP ("104/56") more room than the single numbers.
+const condensedColumns: Record<PatientMonitoringCardSize, string> = {
+	md: "grid-cols-4",
+	sm: "grid-cols-[1fr_1fr_1.5fr_1fr]",
+};
 
 type PatientMonitoringCardProps = Omit<
 	React.ComponentProps<"article">,
@@ -76,10 +119,18 @@ type PatientMonitoringCardProps = Omit<
 		| "alert"
 		| "onOpen"
 		| "href"
-	> & {
+	> &
+	VariantProps<typeof patientMonitoringCardVariants> & {
 		vitals?: MonitorVitals;
 		/** Alarm limits; defaults to common adult ICU limits. */
 		limits?: Partial<MonitorLimits>;
+		/**
+		 * What the condensed monitor shows above the numerics: the live ECG strip (`waveform`, default) or a 1-hour
+		 * sparkline under each numeric (`trends`, from `trends`). The full monitor always shows the waveforms.
+		 */
+		condensedView?: "waveform" | "trends";
+		/** The last hour of HR, SpO₂, systolic and RR, for the `trends` view. */
+		trends?: MonitorTrends;
 		/** Controlled: the full monitor (all waveforms) instead of the condensed one. */
 		expanded?: boolean;
 		/** Uncontrolled starting state. Defaults to condensed. */
@@ -93,11 +144,13 @@ function MonitorNumeric({
 	vitals,
 	limits,
 	full,
+	size,
 }: {
 	parameter: ParameterKey;
 	vitals: MonitorVitals;
 	limits: MonitorLimits;
 	full: boolean;
+	size: PatientMonitoringCardSize;
 }) {
 	const { label, unit, color } = parameters[parameter];
 	const value =
@@ -107,24 +160,44 @@ function MonitorNumeric({
 				: "--"
 			: (vitals[parameter] ?? "--");
 	const limit = parameter === "bp" ? limits.systolic : limits[parameter];
-	const alarm = outside(parameter === "bp" ? vitals.systolic : vitals[parameter], limit);
+	const alarm = alarmSide(parameter === "bp" ? vitals.systolic : vitals[parameter], limit);
+
+	// A value outside its alarm limits gets a small ↑ / ↓ tag in the label row, in the monitor's neutral ink: drift shows
+	// in place, before (or without) an alert, and the parameter keeps its color (PRD Monitoring SV-073). In the label row
+	// rather than by the number, so the numerics keep their width.
+	const alarmTag = alarm ? (
+		<span
+			aria-hidden='true'
+			className='grid size-3.5 shrink-0 place-items-center rounded-sm bg-monitor-foreground text-[10px] leading-none font-bold text-monitor'
+		>
+			{alarm === "above" ? "↑" : "↓"}
+		</span>
+	) : null;
 
 	return (
-		// No visual highlight for a value outside its limits (removed by design, Oct 26, 2026): the limits sit beside the
-		// value and the card's alert pill carries the alarm. `data-alarm` and the screen-reader note keep it known.
 		<div
-			data-alarm={alarm ? "" : undefined}
-			className='flex min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-sm px-2 py-0.5'
+			data-alarm={alarm}
+			className={cn(
+				"flex min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-sm py-0.5",
+				size === "sm" ? "px-1.5" : "px-2",
+			)}
 		>
-			<span className={cn("flex w-full items-baseline justify-between gap-1 text-xs/4 font-semibold", color)}>
-				<span>
+			<span className={cn("flex w-full items-center justify-between gap-1 text-xs/4 font-semibold", color)}>
+				<span className='flex min-w-0 items-center gap-1'>
 					{label}
 					{/* The mean pressure sits by the label, as on a bedside monitor. */}
 					{full && parameter === "bp" && vitals.map !== undefined ? (
-						<span className='font-normal text-monitor-foreground tabular-nums'> ({vitals.map})</span>
+						<span className='font-normal text-monitor-foreground tabular-nums'>({vitals.map})</span>
 					) : null}
+					{full ? alarmTag : null}
 				</span>
-				<span className='font-normal text-monitor-foreground'>{unit}</span>
+				{/* Condensed cells are too narrow for both, so the tag takes the unit's place there; the compact card's are too
+				    narrow for units at all (the full monitor shows them). */}
+				{alarm && !full ? (
+					alarmTag
+				) : full || size === "md" ? (
+					<span className='font-normal text-monitor-foreground'>{unit}</span>
+				) : null}
 			</span>
 			<span className='flex w-full items-end justify-between gap-1'>
 				{/* Alarm limits, high over low, small beside the value. */}
@@ -134,9 +207,15 @@ function MonitorNumeric({
 						<span>{limit[0]}</span>
 					</span>
 				) : null}
-				<span className={cn("font-semibold tabular-nums leading-none", full ? "text-2xl" : "text-xl", color)}>
+				<span
+					className={cn(
+						"font-semibold tabular-nums leading-none",
+						full ? (size === "sm" ? "text-xl" : "text-2xl") : size === "sm" ? "text-lg" : "text-xl",
+						color,
+					)}
+				>
 					{value}
-					{alarm ? <span className='sr-only'>, outside alarm limits</span> : null}
+					{alarm ? <span className='sr-only'>, {alarm} alarm limits</span> : null}
 				</span>
 			</span>
 		</div>
@@ -162,8 +241,46 @@ function MonitorLane({ parameter, vitals, className }: { parameter: ParameterKey
 }
 
 /**
+ * A parameter's last hour as a line in its color, scaled to its own range (at least 4 units tall, so a steady value
+ * stays flat instead of magnifying noise). Decorative: the number above it carries the value.
+ */
+function MonitorSparkline({ parameter, values }: { parameter: ParameterKey; values?: number[] }) {
+	if (!values || values.length < 2) return <span className='h-6 shrink-0' />;
+	const low = Math.min(...values);
+	const high = Math.max(...values);
+	const middle = (low + high) / 2;
+	const [bottom, top] = high - low < 4 ? [middle - 2, middle + 2] : [low, high];
+	const points = values
+		.map((value, index) => {
+			const x = (index / (values.length - 1)) * 100;
+			const y = 22 - ((value - bottom) / (top - bottom)) * 20;
+			return `${x.toFixed(1)},${y.toFixed(1)}`;
+		})
+		.join(" ");
+
+	return (
+		<svg
+			aria-hidden='true'
+			viewBox='0 0 100 24'
+			preserveAspectRatio='none'
+			className={cn("h-6 w-full shrink-0 px-2", parameters[parameter].color)}
+		>
+			<polyline
+				points={points}
+				fill='none'
+				stroke='currentColor'
+				strokeWidth={1.5}
+				strokeLinejoin='round'
+				vectorEffect='non-scaling-stroke'
+			/>
+		</svg>
+	);
+}
+
+/**
  * A patient's identity and location over a live bedside monitor. Condensed by default (an ECG strip and HR, SpO₂, BP and
- * RR); expands to the full monitor, one waveform lane per parameter with its numbers and alarm limits. An alert behaves
+ * RR, or 1-hour sparklines with `condensedView="trends"`); expands to the full monitor, one waveform lane per parameter
+ * with its numbers and alarm limits. `size="sm"` is the compact card. An alert behaves
  * as on PatientCard (a ring that pulses until the card is clicked or the alert is addressed), and with `onOpen` or
  * `href` the whole card opens the patient. Draft: the monitor follows PRD Monitoring §3.3, not a Figma design yet.
  *
@@ -180,8 +297,11 @@ function PatientMonitoringCard({
 	room,
 	bed,
 	alert,
+	size = "md",
 	vitals = {},
 	limits: limitsProp,
+	condensedView = "waveform",
+	trends = {},
 	expanded: expandedProp,
 	defaultExpanded = false,
 	onExpandedChange,
@@ -198,6 +318,7 @@ function PatientMonitoringCard({
 	const expanded = expandedProp ?? uncontrolledExpanded;
 	const monitorId = React.useId();
 	const limits = { ...defaultMonitorLimits, ...limitsProp };
+	const cardSize = size ?? "md";
 
 	const name = `${lastName}, ${firstName}`;
 	const demographics = [sex, age].filter((part) => part !== undefined && part !== "").join(", ");
@@ -226,12 +347,15 @@ function PatientMonitoringCard({
 		// Same card behavior as PatientCard: lift and hover border when it opens the patient, and the alert ring.
 		<motion.article
 			data-slot='patient-monitoring-card'
+			data-size={cardSize}
 			data-expanded={expanded ? "" : undefined}
 			whileHover={interactive && !prefersReducedMotion ? liftPattern.whileHover : undefined}
 			transition={liftPattern.transition}
 			className={cn(
-				"group/card relative isolate flex flex-col gap-3 rounded-card border border-border bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
+				patientMonitoringCardVariants({ size: cardSize }),
 				interactive && patientCardInteractiveClassName,
+				// The hover border is 2px, so the compact card's padding drops by 1px too.
+				interactive && cardSize === "sm" && "hover:p-[10px]",
 				className,
 			)}
 			// Capture, so any click on the card counts (the open target, the expand button, the monitor).
@@ -244,18 +368,57 @@ function PatientMonitoringCard({
 			{alertRing.ring}
 			<div className='flex items-start gap-2'>
 				<div className='flex min-w-0 flex-1 flex-col'>
-					<h3 className='-mb-0.5 text-xl font-bold break-words text-foreground'>{nameContent}</h3>
-					{identity ? <p className='text-sm break-words text-muted-foreground'>{identity}</p> : null}
+					<h3
+						className={cn(
+							"-mb-0.5 font-bold break-words text-foreground",
+							cardSize === "sm" ? "text-base" : "text-xl",
+						)}
+					>
+						{nameContent}
+					</h3>
+					{identity ? (
+						<p className={cn("break-words text-muted-foreground", cardSize === "sm" ? "text-xs" : "text-sm")}>
+							{identity}
+						</p>
+					) : null}
 				</div>
-				{alert ? (
-					<PatientCardAlert variant={alert.variant} count={alert.count}>
-						{alert.label}
-					</PatientCardAlert>
-				) : null}
+				{/* The pill fades in when an alert appears and out when it's removed, with the Dismiss pattern's exit; a
+				    "Resolved" pill fades slowly (`resolvedFadeTransition`), so it's seen leaving before the card moves. A
+				    severity change recolors it in place. */}
+				<AnimatePresence initial={false}>
+					{alert ? (
+						<motion.div
+							key='alert'
+							variants={{
+								initial: { opacity: 0 },
+								animate: { opacity: 1, transition: resolve(standardTransition) },
+								exit:
+									alert.variant === "resolved"
+										? { opacity: 0, transition: resolve(resolvedFadeTransition) }
+										: prefersReducedMotion
+											? { opacity: 0 }
+											: dismissVariants.exit,
+							}}
+							initial='initial'
+							animate='animate'
+							exit='exit'
+							className='flex'
+						>
+							<PatientCardAlert variant={alert.variant} count={alert.count}>
+								{alert.label}
+							</PatientCardAlert>
+						</motion.div>
+					) : null}
+				</AnimatePresence>
 			</div>
 
 			<div className='flex items-center gap-1'>
-				<p className='flex min-w-0 flex-1 items-center gap-1 text-sm font-medium text-foreground'>
+				<p
+					className={cn(
+						"flex min-w-0 flex-1 items-center gap-1 font-medium text-foreground",
+						cardSize === "sm" ? "text-xs" : "text-sm",
+					)}
+				>
 					<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
 					{/* Only the hospital truncates; unit, room and bed always stay visible. */}
 					<span className='flex min-w-0 flex-1'>
@@ -269,18 +432,6 @@ function PatientMonitoringCard({
 						) : null}
 					</span>
 				</p>
-				<Button
-					variant='ghost'
-					size='icon-xs'
-					aria-expanded={expanded}
-					aria-controls={monitorId}
-					aria-label={expanded ? "Show condensed monitor" : "Show full monitor"}
-					onClick={toggleExpanded}
-					// Raised above the card's open target, so it keeps its own click.
-					className='relative z-10 text-icon-muted'
-				>
-					{expanded ? <Minimize2Icon /> : <Maximize2Icon />}
-				</Button>
 			</div>
 
 			{/* Always dark, like a bedside monitor. The height animates between the two views (Expand pattern). */}
@@ -288,10 +439,24 @@ function PatientMonitoringCard({
 				id={monitorId}
 				aria-label={`Bedside monitor, ${name}`}
 				initial={false}
-				animate={{ height: expanded ? 240 : 120 }}
+				animate={{ height: expanded ? 240 : condensedHeight[cardSize] }}
 				transition={resolve(standardTransition)}
-				className='overflow-hidden rounded-lg bg-monitor text-monitor-foreground'
+				className='relative overflow-hidden rounded-lg bg-monitor text-monitor-foreground'
 			>
+				{/* Full / condensed monitor, top-right over the monitor (intercept.ds Hover variant): Button's `circle`
+				    variant at 32px. It shows while the card is hovered or a keyboard user is inside it, and always on touch
+				    screens, which can't hover. Raised above the card's open target, so it keeps its own click. */}
+				<Button
+					variant='circle'
+					size='icon-sm'
+					aria-expanded={expanded}
+					aria-controls={monitorId}
+					aria-label={expanded ? "Show condensed monitor" : "Show full monitor"}
+					onClick={toggleExpanded}
+					className='absolute top-2 right-2 z-10 opacity-0 transition-[opacity,background-color] duration-160 ease-out group-focus-within/card:opacity-100 group-hover/card:opacity-100 focus-visible:opacity-100 motion-reduce:transition-none [@media(hover:none)]:opacity-100'
+				>
+					{expanded ? <Minimize2Icon /> : <Maximize2Icon />}
+				</Button>
 				<AnimatePresence initial={false} mode='wait'>
 					{expanded ? (
 						<motion.div
@@ -305,8 +470,13 @@ function PatientMonitoringCard({
 							{parameterOrder.map((parameter) => (
 								<div key={parameter} className='flex min-h-0'>
 									<MonitorLane parameter={parameter} vitals={vitals} />
-									<div className='flex w-32 shrink-0 border-l border-monitor-grid py-0.5'>
-										<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} full />
+									<div
+										className={cn(
+											"flex shrink-0 border-l border-monitor-grid py-0.5",
+											cardSize === "sm" ? "w-28" : "w-32",
+										)}
+									>
+										<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} size={cardSize} full />
 									</div>
 								</div>
 							))}
@@ -318,14 +488,50 @@ function PatientMonitoringCard({
 							initial='initial'
 							animate='animate'
 							exit='exit'
-							className='flex h-30 flex-col'
+							style={{ height: condensedHeight[cardSize] }}
+							className='flex flex-col'
 						>
-							<MonitorLane parameter='hr' vitals={vitals} className='border-b border-monitor-grid' />
-							<div className='grid h-[60px] shrink-0 grid-cols-4 divide-x divide-monitor-grid py-1'>
-								{parameterOrder.map((parameter) => (
-									<MonitorNumeric key={parameter} parameter={parameter} vitals={vitals} limits={limits} full={false} />
-								))}
-							</div>
+							{condensedView === "trends" ? (
+								// Each numeric over its last hour.
+								<div className={cn("grid h-full divide-x divide-monitor-grid py-1.5", condensedColumns[cardSize])}>
+									{parameterOrder.map((parameter) => (
+										<div key={parameter} className='flex min-w-0 flex-col justify-between'>
+											<MonitorNumeric
+												parameter={parameter}
+												vitals={vitals}
+												limits={limits}
+												size={cardSize}
+												full={false}
+											/>
+											<MonitorSparkline
+												parameter={parameter}
+												values={trends[parameter === "bp" ? "systolic" : parameter]}
+											/>
+										</div>
+									))}
+								</div>
+							) : (
+								<>
+									<MonitorLane parameter='hr' vitals={vitals} className='border-b border-monitor-grid' />
+									<div
+										className={cn(
+											"grid h-[60px] shrink-0 divide-x divide-monitor-grid py-1",
+											condensedColumns[cardSize],
+										)}
+									>
+										{parameterOrder.map((parameter) => (
+											<MonitorNumeric
+												key={parameter}
+												parameter={parameter}
+												vitals={vitals}
+												limits={limits}
+												size={cardSize}
+												full={false}
+											/>
+										))}
+									</div>
+								</>
+							)}
 						</motion.div>
 					)}
 				</AnimatePresence>
@@ -337,7 +543,10 @@ function PatientMonitoringCard({
 export {
 	defaultMonitorLimits,
 	PatientMonitoringCard,
+	patientMonitoringCardVariants,
 	type MonitorLimits,
+	type MonitorTrends,
 	type MonitorVitals,
 	type PatientMonitoringCardProps,
+	type PatientMonitoringCardSize,
 };
