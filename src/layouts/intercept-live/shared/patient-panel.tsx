@@ -185,8 +185,15 @@ function HospitalTabs({
 	const alphabetical = [...hospitals].sort((a, b) => a.name.localeCompare(b.name));
 
 	return (
-		<Tabs value={value} onValueChange={onValueChange} className='shrink-0'>
-			<TabsList variant='line' size='lg' aria-label='Hospital' className='-mb-px'>
+		// When side panels leave the bar too little room, the tabs scroll sideways (scrollbar hidden; trackpads and the
+		// arrow keys still reach every tab) instead of pushing the live feed out of the bar. The 1px overlap with the bar's
+		// line is on the scroll box, so the active underline isn't clipped.
+		<Tabs
+			value={value}
+			onValueChange={onValueChange}
+			className='-mb-px min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+		>
+			<TabsList variant='line' size='lg' aria-label='Hospital'>
 				<TabsTrigger value='all'>
 					All hospitals
 					<Counter variant='neutral' count={patients.length} />

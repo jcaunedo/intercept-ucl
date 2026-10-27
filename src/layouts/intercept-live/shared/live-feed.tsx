@@ -92,7 +92,9 @@ function LiveFeed({ change, open, onOpen }: { change?: string; open: boolean; on
 			aria-expanded={open}
 			aria-controls='live-feed'
 			title={change ? `Live feed: ${change}` : undefined}
-			className='group/feed flex min-w-0 cursor-pointer items-center gap-2 rounded-sm px-1.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring'
+			// Gives up room before the hospital tabs do (a high shrink factor), but only down to "Live feed:" and the chevron
+			// (its automatic minimum width; the change itself truncates to nothing), so it always stays visible and clickable.
+			className='group/feed flex shrink-[100] cursor-pointer items-center gap-2 rounded-sm px-1.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring'
 		>
 			<span className='flex min-w-0 items-center'>
 				<motion.span
