@@ -130,14 +130,19 @@ function MonitorWaveform({ kind, rate, className, ...props }: MonitorWaveformPro
 			frame = window.requestAnimationFrame(step);
 		};
 
-		const observer = new ResizeObserver(() => {
+		const restart = () => {
 			resize();
 			drawStill();
 			x = 0;
 			time = 0;
 			previousY = undefined;
-		});
+		};
+
+		const observer = new ResizeObserver(restart);
 		observer.observe(canvas);
+		// The trace color is a theme token, read once into the canvas: redraw when the theme class changes.
+		const themeObserver = new MutationObserver(restart);
+		themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 		resize();
 		drawStill();
 		if (!prefersReducedMotion) frame = window.requestAnimationFrame(step);
@@ -145,6 +150,7 @@ function MonitorWaveform({ kind, rate, className, ...props }: MonitorWaveformPro
 		return () => {
 			window.cancelAnimationFrame(frame);
 			observer.disconnect();
+			themeObserver.disconnect();
 		};
 	}, [kind, rate, prefersReducedMotion]);
 

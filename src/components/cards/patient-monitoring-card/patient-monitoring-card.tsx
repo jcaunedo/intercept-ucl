@@ -464,7 +464,7 @@ function PatientMonitoringCard({
 				</p>
 			</div>
 
-			{/* Always dark, like a bedside monitor. The height animates between the two views (Expand pattern). */}
+			{/* Light in light mode, a dark screen in dark mode. The height animates between the two views (Expand pattern). */}
 			<motion.section
 				id={monitorId}
 				aria-label={`Bedside monitor, ${name}`}
