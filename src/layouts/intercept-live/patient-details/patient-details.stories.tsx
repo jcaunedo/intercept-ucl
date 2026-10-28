@@ -54,7 +54,7 @@ type Story = StoryObj<typeof meta>;
  * Sarah Miller, opened from the Census (Intercept-Live › Patient Details). The app header turns to its patient variant
  * ("← Census › Miller, Sarah") with Raise concern, Huddle team, Escalate, Theme and "…". The Patient Header shows her
  * photo, name and alert, acuity and its 24h change, demographics, MRN and location, then code status, allergy, isolation
- * and organ support, with Live Camera, Messages and Ask Intercept on the right. Line tabs: Overview (the AI brief, live
+ * and organ support, with Live Camera and Messages on the right. Line tabs: Overview (the AI brief, live
  * monitor, ventilator, infusions and key labs in the main column; her alerts, care team and encounter in the rail), then
  * Vitals, Chart, Timeline, Medications, Orders, Epic, Notes, Sepsis and Camera view. Every Census patient has the same
  * depth of data: go back and open another. Back returns to the Census as it was.

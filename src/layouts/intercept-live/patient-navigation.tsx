@@ -15,8 +15,6 @@ type PatientNavigation = {
 	compact: boolean;
 	/** Whether a patient's details are open, so the page under them is hidden. */
 	patientOpen: boolean;
-	/** Opens the Ask Intercept chat panel (the Sidebar's Ask Intercept Live), e.g. from a patient's page (PRD PD-100). */
-	openAskIntercept: () => void;
 };
 
 const PatientNavigationContext = React.createContext<PatientNavigation | null>(null);

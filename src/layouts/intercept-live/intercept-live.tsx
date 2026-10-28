@@ -303,7 +303,6 @@ function InterceptLive({
 			},
 			compact: headerCompact,
 			patientOpen: openPatientId !== null,
-			openAskIntercept: () => setChatOpen(true),
 		}),
 		[renderPatientDetails, headerCompact, openPatientId],
 	);

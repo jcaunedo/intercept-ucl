@@ -27,8 +27,6 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
-import { usePatientNavigation } from "../patient-navigation";
-import aiAskIcon from "./images/ai-ask.svg";
 import { PatientOverview } from "./patient-overview";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { ChartSection, type PatientChart } from "./sections/chart-section";
@@ -176,12 +174,11 @@ type PatientDetailsProps = {
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
-/** The patient's actions (PRD PD-014): the app header's, the "…" menu's, and the Patient Header's Live Camera, Messages and Ask Intercept. */
+/** The patient's actions (PRD PD-014): the app header's, the "…" menu's, and the Patient Header's Live Camera and Messages. */
 type PatientAction =
 	| "raise-concern"
 	| "huddle-team"
 	| "live-camera"
-	| "ask-intercept"
 	| "escalate"
 	| "messages"
 	| "new-note"
@@ -375,7 +372,6 @@ function PatientDetails({
 
 	// A switch is announced, so it's never mistaken for an update; the first patient isn't (the page title says it).
 	const [announcement, setAnnouncement] = React.useState("");
-	const navigation = usePatientNavigation();
 	const now = useCurrentMinute();
 	const details = [
 		record?.icuAdmittedAt && now !== null ? `ICU day ${icuDay(record.icuAdmittedAt, now)}` : undefined,
@@ -426,19 +422,6 @@ function PatientDetails({
 						>
 							<MessageCircleMoreIcon aria-hidden='true' />
 							{messagesLabel ?? "Messages"}
-						</Button>
-						{/* Ask Intercept about this patient (PRD PD-100; PD-OD-04 answered with the shell's chat panel). Outside
-						    the shell there's no panel, so the action is only reported. */}
-						<Button
-							variant='outline'
-							size='icon-md'
-							aria-label={`Ask Intercept about ${patientName(patient)}`}
-							onClick={() => {
-								navigation?.openAskIntercept();
-								onAction?.("ask-intercept");
-							}}
-						>
-							<img src={aiAskIcon} alt='' className='size-[18px]' />
 						</Button>
 					</>
 				}

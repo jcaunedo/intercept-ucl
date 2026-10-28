@@ -54,8 +54,7 @@ The agent retrieves and summarizes. It never diagnoses, recommends therapy or ac
 | Surface | Relationship |
 |---|---|
 | **Sidebar · Ask Intercept Live** | Opens and closes the chat panel on any page. |
-| **App header (patient context) · sparkle** | Opens the same panel from a patient's page. |
-| **Patient Header · Ask Intercept** | Opens the same panel, about the patient on screen. |
+| **App header (patient context) · sparkle** | Opens the same panel from a patient's page, about the patient on screen. The Patient Header has no button of its own (removed from Figma, Oct 28, 2026). |
 | **Patient list** | Shares the left side with the chat: one is open at a time. |
 | **Messages** | Not this composer. Messages go to people; the chat composer asks the agent. ⚠️ **Decision needed:** whether the care team thread's composer reuses `ChatComposer` (CC-OD-06). |
 

@@ -394,7 +394,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 
 | Term | Definition | Source |
 | --- | --- | --- |
-| **Ask Intercept Live** | *Proposed* name of the Provider Desktop's chat panel, where a clinician asks the Conversational Clinical Data Agent about their patients. Opened from the Sidebar, the patient-context app header or the Patient Header. | PRD Chat composer §1, PRD PD-100 |
+| **Ask Intercept Live** | *Proposed* name of the Provider Desktop's chat panel, where a clinician asks the Conversational Clinical Data Agent about their patients. Opened from the Sidebar or the patient-context app header. | PRD Chat composer §1, PRD PD-100 |
 | **Chat composer** | The message box at the bottom of Ask Intercept Live: a field, attachments, slash commands, dictation, and voice, Send or Stop. UCL `ChatComposer`. | PRD CC-010 |
 | **Data-completeness signal** | The Provider Desktop tells the clinician explicitly how deep the data is (Integrated versus Overlay). | Spec §8.7 |
 | **Data-depth notice** | *Proposed* plain-language note in a Patient details section saying what this hospital's data doesn't include ("Orders from this hospital are read-only"). Names what's available, never the integration mechanism. | Spec §9.1 Principle 1, PRD PD-121 |

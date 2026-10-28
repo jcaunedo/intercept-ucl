@@ -487,7 +487,7 @@ The Conversational Clinical Data Agent answers questions about this patient (Spe
 | **Drafts** | It can draft a message or a handoff; a draft never sends or saves itself |
 | **Visibility** | Answers are marked as AI with the agent's name (Spec §9.1, Principle 7) |
 
-- ✅ **Resolved (Oct 28, 2026, for the prototype):** Ask lives in the global Ask Intercept Live panel (PD-OD-04; one assistant, Spec §9.1 Principle 11). The Patient Header's Ask Intercept button opens it. Scoping it to the open patient is still to build.
+- ✅ **Resolved (Oct 28, 2026, for the prototype):** Ask lives in the global Ask Intercept Live panel (PD-OD-04; one assistant, Spec §9.1 Principle 11). On this page the app header's sparkle opens it (the Patient Header's own Ask Intercept button was removed from Figma the same day). Scoping it to the open patient is still to build.
 - ⚠️ **Decision needed:** voice input (Spec §9.1, Principle 5). Which hospitals allow microphones, and push-to-talk or wake word, are downstream (Spec §9.5).
 
 ---
@@ -649,7 +649,7 @@ WCAG 2.1 AA (Spec §9.1, Principle 13; ⚠️ 2.1 vs 2.2 is open, glossary confl
 | PD-OD-01 | ✅ **Resolved (Oct 28, 2026):** "Patient details" is the page; the UI shows the patient's name and says "Open patient". "Chart" is reserved for the hospital's record (shown in the sections, or "Open chart in Epic"), since it can imply the EMR of record, which this page isn't in Overlay mode. "View" stays for display modes. | Product / Clinical | "Patient details" in the breadcrumb and title |
 | PD-OD-02 | Sections as tabs, or one scrolling page with a section index. | Design / Clinical | One page per direction, no tabs |
 | PD-OD-03 | Which surfaces a tenant can make mandatory, and whether that ships in v1. | Product | Not explored |
-| PD-OD-04 | ✅ Resolved Oct 28, 2026 (prototype): the global Ask Intercept Live panel, opened from the Patient Header's Ask Intercept button. | Product / Design | A: a box on the page; C: @Intercept in the thread |
+| PD-OD-04 | ✅ Resolved Oct 28, 2026 (prototype): the global Ask Intercept Live panel, opened from the app header's sparkle. | Product / Design | A: a box on the page; C: @Intercept in the thread |
 | PD-OD-05 | The AI summary: on by default or on request; AI ranking or a fixed rule it explains; frozen while read. | Clinical / Product | B: AI-ranked, live |
 | PD-OD-06 | How "last viewed" is recorded per clinician, and whether it comes from the access audit. | Product / Compliance | B: shading since last looked |
 | PD-OD-07 | Which sections ship in v1 (Overview, Timeline, Labs, Medications, Orders, Notes, Sepsis). | Product / Clinical | Overview, timeline, labs, drips, vent, sepsis criteria |
