@@ -21,7 +21,7 @@ import { pressPattern, reducedMotionTransition, reorderSpring, revealVariants, u
 import { cn } from "@/lib/utils";
 
 // The patient list both Census and Monitoring filter, sort and group, so the two pages behave the same (PRD Monitoring
-// AC-11). Each page adds the data its own card needs.
+// MON-AC-11). Each page adds the data its own card needs.
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */

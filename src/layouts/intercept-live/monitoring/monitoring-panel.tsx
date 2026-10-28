@@ -113,7 +113,7 @@ const statusFilters: QuickView<PanelMonitoringPatient>[] = [
 ];
 
 // Columns follow the page's width (a container query), with a minimum card width per density: ~340px Comfortable,
-// ~272px Compact: four Comfortable or five Compact cards a row at Figma's 1728 width (PRD SV-012), fewer while the
+// ~272px Compact: four Comfortable or five Compact cards a row at Figma's 1728 width (PRD MON-012), fewer while the
 // live feed panel takes room beside the canvas. `items-start`: a card showing the full monitor grows on its own, without stretching
 // its row.
 const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
@@ -200,7 +200,7 @@ function MonitoringPanel({
 	const [hospitalId, setHospitalId] = React.useState("all");
 	const [scope, setScope] = React.useState<PatientScope>("all");
 	// Outside limits keeps the patients who matched when it was pressed: readings move every second, and a live filter
-	// would add and drop cards under the clinician's eyes (PRD SV-013). Its count stays live; pressing it again clears it.
+	// would add and drop cards under the clinician's eyes (PRD MON-013). Its count stays live; pressing it again clears it.
 	const [statusFilter, setStatusFilter] = React.useState<{ id: string; ids: ReadonlySet<string> } | null>(null);
 	const [unit, setUnit] = React.useState("all");
 	const [sortBy, setSortBy] = React.useState<SortOrderId>("alert");
@@ -313,7 +313,7 @@ function MonitoringPanel({
 							</div>
 							<UnitSelect value={unit} onValueChange={setUnit} />
 							<SortSelect value={sortBy} onValueChange={setSortBy} orders={sortOrderIds} />
-							{/* View controls (PRD SV-015) at the end of the bar: they change how the panel looks, not who's on it. */}
+							{/* View controls (PRD MON-015) at the end of the bar: they change how the panel looks, not who's on it. */}
 							<div className='ml-auto flex items-center gap-2'>
 								{/* Card monitor, monitor view, then density: 8px apart, the switches of one view. */}
 								<MonitorPlotToggle value={plot} onValueChange={setPlot} density={density} />

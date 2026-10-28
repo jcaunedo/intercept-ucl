@@ -59,7 +59,7 @@ const defaultMonitorLimits: MonitorLimits = { hr: [50, 120], spo2: [90, 100], sy
 
 type ParameterKey = "hr" | "spo2" | "bp" | "rr";
 
-// One color per parameter, everywhere (PRD Monitoring SV-072), with its waveform and its trend's lane label (ABP's
+// One color per parameter, everywhere (PRD Monitoring MON-072), with its waveform and its trend's lane label (ABP's
 // trend is the systolic).
 const parameters: Record<
 	ParameterKey,
@@ -76,7 +76,7 @@ const parameterOrder: ParameterKey[] = ["hr", "spo2", "bp", "rr"];
 const alarmSide = (value: number | undefined, [low, high]: [number, number]) =>
 	value === undefined ? undefined : value > high ? "above" : value < low ? "below" : undefined;
 
-// `md` for the Comfortable panel; `sm` for Compact (PRD Monitoring SV-012): tighter padding, smaller type and a shorter
+// `md` for the Comfortable panel; `sm` for Compact (PRD Monitoring MON-012): tighter padding, smaller type and a shorter
 // condensed monitor, so four fit a row at 1728. Padding is 1px less than the step because the border adds it.
 const patientMonitoringCardVariants = cva(
 	"group/card relative isolate flex flex-col rounded-card border border-border bg-card text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
@@ -169,7 +169,7 @@ function MonitorNumeric({
 	const alarm = alarmSide(parameter === "bp" ? vitals.systolic : vitals[parameter], limit);
 
 	// A value outside its alarm limits gets a small ↑ / ↓ tag in the label row, in the monitor's neutral ink: drift shows
-	// in place, before (or without) an alert, and the parameter keeps its color (PRD Monitoring SV-073). In the label row
+	// in place, before (or without) an alert, and the parameter keeps its color (PRD Monitoring MON-073). In the label row
 	// rather than by the number, so the numerics keep their width.
 	const alarmTag = alarm ? (
 		<span

@@ -2,7 +2,7 @@ import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
 
 import type { TriageAlert } from "./monitoring";
 
-// Synthetic data (PRD SV-080, SV-081): a scripted live feed for the Monitoring Live story. Each step changes some
+// Synthetic data (PRD MON-080, MON-081): a scripted live feed for the Monitoring Live story. Each step changes some
 // patients' vitals and alerts, over `sampleMonitoringPatients` / `sampleMonitoringAlerts`: an alert's severity goes up or
 // down (a Medium becomes High, a Critical eases to Medium), a new one fires, others resolve. Sorted by Alert, the
 // panel moves patients as their worst alert changes, highest severity first. After the last step the feed returns to

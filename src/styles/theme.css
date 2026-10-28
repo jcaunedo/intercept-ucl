@@ -568,7 +568,7 @@
 
 	/* Bedside monitor screen (PatientMonitoringCard). Light in intercept mode, a dark screen in intercept-dark. Parameter
 	   colors avoid the alert hues (red, orange, amber, blue) so a colored number never reads as an alarm (PRD Monitoring
-	   SV-073). In this mode they're dark enough to read at 4.5:1 on white. ⚠️ Draft palette, pending SV-OD-10; no Figma
+	   MON-073). In this mode they're dark enough to read at 4.5:1 on white. ⚠️ Draft palette, pending MON-OD-10; no Figma
 	   variables yet. */
 	--monitor: var(--background);
 	--monitor-grid: oklch(0 0 0 / 8%);

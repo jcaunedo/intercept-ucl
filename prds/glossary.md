@@ -298,11 +298,11 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **NICU** | Neonatal Intensive Care Unit. The ICU for premature or critically ill newborns. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **NIV (Noninvasive ventilation)** | Breathing support through a mask (BiPAP or CPAP), with no tube in the windpipe. Shown as an "NIV" pill on the Patient card, never as "Ventilated". | General, PRD PC-050, §15.1 P1 |
-| **Numerics** | The large numeric readings on a patient monitor (HR, SpO₂, BP, RR…), as opposed to waveforms and trends. On the Surveillance page, HR, SpO₂, BP and RR are the primary numerics. | General, PRD Monitoring SV-071 |
+| **Numerics** | The large numeric readings on a patient monitor (HR, SpO₂, BP, RR…), as opposed to waveforms and trends. On the Surveillance page, HR, SpO₂, BP and RR are the primary numerics. | General, PRD Monitoring MON-071 |
 | **OB exclusion** | Pregnant patients are screened for sepsis under different criteria. | Spec Appendix A |
 | **OB-ICU** | Obstetric intensive care: critically ill pregnant or postpartum patients. A unit code in the Census unit menu. | General |
 | **PAD (Pain, Agitation, Delirium)** | ICU framework for sedation depth, agitation and delirium. | Spec Appendix A |
-| **Parameter color** | The one color a physiological parameter keeps everywhere (number, waveform, label, trend). Kept apart from alarm severity colors and never the only signal. ⚠️ **Decision needed:** the palette (SV-OD-10). | General, PRD Monitoring SV-072 |
+| **Parameter color** | The one color a physiological parameter keeps everywhere (number, waveform, label, trend). Kept apart from alarm severity colors and never the only signal. ⚠️ **Decision needed:** the palette (MON-OD-10). | General, PRD Monitoring MON-072 |
 | **PCU (Progressive Care Unit)** | A step-down unit between the ICU and a general ward, for patients who need closer monitoring than a ward gives but no longer need intensive care. | General |
 | **PEEP** | Positive end-expiratory pressure, a ventilator setting. | General, PRD PC-051 |
 | **Plateau pressure** | Ventilator measurement of alveolar pressure at the end-inspiratory pause. Kept under about 30 cmH₂O in ARDS. | Spec Appendix A |
@@ -328,7 +328,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **VAE (Ventilator-Associated Event)** | CDC-NHSN surveillance category covering VAC, IVAC and VAP. Roadmap protocol. | Spec Appendix A |
 | **Ventilated** | On invasive mechanical ventilation: a ventilator breathes for the patient through a tube in the windpipe or a tracheostomy. Shown as a "Ventilated" pill on the Patient card. Required for ventilator settings (PC-051) and vent-order mismatch alerts. | General, PRD PC-050, §15.1 P1 |
 | **Ventilator liberation** | Weaning a patient off mechanical ventilation. Roadmap protocol. | Spec Appendix A |
-| **Waveform** | A continuous trace of a physiological signal from a bedside device, e.g. ECG lead II, SpO₂ pleth, arterial pressure, respiration or capnography. | General, PRD Monitoring SV-070 |
+| **Waveform** | A continuous trace of a physiological signal from a bedside device, e.g. ECG lead II, SpO₂ pleth, arterial pressure, respiration or capnography. | General, PRD Monitoring MON-070 |
 
 ---
 
@@ -397,21 +397,21 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Data-depth notice** | *Proposed* plain-language note in a Patient details section saying what this hospital's data doesn't include ("Orders from this hospital are read-only"). Names what's available, never the integration mechanism. | Spec §9.1 Principle 1, PRD PD-121 |
 | **Density model** | How much information a surface shows per area. Part of the design system deliverable. Surveillance and Credentialing have very different density needs. | Brief, Spec §9.2 |
 | **Design tensions** | Four to resolve up front: information density without clutter, honest data provenance, visible AI activity, and graceful degradation when hospital data is thin or stale. | Brief |
-| **Evidence snapshot** | *Proposed* record attached to an escalation: the patient's primary numerics, drips and ventilator settings at the moment of escalating, so the receiver sees what the sender saw. | PRD Monitoring SV-040 |
+| **Evidence snapshot** | *Proposed* record attached to an escalation: the patient's primary numerics, drips and ventilator settings at the moment of escalating, so the receiver sees what the sender saw. | PRD Monitoring MON-040 |
 | **Fighter-Jet HUD** | Shorthand for the multi-monitor, high-density, layered workspace the Provider Desktop should feel like. | Spec Appendix A |
-| **Focus view** | *Proposed* side sheet on the Monitoring page with one patient's trends, respiratory and infusion context, alerts, bedside camera and actions, opened over the live panel. ⚠️ **Decision needed:** side sheet or full page (SV-OD-06). | PRD Monitoring SV-030 |
+| **Focus view** | *Proposed* side sheet on the Monitoring page with one patient's trends, respiratory and infusion context, alerts, bedside camera and actions, opened over the live panel. ⚠️ **Decision needed:** side sheet or full page (MON-OD-06). | PRD Monitoring MON-030 |
 | **Graceful degradation** | The UI stays useful and honest when data is missing, delayed or stale, without passing off old values as live. | Brief, PRD §12 |
 | **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
-| **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (SV-OD-01). | Spec §5.2, PRD Monitoring SV-010 |
+| **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (MON-OD-01). | Spec §5.2, PRD Monitoring MON-010 |
 | **Order recommendation** | An order change an AI agent suggests (Order-Entry Suggestion or Vent-Order Mismatch Agent) with its evidence and protocol. The clinician accepts, modifies or declines; it never becomes an order on its own. | Spec §5.5, §8.5, PRD PD-061 |
-| **Panel order prompt** | *Proposed* "Panel order changed · Update" bar on the Monitoring page. When alerts change priority, cards keep their place until the clinician accepts the new order, so nothing moves under the pointer. ⚠️ **Decision needed:** auto-reorder rules (SV-OD-05). | PRD Monitoring SV-013 |
+| **Panel order prompt** | *Proposed* "Panel order changed · Update" bar on the Monitoring page. When alerts change priority, cards keep their place until the clinician accepts the new order, so nothing moves under the pointer. ⚠️ **Decision needed:** auto-reorder rules (MON-OD-05). | PRD Monitoring MON-013 |
 | **Patient details** | The Provider Desktop page for one patient, opened from any Patient card, the focus view, an alert or Search: header with identity and safety badges, alerts, live monitor, timeline, labs, medications, orders, notes, sepsis, camera, messages and Ask. What clinicians call the patient chart; not the EMR of record. ⚠️ **Decision needed:** whether the UI also says "chart" (PD-OD-01). | Spec §5.1, PRD PC-100, PRD PD-001 |
 | **Patient switcher** | *Proposed* previous / next control in the Patient details header that steps through the list the clinician came from, in its order and filters. | PRD PD-015 |
 | **Patient timeline** | *Proposed* Patient details section with vitals, infusions, ventilator settings, labs and events on one time axis, read with one crosshair. | PRD PD-030 |
 | **Single Pane of Glass** | The Provider Desktop's promise: one workspace replacing 10–12 applications per shift. | Spec §5.1 |
-| **Telemetry-and-camera fusion** | Live drips, vent settings and pump rates overlaid on the bedside camera feed (the spec's "fighter-jet HUD" for the camera). | Spec §5.2, PRD Monitoring SV-031 |
+| **Telemetry-and-camera fusion** | Live drips, vent settings and pump rates overlaid on the bedside camera feed (the spec's "fighter-jet HUD" for the camera). | Spec §5.2, PRD Monitoring MON-031 |
 | **Three-cell-phone problem** | Clinicians carry up to three phones because desktop notifications (especially Epic Haiku) are unreliable. The reason the mobile companion exists. | Spec §6.10, §9.3 |
-| **Triage queue** | The Monitoring page's rail of active alerts for the panel, highest priority first, with Open, Acknowledge, Escalate and Resolve. The Alert Queue page is the full alert surface. ⚠️ **Decision needed:** whether both exist in v1 (SV-OD-03). | Spec §5.2, PRD Monitoring SV-020 |
+| **Triage queue** | The Monitoring page's rail of active alerts for the panel, highest priority first, with Open, Acknowledge, Escalate and Resolve. The Alert Queue page is the full alert surface. ⚠️ **Decision needed:** whether both exist in v1 (MON-OD-03). | Spec §5.2, PRD Monitoring MON-020 |
 | **What changed** | *Proposed* Patient details list of everything that changed since this clinician last viewed the patient. ⚠️ **Decision needed:** how "last viewed" is recorded (PD-OD-06). | PRD PD-023 |
 
 ---
