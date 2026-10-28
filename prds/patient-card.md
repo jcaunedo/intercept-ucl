@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 23, 2026
+Last updated: Oct 27, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -372,6 +372,8 @@ The following is a proposed presentation model derived from ADT and census-recon
 - Unknown
 
 **Proposed tone treatment:**
+
+✅ **Resolved (Oct 27, 2026):** the UCL card draws every category as the same neutral outline pill, with no color; the category word carries the level and the alert pill stays the card's only colored signal. The tone table below is the earlier proposal, kept for the clinical review (OD-03).
 
 | Category | Tone | Tokens |
 |---|---|---|

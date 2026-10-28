@@ -209,16 +209,16 @@ const toMetric = ({ shortLabel: _shortLabel, ...metric }: PatientCardVital) => m
 // content stays 16px in, as with the 1px border.
 type PatientCardAcuityLevel = "low" | "moderate" | "high" | "critical" | "unknown";
 
-// Acuity always says "risk", so its labels never match an alert severity's (Critical / High / Medium / Low). Pale
-// badge tones, unlike the alerts' solid pills. Low and Unknown share the grey and differ by their words.
-const acuityLevels: Record<PatientCardAcuityLevel, { label: string; variant: BadgeProps["variant"]; className?: string }> =
-	{
-		unknown: { label: "Unknown", variant: "secondary", className: "text-muted-foreground" },
-		low: { label: "Low risk", variant: "secondary" },
-		moderate: { label: "Moderate risk", variant: "yellow" },
-		high: { label: "High risk", variant: "amber" },
-		critical: { label: "Critical risk", variant: "red" },
-	};
+// Acuity always says "risk", so its labels never match an alert severity's (Critical / High / Medium / Low). Every
+// level is the same neutral outline badge, so acuity never competes with the alert's colored pill; the word carries
+// the level. Unknown mutes its text.
+const acuityLevels: Record<PatientCardAcuityLevel, { label: string; className?: string }> = {
+	unknown: { label: "Unknown", className: "text-muted-foreground" },
+	low: { label: "Low risk" },
+	moderate: { label: "Moderate risk" },
+	high: { label: "High risk" },
+	critical: { label: "Critical risk" },
+};
 
 type PatientCardAlertStatus = "active" | "acknowledged" | "escalated";
 
@@ -396,7 +396,7 @@ function PatientCard({
 										<span className='text-xl font-semibold text-foreground'>{acuity.score ?? "--"}</span>
 										{acuityLevel ? (
 											<Badge
-												variant={acuityLevels[acuityLevel].variant}
+												variant='outline'
 												size='xs-alt'
 												className={acuityLevels[acuityLevel].className}
 											>
