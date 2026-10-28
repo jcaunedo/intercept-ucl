@@ -245,6 +245,7 @@ Previous / next buttons step through the list the clinician came from (the Censu
 - The name changes visibly (a short Reveal, MOTION.md) and the new patient is announced to screen readers, so a switch is never mistaken for an update.
 - Never navigate to another patient because of stale or recycled bed information (PC-100).
 - Opened from a link with no list (Search, a notification), the switcher is hidden.
+- ✅ **Resolved (Oct 28, 2026, prototype):** the switcher is a patient list, opened from a list button at the left of the app header (intercept.ds `app-header` Patient Context). It shows the source list in its order, the open patient marked; picking one switches. Previous / next buttons and the ↑/↓, J/K shortcuts aren't built yet.
 
 ### PD-016 — Sticky header
 
@@ -475,7 +476,7 @@ As SV-041: rationale (required), category, what to watch, recheck time. It joins
 
 ### PD-100 — Ask about this patient
 
-The Conversational Clinical Data Agent answers questions about this patient (Spec §8.7). Examples from the Specification: "Summarize the last 24 hours", "What changed since I last reviewed this patient?", "List all positive blood cultures in the last 72 hours", "Show me the lactate trend with the antibiotic timeline overlaid", "Show me the sedation vacation and spontaneous breathing trials".
+The Conversational Clinical Data Agent answers questions about this patient (Spec §8.7). The chat composer and how answers arrive are specified in PRD — Chat composer (`prds/chat-composer.md`). Examples from the Specification: "Summarize the last 24 hours", "What changed since I last reviewed this patient?", "List all positive blood cultures in the last 72 hours", "Show me the lactate trend with the antibiotic timeline overlaid", "Show me the sedation vacation and spontaneous breathing trials".
 
 | Rule | Behavior |
 |---|---|

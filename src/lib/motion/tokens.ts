@@ -28,6 +28,12 @@ const motionDuration = {
 	resolvedHold: 2,
 	/** One beat of a live status indicator (Live pattern): slower and calmer than Pending. */
 	liveLoop: 1,
+	/** A streamed AI answer: the average time between chunks of a few words. Each step varies around it, so it reads like real generation. */
+	streamStep: 0.035,
+	/** A streamed AI answer: the extra pause after a sentence or a list item ends. */
+	streamPause: 0.12,
+	/** An AI answer's thinking time before it starts streaming, on average (Pending pattern while it waits). */
+	thinking: 0.9,
 } as const;
 
 /** Pixels. */

@@ -9,6 +9,7 @@ import { samplePatients } from "../census/sample-census";
 import { Monitoring } from "../monitoring/monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
 import { sortOrderById } from "../shared/patient-panel";
 import { samplePatientRecords } from "./sample-patient-details";
 
@@ -33,6 +34,7 @@ const meta = {
 		alerts: sampleMonitoringAlerts,
 		escalationTargets: sampleEscalationTargets,
 		user: sampleUser,
+		askIntercept: sampleAskIntercept,
 		shiftEndsAt: sampleShiftEndsAt,
 		team: sampleTeam,
 		unreadMessages: 3,
@@ -113,6 +115,7 @@ export const FromMonitoring: Story = {
 				alerts={args.alerts}
 				escalationTargets={args.escalationTargets}
 				user={args.user}
+				askIntercept={args.askIntercept}
 				shiftEndsAt={args.shiftEndsAt}
 				team={args.team}
 				unreadMessages={args.unreadMessages}

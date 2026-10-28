@@ -75,6 +75,7 @@ Plus `fadeVariants`, `overlayVariants` (scrims), `panelVariants` (drawers) and `
 - **Tabs:** active indicator via shared `layoutId`.
 - **Lists:** `AnimatePresence` with stable unique keys (never the index). Don't replay entrances on routine data updates.
 - **Loading:** subtle opacity pulse. No aggressive or high-contrast loaders.
+- **AI answers:** "Thinking" is Pending (opacity only) for about `motionDuration.thinking`; then the text streams in uneven bursts of a few words around `motionDuration.streamStep`, with `streamPause` after a sentence, and a soft blinking caret (Pending) at its end. New messages Reveal. Under reduced motion the answer appears whole and the caret is still.
 
 ## Layout and presence
 

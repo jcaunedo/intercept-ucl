@@ -518,8 +518,9 @@ type PatientDetailsSources = {
  */
 function patientDetailsView(
 	patientId: string,
-	// The shell's previous / next isn't shown: Intercept-Live's Patient Header has none (Oct 28, 2026).
-	_stepper: PatientStepper,
+	// The shell's previous / next isn't shown (Intercept-Live's Patient Header has none); its list feeds the app header's
+	// patient list instead.
+	stepper: PatientStepper,
 	{ patients = [], monitoringPatients = [], records = [], alerts = [], escalationTargets, onAlertAction, onAction }: PatientDetailsSources,
 ): PatientDetailsView | null {
 	const find = (id?: string) => patients.find((item) => item.id === id) ?? monitoringPatients.find((item) => item.id === id);
@@ -530,8 +531,22 @@ function patientDetailsView(
 
 	const act = (action: PatientAction) => () => onAction?.(patientId, action);
 
+	// The list the patient was opened from, as the source page shows it (PRD PD-015). Patients none of the sources has
+	// are left out.
+	const patientList = stepper.list
+		?.map((id) => find(id))
+		.filter((item): item is NonNullable<typeof item> => Boolean(item))
+		.map((item) => ({
+			id: item.id,
+			name: patientName(item),
+			location: [item.unit, item.bed, item.hospital].filter(Boolean).join(" · "),
+			alert: alertPill(alerts.filter((alert) => alert.patientId === item.id)),
+			acuity: item.acuity,
+		}));
+
 	return {
 		name: patientName(patient),
+		patientList,
 		headerActions: {
 			onRaiseConcern: act("raise-concern"),
 			onHuddleTeam: act("huddle-team"),

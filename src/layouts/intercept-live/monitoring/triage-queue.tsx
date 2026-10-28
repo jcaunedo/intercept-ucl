@@ -595,7 +595,7 @@ function TriageQueue({ alerts, patients, escalationTargets, onOpenPatient, onAct
 					</TabsTrigger>
 				</TabsList>
 			</div>
-			<TabsContent value='active' className='min-h-0 flex-1 overflow-y-auto p-3'>
+			<TabsContent value='active' className='scrollbar-soft min-h-0 flex-1 overflow-y-auto p-3'>
 				{active.length ? (
 					list(active)
 				) : (
@@ -608,7 +608,7 @@ function TriageQueue({ alerts, patients, escalationTargets, onOpenPatient, onAct
 					/>
 				)}
 			</TabsContent>
-			<TabsContent value='resolved' className='min-h-0 flex-1 overflow-y-auto p-3'>
+			<TabsContent value='resolved' className='scrollbar-soft min-h-0 flex-1 overflow-y-auto p-3'>
 				{history.length ? (
 					list(history)
 				) : (

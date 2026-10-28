@@ -36,7 +36,8 @@ import { Typography } from "@/components/typography/typography";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
-import { AskInterceptPanel } from "./ask-intercept-panel";
+import { AskInterceptPanel, type AskInterceptResponder } from "./ask-intercept-panel";
+import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
 import { PatientNavigationProvider, type PatientNavigation } from "./patient-navigation";
 import { PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
 
@@ -174,6 +175,8 @@ type PatientDetailsView = {
 	name: string;
 	content: React.ReactNode;
 	headerActions?: Pick<AppHeaderPatientProps, "onRaiseConcern" | "onHuddleTeam" | "onEscalate" | "moreActions">;
+	/** The patients of the list the patient was opened from, in its order, for the patient list (PRD PD-015). */
+	patientList?: PatientListEntry[];
 };
 
 /** Where the open patient sits in the list it was opened from, to step to the previous or next one (PRD PD-015). */
@@ -182,6 +185,8 @@ type PatientStepper = {
 	nextId?: string;
 	/** 1-based, e.g. 3 of 14. Missing when the patient wasn't opened from a list. */
 	position?: { index: number; count: number };
+	/** The ids of the list the patient was opened from, in its order. Missing when there's no list (e.g. from an alert). */
+	list?: string[];
 	onSelectPatient: (patientId: string) => void;
 };
 
@@ -219,6 +224,11 @@ type InterceptLiveProps = {
 	renderPatientDetails?: (patientId: string, stepper: PatientStepper) => PatientDetailsView | null;
 	/** A patient whose details show first, over `defaultPage`, with the list to step through. */
 	defaultPatient?: OpenPatient;
+	/**
+	 * Answers questions in Ask Intercept Live, with the page and the patient on screen. Without it, the chat greets the
+	 * user and says it can't answer yet.
+	 */
+	askIntercept?: AskInterceptResponder;
 };
 
 /**
@@ -235,13 +245,22 @@ function InterceptLive({
 	defaultPage = "Census",
 	renderPatientDetails,
 	defaultPatient,
+	askIntercept,
 }: InterceptLiveProps) {
 	const [sidebarCollapsed, setSidebarCollapsed] = React.useState(true);
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
 	// Patient details open over the page, which stays the Sidebar's active item (PRD PD-001).
 	const [openPatient, setOpenPatient] = React.useState<OpenPatient | null>(defaultPatient ?? null);
-	// Ask Intercept is an action, not a page: it toggles the chat panel and leaves the current page as it is.
-	const [chatOpen, setChatOpen] = React.useState(false);
+	// The left side panel: Ask Intercept Live (an action, not a page: it leaves the current page as it is) or, on a
+	// patient's page, the patient list. They share the place, so opening one closes the other.
+	const [leftPanel, setLeftPanel] = React.useState<"chat" | "patients" | null>(null);
+	const chatOpen = leftPanel === "chat";
+	const setChatOpen = React.useCallback((open: boolean) => setLeftPanel(open ? "chat" : null), []);
+	const toggleLeftPanel = React.useCallback(
+		(panel: "chat" | "patients") => setLeftPanel((current) => (current === panel ? null : panel)),
+		[],
+	);
+	const [patientListWidth, setPatientListWidth] = React.useState<number>(sidePanelWidth.min);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);
 	// Kept here, so the chat reopens at the width it was left at.
@@ -250,10 +269,10 @@ function InterceptLive({
 		() =>
 			navGroups.map((group) =>
 				group.map((item) =>
-					item.label === askInterceptLabel ? { ...item, onClick: () => setChatOpen((open) => !open) } : item,
+					item.label === askInterceptLabel ? { ...item, onClick: () => toggleLeftPanel("chat") } : item,
 				),
 			),
-		[],
+		[toggleLeftPanel],
 	);
 	// The header sticks to the top of the canvas and tightens once the canvas scrolls; back at the top it relaxes.
 	const canvasRef = React.useRef<HTMLDivElement>(null);
@@ -296,9 +315,12 @@ function InterceptLive({
 			previousId: index > 0 ? list?.[index - 1] : undefined,
 			nextId: index >= 0 ? list?.[index + 1] : undefined,
 			position: list && index >= 0 ? { index: index + 1, count: list.length } : undefined,
+			list,
 			onSelectPatient: (patientId) => setOpenPatient({ id: patientId, list }),
 		});
 	})();
+	// The patient list shows only on a patient's page with a list; leaving it closes the list.
+	const patientListOpen = leftPanel === "patients" && Boolean(patientView?.patientList);
 	const { theme, toggleTheme } = useDocumentTheme();
 	// The user's real date and time unless the app pins one. Empty for the first server render (see useCurrentMinute).
 	const currentMinute = useCurrentMinute();
@@ -333,7 +355,24 @@ function InterceptLive({
 						carded={sidebarCollapsed}
 						width={chatWidth}
 						onWidthChange={setChatWidth}
+						context={{ page, patientName: patientView?.name }}
+						respond={askIntercept}
 					/>
+
+					{/* On a patient's page opened from a list: that list, to switch patient (PRD PD-015). */}
+					{patientView?.patientList && openPatient ? (
+						<PatientListPanel
+							open={patientListOpen}
+							onOpenChange={(open) => setLeftPanel(open ? "patients" : null)}
+							carded={sidebarCollapsed}
+							width={patientListWidth}
+							onWidthChange={setPatientListWidth}
+							sourcePage={page}
+							patients={patientView.patientList}
+							currentId={openPatient.id}
+							onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}
+						/>
+					) : null}
 
 					{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
 					    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
@@ -345,9 +384,9 @@ function InterceptLive({
 						layoutScroll
 						className={cn(
 							"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-							// With the chat open the chat takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
+							// With a left panel open the panel takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
 							// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
-							chatOpen
+							chatOpen || patientListOpen
 								? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
 								: sidebarCollapsed
 									? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
@@ -362,6 +401,11 @@ function InterceptLive({
 								sourcePage={page}
 								patientName={patientView.name}
 								onBack={() => setOpenPatient(null)}
+								onToggleAskIntercept={() => toggleLeftPanel("chat")}
+								askInterceptOpen={chatOpen}
+								// Only with a list to switch through (not when the patient was opened from an alert).
+								onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
+								patientListOpen={patientListOpen}
 								{...patientView.headerActions}
 								compact={headerCompact}
 								theme={theme}

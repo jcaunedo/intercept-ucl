@@ -7,6 +7,7 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 import { samplePatients } from "../census/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Monitoring, type MonitoringProps } from "./monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "./sample-monitoring";
@@ -32,6 +33,7 @@ const meta = {
 		patientRecords: samplePatientRecords,
 		onPatientDetailsAction: fn(),
 		user: sampleUser,
+		askIntercept: sampleAskIntercept,
 		shiftEndsAt: sampleShiftEndsAt,
 		team: sampleTeam,
 		unreadMessages: 3,

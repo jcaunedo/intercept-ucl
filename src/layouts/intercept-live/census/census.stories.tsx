@@ -8,6 +8,7 @@ import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Census } from "./census";
 import { samplePatients } from "./sample-census";
@@ -31,6 +32,7 @@ const meta = {
 		alerts: sampleMonitoringAlerts,
 		escalationTargets: sampleEscalationTargets,
 		user: sampleUser,
+		askIntercept: sampleAskIntercept,
 		shiftEndsAt: sampleShiftEndsAt,
 		team: sampleTeam,
 		unreadMessages: 3,

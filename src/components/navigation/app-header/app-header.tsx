@@ -1,10 +1,10 @@
 import * as React from "react";
 import {
-	ArrowLeftIcon,
 	ArrowUpIcon,
 	ChevronDownIcon,
 	EllipsisIcon,
 	FlagIcon,
+	ListIcon,
 	MessageCircleMoreIcon,
 	MoonIcon,
 	SunIcon,
@@ -92,8 +92,9 @@ type AppHeaderDefaultProps = AppHeaderCommonProps & {
 
 type AppHeaderPatientProps = AppHeaderCommonProps & {
 	/**
-	 * `patient`: on a patient's page, a breadcrumb back to where the user came from on the left; the patient's actions
-	 * (Raise concern, Huddle team, Escalate), Theme and a "…" menu on the right.
+	 * `patient`: on a patient's page, Ask Intercept and the patient list (when the app handles them), then a breadcrumb
+	 * back to where the user came from, on the left; the patient's actions (Raise concern, Huddle team, Escalate), Theme
+	 * and a "…" menu on the right.
 	 */
 	variant: "patient";
 	/** The page the user came from, e.g. "Census". The breadcrumb's back link. */
@@ -103,6 +104,14 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	/** Makes the back link a link to this URL. Without it, the back link is a button that calls `onBack`. */
 	backHref?: string;
 	onBack?: () => void;
+	/** Opens or closes Ask Intercept Live. Without it, there's no Ask Intercept button. */
+	onToggleAskIntercept?: () => void;
+	/** Whether Ask Intercept Live is open, for its button's pressed state. */
+	askInterceptOpen?: boolean;
+	/** Opens or closes the list of patients the user came from, to switch patient. Without it, there's no list button. */
+	onTogglePatientList?: () => void;
+	/** Whether the patient list is open, for its button's pressed state. */
+	patientListOpen?: boolean;
 	/** Raises a concern about the patient (a Clinician Intuition Alert). */
 	onRaiseConcern?: () => void;
 	/** Starts a huddle with the patient's team. */
@@ -201,43 +210,85 @@ function StatusAndClock({ clock }: { clock: string }) {
 	);
 }
 
-/** Back to the page the user came from, then the patient's name. */
-function PatientBreadcrumb({
+/**
+ * The Ask Intercept sparkle, outlined: Figma's stroke, drawn as the shape stroked inside its own mask (so the stroke
+ * stays within the outline), in `currentColor`. Not in lucide; the filled, gradient sparkle is the AI mark elsewhere.
+ */
+function SparkleOutlineIcon(props: React.SVGProps<SVGSVGElement>) {
+	const maskId = React.useId();
+	const shape =
+		"M7.53516 2.92969C7.83571 2.92969 8.07776 3.17473 8.09766 3.47461C8.33561 7.07134 10.9287 9.66525 14.5254 9.90332C14.8253 9.92316 15.0702 10.1643 15.0703 10.4648C15.0703 10.7654 14.8253 11.0075 14.5254 11.0273C10.9288 11.2654 8.33576 13.8585 8.09766 17.4551C8.07781 17.755 7.83574 18 7.53516 18C7.23464 17.9999 6.99347 17.755 6.97363 17.4551C6.73555 13.8584 4.14165 11.2653 0.544922 11.0273C0.24503 11.0075 0 10.7654 0 10.4648C9.93602e-05 10.1644 0.245109 9.92322 0.544922 9.90332C4.14175 9.66537 6.73568 7.07143 6.97363 3.47461C6.99354 3.1748 7.23469 2.92978 7.53516 2.92969ZM15 0C15.1197 0 15.2167 0.0973811 15.2246 0.216797C15.3193 1.64874 16.3513 2.68149 17.7832 2.77637C17.9026 2.78427 18 2.88032 18 3C18 3.11966 17.9026 3.21573 17.7832 3.22363C16.3513 3.31852 15.3194 4.35127 15.2246 5.7832C15.2167 5.90259 15.1197 6 15 6C14.8805 5.9998 14.7843 5.90246 14.7764 5.7832C14.6816 4.35116 13.6488 3.31837 12.2168 3.22363C12.0976 3.21553 12 3.11952 12 3C12 2.88047 12.0976 2.78447 12.2168 2.77637C13.6489 2.68163 14.6816 1.64885 14.7764 0.216797C14.7843 0.0975081 14.8805 0.000199607 15 0Z";
+	return (
+		<svg xmlns='http://www.w3.org/2000/svg' width={18} height={18} viewBox='0 0 18 18' fill='none' aria-hidden='true' {...props}>
+			<mask id={maskId} fill='white'>
+				<path d={shape} />
+			</mask>
+			<path d={shape} stroke='currentColor' strokeWidth={3} mask={`url(#${maskId})`} />
+		</svg>
+	);
+}
+
+/** A 1px rule between the left side's parts. */
+function HeaderDivider() {
+	return <div aria-hidden='true' className='h-[33px] w-px shrink-0 bg-border' />;
+}
+
+/**
+ * Patient, left side: Ask Intercept and the patient list (each only when the app handles it, each followed by a rule),
+ * then the source page and the patient's name. The source page is the link back.
+ */
+function PatientNavigation({
 	sourcePage,
 	patientName,
 	backHref,
 	onBack,
-}: Pick<AppHeaderPatientProps, "sourcePage" | "patientName" | "backHref" | "onBack">) {
-	const back = (
-		<>
-			<ArrowLeftIcon aria-hidden='true' />
-			{sourcePage}
-		</>
-	);
-
-	// The back link is medium here, like the patient's name; Breadcrumb's own links are regular.
+	onToggleAskIntercept,
+	askInterceptOpen = false,
+	onTogglePatientList,
+	patientListOpen = false,
+}: AppHeaderPatientProps) {
+	// An open panel's button keeps its hover fill, so the toggle shows it's on. The back link is medium here, like the
+	// patient's name; Breadcrumb's own links are regular.
 	return (
-		<Breadcrumb>
-			<BreadcrumbList size='sm'>
-				<BreadcrumbItem>
-					{backHref ? (
-						<BreadcrumbLink href={backHref} onClick={onBack} className='font-medium'>
-							{back}
-						</BreadcrumbLink>
-					) : (
-						<BreadcrumbLink asChild className='font-medium'>
-							<button type='button' onClick={onBack}>
-								{back}
-							</button>
-						</BreadcrumbLink>
-					)}
-				</BreadcrumbItem>
-				<BreadcrumbSeparator />
-				<BreadcrumbItem>
-					<BreadcrumbPage>{patientName}</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
+		<div className='flex min-w-0 items-center gap-4'>
+			{onToggleAskIntercept ? (
+				<>
+					<Button variant='ghost' size='icon-md' className='aria-pressed:bg-accent' aria-pressed={askInterceptOpen} aria-label='Ask Intercept Live' onClick={onToggleAskIntercept}>
+						<SparkleOutlineIcon className='size-[18px]' />
+					</Button>
+					<HeaderDivider />
+				</>
+			) : null}
+			{onTogglePatientList ? (
+				<>
+					<Button variant='ghost' size='icon-md' className='aria-pressed:bg-accent' aria-pressed={patientListOpen} aria-label='Patient list' onClick={onTogglePatientList}>
+						<ListIcon aria-hidden='true' className='size-[18px]' />
+					</Button>
+					<HeaderDivider />
+				</>
+			) : null}
+			<Breadcrumb className='min-w-0 px-2'>
+				<BreadcrumbList size='sm'>
+					<BreadcrumbItem>
+						{backHref ? (
+							<BreadcrumbLink href={backHref} onClick={onBack} className='font-medium'>
+								{sourcePage}
+							</BreadcrumbLink>
+						) : (
+							<BreadcrumbLink asChild className='font-medium'>
+								<button type='button' onClick={onBack}>
+									{sourcePage}
+								</button>
+							</BreadcrumbLink>
+						)}
+					</BreadcrumbItem>
+					<BreadcrumbSeparator />
+					<BreadcrumbItem>
+						<BreadcrumbPage>{patientName}</BreadcrumbPage>
+					</BreadcrumbItem>
+				</BreadcrumbList>
+			</Breadcrumb>
+		</div>
 	);
 }
 
@@ -354,8 +405,8 @@ function PatientActions({
 
 /**
  * Intercept Live's top bar. `default`: connection status and clock on the left; messages, theme, the team on shift and
- * the user's menu on the right. `patient`: a breadcrumb back from a patient's page on the left; the patient's actions,
- * theme and a "…" menu on the right. Each button calls its own handler; the header holds no state.
+ * the user's menu on the right. `patient`: Ask Intercept, the patient list and a breadcrumb back from a patient's page
+ * on the left; the patient's actions, theme and a "…" menu on the right. Each button calls its own handler; the header holds no state.
  *
  * Figma: [intercept.ds › app-header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1169-318)
  */
@@ -372,6 +423,10 @@ function AppHeader(props: AppHeaderProps) {
 		patientName: _patientName,
 		backHref: _backHref,
 		onBack: _onBack,
+		onToggleAskIntercept: _onToggleAskIntercept,
+		askInterceptOpen: _askInterceptOpen,
+		onTogglePatientList: _onTogglePatientList,
+		patientListOpen: _patientListOpen,
 		user: _user,
 		onOpenUserMenu: _onOpenUserMenu,
 		unreadMessages: _unreadMessages,
@@ -414,7 +469,7 @@ function AppHeader(props: AppHeaderProps) {
 				transition={resolve(standardTransition)}
 				className='flex items-center justify-between gap-4'
 			>
-				{props.variant === "patient" ? <PatientBreadcrumb {...props} /> : <StatusAndClock clock={props.clock} />}
+				{props.variant === "patient" ? <PatientNavigation {...props} /> : <StatusAndClock clock={props.clock} />}
 
 				{props.variant === "patient" ? (
 					<PatientActions {...props} themeButton={themeButton} />

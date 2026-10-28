@@ -762,3 +762,14 @@
 		text-size-adjust: 100%;
 	}
 }
+
+/* A thin, soft scrollbar for panels and lists inside the app: the thumb at half
+   of `foreground-subtle` on a clear track, so it reads lighter than the
+   platform's default and follows dark mode. Standard properties only
+   (`scrollbar-width`, `scrollbar-color`); browsers without them keep their own.
+   Shipped to consumers as a utility (`scrollbar-soft`). See DESIGN.md
+   "Soft scrollbars". */
+@utility scrollbar-soft {
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklch, var(--foreground-subtle) 50%, transparent) transparent;
+}

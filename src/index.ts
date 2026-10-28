@@ -119,6 +119,7 @@ export { EmptyState, type EmptyStateProps } from "@/components/feedback/empty-st
 /* Forms                                                                    */
 /* -------------------------------------------------------------------------- */
 
+export { ChatComposer, type ChatCommand, type ChatComposerProps } from "@/components/forms/chat-composer";
 export { Checkbox, type CheckboxProps } from "@/components/forms/checkbox";
 export {
 	Field,

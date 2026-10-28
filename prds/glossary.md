@@ -20,6 +20,7 @@ Each table has three columns: the term, its definition, and the document it come
 | Brief | `documents/Intercept Live Design Phase Team Brief.md` (Oct 20, 2026) |
 | PRD PC-xxx | `prds/patient-card.md` |
 | PRD PD-xxx | `prds/patient-details.md` |
+| PRD CC-xxx | `prds/chat-composer.md` |
 | CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md | UCL project docs |
 | General | Standard industry or clinical meaning. Not defined in a project document |
 
@@ -393,6 +394,8 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 
 | Term | Definition | Source |
 | --- | --- | --- |
+| **Ask Intercept Live** | *Proposed* name of the Provider Desktop's chat panel, where a clinician asks the Conversational Clinical Data Agent about their patients. Opened from the Sidebar, the patient-context app header or the Patient Header. | PRD Chat composer §1, PRD PD-100 |
+| **Chat composer** | The message box at the bottom of Ask Intercept Live: a field, attachments, slash commands, dictation, and voice, Send or Stop. UCL `ChatComposer`. | PRD CC-010 |
 | **Data-completeness signal** | The Provider Desktop tells the clinician explicitly how deep the data is (Integrated versus Overlay). | Spec §8.7 |
 | **Data-depth notice** | *Proposed* plain-language note in a Patient details section saying what this hospital's data doesn't include ("Orders from this hospital are read-only"). Names what's available, never the integration mechanism. | Spec §9.1 Principle 1, PRD PD-121 |
 | **Density model** | How much information a surface shows per area. Part of the design system deliverable. Surveillance and Credentialing have very different density needs. | Brief, Spec §9.2 |
@@ -401,6 +404,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Fighter-Jet HUD** | Shorthand for the multi-monitor, high-density, layered workspace the Provider Desktop should feel like. | Spec Appendix A |
 | **Focus view** | *Proposed* side sheet on the Monitoring page with one patient's trends, respiratory and infusion context, alerts, bedside camera and actions, opened over the live panel. ⚠️ **Decision needed:** side sheet or full page (SV-OD-06). | PRD Monitoring SV-030 |
 | **Graceful degradation** | The UI stays useful and honest when data is missing, delayed or stale, without passing off old values as live. | Brief, PRD §12 |
+| **I-PASS** | Handoff format: Illness severity, Patient summary, Action list, Situation awareness, Synthesis by receiver. Used by /handoff drafts. ⚠️ **Decision needed:** the handoff format (PD-OD-10). | General, PRD PD-110, PRD CC-022 |
 | **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
 | **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (SV-OD-01). | Spec §5.2, PRD Monitoring SV-010 |
 | **Order recommendation** | An order change an AI agent suggests (Order-Entry Suggestion or Vent-Order Mismatch Agent) with its evidence and protocol. The clinician accepts, modifies or declines; it never becomes an order on its own. | Spec §5.5, §8.5, PRD PD-061 |
@@ -408,7 +412,9 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Patient details** | The Provider Desktop page for one patient, opened from any Patient card, the focus view, an alert or Search: header with identity and safety badges, alerts, live monitor, timeline, labs, medications, orders, notes, sepsis, camera, messages and Ask. Not the EMR of record. ✅ **Resolved (PD-OD-01):** the UI shows the patient's name and says "Open patient"; "chart" means only the hospital's record (shown in the page's sections, or "Open chart in Epic"); never "Patient view", since "view" means a display mode (quick views, Monitoring's views, the focus view). | Spec §5.1, PRD PC-100, PRD PD-001 |
 | **Patient switcher** | *Proposed* previous / next control in the Patient details header that steps through the list the clinician came from, in its order and filters. | PRD PD-015 |
 | **Patient timeline** | *Proposed* Patient details section with vitals, infusions, ventilator settings, labs and events on one time axis, read with one crosshair. | PRD PD-030 |
+| **Shift brief** | *Proposed* answer to "Brief me for the start of my shift": the census at a glance, who needs attention first, what's overdue, concerns carried over, pending results and data gaps. | PRD CC-040 |
 | **Single Pane of Glass** | The Provider Desktop's promise: one workspace replacing 10–12 applications per shift. | Spec §5.1 |
+| **Slash command** | *Proposed* shortcut typed in the chat composer as "/name" (/summarize, /changes, /labs, /meds, /sepsis, /handoff), on the patient on screen or one named after it. | PRD CC-020 |
 | **Telemetry-and-camera fusion** | Live drips, vent settings and pump rates overlaid on the bedside camera feed (the spec's "fighter-jet HUD" for the camera). | Spec §5.2, PRD Monitoring SV-031 |
 | **Three-cell-phone problem** | Clinicians carry up to three phones because desktop notifications (especially Epic Haiku) are unreliable. The reason the mobile companion exists. | Spec §6.10, §9.3 |
 | **Triage queue** | The Monitoring page's rail of active alerts for the panel, highest priority first, with Open, Acknowledge, Escalate and Resolve. The Alert Queue page is the full alert surface. ⚠️ **Decision needed:** whether both exist in v1 (SV-OD-03). | Spec §5.2, PRD Monitoring SV-020 |
