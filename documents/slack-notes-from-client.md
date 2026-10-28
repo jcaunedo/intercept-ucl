@@ -114,3 +114,20 @@ Both models leverage the same underlying technology: Intercept Telehealth OS con
 Hospital subscriptions would need to reflect legitimate technology services rather than purchased referrals. An affiliated clinical entity would also require review of patient-choice safeguards, federal fraud-and-abuse/anti-kickback laws, and ACCESS-related billing restrictions.
 
 The opportunity is to turn Intercept's future rural hospital footprint into a scalable population health platform—either as the marketplace connecting patients and providers or as both the marketplace and a direct provider of longitudinal ACCESS care.
+
+# from Diego Reino
+
+## Integration data (from the Temple Biomed team)
+
+In a future state, we will house all of this integration data. Here is some more info from the Temple Biomed people:
+
+The biomed devices below are not integrated via HL7. Intercept (Jack) and Ceiba (Brett) wanted direct connectivity with no hops. That integration is through Ceiba e-connect boxes that Biomed plugs into. Brett can confirm, but those boxes are configured to route data through VPN tunnel.
+
+What does go through HL7 from Epic EMR is listed below. We have a VPN for this integration.
+
+- ADT – Demographics
+- ORM – Orders
+- MDM – Notes
+- RAS/RDE – Pharmacy
+- Lab Results
+- Epic Flowsheets sent in hourly batches.

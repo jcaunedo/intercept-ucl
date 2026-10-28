@@ -214,7 +214,7 @@ Mirror these names when a new component has the same concept. Keep this list cur
 - **Counter** (`data-display/counter`): `variant`: `default` | `neutral` | `secondary` | `outline` (Badge's names; Figma Solid / Solid · Neutral / Flat / Outlined) | `critical` | `high` | `medium` | `low` | `resolved` (PatientCardAlert's severities). `size`: `xxs` (20px, default) | `xs` (24px). `count` + optional `max` ("99+"); without `count` it shows `children`
 - **Avatar** with `AvatarImage`, `AvatarFallback`, `AvatarBadge`, `AvatarGroup`, `AvatarAdd` (`data-display/avatar`): shadcn's API on Radix. Avatar `size`: `xs` | `sm` (default) | `md` | `lg` (24 / 32 / 36 / 40px). AvatarFallback `tone`: `none` (default, neutral) | `1`–`10` (initials colors). AvatarBadge is the online dot. AvatarGroup overlaps its avatars, first on top. AvatarAdd is an add button (`label`, `size`)
 - **HospitalSectionHeader** (`data-display/hospital-section-header`): heads one hospital's group of patients. `name`, `patientCount`, `alertCount` (0 shows "No alerts"), `headingLevel` (`h2` default | `h3` | `h4`), `icon` (lucide, default hospital)
-- **Logo** and **LogoSymbol** (`data-display/logo`): the intercept wordmark with its mark, and the mark alone, 31px tall by default
+- **Logo** and **LogoSymbol** (`data-display/logo`): the intercept wordmark with its mark and boxed "LIVE" tag, and the mark alone, 31px tall by default
 - **Sidebar** with `SidebarMenuButton`, `SidebarDivider` and the `SidebarNavItem` type (`navigation/sidebar`):
   - `groups` (nav items, a divider between groups), `footerItems`
   - `collapsed` / `defaultCollapsed` / `onCollapsedChange`, `activeItem` / `defaultActiveItem` / `onNavigate`
