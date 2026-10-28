@@ -5,6 +5,7 @@ import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { samplePatients } from "../census/sample-census";
+import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Monitoring, type MonitoringProps } from "./monitoring";
@@ -28,6 +29,8 @@ const meta = {
 		escalationTargets: sampleEscalationTargets,
 		onAlertAction: fn(),
 		censusPatients: samplePatients,
+		patientRecords: samplePatientRecords,
+		onPatientDetailsAction: fn(),
 		user: sampleUser,
 		shiftEndsAt: sampleShiftEndsAt,
 		team: sampleTeam,

@@ -124,6 +124,14 @@ const isOpenAlert = (alert: TriageAlert) => alert.status !== "resolved" && alert
 const compareTriageAlerts = (a: TriageAlert, b: TriageAlert) =>
 	severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity) || a.firedAt.localeCompare(b.firedAt);
 
+/** Addressed alerts, most recently addressed first. */
+const sortAddressedAlerts = (alerts: TriageAlert[]) =>
+	[...alerts].sort((a, b) => (b.addressed?.at ?? "").localeCompare(a.addressed?.at ?? ""));
+
+/** When the latest of the alerts fired, for "No active alerts · Last alert 14:22" (PRD SV-051). */
+const lastFiredAt = (alerts: TriageAlert[]) =>
+	alerts.reduce<string | undefined>((latest, alert) => (!latest || alert.firedAt > latest ? alert.firedAt : latest), undefined);
+
 const formatTime = (iso: string) =>
 	new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
@@ -504,7 +512,7 @@ function TriageQueueRow({
 }
 
 /* -------------------------------------------------------------------------- */
-/* TriageQueue                                                                */
+/* TriageAlertList                                                            */
 /* -------------------------------------------------------------------------- */
 
 type TriageQueueProps = {
@@ -516,46 +524,62 @@ type TriageQueueProps = {
 };
 
 /**
+ * The queue's rows, in the order given, without its tabs: for a page that shows one patient's alerts in its own
+ * container (Patient details). One row's form is open at a time.
+ */
+function TriageAlertList({ alerts, patients, escalationTargets, onOpenPatient, onAction }: TriageQueueProps) {
+	const now = useCurrentMinute();
+	const [form, setForm] = React.useState<OpenForm>(null);
+	const order = alerts.map((alert) => alert.id).join();
+
+	return (
+		// popLayout takes a leaving row out of the flow at once (the list is `relative` for it), so the rest glide up.
+		<ul className='relative flex flex-col gap-2'>
+			<AnimatePresence initial={false} mode='popLayout'>
+				{alerts.map((alert) => (
+					<TriageQueueRow
+						key={alert.id}
+						order={order}
+						alert={alert}
+						patient={patients.find((patient) => patient.id === alert.patientId)}
+						now={now}
+						targets={escalationTargets}
+						form={form}
+						onFormChange={setForm}
+						onOpenPatient={onOpenPatient}
+						onAction={onAction}
+					/>
+				))}
+			</AnimatePresence>
+		</ul>
+	);
+}
+
+/* -------------------------------------------------------------------------- */
+/* TriageQueue                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
  * The panel's alerts, highest priority first (PRD Monitoring SV-020–SV-023): Active, and Resolved for the alerts
  * addressed this shift. Each row opens the patient, and acknowledges, escalates and resolves (or declines an AI
  * recommendation) in place. Fills the side panel it sits in (the Monitoring live feed panel), each tab scrolling on
  * its own.
  */
 function TriageQueue({ alerts, patients, escalationTargets, onOpenPatient, onAction }: TriageQueueProps) {
-	const now = useCurrentMinute();
 	const [tab, setTab] = React.useState("active");
-	const [form, setForm] = React.useState<OpenForm>(null);
 	const active = alerts.filter(isOpenAlert).sort(compareTriageAlerts);
-	const history = alerts
-		.filter((alert) => !isOpenAlert(alert))
-		.sort((a, b) => (b.addressed?.at ?? "").localeCompare(a.addressed?.at ?? ""));
-	const lastFired = alerts.reduce<string | undefined>((latest, alert) => (!latest || alert.firedAt > latest ? alert.firedAt : latest), undefined);
-	const patientById = (id: string) => patients.find((patient) => patient.id === id);
+	const history = sortAddressedAlerts(alerts.filter((alert) => !isOpenAlert(alert)));
+	const lastFired = lastFiredAt(alerts);
 
-	const list = (items: TriageAlert[]) => {
-		const order = items.map((alert) => alert.id).join();
-		return (
-			// popLayout takes a leaving row out of the flow at once (the list is `relative` for it), so the rest glide up.
-			<ul className='relative flex flex-col gap-2'>
-				<AnimatePresence initial={false} mode='popLayout'>
-					{items.map((alert) => (
-						<TriageQueueRow
-							key={alert.id}
-							order={order}
-							alert={alert}
-							patient={patientById(alert.patientId)}
-							now={now}
-							targets={escalationTargets}
-							form={form}
-							onFormChange={setForm}
-							onOpenPatient={onOpenPatient}
-							onAction={onAction}
-						/>
-					))}
-				</AnimatePresence>
-			</ul>
-		);
-	};
+	const list = (items: TriageAlert[]) => (
+		<TriageAlertList
+			alerts={items}
+			patients={patients}
+			escalationTargets={escalationTargets}
+			onOpenPatient={onOpenPatient}
+			onAction={onAction}
+		/>
+	);
 
 	return (
 		<Tabs value={tab} onValueChange={setTab} className='flex min-h-0 flex-1 flex-col gap-0'>
@@ -603,6 +627,9 @@ function TriageQueue({ alerts, patients, escalationTargets, onOpenPatient, onAct
 export {
 	compareTriageAlerts,
 	isOpenAlert,
+	lastFiredAt,
+	sortAddressedAlerts,
+	TriageAlertList,
 	TriageQueue,
 	type EscalationTarget,
 	type TriageAlert,

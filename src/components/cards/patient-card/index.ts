@@ -2,6 +2,7 @@ export {
 	PatientCard,
 	PatientCardAlert,
 	PatientCardMetric,
+	patientCardAcuityLevels,
 	patientCardAlertVariants,
 	patientCardMetricVariants,
 	type PatientCardAlertProps,

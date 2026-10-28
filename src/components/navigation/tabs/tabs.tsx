@@ -58,7 +58,7 @@ const tabsListVariants = cva(
 			variant: {
 				default: "rounded-button-md bg-background-subtle p-[3px]",
 				// No track: the active tab is marked by its underline.
-				line: "gap-1",
+				line: "gap-2",
 			},
 			// The control size scale (SIZE-SCALE.md). Triggers take their padding and label size from the list.
 			size: {

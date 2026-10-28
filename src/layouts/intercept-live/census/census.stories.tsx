@@ -6,6 +6,7 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Census } from "./census";
@@ -25,6 +26,8 @@ const meta = {
 		hospitals: sampleHospitals,
 		patients: samplePatients,
 		monitoringPatients: sampleMonitoringPatients,
+		patientRecords: samplePatientRecords,
+		onPatientDetailsAction: fn(),
 		alerts: sampleMonitoringAlerts,
 		escalationTargets: sampleEscalationTargets,
 		user: sampleUser,

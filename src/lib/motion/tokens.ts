@@ -24,6 +24,8 @@ const motionDuration = {
 	urgencyCalm: 0.4,
 	/** A resolved alert's pill fading out: slow, so the change is seen after its card moves (Urgency resolve). */
 	resolvedFade: 1,
+	/** How long a resolved alert's pill stays once its card has landed, before it fades (Urgency resolve). */
+	resolvedHold: 2,
 	/** One beat of a live status indicator (Live pattern): slower and calmer than Pending. */
 	liveLoop: 1,
 } as const;

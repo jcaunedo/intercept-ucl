@@ -1,3 +1,4 @@
+import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { PatientCardAlert } from "@/components/cards/patient-card";
@@ -148,7 +149,9 @@ function MonitoringList({
 	hospitals,
 	grouped,
 	onOpenPatient,
-}: {
+	className,
+	...props
+}: Omit<React.ComponentProps<"div">, "children"> & {
 	patients: MonitoringListPatient[];
 	hospitals: PanelHospital[];
 	grouped: boolean;
@@ -162,7 +165,7 @@ function MonitoringList({
 		: [{ hospital: undefined, patients }];
 
 	return (
-		<div className='overflow-x-auto rounded-card border border-border bg-card shadow-sm'>
+		<div className={cn("overflow-x-auto rounded-card border border-border bg-card shadow-sm", className)} {...props}>
 			<table className='w-full min-w-[56rem] border-collapse text-sm'>
 				<thead>
 					<tr className='border-b border-border text-left text-xs font-semibold text-muted-foreground'>

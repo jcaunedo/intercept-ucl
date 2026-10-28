@@ -10,7 +10,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Provider Desktop (Single Pane of Glass) ★, "patient detail view" (Spec §5.1). Surfaces from Surveillance, Clinical Alerting, Virtual Sepsis, Order Entry, Clinical Documentation and Care Coordination render inside it (Spec §9.1, Principle 11)  
-**Name:** the page is called **Patient details** in the product (PRD Patient card PC-100, resolved). "Patient chart" is what clinicians call it, and what this PRD means by it. ⚠️ **Decision needed:** whether the UI also says "chart" (PD-OD-01)  
+**Name:** the page is called **Patient details** in the product (PRD Patient card PC-100). ✅ **Resolved (PD-OD-01, Oct 28, 2026):** the UI names the page by the patient ("Census › Miller, Sarah", the `h1`), and actions that open it say **Open patient**. "Chart" means only the hospital's record: its slice shows in this page's sections (Timeline, Labs, Medications, Orders, Notes), and an action that leaves for the EMR may say it ("Open chart in Epic"). "View" stays for display modes (quick views, Monitoring's views, the focus view), so the page is never "Patient view"  
 **Surface:** Patient details page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
@@ -79,7 +79,7 @@ Relevant System Specification sections:
 | Surface | Relationship |
 |---|---|
 | **Patient card** (Census) | Selecting a card opens this page (PC-100). ⚠️ The Census Patient Card Options exploration proposes a "more info" step first, with Patient details one step further; still open in the Patient card PRD. |
-| **Focus view** (Monitoring) | A side sheet with the surveillance slice of one patient, opened over the live panel (SV-030). Its "Open chart" action opens this page. The focus view is for watching while staying on the panel; this page is for working on one patient. |
+| **Focus view** (Monitoring) | A side sheet with the surveillance slice of one patient, opened over the live panel (SV-030). Its "Open patient" action opens this page. The focus view is for watching while staying on the panel; this page is for working on one patient. |
 | **Triage queue and Alert Queue** | A row's patient opens this page with that alert's evidence in view (PD-002). |
 | **Virtual Sepsis, Messages, Order Entry, Documentation** | Their full workflows stay in their modules. This page shows the patient's slice of each and opens the workflow in context. |
 | **Ask Intercept Live** (Sidebar) | The global chat. On this page it answers about this patient (PD-100). |
@@ -133,7 +133,7 @@ Ideas from Intercept's clinical team (Slack, Israel Villanueva). None is in the 
 
 | ID | From | Opens |
 |---|---|---|
-| PD-001 | Patient card (Census), Monitoring card, focus view "Open chart", Search, a citation in Ask Intercept Live | The page on its default view (PD-005) |
+| PD-001 | Patient card (Census), Monitoring card, focus view "Open patient", Search, a citation in Ask Intercept Live | The page on its default view (PD-005) |
 | PD-002 | An alert (triage queue, Alert Queue, the page's own alerts, a notification) | The page with that alert expanded and its evidence highlighted on the timeline |
 | PD-003 | Virtual Sepsis, a Messages thread | The page on the matching section (Sepsis, Care team & messages) |
 
@@ -233,7 +233,7 @@ The interventions that answer "who's on a vent, who's on pressors" at a glance: 
 | **Escalate** | Escalation dialog with an evidence snapshot (PD-092, SV-040) | All; targets vary by role (SV-OD-08) |
 | **Raise concern** | Clinician Intuition Alert form (PD-093, SV-041) | All |
 | **New note** | Opens Clinical Documentation in context (PD-071) | Intensivist, APP; ⚠️ RN notes in PD-OD-12 |
-| **More (…)** | Prepare handoff, Copy link, Open in hospital EMR (Integrated, where permitted) | Per role and tenant |
+| **More (…)** | Prepare handoff, Copy link, Open chart in {EMR} (Integrated, where permitted; PD-OD-01) | Per role and tenant |
 
 - An action that isn't available says why on hover and to screen readers ("Orders are read-only at this hospital"), instead of disappearing.
 
@@ -486,7 +486,7 @@ The Conversational Clinical Data Agent answers questions about this patient (Spe
 | **Drafts** | It can draft a message or a handoff; a draft never sends or saves itself |
 | **Visibility** | Answers are marked as AI with the agent's name (Spec §9.1, Principle 7) |
 
-- ⚠️ **Decision needed:** where Ask lives on this page (PD-OD-04): the global Ask Intercept Live panel, scoped to the open patient (one assistant, Spec §9.1 Principle 11), or a question box on the page (the exploration's Ask direction).
+- ✅ **Resolved (Oct 28, 2026, for the prototype):** Ask lives in the global Ask Intercept Live panel (PD-OD-04; one assistant, Spec §9.1 Principle 11). The Patient Header's Ask Intercept button opens it. Scoping it to the open patient is still to build.
 - ⚠️ **Decision needed:** voice input (Spec §9.1, Principle 5). Which hospitals allow microphones, and push-to-talk or wake word, are downstream (Spec §9.5).
 
 ---
@@ -645,10 +645,10 @@ WCAG 2.1 AA (Spec §9.1, Principle 13; ⚠️ 2.1 vs 2.2 is open, glossary confl
 
 | ID | Decision | Owner | Exploration proposal |
 |---|---|---|---|
-| PD-OD-01 | Whether the UI says "Patient details" only, or also "chart" (Monitoring's focus view says "Open chart"). "Chart" can imply the EMR of record, which this page isn't in Overlay mode. | Product / Clinical | "Patient details" in the breadcrumb and title |
+| PD-OD-01 | ✅ **Resolved (Oct 28, 2026):** "Patient details" is the page; the UI shows the patient's name and says "Open patient". "Chart" is reserved for the hospital's record (shown in the sections, or "Open chart in Epic"), since it can imply the EMR of record, which this page isn't in Overlay mode. "View" stays for display modes. | Product / Clinical | "Patient details" in the breadcrumb and title |
 | PD-OD-02 | Sections as tabs, or one scrolling page with a section index. | Design / Clinical | One page per direction, no tabs |
 | PD-OD-03 | Which surfaces a tenant can make mandatory, and whether that ships in v1. | Product | Not explored |
-| PD-OD-04 | Where Ask lives: the global Ask Intercept Live panel scoped to the patient, or a box on the page. | Product / Design | A: a box on the page; C: @Intercept in the thread |
+| PD-OD-04 | ✅ Resolved Oct 28, 2026 (prototype): the global Ask Intercept Live panel, opened from the Patient Header's Ask Intercept button. | Product / Design | A: a box on the page; C: @Intercept in the thread |
 | PD-OD-05 | The AI summary: on by default or on request; AI ranking or a fixed rule it explains; frozen while read. | Clinical / Product | B: AI-ranked, live |
 | PD-OD-06 | How "last viewed" is recorded per clinician, and whether it comes from the access audit. | Product / Compliance | B: shading since last looked |
 | PD-OD-07 | Which sections ship in v1 (Overview, Timeline, Labs, Medications, Orders, Notes, Sepsis). | Product / Clinical | Overview, timeline, labs, drips, vent, sepsis criteria |

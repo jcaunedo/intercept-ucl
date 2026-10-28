@@ -60,6 +60,7 @@ export {
 	PatientCard,
 	PatientCardAlert,
 	PatientCardMetric,
+	patientCardAcuityLevels,
 	patientCardAlertVariants,
 	patientCardMetricVariants,
 	type PatientCardAlertProps,
@@ -73,6 +74,7 @@ export {
 } from "@/components/cards/patient-card";
 export {
 	defaultMonitorLimits,
+	PatientMonitor,
 	PatientMonitoringCard,
 	patientMonitoringCardVariants,
 	type MonitorLimits,
@@ -80,6 +82,7 @@ export {
 	type MonitorVitals,
 	type PatientMonitoringCardProps,
 	type PatientMonitoringCardSize,
+	type PatientMonitorProps,
 } from "@/components/cards/patient-monitoring-card";
 
 /* -------------------------------------------------------------------------- */
@@ -103,6 +106,7 @@ export {
 export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display/badge";
 export { Counter, counterVariants, type CounterProps } from "@/components/data-display/counter";
 export { HospitalSectionHeader, type HospitalSectionHeaderProps } from "@/components/data-display/hospital-section-header";
+export { PatientHeader, type PatientHeaderProps } from "@/components/data-display/patient-header";
 export { Logo, LogoSymbol, type LogoProps, type LogoSymbolProps } from "@/components/data-display/logo";
 
 /* -------------------------------------------------------------------------- */
@@ -180,7 +184,31 @@ export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-
 /* Navigation                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export { AppHeader, type AppHeaderPerson, type AppHeaderProps, type AppHeaderUser } from "@/components/navigation/app-header";
+export {
+	AppHeader,
+	type AppHeaderDefaultProps,
+	type AppHeaderMenuAction,
+	type AppHeaderPatientProps,
+	type AppHeaderPerson,
+	type AppHeaderProps,
+	type AppHeaderUser,
+} from "@/components/navigation/app-header";
+export {
+	Breadcrumb,
+	BreadcrumbEllipsis,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+	breadcrumbListVariants,
+	type BreadcrumbEllipsisProps,
+	type BreadcrumbItemProps,
+	type BreadcrumbLinkProps,
+	type BreadcrumbListProps,
+	type BreadcrumbPageProps,
+	type BreadcrumbProps,
+} from "@/components/navigation/breadcrumb";
 export {
 	Sidebar,
 	SidebarDivider,

@@ -25,13 +25,19 @@ import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-mo
 import { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 import { EmptyState } from "@/components/feedback/empty-state";
-import { AppHeader, type AppHeaderPerson, type AppHeaderUser } from "@/components/navigation/app-header";
+import {
+	AppHeader,
+	type AppHeaderPatientProps,
+	type AppHeaderPerson,
+	type AppHeaderUser,
+} from "@/components/navigation/app-header";
 import { Sidebar, type SidebarNavItem } from "@/components/navigation/sidebar";
 import { Typography } from "@/components/typography/typography";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
 import { AskInterceptPanel } from "./ask-intercept-panel";
+import { PatientNavigationProvider, type PatientNavigation } from "./patient-navigation";
 import { PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
 
 /* -------------------------------------------------------------------------- */
@@ -149,9 +155,38 @@ function useDocumentTheme() {
 	return { theme, toggleTheme };
 }
 
+/**
+ * The sticky header, with a subtle shadow while the page scrolls under it, fading with the padding (same 300ms and
+ * curve as standardTransition).
+ */
+const headerClassName = (compact: boolean) =>
+	cn(
+		"sticky top-0 z-20 bg-background transition-shadow duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
+		compact ? "shadow-sm" : "shadow-none",
+	);
+
 /* -------------------------------------------------------------------------- */
 /* Intercept Live shell                                                       */
 /* -------------------------------------------------------------------------- */
+
+/** A patient's details, as the shell shows them: the name for the header's breadcrumb, the page, and the header's actions. */
+type PatientDetailsView = {
+	name: string;
+	content: React.ReactNode;
+	headerActions?: Pick<AppHeaderPatientProps, "onRaiseConcern" | "onHuddleTeam" | "onEscalate" | "moreActions">;
+};
+
+/** Where the open patient sits in the list it was opened from, to step to the previous or next one (PRD PD-015). */
+type PatientStepper = {
+	previousId?: string;
+	nextId?: string;
+	/** 1-based, e.g. 3 of 14. Missing when the patient wasn't opened from a list. */
+	position?: { index: number; count: number };
+	onSelectPatient: (patientId: string) => void;
+};
+
+/** The patient whose details are open, and the list they were opened from. */
+type OpenPatient = { id: string; list?: string[] };
 
 type InterceptLiveProps = {
 	/**
@@ -175,6 +210,15 @@ type InterceptLiveProps = {
 	pages: Partial<Record<InterceptLivePage, React.ReactNode>>;
 	/** The page shown first. */
 	defaultPage?: InterceptLivePage;
+	/**
+	 * A patient's details page (PRD Patient details), shown over the current page when the page opens one of its
+	 * patients: the header turns to its patient variant, with a breadcrumb back. Gets the patient's id and where they sit
+	 * in the list they were opened from; returns their name and page, or null for a patient it can't show. Without it,
+	 * opening a patient leaves the page as it is.
+	 */
+	renderPatientDetails?: (patientId: string, stepper: PatientStepper) => PatientDetailsView | null;
+	/** A patient whose details show first, over `defaultPage`, with the list to step through. */
+	defaultPatient?: OpenPatient;
 };
 
 /**
@@ -189,9 +233,13 @@ function InterceptLive({
 	unreadMessages,
 	pages,
 	defaultPage = "Census",
+	renderPatientDetails,
+	defaultPatient,
 }: InterceptLiveProps) {
 	const [sidebarCollapsed, setSidebarCollapsed] = React.useState(true);
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
+	// Patient details open over the page, which stays the Sidebar's active item (PRD PD-001).
+	const [openPatient, setOpenPatient] = React.useState<OpenPatient | null>(defaultPatient ?? null);
 	// Ask Intercept is an action, not a page: it toggles the chat panel and leaves the current page as it is.
 	const [chatOpen, setChatOpen] = React.useState(false);
 	// Where the current page's side panel renders (PagePanel).
@@ -211,7 +259,46 @@ function InterceptLive({
 	const canvasRef = React.useRef<HTMLDivElement>(null);
 	const { scrollY } = useScroll({ container: canvasRef });
 	const [headerCompact, setHeaderCompact] = React.useState(false);
-	useMotionValueEvent(scrollY, "change", (y) => setHeaderCompact(y > 0));
+	// The page's scroll position, restored on Back from a patient's details (PRD PD-AC-04). It's kept from the scroll
+	// events while the page shows, not read when a patient opens: by then React's focus restore may have moved it. The
+	// details start at the top, and so does each patient stepped to.
+	const pageScroll = React.useRef(0);
+	const openPatientId = openPatient?.id ?? null;
+	const patientWasOpen = React.useRef(openPatientId !== null);
+	useMotionValueEvent(scrollY, "change", (y) => {
+		setHeaderCompact(y > 0);
+		if (!patientWasOpen.current) pageScroll.current = y;
+	});
+	React.useLayoutEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		if (openPatientId !== null) canvas.scrollTop = 0;
+		else if (patientWasOpen.current) canvas.scrollTop = pageScroll.current;
+		patientWasOpen.current = openPatientId !== null;
+	}, [openPatientId]);
+	const navigation = React.useMemo<PatientNavigation>(
+		() => ({
+			openPatient: (patientId, list) => {
+				if (!renderPatientDetails) return;
+				setOpenPatient({ id: patientId, list });
+			},
+			compact: headerCompact,
+			patientOpen: openPatientId !== null,
+			openAskIntercept: () => setChatOpen(true),
+		}),
+		[renderPatientDetails, headerCompact, openPatientId],
+	);
+	const patientView = (() => {
+		if (!openPatient || !renderPatientDetails) return null;
+		const { id, list } = openPatient;
+		const index = list ? list.indexOf(id) : -1;
+		return renderPatientDetails(id, {
+			previousId: index > 0 ? list?.[index - 1] : undefined,
+			nextId: index >= 0 ? list?.[index + 1] : undefined,
+			position: list && index >= 0 ? { index: index + 1, count: list.length } : undefined,
+			onSelectPatient: (patientId) => setOpenPatient({ id: patientId, list }),
+		});
+	})();
 	const { theme, toggleTheme } = useDocumentTheme();
 	// The user's real date and time unless the app pins one. Empty for the first server render (see useCurrentMinute).
 	const currentMinute = useCurrentMinute();
@@ -223,85 +310,114 @@ function InterceptLive({
 			: user;
 
 	return (
-		<PagePanelSlotProvider value={panelSlot}>
-			<div className='flex h-screen bg-background-subtle'>
-				<Sidebar
-					groups={groups}
-					footerItems={navFooter}
-					activeItem={page}
-					onNavigate={(navigateTo) => setPage(navigateTo as InterceptLivePage)}
-					collapsed={sidebarCollapsed}
-					onCollapsedChange={setSidebarCollapsed}
-					className='h-full'
-				/>
-
-				{/* Global: opens on every page, between the Sidebar and the page. */}
-				<AskInterceptPanel
-					open={chatOpen}
-					onOpenChange={setChatOpen}
-					carded={sidebarCollapsed}
-					width={chatWidth}
-					onWidthChange={setChatWidth}
-				/>
-
-				{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
-				    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
-				    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
-				    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
-				    stay right when it's scrolled. */}
-				<motion.div
-					ref={canvasRef}
-					layoutScroll
-					className={cn(
-						"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-						// With the chat open the chat takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
-						// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
-						chatOpen
-							? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
-							: sidebarCollapsed
-								? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
-								: "rounded-none shadow-none",
-					)}
-				>
-					{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). */}
-					<AppHeader
-						clock={shownClock}
-						user={shownUser}
-						team={team}
-						unreadMessages={unreadMessages}
-						compact={headerCompact}
-						theme={theme}
-						onToggleTheme={toggleTheme}
-						// A subtle shadow while the page scrolls under it, fading with the padding (same 300ms and curve as
-						// standardTransition).
-						className={cn(
-							"sticky top-0 z-20 bg-background transition-shadow duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
-							headerCompact ? "shadow-sm" : "shadow-none",
-						)}
+		<PatientNavigationProvider value={navigation}>
+			<PagePanelSlotProvider value={panelSlot}>
+				<div className='flex h-screen bg-background-subtle'>
+					<Sidebar
+						groups={groups}
+						footerItems={navFooter}
+						activeItem={page}
+						onNavigate={(navigateTo) => {
+							setOpenPatient(null);
+							setPage(navigateTo as InterceptLivePage);
+						}}
+						collapsed={sidebarCollapsed}
+						onCollapsedChange={setSidebarCollapsed}
+						className='h-full'
 					/>
 
-					{pages[page] ?? (
-						// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area below
-						// the header.
-						<main className='relative flex flex-1 flex-col p-6'>
-							<Typography as='h1' size='2xl' weight='bold'>
-								{page}
-							</Typography>
-							<EmptyState
-								className='absolute inset-0 px-6'
-								title={emptyPages[page].title}
-								description={emptyPages[page].description}
-							/>
-						</main>
-					)}
-				</motion.div>
+					{/* Global: opens on every page, between the Sidebar and the page. */}
+					<AskInterceptPanel
+						open={chatOpen}
+						onOpenChange={setChatOpen}
+						carded={sidebarCollapsed}
+						width={chatWidth}
+						onWidthChange={setChatWidth}
+					/>
 
-				{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
-				    `contents`, so the panel is a flex item of this row. */}
-				<div ref={setPanelSlot} className='contents' />
-			</div>
-		</PagePanelSlotProvider>
+					{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
+					    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
+					    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
+					    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
+					    stay right when it's scrolled. */}
+					<motion.div
+						ref={canvasRef}
+						layoutScroll
+						className={cn(
+							"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+							// With the chat open the chat takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
+							// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
+							chatOpen
+								? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+								: sidebarCollapsed
+									? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+									: "rounded-none shadow-none",
+						)}
+					>
+						{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). On
+						    a patient's details, the patient variant: a breadcrumb back to the page, and the patient's actions. */}
+						{patientView ? (
+							<AppHeader
+								variant='patient'
+								sourcePage={page}
+								patientName={patientView.name}
+								onBack={() => setOpenPatient(null)}
+								{...patientView.headerActions}
+								compact={headerCompact}
+								theme={theme}
+								onToggleTheme={toggleTheme}
+								className={headerClassName(headerCompact)}
+							/>
+						) : (
+							<AppHeader
+								clock={shownClock}
+								user={shownUser}
+								team={team}
+								unreadMessages={unreadMessages}
+								compact={headerCompact}
+								theme={theme}
+								onToggleTheme={toggleTheme}
+								className={headerClassName(headerCompact)}
+							/>
+						)}
+
+						{/* Under an open patient the page stays mounted, hidden, so its filters, sort and scroll are as they were on
+						    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. */}
+						<div hidden={Boolean(patientView)} className='contents'>
+							<PagePanelSlotProvider value={patientView ? null : panelSlot}>
+								{pages[page] ?? (
+									// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area
+									// below the header.
+									<main className='relative flex flex-1 flex-col p-6'>
+										<Typography as='h1' size='2xl' weight='bold'>
+											{page}
+										</Typography>
+										<EmptyState
+											className='absolute inset-0 px-6'
+											title={emptyPages[page].title}
+											description={emptyPages[page].description}
+										/>
+									</main>
+								)}
+							</PagePanelSlotProvider>
+						</div>
+						{patientView?.content}
+					</motion.div>
+
+					{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
+					    `contents`, so the panel is a flex item of this row. */}
+					<div ref={setPanelSlot} className='contents' />
+				</div>
+			</PagePanelSlotProvider>
+		</PatientNavigationProvider>
 	);
 }
 
-export { InterceptLive, type InterceptLivePage, type InterceptLiveProps };
+export {
+	InterceptLive,
+	type InterceptLivePage,
+	type InterceptLiveProps,
+	type OpenPatient,
+	type PatientDetailsView,
+	type PatientStepper,
+};

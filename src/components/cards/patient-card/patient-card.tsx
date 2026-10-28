@@ -1,14 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { BellRingIcon, EllipsisIcon, MapPinIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
-import { liftPattern, useMotionPreference } from "@/lib/motion";
+import {
+	dismissVariants,
+	liftPattern,
+	resolvedFadeTransition,
+	standardTransition,
+	useMotionPreference,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import {
@@ -211,7 +217,8 @@ type PatientCardAcuityLevel = "low" | "moderate" | "high" | "critical" | "unknow
 
 // Acuity always says "risk", so its labels never match an alert severity's (Critical / High / Medium / Low). Colored
 // text with no fill or border, so acuity never competes with the alert's solid pill. The colors are the badge tones'
-// text, readable in both modes. Low and Unknown differ by their words.
+// text, readable in both modes. Low and Unknown differ by their words. Exported for pages that show acuity outside the
+// card (e.g. Patient details), so the words and colors stay the same.
 const acuityLevels: Record<PatientCardAcuityLevel, { label: string; className: string }> = {
 	unknown: { label: "Unknown", className: "text-muted-foreground" },
 	low: { label: "Low risk", className: "text-foreground" },
@@ -309,7 +316,7 @@ function PatientCard({
 	onClickCapture,
 	...props
 }: PatientCardProps) {
-	const { prefersReducedMotion } = useMotionPreference();
+	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const interactive = Boolean(onOpen || href);
 	const alertRing = usePatientCardAlertRing({ alert, interactive });
 	const compact = variant === "compact";
@@ -365,7 +372,34 @@ function PatientCard({
 					<h3 className='-mb-0.5 text-xl font-bold break-words text-foreground'>{nameContent}</h3>
 					{identity ? <p className='text-sm break-words text-muted-foreground'>{identity}</p> : null}
 				</div>
-				{alert ? <PatientCardAlert variant={alert.variant} count={alert.count}>{alert.label}</PatientCardAlert> : null}
+				{/* The pill fades in when an alert appears and out when it's removed (Dismiss); a "Resolved" pill fades slowly
+				    (`resolvedFadeTransition`), so it's seen leaving after its card has moved. A severity change recolors it in
+				    place. As on PatientMonitoringCard. */}
+				<AnimatePresence initial={false}>
+					{alert ? (
+						<motion.div
+							key='alert'
+							variants={{
+								initial: { opacity: 0 },
+								animate: { opacity: 1, transition: resolve(standardTransition) },
+								exit:
+									alert.variant === "resolved"
+										? { opacity: 0, transition: resolve(resolvedFadeTransition) }
+										: prefersReducedMotion
+											? { opacity: 0 }
+											: dismissVariants.exit,
+							}}
+							initial='initial'
+							animate='animate'
+							exit='exit'
+							className='flex'
+						>
+							<PatientCardAlert variant={alert.variant} count={alert.count}>
+								{alert.label}
+							</PatientCardAlert>
+						</motion.div>
+					) : null}
+				</AnimatePresence>
 			</div>
 
 			{hospital || placeInHospital ? (
@@ -447,6 +481,7 @@ export {
 	PatientCard,
 	PatientCardAlert,
 	PatientCardMetric,
+	acuityLevels as patientCardAcuityLevels,
 	patientCardAlertVariants,
 	patientCardMetricVariants,
 	type PatientCardAlertProps,

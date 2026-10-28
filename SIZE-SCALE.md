@@ -36,7 +36,7 @@ Use `md` unless a density requirement forces otherwise. Don't mix sizes within o
 | `Textarea` | `md` · `lg`                                                               | `md`    | Heights are minimums (`min-h-9`, `min-h-10`); it grows with its text |
 | `Select`   | `sm` · `md` · `lg`                                                        | `md`    | The trigger. shadcn's has `sm` · `default` (32 / 36px); `lg` matches Input |
 | `Avatar`   | `xs` · `sm` · `md` · `lg`                                                 | `sm`    | Not a control, but the same heights. Defaults to 32px, Figma's and shadcn's default |
-| `Badge`    | `xs` · `xs-alt` · `sm` · `md` · `lg`                                      | `md`    | `xs` is 20px, below the scale (Figma, Oct 26, 2026); `xs-alt` is 24px with a 14px label. 12px label at `xs`, 14px at `xs-alt`/`sm`, 16px at `md`/`lg`; icon 12 / 12 / 12 / 16 / 14px. shadcn's Badge has no `size` prop |
+| `Badge`    | `xs` · `sm` · `md` · `lg`                                                  | `md`    | On the scale: 24 / 32 / 36 / 40px. 14px label at `xs`/`sm`, 16px at `md`/`lg`; icon 12 / 14 / 16 / 14px. `xs-alt` is a deprecated alias of `xs` (Oct 28, 2026: Figma removed it and made `xs` 24px; `xs` was 20px with a 12px label from Oct 26). shadcn's Badge has no `size` prop |
 
 `default` (and Button's `icon`) still work on all three as deprecated aliases. `data-size` always reports the current name (`md`, `icon-md`).
 

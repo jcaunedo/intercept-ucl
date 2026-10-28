@@ -1,7 +1,7 @@
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Oct 28, 2026 (Open chart opens Patient details: SV-030; earlier, Oct 27: My patients is a chip, off by default: SV-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, SV-OD-13 added; filters in context: SV-010, SV-014, SV-051, AC-11; SV-015 view controls, built in UCL)
+Last updated: Oct 28, 2026 (Open chart renamed Open patient, PD-OD-01: SV-030; Open patient opens Patient details: SV-030; earlier, Oct 27: My patients is a chip, off by default: SV-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, SV-OD-13 added; filters in context: SV-010, SV-014, SV-051, AC-11; SV-015 view controls, built in UCL)
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -263,11 +263,11 @@ Opening a patient (card or queue row) opens a side sheet over the panel's right 
 | **Infusions** | Labeled "Pump" (SV-074): active drips and rates (PRD PC-060); a missing pump feed never reads as "stopped" |
 | **Alerts** | This patient's active alerts with the same actions as the queue |
 | **Camera** | The bedside camera (SV-031) |
-| **Actions** | Look in, Message bedside team, Escalate, Raise intuition alert, Open chart |
+| **Actions** | Look in, Message bedside team, Escalate, Raise intuition alert, Open patient |
 
 - The panel stays visible and live behind it; the clinician can step through patients (↑/↓) without closing the sheet.
 - ⚠️ **Decision needed:** side sheet vs. full page for the focus view (SV-OD-06).
-- ℹ️ Open chart opens the Patient details page (`prds/patient-details.md`). The focus view is for watching one patient while staying on the panel; Patient details is for working on one patient.
+- ℹ️ Open patient opens the Patient details page (`prds/patient-details.md`); it was "Open chart" until Oct 28, 2026, when "chart" was reserved for the hospital's record (PD-OD-01). The focus view is for watching one patient while staying on the panel; Patient details is for working on one patient.
 
 ### SV-031 — Camera and telemetry fusion
 
@@ -396,7 +396,7 @@ An interactive page covering this whole PRD: [Intercept Live Monitoring](https:/
 | **Triage queue** | Right rail, collapsible, Active and Resolved tabs. Rows: severity pill, title, age, patient, source chip (AI · agent name, Device · Monitor, Rule · Hemodynamics, Clinician concern), Overdue, "Carried over from night shift". AI rows have a dashed border, a "Recommendation" line and Show evidence. | SV-020, SV-021, SV-023 |
 | **Queue actions** | Open (focus view scrolled to that alert), Acknowledge, Escalate, Resolve with a required reason (Treated, Artifact or false alarm, Expected for this patient, Duplicate) and an optional note. AI rows Decline instead of Resolve, with an optional rationale, recorded as "Declined with rationale". Every state shows who and when. New rows reveal at their position, resolved rows fade and the rest glide. New Critical and High alerts are announced once. | SV-022, SV-023, AC-02–AC-04, AC-09, §9, §11 |
 | **Empty queue** | "No active alerts · Last alert at 14:22". | SV-051 |
-| **Focus view** | Side sheet over the queue; the panel stays live. Header: name, alert pill, MRN, location, acuity ("Critical risk · SOFA 13"), 24 h change, code status, tags. Actions: Look in, Message bedside team, Escalate, Raise concern, Open chart. ↑/↓ steps through the panel's order, Esc closes and returns focus to the card. | SV-030, AC-05 |
+| **Focus view** | Side sheet over the queue; the panel stays live. Header: name, alert pill, MRN, location, acuity ("Critical risk · SOFA 13"), 24 h change, code status, tags. Actions: Look in, Message bedside team, Escalate, Raise concern, Open patient. ↑/↓ steps through the panel's order, Esc closes and returns focus to the card. | SV-030, AC-05 |
 | **Focus sections** | Monitor (four lanes, numerics with limits, MAP, then Temp and EtCO₂), Trends (1 h / 6 h / 24 h; ABP as a systolic–diastolic band; out-of-limit zones in a neutral wash, not a severity color), Respiratory labeled Ventilator (the PEEP-versus-order mismatch marked), Infusions labeled Pump, the patient's alerts. | SV-030, SV-071, SV-074, AC-15 |
 | **Camera** | See SV-031. | SV-031, SV-OD-07 |
 | **Escalation** | See SV-040. | SV-040, SV-OD-08 |

@@ -17,8 +17,17 @@ import {
 	SelectValue,
 } from "@/components/forms/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
-import { pressPattern, reducedMotionTransition, reorderSpring, revealVariants, useMotionPreference } from "@/lib/motion";
+import {
+	motionDuration,
+	pressPattern,
+	reducedMotionTransition,
+	reorderSpring,
+	revealVariants,
+	useMotionPreference,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
+
+import { usePatientNavigation } from "../patient-navigation";
 
 // The patient list both Census and Monitoring filter, sort and group, so the two pages behave the same (PRD Monitoring
 // AC-11). Each page adds the data its own card needs.
@@ -105,9 +114,11 @@ const acuityChange = (patient: PanelPatient) => {
 	return Number.isNaN(number) ? undefined : number;
 };
 
-// Worst alert first; patients without one last.
-const byAlert = (a: PanelPatient, b: PanelPatient) =>
-	(b.alert ? severityRank[b.alert.variant] : -1) - (a.alert ? severityRank[a.alert.variant] : -1);
+// Worst alert first; patients without one last. A resolved alert ranks as none, so its card moves once, when it
+// resolves, and not again when its "Resolved" pill fades (useFadingResolvedAlerts).
+const alertRank = (patient: PanelPatient) =>
+	patient.alert && patient.alert.variant !== "resolved" ? severityRank[patient.alert.variant] : -1;
+const byAlert = (a: PanelPatient, b: PanelPatient) => alertRank(b) - alertRank(a);
 
 // Highest acuity score first; patients without one last.
 const byAcuity = descending((patient) => (typeof patient.acuity?.score === "number" ? patient.acuity.score : undefined));
@@ -137,6 +148,126 @@ const sortOrders = [
 type SortOrderId = (typeof sortOrders)[number]["id"];
 
 const sortOrderById = (id: SortOrderId) => sortOrders.find((order) => order.id === id) ?? sortOrders[0];
+
+/* -------------------------------------------------------------------------- */
+/* Holding the order                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Whether the panel's order is held: while the pointer is over the grid, or keyboard focus is in it, so cards don't
+ * move under the clinician's hand or eyes (Oct 28, 2026). `pauseProps` go on the grid. Touch doesn't hold it (a tap
+ * isn't a hover), and neither does focus left by a click, so moving the mouse away always resumes. It's also held while
+ * a patient's details hide the page, and for a moment after Back, so a card that has to move does it in sight.
+ */
+function useSortPause() {
+	const [hovered, setHovered] = React.useState(false);
+	const [focused, setFocused] = React.useState(false);
+	const grid = React.useRef<HTMLElement | null>(null);
+	const hidden = usePatientNavigation()?.patientOpen ?? false;
+	const [shown, setShown] = React.useState(!hidden);
+
+	React.useEffect(() => {
+		if (hidden) {
+			// The page hides without a pointerleave or blur.
+			setShown(false);
+			setHovered(false);
+			setFocused(false);
+			return;
+		}
+		const timer = window.setTimeout(() => setShown(true), motionDuration.normal * 1000);
+		return () => window.clearTimeout(timer);
+	}, [hidden]);
+
+	// A pointerleave can be missed (the grid hid or moved away under a still pointer), so the next pointer movement
+	// anywhere else ends the hover.
+	React.useEffect(() => {
+		if (!hovered) return;
+		const onPointerOver = (event: PointerEvent) => {
+			if (!(event.target instanceof Node) || !grid.current?.contains(event.target)) setHovered(false);
+		};
+		document.addEventListener("pointerover", onPointerOver);
+		return () => document.removeEventListener("pointerover", onPointerOver);
+	}, [hovered]);
+
+	const pauseProps = {
+		onPointerEnter: (event: React.PointerEvent<HTMLElement>) => {
+			grid.current = event.currentTarget;
+			if (event.pointerType !== "touch") setHovered(true);
+		},
+		onPointerLeave: () => setHovered(false),
+		onFocus: (event: React.FocusEvent) => setFocused(event.target.matches(":focus-visible")),
+		onBlur: (event: React.FocusEvent<HTMLElement>) => {
+			if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+		},
+	} satisfies React.HTMLAttributes<HTMLElement>;
+	return { paused: hovered || focused || !shown, pauseProps };
+}
+
+/**
+ * The patients in the order they had when the pause began, while it lasts; their values keep updating. A patient who
+ * leaves just drops out; one who joins (a filter changed) re-sorts everyone at once. When the pause ends, the patients
+ * take their new order, and the cards move there (Reorder).
+ */
+function usePausedOrder<Patient extends { id: string }>(patients: Patient[], paused: boolean): Patient[] {
+	const order = React.useRef<string[]>([]);
+	const position = new Map(order.current.map((id, index) => [id, index]));
+	if (paused && patients.every((patient) => position.has(patient.id))) {
+		return [...patients].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+	}
+	order.current = patients.map((patient) => patient.id);
+	return patients;
+}
+
+/**
+ * A "Resolved" pill stays while its card moves to its new place, then fades `motionDuration.resolvedHold` after the
+ * card lands (MOTION.md Urgency: the pill fades on `resolvedFadeTransition`). The hold doesn't start while the order is
+ * held, since the card hasn't moved yet. A patient whose alert stops being resolved (a new one fired) shows the next
+ * "Resolved" again.
+ */
+function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient[], paused: boolean): Patient[] {
+	const [faded, setFaded] = React.useState<ReadonlySet<string>>(() => new Set());
+	const timers = React.useRef(new Map<string, number>());
+	const resolvedIds = patients.filter((patient) => patient.alert?.variant === "resolved").map((patient) => patient.id);
+	const resolvedKey = resolvedIds.join();
+
+	React.useEffect(() => {
+		const resolved = new Set(resolvedKey ? resolvedKey.split(",") : []);
+		for (const [id, timer] of timers.current) {
+			if (paused || !resolved.has(id)) {
+				window.clearTimeout(timer);
+				timers.current.delete(id);
+			}
+		}
+		if ([...faded].some((id) => !resolved.has(id))) {
+			setFaded(new Set([...faded].filter((id) => resolved.has(id))));
+			return;
+		}
+		if (paused) return;
+		// The card's move (Reorder settles within `slow`), then the hold.
+		const delay = (motionDuration.slow + motionDuration.resolvedHold) * 1000;
+		for (const id of resolved) {
+			if (faded.has(id) || timers.current.has(id)) continue;
+			timers.current.set(
+				id,
+				window.setTimeout(() => {
+					timers.current.delete(id);
+					setFaded((current) => new Set(current).add(id));
+				}, delay),
+			);
+		}
+	}, [resolvedKey, paused, faded]);
+
+	React.useEffect(() => {
+		const pending = timers.current;
+		return () => pending.forEach((timer) => window.clearTimeout(timer));
+	}, []);
+
+	return faded.size
+		? patients.map((patient) =>
+				patient.alert?.variant === "resolved" && faded.has(patient.id) ? { ...patient, alert: undefined } : patient,
+			)
+		: patients;
+}
 
 /** Whose patients the page shows: everyone's, or the signed-in clinician's (assigned this shift). */
 type PatientScope = "all" | "mine";
@@ -426,12 +557,12 @@ function PanelGrid<Patient extends PanelPatient>({
 	grouped,
 	renderCard,
 	className,
-}: {
+	...props
+}: Omit<React.ComponentProps<"div">, "children"> & {
 	patients: Patient[];
 	hospitals: PanelHospital[];
 	grouped: boolean;
 	renderCard: (patient: Patient) => React.ReactNode;
-	className?: string;
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const reducedMotion = Boolean(prefersReducedMotion);
@@ -451,7 +582,7 @@ function PanelGrid<Patient extends PanelPatient>({
 		// it fades. initial={false}: the first render doesn't animate. Hospital sections are full-width heading rows in the
 		// same grid, so cards keep their parent and key and glide into their section instead of remounting. Hidden once
 		// empty (after any exits), so it adds no gap above the empty state.
-		<div className={cn("relative grid grid-cols-1 gap-4 empty:hidden", className)}>
+		<div className={cn("relative grid grid-cols-1 gap-4 empty:hidden", className)} {...props}>
 			<AnimatePresence initial={false} mode='popLayout'>
 				{items.map((item) =>
 					item.kind === "section" ? (
@@ -510,6 +641,9 @@ export {
 	PanelGrid,
 	QuickViewChips,
 	sortOrderById,
+	useFadingResolvedAlerts,
+	usePausedOrder,
+	useSortPause,
 	SortSelect,
 	UnitSelect,
 	type PanelHospital,
