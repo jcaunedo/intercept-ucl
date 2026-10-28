@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 27, 2026
+Last updated: Oct 28, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -855,6 +855,8 @@ The UI should reveal provenance through detail or an appropriate inspection inte
 Selecting the card's primary interaction navigates to the corresponding patient within Provider Desktop.
 
 ✅ **Resolved:** the whole card is clickable and opens the **Patient details** page.
+
+ℹ️ The page is defined in PRD — Patient details (`prds/patient-details.md`).
 
 Requirements:
 

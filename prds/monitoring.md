@@ -1,7 +1,7 @@
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Oct 27, 2026 (My patients is a chip, off by default: SV-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, SV-OD-13 added; filters in context: SV-010, SV-014, SV-051, AC-11; SV-015 view controls, built in UCL)
+Last updated: Oct 28, 2026 (Open chart opens Patient details: SV-030; earlier, Oct 27: My patients is a chip, off by default: SV-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, SV-OD-13 added; filters in context: SV-010, SV-014, SV-051, AC-11; SV-015 view controls, built in UCL)
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -39,8 +39,8 @@ Monitoring is not the patient chart and not the intervention workflow. It shows 
 
 ### 1.2 Source documents
 
-1. Intercept Live — Virtual Care OS System Specification, May 2026 (`docs/Intercept Live - Virtual Care OS - System Specifications.md`).
-2. Intercept Live Design Phase Team Brief, October 20, 2026 (`docs/Intercept Live Design Phase Team Brief.md`).
+1. Intercept Live — Virtual Care OS System Specification, May 2026 (`documents/Intercept Live - Virtual Care OS - System Specifications.md`).
+2. Intercept Live Design Phase Team Brief, October 20, 2026 (`documents/Intercept Live Design Phase Team Brief.md`).
 3. PRD — Patient card, v0.1 (`prds/patient-card.md`).
 4. Intercept Live Monitoring exploration, October 27, 2026 ([claude.ai artifact](https://claude.ai/artifact/HtZYre6XUQ3vHannnT1nJm), listed in `explorations/index.md`). An interactive page built from this PRD; what it shows and proposes is in §12.1.
 
@@ -267,6 +267,7 @@ Opening a patient (card or queue row) opens a side sheet over the panel's right 
 
 - The panel stays visible and live behind it; the clinician can step through patients (↑/↓) without closing the sheet.
 - ⚠️ **Decision needed:** side sheet vs. full page for the focus view (SV-OD-06).
+- ℹ️ Open chart opens the Patient details page (`prds/patient-details.md`). The focus view is for watching one patient while staying on the panel; Patient details is for working on one patient.
 
 ### SV-031 — Camera and telemetry fusion
 

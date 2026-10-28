@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 27, 2026
+Last updated: Oct 28, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -16,9 +16,10 @@ Each table has three columns: the term, its definition, and the document it come
 
 | Source tag | Document |
 | --- | --- |
-| Spec §x | `docs/Intercept Live - Virtual Care OS - System Specifications.md` (Draft v0.1, May 2026) |
-| Brief | `docs/Intercept Live Design Phase Team Brief.md` (Oct 20, 2026) |
+| Spec §x | `documents/Intercept Live - Virtual Care OS - System Specifications.md` (Draft v0.1, May 2026) |
+| Brief | `documents/Intercept Live Design Phase Team Brief.md` (Oct 20, 2026) |
 | PRD PC-xxx | `prds/patient-card.md` |
+| PRD PD-xxx | `prds/patient-details.md` |
 | CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md | UCL project docs |
 | General | Standard industry or clinical meaning. Not defined in a project document |
 
@@ -287,6 +288,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Gender identity** | How the patient identifies. Used for respectful care (how staff address the patient), usually with pronouns and a name to use. A different data item from sex; not used for clinical calculations. | General, PRD PC-012 |
 | **Handoff** | The structured transfer of patient-care responsibility at shift change. Unresolved alerts and Clinician Intuition Alerts carry over to the incoming clinician. | Spec Appendix A, PRD PC-132 |
 | **HR / RR / SpO₂** | Heart rate (bpm) / respiratory rate (breaths/min) / peripheral oxygen saturation (%). | PRD §7.1 |
+| **I-PASS** | A structured handoff format: Illness severity, Patient summary, Action list, Situation awareness and contingency, Synthesis by receiver. *Proposed* for the Patient details handoff draft. ⚠️ **Decision needed:** handoff format (PD-OD-10). | General, PRD PD-110 |
 | **Inpatient status / Observation status** | Admitted care expected to span two or more midnights / hospital-bed care billed as outpatient, typically under two midnights. See Two-Midnight Rule. | Spec Appendix A |
 | **Isolation precautions** | Infection-control measures for a patient, e.g. contact or droplet isolation. Shown as a safety tag. | General, PRD §15.1 P2 |
 | **Lactate** | A blood marker of tissue hypoperfusion. Measured and repeated as SEP-1 bundle elements. | Spec §8.2 |
@@ -392,6 +394,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | Term | Definition | Source |
 | --- | --- | --- |
 | **Data-completeness signal** | The Provider Desktop tells the clinician explicitly how deep the data is (Integrated versus Overlay). | Spec §8.7 |
+| **Data-depth notice** | *Proposed* plain-language note in a Patient details section saying what this hospital's data doesn't include ("Orders from this hospital are read-only"). Names what's available, never the integration mechanism. | Spec §9.1 Principle 1, PRD PD-121 |
 | **Density model** | How much information a surface shows per area. Part of the design system deliverable. Surveillance and Credentialing have very different density needs. | Brief, Spec §9.2 |
 | **Design tensions** | Four to resolve up front: information density without clutter, honest data provenance, visible AI activity, and graceful degradation when hospital data is thin or stale. | Brief |
 | **Evidence snapshot** | *Proposed* record attached to an escalation: the patient's primary numerics, drips and ventilator settings at the moment of escalating, so the receiver sees what the sender saw. | PRD Monitoring SV-040 |
@@ -400,11 +403,16 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Graceful degradation** | The UI stays useful and honest when data is missing, delayed or stale, without passing off old values as live. | Brief, PRD §12 |
 | **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
 | **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (SV-OD-01). | Spec §5.2, PRD Monitoring SV-010 |
+| **Order recommendation** | An order change an AI agent suggests (Order-Entry Suggestion or Vent-Order Mismatch Agent) with its evidence and protocol. The clinician accepts, modifies or declines; it never becomes an order on its own. | Spec §5.5, §8.5, PRD PD-061 |
 | **Panel order prompt** | *Proposed* "Panel order changed · Update" bar on the Monitoring page. When alerts change priority, cards keep their place until the clinician accepts the new order, so nothing moves under the pointer. ⚠️ **Decision needed:** auto-reorder rules (SV-OD-05). | PRD Monitoring SV-013 |
+| **Patient details** | The Provider Desktop page for one patient, opened from any Patient card, the focus view, an alert or Search: header with identity and safety badges, alerts, live monitor, timeline, labs, medications, orders, notes, sepsis, camera, messages and Ask. What clinicians call the patient chart; not the EMR of record. ⚠️ **Decision needed:** whether the UI also says "chart" (PD-OD-01). | Spec §5.1, PRD PC-100, PRD PD-001 |
+| **Patient switcher** | *Proposed* previous / next control in the Patient details header that steps through the list the clinician came from, in its order and filters. | PRD PD-015 |
+| **Patient timeline** | *Proposed* Patient details section with vitals, infusions, ventilator settings, labs and events on one time axis, read with one crosshair. | PRD PD-030 |
 | **Single Pane of Glass** | The Provider Desktop's promise: one workspace replacing 10–12 applications per shift. | Spec §5.1 |
 | **Telemetry-and-camera fusion** | Live drips, vent settings and pump rates overlaid on the bedside camera feed (the spec's "fighter-jet HUD" for the camera). | Spec §5.2, PRD Monitoring SV-031 |
 | **Three-cell-phone problem** | Clinicians carry up to three phones because desktop notifications (especially Epic Haiku) are unreliable. The reason the mobile companion exists. | Spec §6.10, §9.3 |
 | **Triage queue** | The Monitoring page's rail of active alerts for the panel, highest priority first, with Open, Acknowledge, Escalate and Resolve. The Alert Queue page is the full alert surface. ⚠️ **Decision needed:** whether both exist in v1 (SV-OD-03). | Spec §5.2, PRD Monitoring SV-020 |
+| **What changed** | *Proposed* Patient details list of everything that changed since this clinician last viewed the patient. ⚠️ **Decision needed:** how "last viewed" is recorded (PD-OD-06). | PRD PD-023 |
 
 ---
 
@@ -415,6 +423,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **AC-xx** | An acceptance criterion in a PRD, written Given/then. | PRD §21 |
 | **OD-xx** | An open decision, with its owner. | PRD §23 |
 | **PC-xxx** | A numbered Patient card requirement. | PRD |
+| **PD-xxx** | A numbered Patient details requirement. PD-AC-xx and PD-OD-xx are its acceptance criteria and open decisions. | PRD Patient details |
 | **Scenario ID** | A Patient card scenario code: a layer letter plus a number (A4, S3, V2). Combined to describe one card state, e.g. A4 + S3 + V2. | PRD §15.1 |
 | **Status labels** | In `product-specs/` docs, inline notes start with an emoji and a bold label: ⚠️ for unresolved (**Gap:**, **Decision needed:**, **Risk:**), ✅ for resolved (**Resolved:**, **Confirmed in Figma:**), ℹ️ for information, with no label. | CLAUDE.md |
 | **UC-xx** | A numbered use case. | PRD §2.2 |
