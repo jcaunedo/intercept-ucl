@@ -133,8 +133,8 @@ const acuityLevels: { level: PatientCardAcuityLevel; score?: number }[] = [
 ];
 
 /**
- * Every acuity level beside every alert severity. The scales never share a label: acuity always says "risk" (neutral
- * outline badges); alerts are Critical / High / Medium / Low (colored pills).
+ * Every acuity level beside every alert severity. The scales never share a label: acuity always says "risk" (colored
+ * text); alerts are Critical / High / Medium / Low (solid pills).
  */
 export const AcuityAndAlerts: Story = {
 	render: (args) => (

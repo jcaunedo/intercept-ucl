@@ -373,7 +373,7 @@ The following is a proposed presentation model derived from ADT and census-recon
 
 **Proposed tone treatment:**
 
-✅ **Resolved (Oct 27, 2026):** the UCL card draws every category as the same neutral outline pill, with no color; the category word carries the level and the alert pill stays the card's only colored signal. The tone table below is the earlier proposal, kept for the clinical review (OD-03).
+✅ **Resolved (Oct 27, 2026):** the UCL card shows the category as colored text after the score ("7 Moderate risk"), with no pill, so it never looks like an alert. The colors follow the table below; Low uses the default text color. Only Moderate is drawn in Figma so far. Categories and colors still need clinical approval (OD-03).
 
 | Category | Tone | Tokens |
 |---|---|---|
@@ -385,7 +385,7 @@ The following is a proposed presentation model derived from ADT and census-recon
 
 - ℹ️ Moderate is yellow so it doesn't look like Low or Unknown. Low and Unknown share the grey but differ by content: Low shows a number and "Low", Unknown shows `—` and "Unknown".
 - ℹ️ Yellow (`corn`, hue ≈ 90) and orange (`warning`, hue ≈ 60) are separate scales, so Moderate and High stay distinct. They are still close for some colorblind users, so the category word always carries the meaning (PC-160).
-- ℹ️ Acuity pills use a subtle fill or outline. Solid fills with an icon stay reserved for alert blocks, so Critical acuity never looks like a Critical alert.
+- ℹ️ Acuity is colored text, with no fill. Solid fills with an icon stay reserved for alert blocks, so Critical acuity never looks like a Critical alert.
 - ⚠️ **Gap:** `theme.css` has `corn` only as a primitive, with no semantic token. Add one (e.g. `caution`, `caution-subtle`, `caution-foreground`) in archielabs.ds for both `intercept` and `intercept-dark`, then sync it to `theme.css` (a minor version). Keep yellow for the fill and use `corn-700` or darker for text, since yellow text on white fails contrast.
 - ⚠️ **Gap:** the UCL Badge has no status tones (its tones are `blue`, `green`, `sky`, `purple`, `red`). Acuity and alert severity need status variants such as `neutral`, `caution`, `warning` and `destructive-subtle`, designed in intercept.ds first.
 

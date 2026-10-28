@@ -209,15 +209,15 @@ const toMetric = ({ shortLabel: _shortLabel, ...metric }: PatientCardVital) => m
 // content stays 16px in, as with the 1px border.
 type PatientCardAcuityLevel = "low" | "moderate" | "high" | "critical" | "unknown";
 
-// Acuity always says "risk", so its labels never match an alert severity's (Critical / High / Medium / Low). Every
-// level is the same neutral outline badge, so acuity never competes with the alert's colored pill; the word carries
-// the level. Unknown mutes its text.
-const acuityLevels: Record<PatientCardAcuityLevel, { label: string; className?: string }> = {
+// Acuity always says "risk", so its labels never match an alert severity's (Critical / High / Medium / Low). Colored
+// text with no fill or border, so acuity never competes with the alert's solid pill. The colors are the badge tones'
+// text, readable in both modes. Low and Unknown differ by their words.
+const acuityLevels: Record<PatientCardAcuityLevel, { label: string; className: string }> = {
 	unknown: { label: "Unknown", className: "text-muted-foreground" },
-	low: { label: "Low risk" },
-	moderate: { label: "Moderate risk" },
-	high: { label: "High risk" },
-	critical: { label: "Critical risk" },
+	low: { label: "Low risk", className: "text-foreground" },
+	moderate: { label: "Moderate risk", className: "text-badge-yellow-foreground" },
+	high: { label: "High risk", className: "text-badge-amber-foreground" },
+	critical: { label: "Critical risk", className: "text-badge-red-foreground" },
 };
 
 type PatientCardAlertStatus = "active" | "acknowledged" | "escalated";
@@ -392,16 +392,12 @@ function PatientCard({
 							{acuity ? (
 								<div className='flex min-w-0 flex-1 flex-col whitespace-nowrap'>
 									<span className='text-xs font-medium text-muted-foreground'>{acuity.label}</span>
-									<span className='flex items-center gap-1.5'>
+									<span className='flex items-center gap-2'>
 										<span className='text-xl font-semibold text-foreground'>{acuity.score ?? "--"}</span>
 										{acuityLevel ? (
-											<Badge
-												variant='outline'
-												size='xs-alt'
-												className={acuityLevels[acuityLevel].className}
-											>
+											<span className={cn("text-sm font-semibold", acuityLevels[acuityLevel].className)}>
 												{acuityLevels[acuityLevel].label}
-											</Badge>
+											</span>
 										) : null}
 									</span>
 								</div>
