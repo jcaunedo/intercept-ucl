@@ -1,17 +1,21 @@
-# Intercept Live architecture
+# Architecture
 
-How the Intercept Live prototype is wired: which file does what and how the pieces connect. Read it before working on any Intercept Live layout, and update it in the same change when the wiring changes.
+How each app's reference layouts in `src/layouts/` are wired: which file does what, how the pieces connect, and which files are sample data. One section per app. Read an app's section before working on its layouts, and update it in the same change when the wiring changes.
 
 What's elsewhere:
 
 | Looking for | Go to |
 | --- | --- |
-| Why something looks or behaves as it does; Figma ↔ code decisions | DESIGN.md "Intercept Live" |
+| Why something looks or behaves as it does; Figma ↔ code decisions | DESIGN.md (e.g. "Intercept Live") |
 | What the product should do | `prds/` (Patient card, Monitoring, Patient details, Chat composer) |
 | Repo-wide layout rules (where layouts live, sample data, not exported) | CLAUDE.md "Architecture", "Sample Data" |
 | UCL component APIs | CLAUDE.md "Current Component APIs" |
 
-## The shell
+## Intercept Live
+
+Paths in this section are relative to `src/layouts/intercept-live/`.
+
+### The shell
 
 `intercept-live.tsx` (`InterceptLive`) is the app frame every screen shares: the Sidebar, the canvas with the sticky AppHeader, page switching, theme and clock. It takes `pages`, the content for each Sidebar item; a page a layout doesn't pass shows its title and an empty state.
 
@@ -24,7 +28,7 @@ What's elsewhere:
 | Patient list | `patient-list-panel.tsx` | `PatientListPanel`, the patient switcher, on the left. Opened by the app header's list button on a patient's page. Takes turns with the chat: one is open at a time |
 | Page panel | `PagePanel` (in `side-panel.tsx`) | A page's own panel on the right, e.g. the live feed |
 
-## Pages
+### Pages
 
 The Census and Monitoring are Sidebar pages. Each page's content is a `<name>-panel.tsx`; each layout (`census.tsx`, `monitoring.tsx`) is an `InterceptLive` that renders both pages, so the Sidebar moves between them. A page's filters reset when you leave it.
 
@@ -35,7 +39,7 @@ The Census and Monitoring are Sidebar pages. Each page's content is a `<name>-pa
 | Shared by both | `shared/patient-panel.tsx` | The filter bar (hospital, unit, My patients chip, quick views), sort orders and the grid, so both pages filter, sort and group the same way |
 | Live feed | `shared/live-feed.tsx` | The hospital bar's "Live feed" button and the right-hand panel it opens, on both pages. Its content is the triage queue (`monitoring/triage-queue.tsx`) |
 
-## Patient details
+### Patient details
 
 `patient-details/` isn't a Sidebar page. The shell shows it over the current page, which stays underneath, hidden, and keeps its filters.
 
@@ -53,7 +57,7 @@ The Census and Monitoring are Sidebar pages. Each page's content is a `<name>-pa
 | Building blocks for the sections | `section-parts.tsx` (`SectionCard`, `Detail`, `NoData`, time formatters) |
 | Icons and images | `images/` (`ai-brief.svg`; `sample-patient-photo.png` is sample data) |
 
-## Sample data
+### Sample data
 
 Everything in a `sample-*` file (and `use-sample-live-feed.ts`) is made-up data the app replaces with its APIs; everything else is code to keep. Screens never import samples: the stories pass them in.
 
@@ -70,7 +74,7 @@ Everything in a `sample-*` file (and `use-sample-live-feed.ts`) is made-up data 
 
 ℹ️ The section samples import `sample-patient-records.ts`, never `sample-patient-details.ts`, which imports them: that would be circular.
 
-## Layout-only parts
+### Layout-only parts
 
 These are built in the layout, not in UCL, until intercept.ds draws them. When it does, move them to `src/components/` and export them.
 
