@@ -20,7 +20,7 @@ Everything specific to this project is in this section, "Stack", "Figma", and DE
 - **CLAUDE.md** (this file): operational instructions, how things are built here. Covers the stack, folder structure, component and story conventions and theme tokens.
 - **[MOTION.md](MOTION.md)**: the motion system. Covers principles, the named patterns, component guidance, accessibility and validation. Read it before any animation work. The values live in `src/lib/motion/`.
 - **[DESIGN.md](DESIGN.md)**: design contracts and decisions. Covers why a component is built the way it is, rules that a future edit or Figma/shadcn resync could silently break, the record of Figma ↔ code discrepancies (resolved and pending), and the brand voice.
-- **[prds/](prds/)**: everything about the product's content, kept apart from the code: PRDs, definitions, context and what we're building. New product docs go here, never in the repo root or next to code.
+- **[prds/](prds/)**: everything about the product's content, kept apart from the code: PRDs, definitions, context and what we're building. New product docs go here, never in the repo root or next to code. Storybook shows each one under PRDs (see "Architecture" → "PRDs and Docs in Storybook").
   - **Tables over heading-and-paragraph lists:** when a doc lists items that each have a name and a short description (users, use cases, states, fields, terms), write them as a table, not as a bold heading followed by a paragraph per item.
   - **[prds/glossary.md](prds/glossary.md)**: every product, clinical and platform term with its source. Design system and UCL terms live in Storybook's Glossary page ([src/docs/glossary.mdx](src/docs/glossary.mdx)). Use these terms in specs, PRDs, stories and UI copy, and add new terms to the right one in the same change that introduces them.
 - **Skills** in `.claude/skills/` (`ucl-setup`, `ucl-ds-sync`, `ucl-generate-component`, `ucl-generate-layout`, `ucl-ux-copywriter`) are project-agnostic. They read CLAUDE.md and DESIGN.md before they start (plus MOTION.md when the work involves animation) and take every project value (package, Figma file, categories, apps, component APIs, voice) from them. **When a skill and these files disagree, these files win.**
@@ -121,7 +121,8 @@ How Figma designs become code. The decisions themselves live in DESIGN.md.
   - `motion/`: tokens, transitions, variants, patterns, reduced-motion and scroll helpers
   - `relative-date.ts`: `formatRelativeDate()`
 - **Imports:** use the `@/` alias (`@/lib/utils`, `@/components/<category>/<name>`). Import another component through its folder `index.ts`, never a deep relative path.
-- **Docs:** Storybook MDX pages live in `src/docs/` (Introduction, Glossary, Foundations, Guidelines). Sidebar order is Introduction → Glossary → Foundations → Guidelines → component categories.
+- **Docs:** Storybook MDX pages live in `src/docs/` (Introduction, Glossary, Foundations, Guidelines, PRDs, Docs). Sidebar order is Introduction → Glossary → Foundations → Guidelines → PRDs → Docs → component categories.
+- **PRDs and Docs in Storybook:** each file in `prds/` and `docs/` (project source material: the system specification, team brief, client notes) has a page in `src/docs/prds/` or `src/docs/docs/` (`<kebab-name>.mdx`) that imports the markdown raw (`../../../prds/<file>.md?raw`) and renders it with `<Markdown>`, titled `PRDs/<Name>` or `Docs/<Name>`. The `.md` stays the only source; never copy its text into the page. A new file in either folder gets its page, and its place in that section's order in `.storybook/preview.ts`, in the same change.
 
 ## Code style
 
