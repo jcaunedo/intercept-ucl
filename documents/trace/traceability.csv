@@ -25,3 +25,7 @@ BR-09,src/layouts/intercept-live/census/census-panel.tsx,,Met (design),No cross-
 UX-06,src/components/feedback/empty-state/,,Partial,Empty + missing states
 UX-07,src/layouts/intercept-live/intercept-live.tsx,,Met (design),Modules render in the shell
 NFR-09,src/styles/theme.css,,Partial,Severity tokens below AA for white text (R-24)
+see file,documents/specs/requirements-specification.md,,,"Cowork snapshot set v1 (2026-10-29), read-only"
+see file,documents/specs/design-update-spec.md,,,"Cowork snapshot set v1 (2026-10-29), read-only"
+see file,documents/specs/simulator-specification.md,,,"Cowork snapshot set v1 (2026-10-29), read-only"
+see file,documents/specs/simulator-requirements.md,,,"Cowork snapshot set v1 (2026-10-29), read-only"
