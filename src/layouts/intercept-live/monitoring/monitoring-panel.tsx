@@ -9,7 +9,6 @@ import {
 } from "@/components/cards/patient-monitoring-card";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { Typography } from "@/components/typography/typography";
-import { motionDuration } from "@/lib/motion";
 
 import {
 	activeAlertCount,
@@ -21,8 +20,12 @@ import {
 	sortOrderById,
 	SortSelect,
 	UnitSelect,
-	usePausedOrder,
+	shownAlert,
+	useHeldOrder,
+	useResolvedHolds,
+	useSortCadence,
 	useSortPause,
+	withResolvedHolds,
 	type PanelHospital,
 	type PanelPatient,
 	type PatientScope,
@@ -36,7 +39,6 @@ import {
 	type EscalationTarget,
 	type TriageAlert,
 	type TriageAlertAction,
-	type TriageAlertSeverity,
 } from "./triage-queue";
 import { LiveFeed, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
 import { MonitoringList } from "./monitoring-list";
@@ -125,63 +127,6 @@ const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 		"items-start gap-3 @min-[38rem]:grid-cols-2 @min-[55.5rem]:grid-cols-3 @min-[73.5rem]:grid-cols-4 @min-[91rem]:grid-cols-5",
 };
 
-// How long a card says "Resolved" in its old place (its ring blinks green once meanwhile) after its last alert resolves,
-// before it moves.
-const RESOLVED_PILL_MS = 2000;
-// The move (`reorderSpring`, about `deliberate`), waited out so the pill is still there when the card lands; then it
-// fades out slowly (`resolvedFadeTransition`).
-const RESOLVED_MOVE_MS = motionDuration.deliberate * 1000;
-
-type ResolvedHold = { severity: TriageAlertSeverity; moved: boolean };
-
-/**
- * Patients whose last open alert just resolved, by id, with the severity they had: held in place for `RESOLVED_PILL_MS`
- * showing "Resolved", then `moved` to their new place still showing it, then released once they've landed, when the
- * pill fades out. Covers resolving in the queue and alerts that resolve or drop out of the feed.
- */
-function useResolvedHolds(patients: Pick<PanelMonitoringPatient, "id" | "alert">[]) {
-	const [holds, setHolds] = React.useState<Record<string, ResolvedHold>>({});
-	const previous = React.useRef<Record<string, TriageAlertSeverity> | null>(null);
-	const timers = React.useRef<number[]>([]);
-	const open: Record<string, TriageAlertSeverity> = {};
-	for (const patient of patients) {
-		const variant = patient.alert?.variant;
-		if (variant === "critical" || variant === "high" || variant === "medium" || variant === "low") open[patient.id] = variant;
-	}
-	const openKey = JSON.stringify(open);
-
-	React.useEffect(() => {
-		const before = previous.current;
-		previous.current = open;
-		if (!before) return;
-		const resolved = Object.keys(before).filter((id) => !open[id]);
-		if (!resolved.length) return;
-		const update = (change: (hold: ResolvedHold) => ResolvedHold | null) =>
-			setHolds((current) => {
-				const next = { ...current };
-				for (const id of resolved) {
-					const changed = next[id] ? change(next[id]) : null;
-					if (changed) next[id] = changed;
-					else delete next[id];
-				}
-				return next;
-			});
-		setHolds((current) => ({
-			...current,
-			...Object.fromEntries(resolved.map((id) => [id, { severity: before[id], moved: false }])),
-		}));
-		timers.current.push(
-			window.setTimeout(() => update((hold) => ({ ...hold, moved: true })), RESOLVED_PILL_MS),
-			window.setTimeout(() => update(() => null), RESOLVED_PILL_MS + RESOLVED_MOVE_MS),
-		);
-		// Keyed on the open alerts' contents, not the object (a new one every render).
-	}, [openKey]);
-
-	React.useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
-
-	return holds;
-}
-
 /* -------------------------------------------------------------------------- */
 /* Monitoring                                                                 */
 /* -------------------------------------------------------------------------- */
@@ -215,6 +160,7 @@ function MonitoringPanel({
 	const [feedOpen, setFeedOpen] = React.useState(false);
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 	const { paused, pauseProps } = useSortPause();
+	const { sorts, sortNow } = useSortCadence(paused);
 	// Inside the shell, a card or a list row opens the patient's details over the page, stepping through the panel as it's
 	// shown now; an alert in the live feed opens them on their own (PRD PD-015).
 	const navigation = usePatientNavigation();
@@ -234,21 +180,14 @@ function MonitoringPanel({
 		...patient,
 		alert: alertPill(alerts.filter((alert) => alert.patientId === patient.id)),
 	}));
-	const resolvedHolds = useResolvedHolds(withAlerts);
 	// A patient whose last alert just resolved keeps its old place for a moment while its card says "Resolved", then sorts
-	// as a patient without an alert and moves, still saying it, so the clinician can follow the card to its new place;
-	// the pill fades out once it has landed. The held severity counts no alerts (count 0), so the summary already drops
-	// them.
-	const patients: PanelMonitoringPatient[] = withAlerts.map((patient) => {
-		const hold = resolvedHolds[patient.id];
-		return hold && !hold.moved && !patient.alert ? { ...patient, alert: { variant: hold.severity, count: 0 } } : patient;
-	});
+	// as a patient without an alert and moves at once, still saying it, so the clinician can follow the card to its new
+	// place; the pill fades out once it has landed (useResolvedHolds).
+	const resolvedHolds = useResolvedHolds(withAlerts, sortNow);
+	const patients: PanelMonitoringPatient[] = withResolvedHolds(withAlerts, resolvedHolds);
 	/** The pill the card shows: "Resolved" while held and moving, then nothing (it fades out), otherwise its own. */
-	const shownAlert = (patient: PanelMonitoringPatient): PanelMonitoringPatient["alert"] => {
-		const hold = resolvedHolds[patient.id];
-		if (!hold || withAlerts.find((other) => other.id === patient.id)?.alert) return patient.alert;
-		return { variant: "resolved" };
-	};
+	const ownAlerts = new Map(withAlerts.map((patient) => [patient.id, patient.alert]));
+	const cardAlert = (id: string) => shownAlert(ownAlerts.get(id), resolvedHolds[id]);
 
 	// Scope only: My patients applies to everything below it, the tab counters included; then hospital and unit.
 	// Hospital and unit run on both scopes, so the summary can say "6 of 14 patients", as on the Census.
@@ -259,9 +198,9 @@ function MonitoringPanel({
 	const filtered = (scoped: PanelMonitoringPatient[]) =>
 		statusFilter ? located(scoped).filter((patient) => statusFilter.ids.has(patient.id)) : located(scoped);
 	const assigned = scope === "mine" ? patients.filter((patient) => patient.mine) : patients;
-	// The panel holds its order while the pointer is over it (or keyboard focus is in it), so cards and rows don't move
-	// under the clinician's hand; it re-sorts when they leave.
-	const visible = usePausedOrder([...filtered(assigned)].sort(sortOrderById(sortBy).compare), paused);
+	// The panel re-sorts now and then (useSortCadence), never while the pointer is over it (or keyboard focus is in it),
+	// so cards and rows don't move under the clinician's hand; a re-sort that came due runs when they leave.
+	const visible = useHeldOrder([...filtered(assigned)].sort(sortOrderById(sortBy).compare), sorts, sortBy);
 	const everyoneCount = scope === "mine" ? filtered(patients).length : visible.length;
 
 	const pressStatusFilter = (id: string | null) => {
@@ -353,7 +292,7 @@ function MonitoringPanel({
 					{density === "list" ? (
 						<MonitoringList
 							{...pauseProps}
-							patients={visible.map((patient) => ({ ...patient, alert: shownAlert(patient) }))}
+							patients={visible.map((patient) => ({ ...patient, alert: cardAlert(patient.id) }))}
 							hospitals={hospitals}
 							grouped={sortBy === "location"}
 							onOpenPatient={canOpenPatient ? openPatient : undefined}
@@ -376,7 +315,7 @@ function MonitoringPanel({
 							}) => (
 								<PatientMonitoringCard
 									{...card}
-									alert={shownAlert({ id, ...card } as PanelMonitoringPatient)}
+									alert={cardAlert(id)}
 									size={density === "compact" ? "sm" : "md"}
 									plot={plot}
 									expanded={expandedIds.has(id)}

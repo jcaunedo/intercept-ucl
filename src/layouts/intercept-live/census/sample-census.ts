@@ -1,6 +1,6 @@
 import type { CensusPatient } from "./census";
 
-// Synthetic data (PRD PC-180). The first eight patients are Figma's; six more fill the hospital counts (7 / 2 / 5).
+// Synthetic data (PRD PC-180). The first eight patients are Figma's; seven more fill the hospital counts (7 / 3 / 5).
 
 const sofa = "SOFA acuity score";
 const change = "Change in last 24 h";
@@ -18,7 +18,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 11",
-		alert: { variant: "critical", count: 3 },
+		alert: { variant: "critical" },
 		acuity: { label: sofa, score: 13, level: "critical" },
 		trajectory: { label: change, value: "+4", trend: "up", trendVariant: "critical" },
 		vitals: [
@@ -86,7 +86,6 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "CVICU",
 		bed: "Bed 5",
-		alert: { variant: "medium" },
 		acuity: { label: sofa, score: 8, level: "moderate" },
 		trajectory: { label: change, value: "0" },
 		vitals: [
@@ -194,7 +193,6 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 8",
-		alert: { variant: "high" },
 		acuity: { label: sofa, score: 10, level: "high" },
 		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
 		vitals: [
@@ -282,7 +280,6 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "CVICU",
 		bed: "Bed 3",
-		alert: { variant: "medium" },
 		acuity: { label: sofa, score: 12, level: "critical" },
 		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
 		vitals: [
@@ -312,6 +309,27 @@ const samplePatients: CensusPatient[] = [
 			{ label: "SpO₂", value: "97%" },
 			{ label: "Resp. Rate", shortLabel: "RR", value: 17 },
 		],
+	},
+	{
+		id: "p15",
+		hospitalId: "mwh",
+		lastName: "Hayes",
+		firstName: "Margaret",
+		mrn: "00826154",
+		sex: "F",
+		age: 74,
+		hospital: "Mercy West Hospital",
+		unit: "MICU",
+		bed: "Bed 5",
+		acuity: { label: sofa, score: 6, level: "moderate" },
+		trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 102 },
+			{ label: "MAP", value: 70 },
+			{ label: "SpO₂", value: "95%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 18 },
+		],
+		tags: [{ label: "Fall risk" }],
 	},
 ];
 

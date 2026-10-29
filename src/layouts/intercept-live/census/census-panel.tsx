@@ -19,9 +19,13 @@ import {
 	sortOrderById,
 	SortSelect,
 	UnitSelect,
+	shownAlert,
 	useFadingResolvedAlerts,
-	usePausedOrder,
+	useHeldOrder,
+	useResolvedHolds,
+	useSortCadence,
 	useSortPause,
+	withResolvedHolds,
 	type PanelHospital,
 	type PatientScope,
 	type QuickView,
@@ -120,10 +124,16 @@ function CensusPanel({
 			),
 		[patientsProp, resolvedIds],
 	);
-	// The grid holds its order while the pointer is over it (or keyboard focus is in it); a "Resolved" pill fades once
-	// its card has moved.
+	// The grid re-sorts now and then (useSortCadence), never while the pointer is over it (or keyboard focus is in it); a
+	// "Resolved" pill fades once its card has moved.
 	const { paused, pauseProps } = useSortPause();
-	const patients = useFadingResolvedAlerts(withResolved, paused);
+	const { sorts, sortNow } = useSortCadence(paused);
+	const ownPatients = useFadingResolvedAlerts(withResolved, paused, sorts);
+	// A patient whose last alert resolves (opened here, or resolved by the feed) says "Resolved" in its old place for a
+	// moment, then moves at once without waiting for the cadence, still saying it; the pill fades once it has landed.
+	const resolvedHolds = useResolvedHolds(ownPatients, sortNow);
+	const patients = withResolvedHolds(ownPatients, resolvedHolds);
+	const ownAlerts = new Map(ownPatients.map((patient) => [patient.id, patient.alert]));
 	// Inside the shell, a card opens the patient's details over the page, stepping through the grid as it's shown now; an
 	// alert in the live feed opens them on their own (PRD PD-015).
 	const navigation = usePatientNavigation();
@@ -159,7 +169,7 @@ function CensusPanel({
 	};
 	const assigned = scope === "mine" ? patients.filter((patient) => patient.mine) : patients;
 	const { inUnit, visible: unsorted } = filtered(assigned);
-	const visible = usePausedOrder(unsorted.sort(sortOrderById(sortBy).compare), paused);
+	const visible = useHeldOrder(unsorted.sort(sortOrderById(sortBy).compare), sorts, sortBy);
 	const everyoneCount = scope === "mine" ? filtered(patients).visible.length : visible.length;
 	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
 	// One hospital, picked on its tab or the only one the filters leave, reads by name: "7 patients at CVMC".
@@ -238,6 +248,7 @@ function CensusPanel({
 					renderCard={({ id, hospitalId: _hospitalId, mine: _mine, sepsisWatch: _sepsisWatch, ...card }) => (
 						<PatientCard
 							{...card}
+							alert={shownAlert(ownAlerts.get(id), resolvedHolds[id])}
 							onOpen={() => openPatient(id)}
 							onMoreActions={onPatientActions ? () => onPatientActions(id) : undefined}
 						/>

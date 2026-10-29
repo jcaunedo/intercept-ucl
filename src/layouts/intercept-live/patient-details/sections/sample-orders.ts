@@ -603,6 +603,23 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 			["diet", "Cardiac diet", "2 g sodium", "Elena Petrova", 280],
 		],
 	}),
+
+	// Upper GI bleed: hemoglobin 7.6 is over the threshold of 7, so nothing to transfuse until the repeat.
+	p15: patientOrders("p15", {
+		hospital: "mwh",
+		checks: [
+			noVentilator("Nasal cannula at 2 L/min"),
+			nothingToRecommend("Hemoglobin 7.6 is over the transfusion threshold of 7. The repeat is due in 2 h."),
+		],
+		active: [
+			["medication", "Pantoprazole infusion", "8 mg/h IV · 72 h", "Marcus Lee", 1000],
+			["medication", "Acetaminophen", "650 mg by mouth every 6 h", "Marcus Lee", 980],
+			["lab", "Hemoglobin", "Every 6 h", "Marcus Lee", 1000, "Scheduled"],
+			["lab", "H. pylori stool antigen", "Once", "Marcus Lee", 420, "Pending"],
+			["nursing", "Fall precautions", "Bed alarm on · assist to stand", "Marcus Lee", 980],
+			["diet", "Nothing by mouth", "Clear liquids if hemoglobin holds", "Marcus Lee", 1000],
+		],
+	}),
 };
 
 export { sampleOrdersByPatient };

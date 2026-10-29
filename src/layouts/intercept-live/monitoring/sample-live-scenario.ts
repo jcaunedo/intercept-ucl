@@ -4,7 +4,8 @@ import type { TriageAlert } from "./monitoring";
 
 // Synthetic data (PRD MON-080, MON-081): a scripted live feed for the Monitoring Live story. Each step changes some
 // patients' vitals and alerts, over `sampleMonitoringPatients` / `sampleMonitoringAlerts`: an alert's severity goes up or
-// down (a Medium becomes High, a Critical eases to Medium), a new one fires, others resolve. Sorted by Alert, the
+// down (a Medium becomes High, a Critical eases to Medium), new ones fire, others resolve. It starts from the three
+// default alerts (Miller Critical, Johnson and Anderson Low) and builds up from there. Sorted by Alert, the
 // panel moves patients as their worst alert changes, highest severity first. After the last step the feed returns to
 // the start.
 
@@ -30,15 +31,17 @@ const sampleLiveScenario: LiveStep[] = [
 		],
 	},
 	{
-		// Walker's card is in the first row, so the resolve (green blink, "Resolved", then the move) is easy to see.
-		label: "Walker's lactate comes back down: the concern is resolved",
-		vitals: { p13: { hr: 112, systolic: 96, diastolic: 51, map: 66 } },
-		resolve: ["a7"],
+		// Johnson's card is in the first row, so the resolve (green blink, "Resolved", then the move) is easy to see.
+		label: "Johnson's SpO₂ recovers: the alert is resolved",
+		vitals: { p2: { hr: 104, spo2: 94 } },
+		resolve: ["a4"],
 	},
 	{
-		label: "Thompson's pressor dose climbs again: Medium becomes High",
+		label: "Thompson's pressor dose climbs: a new Medium alert",
 		vitals: { p4: { hr: 104, systolic: 88, diastolic: 47, map: 61 } },
-		update: { a6: { severity: "high", title: "Norepinephrine up 3 steps in 1 h" } },
+		fire: [
+			{ id: "live-2", patientId: "p4", severity: "medium", title: "Norepinephrine up 2 steps in 1 h", source: { kind: "rule", name: "Vasopressors" } },
+		],
 	},
 	{
 		label: "Moore worsens: Medium becomes Critical",
@@ -46,28 +49,32 @@ const sampleLiveScenario: LiveStep[] = [
 		update: { "live-1": { severity: "critical", title: "MAP below 60 mmHg" } },
 	},
 	{
-		// Both of Miller's Critical alerts ease, so her card drops to her next worst, High.
-		label: "Miller responds to treatment: both Critical alerts ease to Medium",
+		label: "Miller responds to treatment: Critical eases to Medium",
 		vitals: { p1: { hr: 114, systolic: 96, diastolic: 56, map: 69 } },
-		update: {
-			a1: { severity: "medium", title: "Sepsis candidate, bundle started" },
-			a2: { severity: "medium", title: "MAP recovering, 69 mmHg" },
-		},
+		update: { a1: { severity: "medium", title: "Sepsis candidate, bundle started" } },
 	},
 	{
-		label: "Johnson desaturates: Low becomes High",
-		vitals: { p2: { hr: 126, spo2: 81 } },
-		update: { a4: { severity: "high", title: "SpO₂ below 82%" } },
+		label: "Harris's PEEP differs from the order: a new High alert",
+		fire: [
+			{
+				id: "live-3",
+				patientId: "p9",
+				severity: "high",
+				title: "PEEP differs from the active order",
+				source: { kind: "ai", name: "Vent-Order Mismatch" },
+				recommendation: "Check the ventilator against the order.",
+				evidence: ["Ventilator PEEP 8 cmH₂O", "Active order: PEEP 10 cmH₂O (James Tan, 10:42)"],
+			},
+		],
 	},
 	{
-		label: "Harris's PEEP is corrected: High eases to Low",
-		update: { a5: { severity: "low", title: "PEEP corrected, confirm with the order" } },
+		label: "Thompson's pressor dose climbs again: Medium becomes High",
+		vitals: { p4: { hr: 110, systolic: 84, diastolic: 45, map: 58 } },
+		update: { "live-2": { severity: "high", title: "Norepinephrine up 3 steps in 1 h" } },
 	},
 	{
-		// Johnson is third in the first row by now.
-		label: "Johnson's SpO₂ recovers: the alert is resolved",
-		vitals: { p2: { hr: 104, spo2: 94 } },
-		resolve: ["a4"],
+		label: "Harris's PEEP is corrected: the alert is resolved",
+		resolve: ["live-3"],
 	},
 ];
 

@@ -48,9 +48,11 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * Hospital tabs, the My patients chip and the quick views filter the grid; cards are sorted by alert severity.
- * The live feed plays as on Monitoring (PRD SV-081): after 2, 3, 5 or 10 s, in turn, an alert fires, changes severity
- * or resolves. The hospital bar says what changed ("Live feed: …"), the live feed panel's queue follows, and so do the
- * cards' alert pills (`withFeedAlerts`), so a card moves to its new place. Then it loops.
+ * The live feed plays as on Monitoring (PRD SV-081): at 1.5 s, at 8 s, then every 15 to 30 s, an alert fires, changes
+ * severity or resolves. The hospital bar says what changed ("Live feed: …"), the live feed panel's queue follows, and so
+ * do the cards' alert pills (`withFeedAlerts`). The cards move to their new places at the grid's next re-sort: 2 s after
+ * the page opens, then every 15 to 30 s (`useSortCadence`). A resolve doesn't wait: the card says "Resolved" in place
+ * for a moment, then moves (Johnson, at 8 s). Then it loops.
  */
 export const Default: Story = {
 	render: (args) => <LiveCensus {...args} />,
@@ -61,7 +63,7 @@ export const Static: Story = {};
 
 /**
  * My patients: a chip like the quick views, off by default, so the grid starts with everyone. Pressed, it narrows the
- * grid to the user's own and the title reads "6 of 14 patients"; pressed again, everyone is back.
+ * grid to the user's own and the title reads "6 of 15 patients"; pressed again, everyone is back.
  */
 export const MyPatients: Story = {
 	play: async ({ canvas, userEvent }) => {
@@ -106,7 +108,7 @@ export const LiveFeed: Story = {
 		await expect(args.onOpenLiveFeed).toHaveBeenCalled();
 		const queue = within(panel);
 		await userEvent.click(queue.getAllByRole("button", { name: "Acknowledge" })[0]);
-		await expect(args.onAlertAction).toHaveBeenCalledWith("a2", { type: "acknowledge" });
+		await expect(args.onAlertAction).toHaveBeenCalledWith("a1", { type: "acknowledge" });
 		await expect(queue.getByText(/Acknowledged by you/)).toBeVisible();
 	},
 };

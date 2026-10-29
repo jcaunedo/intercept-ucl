@@ -421,6 +421,14 @@ const notesSpecs: Record<string, NotesSpec> = {
 		apPlan: "Magnesium 2 g. Echo. Start heparin per Dr. Petrova if no bleeding risk.",
 		plan: "Document code status today with her and her partner. Decide on anticoagulation with Dr. Petrova after the echo.",
 	},
+	p15: {
+		history: "74-year-old woman with hypertension and knee osteoarthritis on daily naproxen. Two days of black stools, then dizziness and a near faint at home. Hemoglobin 6.8 and HR 118 in the ED.",
+		admitPlan: "Admit to MICU. Two large-bore IVs, transfuse to hemoglobin over 7, pantoprazole bolus and infusion, urgent endoscopy. Hold naproxen and lisinopril.",
+		nursing: ["HR 102, BP 104/53. Second unit finished overnight. No melena for 6 h. Up to the chair with help; unsteady on her feet, bed alarm on.", 25],
+		events: "Endoscopy overnight: bleeding duodenal ulcer, clipped. 2 units given. Hemoglobin 6.8 to 7.6. HR 118 to 102.",
+		apPlan: "Repeat hemoglobin in 2 h. Pantoprazole infusion for 72 h. H. pylori stool test. Clear liquids if hemoglobin holds.",
+		plan: "Check the repeat hemoglobin; transfuse if it's under 7 or she bleeds again. Call GI with any new melena. Start clear liquids if it holds.",
+	},
 };
 
 const sampleNotesByPatient: Record<string, PatientNotes> = {

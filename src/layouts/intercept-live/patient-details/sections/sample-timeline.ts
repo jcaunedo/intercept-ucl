@@ -198,8 +198,6 @@ const millerTimeline: PatientTimeline = {
 		{ id: "e12", at: minutesAgo(85), kind: "care", label: "SpO₂ probe repositioned" },
 		{ id: "e13", at: minutesAgo(40), kind: "drip", label: "Norepinephrine 0.15 → 0.22 mcg/kg/min" },
 		{ id: "e14", at: minutesAgo(35), kind: "lab", label: "Lactate 4.1 mmol/L resulted" },
-		{ id: "e15", at: minutesAgo(11), kind: "alert", label: "SpO₂ below 90% · High" },
-		{ id: "e16", at: minutesAgo(6), kind: "alert", label: "MAP below 65 mmHg · Critical" },
 		{ id: "e17", at: minutesAgo(2), kind: "alert", label: "Sepsis candidate · Sepsis Sniffer" },
 	],
 };
@@ -496,7 +494,6 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[40, "lab", "Lactate 2.3 mmol/L resulted"],
 			[28, "drip", "Norepinephrine 0.09 → 0.12 mcg/kg/min"],
 			[25, "care", "Troponin I drawn"],
-			[24, "alert", "Norepinephrine up 2 steps in 1 h · Medium"],
 		],
 	}),
 
@@ -528,7 +525,6 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[300, "lab", "Potassium 3.2 mmol/L, magnesium 2.6 mg/dL resulted"],
 			[240, "ventilator", "FiO₂ 50 → 45%"],
 			[110, "lab", "ABG: pH 7.31, PaCO₂ 52 · lactate 2.4 mmol/L"],
-			[14, "alert", "SpO₂ not reporting · Medium"],
 		],
 	}),
 
@@ -635,7 +631,6 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[55, "lab", "Lactate 2.6 mmol/L resulted"],
 			[45, "care", "Ventilator circuit changed"],
 			[45, "ventilator", "PEEP 10 → 8 cmH₂O, order is 10"],
-			[18, "alert", "PEEP differs from the active order · High"],
 		],
 	}),
 
@@ -726,7 +721,6 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[300, "lab", "Sodium 134 mmol/L resulted"],
 			[120, "care", "Neuro check unchanged · NIHSS 9"],
 			[90, "lab", "Glucose 182 mg/dL resulted"],
-			[27, "alert", "RR not reporting · Low"],
 		],
 	}),
 
@@ -768,7 +762,6 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[250, "lab", "Lactate 2.6 mmol/L resulted"],
 			[245, "care", "ECMO flow 4.4 → 3.8 L/min"],
 			[240, "lab", "Creatinine 2.1 mg/dL, anti-Xa 0.42 resulted"],
-			[132, "alert", "Concern: lactate after ECMO flow change · Maria Ruiz"],
 			[130, "lab", "Lactate 3.1 mmol/L resulted"],
 			[90, "drip", "Norepinephrine 0.12 → 0.18 mcg/kg/min"],
 			[15, "care", "Repeat lactate drawn"],
@@ -799,6 +792,33 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[240, "lab", "Magnesium 1.7 mg/dL, potassium 3.6 mmol/L resulted"],
 			[200, "care", "Magnesium 2 g IV given"],
 			[120, "drip", "Diltiazem 15 → 10 mg/h"],
+		],
+	}),
+
+	// Hayes: admitted 17 h ago with an upper GI bleed. Two units and a clipped duodenal ulcer overnight; HR down from 118
+	// to 102 and hemoglobin up from 6.8 to 7.6.
+	p15: timeline({
+		span: 1020,
+		seed: 141,
+		hr: [[1020, 118], [600, 114], [400, 108], [0, 102]],
+		map: [[1020, 62], [500, 66], [0, 70]],
+		bp: [104, 53],
+		spo2: [[1020, 96], [0, 95]],
+		rr: [[1020, 22], [0, 18]],
+		temp: [[1000, 36.8], [780, 36.9], [540, 37.0], [300, 36.9], [60, 36.8]],
+		lanes: [
+			pump("Pantoprazole", "mg/h", [[1020, 0], [1000, 8]]),
+			labLane("Hemoglobin", "g/dL", [[600, 6.8], [120, 7.6]], { low: 7 }),
+		],
+		events: [
+			[1010, "care", "Pantoprazole 80 mg IV bolus"],
+			[1000, "drip", "Pantoprazole started at 8 mg/h"],
+			[980, "note", "Admission note signed"],
+			[600, "lab", "Hemoglobin 6.8 g/dL resulted"],
+			[580, "care", "Packed red cells, unit 1"],
+			[480, "care", "Upper endoscopy: duodenal ulcer clipped"],
+			[400, "care", "Packed red cells, unit 2"],
+			[120, "lab", "Hemoglobin 7.6 g/dL resulted"],
 		],
 	}),
 };

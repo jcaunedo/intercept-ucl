@@ -1,9 +1,9 @@
 import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 
-// Synthetic data (PRD MON-080): the Census's 14 patients on the monitoring panel, with live bedside values, and the
+// Synthetic data (PRD MON-080): the Census's 15 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
-// match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller, Johnson and
-// Walker (with alerts), Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and
+// match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller and Johnson
+// (with alerts), Walker, Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and
 // Whitfield no RR (Data gap).
 
 const sofa = "SOFA acuity score";
@@ -238,6 +238,22 @@ const monitoringPatients: MonitoringPatient[] = [
 		trajectory: { label: change, variant: "missing" },
 		vitals: { hr: 88, spo2: 97, systolic: 110, diastolic: 61, map: 77, rr: 17 },
 	},
+	{
+		id: "p15",
+		hospitalId: "mwh",
+		lastName: "Hayes",
+		firstName: "Margaret",
+		mrn: "00826154",
+		sex: "F",
+		age: 74,
+		hospital: "Mercy West Hospital",
+		unit: "MICU",
+		bed: "Bed 5",
+		acuity: { label: sofa, score: 6, level: "moderate" },
+		trajectory: { label: change, value: "−1", trend: "down" },
+		tags: [{ label: "Fall risk" }],
+		vitals: { hr: 102, spo2: 95, systolic: 104, diastolic: 53, map: 70, rr: 18 },
+	},
 ];
 
 // The last hour of each primary numeric, one point a minute, ending at the current value: a rising acuity drifts in
@@ -270,10 +286,9 @@ const sampleMonitoringPatients: MonitoringPatient[] = monitoringPatients.map((pa
 // Times are relative to when the sample loads, so ages ("6 min") and Overdue read the same in every session.
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
-// Ten alerts on eight patients. Six match the Census's pills: Miller Critical · 3, Johnson Low, Harris High, Thompson
-// Medium, Walker Medium, Anderson Low. Two are past their response target (Overdue): Miller's MAP and Harris's PEEP.
-// Walker's is a concern carried over from the night shift. A parameter that stops reporting is a System alert, not a
-// filter (Oct 27, 2026): Carter's SpO₂ and Whitfield's RR, which the Census sample doesn't carry yet.
+// Three alerts on three patients, as the Census's pills (Oct 29, 2026, user request: 1 Critical and 2 Low to start):
+// Miller's Sepsis candidate (Critical), Johnson's SpO₂ and Anderson's bed exit (Low). The live feed adds and changes the
+// rest (`sample-live-scenario.ts`).
 const sampleMonitoringAlerts: TriageAlert[] = [
 	{
 		id: "a1",
@@ -287,24 +302,6 @@ const sampleMonitoringAlerts: TriageAlert[] = [
 		evidence: ["Lactate 4.1 mmol/L, up from 2.2 at 08:10", "MAP 58 mmHg on norepinephrine 0.22", "Temp 38.9 °C · WBC 17.2"],
 	},
 	{
-		id: "a2",
-		patientId: "p1",
-		severity: "critical",
-		title: "MAP below 65 mmHg",
-		source: { kind: "rule", name: "Hemodynamics" },
-		firedAt: minutesAgo(6),
-		respondBy: minutesAgo(1),
-	},
-	{
-		id: "a3",
-		patientId: "p1",
-		severity: "high",
-		title: "SpO₂ below 90%",
-		source: { kind: "device", name: "Monitor" },
-		firedAt: minutesAgo(11),
-		respondBy: minutesAgo(-4),
-	},
-	{
 		id: "a4",
 		patientId: "p2",
 		severity: "low",
@@ -312,54 +309,6 @@ const sampleMonitoringAlerts: TriageAlert[] = [
 		source: { kind: "rule", name: "Oxygenation" },
 		firedAt: minutesAgo(9),
 		respondBy: minutesAgo(-51),
-	},
-	{
-		id: "a5",
-		patientId: "p9",
-		severity: "high",
-		title: "PEEP differs from the active order",
-		source: { kind: "ai", name: "Vent-Order Mismatch" },
-		firedAt: minutesAgo(18),
-		respondBy: minutesAgo(3),
-		recommendation: "Check the ventilator against the order.",
-		evidence: ["Ventilator PEEP 8 cmH₂O", "Active order: PEEP 10 cmH₂O (James Tan, 10:42)", "No setting change since 10:15"],
-	},
-	{
-		id: "a6",
-		patientId: "p4",
-		severity: "medium",
-		title: "Norepinephrine up 2 steps in 1 h",
-		source: { kind: "rule", name: "Vasopressors" },
-		firedAt: minutesAgo(24),
-		respondBy: minutesAgo(-6),
-	},
-	{
-		id: "a7",
-		patientId: "p13",
-		severity: "medium",
-		title: "Concern: lactate after ECMO flow change",
-		source: { kind: "manual", name: "Maria Ruiz" },
-		firedAt: minutesAgo(132),
-		carriedOver: true,
-		rationale: "Flow cut to 3.8 L/min at 05:30, lactate 2.6 → 3.1. Recheck at 08:00 and watch MAP.",
-	},
-	{
-		id: "a9",
-		patientId: "p5",
-		severity: "medium",
-		title: "SpO₂ not reporting",
-		source: { kind: "system", name: "Telemetry" },
-		firedAt: minutesAgo(14),
-		respondBy: minutesAgo(-16),
-	},
-	{
-		id: "a10",
-		patientId: "p12",
-		severity: "low",
-		title: "RR not reporting",
-		source: { kind: "system", name: "Telemetry" },
-		firedAt: minutesAgo(27),
-		respondBy: minutesAgo(-33),
 	},
 	{
 		id: "a8",

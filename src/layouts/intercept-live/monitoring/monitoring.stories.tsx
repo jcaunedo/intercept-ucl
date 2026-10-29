@@ -56,10 +56,11 @@ async function openLiveFeed(
 }
 
 /**
- * The screen with a simulated live feed (PRD SV-081): after 2, 3, 5 or 10 s, in turn, a patient's vitals and alerts
- * change; an alert's severity goes up or down (a Medium becomes High, a Critical eases to Medium), a new one fires,
- * another resolves. Sorted by Alert, the cards move to their new place (Reorder motion), highest severity first, and the
- * triage queue reorders with them; the hospital bar says what changed ("Live feed: …", the page's `liveFeed`). Then it loops. The hospital tabs, the patients pill and
+ * The screen with a simulated live feed (PRD SV-081): at 1.5 s, at 8 s, then every 15 to 30 s, a patient's vitals and
+ * alerts change; an alert's severity goes up or down (a Medium becomes High, a Critical eases to Medium), a new one
+ * fires, another resolves. Sorted by Alert, the cards move to their new place (Reorder motion) at the panel's next
+ * re-sort (2 s after the page opens, then every 15 to 30 s; a resolve moves its card at once, after a moment saying
+ * "Resolved"), highest severity first, and the triage queue reorders right away; the hospital bar says what changed ("Live feed: …", the page's `liveFeed`). Then it loops. The hospital tabs, the patients pill and
  * Unit narrow the panel's scope; the queue always shows every alert on it.
  * ⚠️ Cards moving on their own is what PRD SV-013 rules out ("Panel order changed · Update"); this shows the live
  * alternative for comparison (SV-OD-05).
@@ -114,7 +115,7 @@ export const AcknowledgeAlert: Story = {
 	play: async ({ args, canvas, userEvent }) => {
 		const queue = await openLiveFeed(canvas, userEvent);
 		await userEvent.click(queue.getAllByRole("button", { name: "Acknowledge" })[0]);
-		await expect(args.onAlertAction).toHaveBeenCalledWith("a2", { type: "acknowledge" });
+		await expect(args.onAlertAction).toHaveBeenCalledWith("a1", { type: "acknowledge" });
 		await expect(queue.getByText(/Acknowledged by you/)).toBeVisible();
 	},
 };
@@ -165,7 +166,7 @@ export const LiveFeedPanel: Story = {
 		await expect(link).toHaveAttribute("aria-expanded", "false");
 		const panel = await openLiveFeed(canvas, userEvent);
 		await expect(link).toHaveAttribute("aria-expanded", "true");
-		await expect(panel.getByRole("tab", { name: /Active/ })).toHaveTextContent("10");
+		await expect(panel.getByRole("tab", { name: /Active/ })).toHaveTextContent("3");
 		await expect(panel.getByRole("separator", { name: "Resize Live feed" })).toBeInTheDocument();
 		await userEvent.click(panel.getByRole("button", { name: "Close Live feed" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Live feed" })).not.toBeInTheDocument());

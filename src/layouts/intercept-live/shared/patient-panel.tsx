@@ -203,30 +203,146 @@ function useSortPause() {
 	return { paused: hovered || focused || !shown, pauseProps };
 }
 
+// Seconds before the first re-sort after the page opens, and the range each later gap is drawn from (Oct 29, 2026).
+const firstSortDelay = 2;
+const sortGap = [15, 30] as const;
+
 /**
- * The patients in the order they had when the pause began, while it lasts; their values keep updating. A patient who
- * leaves just drops out; one who joins (a filter changed) re-sorts everyone at once. When the pause ends, the patients
- * take their new order, and the cards move there (Reorder).
+ * When the panel re-sorts: once `firstSortDelay` after the page opens, then after a random gap within `sortGap`, so
+ * cards move now and then rather than on every data change. A re-sort that comes due while the order is held (`paused`)
+ * waits for the pause to end. `sorts` counts the re-sorts that have run; each new count lets the patients take their
+ * order. `sortNow` re-sorts without waiting for the gap (still not while paused), and the next gap starts from there.
  */
-function usePausedOrder<Patient extends { id: string }>(patients: Patient[], paused: boolean): Patient[] {
+function useSortCadence(paused: boolean) {
+	const [sorts, setSorts] = React.useState(0);
+	const [due, setDue] = React.useState(false);
+	const sortNow = React.useCallback(() => setDue(true), []);
+
+	React.useEffect(() => {
+		if (due) return;
+		const seconds = sorts === 0 ? firstSortDelay : sortGap[0] + Math.random() * (sortGap[1] - sortGap[0]);
+		const timer = window.setTimeout(() => setDue(true), seconds * 1000);
+		return () => window.clearTimeout(timer);
+	}, [sorts, due]);
+
+	React.useEffect(() => {
+		if (!due || paused) return;
+		setDue(false);
+		setSorts((current) => current + 1);
+	}, [due, paused]);
+
+	return { sorts, sortNow };
+}
+
+type AlertSeverity = "critical" | "high" | "medium" | "low";
+
+const isSeverity = (variant: PatientCardAlertVariant | undefined): variant is AlertSeverity =>
+	variant === "critical" || variant === "high" || variant === "medium" || variant === "low";
+
+// How long a card says "Resolved" in its old place (its ring blinks green once meanwhile) after its last alert resolves,
+// before it moves.
+const resolvedPillMs = 2000;
+// The move (`reorderSpring`, about `deliberate`), then the hold after it lands (MOTION.md Urgency), so the pill is still
+// there when the card lands and fades out (`resolvedFadeTransition`) `resolvedHold` later.
+const resolvedMoveMs = (motionDuration.deliberate + motionDuration.resolvedHold) * 1000;
+
+type ResolvedHold = { severity: AlertSeverity; moved: boolean };
+
+/**
+ * Patients whose last active alert just resolved, by id, with the severity they had: held in place for `resolvedPillMs`
+ * showing "Resolved", then `moved` to their new place still showing it, then released once they've landed and held,
+ * when the pill fades out. A resolve doesn't wait for the cadence (Oct 29, 2026): `onMove` re-sorts at once, so the
+ * card relocates as soon as its moment in place is over. Covers alerts resolved by the clinician, by the feed, or that
+ * drop out of it.
+ */
+function useResolvedHolds(patients: Pick<PanelPatient, "id" | "alert">[], onMove: () => void) {
+	const [holds, setHolds] = React.useState<Record<string, ResolvedHold>>({});
+	const previous = React.useRef<Record<string, AlertSeverity> | null>(null);
+	const timers = React.useRef<number[]>([]);
+	const open: Record<string, AlertSeverity> = {};
+	for (const patient of patients) {
+		if (isSeverity(patient.alert?.variant)) open[patient.id] = patient.alert.variant;
+	}
+	const openKey = JSON.stringify(open);
+
+	React.useEffect(() => {
+		const before = previous.current;
+		previous.current = open;
+		if (!before) return;
+		const resolved = Object.keys(before).filter((id) => !open[id]);
+		if (!resolved.length) return;
+		const update = (change: (hold: ResolvedHold) => ResolvedHold | null) =>
+			setHolds((current) => {
+				const next = { ...current };
+				for (const id of resolved) {
+					const changed = next[id] ? change(next[id]) : null;
+					if (changed) next[id] = changed;
+					else delete next[id];
+				}
+				return next;
+			});
+		setHolds((current) => ({
+			...current,
+			...Object.fromEntries(resolved.map((id) => [id, { severity: before[id], moved: false }])),
+		}));
+		timers.current.push(
+			window.setTimeout(() => {
+				update((hold) => ({ ...hold, moved: true }));
+				onMove();
+			}, resolvedPillMs),
+			window.setTimeout(() => update(() => null), resolvedPillMs + resolvedMoveMs),
+		);
+		// Keyed on the open alerts' contents, not the object (a new one every render).
+	}, [openKey]);
+
+	React.useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
+
+	return holds;
+}
+
+/**
+ * The patients as they sort: one whose last alert just resolved keeps its severity until it moves, so it holds its place
+ * through any re-sort meanwhile. The held severity counts no alerts (count 0), so the counters already drop it.
+ */
+const withResolvedHolds = <Patient extends PanelPatient>(patients: Patient[], holds: Record<string, ResolvedHold>) =>
+	patients.map((patient) => {
+		const hold = holds[patient.id];
+		return hold && !hold.moved && !patient.alert ? { ...patient, alert: { variant: hold.severity, count: 0 } } : patient;
+	});
+
+/** The pill a card shows: "Resolved" from the resolve until it has landed, otherwise its own (`ownAlert`). */
+const shownAlert = (ownAlert: PanelPatient["alert"], hold: ResolvedHold | undefined): PanelPatient["alert"] =>
+	hold && !ownAlert ? { variant: "resolved" } : ownAlert;
+
+/**
+ * The patients in the order they took at the last re-sort (`sorts`, from useSortCadence); their values keep updating.
+ * A patient who leaves just drops out; one who joins (a filter changed) or a new sort order (`orderKey`) re-sorts
+ * everyone at once. At each re-sort the patients take their new order, and the cards move there (Reorder).
+ */
+function useHeldOrder<Patient extends { id: string }>(patients: Patient[], sorts: number, orderKey: string): Patient[] {
 	const order = React.useRef<string[]>([]);
+	const takenAt = React.useRef<{ sorts: number; orderKey: string } | null>(null);
 	const position = new Map(order.current.map((id, index) => [id, index]));
-	if (paused && patients.every((patient) => position.has(patient.id))) {
+	const current = takenAt.current?.sorts === sorts && takenAt.current.orderKey === orderKey;
+	if (current && patients.every((patient) => position.has(patient.id))) {
 		return [...patients].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
 	}
 	order.current = patients.map((patient) => patient.id);
+	takenAt.current = { sorts, orderKey };
 	return patients;
 }
 
 /**
  * A "Resolved" pill stays while its card moves to its new place, then fades `motionDuration.resolvedHold` after the
- * card lands (MOTION.md Urgency: the pill fades on `resolvedFadeTransition`). The hold doesn't start while the order is
- * held, since the card hasn't moved yet. A patient whose alert stops being resolved (a new one fired) shows the next
- * "Resolved" again.
+ * card lands (MOTION.md Urgency: the pill fades on `resolvedFadeTransition`). The card moves at the first re-sort
+ * (`sorts`) after its alert resolved, so the hold doesn't start before that, nor while the order is held. A patient
+ * whose alert stops being resolved (a new one fired) shows the next "Resolved" again.
  */
-function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient[], paused: boolean): Patient[] {
+function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient[], paused: boolean, sorts: number): Patient[] {
 	const [faded, setFaded] = React.useState<ReadonlySet<string>>(() => new Set());
 	const timers = React.useRef(new Map<string, number>());
+	// The re-sort count when each pill turned "Resolved".
+	const resolvedAt = React.useRef(new Map<string, number>());
 	const resolvedIds = patients.filter((patient) => patient.alert?.variant === "resolved").map((patient) => patient.id);
 	const resolvedKey = resolvedIds.join();
 
@@ -238,6 +354,8 @@ function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient
 				timers.current.delete(id);
 			}
 		}
+		for (const id of resolvedAt.current.keys()) if (!resolved.has(id)) resolvedAt.current.delete(id);
+		for (const id of resolved) if (!resolvedAt.current.has(id)) resolvedAt.current.set(id, sorts);
 		if ([...faded].some((id) => !resolved.has(id))) {
 			setFaded(new Set([...faded].filter((id) => resolved.has(id))));
 			return;
@@ -246,7 +364,7 @@ function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient
 		// The card's move (Reorder settles within `slow`), then the hold.
 		const delay = (motionDuration.slow + motionDuration.resolvedHold) * 1000;
 		for (const id of resolved) {
-			if (faded.has(id) || timers.current.has(id)) continue;
+			if (faded.has(id) || timers.current.has(id) || resolvedAt.current.get(id) === sorts) continue;
 			timers.current.set(
 				id,
 				window.setTimeout(() => {
@@ -255,7 +373,7 @@ function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient
 				}, delay),
 			);
 		}
-	}, [resolvedKey, paused, faded]);
+	}, [resolvedKey, paused, faded, sorts]);
 
 	React.useEffect(() => {
 		const pending = timers.current;
@@ -641,9 +759,13 @@ export {
 	PanelGrid,
 	QuickViewChips,
 	sortOrderById,
+	shownAlert,
 	useFadingResolvedAlerts,
-	usePausedOrder,
+	useHeldOrder,
+	useResolvedHolds,
+	useSortCadence,
 	useSortPause,
+	withResolvedHolds,
 	SortSelect,
 	UnitSelect,
 	type PanelHospital,

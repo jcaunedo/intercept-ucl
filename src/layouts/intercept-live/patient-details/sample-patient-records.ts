@@ -657,6 +657,35 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			...interceptTeam,
 		],
 	},
+	{
+		id: "p15",
+		weight: "61 kg",
+		brief: {
+			text: "Admitted 18 h ago with an upper GI bleed from a duodenal ulcer, clipped at endoscopy overnight. Hemoglobin is 7.6 after 2 units, up from 6.8; a repeat is due in 2 h. HR is down from 118 to 102 and there's been no new melena for 6 h.",
+			sourceCount: 14,
+			updatedAt: minutesAgo(30),
+		},
+		codeStatus: "Full code",
+		allergies: ["Codeine"],
+		diagnosis: "Upper GI bleed from a duodenal ulcer, after endoscopic clipping",
+		problems: ["Acute blood loss anemia", "Hypertension", "Osteoarthritis"],
+		admittedAt: hoursAgo(18),
+		admittedFrom: "Emergency department",
+		icuAdmittedAt: hoursAgo(17),
+		ventilator: charted("Oxygen", 60, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
+		infusions: [{ drug: "Pantoprazole", rate: "8 mg/h", updatedAt: minutesAgo(3) }],
+		labs: [
+			lab("Hemoglobin", "7.6", "g/dL", 120, "low", ["6.8", 600]),
+			lab("BUN", "48", "mg/dL", 120, "high", ["56", 600]),
+			lab("Creatinine", "1.1", "mg/dL", 120, "high", ["1.3", 600]),
+			lab("Potassium", "4.0", "mmol/L", 120, undefined, ["4.2", 600]),
+			lab("INR", "1.1", "", 600, undefined),
+		],
+		careTeam: [
+			...hospitalStaff("Mercy West Hospital", ["Aisha Bello", "AB", 7, "online"], ["Marcus Lee", "ML", 2, "online"]),
+			...interceptTeam,
+		],
+	},
 ];
 
 export { samplePatientBaseRecords };

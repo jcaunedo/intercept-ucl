@@ -43,7 +43,7 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 	};
 
 /**
- * Heads a patient's page: photo (a rounded square), name and top alert, then acuity, its 24h change, demographics, MRN and location on one
+ * Heads a patient's page: photo (a circle), name and top alert, then acuity, its 24h change, demographics, MRN and location on one
  * line, then badges (safety and organ support). An optional slot on the right takes actions.
  *
  * Figma: [intercept.ds › Patient Header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1191-3147)
@@ -79,11 +79,10 @@ function PatientHeader({
 	return (
 		<div data-slot='patient-header' className={cn("flex items-center gap-4 px-6", className)} {...props}>
 			<div className='flex min-w-0 flex-1 items-start gap-4'>
-				{/* 64px, above Avatar's sizes, and a rounded square rather than Avatar's circle (the root, the photo and the
-				    initials each carry the radius); the initials keep Avatar's proportion (11px at 32px). */}
-				<Avatar aria-hidden='true' className='size-16 rounded-avatar-lg'>
-					{photo ? <AvatarImage src={photo} alt='' className='rounded-avatar-lg' /> : null}
-					<AvatarFallback tone={tone} className='rounded-avatar-lg text-[22px]'>
+				{/* 64px, above Avatar's sizes, and Avatar's circle; the initials keep Avatar's proportion (11px at 32px). */}
+				<Avatar aria-hidden='true' className='size-16'>
+					{photo ? <AvatarImage src={photo} alt='' /> : null}
+					<AvatarFallback tone={tone} className='text-[22px]'>
 						{initials}
 					</AvatarFallback>
 				</Avatar>

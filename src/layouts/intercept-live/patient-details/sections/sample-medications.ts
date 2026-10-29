@@ -494,6 +494,15 @@ const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 			prn("Melatonin", "3 mg", "PO", "Nightly as needed", "Sleep"),
 		],
 	),
+	// Hayes: GI bleed on daily naproxen, so acetaminophen for her knees and no NSAIDs.
+	p15: medicationsFor(
+		"p15",
+		[scheduled("Acetaminophen", "650 mg", "PO", every(6), 150, "Knee pain, in place of naproxen")],
+		[
+			prn("Ondansetron", "4 mg", "IV push", "Every 6 h as needed", "Nausea", 300, 1),
+			prn("Melatonin", "3 mg", "PO", "Nightly as needed", "Sleep"),
+		],
+	),
 };
 
 export { sampleMedicationsByPatient };

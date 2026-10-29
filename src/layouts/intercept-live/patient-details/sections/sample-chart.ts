@@ -560,6 +560,20 @@ const chartSpecs: Record<string, ChartSpec> = {
 			report("Echocardiogram, transthoracic", 2, "Normal left ventricular size. EF about 50%.", "Normal left ventricular size, low-normal function in atrial fibrillation. Left atrium mildly enlarged. No significant valve disease.", "Kofi Mensah, MD, Cardiology", "preliminary"),
 		],
 	},
+	p15: {
+		onsets: [18, "2012", "2016"],
+		medical: ["Hypertension", "Osteoarthritis of both knees · daily naproxen"],
+		surgical: ["Right total knee replacement, 2020", "Cholecystectomy, 1998"],
+		social: ["Former smoker, quit 1995", "No alcohol", "Widowed, lives alone", "Retired librarian"],
+		home: [
+			["Naproxen", "500 mg by mouth twice a day", "held"],
+			["Lisinopril", "10 mg by mouth daily", "held"],
+			["Acetaminophen", "500 mg by mouth as needed", "continued"],
+		],
+		extras: [["Sodium", "137"], ["Glucose", "128"], ["WBC", "10.4"], ["Platelets", "212"], ["Albumin", "3.1"]],
+		cultures: [],
+		imaging: [report("Chest X-ray, portable", 17, "No acute findings.", "Normal heart size. Lungs clear. No free air under the diaphragm.", mwh)],
+	},
 };
 
 const sampleChartByPatient: Record<string, PatientChart> = Object.fromEntries(

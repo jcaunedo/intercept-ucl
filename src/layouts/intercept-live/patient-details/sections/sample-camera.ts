@@ -171,6 +171,9 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 	p14: camera("p14", "cvmc", "Bed 9", { "Lucy Nguyen": "On another patient", "Elena Petrova": "At the bedside" }, [
 		["look-in", "James Tan", 95, 4],
 	]),
+	p15: camera("p15", "mwh", "Bed 5", { "Aisha Bello": "At the bedside", "Marcus Lee": "On another patient" }, [
+		["look-in", "James Tan", 60, 3],
+	]),
 };
 
 export { sampleCameraByPatient };

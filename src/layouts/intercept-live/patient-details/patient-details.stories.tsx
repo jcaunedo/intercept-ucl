@@ -82,7 +82,7 @@ export const BackToCensus: Story = {
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		const breadcrumb = within(canvas.getByRole("navigation", { name: "Breadcrumb" }));
 		await userEvent.click(breadcrumb.getByRole("button", { name: "Census" }));
-		await expect(await canvas.findByRole("heading", { level: 1, name: /14 patients/ })).toBeVisible();
+		await expect(await canvas.findByRole("heading", { level: 1, name: /15 patients/ })).toBeVisible();
 	},
 };
 

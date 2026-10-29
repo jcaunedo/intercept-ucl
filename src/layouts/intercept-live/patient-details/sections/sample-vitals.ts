@@ -426,6 +426,21 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		temps: [36.9, 37.0],
 		lastTemp: 60,
 	}),
+	// Hayes: upper GI bleed, HR settling from 118 as she's transfused.
+	p15: buildVitals({
+		seed: 15,
+		hours: 17,
+		hr: [118, 102],
+		systolic: [96, 104],
+		diastolic: [46, 53],
+		spo2: [96, 95],
+		rr: [22, 18],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Aisha Bello",
+		temps: [36.8, 36.9, 37.0, 36.9, 36.8],
+		lastTemp: 60,
+	}),
 };
 
 export { sampleVitalsByPatient };

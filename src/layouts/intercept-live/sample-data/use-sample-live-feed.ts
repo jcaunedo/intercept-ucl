@@ -10,12 +10,17 @@ import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/
 // Story-only helpers: they play the scripted live feed into the Census and Monitoring stories. Apps get the same data
 // from their APIs instead.
 
-// Seconds between feed changes, in turn: an uneven rhythm, as a real feed has, rather than a steady beat.
-const liveFeedDelays = [2, 3, 5, 10];
+// When the feed changes (Oct 29, 2026): the first change just before the panels' first re-sort (2 s), so it shows in the
+// order at once; the first resolve at 8 s; then a random 15 to 30 s between changes, as the panels' re-sorts, so the
+// story stays calm and uneven, as a real feed is.
+const firstChanges = [1.5, 6.5];
+const changeGap = [15, 30] as const;
+const nextChangeIn = (tick: number) =>
+	tick < firstChanges.length ? firstChanges[tick] : changeGap[0] + Math.random() * (changeGap[1] - changeGap[0]);
 
 /**
- * Plays `sampleLiveScenario`, one step after each delay in `liveFeedDelays` (2, 3, 5, 10 s, then again), and starts over
- * after the last step: vitals change, alerts change severity, fire and resolve. A resolved alert leaves the feed (the
+ * Plays `sampleLiveScenario`, one step at a time (at 1.5 s, at 8 s, then every 15 to 30 s), and starts over after the
+ * last step: vitals change, alerts change severity, fire and resolve. A resolved alert leaves the feed (the
  * feed resolved it, not the clinician). `caption` is what the last step changed, for the hospital bar's Live feed.
  */
 function useSampleLiveFeed() {
@@ -27,7 +32,7 @@ function useSampleLiveFeed() {
 		const timer = window.setTimeout(() => {
 			setStep((current) => (current + 1) % (sampleLiveScenario.length + 1));
 			setTick((current) => current + 1);
-		}, liveFeedDelays[tick % liveFeedDelays.length] * 1000);
+		}, nextChangeIn(tick) * 1000);
 		return () => window.clearTimeout(timer);
 	}, [tick]);
 
