@@ -5,7 +5,7 @@ import { Badge } from "./badge";
 
 const variants = ["default", "secondary", "neutral", "destructive", "outline", "ghost", "link"] as const;
 const tones = ["blue", "green", "sky", "purple", "red", "yellow", "amber"] as const;
-const sizes = ["xs", "xs-alt", "sm", "md", "lg"] as const;
+const sizes = ["xs", "sm", "md", "lg"] as const;
 
 const meta = {
 	title: "Data Display/Badge",
@@ -93,7 +93,7 @@ export const WithCount: Story = {
 
 /**
  * A trailing icon as the last child (Figma's Icon R, hidden by default there), here with a count: label, count, then the
- * icon. Sized like the leading icon: 12px at xs and xs-alt, 14px at sm and lg, 16px at md.
+ * icon. Sized like the leading icon: 12px at xs, 14px at sm and lg, 16px at md.
  */
 export const WithTrailingIcon: Story = {
 	render: () => (
@@ -121,7 +121,7 @@ export const AsLink: Story = {
 	),
 };
 
-/** xs (20px), xs-alt (24px), sm (32px), md (36px, the default) and lg (40px). */
+/** xs (24px), sm (32px), md (36px, the default) and lg (40px). `xs-alt` is a deprecated alias of xs. */
 export const Sizes: Story = {
 	render: () => (
 		<div className='flex items-center gap-4'>

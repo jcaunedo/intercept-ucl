@@ -21,12 +21,15 @@ import {
 	sortOrderById,
 	SortSelect,
 	UnitSelect,
+	usePausedOrder,
+	useSortPause,
 	type PanelHospital,
 	type PanelPatient,
 	type PatientScope,
 	type QuickView,
 	type SortOrderId,
 } from "../shared/patient-panel";
+import { usePatientNavigation } from "../patient-navigation";
 import {
 	compareTriageAlerts,
 	isOpenAlert,
@@ -211,6 +214,22 @@ function MonitoringPanel({
 	// The live feed panel, right of the canvas: the triage queue.
 	const [feedOpen, setFeedOpen] = React.useState(false);
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
+	const { paused, pauseProps } = useSortPause();
+	// Inside the shell, a card or a list row opens the patient's details over the page, stepping through the panel as it's
+	// shown now; an alert in the live feed opens them on their own (PRD PD-015).
+	const navigation = usePatientNavigation();
+	const openPatient = (patientId: string) => {
+		navigation?.openPatient(
+			patientId,
+			visible.map((patient) => patient.id),
+		);
+		onOpenPatient?.(patientId);
+	};
+	const openAlertPatient = (patientId: string) => {
+		navigation?.openPatient(patientId);
+		onOpenPatient?.(patientId);
+	};
+	const canOpenPatient = Boolean(navigation || onOpenPatient);
 	const withAlerts = patientsProp.map((patient) => ({
 		...patient,
 		alert: alertPill(alerts.filter((alert) => alert.patientId === patient.id)),
@@ -240,7 +259,9 @@ function MonitoringPanel({
 	const filtered = (scoped: PanelMonitoringPatient[]) =>
 		statusFilter ? located(scoped).filter((patient) => statusFilter.ids.has(patient.id)) : located(scoped);
 	const assigned = scope === "mine" ? patients.filter((patient) => patient.mine) : patients;
-	const visible = [...filtered(assigned)].sort(sortOrderById(sortBy).compare);
+	// The panel holds its order while the pointer is over it (or keyboard focus is in it), so cards and rows don't move
+	// under the clinician's hand; it re-sorts when they leave.
+	const visible = usePausedOrder([...filtered(assigned)].sort(sortOrderById(sortBy).compare), paused);
 	const everyoneCount = scope === "mine" ? filtered(patients).length : visible.length;
 
 	const pressStatusFilter = (id: string | null) => {
@@ -331,13 +352,15 @@ function MonitoringPanel({
 
 					{density === "list" ? (
 						<MonitoringList
+							{...pauseProps}
 							patients={visible.map((patient) => ({ ...patient, alert: shownAlert(patient) }))}
 							hospitals={hospitals}
 							grouped={sortBy === "location"}
-							onOpenPatient={onOpenPatient}
+							onOpenPatient={canOpenPatient ? openPatient : undefined}
 						/>
 					) : (
 						<PanelGrid
+							{...pauseProps}
 							patients={visible}
 							hospitals={hospitals}
 							grouped={sortBy === "location"}
@@ -358,7 +381,7 @@ function MonitoringPanel({
 									plot={plot}
 									expanded={expandedIds.has(id)}
 									onExpandedChange={(expanded) => setExpanded(id, expanded)}
-									onOpen={onOpenPatient ? () => onOpenPatient(id) : undefined}
+									onOpen={canOpenPatient ? () => openPatient(id) : undefined}
 								/>
 							)}
 						/>
@@ -392,7 +415,7 @@ function MonitoringPanel({
 				alerts={alerts}
 				patients={patients}
 				escalationTargets={escalationTargets}
-				onOpenPatient={onOpenPatient}
+				onOpenPatient={canOpenPatient ? openAlertPatient : undefined}
 				onAlertAction={handleAlertAction}
 			/>
 		</div>

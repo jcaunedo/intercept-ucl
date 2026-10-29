@@ -34,8 +34,8 @@ function HospitalSectionHeader({
 }: HospitalSectionHeaderProps) {
 	return (
 		<div data-slot='hospital-section-header' className={cn("flex items-center gap-3", className)} {...props}>
-			<span aria-hidden='true' className='grid shrink-0 place-items-center rounded-lg bg-background-subtle p-2.5'>
-				<Icon className='size-6 text-icon' />
+			<span aria-hidden='true' className='grid shrink-0 place-items-center rounded-[7px] bg-foreground p-[9px]'>
+				<Icon className='size-[22px] text-background' />
 			</span>
 			<div className='flex min-w-0 flex-col whitespace-nowrap'>
 				<Heading className='truncate text-xl/6 font-bold text-foreground'>{name}</Heading>

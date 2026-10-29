@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ArrowRightLeftIcon, FilePenLineIcon, LinkIcon } from "lucide-react";
 import { fn } from "storybook/test";
 
 import samplePhoto1 from "@/components/data-display/avatar/images/sample-photo-1.png";
@@ -76,7 +77,40 @@ export const LongContent: Story = {
 	},
 };
 
-/** Every state the header has: photo and initials avatars, one and many messages, short and long content. */
+const patientArgs = {
+	variant: "patient",
+	sourcePage: "Census",
+	patientName: "Carter, Ellen",
+	onBack: fn(),
+	onToggleAskIntercept: fn(),
+	onTogglePatientList: fn(),
+	onRaiseConcern: fn(),
+	onHuddleTeam: fn(),
+	onEscalate: fn(),
+	moreActions: [
+		{ label: "New note", icon: FilePenLineIcon, onSelect: fn() },
+		{ label: "Prepare handoff", icon: ArrowRightLeftIcon, onSelect: fn() },
+		{ label: "Copy link", icon: LinkIcon, onSelect: fn() },
+	],
+} as const;
+
+/**
+ * On a patient's page: Ask Intercept and the patient list (toggles, shown when the app handles them), then a breadcrumb
+ * back to where the user came from; Raise concern, Huddle team, Escalate, Theme and "…".
+ */
+export const PatientContext: Story = {
+	render: (args) => (
+		<AppHeader
+			{...patientArgs}
+			onToggleTheme={args.onToggleTheme}
+			theme={args.theme}
+			compact={args.compact}
+		/>
+	),
+};
+
+/** Every state the header has: photo and initials avatars, one and many messages, short and long content, and the
+ * patient variant. */
 export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-6'>
@@ -84,6 +118,7 @@ export const AllVariants: Story = {
 			<AppHeader {...args} {...InitialsOnly.args} />
 			<AppHeader {...args} {...OneMessage.args} />
 			<AppHeader {...args} {...LongContent.args} />
+			<AppHeader {...patientArgs} />
 		</div>
 	),
 };

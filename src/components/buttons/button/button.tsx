@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 // The md sizes, shared with their deprecated aliases (`default`, `icon`) so the two never drift apart. md follows
-// intercept.ds Button lg · 36: 10px radius, 14px semibold label, 6px between icon and label, 14px to the label's side
+// intercept.ds Button lg · 36: 12px radius, 14px semibold label, 6px between icon and label, 14px to the label's side
 // and 10px to an icon's (the outline variant's 1px border is inside those, see compoundVariants).
 const mdSize = "h-9 gap-1.5 rounded-button-md px-3.5 font-semibold has-[>svg]:pl-2.5";
 const iconMdSize = "size-9 rounded-button-md";
@@ -16,6 +16,9 @@ const buttonVariants = cva(
 		variants: {
 			variant: {
 				default: "bg-primary text-primary-foreground hover:bg-primary/90",
+				// Solid · Neutral: a dark fill for strong actions that aren't the page's brand action. The label is
+				// `neutral-foreground`, which turns dark with the fill in dark mode.
+				neutral: "bg-neutral text-neutral-foreground hover:bg-neutral/90",
 				destructive:
 					"bg-destructive text-destructive-foreground hover:bg-destructive/90",
 				outline:

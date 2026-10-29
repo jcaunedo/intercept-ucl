@@ -8,8 +8,9 @@ import { Typography } from "@/components/typography/typography";
 import { enterTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-// A panel beside the canvas, for the shell's side tools: Ask Intercept Live on the left, the Monitoring live feed on
-// the right. Figma draws only the chat ("Chat open", `129:14814`); the live feed panel follows it.
+// A panel beside the canvas, for the shell's side tools: Ask Intercept Live and the patient list on the left, the
+// Monitoring live feed on the right. Figma draws only the chat (intercept.ds `Chat`, `1200:1431`; Intercept-Live "Chat
+// open", `129:14814`); the other panels follow it.
 
 /** A side panel's default width, Figma's chat width; the resize handle keeps it between the min and max. */
 const sidePanelWidth = { default: 400, min: 320, max: 720 } as const;
@@ -132,6 +133,7 @@ function SidePanel({
 	onOpenChange,
 	width,
 	onWidthChange,
+	description,
 	className,
 	children,
 }: {
@@ -139,6 +141,8 @@ function SidePanel({
 	id: string;
 	side: SidePanelSide;
 	title: string;
+	/** A line under the title, e.g. what the panel is for. */
+	description?: React.ReactNode;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	width: number;
@@ -180,21 +184,31 @@ function SidePanel({
 					{/* At the panel's width, so the content doesn't reflow while the panel opens or closes. A right panel's
 					    content keeps to its right edge, so it slides in with the edge. */}
 					<div className={cn("absolute inset-y-0 flex flex-col", side === "left" ? "left-0" : "right-0")} style={{ width }}>
-						<div className='flex shrink-0 items-center justify-between gap-2 px-6 py-5'>
-							<Typography
-								ref={headingRef}
-								id={`${id}-title`}
-								as='h2'
-								size='lg'
-								weight='semibold'
-								tabIndex={-1}
-								className='outline-none'
-							>
-								{title}
-							</Typography>
-							<Button variant='ghost' size='icon-md' aria-label={`Close ${title}`} onClick={() => onOpenChange(false)}>
-								<XIcon />
-							</Button>
+						{/* intercept.ds Chat's header (`1200:1397`): every side panel follows it. 14px on top centers its row with the app header's. */}
+						<div className='flex shrink-0 flex-col gap-4 px-5 pt-[14px] pb-4'>
+							<div className='flex items-center justify-between gap-2'>
+								<Typography
+									ref={headingRef}
+									id={`${id}-title`}
+									as='h2'
+									size='base'
+									weight='medium'
+									tabIndex={-1}
+									className='outline-none'
+								>
+									{title}
+								</Typography>
+								<Button
+									variant='ghost'
+									size='icon-sm'
+									aria-label={`Close ${title}`}
+									onClick={() => onOpenChange(false)}
+									className='rounded-button-md'
+								>
+									<XIcon />
+								</Button>
+							</div>
+							{description ? <p className='pr-10 text-sm text-foreground'>{description}</p> : null}
 						</div>
 						{children}
 					</div>

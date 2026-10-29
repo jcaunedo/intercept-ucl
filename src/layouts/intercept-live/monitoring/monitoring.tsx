@@ -1,5 +1,7 @@
 import { CensusPanel, type CensusPatient } from "../census/census-panel";
-import { InterceptLive, type InterceptLivePage, type InterceptLiveProps } from "../intercept-live";
+import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
+import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
+import { useAddressedAlerts } from "../shared/live-feed";
 import {
 	MonitoringPanel,
 	type EscalationTarget,
@@ -18,6 +20,12 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		onPatientActions?: (patientId: string) => void;
 		/** The page shown first. The Sidebar switches between Monitoring, the Census and the pages that aren't built. */
 		defaultPage?: InterceptLivePage;
+		/** What's known about each patient beyond the card, for their details page. A patient without one shows the card's. */
+		patientRecords?: PatientRecord[];
+		/** A patient's details opened first, over the default page. */
+		defaultPatient?: OpenPatient;
+		/** An action in a patient's details header (Look in, Message, Escalate…). */
+		onPatientDetailsAction?: (patientId: string, action: PatientAction) => void;
 	};
 
 /**
@@ -28,7 +36,7 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 function Monitoring({
 	hospitals,
 	patients,
-	alerts,
+	alerts: alertsProp = [],
 	escalationTargets,
 	onAlertAction,
 	liveFeed,
@@ -37,12 +45,30 @@ function Monitoring({
 	onOpenPatient,
 	onPatientActions,
 	defaultPage = "Monitoring",
+	patientRecords,
+	defaultPatient,
+	onPatientDetailsAction,
 	...shell
 }: MonitoringProps) {
+	// Alert actions apply here, above the pages, so one taken on a patient's details shows on Monitoring and the Census.
+	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
+
 	return (
 		<InterceptLive
 			{...shell}
 			defaultPage={defaultPage}
+			defaultPatient={defaultPatient}
+			renderPatientDetails={(patientId, stepper) =>
+				patientDetailsView(patientId, stepper, {
+					patients: censusPatients,
+					monitoringPatients: patients,
+					records: patientRecords,
+					alerts,
+					escalationTargets,
+					onAlertAction: handleAlertAction,
+					onAction: onPatientDetailsAction,
+				})
+			}
 			pages={{
 				Monitoring: (
 					<MonitoringPanel
@@ -51,7 +77,7 @@ function Monitoring({
 						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onOpenPatient={onOpenPatient}
-						onAlertAction={onAlertAction}
+						onAlertAction={handleAlertAction}
 						liveFeed={liveFeed}
 						onOpenLiveFeed={onOpenLiveFeed}
 					/>
@@ -64,7 +90,7 @@ function Monitoring({
 						onPatientActions={onPatientActions}
 						alerts={alerts}
 						escalationTargets={escalationTargets}
-						onAlertAction={onAlertAction}
+						onAlertAction={handleAlertAction}
 						liveFeed={liveFeed}
 						onOpenLiveFeed={onOpenLiveFeed}
 					/>

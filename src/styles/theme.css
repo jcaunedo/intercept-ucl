@@ -160,7 +160,8 @@
 	--radius-input: 0.625rem; /* radius/input: 10px */
 	--radius-menu: 1rem; /* radius/menu/container: 16px */
 	--radius-card: 1rem; /* radius/card: 16px */
-	--radius-button-md: 0.625rem; /* radius/button/lg: 10px, the 36px button (Figma's lg · 36 is UCL's md) */
+	--radius-button-md: 0.75rem; /* radius/button/lg → radius/3: 12px, the 36px button (Figma's lg · 36 is UCL's md) */
+	--radius-avatar-lg: 1.25rem; /* 20px, the Patient Header's 64px avatar (raw in intercept.ds, no variable yet) */
 
 	/* Effect styles shadow-xs … shadow-2xl. */
 	--shadow-xs: 0 1px 2px 0 var(--shadow-color-sm);
@@ -295,9 +296,9 @@
 	--corn-800: oklch(0.448 0.09 74.06);
 	--corn-900: oklch(0.397 0.077 71.83);
 	--corn-950: oklch(0.27 0.053 68.66);
-	--info-50: oklch(0.951 0.018 250.59);
-	--info-100: oklch(0.9 0.034 245.49);
-	--info-200: oklch(0.8 0.07 246.12);
+	--info-50: oklch(0.973 0.013 251.56);
+	--info-100: oklch(0.926 0.026 244.43);
+	--info-200: oklch(0.811 0.066 246.56);
 	--info-300: oklch(0.703 0.108 247.66);
 	--info-400: oklch(0.61 0.142 249.79);
 	--info-500: oklch(0.563 0.159 251);
@@ -570,7 +571,8 @@
 	   colors avoid the alert hues (red, orange, amber, blue) so a colored number never reads as an alarm (PRD Monitoring
 	   MON-073). In this mode they're dark enough to read at 4.5:1 on white. ⚠️ Draft palette, pending MON-OD-10; no Figma
 	   variables yet. */
-	--monitor: var(--background);
+	/* No fill in light mode: the monitor sits on the card, alert tint included (Oct 28, 2026). */
+	--monitor: transparent;
 	--monitor-grid: oklch(0 0 0 / 8%);
 	--monitor-foreground: var(--graphite-600);
 	--monitor-ecg: oklch(0.48 0.15 145); /* ECG / HR: green */
@@ -589,7 +591,7 @@
    both modes needs no override: it follows --x. */
 .dark {
 	--background: var(--graphite-950);
-	--foreground: var(--graphite-200);
+	--foreground: var(--graphite-100);
 	--muted-foreground: var(--graphite-400);
 	--foreground-subtle: var(--graphite-500);
 	--card: var(--graphite-900);
@@ -610,7 +612,7 @@
 	--card-defined: var(--graphite-700);
 	--border-subtle: var(--graphite-900);
 	--border-muted: var(--graphite-800);
-	--border-defined: var(--graphite-700);
+	--border-defined: var(--graphite-600);
 	--modal: var(--graphite-900);
 	--input-disabled: var(--graphite-800);
 	--ring-outside: var(--catalina-900);
@@ -668,6 +670,7 @@
 	--shadow-color-md: oklch(0 0 0 / 60%);
 	--shadow-color-lg: oklch(0 0 0 / 80%);
 
+	--monitor: var(--background);
 	--monitor-grid: oklch(1 0 0 / 8%);
 	--monitor-foreground: var(--graphite-300);
 	--monitor-ecg: oklch(0.83 0.2 145);
@@ -758,4 +761,15 @@
 		-webkit-text-size-adjust: 100%;
 		text-size-adjust: 100%;
 	}
+}
+
+/* A thin, soft scrollbar for panels and lists inside the app: the thumb at half
+   of `foreground-subtle` on a clear track, so it reads lighter than the
+   platform's default and follows dark mode. Standard properties only
+   (`scrollbar-width`, `scrollbar-color`); browsers without them keep their own.
+   Shipped to consumers as a utility (`scrollbar-soft`). See DESIGN.md
+   "Soft scrollbars". */
+@utility scrollbar-soft {
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklch, var(--foreground-subtle) 50%, transparent) transparent;
 }

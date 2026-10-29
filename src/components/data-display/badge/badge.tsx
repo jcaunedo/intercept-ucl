@@ -6,6 +6,9 @@ import { cn } from "@/lib/utils";
 
 // shadcn's Badge. Every variant has a 1px border (transparent unless `outline`) so sizes match. Hover only applies
 // when the badge is a link (`asChild` with an `<a>`).
+// The xs size, shared with its deprecated alias (`xs-alt`) so the two never drift apart.
+const xsSize = "gap-1 px-2 py-0.5 text-sm/4.5 data-[icon-start]:pl-1.5 [&>svg]:size-3 [&>[data-slot=badge-count]]:-ms-px";
+
 const badgeVariants = cva(
 	[
 		"inline-flex w-fit shrink-0 items-center justify-center overflow-hidden rounded-full border border-transparent font-medium whitespace-nowrap transition-[color,background-color,box-shadow] outline-none",
@@ -45,11 +48,10 @@ const badgeVariants = cva(
 			// With a leading icon (`data-icon-start`, set by Badge), xs–md pad its side 2px less (lg doesn't). The count sits 3px from the label, so it pulls
 			// back by the size's gap minus 3px.
 			size: {
-				// 20px
-				xs: "gap-1 px-2 py-0.5 text-xs/3.5 data-[icon-start]:pl-1.5 [&>svg]:size-3 [&>[data-slot=badge-count]]:-ms-px",
-				// 24px with the larger label, for a badge beside a value (e.g. an acuity category)
-				"xs-alt":
-					"gap-1 px-2 py-0.5 text-sm/4.5 data-[icon-start]:pl-1.5 [&>svg]:size-3 [&>[data-slot=badge-count]]:-ms-px",
+				// 24px
+				xs: xsSize,
+				/** @deprecated Use `xs`, which has been 24px with the 14px label since Oct 28, 2026. */
+				"xs-alt": xsSize,
 				// 32px
 				sm: "gap-1 px-2.5 py-1.5 text-sm/4.5 data-[icon-start]:pl-2 [&>svg]:size-3.5 [&>[data-slot=badge-count]]:-ms-px",
 				// 36px

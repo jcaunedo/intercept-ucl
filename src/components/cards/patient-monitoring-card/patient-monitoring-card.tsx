@@ -305,6 +305,43 @@ function MonitorTrendLane({ parameter, values }: { parameter: ParameterKey; valu
 	);
 }
 
+type PatientMonitorProps = Omit<React.ComponentProps<"section">, "children"> &
+	Pick<PatientMonitoringCardProps, "vitals" | "limits" | "plot" | "trends">;
+
+/**
+ * The full bedside monitor on its own, without the card: one lane per parameter (its waveform, or its last hour with
+ * `plot="trends"`) beside its numbers and alarm limits, as in PatientMonitoringCard's full view. For a page that already
+ * shows who the patient is, e.g. Patient details. 240px tall by default; a height in `className` stretches the lanes.
+ * Pass an `aria-label` that names the patient.
+ */
+function PatientMonitor({ vitals = {}, limits: limitsProp, plot = "waveform", trends = {}, className, ...props }: PatientMonitorProps) {
+	const limits = { ...defaultMonitorLimits, ...limitsProp };
+
+	return (
+		<section
+			data-slot='patient-monitor'
+			className={cn(
+				"grid h-60 grid-rows-4 divide-y divide-monitor-grid overflow-hidden rounded-lg bg-monitor text-monitor-foreground",
+				className,
+			)}
+			{...props}
+		>
+			{parameterOrder.map((parameter) => (
+				<div key={parameter} className='flex min-h-0'>
+					{plot === "trends" ? (
+						<MonitorTrendLane parameter={parameter} values={trends[parameter === "bp" ? "systolic" : parameter]} />
+					) : (
+						<MonitorLane parameter={parameter} vitals={vitals} />
+					)}
+					<div className='flex w-32 shrink-0 border-l border-monitor-grid py-0.5'>
+						<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} size='md' full />
+					</div>
+				</div>
+			))}
+		</section>
+	);
+}
+
 /**
  * A patient's identity and location over a live bedside monitor. Condensed by default (an ECG strip and HR, SpO₂, BP and
  * RR, or 1-hour sparklines with `plot="trends"`); expands to the full monitor, one lane per parameter (its waveform, or
@@ -579,11 +616,13 @@ function PatientMonitoringCard({
 
 export {
 	defaultMonitorLimits,
+	PatientMonitor,
 	PatientMonitoringCard,
 	patientMonitoringCardVariants,
 	type MonitorLimits,
 	type MonitorTrends,
 	type MonitorVitals,
 	type PatientMonitoringCardProps,
+	type PatientMonitorProps,
 	type PatientMonitoringCardSize,
 };
