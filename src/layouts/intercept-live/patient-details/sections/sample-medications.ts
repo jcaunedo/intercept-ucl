@@ -494,13 +494,22 @@ const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 			prn("Melatonin", "3 mg", "PO", "Nightly as needed", "Sleep"),
 		],
 	),
-	// Hayes: GI bleed on daily naproxen, so acetaminophen for her knees and no NSAIDs.
+	// Hayes: heart failure on IV furosemide, no infusions. Spironolactone held while creatinine is up; glargine cut from
+	// her home 16 units while she's eating less.
 	p15: medicationsFor(
 		"p15",
-		[scheduled("Acetaminophen", "650 mg", "PO", every(6), 150, "Knee pain, in place of naproxen")],
 		[
-			prn("Ondansetron", "4 mg", "IV push", "Every 6 h as needed", "Nausea", 300, 1),
-			prn("Melatonin", "3 mg", "PO", "Nightly as needed", "Sleep"),
+			scheduled("Furosemide", "80 mg", "IV push", every(12), 400, "Heart failure, volume overload"),
+			scheduled("Carvedilol", "6.25 mg", "PO", every(12), 280, "Heart failure"),
+			scheduled("Sacubitril-valsartan", "24/26 mg", "PO", every(12), 280, "Heart failure"),
+			scheduled("Insulin glargine", "12 units", "SC", nightly, 280, "Down from 16 units at home"),
+			scheduled("Insulin lispro, sliding scale", "Per scale", "SC", ["Before meals and at bedtime", 6], 280, "Last dose 2 units for glucose 192"),
+			scheduled("Atorvastatin", "40 mg", "PO", nightly, 280),
+			scheduled("Heparin", "5,000 units", "SC", every(8), 220, "VTE prophylaxis"),
+		],
+		[
+			prn("Acetaminophen", "650 mg", "PO", "Every 6 h as needed", "Pain or fever", 600, 1),
+			prn("Melatonin", "3 mg", "PO", "Nightly as needed", "Sleep", 280, 1),
 		],
 	),
 };

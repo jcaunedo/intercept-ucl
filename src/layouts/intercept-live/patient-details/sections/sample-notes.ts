@@ -421,18 +421,61 @@ const notesSpecs: Record<string, NotesSpec> = {
 		apPlan: "Magnesium 2 g. Echo. Start heparin per Dr. Petrova if no bleeding risk.",
 		plan: "Document code status today with her and her partner. Decide on anticoagulation with Dr. Petrova after the echo.",
 	},
-	p15: {
-		history: "74-year-old woman with hypertension and knee osteoarthritis on daily naproxen. Two days of black stools, then dizziness and a near faint at home. Hemoglobin 6.8 and HR 118 in the ED.",
-		admitPlan: "Admit to MICU. Two large-bore IVs, transfuse to hemoglobin over 7, pantoprazole bolus and infusion, urgent endoscopy. Hold naproxen and lisinopril.",
-		nursing: ["HR 102, BP 104/53. Second unit finished overnight. No melena for 6 h. Up to the chair with help; unsteady on her feet, bed alarm on.", 25],
-		events: "Endoscopy overnight: bleeding duodenal ulcer, clipped. 2 units given. Hemoglobin 6.8 to 7.6. HR 118 to 102.",
-		apPlan: "Repeat hemoglobin in 2 h. Pantoprazole infusion for 72 h. H. pylori stool test. Clear liquids if hemoglobin holds.",
-		plan: "Check the repeat hemoglobin; transfuse if it's under 7 or she bleeds again. Call GI with any new melena. Start clear liquids if it holds.",
-	},
 };
+
+// Margaret Hayes (`p15`), Scenario 1 at 01:40: only the hospital's notes. She's on a med-surg floor and no one from
+// Intercept has looked in yet, so there's no Intercept note to draft or sign.
+const chadron = "Chadron Community Hospital";
+const hayesNotes: PatientNote[] = [
+	{
+		id: "p15-n1",
+		type: "Nursing note",
+		author: { name: "Kayla Brandt", role: "RN", organization: chadron },
+		at: minutesAgo(25),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Short of breath lying flat; head of bed up 45°. SpO₂ 89% on 4 L, RR 26, HR 112, BP 148/86. Crackles halfway up both lungs. 350 mL urine since 18:00 after IV furosemide; net +1.8 L since admission. Weight 78 kg, up 2.1 kg from her home weight 2 days ago. Paged Dr. Weller again.",
+			},
+		],
+	},
+	{
+		id: "p15-n2",
+		type: "Telephone encounter",
+		author: { name: "Tom Weller", role: "MD, Family medicine", organization: chadron },
+		at: minutesAgo(140),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Called by the RN for rising oxygen needs, now 4 L. Repeat BMP and BNP now. Continue furosemide 80 mg IV every 12 h. Call back with the results or if she needs more than 4 L.",
+			},
+		],
+	},
+	{
+		id: "p15-n3",
+		type: "History and physical",
+		author: { name: "Tom Weller", role: "MD, Family medicine", organization: chadron },
+		at: hoursAgo(18),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				heading: "History",
+				text: "72-year-old woman with HFrEF (EF 25%), stage 3 CKD and type 2 diabetes. A week of weight gain and leg swelling, then two nights sleeping in her recliner. Lives alone 20 miles outside town and drove herself in. BNP 1,850, creatinine 1.6 from a baseline of 1.5. Chest X-ray: vascular congestion and small effusions.",
+			},
+			{
+				heading: "Plan",
+				text: "Admit to med-surg. Furosemide 80 mg IV every 12 h, strict intake and output, daily weights, 2 g sodium diet with a 1.5 L fluid limit. Oxygen to SpO₂ 92% or more. Hold spironolactone while creatinine is up. BMP and BNP in the morning.",
+			},
+		],
+	},
+];
 
 const sampleNotesByPatient: Record<string, PatientNotes> = {
 	p1: { emr: "Epic", notes: sarahNotes },
+	p15: { emr: "Epic", notes: hayesNotes },
 	...Object.fromEntries(
 		samplePatientBaseRecords
 			.filter((record) => notesSpecs[record.id])

@@ -11,6 +11,9 @@ const sampleHospitals: PanelHospital[] = [
 	{ id: "hpg", name: "Harbor Point General" },
 	{ id: "mwh", name: "Mercy West Hospital" },
 	{ id: "cvmc", name: "CVMC" },
+	// A 25-bed critical access hospital: one RN on the floor at night, the family physician on call from home (Demo Use
+	// Cases, Scenario 1).
+	{ id: "chadron", name: "Chadron Community Hospital" },
 ];
 
 const sampleUser: AppHeaderUser = {

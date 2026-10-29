@@ -426,20 +426,21 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		temps: [36.9, 37.0],
 		lastTemp: 60,
 	}),
-	// Hayes: upper GI bleed, HR settling from 118 as she's transfused.
+	// Hayes: heart failure getting worse overnight on the med-surg floor, admitted 20 h ago. RR 18 → 26, SpO₂ 94 → 89%
+	// as her oxygen goes up to 4 L, HR 92 → 112; BP stays up, so a nitrate is an option.
 	p15: buildVitals({
 		seed: 15,
-		hours: 17,
-		hr: [118, 102],
-		systolic: [96, 104],
-		diastolic: [46, 53],
-		spo2: [96, 95],
-		rr: [22, 18],
+		hours: 20,
+		hr: [92, 112],
+		systolic: [138, 148],
+		diastolic: [80, 86],
+		spo2: [94, 89],
+		rr: [18, 26],
 		arterialLine: false,
 		ventilated: false,
-		nurse: "Aisha Bello",
-		temps: [36.8, 36.9, 37.0, 36.9, 36.8],
-		lastTemp: 60,
+		nurse: "Kayla Brandt",
+		temps: [36.7, 36.8, 36.6, 36.7, 36.8],
+		lastTemp: 40,
 	}),
 };
 

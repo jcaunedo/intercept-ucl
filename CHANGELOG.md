@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Intercept Live samples: Margaret Hayes (`p15`) is now Scenario 1's patient from the demo use cases: 72, heart failure getting worse at 01:40 on the med-surg floor of Chadron Community Hospital, a new hospital in the shared workspace. Her record, vitals, timeline, chart, medications, orders, notes, EHR status and camera replace the earlier GI bleed at Mercy West. The Monitoring `OutsideLimitsFilter` story now counts 6 patients.
 - Renamespaced the repo-local PRD IDs so they no longer collide with the Cowork requirement prefix `SV-`: `SV-0xx → MON-0xx`, `SV-OD-xx → MON-OD-xx`, `SV-UC-xx → MON-UC-xx`. Acceptance-criteria IDs are now `MON-AC-xx` (Monitoring) and `PC-AC-xx` (Patient card). `prds/patient-details.md`'s references to the Monitoring PRD were updated to `MON-` too. Each PRD carries an old → new mapping table. Rendered strings and story descriptions were left unchanged and are listed in the PR. [I-18]
 - `.gitignore`: added `*.log` and `coverage/`. [I-19][R-16]
 - `CLAUDE.md`: corrected the `product-specs/` folder name to `prds/` and added a Traceability note. [R-22]

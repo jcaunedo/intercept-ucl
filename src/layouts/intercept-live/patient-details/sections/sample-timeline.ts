@@ -795,30 +795,33 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		],
 	}),
 
-	// Hayes: admitted 17 h ago with an upper GI bleed. Two units and a clipped duodenal ulcer overnight; HR down from 118
-	// to 102 and hemoglobin up from 6.8 to 7.6.
+	// Hayes: admitted 20 h ago with heart failure, on IV furosemide. Worse through the night: RR 18 → 26, SpO₂ 94 → 89%
+	// as oxygen goes 2 → 4 L, HR 92 → 112. BNP 1,850 → 2,400 and creatinine 1.6 → 1.9 on the repeat Dr. Weller ordered.
 	p15: timeline({
-		span: 1020,
+		span: 1200,
 		seed: 141,
-		hr: [[1020, 118], [600, 114], [400, 108], [0, 102]],
-		map: [[1020, 62], [500, 66], [0, 70]],
-		bp: [104, 53],
-		spo2: [[1020, 96], [0, 95]],
-		rr: [[1020, 22], [0, 18]],
-		temp: [[1000, 36.8], [780, 36.9], [540, 37.0], [300, 36.9], [60, 36.8]],
+		hr: [[1200, 92], [600, 96], [240, 104], [0, 112]],
+		map: [[1200, 100], [0, 107]],
+		bp: [148, 86],
+		spo2: [[1200, 94], [600, 93], [240, 91], [0, 89]],
+		rr: [[1200, 18], [600, 19], [240, 22], [0, 26]],
+		temp: [[1000, 36.7], [760, 36.8], [520, 36.6], [280, 36.7], [40, 36.8]],
 		lanes: [
-			pump("Pantoprazole", "mg/h", [[1020, 0], [1000, 8]]),
-			labLane("Hemoglobin", "g/dL", [[600, 6.8], [120, 7.6]], { low: 7 }),
+			oxygenFlow([[1200, 2], [300, 3], [150, 4]]),
+			labLane("BNP", "pg/mL", [[1180, 1850], [75, 2400]], { high: 100 }),
+			labLane("Creatinine", "mg/dL", [[1180, 1.6], [75, 1.9]], { high: 1.0 }, "lab-2"),
 		],
 		events: [
-			[1010, "care", "Pantoprazole 80 mg IV bolus"],
-			[1000, "drip", "Pantoprazole started at 8 mg/h"],
-			[980, "note", "Admission note signed"],
-			[600, "lab", "Hemoglobin 6.8 g/dL resulted"],
-			[580, "care", "Packed red cells, unit 1"],
-			[480, "care", "Upper endoscopy: duodenal ulcer clipped"],
-			[400, "care", "Packed red cells, unit 2"],
-			[120, "lab", "Hemoglobin 7.6 g/dL resulted"],
+			[1180, "lab", "BNP 1,850 pg/mL, creatinine 1.6 mg/dL resulted"],
+			[1120, "care", "Furosemide 80 mg IV"],
+			[1100, "note", "History and physical signed"],
+			[400, "care", "Furosemide 80 mg IV"],
+			[300, "care", "Oxygen 2 → 3 L/min for SpO₂ 90%"],
+			[150, "care", "Oxygen 3 → 4 L/min for SpO₂ 89%"],
+			[140, "note", "Dr. Weller called: repeat BMP and BNP"],
+			[120, "care", "BMP and BNP drawn"],
+			[75, "lab", "BNP 2,400 pg/mL, creatinine 1.9 mg/dL resulted"],
+			[25, "note", "Nursing note: net +1.8 L, weight up 2.1 kg in 48 h"],
 		],
 	}),
 };

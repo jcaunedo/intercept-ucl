@@ -3,8 +3,9 @@ import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitor
 // Synthetic data (PRD MON-080): the Census's 15 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
 // match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller and Johnson
-// (with alerts), Walker, Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and
-// Whitfield no RR (Data gap).
+// (with alerts), Walker, Moore, Clark and Hayes (without one, so "Outside limits" finds them first). Carter has no SpO₂
+// and Whitfield no RR (Data gap). Hayes (Chadron, Med-Surg) is Scenario 1 at 01:40 (Demo Use Cases): heart failure getting
+// worse, RR 26 and SpO₂ 89% on 4 L; her early-warning alert is still to come.
 
 const sofa = "SOFA acuity score";
 const change = "Change in last 24 h";
@@ -240,19 +241,19 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p15",
-		hospitalId: "mwh",
+		hospitalId: "chadron",
 		lastName: "Hayes",
 		firstName: "Margaret",
 		mrn: "00826154",
 		sex: "F",
-		age: 74,
-		hospital: "Mercy West Hospital",
-		unit: "MICU",
-		bed: "Bed 5",
-		acuity: { label: sofa, score: 6, level: "moderate" },
-		trajectory: { label: change, value: "−1", trend: "down" },
+		age: 72,
+		hospital: "Chadron Community Hospital",
+		unit: "Med-Surg",
+		bed: "Bed 4",
+		acuity: { label: sofa, score: 3, level: "low" },
+		trajectory: { label: change, value: "+2", trend: "up" },
 		tags: [{ label: "Fall risk" }],
-		vitals: { hr: 102, spo2: 95, systolic: 104, diastolic: 53, map: 70, rr: 18 },
+		vitals: { hr: 112, spo2: 89, systolic: 148, diastolic: 86, map: 107, rr: 26 },
 	},
 ];
 

@@ -6,7 +6,7 @@ import type { CameraPerson, CameraPreset, CameraSession, PatientCamera } from ".
 // record's care team (`sample-patient-records.ts`), with what each person is doing now; anyone else in the room (a
 // respiratory therapist, a perfusionist) is added per patient. Cameras and consent follow the hospital: Harbor Point
 // General is all-party, so a huddle waits for consent before the AI Scribe listens (PD-073); CVMC's cameras have no
-// two-way audio and no door preset; Mercy West's have no pump preset.
+// two-way audio and no door preset; Mercy West's have no pump preset; Chadron's med-surg room has only bed and monitor.
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
@@ -21,6 +21,7 @@ const hospitals = {
 	hpg: { presets: [preset.bed, preset.monitor, preset.pumps, preset.door], talk: true, consent: "all-party" },
 	mwh: { presets: [preset.bed, preset.monitor, preset.door], talk: true, consent: "one-party" },
 	cvmc: { presets: [preset.bed, preset.monitor, preset.pumps], talk: false, consent: "one-party" },
+	chadron: { presets: [preset.bed, preset.monitor], talk: true, consent: "one-party" },
 } satisfies Record<string, Pick<PatientCamera, "presets" | "talk" | "consent">>;
 
 const presenceOrder: CameraPerson["presence"][] = ["online", "away", "offline"];
@@ -171,9 +172,8 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 	p14: camera("p14", "cvmc", "Bed 9", { "Lucy Nguyen": "On another patient", "Elena Petrova": "At the bedside" }, [
 		["look-in", "James Tan", 95, 4],
 	]),
-	p15: camera("p15", "mwh", "Bed 5", { "Aisha Bello": "At the bedside", "Marcus Lee": "On another patient" }, [
-		["look-in", "James Tan", 60, 3],
-	]),
+	// Hayes: no one from Intercept has looked in yet; Dr. Weller is on call from home.
+	p15: camera("p15", "chadron", "Bed 4", { "Kayla Brandt": "At the bedside", "Tom Weller": "On call from home" }, []),
 };
 
 export { sampleCameraByPatient };

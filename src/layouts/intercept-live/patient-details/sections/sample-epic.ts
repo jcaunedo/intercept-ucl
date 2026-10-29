@@ -10,6 +10,8 @@ import { sampleNotesByPatient } from "./sample-notes";
 //   signed Intercept notes are written back.
 // - Mercy West Hospital: everything is up to date, and signed Intercept notes are written back.
 // - CVMC: lab results arrive late, and the hospital doesn't take Intercept notes back yet.
+// - Chadron Community Hospital: up to date, but charted vitals come every 4 h on its med-surg floor, and it doesn't
+//   take Intercept notes back yet.
 // Orders are read-only everywhere. Write-backs come from each patient's notes in `sample-notes.ts`, so the two agree.
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -54,6 +56,20 @@ const profiles: Record<string, HospitalProfile> = {
 		notes: {
 			access: "read",
 			note: "CVMC doesn't take Intercept notes back yet. Signed Intercept notes stay in Intercept.",
+		},
+	},
+	"Chadron Community Hospital": {
+		prefix: "CCH",
+		state: "connected",
+		results: (latest) => ({ state: "current", updatedAt: latest }),
+		vitals: {
+			state: "current",
+			updatedAt: minutesAgo(40),
+			note: "Vitals are charted every 4 hours on this floor. Monitor values on this page come from the bedside, not from here.",
+		},
+		notes: {
+			access: "read",
+			note: "Chadron Community Hospital doesn't take Intercept notes back yet. Signed Intercept notes stay in Intercept.",
 		},
 	},
 };

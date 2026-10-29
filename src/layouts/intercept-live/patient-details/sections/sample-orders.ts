@@ -141,6 +141,7 @@ const hospitals = {
 	hpg: { hospital: "Harbor Point General", source: "Epic" },
 	mwh: { hospital: "Mercy West Hospital", source: "Epic" },
 	cvmc: { hospital: "CVMC", source: "Epic" },
+	chadron: { hospital: "Chadron Community Hospital", source: "Epic" },
 };
 
 /** An evidence value with its source, `minutes` ago or at a clock time. */
@@ -604,20 +605,28 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 		],
 	}),
 
-	// Upper GI bleed: hemoglobin 7.6 is over the threshold of 7, so nothing to transfuse until the repeat.
+	// Heart failure on the med-surg floor: her oxygen is at the order's 4 L ceiling. The CHF pathway (Scenario 1) isn't
+	// built yet, so no agent recommends anything for her heart failure.
 	p15: patientOrders("p15", {
-		hospital: "mwh",
+		hospital: "chadron",
 		checks: [
-			noVentilator("Nasal cannula at 2 L/min"),
-			nothingToRecommend("Hemoglobin 7.6 is over the transfusion threshold of 7. The repeat is due in 2 h."),
+			noVentilator("Nasal cannula at 4 L/min"),
+			nothingToRecommend("Potassium 4.6 and magnesium 2.0 are in range. Glucose 186 is covered by her sliding scale."),
 		],
 		active: [
-			["medication", "Pantoprazole infusion", "8 mg/h IV · 72 h", "Marcus Lee", 1000],
-			["medication", "Acetaminophen", "650 mg by mouth every 6 h", "Marcus Lee", 980],
-			["lab", "Hemoglobin", "Every 6 h", "Marcus Lee", 1000, "Scheduled"],
-			["lab", "H. pylori stool antigen", "Once", "Marcus Lee", 420, "Pending"],
-			["nursing", "Fall precautions", "Bed alarm on · assist to stand", "Marcus Lee", 980],
-			["diet", "Nothing by mouth", "Clear liquids if hemoglobin holds", "Marcus Lee", 1000],
+			["medication", "Furosemide", "80 mg IV every 12 h", "Tom Weller", 1130],
+			["medication", "Carvedilol", "6.25 mg by mouth twice a day", "Tom Weller", 1130],
+			["medication", "Sacubitril-valsartan", "24/26 mg by mouth twice a day", "Tom Weller", 1130],
+			["medication", "Heparin", "5,000 units SC every 8 h", "Tom Weller", 1130],
+			["lab", "Basic metabolic panel and BNP", "Now", "Tom Weller", 140, "Collected"],
+			["lab", "Basic metabolic panel and BNP", "Daily at 05:00", "Tom Weller", 1130, "Scheduled"],
+			["imaging", "Chest X-ray", "In the morning", "Tom Weller", 1130, "Scheduled"],
+			["respiratory", "Oxygen by nasal cannula", "Titrate to SpO₂ 92% or more, up to 4 L/min", "Tom Weller", 1130],
+			["nursing", "Strict intake and output", "Every 4 h", "Tom Weller", 1130],
+			["nursing", "Daily weight", "Before breakfast, same scale", "Tom Weller", 1130],
+			["nursing", "Vital signs", "Every 4 h · continuous pulse oximetry", "Tom Weller", 1130],
+			["nursing", "Fall precautions", "Bed alarm on · assist to stand", "Tom Weller", 1130],
+			["diet", "Cardiac diet", "2 g sodium · 1.5 L fluid restriction", "Tom Weller", 1130],
 		],
 	}),
 };

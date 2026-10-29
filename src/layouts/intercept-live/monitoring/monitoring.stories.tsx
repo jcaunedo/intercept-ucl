@@ -217,14 +217,14 @@ export const FullTrends: Story = {
 
 /**
  * The Outside limits filter keeps the patients outside their alarm limits when it's pressed: Miller, Johnson, Walker,
- * Moore and Clark. Membership holds while readings move; pressing it again shows everyone.
+ * Moore, Clark and Hayes. Membership holds while readings move; pressing it again shows everyone.
  */
 export const OutsideLimitsFilter: Story = {
 	play: async ({ canvas, userEvent }) => {
 		const chip = canvas.getByRole("button", { name: /Outside limits/ });
-		await expect(chip).toHaveTextContent(/Outside limits\s*·\s*5/);
+		await expect(chip).toHaveTextContent(/Outside limits\s*·\s*6/);
 		await userEvent.click(chip);
-		await waitFor(() => expect(canvas.getAllByRole("article")).toHaveLength(5));
+		await waitFor(() => expect(canvas.getAllByRole("article")).toHaveLength(6));
 		await userEvent.click(chip);
 		await waitFor(() => expect(canvas.getAllByRole("article")).toHaveLength(sampleMonitoringPatients.length));
 	},

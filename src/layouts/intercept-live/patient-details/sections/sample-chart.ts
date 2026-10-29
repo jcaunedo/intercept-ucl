@@ -52,6 +52,7 @@ const references: Record<string, Reference> = {
 	aPTT: { unit: "s", range: "25–35", panel: "Coagulation" },
 	Fibrinogen: { unit: "mg/dL", range: "200–400", panel: "Coagulation" },
 	"Anti-Xa": { unit: "units/mL", range: "0.3–0.7", panel: "Coagulation" },
+	BNP: { unit: "pg/mL", range: "Under 100", panel: "Cardiac" },
 	"NT-proBNP": { unit: "pg/mL", range: "Under 450", panel: "Cardiac" },
 	"Troponin I": { unit: "ng/mL", range: "Under 0.04", panel: "Cardiac" },
 	"Hemoglobin A1c": { unit: "%", range: "4.0–5.6", panel: "Other" },
@@ -122,6 +123,7 @@ const radiologists = {
 	"Harbor Point General": "Alan Reyes, MD, Radiology",
 	"Mercy West Hospital": "Owen Mitchell, MD, Radiology",
 	CVMC: "Farah Haddad, MD, Radiology",
+	"Chadron Community Hospital": "Neil Carver, MD, Teleradiology",
 } as Record<string, string>;
 
 const report = (
@@ -267,6 +269,7 @@ const allergyDetails: Record<string, { reaction: string; severity: "mild" | "mod
 const hpg = radiologists["Harbor Point General"];
 const mwh = radiologists["Mercy West Hospital"];
 const cvmc = radiologists.CVMC;
+const chadron = radiologists["Chadron Community Hospital"];
 const day = 1520;
 
 const chartSpecs: Record<string, ChartSpec> = {
@@ -560,19 +563,39 @@ const chartSpecs: Record<string, ChartSpec> = {
 			report("Echocardiogram, transthoracic", 2, "Normal left ventricular size. EF about 50%.", "Normal left ventricular size, low-normal function in atrial fibrillation. Left atrium mildly enlarged. No significant valve disease.", "Kofi Mensah, MD, Cardiology", "preliminary"),
 		],
 	},
+	// Hayes: her last echo was at Regional West 4 months ago; home furosemide went to IV on admission.
 	p15: {
-		onsets: [18, "2012", "2016"],
-		medical: ["Hypertension", "Osteoarthritis of both knees · daily naproxen"],
-		surgical: ["Right total knee replacement, 2020", "Cholecystectomy, 1998"],
-		social: ["Former smoker, quit 1995", "No alcohol", "Widowed, lives alone", "Retired librarian"],
-		home: [
-			["Naproxen", "500 mg by mouth twice a day", "held"],
-			["Lisinopril", "10 mg by mouth daily", "held"],
-			["Acetaminophen", "500 mg by mouth as needed", "continued"],
+		onsets: ["2019", "2011", "2004"],
+		medical: [
+			"Heart failure with reduced ejection fraction · EF 25%, two admissions this year",
+			"Chronic kidney disease, stage 3 · baseline creatinine 1.5",
+			"Type 2 diabetes · A1c 7.9%",
+			"Hypertension",
 		],
-		extras: [["Sodium", "137"], ["Glucose", "128"], ["WBC", "10.4"], ["Platelets", "212"], ["Albumin", "3.1"]],
+		surgical: ["Right total knee replacement · 2020", "Cholecystectomy · 1998"],
+		social: ["Former smoker, quit 1995", "No alcohol", "Widowed, lives alone 20 miles outside Chadron", "Retired librarian"],
+		home: [
+			["Furosemide", "40 mg by mouth daily", "changed"],
+			["Carvedilol", "6.25 mg by mouth twice a day", "continued"],
+			["Sacubitril-valsartan", "24/26 mg by mouth twice a day", "continued"],
+			["Spironolactone", "12.5 mg by mouth daily", "held"],
+			["Insulin glargine", "16 units at bedtime", "changed"],
+			["Atorvastatin", "40 mg by mouth at bedtime", "continued"],
+		],
+		extras: [
+			["Bicarbonate", "27", { previous: ["26", 1180] }],
+			["Magnesium", "2.0", { previous: ["2.1", 1180] }],
+			["Troponin I", "0.03", { minutes: 1180 }],
+			["Hemoglobin", "11.4", { previous: ["11.6", 1180] }],
+			["WBC", "8.2", { minutes: 1180 }],
+			["Platelets", "196", { minutes: 1180 }],
+			["Hemoglobin A1c", "7.9", { minutes: 1180 }],
+		],
 		cultures: [],
-		imaging: [report("Chest X-ray, portable", 17, "No acute findings.", "Normal heart size. Lungs clear. No free air under the diaphragm.", mwh)],
+		imaging: [
+			report("Echocardiogram, transthoracic", 24 * 122, "EF 25%. Dilated left ventricle with global hypokinesis.", "Dilated left ventricle with global hypokinesis, EF about 25%. Moderate functional mitral regurgitation. Estimated pulmonary artery systolic pressure 48 mmHg.", "Elena Marsh, MD, Cardiology, Regional West"),
+			report("Chest X-ray, portable", 19, "Pulmonary vascular congestion with small bilateral pleural effusions.", "Enlarged heart. Upper-lobe vascular redistribution and interstitial edema. Small effusions on both sides. No consolidation.", chadron),
+		],
 	},
 };
 
