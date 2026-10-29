@@ -9,6 +9,7 @@ This repository (`@jcaunedo/intercept-ucl`) is the **Intercept Live design-syste
 | `Intercept Live - Virtual Care OS - System Specifications.md` | A copy of the Cowork System Specification. |
 | `Intercept Live Design Phase Team Brief.md` | A copy of the Cowork Design Phase Team Brief. |
 | `slack-notes-from-client.md` | Raw client input. |
+| `specs/` | Cowork spec snapshots (requirements, simulator, design updates), read-only; the source of truth is Cowork. See [`specs/README.md`](specs/README.md). |
 
 **These are copies of Cowork-owned material.** They are read-only mirrors — reconcile any edit in Cowork, not here. They remain tracked in git only because the Storybook **Documents** section renders them (`src/docs/documents/*.mdx` import them). Taking them out of git also means removing those Storybook pages and their order in `.storybook/preview.ts`, which is out of scope for the governance change that added this note (see the `chore/repo-foundation` PR). Until that follow-up lands, do not add further Cowork or client material here.
 
