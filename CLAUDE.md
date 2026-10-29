@@ -364,3 +364,9 @@ Purpose: one or two lines on why the file exists.
 - Each PRD carries `requirements:` front-matter citing the Cowork requirement IDs it maps to.
 - [`documents/trace/`](documents/trace/README.md) maps repo files to requirement IDs; [`CHANGELOG.md`](CHANGELOG.md) records changes with IDs.
 - Cowork owns the requirement IDs (PD-, SV-, …); only the repo-local PRD IDs (`MON-`, `MON-AC-`, `PC-`, `PC-AC-`) are minted here.
+
+### Current specs (read first)
+
+- documents/specs/ holds read-only snapshots of the Cowork specs (requirements, simulator, design updates). Cowork is the source of truth; don't edit them here.
+- Before changing a component or layout, check documents/specs/design-update-spec.md for open DU items that touch it, and cite the DU and requirement IDs in the commit.
+- Sample data uses the names and enums in design-update-spec.md §4 (data contracts).
