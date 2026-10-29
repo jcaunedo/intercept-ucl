@@ -26,6 +26,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `debug-storybook.log` (a committed dev log that leaked a local path); moved the root screenshots to `explorations/screenshots/`. [I-19]
 
+### Docs
+
+- Added `documents/specs/`: Cowork spec snapshot set v1 (Requirements v0.7, Design Update Spec v1.0, Simulator Specification v0.6, Simulator Requirements v0.6), read-only. [DEC-20]
+
 ## [0.1.0] — 2026-10-28 — baseline
 
 The repository as it stood when the governance layer was added (the design-system package and the reference screens). The package version has not been bumped; `0.1.0` records the baseline only.
