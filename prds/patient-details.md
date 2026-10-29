@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Oct 28, 2026
+Last updated: Oct 29, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Patient details page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** October 28, 2026
+**Last updated:** October 29, 2026
 
 ---
 
@@ -220,7 +220,7 @@ Code status ("Full code", "DNR", "DNI"), allergies ("Allergy: Penicillin"; "No k
 
 ### PD-012 — Acuity and trajectory
 
-As on the card: "Critical risk · SOFA 13" with "▲ +4 in 24 h" (PC-030, PC-031). The score opens its breakdown by organ system with each component's value, time and source.
+As on the card: "Critical · SOFA 13" with "▲ +4 in 24 h" (PC-030, PC-031). The score opens its breakdown by organ system with each component's value, time and source.
 
 - No overall condition word (Stable, Unstable, Guarded) until PRD OD-17 is decided.
 - ⚠️ **Decision needed:** the acuity score itself (PRD OD-02); SOFA is the leading candidate.

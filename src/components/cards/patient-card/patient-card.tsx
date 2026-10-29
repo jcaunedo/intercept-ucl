@@ -215,16 +215,16 @@ const toMetric = ({ shortLabel: _shortLabel, ...metric }: PatientCardVital) => m
 // content stays 16px in, as with the 1px border.
 type PatientCardAcuityLevel = "low" | "moderate" | "high" | "critical" | "unknown";
 
-// Acuity always says "risk", so its labels never match an alert severity's (Critical / High / Medium / Low). Colored
-// text with no fill or border, so acuity never competes with the alert's solid pill. The colors are the badge tones'
-// text, readable in both modes. Low and Unknown differ by their words. Exported for pages that show acuity outside the
-// card (e.g. Patient details), so the words and colors stay the same.
+// Acuity is the level's word alone, the same words as some alert severities; it stays apart from an alert as plain text
+// after its score, with no fill or border, never competing with the alert's solid pill. Every level is neutral text for
+// now: no color carries its meaning until acuity's design is settled. Unknown is muted, as a missing value. Exported for
+// pages that show acuity outside the card (e.g. Patient details), so the words and colors stay the same.
 const acuityLevels: Record<PatientCardAcuityLevel, { label: string; className: string }> = {
 	unknown: { label: "Unknown", className: "text-muted-foreground" },
-	low: { label: "Low risk", className: "text-foreground" },
-	moderate: { label: "Moderate risk", className: "text-badge-yellow-foreground" },
-	high: { label: "High risk", className: "text-badge-amber-foreground" },
-	critical: { label: "Critical risk", className: "text-badge-red-foreground" },
+	low: { label: "Low", className: "text-foreground" },
+	moderate: { label: "Moderate", className: "text-foreground" },
+	high: { label: "High", className: "text-foreground" },
+	critical: { label: "Critical", className: "text-foreground" },
 };
 
 type PatientCardAlertStatus = "active" | "acknowledged" | "escalated";
@@ -267,7 +267,7 @@ type PatientCardProps = Omit<
 		 */
 		status?: PatientCardAlertStatus;
 	};
-	/** Acuity score with its risk level, e.g. SOFA 7, Moderate risk. Without a score the level is Unknown. */
+	/** Acuity score with its level, e.g. SOFA 7, Moderate. Without a score the level is Unknown. */
 	acuity?: {
 		label: string;
 		score?: React.ReactNode;

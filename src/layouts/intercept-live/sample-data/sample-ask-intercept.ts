@@ -70,7 +70,8 @@ const where = ({ census }: Patient) => [census.unit, census.bed].filter(Boolean)
 const who = (patient: Patient) => `${patientName(patient)} (${where(patient)})`;
 
 const severityWords = { critical: "Critical", high: "High", medium: "Medium", low: "Low" } as const;
-const levelWords = { low: "Low risk", moderate: "Moderate risk", high: "High risk", critical: "Critical risk", unknown: "Unknown risk" };
+// Acuity's words, as on the card. In a list beside alerts they read "Critical acuity", so they're never taken for a severity.
+const levelWords = { low: "Low", moderate: "Moderate", high: "High", critical: "Critical", unknown: "Unknown" };
 const flagWords = { high: "high", low: "low", critical: "critical" } as const;
 
 const list = (items: string[]) => items.map((item) => `- ${item}`).join("\n");
@@ -631,7 +632,7 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			return {
 				text: [
 					`Here's your shift${among}, ${sampleUser.name.split(" ")[0]}. ${scope.length} patients across ${hospitals.length} hospital${hospitals.length === 1 ? "" : "s"}; ${mine.length} assigned to you. ${scope.filter((patient) => patient.alerts.length).length} have open alerts.`,
-					`**Needs you first:**\n${list(ranked.map((patient) => `${who(patient)}: ${patient.alerts[0] ? `${patient.alerts[0].title} (${severityWords[patient.alerts[0].severity]})` : levelWords[patient.census.acuity?.level ?? "unknown"]}`))}`,
+					`**Needs you first:**\n${list(ranked.map((patient) => `${who(patient)}: ${patient.alerts[0] ? `${patient.alerts[0].title} (${severityWords[patient.alerts[0].severity]})` : `${levelWords[patient.census.acuity?.level ?? "unknown"]} acuity`}`))}`,
 					overdueAlerts.length || overdueMeds.length || overdueBundles.length ? `**Overdue now:**\n${capped([...overdueAlerts, ...overdueBundles, ...overdueMeds], 6)}` : "**Overdue now:** nothing.",
 					carried.length ? `**Carried over from last shift:**\n${list(carried)}` : undefined,
 					pending.length ? `**Waiting on:** ${joinWords(pending)}.` : undefined,
@@ -648,7 +649,7 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 				text: `${ranked.length === 1 ? "One patient needs" : `${ranked.length} patients need`} you first${among}:\n${list(
 					ranked.map(
 						(patient) =>
-							`${who(patient)}: ${patient.alerts.length ? `${severityWords[patient.alerts[0].severity]}, ${patient.alerts.map((alert) => alert.title).join("; ")}.` : `${levelWords[patient.census.acuity?.level ?? "unknown"]}.`} ${patient.record?.brief ? sentence(patient.record.brief.text) : ""}`.trim(),
+							`${who(patient)}: ${patient.alerts.length ? `${severityWords[patient.alerts[0].severity]}, ${patient.alerts.map((alert) => alert.title).join("; ")}.` : `${levelWords[patient.census.acuity?.level ?? "unknown"]} acuity.`} ${patient.record?.brief ? sentence(patient.record.brief.text) : ""}`.trim(),
 					),
 				)}\nRanked by alert severity, then acuity and how fast it's changing.`,
 				sources: ["Alerts", "Census", "Monitor"],

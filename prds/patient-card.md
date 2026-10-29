@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 28, 2026
+Last updated: Oct 29, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines proposed presentation behavior, states and acceptance criteria 
 **Component:** Patient card  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** October 23, 2026
+**Last updated:** October 29, 2026
 
 ---
 
@@ -378,7 +378,7 @@ The following is a proposed presentation model derived from ADT and census-recon
 
 **Proposed tone treatment:**
 
-✅ **Resolved (Oct 27, 2026):** the UCL card shows the category as colored text after the score ("7 Moderate risk"), with no pill, so it never looks like an alert. The colors follow the table below; Low uses the default text color. Only Moderate is drawn in Figma so far. Categories and colors still need clinical approval (OD-03).
+✅ **Resolved (Oct 27, 2026):** the UCL card shows the category as colored text after the score ("7 Moderate"; "7 Moderate risk" until Oct 29, 2026, when "risk" was dropped), with no pill, so it never looks like an alert. The colors follow the table below; Low uses the default text color. Only Moderate is drawn in Figma so far. Categories and colors still need clinical approval (OD-03). ⚠️ **On hold (Oct 29, 2026):** every level shows as neutral text, with no color, until acuity's design is decided (DESIGN.md "Patient card").
 
 | Category | Tone | Tokens |
 |---|---|---|

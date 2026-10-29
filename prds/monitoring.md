@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Oct 28, 2026 (Open chart opens Patient details: MON-030; earlier, Oct 27: My patients is a chip, off by default: MON-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, MON-OD-13 added; filters in context: MON-010, MON-014, MON-051, MON-AC-11; MON-015 view controls, built in UCL)
+Last updated: Oct 29, 2026 (acuity without "risk": MON-011, §12; earlier, Oct 28: Open chart opens Patient details: MON-030; earlier, Oct 27: My patients is a chip, off by default: MON-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, MON-OD-13 added; filters in context: MON-010, MON-014, MON-051, MON-AC-11; MON-015 view controls, built in UCL)
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** October 27, 2026
+**Last updated:** October 29, 2026
 
 ---
 
@@ -170,7 +170,7 @@ A filter on live status would also add and remove cards as readings change, whic
 Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, location, top alert, acuity and 24h change, vitals with range markers, and tags. Values update in place as telemetry arrives.
 
 - Reuses the UCL `PatientCard` (`variant="expanded"`) with its alert pill, acuity levels and severity border, so a patient reads the same on Census and Monitoring (PRD PC-001, PC-002).
-- ✅ **Resolved:** acuity says "risk" (Low / Moderate / High / Critical risk) and never shares a word with alert severities (DESIGN.md "Patient card").
+- ✅ **Resolved (Oct 29, 2026):** acuity reads Low / Moderate / High / Critical, without "risk", replacing the earlier rule that it never shares a word with alert severities. It stays apart from an alert as colored text after its score, not a pill (DESIGN.md "Patient card").
 
 ### MON-012 — Density
 
@@ -401,7 +401,7 @@ An interactive page covering this whole PRD: [Intercept Live Monitoring](https:/
 | **Triage queue** | Right rail, collapsible, Active and Resolved tabs. Rows: severity pill, title, age, patient, source chip (AI · agent name, Device · Monitor, Rule · Hemodynamics, Clinician concern), Overdue, "Carried over from night shift". AI rows have a dashed border, a "Recommendation" line and Show evidence. | MON-020, MON-021, MON-023 |
 | **Queue actions** | Open (focus view scrolled to that alert), Acknowledge, Escalate, Resolve with a required reason (Treated, Artifact or false alarm, Expected for this patient, Duplicate) and an optional note. AI rows Decline instead of Resolve, with an optional rationale, recorded as "Declined with rationale". Every state shows who and when. New rows reveal at their position, resolved rows fade and the rest glide. New Critical and High alerts are announced once. | MON-022, MON-023, MON-AC-02–MON-AC-04, MON-AC-09, §9, §11 |
 | **Empty queue** | "No active alerts · Last alert at 14:22". | MON-051 |
-| **Focus view** | Side sheet over the queue; the panel stays live. Header: name, alert pill, MRN, location, acuity ("Critical risk · SOFA 13"), 24 h change, code status, tags. Actions: Look in, Message bedside team, Escalate, Raise concern, Open chart. ↑/↓ steps through the panel's order, Esc closes and returns focus to the card. | MON-030, MON-AC-05 |
+| **Focus view** | Side sheet over the queue; the panel stays live. Header: name, alert pill, MRN, location, acuity ("Critical · SOFA 13"), 24 h change, code status, tags. Actions: Look in, Message bedside team, Escalate, Raise concern, Open chart. ↑/↓ steps through the panel's order, Esc closes and returns focus to the card. | MON-030, MON-AC-05 |
 | **Focus sections** | Monitor (four lanes, numerics with limits, MAP, then Temp and EtCO₂), Trends (1 h / 6 h / 24 h; ABP as a systolic–diastolic band; out-of-limit zones in a neutral wash, not a severity color), Respiratory labeled Ventilator (the PEEP-versus-order mismatch marked), Infusions labeled Pump, the patient's alerts. | MON-030, MON-071, MON-074, MON-AC-15 |
 | **Camera** | See MON-031. | MON-031, MON-OD-07 |
 | **Escalation** | See MON-040. | MON-040, MON-OD-08 |
