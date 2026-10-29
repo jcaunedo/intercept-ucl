@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { layoutSpring, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-// The Monitoring page's view controls (PRD Monitoring SV-015): how the panel looks, never who's on it.
+// The Monitoring page's view controls (PRD Monitoring MON-015): how the panel looks, never who's on it.
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
@@ -108,13 +108,13 @@ function SegmentedToggle<Value extends string>({
 	);
 }
 
-/** Comfortable, Compact or List (PRD SV-012), icon only. */
+/** Comfortable, Compact or List (PRD MON-012), icon only. */
 function DensityToggle({ value, onValueChange }: { value: PanelDensity; onValueChange: (value: PanelDensity) => void }) {
 	return <SegmentedToggle label='Density' options={densities} value={value} onValueChange={onValueChange} iconOnly />;
 }
 
 /**
- * What the cards' monitors plot, condensed or full: live waveforms or 1-hour trends (PRD SV-OD-12), with icon and label.
+ * What the cards' monitors plot, condensed or full: live waveforms or 1-hour trends (PRD MON-OD-12), with icon and label.
  * A card option, so it's disabled in List density.
  */
 function MonitorPlotToggle({

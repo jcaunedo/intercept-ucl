@@ -330,9 +330,9 @@ Apps also load the webfonts the font tokens name, because `theme.css` declares t
 import { Button } from "@jcaunedo/intercept-ucl";
 ```
 
-## product-specs writing conventions
+## prds writing conventions
 
-Conventions for every doc under `product-specs/`.
+Conventions for every doc under `prds/`.
 
 ### Status labels
 
@@ -357,3 +357,10 @@ Scope: one or two lines on which spec doc(s) this file governs.
 Purpose: one or two lines on why the file exists.
 -->
 ```
+
+## Traceability
+
+- Commits follow [CONVENTIONS.md](CONVENTIONS.md): `type(scope): summary [REQ-ID…] [DEC-ID]`, and the PR lists every ID.
+- Each PRD carries `requirements:` front-matter citing the Cowork requirement IDs it maps to.
+- [`documents/trace/`](documents/trace/README.md) maps repo files to requirement IDs; [`CHANGELOG.md`](CHANGELOG.md) records changes with IDs.
+- Cowork owns the requirement IDs (PD-, SV-, …); only the repo-local PRD IDs (`MON-`, `MON-AC-`, `PC-`, `PC-AC-`) are minted here.

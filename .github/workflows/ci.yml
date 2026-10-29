@@ -1,0 +1,49 @@
+name: CI
+
+# Type-check, build the library and build Storybook on every pull request and on
+# pushes to main, so a broken main is caught before a release or a demo instead of
+# only at publish time. No publish step (that is publish.yml, gated on a version
+# change) and no write scopes: a read-only GITHUB_TOKEN is enough to install from
+# GitHub Packages.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          # .npmrc references ${NPM_TOKEN}; setup-node uses NODE_AUTH_TOKEN. The
+          # read-only GITHUB_TOKEN covers both (installing public deps + the scope).
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Type-check
+        run: npm run lint
+
+      - name: Build library
+        run: npm run build
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      # Follow-up: run the Vitest story tests (`npm test`) here too. They drive
+      # Playwright Chromium (`npx playwright install chromium` first), so they are
+      # left to a separate change to keep this workflow fast and light.

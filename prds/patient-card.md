@@ -1,3 +1,8 @@
+---
+requirements: [PD-04, SV-08, SV-09]
+status: proposed — confirm with Carlos
+---
+
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
@@ -1306,52 +1311,52 @@ The prototype must not be represented as production-ready clinical software.
 
 ### Identity and location
 
-- **AC-01:** Given an admitted patient with authorized identity and location information, the card displays the correct patient and facility context.
-- **AC-02:** Given an authoritative bed transfer, the card updates the displayed location.
-- **AC-03:** Given a patient outside the user's access scope, the card does not expose unauthorized data.
+- **PC-AC-01:** Given an admitted patient with authorized identity and location information, the card displays the correct patient and facility context.
+- **PC-AC-02:** Given an authoritative bed transfer, the card updates the displayed location.
+- **PC-AC-03:** Given a patient outside the user's access scope, the card does not expose unauthorized data.
 
 ### Clinical observations
 
-- **AC-04:** Given current observations, the card displays supported values with correct units.
-- **AC-05:** Given a missing observation, the card displays an unavailable state rather than zero.
-- **AC-06:** Given an observation exceeding its freshness interval, the card identifies it as stale.
-- **AC-07:** Given observations with different update times, the card preserves the separate freshness contexts.
+- **PC-AC-04:** Given current observations, the card displays supported values with correct units.
+- **PC-AC-05:** Given a missing observation, the card displays an unavailable state rather than zero.
+- **PC-AC-06:** Given an observation exceeding its freshness interval, the card identifies it as stale.
+- **PC-AC-07:** Given observations with different update times, the card preserves the separate freshness contexts.
 
 ### Alert lifecycle
 
-- **AC-08:** Given an unresolved clinical alert, the card displays a relevant alert indicator.
-- **AC-09:** Given multiple unresolved alerts, the card identifies the highest-priority alert according to approved ordering rules and exposes the remaining alerts.
-- **AC-10:** Given an acknowledged alert, the card does not automatically mark it resolved.
-- **AC-11:** Given an escalated alert, the card preserves access to escalation context.
-- **AC-12:** Given a resolved alert, the active-alert summary updates without destroying historical traceability.
+- **PC-AC-08:** Given an unresolved clinical alert, the card displays a relevant alert indicator.
+- **PC-AC-09:** Given multiple unresolved alerts, the card identifies the highest-priority alert according to approved ordering rules and exposes the remaining alerts.
+- **PC-AC-10:** Given an acknowledged alert, the card does not automatically mark it resolved.
+- **PC-AC-11:** Given an escalated alert, the card preserves access to escalation context.
+- **PC-AC-12:** Given a resolved alert, the active-alert summary updates without destroying historical traceability.
 
 ### Sepsis
 
-- **AC-13:** Given a positive screening candidate awaiting validation, the card does not claim a confirmed diagnosis.
-- **AC-14:** Given a clinician-validated sepsis case under active tracking, the card displays the supported tracking state.
-- **AC-15:** Given insufficient screening data, the card does not represent the patient as conclusively screen-negative.
+- **PC-AC-13:** Given a positive screening candidate awaiting validation, the card does not claim a confirmed diagnosis.
+- **PC-AC-14:** Given a clinician-validated sepsis case under active tracking, the card displays the supported tracking state.
+- **PC-AC-15:** Given insufficient screening data, the card does not represent the patient as conclusively screen-negative.
 
 ### Respiratory monitoring
 
-- **AC-16:** Given supported respiratory data, the expanded card can display the relevant respiratory-support context.
-- **AC-17:** Given a detected ventilator-order mismatch, the card provides access to the associated alert and evidence.
-- **AC-18:** Given unavailable ventilator data, the card does not infer that no mismatch exists.
+- **PC-AC-16:** Given supported respiratory data, the expanded card can display the relevant respiratory-support context.
+- **PC-AC-17:** Given a detected ventilator-order mismatch, the card provides access to the associated alert and evidence.
+- **PC-AC-18:** Given unavailable ventilator data, the card does not infer that no mismatch exists.
 
 ### Component behavior
 
-- **AC-19:** The compact and expanded variants represent the same patient state.
-- **AC-20:** Selecting the primary card interaction opens the correct patient detail.
-- **AC-21:** Nested controls do not accidentally trigger unrelated card navigation.
-- **AC-22:** Frequent observation updates do not cause unnecessary disruptive movement.
-- **AC-23:** Important states remain understandable without relying exclusively on color.
-- **AC-24:** Every available card action is keyboard accessible.
+- **PC-AC-19:** The compact and expanded variants represent the same patient state.
+- **PC-AC-20:** Selecting the primary card interaction opens the correct patient detail.
+- **PC-AC-21:** Nested controls do not accidentally trigger unrelated card navigation.
+- **PC-AC-22:** Frequent observation updates do not cause unnecessary disruptive movement.
+- **PC-AC-23:** Important states remain understandable without relying exclusively on color.
+- **PC-AC-24:** Every available card action is keyboard accessible.
 
 ### Prototype consistency
 
-- **AC-25:** Synthetic surveillance updates propagate consistently to relevant card fields.
-- **AC-26:** Simulated source disconnection produces a clearly identifiable degraded-data state.
-- **AC-27:** The prototype never exposes real patient information.
-- **AC-28:** Demonstration clinical states are not misrepresented as validated production decision support.
+- **PC-AC-25:** Synthetic surveillance updates propagate consistently to relevant card fields.
+- **PC-AC-26:** Simulated source disconnection produces a clearly identifiable degraded-data state.
+- **PC-AC-27:** The prototype never exposes real patient information.
+- **PC-AC-28:** Demonstration clinical states are not misrepresented as validated production decision support.
 
 ---
 
@@ -1452,3 +1457,13 @@ The Patient card specification and design are considered ready for design-phase 
 - All unresolved clinical decisions are either approved or explicitly documented as deferred.
 
 **Final principle:** The Patient card must communicate what is known, what has changed, and what requires attention — without presenting incomplete data, AI-generated interpretations, or workflow states as clinical facts beyond the evidence available.
+
+---
+
+## ID mapping (Oct 28, 2026)
+
+The acceptance-criteria IDs were renamespaced so they no longer start from `AC-01` in several PRDs. The card's own `PC-xxx` IDs and the open-decision IDs (`OD-01`…`OD-17`) are unchanged.
+
+| Old ID | New ID |
+|---|---|
+| `AC-xx` | `PC-AC-xx` |

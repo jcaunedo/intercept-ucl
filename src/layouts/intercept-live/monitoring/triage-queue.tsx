@@ -38,7 +38,7 @@ import {
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-// The Monitoring page's triage queue (PRD Monitoring SV-020–SV-023): every active alert on the panel in one list,
+// The Monitoring page's triage queue (PRD Monitoring MON-020–MON-023): every active alert on the panel in one list,
 // highest priority first, with the actions that address it. Draft, ahead of Figma: intercept.ds has no queue yet.
 
 /* -------------------------------------------------------------------------- */
@@ -69,18 +69,18 @@ type TriageAlert = {
 	respondBy?: string;
 	/** Defaults to `active`. */
 	status?: TriageAlertStatus;
-	/** An AI agent's alert: what it recommends, and the evidence behind it (PRD SV-023). */
+	/** An AI agent's alert: what it recommends, and the evidence behind it (PRD MON-023). */
 	recommendation?: string;
 	evidence?: string[];
 	/** A clinician concern's rationale. */
 	rationale?: string;
-	/** Raised on an earlier shift and handed over (PRD SV-UC-06). */
+	/** Raised on an earlier shift and handed over (PRD MON-UC-06). */
 	carriedOver?: boolean;
 	/** When the signed-in clinician addressed it, ISO 8601, and the details of what they did. */
 	addressed?: { at: string; to?: string; reason?: string; note?: string };
 };
 
-/** Someone an alert can be escalated to (PRD SV-040). */
+/** Someone an alert can be escalated to (PRD MON-040). */
 type EscalationTarget = { id: string; name: string; description: string };
 
 /** What the clinician did to an alert. The app sends it to Clinical Alerting, which records who and when. */
@@ -114,13 +114,13 @@ const sources: Record<TriageAlertSource["kind"], { label: string; icon: LucideIc
 	system: { label: "System", icon: ServerIcon },
 };
 
-// Why an alert is resolved (PRD SV-022: resolving requires one).
+// Why an alert is resolved (PRD MON-022: resolving requires one).
 const resolutionReasons = ["Treated", "Artifact or false alarm", "Expected for this patient", "Duplicate"];
 
 /** Resolved and declined alerts leave the queue. */
 const isOpenAlert = (alert: TriageAlert) => alert.status !== "resolved" && alert.status !== "declined";
 
-/** Queue order (PRD SV-021): severity first, then oldest first within a severity. */
+/** Queue order (PRD MON-021): severity first, then oldest first within a severity. */
 const compareTriageAlerts = (a: TriageAlert, b: TriageAlert) =>
 	severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity) || a.firedAt.localeCompare(b.firedAt);
 
@@ -221,7 +221,7 @@ function NoteField({ id, label, value, onChange }: { id: string; label: string; 
 	);
 }
 
-/** Resolve needs a reason; declining an AI recommendation takes an optional rationale (PRD SV-022, SV-023). */
+/** Resolve needs a reason; declining an AI recommendation takes an optional rationale (PRD MON-022, MON-023). */
 function ResolveForm({
 	alert,
 	onAction,
@@ -269,7 +269,7 @@ function ResolveForm({
 	);
 }
 
-/** Who to escalate to, and a note. The alert travels with it (PRD SV-040). */
+/** Who to escalate to, and a note. The alert travels with it (PRD MON-040). */
 function EscalateForm({
 	targets,
 	onAction,
@@ -376,7 +376,7 @@ function TriageQueueRow({
 			transition={{ layout: resolve(reorderSpring) }}
 			data-severity={alert.severity}
 			data-status={status}
-			// An AI agent's alert is a recommendation, never a fact (PRD SV-023): a dashed border sets it apart.
+			// An AI agent's alert is a recommendation, never a fact (PRD MON-023): a dashed border sets it apart.
 			className={cn(
 				"flex flex-col gap-2 rounded-lg border bg-card px-3 py-2.5",
 				ai ? "border-dashed border-badge-purple-foreground/50" : "border-border",
@@ -524,6 +524,7 @@ type TriageQueueProps = {
 };
 
 /**
+ * The panel's alerts, highest priority first (PRD Monitoring MON-020–MON-023): Active, and Resolved for the alerts
  * The queue's rows, in the order given, without its tabs: for a page that shows one patient's alerts in its own
  * container (Patient details). One row's form is open at a time.
  */

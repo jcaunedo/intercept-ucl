@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
 
 import { activeAlertCount, type PanelHospital, type PanelPatient } from "../shared/patient-panel";
 
-// The panel's List density (PRD Monitoring SV-012): one row per patient, the primary numerics as columns, for large
-// panels. The numbers keep their parameter colors (SV-072), in the `-ink` shades that read on the page's surface.
+// The panel's List density (PRD Monitoring MON-012): one row per patient, the primary numerics as columns, for large
+// panels. The numbers keep their parameter colors (MON-072), in the `-ink` shades that read on the page's surface.
 
 type MonitoringListPatient = PanelPatient & {
 	mrn?: string;
@@ -122,7 +122,7 @@ function ListRow({ patient, onOpenPatient }: { patient: MonitoringListPatient; o
 							text === undefined ? "text-muted-foreground" : column.color,
 						)}
 					>
-						{/* The same ↑ / ↓ tag as on the card's monitor, in the page's ink (PRD SV-014, SV-073). */}
+						{/* The same ↑ / ↓ tag as on the card's monitor, in the page's ink (PRD MON-014, MON-073). */}
 						{alarm ? (
 							<span
 								aria-hidden='true'

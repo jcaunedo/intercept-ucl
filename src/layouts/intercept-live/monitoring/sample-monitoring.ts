@@ -1,6 +1,6 @@
 import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 
-// Synthetic data (PRD SV-080): the Census's 14 patients on the monitoring panel, with live bedside values, and the
+// Synthetic data (PRD MON-080): the Census's 14 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
 // match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller, Johnson and
 // Walker (with alerts), Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and

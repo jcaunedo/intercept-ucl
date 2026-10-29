@@ -1,0 +1,27 @@
+req_id,artifact_path,repo_ids,evidence,notes
+PD-01,src/layouts/intercept-live/census/census-panel.tsx,,Partial,"Grouped + per-hospital tabs; missing EHR / time zone / connection status per group; ""across hospitals"" headline (I-17)"
+PD-03,src/layouts/intercept-live/census/census-panel.tsx,,Met (design),Quick views + empty state (EmptyState)
+PD-04,src/components/cards/patient-card/,PC-*,Partial,Card anatomy per prds/patient-card.md; acuity = SOFA placeholder
+PD-05,src/layouts/intercept-live/intercept-live.tsx,,Partial,Shell switches pages; workspace with census rail not built
+PD-07,src/layouts/intercept-live/intercept-live.tsx,,Met (design),Live shift countdown (AppHeader)
+PD-08,src/layouts/intercept-live/ask-intercept-panel.tsx,,Met (UI),UI only; no answering
+PD-11,src/styles/theme.css,,Met (design),Light + dark (.dark)
+SV-01,src/components/cards/patient-monitoring-card/,MON-*,Partial (UI),Waveform + numerics UI; no live source; CARESCAPE ONE parameter set not checked
+SV-04,src/layouts/intercept-live/monitoring/,MON-*,Partial,Vitals trends per CX-01 §4.1
+SV-05,src/layouts/intercept-live/monitoring/view-controls.tsx,MON-*,Partial,Density / paging; verify 4/8/12/16
+SV-08,src/layouts/intercept-live/census/sample-census.ts,,Partial,missing variant present; stale / age per PRD
+SV-09,src/layouts/intercept-live/census/sample-census.ts,PC-*,Partial,"SOFA + level; contributing factors not on card (G0-5, CI-06)"
+SV-10,src/layouts/intercept-live/monitoring/triage-queue.tsx,MON-*,Met (UI),Escalate + targets
+SV-13,src/components/cards/patient-monitoring-card/,MON-*,Partial,Monitor panel only; no vent / pump class templates
+CC-04,src/layouts/intercept-live/shared/live-feed.tsx,MON-*,Partial,Triage queue opens patient; Messages page is an empty state
+AL-02,src/layouts/intercept-live/monitoring/triage-queue.tsx,MON-*,Partial (UI),Alert tiers per CX-01 §4.1
+AL-03,src/layouts/intercept-live/monitoring/monitoring-panel.tsx,MON-*,Met (UI),ack -> escalate -> resolve / decline
+AL-04,src/layouts/intercept-live/monitoring/,MON-*,Partial,Alert origin / evidence per CX-01 §4.1
+VS-07,src/layouts/intercept-live/census/census-panel.tsx,,Partial,"""Sepsis watch"" quick view only"
+SC-09,src/components/navigation/sidebar/,,Held,Marketplace nav is an empty state; no pricing
+CH-01,src/layouts/intercept-live/ask-intercept-panel.tsx,,Partial (UI),Panel UI only
+BR-06,repo-wide (CX-01 §3.5),,Held,No pre-accepted AI action in UI
+BR-09,src/layouts/intercept-live/census/census-panel.tsx,,Met (design),No cross-tenant joins; headline fix pending (I-17)
+UX-06,src/components/feedback/empty-state/,,Partial,Empty + missing states
+UX-07,src/layouts/intercept-live/intercept-live.tsx,,Met (design),Modules render in the shell
+NFR-09,src/styles/theme.css,,Partial,Severity tokens below AA for white text (R-24)

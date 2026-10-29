@@ -1,3 +1,8 @@
+---
+requirements: [PD-05, PD-06, CH-01]
+status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
+---
+
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
@@ -79,7 +84,7 @@ Relevant System Specification sections:
 | Surface | Relationship |
 |---|---|
 | **Patient card** (Census) | Selecting a card opens this page (PC-100). ⚠️ The Census Patient Card Options exploration proposes a "more info" step first, with Patient details one step further; still open in the Patient card PRD. |
-| **Focus view** (Monitoring) | A side sheet with the surveillance slice of one patient, opened over the live panel (SV-030). Its "Open patient" action opens this page. The focus view is for watching while staying on the panel; this page is for working on one patient. |
+| **Focus view** (Monitoring) | A side sheet with the surveillance slice of one patient, opened over the live panel (MON-030). Its "Open chart" action opens this page. The focus view is for watching while staying on the panel; this page is for working on one patient. |
 | **Triage queue and Alert Queue** | A row's patient opens this page with that alert's evidence in view (PD-002). |
 | **Virtual Sepsis, Messages, Order Entry, Documentation** | Their full workflows stay in their modules. This page shows the patient's slice of each and opens the workflow in context. |
 | **Ask Intercept Live** (Sidebar) | The global chat. On this page it answers about this patient (PD-100). |
@@ -230,8 +235,8 @@ The interventions that answer "who's on a vent, who's on pressors" at a glance: 
 |---|---|---|
 | **Look in** | Opens the camera in the page panel (PD-090) | All |
 | **Message** | Opens the patient's thread with the bedside nurse (PD-091) | All |
-| **Escalate** | Escalation dialog with an evidence snapshot (PD-092, SV-040) | All; targets vary by role (SV-OD-08) |
-| **Raise concern** | Clinician Intuition Alert form (PD-093, SV-041) | All |
+| **Escalate** | Escalation dialog with an evidence snapshot (PD-092, MON-040) | All; targets vary by role (MON-OD-08) |
+| **Raise concern** | Clinician Intuition Alert form (PD-093, MON-041) | All |
 | **New note** | Opens Clinical Documentation in context (PD-071) | Intensivist, APP; ⚠️ RN notes in PD-OD-12 |
 | **More (…)** | Prepare handoff, Copy link, Open chart in {EMR} (Integrated, where permitted; PD-OD-01) | Per role and tenant |
 
@@ -259,27 +264,27 @@ The default view: what the clinician needs to know about this patient now, and n
 
 ### PD-020 — Alerts and concerns
 
-Every active alert and Clinician Intuition Alert for the patient, highest severity first (SV-021), with the same rows and actions as the triage queue: Acknowledge, Escalate, Resolve with a reason, Decline with rationale for AI rows (SV-022, SV-023).
+Every active alert and Clinician Intuition Alert for the patient, highest severity first (MON-021), with the same rows and actions as the triage queue: Acknowledge, Escalate, Resolve with a reason, Decline with rationale for AI rows (MON-022, MON-023).
 
 - Each row shows source, age, state with who and when, and Overdue (PRD OD-15).
 - A concern carried over from the last shift says so, with who raised it (PC-132).
 - Selecting an alert highlights its evidence on the Timeline (§6).
-- With no active alerts: "No active alerts · Last alert 14:22" (SV-051).
+- With no active alerts: "No active alerts · Last alert 14:22" (MON-051).
 
 ### PD-021 — Live monitor
 
 The patient's full bedside monitor: the four-lane `PatientMonitoringCard` view (ECG II, Pleth, ABP, Resp) with HR, SpO₂, BP and MAP, RR as primary numerics and temperature, EtCO₂ and the rest secondary.
 
-- Follows the Monitoring display conventions SV-070 to SV-074: fixed lane order, numeric hierarchy, one color per parameter, alarms shown apart from parameter colors, values grouped by device.
-- A value outside its limits gets the ↑ / ↓ tag (SV-014); limits come from configuration (PC-044).
-- ⚠️ **Decision needed:** the waveform set per bed type (SV-OD-11) and the parameter palette (SV-OD-10) are shared with Monitoring.
+- Follows the Monitoring display conventions MON-070 to MON-074: fixed lane order, numeric hierarchy, one color per parameter, alarms shown apart from parameter colors, values grouped by device.
+- A value outside its limits gets the ↑ / ↓ tag (MON-014); limits come from configuration (PC-044).
+- ⚠️ **Decision needed:** the waveform set per bed type (MON-OD-11) and the parameter palette (MON-OD-10) are shared with Monitoring.
 
 ### PD-022 — Organ support
 
 | Group | Label | Content |
 |---|---|---|
-| **Respiratory** | "Ventilator" (SV-074) | Support type (invasive, NIV, high-flow, oxygen, room air), mode, FiO₂, PEEP, set and measured tidal volume and rate, plateau pressure, last ABG. Vent-order mismatch evidence when present: current vs ordered, time delta, source of each (PC-052, Spec §8.3) |
-| **Infusions** | "Pump" (SV-074) | Each continuous infusion: drug, rate with units, dose by weight where relevant, last change and its direction. A missing pump feed reads "Rate unavailable", never "stopped" (PC-060) |
+| **Respiratory** | "Ventilator" (MON-074) | Support type (invasive, NIV, high-flow, oxygen, room air), mode, FiO₂, PEEP, set and measured tidal volume and rate, plateau pressure, last ABG. Vent-order mismatch evidence when present: current vs ordered, time delta, source of each (PC-052, Spec §8.3) |
+| **Infusions** | "Pump" (MON-074) | Each continuous infusion: drug, rate with units, dose by weight where relevant, last change and its direction. A missing pump feed reads "Rate unavailable", never "stopped" (PC-060) |
 | **Other support** | By device | CRRT, ECMO and others, when sourced |
 
 - ⚠️ **Decision needed:** the exact respiratory parameters (PRD OD-08).
@@ -298,7 +303,7 @@ A short summary of the last 24 hours written by the Conversational Clinical Data
 - Marked as AI, with the agent's name and when it was written (Spec §9.1, Principles 7 and 9).
 - Every sentence cites its source (vitals, labs, notes, orders); a citation opens the source and its place on the Timeline.
 - Retrieves and summarizes only: no diagnosis, no therapeutic recommendation (Spec §8.7). Where data is thin it says so ("No labs resulted at this hospital in the last 24 hours") instead of filling the gap (Spec §9.1, Principle 12).
-- It doesn't rewrite while someone is reading it: a newer version waits behind "Summary updated · Show" (as the Monitoring panel order prompt, SV-013).
+- It doesn't rewrite while someone is reading it: a newer version waits behind "Summary updated · Show" (as the Monitoring panel order prompt, MON-013).
 - ⚠️ **Decision needed:** on by default or on request, and whether it ranks "what matters now" (PD-OD-05). The exploration's Brief direction ranks with AI; a fixed rule (severity, then rate of change) that the AI only explains is safer to validate.
 
 ### PD-025 — Key labs snapshot
@@ -332,7 +337,7 @@ Lanes share one time axis so cause and effect line up:
 
 - Windows: 1 h, 6 h, 24 h, 72 h, whole stay. ⚠️ **Decision needed:** windows and default (PRD OD-07); the exploration defaults to 24 h.
 - A crosshair reads every lane at one moment; values at the crosshair show at each lane's end.
-- Limits show as a band from configuration; out-of-limit stretches get a neutral wash, not a severity color (SV-073).
+- Limits show as a band from configuration; out-of-limit stretches get a neutral wash, not a severity color (MON-073).
 - A medication can be overlaid on any trend (Spec §8.7: "the lactate trend with the antibiotic timeline overlaid").
 - The clinician can add, hide and reorder lanes; the defaults are restored with one action.
 
@@ -389,7 +394,7 @@ Suggestions from the Order-Entry Suggestion Agent and the Vent-Order Mismatch Ag
 
 | Element | Requirement |
 |---|---|
-| **Look** | A recommendation, never an order: agent chip, "Recommendation", dashed edge (as AI rows in the triage queue, SV-023) |
+| **Look** | A recommendation, never an order: agent chip, "Recommendation", dashed edge (as AI rows in the triage queue, MON-023) |
 | **Evidence** | The values that triggered it, with sources and times |
 | **Protocol** | Which protocol it comes from: the hospital's, Intercept's curated one, SEP-1, or the glycemic system's criteria (Spec §8.5) |
 | **Actions** | Accept, Modify, Decline with rationale. Each outcome is recorded as taken, declined with rationale, or elapsed (Spec §8.2 three-state telemetry) |
@@ -450,10 +455,10 @@ Shown when the patient has a Sepsis Sniffer candidate or a confirmed case under 
 
 ### PD-090 — Look in
 
-The bedside camera opens in the page panel, with telemetry-and-camera fusion and the controls from SV-031 (session state, presets, Talk / mute, overlay on or off). The Overview stays beside it.
+The bedside camera opens in the page panel, with telemetry-and-camera fusion and the controls from MON-031 (session state, presets, Talk / mute, overlay on or off). The Overview stays beside it.
 
 - ⚠️ **Constraint:** synthetic or placeholder feed only in the prototype (Brief).
-- Overlay placement is shared with Monitoring (SV-OD-07).
+- Overlay placement is shared with Monitoring (MON-OD-07).
 
 ### PD-091 — Care team and messages
 
@@ -464,11 +469,11 @@ The patient's threads from Care Coordination (Spec §5.3): bedside nurse, hospit
 
 ### PD-092 — Escalate
 
-As SV-040: send to the intensivist on call, the bedside team, or start intervention, with the alerts to attach, an evidence snapshot and a note. Targets per role and hospital are SV-OD-08.
+As MON-040: send to the intensivist on call, the bedside team, or start intervention, with the alerts to attach, an evidence snapshot and a note. Targets per role and hospital are MON-OD-08.
 
 ### PD-093 — Raise concern
 
-As SV-041: rationale (required), category, what to watch, recheck time. It joins the alerts at once and carries over at handoff. Severity is SV-OD-13.
+As MON-041: rationale (required), category, what to watch, recheck time. It joins the alerts at once and carries over at handoff. Severity is MON-OD-13.
 
 ---
 
@@ -526,8 +531,8 @@ When a section has less data because of how the hospital is connected, the secti
 | **Transferred** | Banner: "Transferred to {Unit} · {time}"; location updated (PC-129). A transfer to another hospital ends access in this tenant (PD-130) |
 | **Discharged / deceased** | Read-only, banner with time; actions that need an active encounter disabled with a reason (PC-130, PRD OD-16) |
 | **Pending reconciliation** | Banner: census sources disagree; location shown as last confirmed (PRD §5) |
-| **Hospital feed down** | Banner "{Hospital} data is delayed · last update 14:02"; affected values Stale (SV-051) |
-| **Offline** | Everything Stale; actions that need the network disabled with a reason (SV-051) |
+| **Hospital feed down** | Banner "{Hospital} data is delayed · last update 14:02"; affected values Stale (MON-051) |
+| **Offline** | Everything Stale; actions that need the network disabled with a reason (MON-051) |
 | **Section empty** | Each section says what's empty and since when: "No labs resulted in the last 72 hours", "No notes imported" |
 
 ---
@@ -554,7 +559,7 @@ Under reduced motion, every one of these is instant or opacity-only. Nothing fla
 |---|---|
 | **PD-130 Tenant isolation** | The page renders one patient record in one tenant. A patient transferred between hospitals is two records; the page never shows the other hospital's encounter or data (Spec §6.5, Brief ground rule). |
 | **PD-131 Privileges** | Per-hospital privileges decide whether the page opens and which actions it offers (Spec §5.2). |
-| **PD-132 Role-based actions** | Order actions for intensivists and APPs only, APP sign-off where required (PD-062); escalation targets by role (SV-OD-08). |
+| **PD-132 Role-based actions** | Order actions for intensivists and APPs only, APP sign-off where required (PD-062); escalation targets by role (MON-OD-08). |
 | **PD-133 Audit** | Opening the page, every section viewed and every action is logged with who and when (Spec §6.8). AI outputs shown are logged with their version. |
 | **PD-134 Sanctioned integration story** | Nothing on this page may depict screen-operated extraction or overlay fallback paths in material Intercept shows externally (Brief). |
 | **PD-135 Provenance** | Every value, alert, note and AI output shows its source on demand (Spec §9.1, Principle 6). |
@@ -661,7 +666,7 @@ WCAG 2.1 AA (Spec §9.1, Principle 13; ⚠️ 2.1 vs 2.2 is open, glossary confl
 | PD-OD-13 | Which demo scenarios use this page. | Product / Project | Not explored |
 | PD-OD-14 | The client's family-engagement idea: change request, roadmap or out (§1.4). | Product / Carlos | Not explored |
 | PRD OD-01, OD-02, OD-07, OD-08, OD-09, OD-14, OD-16, OD-17 | Mandatory fields, acuity score, trend windows, respiratory parameters, sepsis states, error copy, code status and safety tags, overall condition. Shared with the Patient card PRD. | See `prds/patient-card.md` §23 | Code status, allergy and isolation as header badges; trends 1 h / 6 h / 24 h |
-| SV-OD-07, SV-OD-08, SV-OD-10, SV-OD-11, SV-OD-13 | Camera overlay placement, escalation targets, parameter palette, waveform set, concern severity. Shared with Monitoring. | See `prds/monitoring.md` §15 | As in the Monitoring exploration |
+| MON-OD-07, MON-OD-08, MON-OD-10, MON-OD-11, MON-OD-13 | Camera overlay placement, escalation targets, parameter palette, waveform set, concern severity. Shared with Monitoring. | See `prds/monitoring.md` §15 | As in the Monitoring exploration |
 
 ---
 
@@ -688,3 +693,10 @@ WCAG 2.1 AA (Spec §9.1, Principle 13; ⚠️ 2.1 vs 2.2 is open, glossary confl
 - The agreed scenarios run end to end on the real-time data simulator.
 - Acceptance criteria PD-AC-01 to PD-AC-18 pass in the prototype.
 - New terms are in `prds/glossary.md`.
+
+---
+
+## ID notes (Oct 28, 2026)
+
+- References to the Monitoring PRD were renamespaced to match it: `SV-0xx → MON-0xx`, `SV-OD-xx → MON-OD-xx`.
+- ⚠️ **Decision needed:** this PRD mints `PD-xxx` (plus `PD-AC-`, `PD-OD-`, `PD-UC-`), which **collides with the Cowork `PD-` (Provider Desktop) requirement prefix**. It needs a repo-local namespace of its own — the name is Julio's choice (G0-3). It was **left unchanged** here; pick a namespace and renamespace it in a follow-up (see `CONVENTIONS.md` → "IDs").
