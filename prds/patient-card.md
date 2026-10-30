@@ -447,6 +447,18 @@ The change in the score matters more than the number. Sepsis-3 treats a rise of 
 | 5 | Where do the contributing factors show (each input's value and points)? | Only in a deterioration alert's evidence ("RR 26/min, 3 points") | SV-09 and DU-14 ask for them with the score: on the card, in the patient header's breakdown (PD-012) or in the Overview Brief |
 | 6 | Work-list ranking: severity, then band, then the rise over **4 h**, then oldest first. Is 4 h the right window, next to the card's 24 h change? | As described (DU-09); the Census and Monitoring Alert sort ranks the same way | This is what puts Margaret above Miller in Scenario 1: her score rose 5 in 4 h, his held steady. Overdue sepsis elements (DU-09) aren't in it yet |
 | 7 | What severity does a score crossing into High raise, and what does the alert say? | Critical, "NEWS2 10, High: up 5 in 4 h", source "Rule · Deterioration score", with a reason line ("Rising work of breathing, positive fluid balance, HFrEF") | NEWS2's own response for 7+ is an emergency assessment, which could map to High or Critical. The reason line's wording comes from rules, and the client should approve it |
+| 8 | Beyond NEWS2, which scores will Intercept Live support, and for which units? | NEWS2 only; SIRS criteria for sepsis episodes (a separate track, not the card's score) | The specs name one deterioration score. SOFA (ICUs), PEWS / MEOWS (pediatric, maternity: NEWS2 isn't valid there) or a hospital's own Epic Deterioration Index / Rothman Index would each be the client's addition |
+| 9 | If several are supported, who chooses the one a card shows: a setting per unit or hospital, or each user? Can a view switch between them? | One score for every card; no setting, no switch | The work list ranks by the score, and clinicians at a handoff or escalation must see the same number for the same patient |
+| 10 | Does the patient details page show every score the patient has, or only the card's? | Only NEWS2, in the patient header | A patient in an ICU that also scores SOFA would have two current scores, each with its own inputs and time |
+
+**Proposed answers (Oct 30, 2026, for the client to confirm):**
+
+| # | Proposed answer |
+|---|---|
+| 1 | NEWS2 by default, on the card and everywhere the score shows, as the specs name it (Requirements SV-09 and the deterioration score definition, DU-14). If the client's ICUs want SOFA too, it's added per unit (#8, #9), never in place of NEWS2 on wards |
+| 8 | Only what the client's units need: NEWS2 (scale 1 and Scale 2) as the base; SOFA for ICUs if they ask; PEWS / MEOWS only if pediatric or maternity units are in scope; a hospital's Epic Deterioration Index or Rothman Index only where it already runs. qSOFA and SIRS stay screens in the sepsis section, not a card score |
+| 9 | An administrator sets the score per unit or hospital, as part of its clinical protocol; users don't switch it. **One score per card, always.** One score per view in practice: a view mixing units on different scores (wards on NEWS2, ICUs on SOFA) shows each card's own score by name, ranks by severity band only (never the raw number) and leaves the score sorts out. If the client still wants a switch, it changes the whole view (every card and the sort) together, never one card |
+| 10 | Yes. The Overview shows the unit's score first, with its inputs and points (DU-14's Overview Brief), then any other current score the patient has, each with its name, time calculated and inputs, side by side, never combined |
 
 ### PC-031 — Clinical trajectory
 
@@ -1431,7 +1443,7 @@ The prototype must not be represented as production-ready clinical software.
 | OD-14 | Define precise data-source provenance and error-state copy. | Product / Engineering |
 | OD-15 | Approve alert category and source (§15.1 A), the Snoozed status and Overdue response targets (§15.1 S). | Clinical / Product |
 | OD-16 | Add safety tags, code status, transfer pending and deceased to the data model (§15.1 P). | Clinical / Product |
-| OD-18 | The score questions for the client in PC-030 "To clarify with the client": which score, scale 2, the on-screen name (no "acuity"), bands, contributing factors, 4 h ranking, the threshold alert. | Client / Clinical / Product |
+| OD-18 | The score questions for the client in PC-030 "To clarify with the client": which score, scale 2, the on-screen name (no "acuity"), bands, contributing factors, 4 h ranking, the threshold alert, which other scores, who chooses the card's score, scores on the details page (with proposed answers). | Client / Clinical / Product |
 | OD-17 | Decide whether the card shows an overall condition (Stable / Unstable / Guarded), who sets it and with what vocabulary. Until decided, the card shows the acuity score only (PC-031). To discuss with the client. | Clinical / Product / Client |
 
 ---

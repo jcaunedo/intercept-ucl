@@ -293,10 +293,11 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Inpatient status / Observation status** | Admitted care expected to span two or more midnights / hospital-bed care billed as outpatient, typically under two midnights. See Two-Midnight Rule. | Spec Appendix A |
 | **Isolation precautions** | Infection-control measures for a patient, e.g. contact or droplet isolation. Shown as a safety tag. | General, PRD §15.1 P2 |
 | **Lactate** | A blood marker of tissue hypoperfusion. Measured and repeated as SEP-1 bundle elements. | Spec §8.2 |
+| **MEOWS (Modified Early Obstetric Warning Score)** | Early-warning score from vitals, adapted for pregnant and postpartum patients, for whom NEWS2 isn't valid. A candidate score only if maternity units are in scope (OD-18). | General, PRD PC-030 |
 | **MICU** | Medical Intensive Care Unit. The ICU for critically ill adults with medical (non-surgical) problems such as respiratory failure, sepsis or organ failure. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **MRN (Medical Record Number)** | A hospital-specific patient identifier. Scoped to its tenant, never a global patient ID. | PRD PC-011 |
 | **Neuro ICU** | Neurocritical care unit for patients with stroke, brain injury, seizures or after neurosurgery. A unit code in the Census unit menu. | General |
-| **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. Since Oct 30, 2026 the prototype's acuity score is NEWS2-style (scale 1), a current-state score shown with its band and 24 h change; it replaces the SOFA placeholder, pending clinical approval (OD-02, D-04). | General, PRD PC-030, SV-09, DU-14 |
+| **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. Since Oct 30, 2026 the prototype's acuity score is NEWS2-style (scale 1), a current-state score shown with its band and 24 h change; it replaces the SOFA placeholder, pending clinical approval (OD-02, D-04). **Scale 2** is NEWS2's oxygen-saturation scale for patients with hypercapnic respiratory failure (target SpO₂ 88–92%, e.g. COPD); the specs name it, and the prototype doesn't use it yet (OD-18). | General, PRD PC-030, SV-09, DU-14 |
 | **NICU** | Neonatal Intensive Care Unit. The ICU for premature or critically ill newborns. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **NIV (Noninvasive ventilation)** | Breathing support through a mask (BiPAP or CPAP), with no tube in the windpipe. Shown as an "NIV" pill on the Patient card, never as "Ventilated". | General, PRD PC-050, §15.1 P1 |
 | **Numerics** | The large numeric readings on a patient monitor (HR, SpO₂, BP, RR…), as opposed to waveforms and trends. On the Surveillance page, HR, SpO₂, BP and RR are the primary numerics. | General, PRD Monitoring MON-071 |
@@ -306,10 +307,12 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Parameter color** | The one color a physiological parameter keeps everywhere (number, waveform, label, trend). Kept apart from alarm severity colors and never the only signal. ⚠️ **Decision needed:** the palette (MON-OD-10). | General, PRD Monitoring MON-072 |
 | **PCU (Progressive Care Unit)** | A step-down unit between the ICU and a general ward, for patients who need closer monitoring than a ward gives but no longer need intensive care. | General |
 | **PEEP** | Positive end-expiratory pressure, a ventilator setting. | General, PRD PC-051 |
+| **PEWS (Pediatric Early Warning Score)** | Early-warning score for children, with normal ranges by age; NEWS2 isn't valid under 16. A candidate score only if pediatric units are in scope (OD-18). | General, PRD PC-030 |
 | **Plateau pressure** | Ventilator measurement of alveolar pressure at the end-inspiratory pause. Kept under about 30 cmH₂O in ARDS. | Spec Appendix A |
 | **Pressors (vasopressors)** | Drugs given by continuous infusion to raise blood pressure. "On pressors" is a therapy tag. | General, PRD PC-060, §15.1 P1 |
 | **Procalcitonin** | A bacterial-infection biomarker. An example of a hospital-specific bundle element added on top of SEP-1. | Spec Appendix A |
 | **Prone positioning** | Placing a severe-ARDS patient face-down to improve oxygenation. | Spec Appendix A |
+| **qSOFA (quick SOFA)** | A bedside sepsis screen of three signs, one point each: respiratory rate 22/min or more, altered mental state, systolic BP 100 mmHg or less. A screen, not a severity score: it belongs with sepsis, not on the card (OD-18). | General, PRD PC-030 |
 | **RASS** | Richmond Agitation-Sedation Scale. A bedside sedation-depth score. | Spec Appendix A |
 | **RN / RT** | Registered Nurse / Respiratory Therapist. | General |
 | **Rothman Index** | Proprietary score of overall condition, up to 100, calculated continuously from EMR data. Runs in reverse: lower is sicker. A candidate acuity score (OD-02). | General, PRD PC-030 |
