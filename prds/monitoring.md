@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Oct 30, 2026 (Compact shows one more card a row: MON-012; work-list ranking and reason line: MON-021, DU-09; cards per row by breakpoint, both densities: MON-012; earlier, Oct 29: acuity without "risk": MON-011, §12; earlier, Oct 28: Open chart opens Patient details: MON-030; earlier, Oct 27: My patients is a chip, off by default: MON-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, MON-OD-13 added; filters in context: MON-010, MON-014, MON-051, MON-AC-11; MON-015 view controls, built in UCL)
+Last updated: Oct 30, 2026 (Group by location is a switch, actions move to the summary row: §3; Compact shows one more card a row: MON-012; work-list ranking and reason line: MON-021, DU-09; cards per row by breakpoint, both densities: MON-012; earlier, Oct 29: acuity without "risk": MON-011, §12; earlier, Oct 28: Open chart opens Patient details: MON-030; earlier, Oct 27: My patients is a chip, off by default: MON-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, MON-OD-13 added; filters in context: MON-010, MON-014, MON-051, MON-AC-11; MON-015 view controls, built in UCL)
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -151,7 +151,7 @@ Adopted from the design references (§1.3). They apply wherever the page shows l
 
 The panel shows the patients the clinician is responsible for on this shift: by default every patient assigned to them across the hospitals they cover, narrowed by hospital (tabs), **My patients** (a chip, off by default) (a pill opening a menu, replacing the Census's My Patients switch on Oct 27, 2026) and unit. With My patients the summary reads "6 of 14 patients".
 
-✅ **Resolved (Oct 27, 2026): filters in context.** Monitoring's filters set the panel's **scope** (hospital, My patients, unit), its **order** (Sort by: Alert, Location, Name) and its **view** (Full monitors, densities), and nothing else. The Census's status filters don't repeat here, because other parts of this page already do that job:
+✅ **Resolved (Oct 27, 2026): filters in context.** Monitoring's filters set the panel's **scope** (hospital, My patients, unit), its **order** (Sort by: Alert, Name; Group by location since Oct 30, 2026) and its **view** (Full monitors, densities), and nothing else. The Census's status filters don't repeat here, because other parts of this page already do that job:
 
 | Census filter | On Monitoring |
 |---|---|
@@ -186,7 +186,7 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 
 ### MON-013 — Ordering
 
-Default order is **Alert**, then **Score** (the Census's Sort by: Alert, ties broken by score band, 4 h rise and score, then name). The clinician can switch to Score, Score change, Name or Location; Location groups the panel into hospital sections (HospitalSectionHeader).
+Default order is **Alert**, then **Score** (the Census's Sort by: Alert, ties broken by score band, 4 h rise and score, then name). The clinician can switch to Score, Score change or Name; **Group by location** (a switch beside the filter chips since Oct 30, 2026; it was the Location sort) sections the panel by hospital with the sort inside each; Location groups the panel into hospital sections (HospitalSectionHeader).
 
 - Cards **never reorder by themselves** while the clinician is looking at them. A new alert moves a card only when the clinician accepts a "Panel order changed · Update" prompt, or after they've been idle for a configured time. ⚠️ **Decision needed:** auto-reorder rules (MON-OD-05); a card jumping under the pointer is a safety risk.
 - ℹ️ The UCL Monitoring Default story (live since Oct 27, 2026; `Static` is the still one) shows the opposite for comparison: a scripted feed raises and lowers alert severities and the cards reorder by themselves, highest first.
@@ -210,7 +210,7 @@ Two controls at the end of the toolbar, after Unit and Sort by, change how the p
 |---|---|
 | **Density** | A segmented control with an icon for each option, named by a tooltip (and for screen readers): **Comfortable** (default), **Compact**, **List** (MON-012). One option is pressed at a time. Switching reflows the panel in place; the order and the scope stay the same. |
 | **Card monitor** | A segmented control like Density, with icon and label, just left of it: **ECG strip** (default) or **1 h trends**, which puts a sparkline under each numeric instead of the waveform, and in full monitors draws each lane's last hour instead of its waveform (MON-014, MON-OD-12). Disabled in List. Moved out of the View menu on Oct 27, 2026. |
-| **Monitor view** | Two icon buttons with tooltips, **Condensed monitors** / **Full monitors**, between Card monitor and Density: every card's monitor condensed, or all four lanes (Comfortable and Compact). Each card's own button still toggles it alone; while cards are mixed, neither is pressed. Disabled in List. Replaced the View menu on Oct 27, 2026. |
+| **Monitor view** | Two icon buttons with tooltips, **Condensed monitors** / **Full monitors**, between Card monitor and Density: every card's monitor condensed, or all four lanes (Comfortable and Compact). The only way to switch: the cards have no expand button of their own since Oct 30, 2026. Disabled in List. Replaced the View menu on Oct 27, 2026. |
 
 - Neither control appears on the Census: densities and monitors are Monitoring's own (filters in context, MON-010).
 - Values outside their limits aren't a View option: the card always marks them (MON-014). The exploration's "Mark values outside limits" switch was dropped when that became the default.
@@ -395,7 +395,7 @@ An interactive page covering this whole PRD: [Intercept Live Monitoring](https:/
 |---|---|---|
 | **Shell** | Sidebar rail with Monitoring active, sticky header (clock, Online pill, messages, theme, team, user). Below 1280px the triage queue becomes a drawer opened from the header, with its active count. | §3.1 |
 | **Page header** | Hospital tabs with counts (a warning icon on a hospital whose feed is down), Alerts only and My Patients, the summary ("14 patients · 8 active alerts") and a privilege note ("2 patients at Mercy West Hospital hidden by your privileges"). | §3.1, MON-010, MON-051, MON-OD-02 |
-| **Filters** | The Census's quick views tuned for monitoring (All Patients, Needs attention, Outside limits, Rising score, Organ support, Data gap), Unit, Sort by (Alert, Score, Score change, Name, Location; Location groups by hospital). | MON-010, MON-013, MON-AC-11 |
+| **Filters** | The Census's quick views tuned for monitoring (All Patients, Needs attention, Outside limits, Rising score, Organ support, Data gap), Unit, Sort by (Alert, Score, Score change, Name) and Group by location (a switch since Oct 30, 2026; it was the Location sort). | MON-010, MON-013, MON-AC-11 |
 | **Density** | Comfortable, Compact and List side by side. List shows the vitals as columns, in the parameter colors. | MON-012 |
 | **View options** | Card monitor: ECG strip or 1 h trends (a sparkline under each numeric; in full monitors, a trend line per lane). Full monitors (Comfortable only). Mark values outside limits: off by default, as in UCL; on, a small ↑/↓ tag beside the number that keeps the parameter color. | MON-014, MON-073, MON-OD-12 |
 | **Panel cards** | `PatientMonitoringCard` imitated: identity, alert pill, location, live monitor with waveforms ported from UCL. Alert ring pulses until the card is opened or the alert is addressed. Stale cards dim their numbers and freeze their waveforms, with a "Stale" tag. | MON-011, MON-014, MON-050 |

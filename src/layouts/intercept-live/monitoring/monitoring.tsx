@@ -39,6 +39,7 @@ function Monitoring({
 	onAlertAction,
 	liveFeed,
 	onOpenLiveFeed,
+	groupedView,
 	censusPatients,
 	onOpenPatient,
 	defaultPage = "Monitoring",
@@ -77,6 +78,7 @@ function Monitoring({
 						onAlertAction={handleAlertAction}
 						liveFeed={liveFeed}
 						onOpenLiveFeed={onOpenLiveFeed}
+						groupedView={groupedView}
 					/>
 				),
 				Census: censusPatients ? (
@@ -89,6 +91,7 @@ function Monitoring({
 						onAlertAction={handleAlertAction}
 						liveFeed={liveFeed}
 						onOpenLiveFeed={onOpenLiveFeed}
+						groupedView={groupedView}
 					/>
 				) : undefined,
 			}}

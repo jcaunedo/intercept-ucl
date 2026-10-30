@@ -137,7 +137,7 @@ function MonitorPlotToggle({
 	);
 }
 
-/** Every card's monitor condensed or full. Neither is pressed while some cards are expanded and others aren't. */
+/** Every card's monitor condensed or full. */
 type MonitorView = "condensed" | "full";
 
 const monitorViews: ToggleOption<MonitorView>[] = [
@@ -146,8 +146,8 @@ const monitorViews: ToggleOption<MonitorView>[] = [
 ];
 
 /**
- * Condensed or full monitors on every card, icon only (archielabs.ds's custom monitor-view icons). Each card's own
- * button still toggles it alone. A card option, so it's disabled in List density.
+ * Condensed or full monitors on every card, icon only (archielabs.ds's custom monitor-view icons); the cards have no
+ * toggle of their own. A card option, so it's disabled in List density.
  */
 function MonitorViewToggle({
 	value,

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { UsersIcon, type LucideIcon } from "lucide-react";
+import { ArrowDownUpIcon, UsersIcon, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, type Transition, type Variants } from "motion/react";
 
 import type { PatientCardAcuityLevel, PatientCardAlertVariant, PatientCardProps } from "@/components/cards/patient-card";
@@ -27,6 +27,7 @@ import {
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+import { usePagePreferences } from "../page-preferences";
 import { usePatientNavigation } from "../patient-navigation";
 
 // The patient list both Census and Monitoring filter, sort and group, so the two pages behave the same (PRD Monitoring
@@ -146,20 +147,23 @@ const sortOrders = [
 		compare: (a: PanelPatient, b: PanelPatient) => descending(acuityChange)(a, b) || byName(a, b),
 	},
 	{ id: "name", label: "Name", compare: byName },
-	{
-		id: "location",
-		label: "Location",
-		compare: (a: PanelPatient, b: PanelPatient) =>
-			a.hospital?.localeCompare(b.hospital ?? "") ||
-			(a.unit ?? "").localeCompare(b.unit ?? "") ||
-			(a.bed ?? "").localeCompare(b.bed ?? "", undefined, { numeric: true }) ||
-			byName(a, b),
-	},
 ] as const;
 
 type SortOrderId = (typeof sortOrders)[number]["id"];
 
 const sortOrderById = (id: SortOrderId) => sortOrders.find((order) => order.id === id) ?? sortOrders[0];
+
+/**
+ * The panel's order: the sort, and with Group by location, hospital by hospital (in name order) first, the sort inside
+ * each. PanelGrid and the List tables start a section wherever the hospital changes. Location is no longer a sort (Oct
+ * 30, 2026, Intercept-Live Census `167:5543`): grouping is its own switch.
+ */
+const panelOrder = (sortBy: SortOrderId, grouped: boolean) => {
+	const { compare } = sortOrderById(sortBy);
+	return grouped
+		? (a: PanelPatient, b: PanelPatient) => (a.hospital ?? "").localeCompare(b.hospital ?? "") || compare(a, b)
+		: compare;
+};
 
 /* -------------------------------------------------------------------------- */
 /* Holding the order                                                          */
@@ -600,24 +604,35 @@ function SortSelect({
 	value,
 	onValueChange,
 	orders = sortOrders.map((order) => order.id),
+	scoreName,
 }: {
 	value: SortOrderId;
 	onValueChange: (value: SortOrderId) => void;
 	orders?: readonly SortOrderId[];
+	/**
+	 * The score's name from the data ("NEWS2"), so the score sorts read "NEWS2" and "NEWS2 change", as the card names it
+	 * (PRD PC-030). Without it they read "Score" and "Score change".
+	 */
+	scoreName?: string;
 }) {
+	const label = (order: (typeof sortOrders)[number]) => {
+		if (scoreName && order.id === "acuity") return scoreName;
+		if (scoreName && order.id === "change") return `${scoreName} change`;
+		return order.label;
+	};
 	return (
 		<Select value={value} onValueChange={(next) => onValueChange(next as SortOrderId)}>
+			{/* The sort icon, then the order's name (Intercept-Live Census `167:5543`). */}
 			<SelectTrigger aria-label='Sort by' className={menuTriggerClassName}>
-				<span>
-					Sort by: <SelectValue />
-				</span>
+				<ArrowDownUpIcon aria-hidden='true' />
+				<SelectValue />
 			</SelectTrigger>
 			<SelectContent position='popper' align='start'>
 				{sortOrders
 					.filter((order) => orders.includes(order.id))
 					.map((order) => (
 						<SelectItem key={order.id} value={order.id}>
-							{order.label}
+							{label(order)}
 						</SelectItem>
 					))}
 			</SelectContent>
@@ -746,6 +761,111 @@ function PanelGrid<Patient extends PanelPatient>({
 	);
 }
 
+/**
+ * How Group by location shows the panel: a Kanban board, a column per hospital (the default since Oct 30, 2026), or
+ * sections in the grid.
+ */
+type GroupedView = "board" | "sections";
+
+/**
+ * The user's Group by location choice, off to start. Inside the shell it's kept there, so it holds when the user
+ * switches pages (`usePagePreferences`); a page on its own keeps it itself. Choosing another grouped view (the Prototype
+ * menu's Sections by location, or back) turns it on and calls `onViewChange`, where the panel shows the view at once
+ * (cards, All hospitals). The panel turns grouping off while one hospital is picked, keeping this choice for All
+ * hospitals.
+ */
+function useGrouping(groupedView: GroupedView, onViewChange: () => void) {
+	const preferences = usePagePreferences();
+	const [ownGrouped, setOwnGrouped] = React.useState(false);
+	const grouped = preferences ? preferences.groupByLocation : ownGrouped;
+	const setGrouped = preferences ? preferences.onGroupByLocationChange : setOwnGrouped;
+	// After render, not during it: the shell's state can't be set while a page renders. A page mounted on a view (after a
+	// page switch) doesn't count it as a change.
+	const previousView = React.useRef(groupedView);
+	React.useEffect(() => {
+		if (groupedView === previousView.current) return;
+		previousView.current = groupedView;
+		setGrouped(true);
+		onViewChange();
+	});
+	return [grouped, setGrouped] as const;
+}
+
+/**
+ * Group by location as a Kanban board (its default view since Oct 30, 2026): a column per hospital, in the panel's order
+ * (hospital name, then the sort), each with its HospitalSectionHeader over its cards. The columns share the width, at
+ * least the width `className` sets in `--board-column` (`[--board-column:minmax(…,1fr)]`); more than fit scroll
+ * sideways. Every hospital keeps its column while filters empty it, so the columns don't move or widen as filters
+ * change (Oct 30, 2026). With no patients at all it renders nothing, and the page's empty state takes over.
+ */
+function PanelBoard<Patient extends PanelPatient>({
+	patients,
+	hospitals,
+	renderCard,
+	className,
+	style,
+	...props
+}: Omit<React.ComponentProps<"div">, "children"> & {
+	patients: Patient[];
+	hospitals: PanelHospital[];
+	renderCard: (patient: Patient) => React.ReactNode;
+}) {
+	const { prefersReducedMotion, resolve } = useMotionPreference();
+	const reducedMotion = Boolean(prefersReducedMotion);
+	const layoutTransition = resolve(reorderSpring);
+	if (!patients.length) return null;
+	// One column per hospital, by name as `panelOrder` groups them; the patients come in the sort's order.
+	const columns = [...hospitals]
+		.sort((a, b) => a.name.localeCompare(b.name))
+		.map((hospital) => ({
+			id: hospital.id,
+			name: hospital.name,
+			patients: patients.filter((patient) => patient.hospitalId === hospital.id),
+		}));
+
+	return (
+		<div
+			className={cn("grid items-start gap-4 overflow-x-auto pb-2 scrollbar-soft", className)}
+			// One track per hospital, so a column's width doesn't depend on how many have patients.
+			style={{ gridTemplateColumns: `repeat(${hospitals.length}, var(--board-column))`, ...style }}
+			{...props}
+		>
+			{columns.map((column) => (
+				<section
+					key={column.id}
+					aria-label={column.name}
+					className='flex min-w-0 flex-col gap-3 rounded-card bg-background-subtle p-3'
+				>
+					<HospitalSectionHeader
+						name={column.name}
+						patientCount={column.patients.length}
+						alertCount={activeAlertCount(column.patients)}
+						className='px-1'
+					/>
+					{column.patients.length === 0 ? (
+						<p className='px-1 pb-1 text-sm text-muted-foreground'>No patients match these filters</p>
+					) : null}
+					{/* As in the grid: a leaving card pops out at once while the others glide. */}
+					<div className='relative flex flex-col gap-3 empty:hidden'>
+						<AnimatePresence initial={false} mode='popLayout'>
+							{column.patients.map((patient) => (
+								<PanelItem
+									key={patient.id}
+									reducedMotion={reducedMotion}
+									layoutTransition={layoutTransition}
+									className='grid grid-cols-1'
+								>
+									{renderCard(patient)}
+								</PanelItem>
+							))}
+						</AnimatePresence>
+					</div>
+				</section>
+			))}
+		</div>
+	);
+}
+
 /** Wraps the page's empty state: Reveals in, centered both ways in the space below the filter bar. */
 function PanelEmpty({ children }: { children: React.ReactNode }) {
 	const { prefersReducedMotion } = useMotionPreference();
@@ -770,11 +890,14 @@ export {
 	HospitalTabs,
 	MyPatientsChip,
 	PanelEmpty,
+	PanelBoard,
 	PanelGrid,
 	QuickViewChips,
+	panelOrder,
 	sortOrderById,
 	shownAlert,
 	useFadingResolvedAlerts,
+	useGrouping,
 	useHeldOrder,
 	useResolvedHolds,
 	useSortCadence,
@@ -786,5 +909,6 @@ export {
 	type PanelPatient,
 	type PatientScope,
 	type QuickView,
+	type GroupedView,
 	type SortOrderId,
 };

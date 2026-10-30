@@ -56,7 +56,7 @@ const tabsListVariants = cva(
 	{
 		variants: {
 			variant: {
-				default: "rounded-button-md bg-background-subtle p-[3px]",
+				default: "rounded-button-md bg-muted p-[3px]",
 				// No track: the active tab is marked by its underline.
 				line: "gap-2",
 			},
@@ -144,8 +144,10 @@ const tabsTriggerVariants = cva(
 const tabsIndicatorVariants = cva("absolute", {
 	variants: {
 		variant: {
-			// Two centered 2px blurs, on the shadow tokens' colors, so the raised tab is outlined on every side.
-			default: "inset-0 rounded-lg bg-background shadow-[0_0_2px_var(--shadow-color-sm),0_0_2px_var(--shadow-color-md)]",
+			// Two centered 4px blurs on the shadow tokens' colors (a tight darker edge, a wider soft halo), so the raised tab
+			// is outlined on every side.
+			default:
+				"inset-0 rounded-lg bg-background shadow-[0_0_4px_-2px_var(--shadow-color-md),0_0_4px_1px_var(--shadow-color-sm)]",
 			line: "bg-foreground group-data-[orientation=horizontal]/tabs:inset-x-0 group-data-[orientation=horizontal]/tabs:-bottom-0.5 group-data-[orientation=horizontal]/tabs:h-0.5 group-data-[orientation=vertical]/tabs:inset-y-0 group-data-[orientation=vertical]/tabs:-right-0.5 group-data-[orientation=vertical]/tabs:w-0.5",
 		},
 	},

@@ -41,6 +41,7 @@ function Census({
 	onAlertAction,
 	liveFeed,
 	onOpenLiveFeed,
+	groupedView,
 	onOpenPatient,
 	defaultPage = "Census",
 	patientRecords,
@@ -78,6 +79,7 @@ function Census({
 						onAlertAction={handleAlertAction}
 						liveFeed={liveFeed}
 						onOpenLiveFeed={onOpenLiveFeed}
+						groupedView={groupedView}
 					/>
 				),
 				Monitoring: monitoringPatients ? (
@@ -90,6 +92,7 @@ function Census({
 						onAlertAction={handleAlertAction}
 						liveFeed={liveFeed}
 						onOpenLiveFeed={onOpenLiveFeed}
+						groupedView={groupedView}
 					/>
 				) : undefined,
 			}}

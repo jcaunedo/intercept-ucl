@@ -124,6 +124,8 @@ type PatientCardMetricProps = Omit<React.ComponentProps<"div">, "children"> &
 		range?: "above" | "below";
 		/** Colors the trend arrow only, e.g. a rising acuity in `critical`, a falling one in `success`. */
 		trendVariant?: "critical" | "success";
+		/** `sm` sets the value at 16px instead of 20px, for the small card. */
+		size?: "md" | "sm";
 	};
 
 const trendVariantClassNames = { critical: "text-severity-critical", success: "text-success" } as const;
@@ -156,9 +158,11 @@ function PatientCardMetric({
 	trend,
 	range,
 	trendVariant,
+	size = "md",
 	...props
 }: PatientCardMetricProps) {
 	const missing = variant === "missing";
+	const valueSize = size === "sm" ? "text-base" : "text-xl";
 
 	return (
 		<div
@@ -171,7 +175,7 @@ function PatientCardMetric({
 			<span className='flex items-center gap-0.5 font-semibold'>
 				{missing ? (
 					<>
-						<span aria-hidden='true' className='text-xl'>
+						<span aria-hidden='true' className={valueSize}>
 							--
 						</span>
 						<span className='sr-only'>Not monitored</span>
@@ -185,7 +189,7 @@ function PatientCardMetric({
 								className={trendVariant ? trendVariantClassNames[trendVariant] : undefined}
 							/>
 						) : null}
-						<span className='text-xl'>{value}</span>
+						<span className={valueSize}>{value}</span>
 						{range ? <MetricGlyph glyph={rangeGlyphs[range][0]} text={rangeGlyphs[range][1]} /> : null}
 					</>
 				)}
@@ -246,6 +250,8 @@ type PatientCardProps = Omit<
 	 * the same data.
 	 */
 	variant?: "expanded" | "compact";
+	/** `sm` is the small card, for denser grids (the Census's Compact): 12px padding, 16px name, 12px lines. */
+	size?: "md" | "sm";
 	lastName: string;
 	firstName: string;
 	mrn?: string;
@@ -296,10 +302,13 @@ type PatientCardProps = Omit<
 function PatientCardTags({
 	tags,
 	name,
+	size,
 	onClick,
 }: {
 	tags: PatientCardTag[];
 	name: string;
+	/** Badge size: `sm` (32px) on the card, `xs` (24px) on the small card. */
+	size: "xs" | "sm";
 	onClick?: React.MouseEventHandler<HTMLDivElement>;
 }) {
 	const rowRef = React.useRef<HTMLDivElement>(null);
@@ -330,7 +339,7 @@ function PatientCardTags({
 			)}
 		>
 			{tags.map((tag) => (
-				<Badge key={tag.label} variant={tag.variant ?? "outline"} size='sm' className='shrink-0'>
+				<Badge key={tag.label} variant={tag.variant ?? "outline"} size={size} className='shrink-0'>
 					{tag.label}
 				</Badge>
 			))}
@@ -346,6 +355,7 @@ function PatientCardTags({
  */
 function PatientCard({
 	variant = "compact",
+	size = "md",
 	lastName,
 	firstName,
 	mrn,
@@ -369,6 +379,7 @@ function PatientCard({
 }: PatientCardProps) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const interactive = Boolean(onOpen || href);
+	const small = size === "sm";
 	const alertRing = usePatientCardAlertRing({ alert, interactive });
 	const compact = variant === "compact";
 	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
@@ -397,6 +408,7 @@ function PatientCard({
 		<motion.article
 			data-slot='patient-card'
 			data-variant={variant}
+			data-size={size}
 			whileHover={interactive && !prefersReducedMotion ? liftPattern.whileHover : undefined}
 			transition={liftPattern.transition}
 			className={cn(
@@ -405,9 +417,12 @@ function PatientCard({
 				// card can be narrower than its one-line location, and the hospital truncates instead.
 				"group/card relative isolate flex min-w-0 flex-col rounded-card border border-border-defined bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
 				compact ? "gap-2.5" : "gap-3",
+				// The small card: 12px in (11px + the border) and 8px between sections, as PatientMonitoringCard `sm`.
+				small && "gap-2 p-[11px]",
 				// Hover (interactive cards only): a 2px `foreground` border (the alert ring hides meanwhile) and `shadow-lg`.
-				// The padding drops to 14px so content stays put.
+				// The padding drops by 1px so content stays put.
 				interactive && patientCardInteractiveClassName,
+				interactive && small && "hover:p-[10px]",
 				className,
 			)}
 			// Capture, so any click on the card counts: the open target, the "…" button or the card itself.
@@ -422,10 +437,18 @@ function PatientCard({
 				<div className='flex min-w-0 flex-1 flex-col'>
 					{/* The name stays on one line and truncates, full name in `title` (screen readers get it whole); the identity
 					    line wraps. The open target is a block, so it truncates too (`max-w-full`: a button shrinks to fit). */}
-					<h3 title={name} className='-mb-0.5 truncate text-xl font-bold text-foreground [&>*]:max-w-full [&>*]:truncate'>
+					<h3
+						title={name}
+						className={cn(
+							"-mb-0.5 truncate font-bold text-foreground [&>*]:max-w-full [&>*]:truncate",
+							small ? "text-base" : "text-xl",
+						)}
+					>
 						{nameContent}
 					</h3>
-					{identity ? <p className='text-sm break-words text-muted-foreground'>{identity}</p> : null}
+					{identity ? (
+						<p className={cn("break-words text-muted-foreground", small ? "text-xs" : "text-sm")}>{identity}</p>
+					) : null}
 				</div>
 				{/* The pill fades in when an alert appears and out when it's removed (Dismiss); a "Resolved" pill fades slowly
 				    (`resolvedFadeTransition`), so it's seen leaving after its card has moved. A severity change recolors it in
@@ -458,7 +481,7 @@ function PatientCard({
 			</div>
 
 			{hospital || placeInHospital ? (
-				<p className='flex items-center gap-1 text-sm font-medium text-foreground'>
+				<p className={cn("flex items-center gap-1 font-medium text-foreground", small ? "text-xs" : "text-sm")}>
 					<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
 					{/* Only the hospital truncates; unit, room and bed always stay visible. The full name is in `title`. */}
 					<span className='flex min-w-0 flex-1'>
@@ -478,14 +501,28 @@ function PatientCard({
 				<div className='flex flex-col'>
 					{acuity || trajectory ? (
 						// 16px between the score and its change, so a long level ("Moderate") never runs into the change column.
-						<div className={cn("flex gap-4 border-b border-border-muted px-2 first:border-t", compact ? "py-1.5" : "py-3")}>
+						<div
+							className={cn(
+								"flex border-b border-border-muted px-2 first:border-t",
+								compact ? "py-1.5" : "py-3",
+								small ? "gap-3" : "gap-4",
+							)}
+						>
 							{acuity ? (
 								<div className='flex min-w-0 flex-1 flex-col whitespace-nowrap'>
 									<span className='text-xs font-medium text-muted-foreground'>{acuity.label}</span>
 									<span className='flex items-center gap-2'>
-										<span className='text-xl font-semibold text-foreground'>{acuity.score ?? "--"}</span>
+										<span className={cn("font-semibold text-foreground", small ? "text-base" : "text-xl")}>
+											{acuity.score ?? "--"}
+										</span>
 										{acuityLevel ? (
-											<span className={cn("text-xl font-normal", acuityLevels[acuityLevel].className)}>
+											<span
+												className={cn(
+													"font-normal",
+													small ? "text-base" : "text-xl",
+													acuityLevels[acuityLevel].className,
+												)}
+											>
 												{acuityLevels[acuityLevel].label}
 											</span>
 										) : null}
@@ -493,14 +530,14 @@ function PatientCard({
 								</div>
 							) : null}
 							{trajectory ? (
-								<PatientCardMetric {...toMetric(trajectory)} className='flex-1' />
+								<PatientCardMetric {...toMetric(trajectory)} size={size} className='flex-1' />
 							) : null}
 						</div>
 					) : null}
 					{!compact && vitals.length > 0 ? (
 						<div className='flex gap-2 border-b border-border-muted px-2 py-3 first:border-t'>
 							{vitals.map((vital) => (
-								<PatientCardMetric key={vital.label} {...toMetric(vital)} className='flex-1' />
+								<PatientCardMetric key={vital.label} {...toMetric(vital)} size={size} className='flex-1' />
 							))}
 						</div>
 					) : null}
@@ -511,6 +548,7 @@ function PatientCard({
 				<PatientCardTags
 					tags={tags}
 					name={name}
+					size={small ? "xs" : "sm"}
 					// Re-sent to the open target with its modifier keys, so ⌘/Ctrl-click still opens a link in a new tab.
 					onClick={
 						interactive

@@ -1,3 +1,4 @@
+import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 // Story-only helper, not part of the card's public API.
@@ -236,6 +237,8 @@ export const OutsideLimitsFilter: Story = {
 
 function LiveMonitoring(props: MonitoringProps) {
 	const { patients: fed, alerts, caption, restart } = useSampleLiveFeed();
+	// The Prototype menu's Sections by location view (Group by location's Kanban board is the default).
+	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	const patients = useLivePatients(fed);
 	// What the feed just changed shows at the right of the hospital bar. The Census page (Sidebar) follows the same feed.
 	return (
@@ -245,7 +248,12 @@ function LiveMonitoring(props: MonitoringProps) {
 			alerts={alerts}
 			liveFeed={caption}
 			censusPatients={props.censusPatients && withFeedAlerts(props.censusPatients, alerts)}
-			prototype={prototypeShortcuts({ restartLiveFeed: restart })}
+			prototype={prototypeShortcuts({
+				restartLiveFeed: restart,
+				groupedGrid,
+				onToggleGroupedGrid: () => setGroupedGrid(!groupedGrid),
+			})}
+			groupedView={groupedGrid ? "sections" : "board"}
 			onResetPrototype={resetPrototype}
 		/>
 	);

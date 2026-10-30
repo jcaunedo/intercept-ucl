@@ -24,6 +24,7 @@ Paths in this section are relative to `src/layouts/intercept-live/`.
 | Shell | `intercept-live.tsx` | Owns which page is shown, which patient is open and which side panels are open, and their widths |
 | Sidebar state | `use-layout-sidebar.ts` | `useLayoutSidebar()`: whether the Sidebar is collapsed. Collapsed by default, and on its own at `lg` (1024) and below (DESIGN.md "Sidebar auto-collapses at lg and below") |
 | Patient navigation | `patient-navigation.tsx` | `usePatientNavigation()`: the context the pages use to open a patient (`openPatient(id, list)`), and to read whether the header is compact and whether a patient is open |
+| Page preferences | `page-preferences.tsx` | `usePagePreferences()`: view choices the shell keeps across pages, so switching pages keeps them. Today Group by location (`groupByLocation`, `onGroupByLocationChange`), read by `useGrouping` in `shared/patient-panel.tsx`. Outside the shell each page keeps its own |
 | Side panel | `side-panel.tsx` | `SidePanel`: slides open, resizes from the canvas edge, header with an optional `description`. Every panel below uses it |
 | Ask Intercept Live | `ask-intercept-panel.tsx` | The global chat, on the left. Toggled from the Sidebar's Ask Intercept Live and, on a patient's page, the app header's sparkle. Its message box is UCL's `ChatComposer`; answers come from `InterceptLive`'s `askIntercept` prop |
 | Patient list | `patient-list-panel.tsx` | `PatientListPanel`, the patient switcher, on the left. Opened by the app header's list button on a patient's page. Takes turns with the chat: one is open at a time |
@@ -36,10 +37,10 @@ The Census and Monitoring are Sidebar pages. Each page's content is a `<name>-pa
 
 | Page | Files | Notes |
 | --- | --- | --- |
-| Census | `census/census.tsx`, `census/census-panel.tsx` | Every patient as cards (`PatientCard`), grouped by hospital |
+| Census | `census/census.tsx`, `census/census-panel.tsx` | Every patient as cards (`PatientCard`; Compact uses its `sm` size) or a table (`census/census-list.tsx`, List density), grouped by hospital |
 | Monitoring | `monitoring/monitoring.tsx`, `monitoring/monitoring-panel.tsx` | The clinician's panel as live monitors (`PatientMonitoringCard`) or a List table (`monitoring-list.tsx`), switched by `view-controls.tsx` |
 | Shared by both | `shared/patient-panel.tsx` | The filter bar (hospital, unit, My patients chip, quick views), sort orders and the grid, so both pages filter, sort and group the same way |
-| Live feed | `shared/live-feed.tsx` | The hospital bar's "Live feed" button and the right-hand panel it opens, on both pages. Its content is the triage queue (`monitoring/triage-queue.tsx`) |
+| Live feed | `shared/live-feed.tsx` | The "Live feed" line right of the page's summary and the right-hand panel it opens, on both pages. Its content is the triage queue (`monitoring/triage-queue.tsx`) |
 
 ### Patient details
 
@@ -69,7 +70,7 @@ Everything in a `sample-*` file (and `use-sample-live-feed.ts`) is made-up data 
 | Census patients | `census/sample-census.ts` | Census |
 | Monitoring patients, vitals, alerts, escalation targets | `monitoring/sample-monitoring.ts` | Monitoring, the live feed, patient details |
 | Scripted live feed | `monitoring/sample-live-scenario.ts`, played by `sample-data/use-sample-live-feed.ts` (stories only) | The Live stories |
-| Prototype menu entries and Reset prototype | `sample-data/prototype-links.ts` (stories only): `prototypeShortcuts({ restartLiveFeed })` (Scenario 1 opens Monitoring and replays the live feed), `resetPrototype()` (reloads the story) | The Live Census and Monitoring stories |
+| Prototype menu entries and Reset prototype | `sample-data/prototype-links.ts` (stories only): `prototypeShortcuts({ restartLiveFeed, groupedGrid, onToggleGroupedGrid })` (Scenario 1 opens Monitoring and replays the live feed; Views › Sections by location shows Group by location as the grid's hospital sections instead of the default Kanban board, via the panels' `groupedView`), `resetPrototype()` (reloads the story) | The Live Census and Monitoring stories |
 | Each patient's base record | `patient-details/sample-patient-records.ts` | The section samples build on it |
 | Each tab's data, per patient | `patient-details/sections/sample-<name>.ts` (`sample<Name>ByPatient`) | The sections |
 | Full patient records | `patient-details/sample-patient-details.ts`, which merges the two above | Patient details |

@@ -8,6 +8,7 @@ import {
 	type PatientMonitoringCardProps,
 } from "@/components/cards/patient-monitoring-card";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { Switch } from "@/components/forms/switch";
 import { Typography } from "@/components/typography/typography";
 
 import {
@@ -17,7 +18,10 @@ import {
 	PanelEmpty,
 	PanelGrid,
 	QuickViewChips,
-	sortOrderById,
+	PanelBoard,
+	panelOrder,
+	useGrouping,
+	type GroupedView,
 	SortSelect,
 	UnitSelect,
 	shownAlert,
@@ -74,6 +78,8 @@ type MonitoringPanelProps = {
 	/** The latest change from the live feed, e.g. "Moore worsens: Medium becomes Critical". Shown at the right of the
 	 * hospital bar as "Live feed: …"; nothing shows without it. */
 	liveFeed?: string;
+	/** How Group by location shows: `board`, a Kanban column per hospital (default), or `sections` in the grid. */
+	groupedView?: GroupedView;
 	/** Called when the hospital bar's "Live feed" opens or closes the live feed panel (the triage queue). */
 	onOpenLiveFeed?: () => void;
 };
@@ -98,8 +104,8 @@ function alertPill(patientAlerts: TriageAlert[]): PanelPatient["alert"] {
 // The filters stay in context (Oct 27, 2026): Monitoring narrows the panel's scope (hospital, My patients, unit),
 // sets how it looks, and has one status filter of its own, Outside limits. What needs attention is the triage queue's
 // job, and acuity and tags aren't on the monitoring card, so the Census's other quick views stay there. Acuity sorts are
-// left out too.
-const sortOrderIds: readonly SortOrderId[] = ["alert", "location", "name"];
+// left out too; Group by location is a switch, as on the Census.
+const sortOrderIds: readonly SortOrderId[] = ["alert", "name"];
 
 /** Whether any primary numeric is outside the patient's alarm limits (the card's own limits, defaults included). */
 const isOutsideLimits = ({ vitals = {}, limits }: PanelMonitoringPatient) => {
@@ -124,6 +130,12 @@ const statusFilters: QuickView<PanelMonitoringPatient>[] = [
 // Compact (`sm` cards) shows one more a row at every width (Oct 30, 2026), from 2 at 608px. All in px: Tailwind can't order container queries in mixed units, and a px one placed
 // before a rem one loses to it. `items-start`: a card showing the full monitor grows on its own, without stretching its
 // row.
+// The Kanban board's columns share the width, at least one card wide each (Compact's small card is narrower).
+const boardClassNames: Record<Exclude<PanelDensity, "list">, string> = {
+	comfortable: "[--board-column:minmax(340px,1fr)]",
+	compact: "[--board-column:minmax(260px,1fr)] gap-3",
+};
+
 const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 	comfortable:
 		"items-start @min-[744px]:grid-cols-2 @min-[961px]:grid-cols-3 @min-[1217px]:grid-cols-4 @min-[1473px]:grid-cols-5 @min-[1665px]:grid-cols-6 @min-[2104px]:grid-cols-7 @min-[2400px]:grid-cols-8 @min-[2696px]:grid-cols-9 @min-[2992px]:grid-cols-10 @min-[3288px]:grid-cols-11 @min-[3584px]:grid-cols-12 @min-[3880px]:grid-cols-13",
@@ -148,6 +160,7 @@ function MonitoringPanel({
 	onAlertAction,
 	liveFeed,
 	onOpenLiveFeed,
+	groupedView = "board",
 }: MonitoringPanelProps) {
 	const [hospitalId, setHospitalId] = React.useState("all");
 	const [scope, setScope] = React.useState<PatientScope>("all");
@@ -157,6 +170,16 @@ function MonitoringPanel({
 	const [unit, setUnit] = React.useState("all");
 	const [sortBy, setSortBy] = React.useState<SortOrderId>("alert");
 	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
+	// Group by location: a Kanban column per hospital, the sort inside each; or, with the sections view, a grid section each.
+	// A view picked in the Prototype menu shows at once: cards, across all hospitals.
+	const [groupedChoice, setGrouped] = useGrouping(groupedView, () => {
+		setDensity((current) => (current === "list" ? "comfortable" : current));
+		setHospitalId("all");
+	});
+	// One hospital has nothing to group: picking it on its tab turns grouping off (and the switch, disabled), and All
+	// hospitals brings back the user's choice (Oct 30, 2026, user's call).
+	const grouped = groupedChoice && hospitalId === "all";
+	const board = grouped && groupedView === "board" && density !== "list";
 	const [plot, setPlot] = React.useState<MonitorPlot>("waveform");
 	// Condensed or full monitors, for every card at once (the cards have no toggle of their own).
 	const [monitorView, setMonitorView] = React.useState<"condensed" | "full">("condensed");
@@ -204,7 +227,7 @@ function MonitoringPanel({
 	const assigned = scope === "mine" ? patients.filter((patient) => patient.mine) : patients;
 	// The panel re-sorts now and then (useSortCadence), never while the pointer is over it (or keyboard focus is in it),
 	// so cards and rows don't move under the clinician's hand; a re-sort that came due runs when they leave.
-	const visible = useHeldOrder([...filtered(assigned)].sort(sortOrderById(sortBy).compare), sorts, sortBy);
+	const visible = useHeldOrder([...filtered(assigned)].sort(panelOrder(sortBy, grouped)), sorts, `${sortBy}:${grouped}`);
 	const everyoneCount = scope === "mine" ? filtered(patients).length : visible.length;
 
 	const pressStatusFilter = (id: string | null) => {
@@ -214,6 +237,24 @@ function MonitoringPanel({
 		);
 	};
 	const alertCount = activeAlertCount(visible);
+	const renderCard = ({
+		id,
+		hospitalId: _hospitalId,
+		mine: _mine,
+		acuity: _acuity,
+		trajectory: _trajectory,
+		tags: _tags,
+		...card
+	}: PanelMonitoringPatient) => (
+		<PatientMonitoringCard
+			{...card}
+			alert={cardAlert(id)}
+			size={density === "compact" ? "sm" : "md"}
+			plot={plot}
+			expanded={monitorView === "full"}
+			onOpen={canOpenPatient ? () => openPatient(id) : undefined}
+		/>
+	);
 
 	const clearFilters = () => {
 		setHospitalId("all");
@@ -226,33 +267,46 @@ function MonitoringPanel({
 		// The page is a size container, so the grid's columns follow the room the live feed panel leaves.
 		<div className='flex flex-1'>
 			<div className='@container flex min-w-0 flex-1 flex-col'>
-				{/* The hospital bar, right under the header, as on the Census, with the live feed's latest change at its right
-				    (Intercept-Live Census `141:22191`), which opens the live feed panel. The tabs keep their width; a long
-				    change truncates. */}
-				<div className='flex items-center justify-between gap-6 border-b border-border px-4'>
+				{/* The hospital bar, right under the header, as on the Census (Intercept-Live Census `83:2515`), with Group by
+				    location at its right (label first). */}
+				<div className='flex items-center justify-between gap-6 border-b border-border pr-6 pl-4'>
 					<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
-					<LiveFeed
-						change={liveFeed}
-						open={feedOpen}
-						onOpen={() => {
-							setFeedOpen((open) => !open);
-							onOpenLiveFeed?.();
-						}}
-					/>
+					<div className='shrink-0'>
+						<Switch
+							label='Group by location'
+							labelSide='left'
+							checked={grouped}
+							disabled={hospitalId !== "all"}
+							onCheckedChange={setGrouped}
+						/>
+					</div>
 				</div>
 
 				<main className='flex flex-1 flex-col gap-6 p-6'>
-					<div className='flex flex-col gap-4'>
-						{/* The panel summary (PRD Monitoring §3.1): patients shown and their active alerts. */}
-						<Typography as='h1' size='2xl' weight='regular' aria-live='polite'>
-							<span className='font-bold'>
-								{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
-								{everyoneCount === 1 ? "patient" : "patients"}
-							</span>{" "}
-							· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
-						</Typography>
+					{/* As on the Census (Intercept-Live Census `167:5543`): the summary with the live feed's latest change at its
+					    right, which opens the live feed panel; then the filter chips, with the page's actions at the right, 8px
+					    apart; 24px between the rows. */}
+					<div className='flex flex-col gap-6'>
+						<div className='flex min-h-9 items-center gap-2'>
+							{/* The panel summary (PRD Monitoring §3.1): patients shown and their active alerts. */}
+							<Typography as='h1' size='2xl' weight='regular' aria-live='polite' className='min-w-0 flex-1'>
+								<span className='font-bold'>
+									{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
+									{everyoneCount === 1 ? "patient" : "patients"}
+								</span>{" "}
+								· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
+							</Typography>
+							<LiveFeed
+								change={liveFeed}
+								open={feedOpen}
+								onOpen={() => {
+									setFeedOpen((open) => !open);
+									onOpenLiveFeed?.();
+								}}
+							/>
+						</div>
 
-						<div className='flex flex-wrap items-center gap-2'>
+						<div className='flex flex-wrap items-center justify-between gap-4'>
 							<div className='flex flex-wrap items-center gap-1'>
 								<MyPatientsChip
 									value={scope}
@@ -266,11 +320,8 @@ function MonitoringPanel({
 									patients={located(assigned)}
 								/>
 							</div>
-							<UnitSelect value={unit} onValueChange={setUnit} />
-							<SortSelect value={sortBy} onValueChange={setSortBy} orders={sortOrderIds} />
-							{/* View controls (PRD MON-015) at the end of the bar: they change how the panel looks, not who's on it. */}
-							<div className='ml-auto flex items-center gap-2'>
-								{/* Card monitor, monitor view, then density: 8px apart, the switches of one view. */}
+							{/* View controls (PRD MON-015): card monitor, monitor view, then density, the switches of one view. */}
+							<div className='ml-auto flex flex-wrap items-center gap-2'>
 								<MonitorPlotToggle value={plot} onValueChange={setPlot} density={density} />
 								<MonitorViewToggle
 									density={density}
@@ -278,6 +329,8 @@ function MonitoringPanel({
 									onValueChange={(view) => view && setMonitorView(view)}
 								/>
 								<DensityToggle value={density} onValueChange={setDensity} />
+								<UnitSelect value={unit} onValueChange={setUnit} />
+								<SortSelect value={sortBy} onValueChange={setSortBy} orders={sortOrderIds} />
 							</div>
 						</div>
 					</div>
@@ -287,34 +340,25 @@ function MonitoringPanel({
 							{...pauseProps}
 							patients={visible.map((patient) => ({ ...patient, alert: cardAlert(patient.id) }))}
 							hospitals={hospitals}
-							grouped={sortBy === "location"}
+							grouped={grouped}
 							onOpenPatient={canOpenPatient ? openPatient : undefined}
+						/>
+					) : board ? (
+						<PanelBoard
+							{...pauseProps}
+							patients={visible}
+							hospitals={hospitals}
+							className={boardClassNames[density]}
+							renderCard={renderCard}
 						/>
 					) : (
 						<PanelGrid
 							{...pauseProps}
 							patients={visible}
 							hospitals={hospitals}
-							grouped={sortBy === "location"}
+							grouped={grouped}
 							className={gridClassNames[density]}
-							renderCard={({
-								id,
-								hospitalId: _hospitalId,
-								mine: _mine,
-								acuity: _acuity,
-								trajectory: _trajectory,
-								tags: _tags,
-								...card
-							}) => (
-								<PatientMonitoringCard
-									{...card}
-									alert={cardAlert(id)}
-									size={density === "compact" ? "sm" : "md"}
-									plot={plot}
-									expanded={monitorView === "full"}
-									onOpen={canOpenPatient ? () => openPatient(id) : undefined}
-								/>
-							)}
+							renderCard={renderCard}
 						/>
 					)}
 

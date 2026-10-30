@@ -97,6 +97,18 @@ export const Minimal: Story = {
 	args: { alert: undefined, acuity: undefined, trajectory: undefined, tags: [] },
 };
 
+/** The small card (`size="sm"`), for the Census's Compact density: 12px padding, 16px name and score, 12px lines, `xs` tags. */
+export const Small: Story = {
+	args: { size: "sm", tags: [{ label: "Ventilated" }, { label: "On pressors" }] },
+	decorators: [
+		(Story) => (
+			<div className='w-56'>
+				<Story />
+			</div>
+		),
+	],
+};
+
 /** A long name truncates on one line (full name on hover). A long hospital name truncates, so the unit, room and bed stay visible. */
 export const LongContent: Story = {
 	args: {

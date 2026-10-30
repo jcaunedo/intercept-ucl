@@ -35,6 +35,7 @@ import {
 } from "@/components/navigation/app-header";
 import { Sidebar, type SidebarNavItem } from "@/components/navigation/sidebar";
 import {
+	DropdownMenuCheckboxItem,
 	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
@@ -46,6 +47,7 @@ import { cn } from "@/lib/utils";
 
 import { AskInterceptPanel, type AskInterceptResponder } from "./ask-intercept-panel";
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
+import { PagePreferencesProvider } from "./page-preferences";
 import { PatientNavigationProvider, type PatientNavigation } from "./patient-navigation";
 import { PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
 import { useLayoutSidebar } from "./use-layout-sidebar";
@@ -259,6 +261,8 @@ type PrototypeShortcut = {
 	patientId?: string;
 	/** Anything else it does, e.g. restart the scripted live feed. */
 	onSelect?: () => void;
+	/** A view that stays on until chosen again (e.g. the Kanban board): shown with a check while it's on. */
+	checked?: boolean;
 };
 
 /**
@@ -295,6 +299,12 @@ function InterceptLive({
 		[],
 	);
 	const [patientListWidth, setPatientListWidth] = React.useState<number>(sidePanelWidth.min);
+	// View choices that hold across pages (Group by location), so switching pages keeps them.
+	const [groupByLocation, setGroupByLocation] = React.useState(false);
+	const pagePreferences = React.useMemo(
+		() => ({ groupByLocation, onGroupByLocationChange: setGroupByLocation }),
+		[groupByLocation],
+	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);
 	// Kept here, so the chat reopens at the width it was left at.
@@ -308,7 +318,8 @@ function InterceptLive({
 			),
 		[toggleLeftPanel],
 	);
-	// The Prototype menu: its shortcuts by group, then "Reset prototype" after a divider (as in bethere-ucl).
+	// The Prototype menu: its shortcuts by group, a divider between groups, then "Reset prototype" after a divider (as in
+	// bethere-ucl).
 	const prototypeGroups = [...new Set(prototype.map((shortcut) => shortcut.group))];
 	const openShortcut = (shortcut: PrototypeShortcut) => {
 		if (shortcut.page) setPage(shortcut.page);
@@ -318,16 +329,27 @@ function InterceptLive({
 	const prototypeMenu =
 		prototype.length || onResetPrototype ? (
 			<>
-				{prototypeGroups.map((group) => (
+				{prototypeGroups.map((group, index) => (
 					<DropdownMenuGroup key={group}>
+						{index > 0 ? <DropdownMenuSeparator /> : null}
 						<DropdownMenuLabel>{group}</DropdownMenuLabel>
 						{prototype
 							.filter((shortcut) => shortcut.group === group)
-							.map((shortcut) => (
-								<DropdownMenuItem key={shortcut.label} onSelect={() => openShortcut(shortcut)}>
-									{shortcut.label}
-								</DropdownMenuItem>
-							))}
+							.map((shortcut) =>
+								shortcut.checked === undefined ? (
+									<DropdownMenuItem key={shortcut.label} onSelect={() => openShortcut(shortcut)}>
+										{shortcut.label}
+									</DropdownMenuItem>
+								) : (
+									<DropdownMenuCheckboxItem
+										key={shortcut.label}
+										checked={shortcut.checked}
+										onSelect={() => openShortcut(shortcut)}
+									>
+										{shortcut.label}
+									</DropdownMenuCheckboxItem>
+								),
+							)}
 					</DropdownMenuGroup>
 				))}
 				{prototype.length && onResetPrototype ? <DropdownMenuSeparator /> : null}
@@ -400,126 +422,128 @@ function InterceptLive({
 
 	return (
 		<PatientNavigationProvider value={navigation}>
-			<PagePanelSlotProvider value={panelSlot}>
-				<div className='flex h-screen bg-background-subtle'>
-					<Sidebar
-						groups={groups}
-						footerItems={footerItems}
-						activeItem={page}
-						onNavigate={(navigateTo) => {
-							setOpenPatient(null);
-							setPage(navigateTo as InterceptLivePage);
-						}}
-						collapsed={sidebarCollapsed}
-						onCollapsedChange={handleSidebarCollapsedChange}
-						className='h-full'
-					/>
-
-					{/* Global: opens on every page, between the Sidebar and the page. */}
-					<AskInterceptPanel
-						open={chatOpen}
-						onOpenChange={setChatOpen}
-						carded={sidebarCollapsed}
-						width={chatWidth}
-						onWidthChange={setChatWidth}
-						context={{ page, patientName: patientView?.name }}
-						respond={askIntercept}
-					/>
-
-					{/* On a patient's page opened from a list: that list, to switch patient (PRD PD-015). */}
-					{patientView?.patientList && openPatient ? (
-						<PatientListPanel
-							open={patientListOpen}
-							onOpenChange={(open) => setLeftPanel(open ? "patients" : null)}
-							carded={sidebarCollapsed}
-							width={patientListWidth}
-							onWidthChange={setPatientListWidth}
-							sourcePage={page}
-							patients={patientView.patientList}
-							currentId={openPatient.id}
-							onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}
+			<PagePreferencesProvider value={pagePreferences}>
+				<PagePanelSlotProvider value={panelSlot}>
+					<div className='flex h-screen bg-background-subtle'>
+						<Sidebar
+							groups={groups}
+							footerItems={footerItems}
+							activeItem={page}
+							onNavigate={(navigateTo) => {
+								setOpenPatient(null);
+								setPage(navigateTo as InterceptLivePage);
+							}}
+							collapsed={sidebarCollapsed}
+							onCollapsedChange={handleSidebarCollapsedChange}
+							className='h-full'
 						/>
-					) : null}
 
-					{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
-					    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
-					    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
-					    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
-					    stay right when it's scrolled. */}
-					<motion.div
-						ref={canvasRef}
-						layoutScroll
-						className={cn(
-							"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-							// With a left panel open the panel takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
-							// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
-							chatOpen || patientListOpen
-								? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
-								: sidebarCollapsed
-									? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
-									: "rounded-none shadow-none",
-						)}
-					>
-						{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). On
-						    a patient's details, the patient variant: a breadcrumb back to the page, and the patient's actions. */}
-						{patientView ? (
-							<AppHeader
-								variant='patient'
+						{/* Global: opens on every page, between the Sidebar and the page. */}
+						<AskInterceptPanel
+							open={chatOpen}
+							onOpenChange={setChatOpen}
+							carded={sidebarCollapsed}
+							width={chatWidth}
+							onWidthChange={setChatWidth}
+							context={{ page, patientName: patientView?.name }}
+							respond={askIntercept}
+						/>
+
+						{/* On a patient's page opened from a list: that list, to switch patient (PRD PD-015). */}
+						{patientView?.patientList && openPatient ? (
+							<PatientListPanel
+								open={patientListOpen}
+								onOpenChange={(open) => setLeftPanel(open ? "patients" : null)}
+								carded={sidebarCollapsed}
+								width={patientListWidth}
+								onWidthChange={setPatientListWidth}
 								sourcePage={page}
-								patientName={patientView.name}
-								onBack={() => setOpenPatient(null)}
-								onToggleAskIntercept={() => toggleLeftPanel("chat")}
-								askInterceptOpen={chatOpen}
-								// Only with a list to switch through (not when the patient was opened from an alert).
-								onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
-								patientListOpen={patientListOpen}
-								{...patientView.headerActions}
-								compact={headerCompact}
-								theme={theme}
-								onToggleTheme={toggleTheme}
-								className={headerClassName(headerCompact)}
+								patients={patientView.patientList}
+								currentId={openPatient.id}
+								onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}
 							/>
-						) : (
-							<AppHeader
-								clock={shownClock}
-								user={shownUser}
-								team={team}
-								unreadMessages={unreadMessages}
-								compact={headerCompact}
-								theme={theme}
-								onToggleTheme={toggleTheme}
-								className={headerClassName(headerCompact)}
-							/>
-						)}
+						) : null}
 
-						{/* Under an open patient the page stays mounted, hidden, so its filters, sort and scroll are as they were on
-						    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. */}
-						<div hidden={Boolean(patientView)} className='contents'>
-							<PagePanelSlotProvider value={patientView ? null : panelSlot}>
-								{pages[page] ?? (
-									// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area
-									// below the header.
-									<main className='relative flex flex-1 flex-col p-6'>
-										<Typography as='h1' size='2xl' weight='bold'>
-											{page}
-										</Typography>
-										<EmptyState
-											className='absolute inset-0 px-6'
-											title={emptyPages[page].title}
-											description={emptyPages[page].description}
-										/>
-									</main>
-								)}
-							</PagePanelSlotProvider>
-						</div>
-						{patientView?.content}
-					</motion.div>
+						{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
+						    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
+						    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
+						    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
+						    stay right when it's scrolled. */}
+						<motion.div
+							ref={canvasRef}
+							layoutScroll
+							className={cn(
+								"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+								// With a left panel open the panel takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
+								// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
+								chatOpen || patientListOpen
+									? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+									: sidebarCollapsed
+										? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+										: "rounded-none shadow-none",
+							)}
+						>
+							{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). On
+							    a patient's details, the patient variant: a breadcrumb back to the page, and the patient's actions. */}
+							{patientView ? (
+								<AppHeader
+									variant='patient'
+									sourcePage={page}
+									patientName={patientView.name}
+									onBack={() => setOpenPatient(null)}
+									onToggleAskIntercept={() => toggleLeftPanel("chat")}
+									askInterceptOpen={chatOpen}
+									// Only with a list to switch through (not when the patient was opened from an alert).
+									onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
+									patientListOpen={patientListOpen}
+									{...patientView.headerActions}
+									compact={headerCompact}
+									theme={theme}
+									onToggleTheme={toggleTheme}
+									className={headerClassName(headerCompact)}
+								/>
+							) : (
+								<AppHeader
+									clock={shownClock}
+									user={shownUser}
+									team={team}
+									unreadMessages={unreadMessages}
+									compact={headerCompact}
+									theme={theme}
+									onToggleTheme={toggleTheme}
+									className={headerClassName(headerCompact)}
+								/>
+							)}
 
-					{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
-					    `contents`, so the panel is a flex item of this row. */}
-					<div ref={setPanelSlot} className='contents' />
-				</div>
-			</PagePanelSlotProvider>
+							{/* Under an open patient the page stays mounted, hidden, so its filters, sort and scroll are as they were on
+							    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. */}
+							<div hidden={Boolean(patientView)} className='contents'>
+								<PagePanelSlotProvider value={patientView ? null : panelSlot}>
+									{pages[page] ?? (
+										// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area
+										// below the header.
+										<main className='relative flex flex-1 flex-col p-6'>
+											<Typography as='h1' size='2xl' weight='bold'>
+												{page}
+											</Typography>
+											<EmptyState
+												className='absolute inset-0 px-6'
+												title={emptyPages[page].title}
+												description={emptyPages[page].description}
+											/>
+										</main>
+									)}
+								</PagePanelSlotProvider>
+							</div>
+							{patientView?.content}
+						</motion.div>
+
+						{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
+						    `contents`, so the panel is a flex item of this row. */}
+						<div ref={setPanelSlot} className='contents' />
+					</div>
+				</PagePanelSlotProvider>
+			</PagePreferencesProvider>
 		</PatientNavigationProvider>
 	);
 }

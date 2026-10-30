@@ -20,8 +20,8 @@ import {
 } from "../monitoring/triage-queue";
 import { PagePanel, SidePanel, sidePanelWidth } from "../side-panel";
 
-// The live feed, on the Census and Monitoring pages: the hospital bar's "Live feed: …" button, and the panel it opens
-// right of the canvas, the triage queue of the page's alerts.
+// The live feed, on the Census and Monitoring pages: the "Live feed: …" button right of the page's summary, and the
+// panel it opens right of the canvas, the triage queue of the page's alerts.
 
 /* -------------------------------------------------------------------------- */
 /* Alert actions                                                              */
@@ -75,8 +75,8 @@ const reducedFeedVariants: Variants = {
 };
 
 /**
- * The hospital bar's live feed: "Live feed:" in `muted-foreground`, the latest change in medium `foreground`, then a
- * chevron (Intercept-Live Census `141:22191`); just "Live feed" before the first change. A button that opens and
+ * The live feed line, right of the page's summary, 16px: "Live feed:" in `muted-foreground`, the latest change in
+ * `foreground`, then a chevron (Intercept-Live Census `179:8347`; it sat in the hospital bar until Oct 30, 2026); just "Live feed" before the first change. A button that opens and
  * closes the live feed panel, underlined on hover. Each new change rolls in like a ticker: it rises from below the
  * line as the last one rises out the top, at the same time. Both sit in one grid cell, right-aligned, so the leaving
  * one doesn't jump sideways; "Live feed:" glides to the new length. A near-instant cross-fade under reduced motion.
@@ -92,9 +92,9 @@ function LiveFeed({ change, open, onOpen }: { change?: string; open: boolean; on
 			aria-expanded={open}
 			aria-controls='live-feed'
 			title={change ? `Live feed: ${change}` : undefined}
-			// Gives up room before the hospital tabs do (a high shrink factor), but only down to "Live feed:" and the chevron
+			// Gives up room before the summary does (a high shrink factor), but only down to "Live feed:" and the chevron
 			// (its automatic minimum width; the change itself truncates to nothing), so it always stays visible and clickable.
-			className='group/feed flex shrink-[100] cursor-pointer items-center gap-2 rounded-sm px-1.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring'
+			className='group/feed flex shrink-[100] cursor-pointer items-center gap-2 rounded-sm px-1.5 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring'
 		>
 			<span className='flex min-w-0 items-center'>
 				<motion.span
@@ -113,7 +113,7 @@ function LiveFeed({ change, open, onOpen }: { change?: string; open: boolean; on
 								initial='initial'
 								animate='animate'
 								exit='exit'
-								className='col-start-1 row-start-1 min-w-0 max-w-full justify-self-end truncate font-medium group-hover/feed:underline'
+								className='col-start-1 row-start-1 min-w-0 max-w-full justify-self-end truncate group-hover/feed:underline'
 							>
 								{change}
 							</motion.span>

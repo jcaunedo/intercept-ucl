@@ -7,9 +7,20 @@ import type { PrototypeShortcut } from "../intercept-live";
 /**
  * The menu's entries. Scenario 1 (Demo Use Cases, "Heart failure at 2 a.m. in a 25-bed hospital") opens Monitoring
  * and plays the live feed from the start of the shift, so Margaret Hayes's early-warning alert fires and she ranks #1.
+ * Sections by location shows Group by location as the grid's hospital sections instead of the Kanban board (the default), on
+ * the Census and Monitoring, until chosen again.
  */
-const prototypeShortcuts = ({ restartLiveFeed }: { restartLiveFeed: () => void }): PrototypeShortcut[] => [
+const prototypeShortcuts = ({
+	restartLiveFeed,
+	groupedGrid,
+	onToggleGroupedGrid,
+}: {
+	restartLiveFeed: () => void;
+	groupedGrid: boolean;
+	onToggleGroupedGrid: () => void;
+}): PrototypeShortcut[] => [
 	{ group: "Scenarios", label: "Scenario 1 · Heart failure at 2 a.m.", page: "Monitoring", onSelect: restartLiveFeed },
+	{ group: "Views", label: "Sections by location", checked: groupedGrid, onSelect: onToggleGroupedGrid },
 ];
 
 /**
