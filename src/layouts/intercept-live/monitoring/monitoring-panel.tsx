@@ -158,8 +158,8 @@ function MonitoringPanel({
 	const [sortBy, setSortBy] = React.useState<SortOrderId>("alert");
 	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
 	const [plot, setPlot] = React.useState<MonitorPlot>("waveform");
-	// Cards showing the full monitor. Each card's own button toggles it; "Full monitors" sets every card.
-	const [expandedIds, setExpandedIds] = React.useState<ReadonlySet<string>>(() => new Set());
+	// Condensed or full monitors, for every card at once (the cards have no toggle of their own).
+	const [monitorView, setMonitorView] = React.useState<"condensed" | "full">("condensed");
 	// The live feed panel, right of the canvas: the triage queue.
 	const [feedOpen, setFeedOpen] = React.useState(false);
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
@@ -214,15 +214,6 @@ function MonitoringPanel({
 		);
 	};
 	const alertCount = activeAlertCount(visible);
-	const allExpanded = visible.length > 0 && visible.every((patient) => expandedIds.has(patient.id));
-
-	const setExpanded = (patientId: string, expanded: boolean) =>
-		setExpandedIds((current) => {
-			const next = new Set(current);
-			if (expanded) next.add(patientId);
-			else next.delete(patientId);
-			return next;
-		});
 
 	const clearFilters = () => {
 		setHospitalId("all");
@@ -283,10 +274,8 @@ function MonitoringPanel({
 								<MonitorPlotToggle value={plot} onValueChange={setPlot} density={density} />
 								<MonitorViewToggle
 									density={density}
-									value={allExpanded ? "full" : expandedIds.size === 0 ? "condensed" : null}
-									onValueChange={(view) =>
-										setExpandedIds(view === "full" ? new Set(patients.map((patient) => patient.id)) : new Set())
-									}
+									value={monitorView}
+									onValueChange={(view) => view && setMonitorView(view)}
 								/>
 								<DensityToggle value={density} onValueChange={setDensity} />
 							</div>
@@ -322,8 +311,7 @@ function MonitoringPanel({
 									alert={cardAlert(id)}
 									size={density === "compact" ? "sm" : "md"}
 									plot={plot}
-									expanded={expandedIds.has(id)}
-									onExpandedChange={(expanded) => setExpanded(id, expanded)}
+									expanded={monitorView === "full"}
 									onOpen={canOpenPatient ? () => openPatient(id) : undefined}
 								/>
 							)}

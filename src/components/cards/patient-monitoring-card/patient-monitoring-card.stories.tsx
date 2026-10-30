@@ -67,7 +67,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Condensed (default): the ECG strip and HR, SpO₂, BP and RR. The expand button shows the full monitor. */
+/** Condensed (default): the ECG strip and HR, SpO₂, BP and RR. The page sets `expanded` for the full monitor. */
 export const Default: Story = {};
 
 /** The full monitor: one waveform lane per parameter, with its numbers and alarm limits. */

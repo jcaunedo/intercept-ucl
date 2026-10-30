@@ -1,11 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { MapPinIcon, Maximize2Icon, Minimize2Icon } from "lucide-react";
+import { MapPinIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 
-import { Button } from "@/components/buttons/button";
 import {
 	PatientCardAlert,
 	patientCardInteractiveClassName,
@@ -139,10 +138,14 @@ type PatientMonitoringCardProps = Omit<
 		condensedView?: "waveform" | "trends";
 		/** The last hour of HR, SpO₂, systolic and RR, for the `trends` plot. */
 		trends?: MonitorTrends;
-		/** Controlled: the full monitor (all waveforms) instead of the condensed one. */
+		/**
+		 * The full monitor (all waveforms) instead of the condensed one. The page sets it (e.g. Monitoring's monitor view);
+		 * the card has no toggle of its own since Oct 30, 2026.
+		 */
 		expanded?: boolean;
-		/** Uncontrolled starting state. Defaults to condensed. */
+		/** The view when `expanded` isn't passed. Defaults to condensed. */
 		defaultExpanded?: boolean;
+		/** @deprecated Never called: the card has no expand button since Oct 30, 2026. */
 		onExpandedChange?: (expanded: boolean) => void;
 	};
 
@@ -348,7 +351,7 @@ function PatientMonitor({ vitals = {}, limits: limitsProp, plot = "waveform", tr
 
 /**
  * A patient's identity and location over a live bedside monitor. Condensed by default (an ECG strip and HR, SpO₂, BP and
- * RR, or 1-hour sparklines with `plot="trends"`); expands to the full monitor, one lane per parameter (its waveform, or
+ * RR, or 1-hour sparklines with `plot="trends"`); with `expanded`, the full monitor, one lane per parameter (its waveform, or
  * its last hour with `plot="trends"`) with its numbers and alarm limits. `size="sm"` is the compact card. An alert behaves
  * as on PatientCard (a ring that pulses until the card is clicked or the alert is addressed), and with `onOpen` or
  * `href` the whole card opens the patient. Draft: the monitor follows PRD Monitoring §3.3, not a Figma design yet.
@@ -374,7 +377,7 @@ function PatientMonitoringCard({
 	trends = {},
 	expanded: expandedProp,
 	defaultExpanded = false,
-	onExpandedChange,
+	onExpandedChange: _onExpandedChange,
 	onOpen,
 	href,
 	className,
@@ -384,8 +387,7 @@ function PatientMonitoringCard({
 	const { resolve, prefersReducedMotion } = useMotionPreference();
 	const interactive = Boolean(onOpen || href);
 	const alertRing = usePatientCardAlertRing({ alert, interactive });
-	const [uncontrolledExpanded, setUncontrolledExpanded] = React.useState(defaultExpanded);
-	const expanded = expandedProp ?? uncontrolledExpanded;
+	const expanded = expandedProp ?? defaultExpanded;
 	const monitorId = React.useId();
 	const limits = { ...defaultMonitorLimits, ...limitsProp };
 	const cardSize = size ?? "md";
@@ -409,11 +411,6 @@ function PatientMonitoringCard({
 		name
 	);
 
-	const toggleExpanded = () => {
-		setUncontrolledExpanded(!expanded);
-		onExpandedChange?.(!expanded);
-	};
-
 	return (
 		// Same card behavior as PatientCard: lift and hover border when it opens the patient, and the alert ring.
 		<motion.article
@@ -429,7 +426,7 @@ function PatientMonitoringCard({
 				interactive && cardSize === "sm" && "hover:p-[10px]",
 				className,
 			)}
-			// Capture, so any click on the card counts (the open target, the expand button, the monitor).
+			// Capture, so any click on the card counts (the open target, the monitor).
 			onClickCapture={(event) => {
 				alertRing.markSeen();
 				onClickCapture?.(event);
@@ -518,20 +515,6 @@ function PatientMonitoringCard({
 				// its content would collapse if it were the container itself.
 				className='@container/monitor relative overflow-hidden rounded-lg bg-monitor text-monitor-foreground'
 			>
-				{/* Full / condensed monitor, top-right over the monitor (intercept.ds Hover variant): Button's `circle`
-				    variant at 32px. It shows while the card is hovered or a keyboard user is inside it, and always on touch
-				    screens, which can't hover. Raised above the card's open target, so it keeps its own click. */}
-				<Button
-					variant='circle'
-					size='icon-sm'
-					aria-expanded={expanded}
-					aria-controls={monitorId}
-					aria-label={expanded ? "Show condensed monitor" : "Show full monitor"}
-					onClick={toggleExpanded}
-					className='absolute top-2 right-2 z-10 opacity-0 transition-[opacity,background-color] duration-160 ease-out group-focus-within/card:opacity-100 group-hover/card:opacity-100 focus-visible:opacity-100 motion-reduce:transition-none [@media(hover:none)]:opacity-100'
-				>
-					{expanded ? <Minimize2Icon /> : <Maximize2Icon />}
-				</Button>
 				<AnimatePresence initial={false} mode='wait'>
 					{expanded ? (
 						<motion.div

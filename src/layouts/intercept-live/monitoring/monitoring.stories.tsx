@@ -89,10 +89,12 @@ export const OutsideLimits: Story = {
 
 /** Full monitors (the monitor-view buttons): every card shows all four waveform lanes, with their alarm limits. */
 export const FullMonitors: Story = {
-	play: async ({ canvas, userEvent }) => {
+	play: async ({ canvas, canvasElement, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Full monitors" }));
 		await waitFor(() =>
-			expect(canvas.getAllByRole("button", { name: "Show condensed monitor" })).toHaveLength(sampleMonitoringPatients.length),
+			expect(canvasElement.querySelectorAll("[data-slot='patient-monitoring-card'][data-expanded]")).toHaveLength(
+				sampleMonitoringPatients.length,
+			),
 		);
 	},
 };
