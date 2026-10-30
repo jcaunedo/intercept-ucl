@@ -119,6 +119,8 @@ Renaming a `cva` variant key or exported type is **breaking** for apps consuming
 
 ## Workflow B: refine an existing component
 
+**Every update is a full audit, whatever the user asked for.** A request names one change ("remove the … button", "tags shouldn't wrap"), but the designer may have changed other things in the same pass, and the user expects all of them to land without having to point each one out. Missed changes (a text weight, a gap) are the most common complaint about this workflow. B1 and B2 below require the full layer dump and diff table in [references/figma-audit.md](references/figma-audit.md); don't skip them because the request looks small.
+
 Use this when `src/components/<category>/<component-name>/<component-name>.tsx` **already exists** and the Figma design has been revised since — e.g. a size/spacing value changed, an icon's scale within its slot changed, a color was rebound to a different token, or a variant was tweaked. This is a **targeted patch against a diff**, not a regeneration: preserve everything in the existing file that Figma didn't change (prop API, variant keys, structure, accessibility semantics) and only touch the values that actually drifted.
 
 Because `src/components/**` components are shared across every consumer (layouts, other components, external apps via the published package), a fix here has wider blast radius than a layout fix — check for other `src/components/*/*` or `src/layouts/*` files that render this component and consider whether the same drift shows up there too (usually it won't, since they just consume the component's API, but a prop default change can ripple).
@@ -127,17 +129,20 @@ Because `src/components/**` components are shared across every consumer (layouts
 
 - Confirm `src/components/<category>/<component-name>/<component-name>.tsx` exists. If the user only gave a Figma URL and it's unclear which component it maps to, check the folders under `src/components/*/` and match by name/shape before assuming.
 - Read the existing `<component-name>.tsx` (and its `.stories.tsx`) in full before touching Figma — you need the current `cva` variants, prop API, and class values as the baseline for the diff.
+- Read the component's DESIGN.md entry **and** the token sync notes (DESIGN.md "Figma → theme.css token map" and the sync drift lists) before touching Figma. Differences already decided there are not questions: don't ask about them again, and never reopen a resolved decision unless the user asks.
+- List every Figma component that renders through this code (e.g. PatientCard's `patient-card` and `patient-card-compact` sets). All of them are audited.
 
 ### B1. Re-pull the current Figma state
 
 1. `get_metadata` + `get_design_context` (`excludeScreenshot: true` unless a visual check is needed) on the same component/component-set node used originally, to get the **current, full** variant matrix — list every symbol name in the response, not just the ones the user pointed at — plus spacing, radius, color, typography, and icon/asset sizing, including any semantic token bindings that changed. Treat this the same as A3 step 1: the fresh symbol list is what B2 diffs against, so read it completely even when you only expect one small change — Figma often carries other new states/values alongside the one the user mentioned.
-2. `get_variable_defs` on nodes whose bound variable may have changed, to confirm the token name.
-3. Prefer bound variable names over recomputing raw px — if Figma now binds a value to a semantic token, that token's existing Tailwind utility is the target (see [references/ucl-conventions.md](references/ucl-conventions.md)), not a hardcoded arbitrary value.
-4. **If this component maps to a shadcn/ui primitive, also re-pull shadcn's actual current source** (`https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/<component>.tsx`) — not just Figma — before diffing. Default prop values, wrapper structure, and base classNames are exactly the kind of thing that silently drifts across a component's history in this repo (each refine pass tends to patch one symptom at a time), so re-anchoring against the real upstream source periodically, not just the last-known local baseline, catches accumulated drift that a Figma-only diff would miss entirely (Figma has no opinion on Radix positioning modes, default props, or DOM structure).
+2. **Dump every layer of every variant** with the script in [references/figma-audit.md](references/figma-audit.md) (step 1), including hidden layers and nested instances, for each Figma component listed in B0. `get_design_context` alone isn't enough: its generated code drops weights and line heights it can't map, and it's easy to read only the part the user pointed at.
+3. `get_variable_defs` on nodes whose bound variable may have changed, to confirm the token name. When a bound foundation token (line height, size, color) resolves to a value other than `theme.css`'s, check the DESIGN.md token notes first; if it's undecided, it's a foundations question (archielabs.ds), not a component fix.
+4. Prefer bound variable names over recomputing raw px — if Figma now binds a value to a semantic token, that token's existing Tailwind utility is the target (see [references/ucl-conventions.md](references/ucl-conventions.md)), not a hardcoded arbitrary value.
+5. **If this component maps to a shadcn/ui primitive, also re-pull shadcn's actual current source** (`https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/<component>.tsx`) — not just Figma — before diffing. Default prop values, wrapper structure, and base classNames are exactly the kind of thing that silently drifts across a component's history in this repo (each refine pass tends to patch one symptom at a time), so re-anchoring against the real upstream source periodically, not just the last-known local baseline, catches accumulated drift that a Figma-only diff would miss entirely (Figma has no opinion on Radix positioning modes, default props, or DOM structure).
 
 ### B2. Diff against the existing code
 
-Compare the freshly pulled Figma values against the existing `cva` definition and markup, section by section:
+Build the diff table from [references/figma-audit.md](references/figma-audit.md) (step 2): one row per Figma layer and property, each marked ✅ matches, 🔧 changed, 📌 recorded or ⚠️ new. Every text layer's weight, size and line height gets a row, including layers next to the one the user mentioned. Then work through it section by section:
 
 - **Variant matrix:** if Figma added/removed/renamed a `Type`/`Size`/`State` value, treat it like Workflow A4 — reuse existing key names where the concept matches, and **stop and ask** before adding a genuinely new variant axis or value with no existing equivalent.
 - **Icon size inside a fixed slot — check this explicitly, don't eyeball it.** When a component renders an icon/glyph/image inside a fixed-size container (e.g. a `size-10` button slot), the meaningful value is the *icon's* size relative to the slot, not just the slot size. Use the icon instance's own defined size from Figma (DESIGN.md "Icon sizes match Figma's defined instance size"); Figma's raw inset/scale math on a cropped source image reflects the asset's bleed, not a size to copy. If the instance size and what the export suggests disagree, ask the user.
@@ -152,6 +157,7 @@ Compare the freshly pulled Figma values against the existing `cva` definition an
 - Edit the existing `<component-name>.tsx` (and its folder's `.stories.tsx`/`index.ts`, plus the top-level `src/index.ts`, only if the diff actually requires it — e.g. a new variant needs a new story, or a renamed export) with targeted patches — use `Edit`, not a full rewrite via `Write`.
 - Run the same state-coverage check as A6: walk the full symbol list from B1 step 1 name by name and confirm each has a code branch. This catches the common case where the user asks about one specific state change but Figma's set has grown other new states in the same pass.
 - Follow the same "Always verify" steps as Workflow A (lint, build) and check the component's Storybook stories (and any layout that renders it) to confirm the drift is resolved.
+- **Report the audit** (references/figma-audit.md step 3): the 🔧 rows applied, the 📌 rows with their DESIGN.md reference, the ⚠️ rows asked about, and a count of the ✅ rows, so the user sees everything that was checked, not only what they asked for. Record any new decision in the component's DESIGN.md entry.
 
 ## Always verify
 
@@ -176,6 +182,7 @@ Pause and ask the user when any of these is true:
 - A state, interaction, or layer is unnamed/ambiguous in Figma.
 - Reusing an existing variant name would change its current meaning (breaking change).
 - A nested instance (e.g. an icon button inside a composed component) needs interaction states but Figma gives no source for what they should look like — propose a direction using existing library patterns rather than inventing one silently.
+- **(Workflow B)** You haven't run the full layer dump and diff table yet — even when the user asked for one specific change.
 - **(Workflow B)** Unclear which existing `src/components/<category>/<component-name>/<component-name>.tsx` a Figma URL corresponds to.
 - **(Workflow B)** A diffed value doesn't map to any existing token.
 - **(Workflow B)** The diff implies a structural change (new variant axis, renamed prop, different element) rather than a value tweak — confirm before restructuring, since this workflow is meant for drift, not redesign.

@@ -56,7 +56,6 @@ type CensusPanelProps = {
 	hospitals: CensusHospital[];
 	patients: CensusPatient[];
 	onOpenPatient?: (patientId: string) => void;
-	onPatientActions?: (patientId: string) => void;
 	/** Every alert on the census, for the live feed panel's triage queue. Resolved and declined ones show under Resolved. */
 	alerts?: TriageAlert[];
 	/** Who the queue's Escalate can send an alert to. Without any, rows don't offer Escalate. */
@@ -107,7 +106,6 @@ function CensusPanel({
 	hospitals,
 	patients: patientsProp,
 	onOpenPatient,
-	onPatientActions,
 	alerts: alertsProp = [],
 	escalationTargets = [],
 	onAlertAction,
@@ -243,14 +241,17 @@ function CensusPanel({
 					patients={visible}
 					hospitals={hospitals}
 					grouped={sortBy === "location"}
-					// The columns the md, xl and 2xl breakpoints gave beside the collapsed rail, measured inside the page's padding.
-					className='@min-[41rem]:grid-cols-2 @min-[73rem]:grid-cols-3 @min-[89rem]:grid-cols-4'
+					// Beside the collapsed rail: 2 a row above md (768), 3 above lg (1024), 4 above xl (1280), 5 above 2xl (1536)
+					// and 6 above 2.5xl (1728); above 3xl (1920) one more every 296px (a ~280px card and its gap), 7 from a 2168px
+					// window to 13 from 3944px. The page is 112px narrower than the window (64px rail, 24px padding each side). An
+					// open side panel takes its width off, so it drops columns. All in px: Tailwind can't order container queries
+					// in mixed units, and a px one placed before a rem one loses to it.
+					className='@min-[657px]:grid-cols-2 @min-[913px]:grid-cols-3 @min-[1169px]:grid-cols-4 @min-[1425px]:grid-cols-5 @min-[1617px]:grid-cols-6 @min-[2056px]:grid-cols-7 @min-[2352px]:grid-cols-8 @min-[2648px]:grid-cols-9 @min-[2944px]:grid-cols-10 @min-[3240px]:grid-cols-11 @min-[3536px]:grid-cols-12 @min-[3832px]:grid-cols-13'
 					renderCard={({ id, hospitalId: _hospitalId, mine: _mine, sepsisWatch: _sepsisWatch, ...card }) => (
 						<PatientCard
 							{...card}
 							alert={shownAlert(ownAlerts.get(id), resolvedHolds[id])}
 							onOpen={() => openPatient(id)}
-							onMoreActions={onPatientActions ? () => onPatientActions(id) : undefined}
 						/>
 					)}
 				/>

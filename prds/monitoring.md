@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Oct 29, 2026 (acuity without "risk": MON-011, §12; earlier, Oct 28: Open chart opens Patient details: MON-030; earlier, Oct 27: My patients is a chip, off by default: MON-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, MON-OD-13 added; filters in context: MON-010, MON-014, MON-051, MON-AC-11; MON-015 view controls, built in UCL)
+Last updated: Oct 30, 2026 (cards per row by breakpoint, both densities: MON-012; earlier, Oct 29: acuity without "risk": MON-011, §12; earlier, Oct 28: Open chart opens Patient details: MON-030; earlier, Oct 27: My patients is a chip, off by default: MON-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, MON-OD-13 added; filters in context: MON-010, MON-014, MON-051, MON-AC-11; MON-015 view controls, built in UCL)
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -176,9 +176,11 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 
 | Density | Cards per row at 1728px | For |
 |---|---|---|
-| **Comfortable** (default) | 3 | Fewer patients, more trend detail per card |
-| **Compact** | 4 | A full panel at a glance |
+| **Comfortable** (default) | 5 (4 with the triage queue open) | Fewer patients, more trend detail per card |
+| **Compact** | 5 (4 with the triage queue open) | A full panel at a glance |
 | **List** | One row per patient | Large panels; vitals as columns |
+
+✅ **Resolved (Oct 30, 2026, user's call):** both densities show 3 / 4 / 5 / 6 cards per row in the 1280 / 1536 / 1728 / 1920 frames, and above 1920 one more per 296px of window up to 13 (8 at 2560, 12 at 3840), with the Sidebar collapsed and no panel open; an open panel drops columns. The densities differ in card size (Comfortable keeps the larger monitor and type) and below 1025px. Replaces 3 Comfortable / 4 Compact at 1728 (DESIGN.md "Card grids: cards a row per breakpoint").
 
 ⚠️ **Decision needed:** which densities ship in v1 (MON-OD-04). Spec §9.1 Principle 3: density is not clutter; every added value must earn its place.
 

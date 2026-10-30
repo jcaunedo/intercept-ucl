@@ -40,6 +40,7 @@ import { AskInterceptPanel, type AskInterceptResponder } from "./ask-intercept-p
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
 import { PatientNavigationProvider, type PatientNavigation } from "./patient-navigation";
 import { PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
+import { useLayoutSidebar } from "./use-layout-sidebar";
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
@@ -232,7 +233,8 @@ type InterceptLiveProps = {
 };
 
 /**
- * Intercept Live's Provider Desktop: the Sidebar (collapsed to its rail by default) beside the canvas, with the sticky
+ * Intercept Live's Provider Desktop: the Sidebar (collapsed to its rail by default, and on its own at lg and below;
+ * DESIGN.md "Sidebar auto-collapses at lg and below") beside the canvas, with the sticky
  * AppHeader over the current page. Figma origin: Intercept-Live › Census (1:350).
  */
 function InterceptLive({
@@ -247,7 +249,8 @@ function InterceptLive({
 	defaultPatient,
 	askIntercept,
 }: InterceptLiveProps) {
-	const [sidebarCollapsed, setSidebarCollapsed] = React.useState(true);
+	// Collapsed to the rail by default, and always at lg (1024) and below.
+	const { sidebarCollapsed, handleSidebarCollapsedChange } = useLayoutSidebar(true);
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
 	// Patient details open over the page, which stays the Sidebar's active item (PRD PD-001).
 	const [openPatient, setOpenPatient] = React.useState<OpenPatient | null>(defaultPatient ?? null);
@@ -343,7 +346,7 @@ function InterceptLive({
 							setPage(navigateTo as InterceptLivePage);
 						}}
 						collapsed={sidebarCollapsed}
-						onCollapsedChange={setSidebarCollapsed}
+						onCollapsedChange={handleSidebarCollapsedChange}
 						className='h-full'
 					/>
 

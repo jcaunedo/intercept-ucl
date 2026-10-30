@@ -70,7 +70,7 @@ export { <Name>, <name>Variants, type <Name>Props };
 
 ## Breakpoints
 
-See DESIGN.md "Breakpoints include their own width". In short: `lg:` means **above** the lg frame width, `max-lg:` means at it and below. Write the usual `sm:`…`3xl:` classes, never an arbitrary `min-[…px]:` for a standard breakpoint. JS media queries use `mediaAbove()` + `useMediaQuery()`.
+See DESIGN.md "Breakpoints include their own width". In short: `lg:` means **above** the lg frame width, `max-lg:` means at it and below. Write the usual `sm:`…`8xl:` classes, never an arbitrary `min-[…px]:` for a standard breakpoint. JS media queries use `mediaAbove()` + `useMediaQuery()`.
 
 Design mobile-first: base (smallest) styles unprefixed, then `md:`/`lg:` overrides, e.g. `grid-cols-1 md:grid-cols-[0.75fr_1fr]`. A one-off breakpoint Figma actually specifies uses bracket syntax (`min-[825px]:flex`); otherwise reuse the nearest standard prefix.
 

@@ -37,7 +37,6 @@ const meta = {
 		team: sampleTeam,
 		unreadMessages: 3,
 		onOpenPatient: fn(),
-		onPatientActions: fn(),
 		onAlertAction: fn(),
 		onOpenLiveFeed: fn(),
 	},

@@ -3,9 +3,8 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { BellRingIcon, EllipsisIcon, MapPinIcon } from "lucide-react";
+import { BellRingIcon, MapPinIcon } from "lucide-react";
 
-import { Button } from "@/components/buttons/button";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
 import {
@@ -283,13 +282,63 @@ type PatientCardProps = Omit<
 	onOpen?: () => void;
 	/** Opens the patient as a link. Use instead of `onOpen` when the app routes with URLs. */
 	href?: string;
-	/** Shows the "…" button, which opens the card's actions. */
+	/** @deprecated Ignored: the card has no "…" button since Oct 30, 2026 (intercept.ds `patient-card-compact`). */
 	onMoreActions?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
 /**
+ * The tags on one line. When they're wider than the card, the row scrolls sideways (wheel, trackpad, touch, or the
+ * arrow keys once focused) and its thin scrollbar shows there's more. It sits above the card's open target so it can
+ * scroll; `onClick` passes a click through to that target, so the row still opens the patient.
+ */
+function PatientCardTags({
+	tags,
+	name,
+	onClick,
+}: {
+	tags: PatientCardTag[];
+	name: string;
+	onClick?: React.MouseEventHandler<HTMLDivElement>;
+}) {
+	const rowRef = React.useRef<HTMLDivElement>(null);
+	const [overflowing, setOverflowing] = React.useState(false);
+
+	// A row that scrolls must be reachable by keyboard (a tab stop); one that fits stays out of the tab order.
+	React.useLayoutEffect(() => {
+		const row = rowRef.current;
+		if (!row) return;
+		const measure = () => setOverflowing(row.scrollWidth > row.clientWidth);
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(row);
+		for (const child of row.children) observer.observe(child);
+		return () => observer.disconnect();
+	}, [tags]);
+
+	return (
+		<div
+			ref={rowRef}
+			role={overflowing ? "group" : undefined}
+			aria-label={overflowing ? `Tags for ${name}` : undefined}
+			tabIndex={overflowing ? 0 : undefined}
+			onClick={onClick}
+			className={cn(
+				"relative z-10 flex gap-1.5 overflow-x-auto rounded-md scrollbar-soft outline-none focus-visible:ring-2 focus-visible:ring-ring",
+				onClick && "cursor-pointer",
+			)}
+		>
+			{tags.map((tag) => (
+				<Badge key={tag.label} variant={tag.variant ?? "outline"} size='sm' className='shrink-0'>
+					{tag.label}
+				</Badge>
+			))}
+		</div>
+	);
+}
+
+/**
  * A patient's identity, location, top alert, acuity and vitals in a census or monitoring grid. With `onOpen` or
- * `href` the whole card opens the patient and lifts on hover; the "…" button stays a separate target.
+ * `href` the whole card opens the patient and lifts on hover.
  *
  * Figma: [intercept.ds › patient-card](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1058-2360)
  */
@@ -311,7 +360,7 @@ function PatientCard({
 	tags = [],
 	onOpen,
 	href,
-	onMoreActions,
+	onMoreActions: _onMoreActions,
 	className,
 	onClickCapture,
 	...props
@@ -327,15 +376,15 @@ function PatientCard({
 	const roomAndBed = room && bed ? `${room} - ${bed}` : (room ?? bed);
 	const placeInHospital = [unit, roomAndBed].filter(Boolean).join(" · ");
 
-	// The name is the card's one open control. Its ::after covers the card, so a click anywhere opens the patient
-	// while the "…" button (raised above it) keeps its own target.
+	// The name is the card's one open control. Its ::after covers the card, so a click anywhere opens the patient.
 	const openTargetClassName = patientCardOpenTargetClassName;
+	const openRef = React.useRef<HTMLAnchorElement & HTMLButtonElement>(null);
 	const nameContent = href ? (
-		<a href={href} className={openTargetClassName}>
+		<a ref={openRef} href={href} className={openTargetClassName}>
 			{name}
 		</a>
 	) : onOpen ? (
-		<button type='button' onClick={onOpen} className={cn("text-left", openTargetClassName)}>
+		<button ref={openRef} type='button' onClick={onOpen} className={cn("text-left", openTargetClassName)}>
 			{name}
 		</button>
 	) : (
@@ -350,8 +399,9 @@ function PatientCard({
 			transition={liftPattern.transition}
 			className={cn(
 				// 15px padding + the 1px border: content sits 16px in, as in Figma, where the stroke is drawn inside. The
-				// compact card's sections sit closer (10px; 12px on the expanded card).
-				"group/card relative isolate flex flex-col rounded-card border border-border-defined bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
+				// compact card's sections sit closer (10px; 12px on the expanded card). `min-w-0`, so in a flex or grid cell the
+				// card can be narrower than its one-line location, and the hospital truncates instead.
+				"group/card relative isolate flex min-w-0 flex-col rounded-card border border-border-defined bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
 				compact ? "gap-2.5" : "gap-3",
 				// Hover (interactive cards only): a 2px `foreground` border (the alert ring hides meanwhile) and `shadow-lg`.
 				// The padding drops to 14px so content stays put.
@@ -429,7 +479,7 @@ function PatientCard({
 									<span className='flex items-center gap-2'>
 										<span className='text-xl font-semibold text-foreground'>{acuity.score ?? "--"}</span>
 										{acuityLevel ? (
-											<span className={cn("text-sm font-semibold", acuityLevels[acuityLevel].className)}>
+											<span className={cn("text-xl font-normal", acuityLevels[acuityLevel].className)}>
 												{acuityLevels[acuityLevel].label}
 											</span>
 										) : null}
@@ -451,27 +501,27 @@ function PatientCard({
 				</div>
 			) : null}
 
-			{tags.length > 0 || onMoreActions ? (
-				<div className='flex items-center justify-between gap-2'>
-					<div className='flex min-w-0 flex-wrap items-center gap-1.5'>
-						{tags.map((tag) => (
-							<Badge key={tag.label} variant={tag.variant ?? "outline"} size='sm'>
-								{tag.label}
-							</Badge>
-						))}
-					</div>
-					{onMoreActions ? (
-						<Button
-							variant='ghost'
-							size='icon-sm'
-							aria-label={`More actions for ${name}`}
-							onClick={onMoreActions}
-							className='relative z-10 shrink-0'
-						>
-							<EllipsisIcon />
-						</Button>
-					) : null}
-				</div>
+			{tags.length > 0 ? (
+				<PatientCardTags
+					tags={tags}
+					name={name}
+					// Re-sent to the open target with its modifier keys, so ⌘/Ctrl-click still opens a link in a new tab.
+					onClick={
+						interactive
+							? (event) =>
+									openRef.current?.dispatchEvent(
+										new MouseEvent("click", {
+											bubbles: true,
+											cancelable: true,
+											ctrlKey: event.ctrlKey,
+											metaKey: event.metaKey,
+											shiftKey: event.shiftKey,
+											altKey: event.altKey,
+										}),
+									)
+							: undefined
+					}
+				/>
 			) : null}
 		</motion.article>
 	);

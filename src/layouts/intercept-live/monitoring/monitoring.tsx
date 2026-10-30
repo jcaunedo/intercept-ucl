@@ -16,8 +16,6 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 	MonitoringPanelProps & {
 		/** The census's patients. With them, the Sidebar's Census opens the Census page, with the same live feed. */
 		censusPatients?: CensusPatient[];
-		/** The Census card's "…" button. */
-		onPatientActions?: (patientId: string) => void;
 		/** The page shown first. The Sidebar switches between Monitoring, the Census and the pages that aren't built. */
 		defaultPage?: InterceptLivePage;
 		/** What's known about each patient beyond the card, for their details page. A patient without one shows the card's. */
@@ -43,7 +41,6 @@ function Monitoring({
 	onOpenLiveFeed,
 	censusPatients,
 	onOpenPatient,
-	onPatientActions,
 	defaultPage = "Monitoring",
 	patientRecords,
 	defaultPatient,
@@ -87,7 +84,6 @@ function Monitoring({
 						hospitals={hospitals}
 						patients={censusPatients}
 						onOpenPatient={onOpenPatient}
-						onPatientActions={onPatientActions}
 						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onAlertAction={handleAlertAction}

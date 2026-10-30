@@ -721,7 +721,9 @@ function PanelGrid<Patient extends PanelPatient>({
 							key={item.patient.id}
 							reducedMotion={reducedMotion}
 							layoutTransition={layoutTransition}
-							className='grid'
+							// `grid-cols-1` is minmax(0, 1fr): the card takes the cell's width and its hospital truncates. An `auto`
+							// column would grow to the card's one-line location and push it past the cell.
+							className='grid grid-cols-1'
 						>
 							{renderCard(item.patient)}
 						</PanelItem>

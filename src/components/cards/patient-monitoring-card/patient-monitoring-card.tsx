@@ -77,9 +77,10 @@ const alarmSide = (value: number | undefined, [low, high]: [number, number]) =>
 	value === undefined ? undefined : value > high ? "above" : value < low ? "below" : undefined;
 
 // `md` for the Comfortable panel; `sm` for Compact (PRD Monitoring MON-012): tighter padding, smaller type and a shorter
-// condensed monitor, so four fit a row at 1728. Padding is 1px less than the step because the border adds it.
+// condensed monitor, so four fit a row at 1728. Padding is 1px less than the step because the border adds it. `min-w-0`,
+// so in a flex or grid cell the card can be narrower than its one-line location, and the hospital truncates instead.
 const patientMonitoringCardVariants = cva(
-	"group/card relative isolate flex flex-col rounded-card border border-border bg-card text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
+	"group/card relative isolate flex min-w-0 flex-col rounded-card border border-border bg-card text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
 	{
 		variants: {
 			size: {
@@ -98,9 +99,10 @@ type PatientMonitoringCardSize = NonNullable<VariantProps<typeof patientMonitori
 // The condensed monitor's height per size; the full monitor is 240px at both.
 const condensedHeight: Record<PatientMonitoringCardSize, number> = { md: 120, sm: 104 };
 
-// The condensed numerics' columns. The compact card gives ABP ("104/56") more room than the single numbers.
+// The condensed numerics' columns. The compact card gives ABP ("104/56") more room than the single numbers; so does the
+// default card when it's under ~340px wide (a 308px monitor), e.g. five or six a row.
 const condensedColumns: Record<PatientMonitoringCardSize, string> = {
-	md: "grid-cols-4",
+	md: "grid-cols-[1fr_1fr_1.5fr_1fr] @min-[308px]/monitor:grid-cols-4",
 	sm: "grid-cols-[1fr_1fr_1.5fr_1fr]",
 };
 
@@ -185,7 +187,7 @@ function MonitorNumeric({
 			data-alarm={alarm}
 			className={cn(
 				"flex min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-sm py-0.5",
-				size === "sm" ? "px-1.5" : "px-2",
+				size === "sm" ? "px-1.5" : full ? "px-2" : "px-1.5 @min-[308px]/monitor:px-2",
 			)}
 		>
 			<span className={cn("flex w-full items-center justify-between gap-1 text-xs/4 font-semibold", color)}>
@@ -198,11 +200,13 @@ function MonitorNumeric({
 					{full ? alarmTag : null}
 				</span>
 				{/* Condensed cells are too narrow for both, so the tag takes the unit's place there; the compact card's are too
-				    narrow for units at all (the full monitor shows them). */}
+				    narrow for units at all (the full monitor shows them), and so are the default card's under a 308px monitor. */}
 				{alarm && !full ? (
 					alarmTag
-				) : full || size === "md" ? (
+				) : full ? (
 					<span className='font-normal text-monitor-foreground'>{unit}</span>
+				) : size === "md" ? (
+					<span className='hidden font-normal text-monitor-foreground @min-[308px]/monitor:inline'>{unit}</span>
 				) : null}
 			</span>
 			<span className='flex w-full items-end justify-between gap-1'>
@@ -508,7 +512,9 @@ function PatientMonitoringCard({
 				initial={false}
 				animate={{ height: expanded ? 240 : condensedHeight[cardSize] }}
 				transition={resolve(standardTransition)}
-				className='relative overflow-hidden rounded-lg bg-monitor text-monitor-foreground'
+				// A size container, so the numerics fit the card's width. On the monitor rather than the card: a card sized by
+				// its content would collapse if it were the container itself.
+				className='@container/monitor relative overflow-hidden rounded-lg bg-monitor text-monitor-foreground'
 			>
 				{/* Full / condensed monitor, top-right over the monitor (intercept.ds Hover variant): Button's `circle`
 				    variant at 32px. It shows while the card is hovered or a keyboard user is inside it, and always on touch

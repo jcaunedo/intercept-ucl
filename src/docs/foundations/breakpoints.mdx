@@ -13,7 +13,7 @@ export const CurrentBreakpoint = () => {
 		index === -1
 			? `sm (${breakpoints.sm}px) and below`
 			: index === names.length - 1
-				? `above 3xl (${breakpoints["3xl"]}px)`
+				? `above 8xl (${breakpoints["8xl"]}px)`
 				: `${names[index + 1]}: above ${names[index]}, up to ${breakpoints[names[index + 1]]}px`;
 	return (
 		<div
@@ -66,7 +66,7 @@ Each breakpoint matches a design frame width. A breakpoint's layout covers width
 	</tbody>
 </table>
 
-`2.5xl` is a custom breakpoint halfway between `2xl` and `3xl`.
+`2.5xl` is a custom breakpoint halfway between `2xl` and `3xl`. From `3.5xl` up they're large monitors: `7xl` (3440 × 1440) is a 21:9 ultrawide, `8xl` (3840 × 2160) is 4K.
 
 ## In CSS
 
@@ -78,7 +78,7 @@ Write the usual Tailwind variants. `theme.css` registers each one 1px past its f
 <nav className="max-lg:hidden">…</nav>`}
 />
 
-Don't write arbitrary queries such as `min-[1025px]:`. These boundaries ship in `@jcaunedo/intercept-ucl/styles`, so the apps' own `sm:`–`3xl:` classes follow them too.
+Don't write arbitrary queries such as `min-[1025px]:`. These boundaries ship in `@jcaunedo/intercept-ucl/styles`, so the apps' own `sm:`–`8xl:` classes follow them too.
 
 ## In JavaScript
 

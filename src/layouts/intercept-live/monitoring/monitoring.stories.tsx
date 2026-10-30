@@ -38,7 +38,6 @@ const meta = {
 		team: sampleTeam,
 		unreadMessages: 3,
 		onOpenPatient: fn(),
-		onPatientActions: fn(),
 		onOpenLiveFeed: fn(),
 	},
 } satisfies Meta<typeof Monitoring>;

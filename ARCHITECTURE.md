@@ -22,6 +22,7 @@ Paths in this section are relative to `src/layouts/intercept-live/`.
 | Part | File | Notes |
 | --- | --- | --- |
 | Shell | `intercept-live.tsx` | Owns which page is shown, which patient is open and which side panels are open, and their widths |
+| Sidebar state | `use-layout-sidebar.ts` | `useLayoutSidebar()`: whether the Sidebar is collapsed. Collapsed by default, and on its own at `lg` (1024) and below (DESIGN.md "Sidebar auto-collapses at lg and below") |
 | Patient navigation | `patient-navigation.tsx` | `usePatientNavigation()`: the context the pages use to open a patient (`openPatient(id, list)`), and to read whether the header is compact and whether a patient is open |
 | Side panel | `side-panel.tsx` | `SidePanel`: slides open, resizes from the canvas edge, header with an optional `description`. Every panel below uses it |
 | Ask Intercept Live | `ask-intercept-panel.tsx` | The global chat, on the left. Toggled from the Sidebar's Ask Intercept Live and, on a patient's page, the app header's sparkle. Its message box is UCL's `ChatComposer`; answers come from `InterceptLive`'s `askIntercept` prop |

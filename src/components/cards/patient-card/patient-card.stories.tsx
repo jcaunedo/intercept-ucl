@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn } from "storybook/test";
+import { expect, fn } from "storybook/test";
 
 import {
 	PatientCard,
@@ -41,7 +41,7 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
-	args: { ...patient, onOpen: fn(), onMoreActions: fn() },
+	args: { ...patient, onOpen: fn() },
 	decorators: [
 		// Figma draws the card 400px wide; in an app its grid column sets the width.
 		(Story) => (
@@ -57,7 +57,7 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * Compact, the default, for the Census: identity, location, the top alert, acuity and tags, no vitals (the `vitals`
- * passed here show only on the expanded card). Click anywhere to open the patient; the "…" button is a separate target.
+ * passed here show only on the expanded card). Click anywhere to open the patient.
  * Hover lifts the card, darkens its border and deepens its shadow.
  */
 export const Default: Story = {};
@@ -72,9 +72,9 @@ export const AsLink: Story = {
 	args: { onOpen: undefined, href: "#patient-01033876" },
 };
 
-/** Without `onOpen`, `href` or `onMoreActions`: a static card, no hover, no "…" button. */
+/** Without `onOpen` or `href`: a static card, no hover. */
 export const Static: Story = {
-	args: { onOpen: undefined, onMoreActions: undefined },
+	args: { onOpen: undefined },
 };
 
 /** Out-of-range readings take the destructive color and an arrow; an unmonitored one shows "--". */
@@ -94,7 +94,7 @@ export const AbnormalAndMissingVitals: Story = {
 
 /** No alert, no acuity and no tags: the card keeps only what it has. */
 export const Minimal: Story = {
-	args: { alert: undefined, acuity: undefined, trajectory: undefined, tags: [], onMoreActions: undefined },
+	args: { alert: undefined, acuity: undefined, trajectory: undefined, tags: [] },
 };
 
 /** A long name wraps so it's always readable. A long hospital name truncates, so the unit, room and bed stay visible. */
@@ -107,7 +107,33 @@ export const LongContent: Story = {
 	},
 };
 
-const alertVariants: PatientCardAlertVariant[] = ["critical", "high", "medium", "low", "resolved"];
+/**
+ * More tags than fit: they stay on one line, and the row scrolls sideways (wheel, trackpad, touch, or the arrow keys
+ * once it's focused with Tab). A click on the row still opens the patient.
+ */
+export const ManyTags: Story = {
+	args: {
+		tags: [
+			{ label: "Ventilated" },
+			{ label: "On pressors" },
+			{ label: "ECMO" },
+			{ label: "Contact isolation" },
+			{ label: "Fall risk" },
+			{ label: "DNR" },
+		],
+	},
+	play: async ({ canvasElement, args }) => {
+		const row = canvasElement.querySelector<HTMLElement>("[role='group'][aria-label^='Tags for']");
+		if (!row) throw new Error("The tags row should be a focusable group when it overflows");
+		const badges = [...row.children].map((badge) => badge.getBoundingClientRect().top);
+		if (new Set(badges).size !== 1) throw new Error("Tags should stay on one line");
+		if (row.scrollWidth <= row.clientWidth) throw new Error("The tags row should scroll");
+		row.click();
+		await expect(args.onOpen).toHaveBeenCalled();
+	},
+};
+
+const alertVariants: PatientCardAlertVariant[] =["critical", "high", "medium", "low", "resolved"];
 
 /** Every alert pill, with and without a count. */
 export const Alerts: Story = {

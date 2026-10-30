@@ -42,7 +42,6 @@ function Census({
 	liveFeed,
 	onOpenLiveFeed,
 	onOpenPatient,
-	onPatientActions,
 	defaultPage = "Census",
 	patientRecords,
 	defaultPatient,
@@ -74,7 +73,6 @@ function Census({
 						hospitals={hospitals}
 						patients={patients}
 						onOpenPatient={onOpenPatient}
-						onPatientActions={onPatientActions}
 						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onAlertAction={handleAlertAction}
