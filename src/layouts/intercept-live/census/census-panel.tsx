@@ -48,6 +48,8 @@ type CensusPatient = Omit<PatientCardProps, "onOpen" | "href" | "onMoreActions" 
 	mine?: boolean;
 	/** On the Virtual Sepsis watch list. */
 	sepsisWatch?: boolean;
+	/** The acuity score's change over the last 4 h, which ranks patients within an alert severity (DU-09). */
+	scoreChange4h?: number;
 };
 
 type CensusUser = AppHeaderUser;
@@ -88,7 +90,7 @@ const quickViews: QuickView<CensusPatient>[] = [
 	// Any vital the card marks outside its normal range (↑ / ↓), alert or not: the card's own wording. Not "Outside
 	// limits", which Monitoring's alarm limits use.
 	{ id: "range", label: "Out of range", icon: GaugeIcon, matches: isOutOfRange },
-	{ id: "rising", label: "Rising acuity", icon: TriangleIcon, matches: hasRisingAcuity },
+	{ id: "rising", label: "Rising score", icon: TriangleIcon, matches: hasRisingAcuity },
 	{ id: "organ", label: "Organ support", icon: HandHeartIcon, matches: hasOrganSupport },
 	{ id: "sepsis", label: "Sepsis watch", icon: GermIcon, matches: (patient) => Boolean(patient.sepsisWatch) },
 	{ id: "data", label: "Data gap", icon: WifiOffIcon, matches: hasDataGap },

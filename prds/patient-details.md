@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Oct 29, 2026
+Last updated: Oct 30, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -220,10 +220,11 @@ Code status ("Full code", "DNR", "DNI"), allergies ("Allergy: Penicillin"; "No k
 
 ### PD-012 — Acuity and trajectory
 
-As on the card: "Critical · SOFA 13" with "▲ +4 in 24 h" (PC-030, PC-031). The score opens its breakdown by organ system with each component's value, time and source.
+As on the card: "NEWS2 10 High" with "▲ +6 in last 24 h" (PC-030, PC-031); the score's name, not "acuity score" (Oct 30, 2026). The score opens its breakdown by input (RR, SpO₂, oxygen, BP, HR, consciousness, temperature) with each one's value, points, time and source.
 
 - No overall condition word (Stable, Unstable, Guarded) until PRD OD-17 is decided.
-- ⚠️ **Decision needed:** the acuity score itself (PRD OD-02); SOFA is the leading candidate.
+- ⚠️ **To clarify with the client:** the score, its on-screen name and its breakdown are open questions in PRD Patient card PC-030 "To clarify with the client" (OD-18).
+- ✅ **Resolved (Oct 30, 2026, for the prototype; DU-14):** the acuity score is NEWS2-style, replacing the SOFA placeholder; clinical approval is still PRD OD-02. ⚠️ **Gap:** the breakdown isn't built; today the inputs and their points show only in a deterioration alert's evidence.
 
 ### PD-013 — Organ support tags
 

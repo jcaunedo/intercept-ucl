@@ -18,7 +18,7 @@ import {
 import { AnimatePresence, motion, type Variants } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
-import { PatientCardAlert, type PatientCardAlertStatus } from "@/components/cards/patient-card";
+import { PatientCardAlert, type PatientCardAcuityLevel, type PatientCardAlertStatus } from "@/components/cards/patient-card";
 import { Badge } from "@/components/data-display/badge";
 import { Counter } from "@/components/data-display/counter";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -62,6 +62,8 @@ type TriageAlert = {
 	patientId: string;
 	severity: TriageAlertSeverity;
 	title: string;
+	/** Why it matters for this patient, in a few words, e.g. "Rising work of breathing, positive fluid balance, HFrEF". */
+	reason?: string;
 	source: TriageAlertSource;
 	/** When it fired, ISO 8601. */
 	firedAt: string;
@@ -98,6 +100,9 @@ type TriageQueuePatient = {
 	hospital?: string;
 	unit?: string;
 	bed?: string;
+	/** The patient's acuity band and its 4 h change, which rank alerts of the same severity (DU-09). */
+	acuity?: { level?: PatientCardAcuityLevel };
+	scoreChange4h?: number;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -123,6 +128,31 @@ const isOpenAlert = (alert: TriageAlert) => alert.status !== "resolved" && alert
 /** Queue order (PRD MON-021): severity first, then oldest first within a severity. */
 const compareTriageAlerts = (a: TriageAlert, b: TriageAlert) =>
 	severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity) || a.firedAt.localeCompare(b.firedAt);
+
+// Acuity bands, sickest first. Unknown and a patient without a score rank last.
+const acuityBandOrder: PatientCardAcuityLevel[] = ["critical", "high", "medium", "moderate", "low"];
+const bandRank = (patient?: TriageQueuePatient) => {
+	const index = acuityBandOrder.indexOf(patient?.acuity?.level ?? "unknown");
+	return index === -1 ? acuityBandOrder.length : index;
+};
+
+/**
+ * The work list's order (DU-09): severity, then the patient's acuity band, then the larger rise in their score over
+ * 4 h, then oldest first. A patient whose score jumps outranks one whose score is high but steady.
+ */
+const rankTriageAlerts = (patients: TriageQueuePatient[]) => {
+	const byId = new Map(patients.map((patient) => [patient.id, patient]));
+	return (a: TriageAlert, b: TriageAlert) => {
+		const left = byId.get(a.patientId);
+		const right = byId.get(b.patientId);
+		return (
+			severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity) ||
+			bandRank(left) - bandRank(right) ||
+			(right?.scoreChange4h ?? 0) - (left?.scoreChange4h ?? 0) ||
+			a.firedAt.localeCompare(b.firedAt)
+		);
+	};
+};
 
 /** Addressed alerts, most recently addressed first. */
 const sortAddressedAlerts = (alerts: TriageAlert[]) =>
@@ -393,6 +423,12 @@ function TriageQueueRow({
 					</span>
 				) : null}
 			</div>
+			{alert.reason ? (
+				<p className='-mt-1 text-sm text-foreground'>
+					<span className='sr-only'>Reason: </span>
+					{alert.reason}
+				</p>
+			) : null}
 
 			{patient ? (
 				<p className='text-sm'>
@@ -561,14 +597,14 @@ function TriageAlertList({ alerts, patients, escalationTargets, onOpenPatient, o
 /* -------------------------------------------------------------------------- */
 
 /**
- * The panel's alerts, highest priority first (PRD Monitoring SV-020–SV-023): Active, and Resolved for the alerts
+ * The panel's alerts, highest priority first (PRD Monitoring SV-020–SV-023; ranked as `rankTriageAlerts`): Active, and Resolved for the alerts
  * addressed this shift. Each row opens the patient, and acknowledges, escalates and resolves (or declines an AI
  * recommendation) in place. Fills the side panel it sits in (the Monitoring live feed panel), each tab scrolling on
  * its own.
  */
 function TriageQueue({ alerts, patients, escalationTargets, onOpenPatient, onAction }: TriageQueueProps) {
 	const [tab, setTab] = React.useState("active");
-	const active = alerts.filter(isOpenAlert).sort(compareTriageAlerts);
+	const active = alerts.filter(isOpenAlert).sort(rankTriageAlerts(patients));
 	const history = sortAddressedAlerts(alerts.filter((alert) => !isOpenAlert(alert)));
 	const lastFired = lastFiredAt(alerts);
 
@@ -629,6 +665,7 @@ export {
 	compareTriageAlerts,
 	isOpenAlert,
 	lastFiredAt,
+	rankTriageAlerts,
 	sortAddressedAlerts,
 	TriageAlertList,
 	TriageQueue,

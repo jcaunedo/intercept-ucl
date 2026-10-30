@@ -22,7 +22,7 @@ const patient = {
 	room: "4",
 	bed: "11",
 	alert: { variant: "critical" },
-	acuity: { label: "SOFA acuity score", score: 7, level: "moderate" },
+	acuity: { label: "NEWS2", score: 5, level: "medium" },
 	trajectory: { label: "Change in last 24 h", value: "+1", trend: "up", trendVariant: "critical" },
 	vitals: [
 		{ label: "Heart Rate", shortLabel: "HR", value: 77 },
@@ -97,7 +97,7 @@ export const Minimal: Story = {
 	args: { alert: undefined, acuity: undefined, trajectory: undefined, tags: [] },
 };
 
-/** A long name wraps so it's always readable. A long hospital name truncates, so the unit, room and bed stay visible. */
+/** A long name truncates on one line (full name on hover). A long hospital name truncates, so the unit, room and bed stay visible. */
 export const LongContent: Story = {
 	args: {
 		lastName: "Montgomery-Abernathy",
@@ -153,14 +153,15 @@ export const Alerts: Story = {
 const acuityLevels: { level: PatientCardAcuityLevel; score?: number }[] = [
 	{ level: "low", score: 2 },
 	{ level: "moderate", score: 7 },
+	{ level: "medium", score: 5 },
 	{ level: "high", score: 10 },
 	{ level: "critical", score: 13 },
 	{ level: "unknown" },
 ];
 
 /**
- * Every acuity level beside every alert severity. Acuity is neutral text after its score (Low, Moderate, High, Critical,
- * Unknown); alerts are solid pills (Critical / High / Medium / Low).
+ * Every acuity level beside every alert severity. Acuity is neutral text after its score (Low, Moderate, Medium, High,
+ * Critical, Unknown; Medium is NEWS2's band); alerts are solid pills (Critical / High / Medium / Low).
  */
 export const AcuityAndAlerts: Story = {
 	render: (args) => (
@@ -170,7 +171,7 @@ export const AcuityAndAlerts: Story = {
 					key={level}
 					{...args}
 					alert={index < 4 ? { variant: (["low", "medium", "high", "critical"] as const)[index] } : undefined}
-					acuity={{ label: "SOFA acuity score", score, level: score === undefined ? undefined : level }}
+					acuity={{ label: "Score", score, level: score === undefined ? undefined : level }}
 				/>
 			))}
 		</div>

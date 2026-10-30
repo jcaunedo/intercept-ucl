@@ -9,6 +9,7 @@ import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatien
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
+import { prototypeShortcuts, resetPrototype } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Census } from "./census";
 import { samplePatients } from "./sample-census";
@@ -143,7 +144,7 @@ export const EmptyPage: Story = {
 
 /** Plays the sample live feed into the Census: its alerts, the cards' pills from them, and the Monitoring page's values. */
 function LiveCensus(props: React.ComponentProps<typeof Census>) {
-	const { patients: monitoring, alerts, caption } = useSampleLiveFeed();
+	const { patients: monitoring, alerts, caption, restart } = useSampleLiveFeed();
 	const monitoringPatients = useLivePatients(monitoring);
 	return (
 		<Census
@@ -152,6 +153,8 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 			monitoringPatients={monitoringPatients}
 			alerts={alerts}
 			liveFeed={caption}
+			prototype={prototypeShortcuts({ restartLiveFeed: restart })}
+			onResetPrototype={resetPrototype}
 		/>
 	);
 }

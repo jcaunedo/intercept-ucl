@@ -70,8 +70,16 @@ const where = ({ census }: Patient) => [census.unit, census.bed].filter(Boolean)
 const who = (patient: Patient) => `${patientName(patient)} (${where(patient)})`;
 
 const severityWords = { critical: "Critical", high: "High", medium: "Medium", low: "Low" } as const;
-// Acuity's words, as on the card. In a list beside alerts they read "Critical acuity", so they're never taken for a severity.
-const levelWords = { low: "Low", moderate: "Moderate", high: "High", critical: "Critical", unknown: "Unknown" };
+// The score's band words, as on the card. An answer always names the score with them ("NEWS2 10, High"), so a band is
+// never taken for an alert's severity.
+const levelWords = { low: "Low", moderate: "Moderate", medium: "Medium", high: "High", critical: "Critical", unknown: "Unknown" };
+/** "NEWS2 10, High", or "NEWS2 unknown" without a score. */
+const scoreWords = (acuity: CensusPatient["acuity"]) =>
+	!acuity
+		? "Score unknown"
+		: acuity.score !== undefined && acuity.level
+			? `${acuity.label} ${acuity.score}, ${levelWords[acuity.level]}`
+			: `${acuity.label} unknown`;
 const flagWords = { high: "high", low: "low", critical: "critical" } as const;
 
 const list = (items: string[]) => items.map((item) => `- ${item}`).join("\n");
@@ -337,11 +345,10 @@ function medLines(patient: Patient, filter?: RegExp, names?: string[]) {
 
 function summaryOf(patient: Patient): AskInterceptAnswer {
 	const { census, record } = patient;
-	const acuity = census.acuity?.level ? `${levelWords[census.acuity.level]}${census.acuity.score !== undefined ? `, SOFA ${census.acuity.score}` : ""}` : "Acuity unknown";
 	const trend = census.trajectory?.value && census.trajectory.value !== "0" ? ` (${census.trajectory.value} in 24 h)` : "";
 	const lines = [
 		record?.diagnosis ? `**Diagnosis:** ${record.diagnosis}${record.icuAdmittedAt ? `, ICU day ${Math.floor((Date.now() - Date.parse(record.icuAdmittedAt)) / (24 * 60 * MINUTE)) + 1}` : ""}` : undefined,
-		`**Acuity:** ${acuity}${trend}`,
+		`**Score:** ${scoreWords(census.acuity)}${trend}`,
 		patient.alerts.length
 			? `**Alerts:** ${patient.alerts.map((alert) => `${alert.title} (${severityWords[alert.severity]})`).join("; ")}`
 			: "**Alerts:** none open",
@@ -390,7 +397,56 @@ function sepsisFor(patient: Patient): AskInterceptAnswer {
 	};
 }
 
+/**
+ * Scenario 1's early warning (Demo Use Cases): how the patient got here (the first and last charted vitals, the oxygen,
+ * the charted fluids), then the score's crossing, its trend and the inputs that drove it. Only while the crossing is
+ * recent (12 h). Current state only: it never says what will happen.
+ */
+function earlyWarningFor(patient: Patient): string | undefined {
+	const warning = patient.record?.earlyWarning;
+	if (!warning || Date.now() - Date.parse(warning.crossedAt) > 12 * 60 * MINUTE) return undefined;
+	const series = patient.record?.vitals?.series ?? [];
+	const readings = (parameter: string) => series.find((item) => item.parameter === parameter)?.readings ?? [];
+	const [rr, spo2, hr] = [readings("rr"), readings("spo2"), readings("hr")];
+	const oxygen = patient.record?.ventilator?.settings.find((setting) => setting.unit === "L/min");
+	const fluids = patient.record?.fluids;
+	const overnight = rr[0] && Date.now() - Date.parse(rr[0].at) >= 8 * 60 * MINUTE;
+	const course = [
+		rr.length > 1 ? `respiratory rate climbed ${rr[0].value} → ${rr.at(-1)!.value}` : undefined,
+		spo2.length ? `SpO₂ fell to ${spo2.at(-1)!.value}%${oxygen ? ` on ${oxygen.value} L` : ""}` : undefined,
+		hr.length ? `heart rate is ${hr.at(-1)!.value}` : undefined,
+		fluids ? `net fluid balance is ${fluids.netBalance}` : undefined,
+		fluids ? `weight ${fluids.weightChange} over ${fluids.window}` : undefined,
+	].filter((item): item is string => Boolean(item));
+	const trend = [...warning.trend.map((point) => `${point.value} (${ago(point.at)})`), `${warning.value} now`].join(" → ");
+	const their = patient.census.sex === "F" ? "Her" : patient.census.sex === "M" ? "His" : "Their";
+	const scored = warning.inputs.filter((input) => input.points > 0);
+	const zero = warning.inputs.filter((input) => input.points === 0);
+	return [
+		`**Early warning.** ${overnight ? "Overnight" : "Since admission"}, ${joinWords(course)}.`,
+		`${their} deterioration score (${warning.score}) crossed the ${warning.band} threshold (${warning.threshold}) at ${clock(warning.crossedAt)}: ${trend}. What drove it:`,
+		list(scored.map((input) => `${input.label} ${input.value}: ${input.points} point${input.points === 1 ? "" : "s"}`)),
+		zero.length ? `Scoring 0: ${joinWords(zero.map((input) => `${runOn(input.label)} ${input.value}`))}.` : undefined,
+	]
+		.filter(Boolean)
+		.join("\n");
+}
+
+// Questions where a recent early warning leads the answer ("Give me an update on Margaret"). Not the summary, whose brief
+// already tells the story.
+const earlyWarningTopics: Topic[] = ["changes", "events", "attention", "alerts"];
+
 function answerForPatient(patient: Patient, topic: Topic, question: string): AskInterceptAnswer {
+	const answer = answerForPatientTopic(patient, topic, question);
+	const warning = earlyWarningTopics.includes(topic) ? earlyWarningFor(patient) : undefined;
+	if (!warning) return answer;
+	return {
+		text: `${warning}\n${answer.text}`,
+		sources: unique([patient.record!.earlyWarning!.score, "Monitor", "Charted", ...(answer.sources ?? [])]),
+	};
+}
+
+function answerForPatientTopic(patient: Patient, topic: Topic, question: string): AskInterceptAnswer {
 	const { census, record } = patient;
 	const name = firstName(patient);
 	switch (topic) {
@@ -584,7 +640,7 @@ function answerForPatient(patient: Patient, topic: Topic, question: string): Ask
 
 const severityRank = { critical: 4, high: 3, medium: 2, low: 1 } as const;
 
-/** How urgent a patient is: their worst open alert, then acuity, then a rising trend. */
+/** How urgent a patient is: their worst open alert, then their score, then a rising trend. */
 function urgency({ census, alerts }: Patient) {
 	return (alerts[0] ? severityRank[alerts[0].severity] * 100 : 0) + Number(census.acuity?.score ?? 0) * 2 + (census.trajectory?.trend === "up" ? 3 : 0);
 }
@@ -632,7 +688,7 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			return {
 				text: [
 					`Here's your shift${among}, ${sampleUser.name.split(" ")[0]}. ${scope.length} patients across ${hospitals.length} hospital${hospitals.length === 1 ? "" : "s"}; ${mine.length} assigned to you. ${scope.filter((patient) => patient.alerts.length).length} have open alerts.`,
-					`**Needs you first:**\n${list(ranked.map((patient) => `${who(patient)}: ${patient.alerts[0] ? `${patient.alerts[0].title} (${severityWords[patient.alerts[0].severity]})` : `${levelWords[patient.census.acuity?.level ?? "unknown"]} acuity`}`))}`,
+					`**Needs you first:**\n${list(ranked.map((patient) => `${who(patient)}: ${patient.alerts[0] ? `${patient.alerts[0].title} (${severityWords[patient.alerts[0].severity]})` : scoreWords(patient.census.acuity)}`))}`,
 					overdueAlerts.length || overdueMeds.length || overdueBundles.length ? `**Overdue now:**\n${capped([...overdueAlerts, ...overdueBundles, ...overdueMeds], 6)}` : "**Overdue now:** nothing.",
 					carried.length ? `**Carried over from last shift:**\n${list(carried)}` : undefined,
 					pending.length ? `**Waiting on:** ${joinWords(pending)}.` : undefined,
@@ -649,9 +705,9 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 				text: `${ranked.length === 1 ? "One patient needs" : `${ranked.length} patients need`} you first${among}:\n${list(
 					ranked.map(
 						(patient) =>
-							`${who(patient)}: ${patient.alerts.length ? `${severityWords[patient.alerts[0].severity]}, ${patient.alerts.map((alert) => alert.title).join("; ")}.` : `${levelWords[patient.census.acuity?.level ?? "unknown"]} acuity.`} ${patient.record?.brief ? sentence(patient.record.brief.text) : ""}`.trim(),
+							`${who(patient)}: ${patient.alerts.length ? `${severityWords[patient.alerts[0].severity]}, ${patient.alerts.map((alert) => alert.title).join("; ")}.` : `${scoreWords(patient.census.acuity)}.`} ${patient.record?.brief ? sentence(patient.record.brief.text) : ""}`.trim(),
 					),
-				)}\nRanked by alert severity, then acuity and how fast it's changing.`,
+				)}\nRanked by alert severity, then score and how fast it's changing.`,
 				sources: ["Alerts", "Census", "Monitor"],
 			};
 		}
@@ -851,7 +907,7 @@ function handoffFor(patient: Patient): AskInterceptAnswer {
 	return {
 		text: [
 			`**Draft handoff for ${fullName(patient)}** (${where(patient)}, ${census.hospital}). Review and edit it before you use it; it isn't saved or sent.`,
-			`**Illness severity:** for you to set. Acuity is ${census.acuity?.level ? levelWords[census.acuity.level].toLowerCase() : "unknown"}${census.acuity?.score !== undefined ? `, SOFA ${census.acuity.score}` : ""}${census.trajectory?.value && census.trajectory.value !== "0" ? ` (${census.trajectory.value} in 24 h)` : ""}.`,
+			`**Illness severity:** for you to set. ${scoreWords(census.acuity)}${census.trajectory?.value && census.trajectory.value !== "0" ? ` (${census.trajectory.value} in 24 h)` : ""}.`,
 			`**Patient summary:** ${census.age ? `${census.age} ${census.sex ?? ""}`.trim() + ", " : ""}${record?.diagnosis ? record.diagnosis.charAt(0).toLowerCase() + record.diagnosis.slice(1) : "diagnosis not recorded"}${record?.icuAdmittedAt ? `, ICU day ${Math.floor((Date.now() - Date.parse(record.icuAdmittedAt)) / (24 * 60 * MINUTE)) + 1}` : ""}. ${record?.brief?.text ?? ""}`.trim(),
 			`**Action list:**\n${actions.length ? list(actions) : "- Nothing open"}`,
 			`**Situation awareness:**\n${list(watch)}`,

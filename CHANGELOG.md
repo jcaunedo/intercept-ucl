@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Intercept Live: `PatientRecord` takes `earlyWarning` (the deterioration score's crossing into its alert band: score, band, threshold, time, trend and each input's points; SV-09, DU-14) and `fluids` (charted net balance and weight change; DU-18). Margaret Hayes's record has both. Ask Intercept Live leads an update on a patient ("Give me an update on Margaret") with Scenario 1's early warning: the overnight course, the crossing with its trend, and the inputs that drove it.
+- Sidebar: a `SidebarNavItem` (and SidebarMenuButton) can take a `menu`, DropdownMenu items it opens above itself instead of acting; the item never becomes active. Additive.
+- Intercept Live: the Sidebar footer's **Prototype** item (intercept.ds `sidebar` `1001:544`), with the shell's new `prototype` (scenarios, views and shortcuts by group) and `onResetPrototype` ("Reset prototype", last, after a divider). The Live Census and Monitoring stories offer Scenario 1 · Heart failure at 2 a.m. (opens Monitoring and replays the live feed) and Reset prototype (reloads the story).
+- PatientCard, PatientHeader: acuity `level` takes `medium` ("Medium"), NEWS2's band between Low and High. Additive; `moderate` stays. [DU-14][SV-09]
+- Intercept Live triage queue: a `TriageAlert` can carry a `reason` line, shown under its title ("Rising work of breathing, positive fluid balance, HFrEF"). [DU-09][SV-10]
+- Intercept Live samples: Scenario 1, beats 1–2. Margaret Hayes's early-warning alert is the live feed's first step: Critical, "NEWS2 10, High: up 5 in 4 h", with the score's inputs and points as evidence, and she ranks #1 in the queue and the grid. [DU-09][DU-14][SV-09]
 - Breakpoints `3.5xl` (2048), `4xl` (2560), `5xl` (2880), `6xl` (3200), `7xl` (3440, ultrawide) and `8xl` (3840, 4K), with the same +1px rule (`4xl:` = above 2560) in `theme.css` and `src/lib/breakpoints.ts`. They ship in the styles, so apps get the new `3.5xl:`–`8xl:` variants.
 - `CHANGELOG.md`, `CONVENTIONS.md`, `.github/PULL_REQUEST_TEMPLATE.md` and `documents/README.md` (a scope note for the `documents/` folder). [R-22][DEC-13]
 - `documents/trace/` — a file-to-requirement map (`README.md` + `traceability.csv`), seeded from the Traceability Matrix v0.1. [R-22]
@@ -21,6 +27,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- PatientCard, PatientMonitoringCard: the patient's name stays on one line and truncates, with the full name in `title`; it wrapped before.
+- HospitalSectionHeader: the hospital icon tile is gone, as in intercept.ds `hospital-section-header` (`1118:4281`); the header is the name over its counts. `icon` is deprecated and ignored.
+- Intercept Live samples: Margaret Hayes (`p15`) is one of the signed-in clinician's patients (`mine`) and Sarah Miller (`p1`) no longer is; My patients still counts 6.
+- PatientCard: 16px between the acuity score and its 24 h change (both variants), as in intercept.ds `patient-card-compact` (`1108:3964`), so a long level no longer runs into the change column.
+- Intercept Live samples, stories and Ask Intercept Live: acuity is the NEWS2-style current-state score (labeled "NEWS2", bands Low / Medium / High), worked out from each patient's sample vitals, replacing the SOFA placeholder. No sample patient shows Critical acuity now (NEWS2 has no such band); Bennett has a score, and Carter and Whitfield stay Unknown (an input stopped reporting). Margaret Hayes's vitals and timeline are hour by hour, so her score crosses 7 at 01:40. [DU-14][SV-09]
+- PatientHeader: the score shows by its name, `acuity.label` before the number ("NEWS2 10  High"); it read "10 acuity score  High". Visual change only: apps whose `acuity.label` is a long phrase ("SOFA acuity score") should pass the short name. [DU-14][SV-09]
+- Intercept Live: "acuity" leaves the screen. Samples' `acuity.label` is "NEWS2"; the patient list reads "NEWS2 10 · High"; the Census sorts are Score and Score change and the quick view Rising score; Ask Intercept Live names the score ("NEWS2 10, High"). PRD Patient card PC-030 lists the score questions to clarify with the client (OD-18). [DU-14][SV-09]
+- Intercept Live triage queue and the panels' Alert sort: ranked by severity, then the patient's acuity band, then the larger 4 h rise in their score (`scoreChange4h` on the samples' patients; `rankTriageAlerts`), then oldest first. It was severity, then oldest first (queue) or severity, then score (grid). The live feed's step order changed: Hayes first, then Johnson's resolve, then Moore. [DU-09]
 - PatientCard: the acuity level ("Moderate") is 20px regular, matching the score's size, as in intercept.ds `patient-card-compact` (`1108:3964`); it was 14px semibold.
 - PatientCard: the "…" more-actions button is gone, as in intercept.ds `patient-card-compact` (`1108:3964`). `onMoreActions` is deprecated and ignored. Tags no longer wrap: they stay on one line and the row scrolls sideways when they don't fit (keyboard-focusable while it overflows; a click still opens the patient). The Census and Monitoring layouts drop `onPatientActions`.
 - PatientMonitoringCard: under ~340px wide, the `md` card's condensed numerics drop their units and give ABP 1.5× the width, as `sm` does, so "104/56" no longer runs into RR. Wider cards are unchanged.

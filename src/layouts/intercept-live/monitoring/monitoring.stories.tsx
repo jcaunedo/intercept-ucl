@@ -8,6 +8,7 @@ import { samplePatients } from "../census/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
+import { prototypeShortcuts, resetPrototype } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Monitoring, type MonitoringProps } from "./monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "./sample-monitoring";
@@ -61,6 +62,8 @@ async function openLiveFeed(
  * re-sort (2 s after the page opens, then every 15 to 30 s; a resolve moves its card at once, after a moment saying
  * "Resolved"), highest severity first, and the triage queue reorders right away; the hospital bar says what changed ("Live feed: …", the page's `liveFeed`). Then it loops. The hospital tabs, the patients pill and
  * Unit narrow the panel's scope; the queue always shows every alert on it.
+ * The first change is Scenario 1's early warning: Margaret Hayes's NEWS2 reaches 10 and her Critical alert lands at #1,
+ * above Miller's, because her score rose 5 in 4 h (DU-09).
  * ⚠️ Cards moving on their own is what PRD SV-013 rules out ("Panel order changed · Update"); this shows the live
  * alternative for comparison (SV-OD-05).
  */
@@ -230,7 +233,7 @@ export const OutsideLimitsFilter: Story = {
 };
 
 function LiveMonitoring(props: MonitoringProps) {
-	const { patients: fed, alerts, caption } = useSampleLiveFeed();
+	const { patients: fed, alerts, caption, restart } = useSampleLiveFeed();
 	const patients = useLivePatients(fed);
 	// What the feed just changed shows at the right of the hospital bar. The Census page (Sidebar) follows the same feed.
 	return (
@@ -240,6 +243,8 @@ function LiveMonitoring(props: MonitoringProps) {
 			alerts={alerts}
 			liveFeed={caption}
 			censusPatients={props.censusPatients && withFeedAlerts(props.censusPatients, alerts)}
+			prototype={prototypeShortcuts({ restartLiveFeed: restart })}
+			onResetPrototype={resetPrototype}
 		/>
 	);
 }

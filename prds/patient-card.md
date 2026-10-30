@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 29, 2026
+Last updated: Oct 30, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -352,7 +352,7 @@ The following is a proposed presentation model derived from ADT and census-recon
 
 **Candidate scoring methods:**
 
-ℹ️ The method isn't chosen yet (OD-02). These are the scores ICUs commonly use.
+ℹ️ These are the scores ICUs commonly use. ✅ **Resolved (Oct 30, 2026, for the prototype; DU-14, SV-09 v0.6):** the prototype uses a **NEWS2-style current-state score** (scale 1) with NEWS2's bands (0–4 Low, 5–6 Medium, 7+ High), replacing the SOFA placeholder; the card shows `NEWS2 10 · High` with its 24 h change. Clinical approval of the method is still OD-02 (D-04).
 
 | Score | Range | Higher means | Updated | Notes |
 |---|---|---|---|---|
@@ -433,6 +433,20 @@ The change in the score matters more than the number. Sepsis-3 treats a rise of 
 - ℹ️ The triangle shows the direction and the tone shows the meaning. On SOFA ▲ is always worse; on the Rothman Index ▲ is better (PC-045). Triangles and arrows have separate meanings (PC-144).
 - ℹ️ The acuity line shows the change only. A rise of 2 or more with suspected infection is a sepsis signal, and it comes from Virtual Sepsis (PC-080) as a sepsis state or alert, never from the acuity line.
 - ℹ️ Screen readers get the full sentence, e.g. "SOFA 7, moderate, up 3 points in 24 hours."
+
+#### ⚠️ To clarify with the client: the score (Oct 30, 2026, OD-18)
+
+**Context:** the prototype now uses a NEWS2-style score in place of the SOFA placeholder. That follows the current specs: Requirements v0.6 SV-09, the reference protocol profile §7.1 and Design Update DU-14, all "pending D-04". Scenario 1 (Heart failure at 2 a.m. in a 25-bed hospital) asks only for "the deterioration score" and doesn't name one. The prototype also stopped showing the word "acuity" on screen. Every item below is a prototype choice for the client and the clinical review to confirm.
+
+| # | Question for the client | What the prototype does now | Why it needs an answer |
+|---|---|---|---|
+| 1 | Which score: NEWS2 for every patient, NEWS2 on wards and another score (e.g. SOFA) in the ICU, or something else? | NEWS2-style (scale 1) for all 15 sample patients, worked out from their vitals | NEWS2 is built for wards and fits Scenario 1 (a med-surg floor at 2 a.m.). It isn't validated in the ICU: sedation and oxygen alone add 5 points, so every ventilated patient reads High (Miller 17, Harris 16, Johnson 15) and the score barely tells them apart. SOFA needs labs and updates about daily, so it can't "cross a threshold at 01:40" |
+| 2 | Scale 2 for hypercapnic patients (target SpO₂ 88–92%): who decides a patient is on it, and is it shown? | Not used | The specs name it, and Scenario 2's Dale (COPD) would score wrongly on scale 1 |
+| 3 | What does the screen call it: the score's name ("NEWS2"), "deterioration score" or "acuity score"? | The score's name: "NEWS2" on the card, "NEWS2 10 High" in the patient header, "NEWS2 10 · High" in the patient list, "NEWS2 10, High" in Ask Intercept Live. The Census sort reads "Score" / "Score change" and the quick view "Rising score". "Acuity" stays in the code and as this PRD's general term | "Acuity" usually means care intensity or nurse staffing, and NEWS2 measures how far vitals are from normal. PC-030 asks for the score's name with the number. The specs say "deterioration score". Figma's Patient Header still reads "acuity score" |
+| 4 | Bands and their words: NEWS2's Low / Medium / High, with no Critical? Is "Medium" acceptable when alerts also have a Medium? How is NEWS2's "3 in one parameter" (low–medium, urgent ward response) shown? | Low (0–4), Medium (5–6), High (7+). A single 3 shows as Low (Anderson's new confusion) | No sample patient reads Critical acuity now. The band and an alert's severity can share a word |
+| 5 | Where do the contributing factors show (each input's value and points)? | Only in a deterioration alert's evidence ("RR 26/min, 3 points") | SV-09 and DU-14 ask for them with the score: on the card, in the patient header's breakdown (PD-012) or in the Overview Brief |
+| 6 | Work-list ranking: severity, then band, then the rise over **4 h**, then oldest first. Is 4 h the right window, next to the card's 24 h change? | As described (DU-09); the Census and Monitoring Alert sort ranks the same way | This is what puts Margaret above Miller in Scenario 1: her score rose 5 in 4 h, his held steady. Overdue sepsis elements (DU-09) aren't in it yet |
+| 7 | What severity does a score crossing into High raise, and what does the alert say? | Critical, "NEWS2 10, High: up 5 in 4 h", source "Rule · Deterioration score", with a reason line ("Rising work of breathing, positive fluid balance, HFrEF") | NEWS2's own response for 7+ is an emergency assessment, which could map to High or Critical. The reason line's wording comes from rules, and the client should approve it |
 
 ### PC-031 — Clinical trajectory
 
@@ -1402,7 +1416,7 @@ The prototype must not be represented as production-ready clinical software.
 | ID | Decision | Owner |
 |---|---|---|
 | OD-01 | Confirm the mandatory fields for compact and expanded variants. | Product / Clinical |
-| OD-02 | Select approved acuity scoring methodology. | Clinical |
+| OD-02 | Select approved acuity scoring methodology. The prototype uses NEWS2-style (Oct 30, 2026, DU-14) until this is approved. | Clinical |
 | OD-03 | Define clinical severity labels and threshold mappings. | Clinical |
 | OD-04 | Approve the patient census status model. | Product / Clinical |
 | OD-05 | Finalize the alert severity taxonomy and prioritization rules. | Clinical / Product |
@@ -1417,6 +1431,7 @@ The prototype must not be represented as production-ready clinical software.
 | OD-14 | Define precise data-source provenance and error-state copy. | Product / Engineering |
 | OD-15 | Approve alert category and source (§15.1 A), the Snoozed status and Overdue response targets (§15.1 S). | Clinical / Product |
 | OD-16 | Add safety tags, code status, transfer pending and deceased to the data model (§15.1 P). | Clinical / Product |
+| OD-18 | The score questions for the client in PC-030 "To clarify with the client": which score, scale 2, the on-screen name (no "acuity"), bands, contributing factors, 4 h ranking, the threshold alert. | Client / Clinical / Product |
 | OD-17 | Decide whether the card shows an overall condition (Stable / Unstable / Guarded), who sets it and with what vocabulary. Until decided, the card shows the acuity score only (PC-031). To discuss with the client. | Clinical / Product / Client |
 
 ---

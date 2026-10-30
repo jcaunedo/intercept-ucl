@@ -1,5 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, screen, userEvent, within } from "storybook/test";
 import {
 	BellRingIcon,
 	BookOpenTextIcon,
@@ -15,6 +16,8 @@ import {
 	ShieldIcon,
 	SparklesIcon,
 	SquareActivityIcon,
+	Undo2Icon,
+	ZapIcon,
 } from "lucide-react";
 
 import { BoxSolidIcon } from "@/components/icons/box-solid-icon";
@@ -26,6 +29,12 @@ import { LayoutGridSolidIcon } from "@/components/icons/layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
 import { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
+import {
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+} from "@/components/overlays/dropdown-menu";
 import { Sidebar, SidebarMenuButton, type SidebarNavItem } from "./sidebar";
 
 // Solid icons show while an item is active. Search, Ask Intercept and the footer items have none yet, so they keep
@@ -50,9 +59,30 @@ const groups: SidebarNavItem[][] = [
 	],
 ];
 
+const onSelectScenario = fn();
+const onResetPrototype = fn();
+
+// Prototype opens a menu above itself: the prototype's scenarios, then "Reset prototype" after a divider.
 const footerItems: SidebarNavItem[] = [
 	{ icon: BookOpenTextIcon, label: "Documentation" },
 	{ icon: LifeBuoyIcon, label: "Support" },
+	{
+		icon: ZapIcon,
+		label: "Prototype",
+		menu: (
+			<>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>Scenarios</DropdownMenuLabel>
+					<DropdownMenuItem onSelect={onSelectScenario}>Scenario 1 · Heart failure at 2 a.m.</DropdownMenuItem>
+				</DropdownMenuGroup>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem onSelect={onResetPrototype}>
+					<Undo2Icon aria-hidden='true' />
+					Reset prototype
+				</DropdownMenuItem>
+			</>
+		),
+	},
 ];
 
 const meta = {
@@ -149,6 +179,26 @@ export const MenuButtonStates: Story = {
 			<SidebarMenuButton icon={HomeIcon} label='Collapsed' collapsed />
 		</div>
 	),
+};
+
+/**
+ * A footer item with a `menu` opens it above itself instead of acting, and never becomes active: here Prototype, with
+ * the prototype's scenarios and "Reset prototype".
+ */
+export const ItemWithMenu: Story = {
+	args: { className: "h-full" },
+	play: async ({ canvas }) => {
+		const prototype = canvas.getByRole("button", { name: "Prototype" });
+		await userEvent.click(prototype);
+		const menu = within(await screen.findByRole("menu"));
+		await expect(prototype).toHaveAttribute("aria-expanded", "true");
+		await userEvent.click(menu.getByRole("menuitem", { name: "Scenario 1 · Heart failure at 2 a.m." }));
+		await expect(onSelectScenario).toHaveBeenCalled();
+		await expect(prototype).not.toHaveAttribute("aria-current");
+		await userEvent.click(prototype);
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Reset prototype" }));
+		await expect(onResetPrototype).toHaveBeenCalled();
+	},
 };
 
 /** Expanded and collapsed side by side. */

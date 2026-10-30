@@ -1,7 +1,7 @@
 req_id,artifact_path,repo_ids,evidence,notes
 PD-01,src/layouts/intercept-live/census/census-panel.tsx,,Partial,"Grouped + per-hospital tabs; missing EHR / time zone / connection status per group; ""across hospitals"" headline (I-17)"
 PD-03,src/layouts/intercept-live/census/census-panel.tsx,,Met (design),Quick views + empty state (EmptyState)
-PD-04,src/components/cards/patient-card/,PC-*,Partial,Card anatomy per prds/patient-card.md; acuity = SOFA placeholder
+PD-04,src/components/cards/patient-card/,PC-*,Partial,Card anatomy per prds/patient-card.md; acuity = NEWS2-style score (DU-14)
 PD-05,src/layouts/intercept-live/intercept-live.tsx,,Partial,Shell switches pages; workspace with census rail not built
 PD-07,src/layouts/intercept-live/intercept-live.tsx,,Met (design),Live shift countdown (AppHeader)
 PD-08,src/layouts/intercept-live/ask-intercept-panel.tsx,,Met (UI),UI only; no answering
@@ -10,7 +10,7 @@ SV-01,src/components/cards/patient-monitoring-card/,MON-*,Partial (UI),Waveform 
 SV-04,src/layouts/intercept-live/monitoring/,MON-*,Partial,Vitals trends per CX-01 §4.1
 SV-05,src/layouts/intercept-live/monitoring/view-controls.tsx,MON-*,Partial,Density / paging; verify 4/8/12/16
 SV-08,src/layouts/intercept-live/census/sample-census.ts,,Partial,missing variant present; stale / age per PRD
-SV-09,src/layouts/intercept-live/census/sample-census.ts,PC-*,Partial,"SOFA + level; contributing factors not on card (G0-5, CI-06)"
+SV-09,src/layouts/intercept-live/census/sample-census.ts,PC-*,Partial,"NEWS2-style score + band + 24 h change (DU-14); contributing factors only in alert evidence, not on card (G0-5, CI-06)"
 SV-10,src/layouts/intercept-live/monitoring/triage-queue.tsx,MON-*,Met (UI),Escalate + targets
 SV-13,src/components/cards/patient-monitoring-card/,MON-*,Partial,Monitor panel only; no vent / pump class templates
 CC-04,src/layouts/intercept-live/shared/live-feed.tsx,MON-*,Partial,Triage queue opens patient; Messages page is an empty state

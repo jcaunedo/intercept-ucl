@@ -118,6 +118,35 @@ type PatientBrief = {
 };
 
 /** What the page knows about the patient beyond the card: safety, encounter, organ support, labs and care team. */
+/**
+ * The deterioration score's last crossing into its alert band, with what drove it (PRD PC-030, SV-09, DU-14): a
+ * current-state score, never a prediction.
+ */
+type PatientEarlyWarning = {
+	/** The score's name, e.g. "NEWS2". */
+	score: string;
+	/** The band it crossed into and that band's threshold, e.g. "High" at 7. */
+	band: string;
+	threshold: number;
+	/** When it crossed, ISO 8601. */
+	crossedAt: string;
+	value: number;
+	/** Earlier values, oldest first, for the trend. */
+	trend: { at: string; value: number }[];
+	/** Each input with its value and points, e.g. RR "26/min", 3. */
+	inputs: { label: string; value: string; points: number }[];
+};
+
+/** Charted intake and output (DU-18): the net fluid balance and the weight change, preformatted ("+1.8 L"). */
+type PatientFluids = {
+	netBalance: string;
+	weightChange: string;
+	/** The period both cover, e.g. "48 h". */
+	window: string;
+	/** When the nurse charted them, ISO 8601. */
+	chartedAt: string;
+};
+
 type PatientRecord = {
 	id: string;
 	/** Photo URL, for the Patient Header's avatar. */
@@ -153,6 +182,9 @@ type PatientRecord = {
 	/** Only for a patient under sepsis screening or tracking (PRD PD-080). */
 	sepsis?: SepsisCase;
 	camera?: PatientCamera;
+	/** Only once the deterioration score has crossed into its alert band. */
+	earlyWarning?: PatientEarlyWarning;
+	fluids?: PatientFluids;
 };
 
 /** The patient's live bedside values, from Monitoring. */
@@ -562,6 +594,8 @@ export {
 	type PatientAction,
 	type PatientBrief,
 	type PatientMonitorData,
+	type PatientEarlyWarning,
+	type PatientFluids,
 	type PatientRecord,
 	type PatientVentilator,
 	type VentilatorSetting,

@@ -1,15 +1,15 @@
 import type { CensusPatient } from "./census";
 
 // Synthetic data (PRD PC-180). The first eight patients are Figma's; seven more fill the hospital counts (7 / 3 / 5).
+// Acuity is the NEWS2-style score, the same as on Monitoring (`sample-monitoring.ts` says how it's worked out).
 
-const sofa = "SOFA acuity score";
+const news2 = "NEWS2";
 const change = "Change in last 24 h";
 
 const samplePatients: CensusPatient[] = [
 	{
 		id: "p1",
 		hospitalId: "hpg",
-		mine: true,
 		lastName: "Miller",
 		firstName: "Sarah",
 		mrn: "01033876",
@@ -19,8 +19,9 @@ const samplePatients: CensusPatient[] = [
 		unit: "MICU",
 		bed: "Bed 11",
 		alert: { variant: "critical" },
-		acuity: { label: sofa, score: 13, level: "critical" },
-		trajectory: { label: change, value: "+4", trend: "up", trendVariant: "critical" },
+		acuity: { label: news2, score: 17, level: "high" },
+		trajectory: { label: change, value: "+7", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 128, variant: "destructive", range: "above" },
 			{ label: "MAP", value: 58, variant: "destructive", range: "below" },
@@ -43,8 +44,9 @@ const samplePatients: CensusPatient[] = [
 		unit: "MICU",
 		bed: "Bed 3",
 		alert: { variant: "low" },
-		acuity: { label: sofa, score: 11, level: "high" },
-		trajectory: { label: change, value: "+3", trend: "up", trendVariant: "critical" },
+		acuity: { label: news2, score: 15, level: "high" },
+		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 118, variant: "destructive", range: "above" },
 			{ label: "MAP", value: 72 },
@@ -64,8 +66,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "MICU",
 		bed: "Bed 7",
-		acuity: { label: sofa, score: 12, level: "critical" },
-		trajectory: { label: change, value: "0" },
+		acuity: { label: news2, score: 10, level: "high" },
+		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 94 },
 			{ label: "MAP", value: 68 },
@@ -86,8 +89,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "CVICU",
 		bed: "Bed 5",
-		acuity: { label: sofa, score: 8, level: "moderate" },
-		trajectory: { label: change, value: "0" },
+		acuity: { label: news2, score: 5, level: "medium" },
+		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 88 },
 			{ label: "MAP", value: 66 },
@@ -107,7 +111,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 6",
-		acuity: { label: sofa },
+		acuity: { label: news2 },
 		trajectory: { label: change, variant: "missing" },
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 102, variant: "destructive", range: "above" },
@@ -129,8 +133,9 @@ const samplePatients: CensusPatient[] = [
 		unit: "SICU",
 		bed: "Bed 2",
 		alert: { variant: "low" },
-		acuity: { label: sofa, score: 3, level: "low" },
-		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
+		acuity: { label: news2, score: 3, level: "low" },
+		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 72 },
 			{ label: "MAP", value: 85 },
@@ -151,8 +156,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Mercy West Hospital",
 		unit: "SICU",
 		bed: "Bed 12",
-		acuity: { label: sofa, score: 4, level: "low" },
-		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
+		acuity: { label: news2, score: 0, level: "low" },
+		trajectory: { label: change, value: "−3", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 84 },
 			{ label: "MAP", value: 82 },
@@ -172,8 +178,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "PCU",
 		bed: "Bed 14",
-		acuity: { label: sofa, score: 2, level: "low" },
-		trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
+		acuity: { label: news2, score: 0, level: "low" },
+		trajectory: { label: change, value: "0" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 76 },
 			{ label: "MAP", value: 90 },
@@ -193,8 +200,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 8",
-		acuity: { label: sofa, score: 10, level: "high" },
-		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
+		acuity: { label: news2, score: 16, level: "high" },
+		trajectory: { label: change, value: "+6", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 2,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 112, variant: "destructive", range: "above" },
 			{ label: "MAP", value: 64 },
@@ -215,8 +223,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "SICU",
 		bed: "Bed 4",
-		acuity: { label: sofa, score: 7, level: "moderate" },
-		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
+		acuity: { label: news2, score: 7, level: "high" },
+		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 98 },
 			{ label: "MAP", value: 61, variant: "destructive", range: "below" },
@@ -237,8 +246,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "OB-ICU",
 		bed: "Bed 1",
-		acuity: { label: sofa, score: 5, level: "moderate" },
-		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "0" },
+		scoreChange4h: 0,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 92 },
 			{ label: "MAP", value: 118, variant: "destructive", range: "above" },
@@ -258,8 +268,8 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "Neuro ICU",
 		bed: "Bed 2",
-		acuity: { label: sofa, score: 5, level: "low" },
-		trajectory: { label: change, value: "0" },
+		acuity: { label: news2 },
+		trajectory: { label: change, variant: "missing" },
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 80 },
 			{ label: "MAP", value: 74 },
@@ -280,8 +290,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "CVICU",
 		bed: "Bed 3",
-		acuity: { label: sofa, score: 12, level: "critical" },
-		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
+		acuity: { label: news2, score: 14, level: "high" },
+		trajectory: { label: change, value: "+5", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 1,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 134, variant: "destructive", range: "above" },
 			{ label: "MAP", value: 55, variant: "destructive", range: "below" },
@@ -301,8 +312,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "CCU",
 		bed: "Bed 9",
-		acuity: { label: sofa },
-		trajectory: { label: change, variant: "missing" },
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "−6", trend: "down", trendVariant: "success" },
+		scoreChange4h: -6,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 88 },
 			{ label: "MAP", value: 77 },
@@ -313,6 +325,7 @@ const samplePatients: CensusPatient[] = [
 	{
 		id: "p15",
 		hospitalId: "chadron",
+		mine: true,
 		lastName: "Hayes",
 		firstName: "Margaret",
 		mrn: "00826154",
@@ -321,8 +334,9 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Chadron Community Hospital",
 		unit: "Med-Surg",
 		bed: "Bed 4",
-		acuity: { label: sofa, score: 3, level: "low" },
-		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
+		acuity: { label: news2, score: 10, level: "high" },
+		trajectory: { label: change, value: "+6", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 5,
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 112 },
 			{ label: "MAP", value: 107 },

@@ -22,6 +22,7 @@ const nextChangeIn = (tick: number) =>
  * Plays `sampleLiveScenario`, one step at a time (at 1.5 s, at 8 s, then every 15 to 30 s), and starts over after the
  * last step: vitals change, alerts change severity, fire and resolve. A resolved alert leaves the feed (the
  * feed resolved it, not the clinician). `caption` is what the last step changed, for the hospital bar's Live feed.
+ * `restart` plays it again from the start of the shift (the Prototype menu's scenarios).
  */
 function useSampleLiveFeed() {
 	const [step, setStep] = React.useState(0);
@@ -36,7 +37,12 @@ function useSampleLiveFeed() {
 		return () => window.clearTimeout(timer);
 	}, [tick]);
 
-	return React.useMemo(() => {
+	const restart = React.useCallback(() => {
+		setStep(0);
+		setTick(0);
+	}, []);
+
+	const feed = React.useMemo(() => {
 		if (step === 0) firedAt.current = {};
 		const vitals: Record<string, Partial<MonitorVitals>> = {};
 		const updates: Record<string, Partial<TriageAlert>> = {};
@@ -61,6 +67,7 @@ function useSampleLiveFeed() {
 			caption: step === 0 ? "Start of the shift" : sampleLiveScenario[step - 1].label,
 		};
 	}, [step]);
+	return { ...feed, restart };
 }
 
 const severityOrder = ["critical", "high", "medium", "low"] as const;

@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Oct 30, 2026 (cards per row by breakpoint, both densities: MON-012; earlier, Oct 29: acuity without "risk": MON-011, §12; earlier, Oct 28: Open chart opens Patient details: MON-030; earlier, Oct 27: My patients is a chip, off by default: MON-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, MON-OD-13 added; filters in context: MON-010, MON-014, MON-051, MON-AC-11; MON-015 view controls, built in UCL)
+Last updated: Oct 30, 2026 (work-list ranking and reason line: MON-021, DU-09; cards per row by breakpoint, both densities: MON-012; earlier, Oct 29: acuity without "risk": MON-011, §12; earlier, Oct 28: Open chart opens Patient details: MON-030; earlier, Oct 27: My patients is a chip, off by default: MON-010, §3; Monitoring exploration recorded: §12.1, its proposals in §15, MON-OD-13 added; filters in context: MON-010, MON-014, MON-051, MON-AC-11; MON-015 view controls, built in UCL)
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -158,7 +158,7 @@ The panel shows the patients the clinician is responsible for on this shift: by 
 | With alerts ("Needs attention" and the Alerts only switch until Oct 27, 2026) | The triage queue (§5) lists exactly these, with the actions |
 | Outside limits | A ↑ / ↓ tag on the value itself (MON-014), so drift shows in place. Also, since Oct 27, 2026, Monitoring's one status filter, **Outside limits**: it keeps the patients who were outside their alarm limits when it was pressed, so cards never come and go as readings move (MON-013); its count stays live |
 | Data gap | A System alert in the queue ("SpO₂ not reporting", MON-051) |
-| Rising acuity, Organ support, acuity sorts | Not on Monitoring: the monitoring card doesn't show acuity or tags. They stay on the Census |
+| Rising score, Organ support, score sorts | Not on Monitoring: the monitoring card doesn't show acuity or tags. They stay on the Census |
 
 A filter on live status would also add and remove cards as readings change, which MON-013 rules out.
 
@@ -186,7 +186,7 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 
 ### MON-013 — Ordering
 
-Default order is **Alert**, then **Acuity** (the Census's Sort by: Alert, ties broken by acuity, then name). The clinician can switch to Acuity, Acuity change, Name or Location; Location groups the panel into hospital sections (HospitalSectionHeader).
+Default order is **Alert**, then **Score** (the Census's Sort by: Alert, ties broken by score band, 4 h rise and score, then name). The clinician can switch to Score, Score change, Name or Location; Location groups the panel into hospital sections (HospitalSectionHeader).
 
 - Cards **never reorder by themselves** while the clinician is looking at them. A new alert moves a card only when the clinician accepts a "Panel order changed · Update" prompt, or after they've been idle for a configured time. ⚠️ **Decision needed:** auto-reorder rules (MON-OD-05); a card jumping under the pointer is a safety risk.
 - ℹ️ The UCL Monitoring Default story (live since Oct 27, 2026; `Static` is the still one) shows the opposite for comparison: a scripted feed raises and lowers alert severities and the cards reorder by themselves, highest first.
@@ -235,7 +235,7 @@ Every active alert for the panel, one row each: severity, patient (name, bed, ho
 
 ### MON-021 — Ordering
 
-Severity first, then oldest first within a severity. New alerts enter at their position with a short Reveal (MOTION.md), never by pushing the row under the pointer. ⚠️ **Decision needed:** ordering rules (PRD OD-05).
+Severity first, then the patient's acuity band, then the larger rise in their score over 4 h, then oldest first (DU-09, Oct 30, 2026; it was severity, then oldest first). A patient whose score jumps outranks one high but steady. Each row can carry a reason line, a few words on why it matters for this patient ("Rising work of breathing, positive fluid balance, HFrEF"). The card grid's Alert sort ranks the same way. ⚠️ **Gap:** overdue sepsis elements (DU-09) aren't in the ranking yet. ⚠️ **To clarify with the client:** the 4 h window and the severity of a score alert (PRD Patient card PC-030 "To clarify with the client", OD-18). New alerts enter at their position with a short Reveal (MOTION.md), never by pushing the row under the pointer. ⚠️ **Decision needed:** ordering rules (PRD OD-05).
 
 ### MON-022 — Actions
 
@@ -395,7 +395,7 @@ An interactive page covering this whole PRD: [Intercept Live Monitoring](https:/
 |---|---|---|
 | **Shell** | Sidebar rail with Monitoring active, sticky header (clock, Online pill, messages, theme, team, user). Below 1280px the triage queue becomes a drawer opened from the header, with its active count. | §3.1 |
 | **Page header** | Hospital tabs with counts (a warning icon on a hospital whose feed is down), Alerts only and My Patients, the summary ("14 patients · 8 active alerts") and a privilege note ("2 patients at Mercy West Hospital hidden by your privileges"). | §3.1, MON-010, MON-051, MON-OD-02 |
-| **Filters** | The Census's quick views tuned for monitoring (All Patients, Needs attention, Outside limits, Rising acuity, Organ support, Data gap), Unit, Sort by (Alert, Acuity, Acuity change, Name, Location; Location groups by hospital). | MON-010, MON-013, MON-AC-11 |
+| **Filters** | The Census's quick views tuned for monitoring (All Patients, Needs attention, Outside limits, Rising score, Organ support, Data gap), Unit, Sort by (Alert, Score, Score change, Name, Location; Location groups by hospital). | MON-010, MON-013, MON-AC-11 |
 | **Density** | Comfortable, Compact and List side by side. List shows the vitals as columns, in the parameter colors. | MON-012 |
 | **View options** | Card monitor: ECG strip or 1 h trends (a sparkline under each numeric; in full monitors, a trend line per lane). Full monitors (Comfortable only). Mark values outside limits: off by default, as in UCL; on, a small ↑/↓ tag beside the number that keeps the parameter color. | MON-014, MON-073, MON-OD-12 |
 | **Panel cards** | `PatientMonitoringCard` imitated: identity, alert pill, location, live monitor with waveforms ported from UCL. Alert ring pulses until the card is opened or the alert is addressed. Stale cards dim their numbers and freeze their waveforms, with a "Stale" tag. | MON-011, MON-014, MON-050 |

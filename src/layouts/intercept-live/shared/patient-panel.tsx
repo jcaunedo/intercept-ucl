@@ -2,7 +2,7 @@ import * as React from "react";
 import { UsersIcon, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, type Transition, type Variants } from "motion/react";
 
-import type { PatientCardAlertVariant, PatientCardProps } from "@/components/cards/patient-card";
+import type { PatientCardAcuityLevel, PatientCardAlertVariant, PatientCardProps } from "@/components/cards/patient-card";
 import { Badge } from "@/components/data-display/badge";
 import { Counter, type CounterProps } from "@/components/data-display/counter";
 import { HospitalSectionHeader } from "@/components/data-display/hospital-section-header";
@@ -46,6 +46,8 @@ type PanelPatient = Pick<
 	hospitalId: string;
 	/** Assigned to the signed-in clinician this shift. */
 	mine?: boolean;
+	/** The acuity score's change over the last 4 h, which ranks patients within an alert severity (DU-09). */
+	scoreChange4h?: number;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -106,7 +108,7 @@ const descending = (value: (patient: PanelPatient) => number | undefined) => (a:
 	return right - left;
 };
 
-// The 24h SOFA change arrives preformatted ("+2", "−1", "0"). An API would send the number; the layout reads it back.
+// The 24h score change arrives preformatted ("+2", "−1", "0"). An API would send the number; the layout reads it back.
 const acuityChange = (patient: PanelPatient) => {
 	const value = patient.trajectory?.value;
 	if (value === undefined || patient.trajectory?.variant === "missing") return undefined;
@@ -123,14 +125,24 @@ const byAlert = (a: PanelPatient, b: PanelPatient) => alertRank(b) - alertRank(a
 // Highest acuity score first; patients without one last.
 const byAcuity = descending((patient) => (typeof patient.acuity?.score === "number" ? patient.acuity.score : undefined));
 
-// Sort orders. Alert and Acuity break ties by each other, so both signals count in either lens; then by name, so the
-// order is stable.
+// Sickest acuity band first, then the larger 4 h rise in the score (DU-09), as the triage queue ranks its alerts.
+const acuityBands: Record<PatientCardAcuityLevel, number> = { critical: 5, high: 4, medium: 3, moderate: 3, low: 1, unknown: 0 };
+const byBand = descending((patient) => (patient.acuity?.level ? acuityBands[patient.acuity.level] : undefined));
+const byRise = descending((patient) => patient.scoreChange4h);
+
+// Sort orders. Alert ranks like the triage queue (severity, band, 4 h rise), then by score; Acuity breaks ties by
+// alert, so both signals count in either lens; then by name, so the order is stable.
 const sortOrders = [
-	{ id: "alert", label: "Alert", compare: (a: PanelPatient, b: PanelPatient) => byAlert(a, b) || byAcuity(a, b) || byName(a, b) },
-	{ id: "acuity", label: "Acuity", compare: (a: PanelPatient, b: PanelPatient) => byAcuity(a, b) || byAlert(a, b) || byName(a, b) },
+	{
+		id: "alert",
+		label: "Alert",
+		compare: (a: PanelPatient, b: PanelPatient) =>
+			byAlert(a, b) || byBand(a, b) || byRise(a, b) || byAcuity(a, b) || byName(a, b),
+	},
+	{ id: "acuity", label: "Score", compare: (a: PanelPatient, b: PanelPatient) => byAcuity(a, b) || byAlert(a, b) || byName(a, b) },
 	{
 		id: "change",
-		label: "Acuity change",
+		label: "Score change",
 		compare: (a: PanelPatient, b: PanelPatient) => descending(acuityChange)(a, b) || byName(a, b),
 	},
 	{ id: "name", label: "Name", compare: byName },

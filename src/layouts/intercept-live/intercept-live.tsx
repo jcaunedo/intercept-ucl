@@ -13,6 +13,8 @@ import {
 	ShieldIcon,
 	SparklesIcon,
 	SquareActivityIcon,
+	Undo2Icon,
+	ZapIcon,
 } from "lucide-react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
 
@@ -32,6 +34,12 @@ import {
 	type AppHeaderUser,
 } from "@/components/navigation/app-header";
 import { Sidebar, type SidebarNavItem } from "@/components/navigation/sidebar";
+import {
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+} from "@/components/overlays/dropdown-menu";
 import { Typography } from "@/components/typography/typography";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
@@ -230,6 +238,27 @@ type InterceptLiveProps = {
 	 * user and says it can't answer yet.
 	 */
 	askIntercept?: AskInterceptResponder;
+	/**
+	 * The Sidebar's Prototype menu (prototype only, not the product): scenarios, views and shortcuts that jump to a
+	 * specific moment of the prototype, grouped by `group`. With `onResetPrototype`, "Reset prototype" closes the menu
+	 * after a divider. Without either, there's no Prototype item.
+	 */
+	prototype?: PrototypeShortcut[];
+	/** "Reset prototype": starts the prototype over, in its initial state. */
+	onResetPrototype?: () => void;
+};
+
+/** One entry in the Sidebar's Prototype menu. */
+type PrototypeShortcut = {
+	/** The menu group it sits in, e.g. "Scenarios", "Views", "Shortcuts". */
+	group: string;
+	label: string;
+	/** The page it opens. */
+	page?: InterceptLivePage;
+	/** A patient whose details it opens, over `page`. */
+	patientId?: string;
+	/** Anything else it does, e.g. restart the scripted live feed. */
+	onSelect?: () => void;
 };
 
 /**
@@ -248,6 +277,8 @@ function InterceptLive({
 	renderPatientDetails,
 	defaultPatient,
 	askIntercept,
+	prototype = [],
+	onResetPrototype,
 }: InterceptLiveProps) {
 	// Collapsed to the rail by default, and always at lg (1024) and below.
 	const { sidebarCollapsed, handleSidebarCollapsedChange } = useLayoutSidebar(true);
@@ -277,6 +308,40 @@ function InterceptLive({
 			),
 		[toggleLeftPanel],
 	);
+	// The Prototype menu: its shortcuts by group, then "Reset prototype" after a divider (as in bethere-ucl).
+	const prototypeGroups = [...new Set(prototype.map((shortcut) => shortcut.group))];
+	const openShortcut = (shortcut: PrototypeShortcut) => {
+		if (shortcut.page) setPage(shortcut.page);
+		setOpenPatient(shortcut.patientId ? { id: shortcut.patientId } : null);
+		shortcut.onSelect?.();
+	};
+	const prototypeMenu =
+		prototype.length || onResetPrototype ? (
+			<>
+				{prototypeGroups.map((group) => (
+					<DropdownMenuGroup key={group}>
+						<DropdownMenuLabel>{group}</DropdownMenuLabel>
+						{prototype
+							.filter((shortcut) => shortcut.group === group)
+							.map((shortcut) => (
+								<DropdownMenuItem key={shortcut.label} onSelect={() => openShortcut(shortcut)}>
+									{shortcut.label}
+								</DropdownMenuItem>
+							))}
+					</DropdownMenuGroup>
+				))}
+				{prototype.length && onResetPrototype ? <DropdownMenuSeparator /> : null}
+				{onResetPrototype ? (
+					<DropdownMenuItem onSelect={onResetPrototype}>
+						<Undo2Icon aria-hidden='true' />
+						Reset prototype
+					</DropdownMenuItem>
+				) : null}
+			</>
+		) : null;
+	const footerItems = prototypeMenu
+		? [...navFooter, { icon: ZapIcon, label: "Prototype", menu: prototypeMenu }]
+		: navFooter;
 	// The header sticks to the top of the canvas and tightens once the canvas scrolls; back at the top it relaxes.
 	const canvasRef = React.useRef<HTMLDivElement>(null);
 	const { scrollY } = useScroll({ container: canvasRef });
@@ -339,7 +404,7 @@ function InterceptLive({
 				<div className='flex h-screen bg-background-subtle'>
 					<Sidebar
 						groups={groups}
-						footerItems={navFooter}
+						footerItems={footerItems}
 						activeItem={page}
 						onNavigate={(navigateTo) => {
 							setOpenPatient(null);
@@ -466,4 +531,5 @@ export {
 	type OpenPatient,
 	type PatientDetailsView,
 	type PatientStepper,
+	type PrototypeShortcut,
 };

@@ -98,8 +98,8 @@ function PatientListPanel({
 								{patient.location ? <span className='truncate text-xs text-muted-foreground'>{patient.location}</span> : null}
 								{level ? (
 									<span className={cn("text-xs font-medium", patientCardAcuityLevels[level].className)}>
+										{patient.acuity ? `${patient.acuity.label} ${patient.acuity.score ?? "--"} · ` : null}
 										{patientCardAcuityLevels[level].label}
-										{patient.acuity?.score !== undefined ? ` · ${patient.acuity.score}` : null}
 									</span>
 								) : null}
 							</button>

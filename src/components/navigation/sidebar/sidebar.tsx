@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { PanelLeftIcon } from "lucide-react";
 
 import { Logo, LogoSymbol } from "@/components/data-display/logo";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/overlays/dropdown-menu";
 import { SidebarTooltip } from "@/components/overlays/sidebar-tooltip";
 import { enterTransition, iconSwapReducedVariants, iconSwapVariants, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,8 @@ type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 	 * SidebarTooltip on hover and focus.
 	 */
 	collapsed?: boolean;
+	/** A menu the row opens above itself instead of acting: DropdownMenu items (DropdownMenuItem, DropdownMenuLabel…). */
+	menu?: React.ReactNode;
 };
 
 /**
@@ -61,49 +64,72 @@ function SidebarMenuButton({
 	suffix,
 	active = false,
 	collapsed = false,
+	menu,
 	className,
 	...props
 }: SidebarMenuButtonProps) {
+	const button = (
+		<button
+			type='button'
+			data-slot='sidebar-menu-button'
+			data-active={active || undefined}
+			aria-current={active ? "page" : undefined}
+			aria-label={collapsed ? label : undefined}
+			className={cn(
+				// The row hugs its content: 32px tall (6px vertical padding around the 20px label line).
+				"flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium outline-none",
+				"[&_svg]:size-4.5 [&_svg]:shrink-0",
+				// Fill, label and icon color fade over motionDuration.fast (160ms).
+				"transition-[background-color,color] duration-160 ease-in-out [&_svg]:transition-colors [&_svg]:duration-160 [&_svg]:ease-in-out",
+				"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+				active
+					? // Active has no fill; the weight and the solid icon mark it.
+						"font-semibold text-foreground [&_svg]:text-icon"
+					: // Hover darkens the label to the Active color, so the two states match.
+						"text-muted-foreground hover:bg-active hover:text-foreground [&_svg]:text-icon-muted hover:[&_svg]:text-icon",
+				// The collapsed rail is `background-subtle`, the same as `bg-active`, so its hover fill is `sidebar-hover`.
+				collapsed ? "size-8 shrink-0 justify-center p-0 hover:bg-sidebar-hover" : "w-full",
+				// While its menu is open, the row keeps its hover look. `aria-expanded`, not `data-state`: the tooltip sets its
+				// own `data-state` on the same button.
+				menu && "aria-expanded:text-foreground aria-expanded:[&_svg]:text-icon",
+				menu && (collapsed ? "aria-expanded:bg-sidebar-hover" : "aria-expanded:bg-active"),
+				className,
+			)}
+			{...props}
+		>
+			{active && ActiveIcon ? <ActiveIcon /> : <Icon />}
+			{collapsed ? null : (
+				<>
+					<span className='min-w-0 flex-1 truncate text-left'>{label}</span>
+					{suffix !== undefined ? (
+						<span data-slot='sidebar-menu-button-suffix' className='shrink-0 text-sm font-normal text-muted-foreground'>
+							{suffix}
+						</span>
+					) : null}
+				</>
+			)}
+		</button>
+	);
+
+	if (!menu) {
+		return (
+			// Always mounted and only `disabled` while expanded, so collapsing the rail doesn't remount the button.
+			<SidebarTooltip label={label} disabled={!collapsed}>
+				{button}
+			</SidebarTooltip>
+		);
+	}
+
+	// The menu opens above the row, from its left edge, so it doesn't cover the rail's other footer items.
 	return (
-		// Always mounted and only `disabled` while expanded, so collapsing the rail doesn't remount the button.
-		<SidebarTooltip label={label} disabled={!collapsed}>
-			<button
-				type='button'
-				data-slot='sidebar-menu-button'
-				data-active={active || undefined}
-				aria-current={active ? "page" : undefined}
-				aria-label={collapsed ? label : undefined}
-				className={cn(
-					// The row hugs its content: 32px tall (6px vertical padding around the 20px label line).
-					"flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium outline-none",
-					"[&_svg]:size-4.5 [&_svg]:shrink-0",
-					// Fill, label and icon color fade over motionDuration.fast (160ms).
-					"transition-[background-color,color] duration-160 ease-in-out [&_svg]:transition-colors [&_svg]:duration-160 [&_svg]:ease-in-out",
-					"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
-					active
-						? // Active has no fill; the weight and the solid icon mark it.
-							"font-semibold text-foreground [&_svg]:text-icon"
-						: // Hover darkens the label to the Active color, so the two states match.
-							"text-muted-foreground hover:bg-active hover:text-foreground [&_svg]:text-icon-muted hover:[&_svg]:text-icon",
-					// The collapsed rail is `background-subtle`, the same as `bg-active`, so its hover fill is `sidebar-hover`.
-					collapsed ? "size-8 shrink-0 justify-center p-0 hover:bg-sidebar-hover" : "w-full",
-					className,
-				)}
-				{...props}
-			>
-				{active && ActiveIcon ? <ActiveIcon /> : <Icon />}
-				{collapsed ? null : (
-					<>
-						<span className='min-w-0 flex-1 truncate text-left'>{label}</span>
-						{suffix !== undefined ? (
-							<span data-slot='sidebar-menu-button-suffix' className='shrink-0 text-sm font-normal text-muted-foreground'>
-								{suffix}
-							</span>
-						) : null}
-					</>
-				)}
-			</button>
-		</SidebarTooltip>
+		<DropdownMenu>
+			<SidebarTooltip label={label} disabled={!collapsed}>
+				<DropdownMenuTrigger asChild>{button}</DropdownMenuTrigger>
+			</SidebarTooltip>
+			<DropdownMenuContent side='top' align='start' className='min-w-56'>
+				{menu}
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 
@@ -131,6 +157,11 @@ type SidebarNavItem = {
 	onClick?: () => void;
 	/** Route this item points at. Clicking passes it to `onNavigate`, so the app can run its router. */
 	navigateTo?: string;
+	/**
+	 * A menu the item opens above itself (DropdownMenu items), e.g. the prototype's scenarios. Wins over `onClick` and
+	 * `navigateTo`, and the item never becomes active.
+	 */
+	menu?: React.ReactNode;
 };
 
 type SidebarProps = Omit<
@@ -212,7 +243,8 @@ function Sidebar({
 			suffix={item.suffix}
 			active={activeItem === item.label}
 			collapsed={collapsed}
-			onClick={() => handleItemClick(item)}
+			menu={item.menu}
+			onClick={item.menu ? undefined : () => handleItemClick(item)}
 		/>
 	);
 

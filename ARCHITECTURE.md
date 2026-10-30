@@ -28,6 +28,7 @@ Paths in this section are relative to `src/layouts/intercept-live/`.
 | Ask Intercept Live | `ask-intercept-panel.tsx` | The global chat, on the left. Toggled from the Sidebar's Ask Intercept Live and, on a patient's page, the app header's sparkle. Its message box is UCL's `ChatComposer`; answers come from `InterceptLive`'s `askIntercept` prop |
 | Patient list | `patient-list-panel.tsx` | `PatientListPanel`, the patient switcher, on the left. Opened by the app header's list button on a patient's page. Takes turns with the chat: one is open at a time |
 | Page panel | `PagePanel` (in `side-panel.tsx`) | A page's own panel on the right, e.g. the live feed |
+| Prototype menu | `intercept-live.tsx` (`prototype`, `onResetPrototype`) | The Sidebar's Prototype footer item: the stories' scenarios, views and shortcuts by group, then "Reset prototype" after a divider. A shortcut opens a page and/or a patient and runs its `onSelect`. Prototype only; an app passes neither, and the item doesn't show |
 
 ### Pages
 
@@ -68,6 +69,7 @@ Everything in a `sample-*` file (and `use-sample-live-feed.ts`) is made-up data 
 | Census patients | `census/sample-census.ts` | Census |
 | Monitoring patients, vitals, alerts, escalation targets | `monitoring/sample-monitoring.ts` | Monitoring, the live feed, patient details |
 | Scripted live feed | `monitoring/sample-live-scenario.ts`, played by `sample-data/use-sample-live-feed.ts` (stories only) | The Live stories |
+| Prototype menu entries and Reset prototype | `sample-data/prototype-links.ts` (stories only): `prototypeShortcuts({ restartLiveFeed })` (Scenario 1 opens Monitoring and replays the live feed), `resetPrototype()` (reloads the story) | The Live Census and Monitoring stories |
 | Each patient's base record | `patient-details/sample-patient-records.ts` | The section samples build on it |
 | Each tab's data, per patient | `patient-details/sections/sample-<name>.ts` (`sample<Name>ByPatient`) | The sections |
 | Full patient records | `patient-details/sample-patient-details.ts`, which merges the two above | Patient details |

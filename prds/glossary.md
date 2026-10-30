@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 28, 2026
+Last updated: Oct 30, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -230,7 +230,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | --- | --- | --- |
 | **Acuity score** | A number for patient severity or care needs from an approved scoring method, with its scoring system, timestamp and source. *Proposed* categories: Low, Moderate, High, Critical, Unknown. High acuity is not the same as an active critical alert. | PRD PC-030 |
 | **Acuity change** | The difference between the current acuity score and the score 24 hours earlier (the default comparison window), shown as e.g. `▲ +3 in 24 h`. Shown instead of a status word like "Stable". | PRD PC-030 |
-| **Acuity level** | The patient's measured severity at the last calculation, on one named score (e.g. `SOFA 6 · Low`), with the time it was calculated. A measurement, not an overall condition. Placeholder `{acuity-level}`. | PRD PC-030 |
+| **Acuity level** | The patient's measured severity at the last calculation, on one named score (e.g. `NEWS2 10 · High`), with the time it was calculated. A measurement, not an overall condition. Placeholder `{acuity-level}`. | PRD PC-030 |
 | **Alert** | A clinical or operational event from Clinical Alerting & Events. Origins: physiological thresholds, derived acuity, protocols, sepsis screening, vent-order mismatch, Clinician Intuition Alerts and operational events (census change, handoff due). | Spec §5.6, PRD §10.1 |
 | **Alert category** | *Proposed* grouping of alerts by kind: Clinical, Operational, Administrative. Separate from severity. ⚠️ **Decision needed:** OD-15. | PRD §15.1 |
 | **Alert lifecycle** | *Proposed* UI states. **Active:** unresolved. **Acknowledged:** an authorized clinician has seen it. **Escalated:** routed for more clinical attention. **Resolved:** has a documented resolution. Acknowledging doesn't resolve an alert, escalating doesn't close it, and resolved alerts stay in history. | PRD PC-071 |
@@ -296,7 +296,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **MICU** | Medical Intensive Care Unit. The ICU for critically ill adults with medical (non-surgical) problems such as respiratory failure, sepsis or organ failure. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **MRN (Medical Record Number)** | A hospital-specific patient identifier. Scoped to its tenant, never a global patient ID. | PRD PC-011 |
 | **Neuro ICU** | Neurocritical care unit for patients with stroke, brain injury, seizures or after neurosurgery. A unit code in the Census unit menu. | General |
-| **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. A candidate acuity score (OD-02). | General, PRD PC-030 |
+| **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. Since Oct 30, 2026 the prototype's acuity score is NEWS2-style (scale 1), a current-state score shown with its band and 24 h change; it replaces the SOFA placeholder, pending clinical approval (OD-02, D-04). | General, PRD PC-030, SV-09, DU-14 |
 | **NICU** | Neonatal Intensive Care Unit. The ICU for premature or critically ill newborns. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **NIV (Noninvasive ventilation)** | Breathing support through a mask (BiPAP or CPAP), with no tube in the windpipe. Shown as an "NIV" pill on the Patient card, never as "Ventilated". | General, PRD PC-050, §15.1 P1 |
 | **Numerics** | The large numeric readings on a patient monitor (HR, SpO₂, BP, RR…), as opposed to waveforms and trends. On the Surveillance page, HR, SpO₂, BP and RR are the primary numerics. | General, PRD Monitoring MON-071 |

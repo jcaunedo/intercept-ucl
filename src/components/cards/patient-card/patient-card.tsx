@@ -212,7 +212,8 @@ const toMetric = ({ shortLabel: _shortLabel, ...metric }: PatientCardVital) => m
 
 // A card with an active alert takes a 2px border in the alert's severity color. The padding drops to 14px so the
 // content stays 16px in, as with the 1px border.
-type PatientCardAcuityLevel = "low" | "moderate" | "high" | "critical" | "unknown";
+// `medium` is NEWS2's band between Low and High; `moderate` stays for scores whose bands use that word.
+type PatientCardAcuityLevel = "low" | "moderate" | "medium" | "high" | "critical" | "unknown";
 
 // Acuity is the level's word alone, the same words as some alert severities; it stays apart from an alert as plain text
 // after its score, with no fill or border, never competing with the alert's solid pill. Every level is neutral text for
@@ -222,6 +223,7 @@ const acuityLevels: Record<PatientCardAcuityLevel, { label: string; className: s
 	unknown: { label: "Unknown", className: "text-muted-foreground" },
 	low: { label: "Low", className: "text-foreground" },
 	moderate: { label: "Moderate", className: "text-foreground" },
+	medium: { label: "Medium", className: "text-foreground" },
 	high: { label: "High", className: "text-foreground" },
 	critical: { label: "Critical", className: "text-foreground" },
 };
@@ -266,7 +268,7 @@ type PatientCardProps = Omit<
 		 */
 		status?: PatientCardAlertStatus;
 	};
-	/** Acuity score with its level, e.g. SOFA 7, Moderate. Without a score the level is Unknown. */
+	/** Acuity score with its level, e.g. NEWS2 10, High. `label` is the score's name ("NEWS2"), shown with it. Without a score the level is Unknown. */
 	acuity?: {
 		label: string;
 		score?: React.ReactNode;
@@ -418,8 +420,11 @@ function PatientCard({
 			{alertRing.ring}
 			<div className='flex items-start gap-2'>
 				<div className='flex min-w-0 flex-1 flex-col'>
-					{/* Name and identity wrap rather than truncate: a clinician must always see who the patient is. */}
-					<h3 className='-mb-0.5 text-xl font-bold break-words text-foreground'>{nameContent}</h3>
+					{/* The name stays on one line and truncates, full name in `title` (screen readers get it whole); the identity
+					    line wraps. The open target is a block, so it truncates too (`max-w-full`: a button shrinks to fit). */}
+					<h3 title={name} className='-mb-0.5 truncate text-xl font-bold text-foreground [&>*]:max-w-full [&>*]:truncate'>
+						{nameContent}
+					</h3>
 					{identity ? <p className='text-sm break-words text-muted-foreground'>{identity}</p> : null}
 				</div>
 				{/* The pill fades in when an alert appears and out when it's removed (Dismiss); a "Resolved" pill fades slowly
@@ -472,7 +477,8 @@ function PatientCard({
 			{acuity || trajectory || (!compact && vitals.length > 0) ? (
 				<div className='flex flex-col'>
 					{acuity || trajectory ? (
-						<div className={cn("flex border-b border-border-muted px-2 first:border-t", compact ? "py-1.5" : "py-3")}>
+						// 16px between the score and its change, so a long level ("Moderate") never runs into the change column.
+						<div className={cn("flex gap-4 border-b border-border-muted px-2 first:border-t", compact ? "py-1.5" : "py-3")}>
 							{acuity ? (
 								<div className='flex min-w-0 flex-1 flex-col whitespace-nowrap'>
 									<span className='text-xs font-medium text-muted-foreground'>{acuity.label}</span>

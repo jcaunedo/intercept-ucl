@@ -43,7 +43,7 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 	};
 
 /**
- * Heads a patient's page: photo (a circle), name and top alert, then acuity, its 24h change, demographics, MRN and location on one
+ * Heads a patient's page: photo (a circle), name and top alert, then the acuity score by its name ("NEWS2 10 High"), its 24h change, demographics, MRN and location on one
  * line, then badges (safety and organ support). An optional slot on the right takes actions.
  *
  * Figma: [intercept.ds › Patient Header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1191-3147)
@@ -102,7 +102,9 @@ function PatientHeader({
 						<p className='text-base text-foreground'>
 							{acuity ? (
 								<>
-									<span className='font-bold'>{acuity.score ?? "--"} acuity score</span>
+									<span className='font-bold'>
+										{acuity.label} {acuity.score ?? "--"}
+									</span>
 									{acuityLevel ? (
 										<span className={cn("ml-2 font-semibold", patientCardAcuityLevels[acuityLevel].className)}>
 											{patientCardAcuityLevels[acuityLevel].label}

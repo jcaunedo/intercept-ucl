@@ -795,16 +795,18 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		],
 	}),
 
-	// Hayes: admitted 20 h ago with heart failure, on IV furosemide. Worse through the night: RR 18 → 26, SpO₂ 94 → 89%
-	// as oxygen goes 2 → 4 L, HR 92 → 112. BNP 1,850 → 2,400 and creatinine 1.6 → 1.9 on the repeat Dr. Weller ordered.
+	// Hayes: admitted 20 h ago with heart failure, on IV furosemide. Through the night HR creeps up and SpO₂ dips twice,
+	// each time back to 92–93% as her oxygen goes 2 → 3 → 4 L; in the last hour RR 20 → 26, SpO₂ 89% and HR 112, so her
+	// NEWS2 jumps from 5 to 10 (`sample-vitals.ts`). BNP 1,850 → 2,400 and creatinine 1.6 → 1.9 on the repeat Dr. Weller
+	// ordered.
 	p15: timeline({
 		span: 1200,
 		seed: 141,
-		hr: [[1200, 92], [600, 96], [240, 104], [0, 112]],
+		hr: [[1200, 92], [600, 98], [240, 104], [60, 106], [0, 112]],
 		map: [[1200, 100], [0, 107]],
 		bp: [148, 86],
-		spo2: [[1200, 94], [600, 93], [240, 91], [0, 89]],
-		rr: [[1200, 18], [600, 19], [240, 22], [0, 26]],
+		spo2: [[1200, 94], [840, 94], [780, 93], [310, 93], [300, 90], [290, 93], [160, 92], [150, 89], [140, 92], [60, 92], [0, 89]],
+		rr: [[1200, 18], [600, 19], [300, 20], [60, 20], [0, 26]],
 		temp: [[1000, 36.7], [760, 36.8], [520, 36.6], [280, 36.7], [40, 36.8]],
 		lanes: [
 			oxygenFlow([[1200, 2], [300, 3], [150, 4]]),

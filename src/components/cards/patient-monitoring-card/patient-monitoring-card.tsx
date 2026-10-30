@@ -439,9 +439,11 @@ function PatientMonitoringCard({
 			{alertRing.ring}
 			<div className='flex items-start gap-2'>
 				<div className='flex min-w-0 flex-1 flex-col'>
+					{/* One line, truncated, full name in `title`, as on PatientCard. */}
 					<h3
+						title={name}
 						className={cn(
-							"-mb-0.5 font-bold break-words text-foreground",
+							"-mb-0.5 truncate font-bold text-foreground [&>*]:max-w-full [&>*]:truncate",
 							cardSize === "sm" ? "text-base" : "text-xl",
 						)}
 					>

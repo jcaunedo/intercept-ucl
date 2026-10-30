@@ -663,7 +663,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p15",
 		weight: "78 kg",
 		brief: {
-			text: "Breathing harder overnight: RR up from 18 to 26 and SpO₂ down to 89% on 4 L, with HR 112. Net fluid balance is +1.8 L and weight is up 2.1 kg over 48 h on IV furosemide. BNP is 2,400, up from 1,850 on admission, and creatinine 1.9 from 1.6.",
+			text: "Breathing harder in the last hour: RR up from 20 to 26 and SpO₂ down to 89% on 4 L, with HR 112, so NEWS2 is 10 (High), up from 5. Overnight her oxygen went from 2 to 4 L to hold SpO₂ at 92%. Net fluid balance is +1.8 L and weight is up 2.1 kg over 48 h on IV furosemide. BNP is 2,400, up from 1,850 on admission, and creatinine 1.9 from 1.6.",
 			sourceCount: 12,
 			updatedAt: minutesAgo(2),
 		},
@@ -674,6 +674,30 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		admittedAt: hoursAgo(20),
 		admittedFrom: "Emergency department",
 		ventilator: charted("Oxygen", 150, [{ label: "Nasal cannula", value: "4", unit: "L/min" }]),
+		// Scenario 1's early warning (01:40): NEWS2 from her vitals in `sample-vitals.ts`, 4 on admission, 5 overnight, 10
+		// now, crossing into High (7). Her net balance and weight are the nurse's 25 min ago.
+		earlyWarning: {
+			score: "NEWS2",
+			band: "High",
+			threshold: 7,
+			crossedAt: minutesAgo(2),
+			value: 10,
+			trend: [
+				{ at: hoursAgo(20), value: 4 },
+				{ at: hoursAgo(4), value: 5 },
+				{ at: hoursAgo(1), value: 5 },
+			],
+			inputs: [
+				{ label: "Respiratory rate", value: "26/min", points: 3 },
+				{ label: "SpO₂", value: "89%", points: 3 },
+				{ label: "Oxygen", value: "4 L/min", points: 2 },
+				{ label: "Heart rate", value: "112 bpm", points: 2 },
+				{ label: "Systolic BP", value: "148 mmHg", points: 0 },
+				{ label: "Consciousness", value: "Alert", points: 0 },
+				{ label: "Temperature", value: "36.8 °C", points: 0 },
+			],
+		},
+		fluids: { netBalance: "+1.8 L", weightChange: "+2.1 kg", window: "48 h", chartedAt: minutesAgo(25) },
 		labs: [
 			lab("BNP", "2,400", "pg/mL", 75, "high", ["1,850", 1180]),
 			lab("Creatinine", "1.9", "mg/dL", 75, "high", ["1.6", 1180]),

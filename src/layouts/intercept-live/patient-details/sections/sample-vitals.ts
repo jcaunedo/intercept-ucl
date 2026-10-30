@@ -126,9 +126,12 @@ const limits = {
 
 /**
  * 24 hourly values from `start` to `end`, with a small deterministic wobble (none on the last, which matches the
- * monitor). Hours before ICU admission (`hours` back) are missing.
+ * monitor). Hours before ICU admission (`hours` back) are missing. More than two values are the hourly readings
+ * themselves, oldest first, ending now.
  */
-function trend([start, end]: [number, number], wobble: number, seed: number, hours = 24): (number | null)[] {
+function trend(course: number[], wobble: number, seed: number, hours = 24): (number | null)[] {
+	if (course.length > 2) return [...Array<null>(24 - course.length).fill(null), ...course];
+	const [start, end] = course;
 	const first = 24 - hours;
 	return Array.from({ length: 24 }, (_, index) => {
 		if (index < first) return null;
@@ -149,11 +152,12 @@ type VitalsSpec = {
 	seed: number;
 	/** Hours since ICU admission, when under 24. */
 	hours?: number;
-	hr: [number, number];
-	systolic: [number, number];
-	diastolic: [number, number];
-	spo2: [number, number];
-	rr: [number, number];
+	/** `[start, end]`, or every hourly reading (see `trend`). */
+	hr: number[];
+	systolic: number[];
+	diastolic: number[];
+	spo2: number[];
+	rr: number[];
 	/** Intubated: end-tidal CO₂ from capnography. */
 	etco2?: [number, number];
 	/** An arterial line, or a cuff. */
@@ -426,16 +430,18 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		temps: [36.9, 37.0],
 		lastTemp: 60,
 	}),
-	// Hayes: heart failure getting worse overnight on the med-surg floor, admitted 20 h ago. RR 18 → 26, SpO₂ 94 → 89%
-	// as her oxygen goes up to 4 L, HR 92 → 112; BP stays up, so a nitrate is an option.
+	// Hayes: heart failure getting worse overnight on the med-surg floor, admitted 20 h ago. Hour by hour, so her NEWS2
+	// crosses 7 only now (Scenario 1, 01:40): 4 on admission, 5 through the night as HR creeps up and SpO₂ holds at
+	// 92–93% while her oxygen goes 2 → 4 L, then 10 in the last hour, with RR 20 → 26, SpO₂ 89% and HR 112. BP stays
+	// up, so a nitrate is an option.
 	p15: buildVitals({
 		seed: 15,
 		hours: 20,
-		hr: [92, 112],
-		systolic: [138, 148],
-		diastolic: [80, 86],
-		spo2: [94, 89],
-		rr: [18, 26],
+		hr: [92, 93, 92, 94, 93, 95, 96, 95, 97, 98, 99, 100, 101, 102, 103, 104, 104, 105, 106, 112],
+		systolic: [138, 137, 139, 138, 140, 139, 141, 140, 142, 141, 143, 142, 144, 143, 145, 144, 146, 145, 147, 148],
+		diastolic: [80, 80, 81, 80, 81, 81, 82, 81, 82, 82, 83, 82, 83, 83, 84, 84, 85, 84, 85, 86],
+		spo2: [94, 94, 95, 94, 94, 94, 93, 93, 93, 93, 93, 93, 93, 92, 92, 93, 92, 92, 92, 89],
+		rr: [18, 18, 17, 18, 18, 18, 18, 19, 18, 19, 19, 19, 19, 19, 20, 20, 19, 20, 20, 26],
 		arterialLine: false,
 		ventilated: false,
 		nurse: "Kayla Brandt",

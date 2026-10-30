@@ -27,7 +27,7 @@ const meta = {
 		bed: "Bed 11",
 		details: ["ICU day 3", "64 kg"],
 		alert: { variant: "critical", count: 3 },
-		acuity: { label: "SOFA acuity score", score: 7, level: "moderate" },
+		acuity: { label: "NEWS2", score: 5, level: "medium" },
 		trajectory: { label: "Change in last 24 h", value: "+2", trend: "up", trendVariant: "critical" },
 		tags: [
 			{ label: "Full code", variant: "outline" },

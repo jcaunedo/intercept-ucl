@@ -1,5 +1,5 @@
 import * as React from "react";
-import { HospitalIcon, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,15 +11,15 @@ type HospitalSectionHeaderProps = React.ComponentProps<"div"> & {
 	alertCount: number;
 	/** Heading level for the name. Defaults to `h2`, under the page's `h1`. */
 	headingLevel?: "h2" | "h3" | "h4";
-	/** Replaces the hospital icon. */
+	/** @deprecated Ignored: the header has no icon since Oct 30, 2026 (intercept.ds dropped the tile). */
 	icon?: LucideIcon;
 };
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 /**
- * Heads a group of patients from one hospital, e.g. when the census is sorted by location: an icon tile, the
- * hospital's name, and how many patients and active alerts it has.
+ * Heads a group of patients from one hospital, e.g. when the census is sorted by location: the hospital's name over
+ * how many patients and active alerts it has.
  *
  * Figma: [intercept.ds › hospital-section-header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1118-4281)
  */
@@ -28,15 +28,12 @@ function HospitalSectionHeader({
 	patientCount,
 	alertCount,
 	headingLevel: Heading = "h2",
-	icon: Icon = HospitalIcon,
+	icon: _icon,
 	className,
 	...props
 }: HospitalSectionHeaderProps) {
 	return (
-		<div data-slot='hospital-section-header' className={cn("flex items-center gap-3", className)} {...props}>
-			<span aria-hidden='true' className='grid shrink-0 place-items-center rounded-[7px] bg-foreground p-[9px]'>
-				<Icon className='size-[22px] text-background' />
-			</span>
+		<div data-slot='hospital-section-header' className={cn("flex items-center", className)} {...props}>
 			<div className='flex min-w-0 flex-col whitespace-nowrap'>
 				<Heading className='truncate text-xl/6 font-bold text-foreground'>{name}</Heading>
 				<p className='flex gap-1 text-sm text-foreground'>
