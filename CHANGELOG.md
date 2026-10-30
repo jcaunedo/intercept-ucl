@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Monitoring: Compact density shows one more card a row than Comfortable at every width (2 from 608px up to 14 from 3880px); it matched Comfortable from 1217px before.
 - PatientCard, PatientMonitoringCard: the patient's name stays on one line and truncates, with the full name in `title`; it wrapped before.
 - HospitalSectionHeader: the hospital icon tile is gone, as in intercept.ds `hospital-section-header` (`1118:4281`); the header is the name over its counts. `icon` is deprecated and ignored.
 - Intercept Live samples: Margaret Hayes (`p15`) is one of the signed-in clinician's patients (`mine`) and Sarah Miller (`p1`) no longer is; My patients still counts 6.
