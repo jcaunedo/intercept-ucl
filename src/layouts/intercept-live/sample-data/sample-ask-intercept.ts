@@ -991,7 +991,7 @@ function isRulesQuestion(question: string) {
 const ruleSections = {
 	ranking: {
 		text: [
-			"**Active alerts** (the chip on the Census and Monitoring) shows only patients with an open alert, any severity. Resolved alerts and family messages don't count. It keeps the patients who matched when you pressed it, so cards don't come and go as alerts change; its count stays live.",
+			"**Active alerts** (the chip on Monitoring) shows only patients with an open alert, any severity. Resolved alerts and family messages don't count. It keeps the patients who matched when you pressed it, so cards don't come and go as alerts change; its count stays live.",
 			"While it's on, the cards are ranked by who to see first:",
 			list([
 				"**1. Severity** of the worst open alert: Critical, High, Medium, Low",

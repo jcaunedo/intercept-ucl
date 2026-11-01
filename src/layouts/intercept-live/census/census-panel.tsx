@@ -1,5 +1,5 @@
 import * as React from "react";
-import { BellRingIcon, FilterXIcon, GermIcon, HandHeartIcon, TriangleIcon } from "lucide-react";
+import { FilterXIcon, GermIcon, HandHeartIcon, TriangleIcon } from "lucide-react";
 
 import { PatientCard, type PatientCardProps } from "@/components/cards/patient-card";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -21,7 +21,6 @@ import {
 	QuickViewChips,
 	PanelBoard,
 	useChangedSinceMount,
-	useSnapOrder,
 	panelOrder,
 	resolvedTimes,
 	useGrouping,
@@ -121,11 +120,9 @@ type CensusPanelProps = {
 
 // Quick views. At most one is active; pressing it again turns it off. My patients is its own chip before them, so it
 // combines with any quick view. Only what the card shows: Out of range and Data gap are live monitoring data, so they're
-// Monitoring's (Nov 1, 2026, PRD Census CEN-OD-07).
+// Monitoring's (Nov 1, 2026, PRD Census CEN-OD-07), and so is Active alerts (Nov 1, 2026, user's call): its cards show
+// no alert, and the Filters panel's Highest alert still finds them.
 const quickViews: QuickView<CensusPatient>[] = [
-	// Every patient with an active alert, any severity (resolved alerts and messages don't count). The only alert filter:
-	// an "Alerts only" switch did the same and was removed (Oct 27, 2026).
-	{ id: "alerts", label: "Active alerts", icon: BellRingIcon, matches: hasActiveAlert },
 	{ id: "rising", label: "Rising score", icon: TriangleIcon, matches: hasRisingAcuity },
 	{ id: "organ", label: "Organ support", icon: HandHeartIcon, matches: hasOrganSupport },
 	{ id: "sepsis", label: "Sepsis watch", icon: GermIcon, matches: (patient) => Boolean(patient.sepsisWatch) },
@@ -237,14 +234,7 @@ function CensusPanel({
 	const recent = useRecentActivity(patients, { ...resolvedTimes(alerts), ...Object.fromEntries(resolvedIds) });
 	const assigned = scope === "mine" ? recent.filter((patient) => patient.mine) : recent;
 	const { inView, inUnit, visible: unsorted } = filtered(assigned);
-	// With Active alerts on, who to see first (severity, acuity band, 4 h rise, time waiting, score), whatever the sort.
-	const alertPriority = quickView === "alerts";
-	const [snapOrder, snapNextOrder] = useSnapOrder();
-	const visible = useHeldOrder(
-		unsorted.sort(panelOrder(sortBy, grouped, alertPriority)),
-		0,
-		`${sortBy}:${grouped}:${alertPriority}`,
-	);
+	const visible = useHeldOrder(unsorted.sort(panelOrder(sortBy, grouped)), 0, `${sortBy}:${grouped}`);
 	const everyoneCount = scope === "mine" ? filtered(patients).visible.length : visible.length;
 	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
 	// One hospital, picked on its tab or the only one the filters leave, reads by name: "7 patients at CVMC".
@@ -344,11 +334,7 @@ function CensusPanel({
 							<QuickViewChips
 								views={quickViews}
 								value={quickView}
-								onValueChange={(next) => {
-									// Active alerts re-sorts by who to see first on the click itself: no glide.
-									if (next === "alerts" || quickView === "alerts") snapNextOrder();
-									setQuickView(next);
-								}}
+								onValueChange={setQuickView}
 								patients={inUnit}
 							/>
 						</FilterBarFilters>
@@ -386,7 +372,6 @@ function CensusPanel({
 					<PanelBoard
 						animateIn={boardSwitched}
 						patients={visible}
-						snap={snapOrder}
 						hospitals={hospitals}
 						className={boardClassNames[density]}
 						spareColumns={density === "compact" ? 1 : 0}
@@ -395,7 +380,6 @@ function CensusPanel({
 				) : (
 					<PanelGrid
 						patients={visible}
-						snap={snapOrder}
 						hospitals={hospitals}
 						grouped={grouped}
 						className={gridClassNames[density]}
