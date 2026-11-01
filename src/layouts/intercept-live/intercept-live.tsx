@@ -8,15 +8,14 @@ import {
 	HeartCrackIcon,
 	LayoutGridIcon,
 	LifeBuoyIcon,
+	MenuIcon,
 	MessageCircleMoreIcon,
-	SearchIcon,
 	ShieldIcon,
 	SparklesIcon,
 	SquareActivityIcon,
 	Undo2Icon,
-	ZapIcon,
 } from "lucide-react";
-import { motion, useMotionValueEvent, useScroll } from "motion/react";
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 
 import { BoxSolidIcon } from "@/components/icons/box-solid-icon";
 import { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
@@ -43,14 +42,31 @@ import {
 } from "@/components/overlays/dropdown-menu";
 import { Typography } from "@/components/typography/typography";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
+import {
+	enterTransition,
+	exitTransition,
+	fadeVariants,
+	motionDistance,
+	motionDuration,
+	revealVariants,
+	useMotionPreference,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import { AskInterceptPanel, type AskInterceptResponder } from "./ask-intercept-panel";
+import { AskInterceptPanel, type AskInterceptNotice, type AskInterceptResponder } from "./ask-intercept-panel";
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
-import { PagePreferencesProvider } from "./page-preferences";
+import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
 import { PatientNavigationProvider, type PatientNavigation } from "./patient-navigation";
 import { PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
 import { useLayoutSidebar } from "./use-layout-sidebar";
+
+// A patient's details reveal at twice Reveal's duration (1 s; Oct 31, 2026, user's call), so the page change reads. On
+// Back they leave sliding right as they fade (Glide), while the page comes in from the left.
+const detailsRevealVariants = {
+	...revealVariants,
+	animate: { opacity: 1, x: 0, y: 0, transition: { ...enterTransition, duration: motionDuration.slow * 2 } },
+	exit: { opacity: 0, x: motionDistance.medium, transition: exitTransition },
+};
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
@@ -59,14 +75,12 @@ import { useLayoutSidebar } from "./use-layout-sidebar";
 // The chat's Sidebar item: an action, matched by its label (Oct 27, 2026: "Ask Intercept Live", was "Ask Intercept").
 const askInterceptLabel = "Ask Intercept Live";
 
+// No Search item (Oct 31, 2026, intercept.ds `sidebar` `1001:544`, user's call): search happens in Ask Intercept Live.
 const navGroups: SidebarNavItem[][] = [
+	[{ icon: SparklesIcon, label: askInterceptLabel }],
 	[
-		{ icon: SearchIcon, label: "Search" },
-		{ icon: SparklesIcon, label: askInterceptLabel },
-	],
-	[
-		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census", navigateTo: "Census" },
 		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring", navigateTo: "Monitoring" },
+		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census", navigateTo: "Census" },
 		{ icon: BellRingIcon, label: "Alert Queue", navigateTo: "Alert Queue" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages", navigateTo: "Messages" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis", navigateTo: "Virtual Sepsis" },
@@ -84,8 +98,8 @@ const navFooter: SidebarNavItem[] = [
 	{ icon: LifeBuoyIcon, label: "Support" },
 ];
 
-// Every Sidebar page, with the empty state it shows when a layout doesn't render it. Search and Ask Intercept aren't
-// pages (they'd open over the current one), so they have no entry.
+// Every Sidebar page, with the empty state it shows when a layout doesn't render it. Ask Intercept isn't a page (it
+// opens over the current one), so it has no entry.
 const emptyPages = {
 	Census: {
 		title: "No patients on the census",
@@ -224,7 +238,7 @@ type InterceptLiveProps = {
 	 * can open its own side panel right of the canvas with PagePanel (e.g. Monitoring's live feed).
 	 */
 	pages: Partial<Record<InterceptLivePage, React.ReactNode>>;
-	/** The page shown first. */
+	/** The page shown first. Monitoring by default, the Sidebar's first page. */
 	defaultPage?: InterceptLivePage;
 	/**
 	 * A patient's details page (PRD Patient details), shown over the current page when the page opens one of its
@@ -240,6 +254,11 @@ type InterceptLiveProps = {
 	 * user and says it can't answer yet.
 	 */
 	askIntercept?: AskInterceptResponder;
+	/**
+	 * What Ask Intercept Live tells the user unasked, e.g. that patients' alerts changed. Each new `id` is posted once in
+	 * the conversation, whether the chat is open or not.
+	 */
+	askInterceptNotice?: AskInterceptNotice;
 	/**
 	 * The Sidebar's Prototype menu (prototype only, not the product): scenarios, views and shortcuts that jump to a
 	 * specific moment of the prototype, grouped by `group`. With `onResetPrototype`, "Reset prototype" closes the menu
@@ -277,10 +296,11 @@ function InterceptLive({
 	team,
 	unreadMessages,
 	pages,
-	defaultPage = "Census",
+	defaultPage = "Monitoring",
 	renderPatientDetails,
 	defaultPatient,
 	askIntercept,
+	askInterceptNotice,
 	prototype = [],
 	onResetPrototype,
 }: InterceptLiveProps) {
@@ -299,11 +319,18 @@ function InterceptLive({
 		[],
 	);
 	const [patientListWidth, setPatientListWidth] = React.useState<number>(sidePanelWidth.min);
-	// View choices that hold across pages (Group by location), so switching pages keeps them.
+	// View choices that hold across pages (Group by location, each page's sort), so switching pages, or opening a patient
+	// and coming back, keeps them.
 	const [groupByLocation, setGroupByLocation] = React.useState(false);
-	const pagePreferences = React.useMemo(
-		() => ({ groupByLocation, onGroupByLocationChange: setGroupByLocation }),
-		[groupByLocation],
+	const [sortBy, setSortBy] = React.useState<PagePreferences["sortBy"]>({});
+	const pagePreferences = React.useMemo<PagePreferences>(
+		() => ({
+			groupByLocation,
+			onGroupByLocationChange: setGroupByLocation,
+			sortBy,
+			onSortByChange: (page, next) => setSortBy((current) => ({ ...current, [page]: next })),
+		}),
+		[groupByLocation, sortBy],
 	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);
@@ -362,7 +389,7 @@ function InterceptLive({
 			</>
 		) : null;
 	const footerItems = prototypeMenu
-		? [...navFooter, { icon: ZapIcon, label: "Prototype", menu: prototypeMenu }]
+		? [...navFooter, { icon: MenuIcon, label: "Prototype", menu: prototypeMenu }]
 		: navFooter;
 	// The header sticks to the top of the canvas and tightens once the canvas scrolls; back at the top it relaxes.
 	const canvasRef = React.useRef<HTMLDivElement>(null);
@@ -385,6 +412,11 @@ function InterceptLive({
 		else if (patientWasOpen.current) canvas.scrollTop = pageScroll.current;
 		patientWasOpen.current = openPatientId !== null;
 	}, [openPatientId]);
+	// Each patient whose details open, from a page or stepped to, for the pages' Recently viewed sort.
+	const [viewedAt, setViewedAt] = React.useState<Record<string, string>>({});
+	React.useEffect(() => {
+		if (openPatientId !== null) setViewedAt((current) => ({ ...current, [openPatientId]: new Date().toISOString() }));
+	}, [openPatientId]);
 	const navigation = React.useMemo<PatientNavigation>(
 		() => ({
 			openPatient: (patientId, list) => {
@@ -393,8 +425,9 @@ function InterceptLive({
 			},
 			compact: headerCompact,
 			patientOpen: openPatientId !== null,
+			viewedAt,
 		}),
-		[renderPatientDetails, headerCompact, openPatientId],
+		[renderPatientDetails, headerCompact, openPatientId, viewedAt],
 	);
 	const patientView = (() => {
 		if (!openPatient || !renderPatientDetails) return null;
@@ -408,6 +441,24 @@ function InterceptLive({
 			onSelectPatient: (patientId) => setOpenPatient({ id: patientId, list }),
 		});
 	})();
+	// Opening a patient reveals the details (MOTION.md Reveal: a fade and an 8px rise, over 1 s; Oct 31, 2026, user's
+	// call, it was a Glide from the right). Back slides right (Glide): the details leave to the right and the page comes
+	// in from the left. Once per navigation, not on stepping between patients; opacity only under reduced motion.
+	const { prefersReducedMotion } = useMotionPreference();
+	const glideDistance = prefersReducedMotion ? 0 : motionDistance.medium;
+	// Not when the app opens on a patient: only a navigation glides.
+	const mounted = React.useRef(false);
+	React.useEffect(() => {
+		mounted.current = true;
+	}, []);
+	// The chat is about the patient on screen only when the user opens it from the app header's Ask Intercept button (Oct
+	// 31, 2026, user's call); the button is filled meanwhile. Removing the patient (the chip over the message box), closing
+	// the chat or opening another patient ends it. From the Sidebar, the chat is general.
+	const [chatPatientId, setChatPatientId] = React.useState<string | null>(null);
+	const chatInPatientContext = chatOpen && chatPatientId !== null && chatPatientId === openPatientId;
+	React.useEffect(() => {
+		if (!chatOpen) setChatPatientId(null);
+	}, [chatOpen]);
 	// The patient list shows only on a patient's page with a list; leaving it closes the list.
 	const patientListOpen = leftPanel === "patients" && Boolean(patientView?.patientList);
 	const { theme, toggleTheme } = useDocumentTheme();
@@ -445,8 +496,10 @@ function InterceptLive({
 							carded={sidebarCollapsed}
 							width={chatWidth}
 							onWidthChange={setChatWidth}
-							context={{ page, patientName: patientView?.name }}
+							context={{ page, patientName: chatInPatientContext ? patientView?.name : undefined }}
 							respond={askIntercept}
+							notice={askInterceptNotice}
+							onRemovePatientContext={chatInPatientContext ? () => setChatPatientId(null) : undefined}
 						/>
 
 						{/* On a patient's page opened from a list: that list, to switch patient (PRD PD-015). */}
@@ -491,7 +544,14 @@ function InterceptLive({
 									sourcePage={page}
 									patientName={patientView.name}
 									onBack={() => setOpenPatient(null)}
-									onToggleAskIntercept={() => toggleLeftPanel("chat")}
+									// Opens the chat about this patient (or makes an open chat about them); pressed again, closes it.
+									onToggleAskIntercept={() => {
+										if (chatInPatientContext) setChatOpen(false);
+										else {
+											setChatPatientId(openPatientId);
+											setChatOpen(true);
+										}
+									}}
 									askInterceptOpen={chatOpen}
 									// Only with a list to switch through (not when the patient was opened from an alert).
 									onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
@@ -516,8 +576,17 @@ function InterceptLive({
 							)}
 
 							{/* Under an open patient the page stays mounted, hidden, so its filters, sort and scroll are as they were on
-							    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. */}
-							<div hidden={Boolean(patientView)} className='contents'>
+							    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. It leaves at once
+							    and glides back in on Back. */}
+							<motion.div
+								initial={false}
+								animate={
+									patientView
+										? { opacity: 0, x: -glideDistance, transition: { duration: 0 } }
+										: { opacity: 1, x: 0, transition: enterTransition }
+								}
+								className={cn("flex min-w-0 flex-1 flex-col", patientView && "hidden")}
+							>
 								<PagePanelSlotProvider value={patientView ? null : panelSlot}>
 									{pages[page] ?? (
 										// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area
@@ -534,8 +603,23 @@ function InterceptLive({
 										</main>
 									)}
 								</PagePanelSlotProvider>
-							</div>
-							{patientView?.content}
+							</motion.div>
+							{/* popLayout: on Back the leaving details are taken out of the flow (over the page) while they slide out, so
+							    the page takes its place at once and comes in beside them. */}
+							<AnimatePresence mode='popLayout' initial={false}>
+								{patientView ? (
+									<motion.div
+										key='details'
+										variants={prefersReducedMotion ? fadeVariants : detailsRevealVariants}
+										initial={mounted.current ? "initial" : false}
+										animate='animate'
+										exit='exit'
+										className='flex min-w-0 flex-1 flex-col'
+									>
+										{patientView.content}
+									</motion.div>
+								) : null}
+							</AnimatePresence>
 						</motion.div>
 
 						{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.

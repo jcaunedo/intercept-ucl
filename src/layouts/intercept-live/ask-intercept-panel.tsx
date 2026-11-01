@@ -1,15 +1,18 @@
 import * as React from "react";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
 import { ChatComposer, type ChatCommand } from "@/components/forms/chat-composer";
 import {
+	expandVariants,
+	fadeVariants,
 	motionDuration,
 	pendingSurfaceVariants,
 	reducedMotionTransition,
 	revealVariants,
 	staggerContainerVariants,
+	useExpandClip,
 	useMotionPreference,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -33,10 +36,25 @@ type AskInterceptContext = { page: string; patientName?: string };
  * An answer. `text` is plain text with two marks: a line starting "- " is a list item, and `**words**` are bold.
  * `sources` name where its facts come from ("Monitor", "Lab"…).
  */
-type AskInterceptAnswer = { text: string; sources?: string[] };
+type AskInterceptAnswer = {
+	text: string;
+	sources?: string[];
+	/**
+	 * The question was about alerts: the chat posts alert updates (`notice`) from now on, until a question that isn't
+	 * (Oct 31, 2026, user's call).
+	 */
+	followAlerts?: boolean;
+};
 
 /** Answers a question. The prototype's answers are canned (`sample-ask-intercept.ts`). */
 type AskInterceptResponder = (question: string, context: AskInterceptContext) => AskInterceptAnswer;
+
+/**
+ * Something Intercept tells the user without being asked: that patients' alerts changed (Oct 31, 2026, user's call).
+ * Posted only while the conversation is about alerts (the last answer's `followAlerts`); a new `id` posts it once, at
+ * the end of the conversation, whole (no thinking or streaming), so it never interrupts an answer being written.
+ */
+type AskInterceptNotice = AskInterceptAnswer & { id: string };
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
@@ -50,13 +68,24 @@ const noAnswer: AskInterceptAnswer = { text: "I can't answer questions here yet.
 // Slash commands. Each runs on the patient on screen, or the one named after it ("/handoff Miller"); the app answers
 // them like questions (`respond` gets the text, "/handoff Miller").
 const commands: ChatCommand[] = [
-	{ name: "summarize", description: "A patient's last 24 hours" },
-	{ name: "changes", description: "What changed in the last hour" },
-	{ name: "labs", description: "Latest labs" },
-	{ name: "meds", description: "Medications and what's due" },
-	{ name: "sepsis", description: "Sepsis criteria and bundle" },
-	{ name: "handoff", description: "Draft a handoff (I-PASS)" },
+	// Names only in the menu (Oct 31, 2026, user's call). /clear empties the conversation; the panel handles it.
+	{ name: "summarize" },
+	{ name: "changes" },
+	{ name: "labs" },
+	{ name: "meds" },
+	{ name: "sepsis" },
+	{ name: "handoff" },
 ];
+
+/**
+ * What to write after a command, shown in the field once it's picked (Nov 1, 2026, user request): the patient the chat is
+ * about goes by default, by last name; /changes without one covers every patient.
+ */
+function commandHint(name: string, patientName?: string) {
+	if (patientName) return `Enter for ${patientName.split(",")[0]}, or add another patient`;
+	if (name === "changes") return "Enter for all your patients, or add a patient's name";
+	return "Add a patient's name";
+}
 
 /** Questions to start with, about the page or the patient on screen. Shown until the first question. */
 function suggestionsFor({ patientName }: AskInterceptContext) {
@@ -86,7 +115,12 @@ type ChatMessage =
 			shown: number;
 			sources?: string[];
 			status: "thinking" | "streaming" | "done" | "stopped";
+			/** Posted unasked (an alert update): shown in a grey box, without the copy button. */
+			notice?: boolean;
 	  };
+
+/** Whether a message is a notice (an alert update), for spacing a run of them. */
+const isNotice = (message?: ChatMessage) => message?.role === "assistant" && Boolean(message.notice);
 
 /** `**bold**` within a line. An unclosed `**` while streaming is bold up to the end, so the marks never flash. */
 function renderInline(line: string) {
@@ -170,8 +204,9 @@ function AssistantMessage({ message }: { message: Extract<ChatMessage, { role: "
 	) : null;
 
 	return (
-		// The sparkle floats at the start of the first line, so the answer uses the full width below it.
-		<div className='flow-root'>
+		// The sparkle floats at the start of the first line, so the answer uses the full width below it. A notice sits in a
+		// neutral grey box (Oct 31, 2026, user's call), so what Intercept says unasked reads apart from its answers.
+		<div className={cn("flow-root", message.notice && "rounded-xl bg-neutral-muted px-3 py-2.5")}>
 			<img src={aiIcon} alt='' className='float-left mt-0.5 mr-2 size-4' />
 			<span className='sr-only'>Intercept Live:</span>
 			{message.status === "thinking" ? (
@@ -187,8 +222,8 @@ function AssistantMessage({ message }: { message: Extract<ChatMessage, { role: "
 			)}
 			{message.status === "stopped" ? <p className='mt-2 text-xs text-muted-foreground'>Stopped</p> : null}
 			{message.status === "done" && (message.sources?.length || message.id !== "greeting") ? (
-				<div className='mt-2 -ml-1 flex items-center gap-1.5'>
-					{message.id !== "greeting" ? <CopyButton text={message.text} /> : null}
+				<div className={cn("mt-2 flex items-center gap-1.5", !message.notice && "-ml-1")}>
+					{message.id !== "greeting" && !message.notice ? <CopyButton text={message.text} /> : null}
 					{message.sources?.length ? (
 						<p className='text-xs text-muted-foreground'>Sources: {message.sources.join(" · ")}</p>
 					) : null}
@@ -240,6 +275,8 @@ function AskInterceptPanel({
 	onWidthChange,
 	context,
 	respond,
+	notice,
+	onRemovePatientContext,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -248,8 +285,16 @@ function AskInterceptPanel({
 	onWidthChange: (width: number) => void;
 	context: AskInterceptContext;
 	respond?: AskInterceptResponder;
+	/** The latest notice (e.g. alert changes); each new `id` is posted once. */
+	notice?: AskInterceptNotice;
+	/**
+	 * Takes the patient on screen out of the chat, from the "About {patient}" chip over the message box, so it answers
+	 * about the census again. Without it, there's no chip.
+	 */
+	onRemovePatientContext?: () => void;
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
+	const patientContextClip = useExpandClip();
 	const [messages, setMessages] = React.useState<ChatMessage[]>([]);
 	const nextId = React.useRef(0);
 	const active = messages.find(
@@ -257,20 +302,50 @@ function AskInterceptPanel({
 			message.role === "assistant" && (message.status === "thinking" || message.status === "streaming"),
 	);
 	const asked = messages.some((message) => message.role === "user");
-	const greeted = messages[0]?.role === "assistant" && messages[0].status === "done";
+	const greetingMessage = messages.find((message) => message.id === "greeting");
+	const greeted = greetingMessage?.role === "assistant" && greetingMessage.status === "done";
 
 	const updateAssistant = (id: string, update: (message: Extract<ChatMessage, { role: "assistant" }>) => ChatMessage) =>
 		setMessages((current) => current.map((message) => (message.id === id && message.role === "assistant" ? update(message) : message)));
 
 	// The greeting streams the first time the panel opens, once the panel has slid open, so it's seen from its start.
+	// Notices posted before then stay below it.
+	const hasGreeting = Boolean(greetingMessage);
 	React.useEffect(() => {
-		if (!open || messages.length) return;
+		if (!open || hasGreeting) return;
 		const timer = window.setTimeout(
-			() => setMessages([{ id: "greeting", role: "assistant", text: greeting, shown: 0, status: "streaming" }]),
+			() =>
+				setMessages((current) => [
+					{ id: "greeting", role: "assistant", text: greeting, shown: 0, status: "streaming" },
+					...current,
+				]),
 			prefersReducedMotion ? 0 : motionDuration.slow * 1000,
 		);
 		return () => window.clearTimeout(timer);
-	}, [open, messages.length, prefersReducedMotion]);
+	}, [open, hasGreeting, prefersReducedMotion]);
+
+	// Alert updates post while the conversation is about alerts: from a question about them until one that isn't. A
+	// notice that comes meanwhile is posted once per id, whole, after whatever is there (an answer being written keeps
+	// streaming above it); one that comes outside an alerts conversation is dropped, not saved for later.
+	const [followingAlerts, setFollowingAlerts] = React.useState(false);
+	const seenNotices = React.useRef(new Set<string>());
+	React.useEffect(() => {
+		if (!notice || seenNotices.current.has(notice.id)) return;
+		seenNotices.current.add(notice.id);
+		if (!followingAlerts) return;
+		setMessages((current) => [
+			...current,
+			{
+				id: `notice-${notice.id}`,
+				role: "assistant",
+				text: notice.text,
+				sources: notice.sources,
+				shown: notice.text.length,
+				status: "done",
+				notice: true,
+			},
+		]);
+	}, [notice, followingAlerts]);
 
 	// Thinking, then streaming: one step at a time for the active answer. Under reduced motion it appears whole.
 	React.useEffect(() => {
@@ -294,9 +369,27 @@ function AskInterceptPanel({
 		return () => window.clearTimeout(timer);
 	}, [active, prefersReducedMotion]);
 
+	// "/clear" (Oct 31, 2026, user's call): an empty conversation, greeted afresh, with alert updates off until the next
+	// question about alerts. Any answer being written stops with it. Picked from the commands menu it runs at once; typed
+	// in full and sent, it does the same.
+	const clearConversation = () => {
+		setMessages([]);
+		setFollowingAlerts(false);
+		stickToBottom.current = true;
+	};
+	const chatCommands: ChatCommand[] = [
+		...commands.map((command) => ({ ...command, hint: commandHint(command.name, context.patientName) })),
+		{ name: "clear", onSelect: clearConversation },
+	];
+
 	const ask = (question: string) => {
+		if (/^\/clear\b/i.test(question.trim())) {
+			clearConversation();
+			return;
+		}
 		if (active) return;
 		const answer = respond ? respond(question, context) : noAnswer;
+		setFollowingAlerts(Boolean(answer.followAlerts));
 		const id = String(nextId.current++);
 		setMessages((current) => [
 			...current,
@@ -354,13 +447,15 @@ function AskInterceptPanel({
 				{/* A log: new messages are announced; a streaming answer is busy, so it's read once it's done. */}
 				<div ref={listRef} role='log' aria-label='Conversation' aria-busy={Boolean(active)} className='flex flex-col gap-5'>
 					<AnimatePresence initial={false}>
-						{messages.map((message) => (
+						{messages.map((message, index) => (
 							<motion.div
 								key={message.id}
 								variants={revealVariants}
 								initial='initial'
 								animate='animate'
 								transition={prefersReducedMotion ? reducedMotionTransition : undefined}
+								// Alert updates in a row stack 8px apart, as one group (Oct 31, 2026, user's call); 20px elsewhere.
+								className={cn(isNotice(message) && isNotice(messages[index - 1]) && "-mt-3")}
 							>
 								{message.role === "user" ? (
 									<div className='flex justify-end'>
@@ -401,8 +496,41 @@ function AskInterceptPanel({
 				</div>
 			</div>
 			<div className='px-5 pb-4'>
+				{/* Who the chat is about, on a patient's page. Removing it makes the chat general again (and the app header's
+				    Ask Intercept button plain). It opens and closes its own height (Expand), so the conversation glides. */}
+				<AnimatePresence initial={false}>
+					{context.patientName && onRemovePatientContext ? (
+						<motion.div
+							key='patient-context'
+							{...patientContextClip}
+							variants={prefersReducedMotion ? fadeVariants : expandVariants}
+							initial='initial'
+							animate='animate'
+							exit='exit'
+						>
+							<div className='flex pb-2'>
+								{/* `foreground` fill, `on-foreground` text (Oct 31, 2026, user's call); "About" softer than the name. */}
+								<span className='inline-flex min-w-0 items-center gap-1 rounded-full bg-foreground py-0.5 pr-0.5 pl-3 text-sm text-on-foreground'>
+									<span className='truncate'>
+										<span className='text-on-foreground/70'>About </span>
+										<span className='font-medium'>{context.patientName}</span>
+									</span>
+									<button
+										type='button'
+										aria-label={`Remove ${context.patientName} from the chat`}
+										onClick={onRemovePatientContext}
+										className='grid size-6 shrink-0 place-items-center rounded-full text-on-foreground/70 outline-none transition-colors hover:bg-on-foreground/15 hover:text-on-foreground focus-visible:ring-2 focus-visible:ring-ring'
+									>
+										<XIcon aria-hidden='true' className='size-3.5' />
+									</button>
+								</span>
+							</div>
+						</motion.div>
+					) : null}
+				</AnimatePresence>
 				<ChatComposer
-					placeholder='How can I help?'
+					// Ask and search in one place: the Sidebar has no Search since Oct 31, 2026.
+					placeholder='Ask a question or search'
 					label='Ask Intercept Live'
 					onSubmit={ask}
 					onAttach={() => {}}
@@ -410,11 +538,17 @@ function AskInterceptPanel({
 					onVoice={() => {}}
 					generating={Boolean(active)}
 					onStop={stop}
-					commands={commands}
+					commands={chatCommands}
 				/>
 			</div>
 		</SidePanel>
 	);
 }
 
-export { AskInterceptPanel, type AskInterceptAnswer, type AskInterceptContext, type AskInterceptResponder };
+export {
+	AskInterceptPanel,
+	type AskInterceptAnswer,
+	type AskInterceptContext,
+	type AskInterceptNotice,
+	type AskInterceptResponder,
+};

@@ -26,7 +26,11 @@ const motionDuration = {
 	resolvedFade: 1,
 	/** How long a resolved alert's pill stays once its card has landed, before it fades (Urgency resolve). */
 	resolvedHold: 2,
-	/** One beat of a live status indicator (Live pattern): slower and calmer than Pending. */
+	/**
+	 * One beat of a live status indicator (Live pattern): 300ms growing, 400ms held at full size, 300ms shrinking (Oct 31,
+	 * 2026, user's call: faster moves with a pause at full size, the pause then doubled; 1s with no hold before). Calmer
+	 * than Pending.
+	 */
 	liveLoop: 1,
 	/** A streamed AI answer: the average time between chunks of a few words. Each step varies around it, so it reads like real generation. */
 	streamStep: 0.035,

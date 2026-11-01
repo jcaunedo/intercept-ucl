@@ -1,24 +1,41 @@
 "use client";
 
 import * as React from "react";
-import { MapPinIcon } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { BellRingIcon, EllipsisIcon, MapPinIcon, type LucideIcon } from "lucide-react";
+import { AnimatePresence, motion, type Variants } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 
+import { Button } from "@/components/buttons/button";
 import {
-	PatientCardAlert,
+	PatientCardScore,
+	PatientCardTags,
 	patientCardInteractiveClassName,
 	patientCardOpenTargetClassName,
 	usePatientCardAlertRing,
+	type PatientCardAlertVariant,
 	type PatientCardProps,
 } from "@/components/cards/patient-card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
+import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
 import {
-	dismissVariants,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
+import { useCurrentSecond } from "@/lib/hooks/use-current-second";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
+import {
+	exitTransition,
 	fadeVariants,
+	motionDistance,
 	liftPattern,
 	resolvedFadeTransition,
 	standardTransition,
+	useDeviceAlarmFlash,
+	useExpandClip,
 	useMotionPreference,
+	type DeviceAlarmPriority,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +70,22 @@ type MonitorLimits = {
 	rr: [number, number];
 };
 
+/**
+ * The bedside monitor's alarm priority for each parameter's limit alarm, from its device profile (PRD AL-02: device
+ * alarm priority is the device's own attribute). A value outside its limits shows the priority's color and flash.
+ */
+type MonitorAlarmPriorities = Partial<Record<keyof MonitorLimits, DeviceAlarmPriority>>;
+
+/** What the numerics need to show device alarms: each limit alarm's priority, and the ones acknowledged at the bedside. */
+type MonitorAlarmState = { priorities: MonitorAlarmPriorities; acknowledged: readonly (keyof MonitorLimits)[] };
+
+// A numeric in alarm, by priority: the device's colored box with its text color. Full class names, so Tailwind sees them.
+const deviceAlarmClassNames: Record<DeviceAlarmPriority, string> = {
+	high: "bg-device-alarm-high text-device-alarm-high-foreground",
+	medium: "bg-device-alarm-medium text-device-alarm-medium-foreground",
+	low: "bg-device-alarm-low text-device-alarm-low-foreground",
+};
+
 // Common adult ICU defaults; an app passes the patient's own limits. Exported so a page can filter on the same limits.
 const defaultMonitorLimits: MonitorLimits = { hr: [50, 120], spo2: [90, 100], systolic: [90, 160], rr: [8, 30] };
 
@@ -70,6 +103,49 @@ const parameters: Record<
 	rr: { label: "RR", wave: "Resp", trend: "RR · 1 h", unit: "rpm", color: "text-monitor-resp", kind: "resp" },
 };
 const parameterOrder: ParameterKey[] = ["hr", "spo2", "bp", "rr"];
+
+/**
+ * The out-of-limits mark: ▲ above the alarm limits, ▼ below, the same triangles as PatientCard's "Change in last 24 h",
+ * a size smaller (12px). Its `className` sets the color. Decorative: say the side in words beside it for screen readers.
+ * Shared with Monitoring's List table.
+ */
+function MonitorAlarmIcon({ side, className }: { side: "above" | "below"; className?: string }) {
+	return (
+		<span aria-hidden='true' className={cn("shrink-0 text-xs leading-none", className)}>
+			{side === "above" ? "▲" : "▼"}
+		</span>
+	);
+}
+
+/**
+ * A value in device alarm, as the bedside monitor shows it: in its priority's box (red with white text, yellow or cyan
+ * with black), flashing for high and medium in step with every other alarm of that priority, steady for low and under
+ * reduced motion. Without a `priority`, the value in its own `color`. The box's padding is there in every state (offset
+ * by a negative margin), so flashing never moves the number. Shared with Monitoring's List table.
+ */
+function DeviceAlarmValue({
+	priority,
+	color,
+	className,
+	children,
+}: {
+	priority?: DeviceAlarmPriority;
+	color?: string;
+	className?: string;
+	children: React.ReactNode;
+}) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const on = useDeviceAlarmFlash(priority, !prefersReducedMotion);
+
+	return (
+		<span
+			data-device-alarm={priority}
+			className={cn("-mx-1 rounded-sm px-1", className, priority && on ? deviceAlarmClassNames[priority] : color)}
+		>
+			{children}
+		</span>
+	);
+}
 
 /** Which side of its alarm limits a value is on, if it's outside them. */
 const alarmSide = (value: number | undefined, [low, high]: [number, number]) =>
@@ -95,6 +171,20 @@ const patientMonitoringCardVariants = cva(
 
 type PatientMonitoringCardSize = NonNullable<VariantProps<typeof patientMonitoringCardVariants>["size"]>;
 
+// The card's gap per size, which a section shown or hidden gives back as it closes.
+const sectionGap: Record<PatientMonitoringCardSize, number> = { md: 12, sm: 8 };
+
+/**
+ * A section the page shows or hides (the score, the tags; e.g. Monitoring's Minimal view) opens and closes in place
+ * (Expand: height and opacity), and so does its share of the card's gap (a negative top margin), so the card and its
+ * neighbors glide instead of jumping (Oct 31, 2026, MOTION.md "Interaction reveals").
+ */
+const sectionVariants = (gap: number): Variants => ({
+	initial: { height: 0, opacity: 0, marginTop: -gap },
+	animate: { height: "auto", opacity: 1, marginTop: 0, transition: standardTransition },
+	exit: { height: 0, opacity: 0, marginTop: -gap, transition: { ...standardTransition, opacity: exitTransition } },
+});
+
 // The condensed monitor's height per size; the full monitor is 240px at both.
 const condensedHeight: Record<PatientMonitoringCardSize, number> = { md: 120, sm: 104 };
 
@@ -104,6 +194,9 @@ const condensedColumns: Record<PatientMonitoringCardSize, string> = {
 	md: "grid-cols-[1fr_1fr_1.5fr_1fr] @min-[308px]/monitor:grid-cols-4",
 	sm: "grid-cols-[1fr_1fr_1.5fr_1fr]",
 };
+
+/** An item in the card's "…" menu. */
+type PatientMonitoringCardAction = { label: string; icon?: LucideIcon; onSelect?: () => void };
 
 type PatientMonitoringCardProps = Omit<
 	React.ComponentProps<"article">,
@@ -121,13 +214,31 @@ type PatientMonitoringCardProps = Omit<
 		| "room"
 		| "bed"
 		| "alert"
+		| "acuity"
+		| "trajectory"
+		| "photo"
+		| "initials"
+		| "tone"
 		| "onOpen"
 		| "href"
 	> &
 	VariantProps<typeof patientMonitoringCardVariants> & {
+		/**
+		 * The patient's tags (Ventilated, DNR…), on one line under the monitor, as on PatientCard. Without it there's no
+		 * row; an empty list shows "No tags", so cards with and without tags line up.
+		 */
+		tags?: PatientCardProps["tags"];
 		vitals?: MonitorVitals;
 		/** Alarm limits; defaults to common adult ICU limits. */
 		limits?: Partial<MonitorLimits>;
+		/**
+		 * The bedside monitor's priority for each limit alarm (`high` | `medium` | `low`). A value outside its limits then
+		 * shows as the device does: its number in a red, yellow or cyan box, flashing for high and medium. Without a
+		 * priority, it's marked ▲ / ▼ only.
+		 */
+		alarmPriorities?: MonitorAlarmPriorities;
+		/** Limit alarms acknowledged at the bedside: they keep their ▲ / ▼ but lose the color, as on the central station. */
+		acknowledgedAlarms?: (keyof MonitorLimits)[];
 		/**
 		 * What the monitor plots, condensed or full: live waveforms (`waveform`, default) or each parameter's last hour
 		 * (`trends`, from `trends`). Condensed, that's the ECG strip or a sparkline under each numeric; full, a waveform
@@ -147,6 +258,15 @@ type PatientMonitoringCardProps = Omit<
 		defaultExpanded?: boolean;
 		/** @deprecated Never called: the card has no expand button since Oct 30, 2026. */
 		onExpandedChange?: (expanded: boolean) => void;
+		/**
+		 * Unread messages from the patient's family. A message icon then shows right of the name, a button when
+		 * `onOpenMessages` is passed.
+		 */
+		unreadMessages?: number;
+		/** Opens the patient's family messages, from the message icon. */
+		onOpenMessages?: () => void;
+		/** The "…" menu right of the name, shown on hover or keyboard focus in the card. Without items there's no button. */
+		moreActions?: PatientMonitoringCardAction[];
 	};
 
 /** One parameter's numbers: label, value, unit, and in the full monitor its alarm limits. */
@@ -154,12 +274,14 @@ function MonitorNumeric({
 	parameter,
 	vitals,
 	limits,
+	alarms,
 	full,
 	size,
 }: {
 	parameter: ParameterKey;
 	vitals: MonitorVitals;
 	limits: MonitorLimits;
+	alarms: MonitorAlarmState;
 	full: boolean;
 	size: PatientMonitoringCardSize;
 }) {
@@ -170,20 +292,16 @@ function MonitorNumeric({
 				? `${vitals.systolic}/${vitals.diastolic}`
 				: "--"
 			: (vitals[parameter] ?? "--");
-	const limit = parameter === "bp" ? limits.systolic : limits[parameter];
+	const limitKey = parameter === "bp" ? "systolic" : parameter;
+	const limit = limits[limitKey];
 	const alarm = alarmSide(parameter === "bp" ? vitals.systolic : vitals[parameter], limit);
+	// The device's alarm, as the monitor shows it, until it's resolved or acknowledged at the bedside.
+	const priority = alarm && !alarms.acknowledged.includes(limitKey) ? alarms.priorities[limitKey] : undefined;
 
-	// A value outside its alarm limits gets a small ↑ / ↓ tag in the label row, in the monitor's neutral ink: drift shows
+	// A value outside its alarm limits gets a small triangle in the label row, in the monitor's neutral ink: drift shows
 	// in place, before (or without) an alert, and the parameter keeps its color (PRD Monitoring MON-073). In the label row
 	// rather than by the number, so the numerics keep their width.
-	const alarmTag = alarm ? (
-		<span
-			aria-hidden='true'
-			className='grid size-3.5 shrink-0 place-items-center rounded-sm bg-monitor-foreground text-[10px] leading-none font-bold text-monitor'
-		>
-			{alarm === "above" ? "↑" : "↓"}
-		</span>
-	) : null;
+	const alarmTag = alarm ? <MonitorAlarmIcon side={alarm} className='text-monitor-foreground' /> : null;
 
 	return (
 		<div
@@ -220,16 +338,21 @@ function MonitorNumeric({
 						<span>{limit[0]}</span>
 					</span>
 				) : null}
-				<span
+				<DeviceAlarmValue
+					priority={priority}
+					color={color}
 					className={cn(
 						"font-semibold tabular-nums leading-none",
 						full ? (size === "sm" ? "text-xl" : "text-2xl") : size === "sm" ? "text-lg" : "text-xl",
-						color,
 					)}
 				>
 					{value}
-					{alarm ? <span className='sr-only'>, {alarm} alarm limits</span> : null}
-				</span>
+					{alarm ? (
+						<span className='sr-only'>
+							, {alarm} alarm limits{priority ? `, ${priority} priority alarm` : ""}
+						</span>
+					) : null}
+				</DeviceAlarmValue>
 			</span>
 		</div>
 	);
@@ -312,8 +435,97 @@ function MonitorTrendLane({ parameter, values }: { parameter: ParameterKey; valu
 	);
 }
 
+// The alert bar, by state: a severity's fill with white text (PatientCardAlert's colors), green when the last alert
+// resolved, and a quiet grey without one. Stacked in one grid cell, so a change cross-fades without moving anything.
+const alertBarVariants = cva("col-start-1 row-start-1 flex min-w-0 items-center gap-[7px] rounded-lg [&_svg]:shrink-0", {
+	variants: {
+		variant: {
+			critical: "bg-severity-critical text-severity-foreground",
+			high: "bg-severity-high text-severity-foreground",
+			medium: "bg-severity-medium text-severity-foreground",
+			low: "bg-severity-low text-severity-foreground",
+			resolved: "bg-badge-green text-badge-green-foreground",
+			message: "bg-neutral-muted text-neutral-prominent",
+			none: "bg-background-subtle text-muted-foreground",
+		},
+		size: {
+			md: "h-7 pr-2.5 pl-2 text-sm [&_svg]:size-3.5",
+			sm: "h-6 pr-2 pl-1.5 text-xs [&_svg]:size-3",
+		},
+	},
+});
+
+const alertBarLabels: Record<Exclude<PatientCardAlertVariant, "message">, string> = {
+	critical: "Critical",
+	high: "High",
+	medium: "Medium",
+	low: "Low",
+	resolved: "Resolved",
+};
+
+/**
+ * How long ago `since` was. An open alert's runs like a clock, ticking each second: "3:34 m ago" under an hour, then
+ * "15:05 h ago". A resolved one (`whole`) reads in whole units: "Just now", "24 m ago", "20 h ago".
+ */
+function AlertAge({ since, whole = false }: { since: string; whole?: boolean }) {
+	const now = useCurrentSecond();
+	const start = Date.parse(since);
+	if (now === null || Number.isNaN(start)) return null;
+	const seconds = Math.max(0, Math.floor((now - start) / 1000));
+	const minutes = Math.floor(seconds / 60);
+	const hours = Math.floor(minutes / 60);
+	const pad = (value: number) => String(value).padStart(2, "0");
+	const [shown, spoken] = whole
+		? hours
+			? [`${hours} h ago`, `${hours} h ago`]
+			: minutes
+				? [`${minutes} m ago`, `${minutes} min ago`]
+				: ["Just now", "just now"]
+		: hours
+			? [`${hours}:${pad(minutes % 60)} h ago`, `${hours} h ${minutes % 60} min ago`]
+			: [`${minutes}:${pad(seconds % 60)} m ago`, minutes ? `${minutes} min ago` : "less than a minute ago"];
+
+	return (
+		<time dateTime={since} className='shrink-0 tabular-nums'>
+			{/* Screen readers get it to the minute, in words. */}
+			<span aria-hidden='true'>{shown}</span>
+			<span className='sr-only'>{spoken}</span>
+		</time>
+	);
+}
+
+/**
+ * The patient's alert as a full-width bar: the top severity with how many alerts the patient had in the last 24 h, and
+ * how long ago it started; "No active alerts" without one.
+ */
+function AlertBar({ alert, size }: { alert: PatientMonitoringCardProps["alert"]; size: PatientMonitoringCardSize }) {
+	const variant = alert?.variant ?? "none";
+	const label = alert ? (alert.label ?? (alert.variant === "message" ? null : alertBarLabels[alert.variant])) : "No active alerts";
+
+	return (
+		<div className={alertBarVariants({ variant, size })}>
+			<span className='flex min-w-0 flex-1 items-center gap-1.5'>
+				{variant === "message" ? <MessageCircleSolidIcon /> : <BellRingIcon aria-hidden='true' />}
+				<span className='truncate'>
+					<span className={alert ? "font-semibold" : undefined}>{label}</span>
+					{alert?.inLast24h !== undefined ? (
+						<span> · {alert.inLast24h} in the last 24 h</span>
+					) : alert?.count !== undefined && alert.count > 1 ? (
+						<span>
+							<span aria-hidden='true'> · </span>
+							{alert.count}
+							<span className='sr-only'> alerts</span>
+						</span>
+					) : null}
+				</span>
+			</span>
+			{alert?.since ? <AlertAge since={alert.since} whole={alert.variant === "resolved"} /> : null}
+		</div>
+	);
+}
+
 type PatientMonitorProps = Omit<React.ComponentProps<"section">, "children"> &
-	Pick<PatientMonitoringCardProps, "vitals" | "limits" | "plot" | "trends">;
+	Pick<PatientMonitoringCardProps, "vitals" | "limits" | "alarmPriorities" | "acknowledgedAlarms" | "plot" | "trends">;
 
 /**
  * The full bedside monitor on its own, without the card: one lane per parameter (its waveform, or its last hour with
@@ -321,8 +533,18 @@ type PatientMonitorProps = Omit<React.ComponentProps<"section">, "children"> &
  * shows who the patient is, e.g. Patient details. 240px tall by default; a height in `className` stretches the lanes.
  * Pass an `aria-label` that names the patient.
  */
-function PatientMonitor({ vitals = {}, limits: limitsProp, plot = "waveform", trends = {}, className, ...props }: PatientMonitorProps) {
+function PatientMonitor({
+	vitals = {},
+	limits: limitsProp,
+	alarmPriorities = {},
+	acknowledgedAlarms = [],
+	plot = "waveform",
+	trends = {},
+	className,
+	...props
+}: PatientMonitorProps) {
 	const limits = { ...defaultMonitorLimits, ...limitsProp };
+	const alarms = { priorities: alarmPriorities, acknowledged: acknowledgedAlarms };
 
 	return (
 		<section
@@ -341,7 +563,7 @@ function PatientMonitor({ vitals = {}, limits: limitsProp, plot = "waveform", tr
 						<MonitorLane parameter={parameter} vitals={vitals} />
 					)}
 					<div className='flex w-32 shrink-0 border-l border-monitor-grid py-0.5'>
-						<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} size='md' full />
+						<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} alarms={alarms} size='md' full />
 					</div>
 				</div>
 			))}
@@ -350,13 +572,15 @@ function PatientMonitor({ vitals = {}, limits: limitsProp, plot = "waveform", tr
 }
 
 /**
- * A patient's identity and location over a live bedside monitor. Condensed by default (an ECG strip and HR, SpO₂, BP and
+ * A patient's identity and location, their alert as a bar (or "No active alerts"), optionally their acuity score and its
+ * change, over a live bedside monitor, with their tags below it when passed. Right of the name: a family message icon
+ * (`unreadMessages`) and a "…" menu (`moreActions`) that shows on hover; left of it, an avatar with `photo` or `initials`. Condensed by default (an ECG strip and HR, SpO₂, BP and
  * RR, or 1-hour sparklines with `plot="trends"`); with `expanded`, the full monitor, one lane per parameter (its waveform, or
  * its last hour with `plot="trends"`) with its numbers and alarm limits. `size="sm"` is the compact card. An alert behaves
  * as on PatientCard (a ring that pulses until the card is clicked or the alert is addressed), and with `onOpen` or
  * `href` the whole card opens the patient. Draft: the monitor follows PRD Monitoring §3.3, not a Figma design yet.
  *
- * Figma: [intercept.ds › patient-monitoring-card](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1125-4328)
+ * Figma: [intercept.ds › patient-monitoring-card-2](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1232-5403)
  */
 function PatientMonitoringCard({
 	lastName,
@@ -369,19 +593,34 @@ function PatientMonitoringCard({
 	room,
 	bed,
 	alert,
+	acuity,
+	trajectory,
+	tags,
+	photo,
+	initials,
+	tone,
 	size = "md",
 	vitals = {},
 	limits: limitsProp,
+	alarmPriorities = {},
+	acknowledgedAlarms = [],
 	plot: plotProp,
 	condensedView,
 	trends = {},
 	expanded: expandedProp,
 	defaultExpanded = false,
 	onExpandedChange: _onExpandedChange,
+	unreadMessages = 0,
+	onOpenMessages,
+	moreActions = [],
 	onOpen,
 	href,
 	className,
 	onClickCapture,
+	onPointerEnter,
+	onPointerLeave,
+	onFocus,
+	onBlur,
 	...props
 }: PatientMonitoringCardProps) {
 	const { resolve, prefersReducedMotion } = useMotionPreference();
@@ -390,21 +629,34 @@ function PatientMonitoringCard({
 	const expanded = expandedProp ?? defaultExpanded;
 	const monitorId = React.useId();
 	const limits = { ...defaultMonitorLimits, ...limitsProp };
+	const alarms = { priorities: alarmPriorities, acknowledged: acknowledgedAlarms };
 	const cardSize = size ?? "md";
 	const plot = plotProp ?? condensedView ?? "waveform";
+	const sectionMotion = prefersReducedMotion ? fadeVariants : sectionVariants(sectionGap[cardSize]);
+	const scoreClip = useExpandClip();
+	const tagsClip = useExpandClip();
 
 	const name = `${lastName}, ${firstName}`;
 	const demographics = [sex, age].filter((part) => part !== undefined && part !== "").join(", ");
 	const identity = [mrn, demographics].filter(Boolean).join(" - ");
 	const roomAndBed = room && bed ? `${room} - ${bed}` : (room ?? bed);
 	const placeInHospital = [unit, roomAndBed].filter(Boolean).join(" · ");
+	// The "…" menu shows while the pointer is on the card, keyboard focus is in it or its menu is open; always where the
+	// device can't hover.
+	const [hovered, setHovered] = React.useState(false);
+	const [focused, setFocused] = React.useState(false);
+	const [menuOpen, setMenuOpen] = React.useState(false);
+	const canHover = useMediaQuery("(hover: hover)");
+	const actionsShown = hovered || focused || menuOpen || !canHover;
+	const messagesLabel = unreadMessages === 1 ? "1 new message from family" : `${unreadMessages} new messages from family`;
 
+	const openRef = React.useRef<HTMLAnchorElement & HTMLButtonElement>(null);
 	const nameContent = href ? (
-		<a href={href} className={patientCardOpenTargetClassName}>
+		<a ref={openRef} href={href} className={patientCardOpenTargetClassName}>
 			{name}
 		</a>
 	) : onOpen ? (
-		<button type='button' onClick={onOpen} className={cn("text-left", patientCardOpenTargetClassName)}>
+		<button ref={openRef} type='button' onClick={onOpen} className={cn("text-left", patientCardOpenTargetClassName)}>
 			{name}
 		</button>
 	) : (
@@ -431,61 +683,123 @@ function PatientMonitoringCard({
 				alertRing.markSeen();
 				onClickCapture?.(event);
 			}}
+			onPointerEnter={(event) => {
+				setHovered(true);
+				onPointerEnter?.(event);
+			}}
+			onPointerLeave={(event) => {
+				setHovered(false);
+				onPointerLeave?.(event);
+			}}
+			onFocus={(event) => {
+				setFocused(true);
+				onFocus?.(event);
+			}}
+			onBlur={(event) => {
+				if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+				onBlur?.(event);
+			}}
 			{...props}
 		>
 			{alertRing.ring}
-			<div className='flex items-start gap-2'>
-				<div className='flex min-w-0 flex-1 flex-col'>
-					{/* One line, truncated, full name in `title`, as on PatientCard. */}
-					<h3
-						title={name}
-						className={cn(
-							"-mb-0.5 truncate font-bold text-foreground [&>*]:max-w-full [&>*]:truncate",
-							cardSize === "sm" ? "text-base" : "text-xl",
-						)}
-					>
-						{nameContent}
-					</h3>
-					{identity ? (
-						<p className={cn("break-words text-muted-foreground", cardSize === "sm" ? "text-xs" : "text-sm")}>
-							{identity}
-						</p>
-					) : null}
-				</div>
-				{/* The pill fades in when an alert appears and out when it's removed, with the Dismiss pattern's exit; a
-				    "Resolved" pill fades slowly (`resolvedFadeTransition`), so it's seen leaving. A
-				    severity change recolors it in place. */}
-				<AnimatePresence initial={false}>
-					{alert ? (
-						<motion.div
-							key='alert'
-							variants={{
-								initial: { opacity: 0 },
-								animate: { opacity: 1, transition: resolve(standardTransition) },
-								exit:
-									alert.variant === "resolved"
-										? { opacity: 0, transition: resolve(resolvedFadeTransition) }
-										: prefersReducedMotion
-											? { opacity: 0 }
-											: dismissVariants.exit,
-							}}
-							initial='initial'
-							animate='animate'
-							exit='exit'
-							className='flex'
+			{/* Name and location, 8px apart: one section of the card. */}
+			<div className='flex flex-col gap-2'>
+				<div className='flex items-start'>
+					{/* As on PatientCard: centered on the name and identity, 44px (32px small). A margin, not the row's gap, so the
+					    hidden "…" slot adds no space. */}
+					{photo || initials ? (
+						<Avatar
+							aria-hidden='true'
+							className={cn("pointer-events-none mr-2 self-center", cardSize === "sm" ? "size-8" : "size-11")}
 						>
-							<PatientCardAlert variant={alert.variant} count={alert.count}>
-								{alert.label}
-							</PatientCardAlert>
+							{photo ? <AvatarImage src={photo} alt='' /> : null}
+							<AvatarFallback tone={tone} className={cardSize === "sm" ? "text-[11px]" : "text-[15px]"}>
+								{initials}
+							</AvatarFallback>
+						</Avatar>
+					) : null}
+					<div className='flex min-w-0 flex-1 flex-col'>
+						{/* One line, truncated, full name in `title`, as on PatientCard. */}
+						<h3
+							title={name}
+							className={cn(
+								"-mb-0.5 truncate font-bold text-foreground [&>*]:max-w-full [&>*]:truncate",
+								cardSize === "sm" ? "text-base" : "text-xl",
+							)}
+						>
+							{nameContent}
+						</h3>
+						{identity ? (
+							<p className={cn("break-words text-muted-foreground", cardSize === "sm" ? "text-xs" : "text-sm")}>
+								{identity}
+							</p>
+						) : null}
+					</div>
+					{/* A new message from the family stays in sight; the "…" menu shows only while it can be used. Both are raised
+					    above the card's open target. */}
+					{unreadMessages > 0 ? (
+						onOpenMessages ? (
+							<Button
+								variant='ghost'
+								size='icon-md'
+								aria-label={messagesLabel}
+								onClick={onOpenMessages}
+								className='relative z-10 ml-2'
+							>
+								<MessageCircleSolidIcon className='size-[18px]' />
+							</Button>
+						) : (
+							<span role='img' aria-label={messagesLabel} className='ml-2 flex size-9 shrink-0 items-center justify-center'>
+								<MessageCircleSolidIcon className='size-[18px]' />
+							</span>
+						)
+					) : null}
+					{moreActions.length ? (
+						// Its slot opens as it shows, so the name and the message icon glide aside rather than jump (as
+						// SearchInput opens: `standardTransition` in, `exitTransition` out), and the button fades in from the
+						// right. Hidden, it's only clipped, so Tab still reaches it (and shows it). The slot's 4px past the button
+						// on three sides (offset by negative margins) keeps its focus ring from being clipped.
+						<motion.div
+							initial={false}
+							animate={actionsShown ? { width: 48, opacity: 1 } : { width: 0, opacity: 0 }}
+							transition={resolve(actionsShown ? standardTransition : exitTransition)}
+							className='-my-1 -mr-1 flex shrink-0 justify-end overflow-hidden py-1 pr-1'
+						>
+							<DropdownMenu onOpenChange={setMenuOpen}>
+								<DropdownMenuTrigger asChild>
+									<Button
+										asChild
+										variant='ghost'
+										size='icon-md'
+										aria-label={`More actions for ${name}`}
+										className='relative z-10'
+									>
+										<motion.button
+											type='button'
+											initial={false}
+											animate={{ x: actionsShown ? 0 : motionDistance.subtle }}
+											transition={resolve(actionsShown ? standardTransition : exitTransition)}
+										>
+											<EllipsisIcon aria-hidden='true' />
+										</motion.button>
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align='end'>
+									{moreActions.map(({ label, icon: Icon, onSelect }) => (
+										<DropdownMenuItem key={label} onSelect={onSelect}>
+											{Icon ? <Icon aria-hidden='true' /> : null}
+											{label}
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</motion.div>
 					) : null}
-				</AnimatePresence>
-			</div>
+				</div>
 
-			<div className='flex items-center gap-1'>
 				<p
 					className={cn(
-						"flex min-w-0 flex-1 items-center gap-1 font-medium text-foreground",
+						"flex min-w-0 items-center gap-1 font-medium text-foreground",
 						cardSize === "sm" ? "text-xs" : "text-sm",
 					)}
 				>
@@ -504,6 +818,47 @@ function PatientMonitoringCard({
 				</p>
 			</div>
 
+			{/* The alert bar. A new state cross-fades in; a "Resolved" bar fades out slowly (`resolvedFadeTransition`), so it's
+			    seen leaving. */}
+			<div className='grid'>
+				<AnimatePresence initial={false}>
+					<motion.div
+						key={alert?.variant ?? "none"}
+						variants={{
+							initial: { opacity: 0 },
+							animate: { opacity: 1, transition: resolve(standardTransition) },
+							exit: {
+								opacity: 0,
+								transition: resolve(alert?.variant === "resolved" ? resolvedFadeTransition : standardTransition),
+							},
+						}}
+						initial='initial'
+						animate='animate'
+						exit='exit'
+						className='col-start-1 row-start-1 grid min-w-0'
+					>
+						<AlertBar alert={alert} size={cardSize} />
+					</motion.div>
+				</AnimatePresence>
+			</div>
+
+			{/* The acuity score and its change, as on PatientCard's compact card. */}
+			<AnimatePresence initial={false}>
+				{acuity || trajectory ? (
+					<motion.div
+						key='score'
+						{...scoreClip}
+						variants={sectionMotion}
+						initial='initial'
+						animate='animate'
+						exit='exit'
+						className='flex flex-col'
+					>
+						<PatientCardScore acuity={acuity} trajectory={trajectory} size={cardSize} />
+					</motion.div>
+				) : null}
+			</AnimatePresence>
+
 			{/* Light in light mode, a dark screen in dark mode. The height animates between the two views (Expand pattern). */}
 			<motion.section
 				id={monitorId}
@@ -512,8 +867,12 @@ function PatientMonitoringCard({
 				animate={{ height: expanded ? 240 : condensedHeight[cardSize] }}
 				transition={resolve(standardTransition)}
 				// A size container, so the numerics fit the card's width. On the monitor rather than the card: a card sized by
-				// its content would collapse if it were the container itself.
-				className='@container/monitor relative overflow-hidden rounded-lg bg-monitor text-monitor-foreground'
+				// its content would collapse if it were the container itself. Positioned, so it paints over the card's open
+				// target; it holds nothing interactive, so on a card that opens the patient, clicks pass through to the target.
+				className={cn(
+					"@container/monitor relative overflow-hidden rounded-lg bg-monitor text-monitor-foreground",
+					interactive && "pointer-events-none",
+				)}
 			>
 				<AnimatePresence initial={false} mode='wait'>
 					{expanded ? (
@@ -541,7 +900,7 @@ function PatientMonitoringCard({
 											cardSize === "sm" ? "w-28" : "w-32",
 										)}
 									>
-										<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} size={cardSize} full />
+										<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} alarms={alarms} size={cardSize} full />
 									</div>
 								</div>
 							))}
@@ -565,6 +924,7 @@ function PatientMonitoringCard({
 												parameter={parameter}
 												vitals={vitals}
 												limits={limits}
+												alarms={alarms}
 												size={cardSize}
 												full={false}
 											/>
@@ -590,6 +950,7 @@ function PatientMonitoringCard({
 												parameter={parameter}
 												vitals={vitals}
 												limits={limits}
+												alarms={alarms}
 												size={cardSize}
 												full={false}
 											/>
@@ -601,15 +962,35 @@ function PatientMonitoringCard({
 					)}
 				</AnimatePresence>
 			</motion.section>
+
+			<AnimatePresence initial={false}>
+				{tags ? (
+					<motion.div
+						key='tags'
+						{...tagsClip}
+						variants={sectionMotion}
+						initial='initial'
+						animate='animate'
+						exit='exit'
+						className='flex min-w-0 flex-col'
+					>
+						<PatientCardTags tags={tags} name={name} size={cardSize} openRef={interactive ? openRef : undefined} />
+					</motion.div>
+				) : null}
+			</AnimatePresence>
 		</motion.article>
 	);
 }
 
 export {
 	defaultMonitorLimits,
+	DeviceAlarmValue,
+	MonitorAlarmIcon,
 	PatientMonitor,
 	PatientMonitoringCard,
 	patientMonitoringCardVariants,
+	type MonitorAlarmPriorities,
+	type PatientMonitoringCardAction,
 	type MonitorLimits,
 	type MonitorTrends,
 	type MonitorVitals,

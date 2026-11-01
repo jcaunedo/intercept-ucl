@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 
 import { tabsIndicatorVariants, tabsListVariants, tabsTriggerVariants } from "@/components/navigation/tabs";
 import { MonitorViewExpandedIcon } from "@/components/icons/monitor-view-expanded-icon";
+import { MonitorViewMinimalIcon } from "@/components/icons/monitor-view-minimal-icon";
 import { MonitorViewMinimizedIcon } from "@/components/icons/monitor-view-minimized-icon";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import { layoutSpring, useMotionPreference } from "@/lib/motion";
@@ -137,17 +138,23 @@ function MonitorPlotToggle({
 	);
 }
 
-/** Every card's monitor condensed or full. */
-type MonitorView = "condensed" | "full";
+/** Every card's monitor full or condensed. */
+/**
+ * How much each card shows: `full` (the four-lane monitor, the score and tags), `condensed` (the ECG strip and numerics,
+ * the score and tags) or `minimal` (the condensed monitor alone: no score, no tags; Oct 31, 2026, user's call).
+ */
+type MonitorView = "full" | "condensed" | "minimal";
 
+// Full first: it's the default view.
 const monitorViews: ToggleOption<MonitorView>[] = [
-	{ id: "condensed", label: "Condensed monitors", icon: MonitorViewMinimizedIcon },
-	{ id: "full", label: "Full monitors", icon: MonitorViewExpandedIcon },
+	{ id: "full", label: "Full view", icon: MonitorViewExpandedIcon },
+	{ id: "condensed", label: "Condensed view", icon: MonitorViewMinimizedIcon },
+	{ id: "minimal", label: "Minimal view", icon: MonitorViewMinimalIcon },
 ];
 
 /**
- * Condensed or full monitors on every card, icon only (archielabs.ds's custom monitor-view icons); the cards have no
- * toggle of their own. A card option, so it's disabled in List density.
+ * Full, condensed or minimal view on every card, icon only (archielabs.ds's custom monitor-view icons); the cards have
+ * no toggle of their own. A card option, so it's disabled in List density.
  */
 function MonitorViewToggle({
 	value,
@@ -170,4 +177,11 @@ function MonitorViewToggle({
 	);
 }
 
-export { DensityToggle, MonitorPlotToggle, MonitorViewToggle, type MonitorPlot, type MonitorView, type PanelDensity };
+export {
+	DensityToggle,
+	MonitorPlotToggle,
+	MonitorViewToggle,
+	type MonitorPlot,
+	type MonitorView,
+	type PanelDensity,
+};

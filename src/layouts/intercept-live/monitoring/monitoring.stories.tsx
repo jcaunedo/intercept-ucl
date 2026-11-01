@@ -8,7 +8,7 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 import { samplePatients } from "../census/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
-import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
+import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { prototypeShortcuts, resetPrototype } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Monitoring, type MonitoringProps } from "./monitoring";
@@ -21,9 +21,13 @@ const meta = {
 		layout: "fullscreen",
 	},
 	// The monitors are live in every story: the numbers vary as on a bedside monitor (`useLivePatients`), without
-	// crossing an alarm limit, so tags, filters and tests stay put.
+	// crossing an alarm limit, so tags, filters and tests stay put. Ask Intercept Live answers from the same alerts
+	// (with the queue's actions) and values the cards show (`useLiveAskIntercept`).
 	render: function Render(args) {
-		return <Monitoring {...args} patients={useLivePatients(args.patients)} />;
+		const patients = useLivePatients(args.patients);
+		const live = useLiveAskIntercept(args.alerts ?? [], patients, args.onAlertAction);
+		return <Monitoring {...args} patients={patients} askIntercept={live.askIntercept}
+			askInterceptNotice={live.notice} onAlertAction={live.onAlertAction} />;
 	},
 	args: {
 		hospitals: sampleHospitals,
@@ -59,12 +63,13 @@ async function openLiveFeed(
 /**
  * The screen with a simulated live feed (PRD SV-081): at 1.5 s, at 8 s, then every 15 to 30 s, a patient's vitals and
  * alerts change; an alert's severity goes up or down (a Medium becomes High, a Critical eases to Medium), a new one
- * fires, another resolves. Sorted by Alert, the cards move to their new place (Reorder motion) at the panel's next
- * re-sort (2 s after the page opens, then every 15 to 30 s; a resolve moves its card at once, after a moment saying
- * "Resolved"), highest severity first, and the triage queue reorders right away; the hospital bar says what changed ("Live feed: …", the page's `liveFeed`). Then it loops. The hospital tabs, the patients pill and
- * Unit narrow the panel's scope; the queue always shows every alert on it.
- * The first change is Scenario 1's early warning: Margaret Hayes's NEWS2 reaches 10 and her Critical alert lands at #1,
- * above Miller's, because her score rose 5 in 4 h (DU-09).
+ * fires, another resolves. The cards' alert bars follow. Sorted by Name (the default), the cards keep their order;
+ * sorted by Recent alerts, they move to their new place (Reorder motion) at the panel's next re-sort, 2 s after the page
+ * opens, then every 15 to 30 s, the newest alert first. The triage queue reorders right away; the hospital bar says what changed ("Live
+ * feed: …", the page's `liveFeed`). Then it loops. The hospital tabs, the chips and Filters narrow the panel; the queue
+ * always shows every alert on it.
+ * The first change is Scenario 1's early warning: Margaret Hayes's NEWS2 reaches 10 and her Critical alert lands at #1
+ * in the queue, above Miller's, because her score rose 5 in 4 h (DU-09).
  * ⚠️ Cards moving on their own is what PRD SV-013 rules out ("Panel order changed · Update"); this shows the live
  * alternative for comparison (SV-OD-05).
  */
@@ -76,7 +81,26 @@ export const Default: Story = {
 export const Static: Story = {};
 
 /**
- * Values outside their alarm limits are tagged ↑ / ↓ by their label, in place, alert or not: Moore's and Clark's
+ * Sort by Recent alerts: patients with an open alert first, the newest alert on top, so Anderson's Low bed exit (1 min ago)
+ * leads, then Johnson's Low SpO₂ (9 min), then Miller's Critical sepsis alert (16 min); everyone else follows by name.
+ * The Active alerts chip orders them by who to see first instead: Miller (Critical), then Johnson, then Anderson.
+ */
+export const SortByRecentAlerts: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("combobox", { name: "Sort by" }));
+		await userEvent.click(await screen.findByRole("option", { name: "Recent alerts" }));
+		const names = () =>
+			canvas.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent?.split(",")[0]);
+		await waitFor(() => expect(names().slice(0, 3)).toEqual(["Anderson", "Johnson", "Miller"]));
+		// Active alerts orders by who to see first instead: Miller (Critical), then the two Lows by acuity band, Johnson
+		// (NEWS2 15, High) above Anderson (3, Low).
+		await userEvent.click(canvas.getByRole("button", { name: /Active alerts/ }));
+		await waitFor(() => expect(names()).toEqual(["Miller", "Johnson", "Anderson"]));
+	},
+};
+
+/**
+ * Values outside their alarm limits are marked ▲ / ▼ by their label, in place, alert or not: Moore's and Clark's
  * pressures have drifted without one. There's no "Outside limits" filter; the panel stays whole.
  */
 export const OutsideLimits: Story = {
@@ -88,15 +112,25 @@ export const OutsideLimits: Story = {
 	},
 };
 
-/** Full monitors (the monitor-view buttons): every card shows all four waveform lanes, with their alarm limits. */
-export const FullMonitors: Story = {
+/**
+ * The monitor-view buttons (Full is the default): Condensed view shows the ECG strip over the four numerics on every
+ * card; Minimal view is that alone, without the NEWS2 row or the tags, which close as it's picked; Full view brings back
+ * the four waveform lanes, the score and the tags.
+ */
+export const MonitorViews: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: "Full monitors" }));
-		await waitFor(() =>
-			expect(canvasElement.querySelectorAll("[data-slot='patient-monitoring-card'][data-expanded]")).toHaveLength(
-				sampleMonitoringPatients.length,
-			),
-		);
+		const expandedCards = () => canvasElement.querySelectorAll("[data-slot='patient-monitoring-card'][data-expanded]");
+		const scores = () => canvas.queryAllByText("NEWS2");
+		await expect(expandedCards()).toHaveLength(sampleMonitoringPatients.length);
+		await userEvent.click(canvas.getByRole("button", { name: "Condensed view" }));
+		await waitFor(() => expect(expandedCards()).toHaveLength(0));
+		await expect(scores().length).toBeGreaterThan(0);
+		await userEvent.click(canvas.getByRole("button", { name: "Minimal view" }));
+		await waitFor(() => expect(scores()).toHaveLength(0));
+		await expect(expandedCards()).toHaveLength(0);
+		await userEvent.click(canvas.getByRole("button", { name: "Full view" }));
+		await waitFor(() => expect(expandedCards()).toHaveLength(sampleMonitoringPatients.length));
+		await waitFor(() => expect(scores().length).toBeGreaterThan(0));
 	},
 };
 
@@ -105,13 +139,43 @@ export const Empty: Story = {
 	args: { patients: [] },
 };
 
-/** A unit with nobody in it (Trauma ICU): an empty state with Clear filters, which brings every patient back. */
+/** Filters that match nobody (OB-ICU and ECMO): an empty state with Clear filters, which brings every patient back. */
 export const NoMatches: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("combobox", { name: "Unit" }));
-		await userEvent.click(await screen.findByRole("option", { name: "Trauma ICU" }));
+		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
+		await userEvent.click(await screen.findByRole("checkbox", { name: "OB-ICU" }));
+		await userEvent.click(screen.getByRole("checkbox", { name: "ECMO" }));
+		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
 		// The empty state Reveals in (opacity 0 → 1), so wait for it to finish appearing.
 		await waitFor(() => expect(canvas.getByText("No patients match these filters")).toBeVisible());
+	},
+};
+
+/**
+ * The Filters panel, as on the Census: Unit, Highest alert, Outside alarm limits (per parameter, and Not reporting; a
+ * picked option holds the patients who matched then), Organ support and Code status & safety. It opens where the live
+ * feed does, one at a time.
+ */
+export const Filters: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await expect(canvas.queryByRole("combobox", { name: "Unit" })).not.toBeInTheDocument();
+		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
+		await userEvent.click(await screen.findByRole("checkbox", { name: "Ventilated" }));
+		await expect(screen.getByText(`5 of ${sampleMonitoringPatients.length} patients in this view`)).toBeInTheDocument();
+		// A modal: the page behind is hidden from assistive tech until Apply closes the sheet.
+		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
+		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^5 patients/);
+		const filtersButton = canvas.getByRole("button", { name: "Filters, 1 picked" });
+		await expect(filtersButton).toHaveAttribute("aria-expanded", "false");
+		await userEvent.click(filtersButton);
+		await userEvent.click(await screen.findByRole("button", { name: "Clear all" }));
+		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+		await waitFor(() =>
+			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(
+				new RegExp(`^${sampleMonitoringPatients.length} patients`),
+			),
+		);
 	},
 };
 
@@ -200,18 +264,18 @@ export const List: Story = {
 	},
 };
 
-/** 1 h trends: each card shows its numerics over their last hour instead of the ECG strip. */
+/** 1 h trends in condensed monitors: each card shows its numerics over their last hour instead of the ECG strip. */
 export const Trends: Story = {
 	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Condensed view" }));
 		await userEvent.click(canvas.getByRole("button", { name: "1 h trends" }));
 		await waitFor(() => expect(canvas.queryByText("II")).not.toBeInTheDocument());
 	},
 };
 
-/** 1 h trends in the full monitors: each lane is a parameter's last hour, and ECG strip switches back to waveforms. */
+/** 1 h trends in the full monitors (the default): each lane is a parameter's last hour; ECG strip brings back waveforms. */
 export const FullTrends: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: "Full monitors" }));
 		await userEvent.click(canvas.getByRole("button", { name: "1 h trends" }));
 		await waitFor(() => expect(canvas.getAllByText("HR · 1 h")).toHaveLength(sampleMonitoringPatients.length));
 		await userEvent.click(canvas.getByRole("button", { name: "ECG strip" }));
@@ -240,12 +304,16 @@ function LiveMonitoring(props: MonitoringProps) {
 	// The Prototype menu's Sections by location view (Group by location's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	const patients = useLivePatients(fed);
+	const live = useLiveAskIntercept(alerts, patients, props.onAlertAction);
 	// What the feed just changed shows at the right of the hospital bar. The Census page (Sidebar) follows the same feed.
 	return (
 		<Monitoring
 			{...props}
 			patients={patients}
 			alerts={alerts}
+			askIntercept={live.askIntercept}
+			askInterceptNotice={live.notice}
+			onAlertAction={live.onAlertAction}
 			liveFeed={caption}
 			censusPatients={props.censusPatients && withFeedAlerts(props.censusPatients, alerts)}
 			prototype={prototypeShortcuts({

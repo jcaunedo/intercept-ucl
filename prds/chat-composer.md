@@ -1,7 +1,7 @@
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Oct 28, 2026
+Last updated: Nov 1, 2026
 Scope: The chat composer (UCL ChatComposer) and the Ask Intercept Live conversation it drives in the Provider Desktop: the message field, its buttons, slash commands, suggested questions, and how answers arrive.
 Purpose: Defines the composer's behavior, states, rules for answers and acceptance criteria, pending clinical and product validation, so design, engineering and the Conversational Clinical Data Agent team build the same thing.
 -->
@@ -91,7 +91,7 @@ The composer is one box: a field on top, a toolbar under it. The commands menu o
 
 | Part | What it is | UCL |
 |---|---|---|
-| **Field** | Multi-line text, one line tall, growing with the text to 160px, then scrolling. Placeholder "How can I help?" | `ChatComposer` textarea; `placeholder`, `label` |
+| **Field** | Multi-line text, one line tall, growing with the text to 160px, then scrolling. Placeholder "Ask a question or search" | `ChatComposer` textarea; `placeholder`, `label` |
 | **+ (Add attachment)** | Left of the toolbar. | `onAttach`; shown only with it |
 | **/ (Commands)** | Next to +. Opens the commands menu. | `commands`; shown only with them |
 | **Microphone (Dictate)** | Right of the toolbar. | `onDictate`; shown only with it |
@@ -106,7 +106,7 @@ The composer is one box: a field on top, a toolbar under it. The commands menu o
 
 ### CC-010 — Field
 
-- Placeholder: "How can I help?". The field's accessible name stays "Ask Intercept Live", since a placeholder disappears once the clinician types.
+- Placeholder: "Ask a question or search" (✅ Oct 31, 2026, product: search moved here from the Sidebar; "How can I help?" before). The field's accessible name stays "Ask Intercept Live", since a placeholder disappears once the clinician types.
 - **Enter** sends; **Shift+Enter** starts a new line. An Enter that ends an input-method composition (IME) doesn't send.
 - What's sent is trimmed; an empty or blank message is never sent.
 - The field stays editable while an answer is being written, so the next question can be typed.
@@ -131,7 +131,9 @@ The commands button, or "/" typed at the start of the field, opens the commands 
 - The menu filters as the clinician types after the slash ("/s" shows /summarize and /sepsis).
 - **↑ ↓** move, **Enter** or **Tab** picks, **Escape** closes the menu (and only the menu, not the panel around it). Clicking a command picks it.
 - Picking writes "/name " into the field, replacing a command being typed, or before text already there. The clinician can add a patient's name, then sends.
+- ✅ **Decision (Nov 1, 2026, product):** once a command is in the field with nothing after it, a guidance line shows right after it, muted, saying what to write next. With a patient in the chat: "Enter for Hayes, or add another patient"; without one: "Add a patient's name" (for /changes: "Enter for all your patients, or add a patient's name"). It disappears as soon as the clinician types after the command, and screen readers hear it as the field's description.
 - With text already in the field, the commands button opens the menu without clearing it.
+- ✅ **Decision (Oct 31, 2026, product):** the menu lists the commands by name alone ("/summarize"), without a description beside each; what each does is in the table below.
 
 | Command | Does | Patient |
 |---|---|---|
@@ -141,6 +143,7 @@ The commands button, or "/" typed at the start of the field, opens the commands 
 | **/meds** | Medications: infusions, scheduled with what's due, as needed | Required |
 | **/sepsis** | Sepsis criteria and bundle, or the values screening looks at if the patient isn't screened | Required |
 | **/handoff** | A draft handoff in I-PASS (CC-022) | Required |
+| **/clear** | Empties the conversation as soon as it's picked from the menu, without sending (typed in full and sent, the same); the chat greets the user again with its starter questions, and alert updates stop until the next question about alerts (Oct 31, 2026, product) | None |
 
 ⚠️ **Decision needed:** the v1 command set, and whether commands vary by role (CC-OD-02). Spec §8.7's examples ("show me the sedation vacation and spontaneous breathing trials") suggest a /trend command with an overlay.
 
@@ -154,6 +157,7 @@ The commands button, or "/" typed at the start of the field, opens the commands 
 
 - A command that needs a patient, with none named or on screen, asks: "Which patient? Add a name after the command, like **/labs Miller**, or open the patient first."
 - An unknown command says so: "There's no **/foo** command. Type **/** to see the commands."
+- ✅ **Decision (Nov 1, 2026, product):** a patient's summary (/summarize, or a question that asks for one) always opens with the patient's full name in bold ("**Harris, William**"), so a first name alone ("/summarize William") shows who it found. Answers about several patients already open each with the name.
 
 ### CC-022 — /handoff draft
 

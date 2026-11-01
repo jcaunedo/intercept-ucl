@@ -23,12 +23,32 @@ const prototypeShortcuts = ({
 	{ group: "Views", label: "Sections by location", checked: groupedGrid, onSelect: onToggleGroupedGrid },
 ];
 
+// The story "Reset prototype" starts over in: Monitoring's live prototype, the app's default page.
+const resetStoryId = "layouts-intercept-live-monitoring--default";
+
 /**
- * "Reset prototype": reloads the story, so every page, panel, alert action and the live feed start over, as when it
- * first opened.
+ * "Reset prototype": loads the prototype afresh on Monitoring, from the Census's story too, so every page, panel,
+ * alert action and the live feed start over. In Storybook's UI it changes the story in the address bar (keeping the
+ * toolbar's globals, e.g. the theme); in the bare story frame (`iframe.html`), the frame's. Elsewhere it reloads.
  */
 function resetPrototype() {
-	window.location.reload();
+	const go = (target: Window, param: "path" | "id", value: string) => {
+		const url = new URL(target.location.href);
+		url.searchParams.set(param, value);
+		url.searchParams.delete("args");
+		target.location.assign(url.toString());
+	};
+	try {
+		// Storybook's UI hosts the story in a same-origin frame and reads the story from `?path=`.
+		if (window.top && window.top !== window && new URL(window.top.location.href).searchParams.has("path")) {
+			go(window.top, "path", `/story/${resetStoryId}`);
+			return;
+		}
+	} catch {
+		// A cross-origin parent: fall through to the frame itself.
+	}
+	if (new URL(window.location.href).searchParams.has("id")) go(window, "id", resetStoryId);
+	else window.location.reload();
 }
 
 export { prototypeShortcuts, resetPrototype };

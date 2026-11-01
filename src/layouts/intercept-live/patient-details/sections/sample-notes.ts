@@ -421,6 +421,22 @@ const notesSpecs: Record<string, NotesSpec> = {
 		apPlan: "Magnesium 2 g. Echo. Start heparin per Dr. Petrova if no bleeding risk.",
 		plan: "Document code status today with her and her partner. Decide on anticoagulation with Dr. Petrova after the echo.",
 	},
+	p17: {
+		history: "67-year-old woman with hypertension and a hysterectomy 12 years ago, 2 days of cramping, vomiting and no stool. CT showed an adhesive small bowel obstruction. Laparotomy, adhesions released, 20 cm of ischemic small bowel resected.",
+		admitPlan: "Admit to SICU after surgery. Nasogastric tube to suction, fluids, hydromorphone PCA, enoxaparin from tomorrow. Incentive spirometry every hour awake.",
+		nursing: ["Splinting with pain at 6/10, RR 21, HR 104. PCA increased to 0.3 mg per Dr. Lee. Incentive spirometry 750 mL. NG draining 150 mL bilious since 06:00. Urine 40 mL/h.", 35],
+		events: "RR up to 21 and HR to 104 overnight, SpO₂ 95% on 2 L, so NEWS2 is 6. Lactate 1.4 from 2.1, hemoglobin 10.8 after the OR.",
+		apPlan: "Pain control first; recheck RR and HR in an hour. Chest X-ray shows atelectasis only. Out of bed to the chair this morning.",
+		plan: "Recheck her in an hour after the PCA change. If RR stays over 20, ask Mercy West's surgical team about a chest exam and a CBC.",
+	},
+	p18: {
+		history: "54-year-old man with type 1 diabetes, out of insulin for 3 days. Vomiting and abdominal pain. Glucose 512, bicarbonate 9, anion gap 28, beta-hydroxybutyrate 6.4.",
+		admitPlan: "Admit to MICU. DKA protocol: fluids, insulin infusion at 0.1 units/kg/h, potassium replacement, hourly glucose, BMP every 4 h. Social work for insulin access.",
+		nursing: ["Gap closed at 12. Glucose 168 on insulin 3 units/h with dextrose. Ate half his breakfast without nausea. Asked about getting his insulin pump back.", 25],
+		events: "Anion gap 12 from 28, bicarbonate 20. Insulin down to 3 units/h, dextrose running.",
+		apPlan: "Glargine 18 units subcutaneous now, then stop the drip in 2 h. Diabetes educator and social work today.",
+		plan: "Glargine at 09:00, drip off at 11:00 if glucose stays under 250. Social work about insulin coverage before he goes to the floor.",
+	},
 };
 
 // Margaret Hayes (`p15`), Scenario 1 at 01:40: only the hospital's notes. She's on a med-surg floor and no one from
@@ -473,9 +489,45 @@ const hayesNotes: PatientNote[] = [
 	},
 ];
 
+// Walter Erickson (`p16`), on the same floor: also only the hospital's notes.
+const ericksonNotes: PatientNote[] = [
+	{
+		id: "p16-n1",
+		type: "Nursing note",
+		author: { name: "Kayla Brandt", role: "RN", organization: chadron },
+		at: minutesAgo(110),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Sleeping well. SpO₂ 96% on 2 L, RR 18, afebrile since yesterday afternoon. Coughing up less. Bed alarm on; walked the hall with his walker this evening.",
+			},
+		],
+	},
+	{
+		id: "p16-n2",
+		type: "Progress note",
+		author: { name: "Tom Weller", role: "MD, Family medicine", organization: chadron },
+		at: hoursAgo(19),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				heading: "Assessment",
+				text: "Right lower lobe pneumococcal pneumonia, day 3, improving. WBC 10.4 from 15.2, procalcitonin 0.4 from 1.8.",
+			},
+			{
+				heading: "Plan",
+				text: "Continue ceftriaxone, finish azithromycin tomorrow. Wean oxygen to keep SpO₂ 90% or more (COPD). Switch to oral antibiotics and plan discharge home if he's on room air by Saturday. DNR, confirmed with him and his wife.",
+			},
+		],
+	},
+];
+
 const sampleNotesByPatient: Record<string, PatientNotes> = {
 	p1: { emr: "Epic", notes: sarahNotes },
 	p15: { emr: "Epic", notes: hayesNotes },
+	p16: { emr: "Epic", notes: ericksonNotes },
 	...Object.fromEntries(
 		samplePatientBaseRecords
 			.filter((record) => notesSpecs[record.id])

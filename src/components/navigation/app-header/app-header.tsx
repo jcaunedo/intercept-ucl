@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+	ArrowLeftIcon,
 	ArrowUpIcon,
 	ChevronDownIcon,
 	EllipsisIcon,
@@ -34,6 +35,7 @@ import {
 	iconSwapReducedVariants,
 	iconSwapVariants,
 	liveDotVariants,
+	liveGlowVariants,
 	liveHaloVariants,
 	standardTransition,
 	useMotionPreference,
@@ -92,8 +94,8 @@ type AppHeaderDefaultProps = AppHeaderCommonProps & {
 
 type AppHeaderPatientProps = AppHeaderCommonProps & {
 	/**
-	 * `patient`: on a patient's page, Ask Intercept and the patient list (when the app handles them), then a breadcrumb
-	 * back to where the user came from, on the left; the patient's actions (Raise concern, Huddle team, Escalate), Theme
+	 * `patient`: on a patient's page, Back, Ask Intercept and the patient list (when the app handles them), then a
+	 * breadcrumb back to where the user came from, on the left; the patient's actions (Raise concern, Huddle team, Escalate), Theme
 	 * and a "…" menu on the right.
 	 */
 	variant: "patient";
@@ -101,16 +103,24 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	sourcePage: string;
 	/** The patient's name as the page shows it, e.g. "Carter, Ellen". The breadcrumb's current page. */
 	patientName: string;
-	/** Makes the back link a link to this URL. Without it, the back link is a button that calls `onBack`. */
+	/**
+	 * Makes Back and the breadcrumb's back link links to this URL. Without it, they're buttons that call `onBack`. Back
+	 * shows only with one of the two.
+	 */
 	backHref?: string;
 	onBack?: () => void;
 	/** Opens or closes Ask Intercept Live. Without it, there's no Ask Intercept button. */
 	onToggleAskIntercept?: () => void;
-	/** Whether Ask Intercept Live is open, for its button's pressed state. */
+	/** Whether Ask Intercept Live is open (`aria-expanded` on its button). */
 	askInterceptOpen?: boolean;
+	/**
+	 * @deprecated The Ask Intercept button no longer shows whether the chat is about this patient; it's a plain ghost
+	 * button (Nov 1, 2026). Ignored; removed in the next breaking release.
+	 */
+	askInterceptInContext?: boolean;
 	/** Opens or closes the list of patients the user came from, to switch patient. Without it, there's no list button. */
 	onTogglePatientList?: () => void;
-	/** Whether the patient list is open, for its button's pressed state. */
+	/** Whether the patient list is open (`aria-expanded` on its button; no pressed look since Oct 31, 2026). */
 	patientListOpen?: boolean;
 	/** Raises a concern about the patient (a Clinician Intuition Alert). */
 	onRaiseConcern?: () => void;
@@ -142,27 +152,37 @@ const menuClassName = cn(
 );
 
 /**
- * The Online dot, with a static ring that straddles its edge (1px inside as the border, 1px outside as the ring). It
- * shows the connection is live with the Live pattern: the dot breathes and a blurred copy of the ring spreads out and
- * fades. Under reduced motion it stays still.
+ * The Online dot. It shows the connection is live with the Live pattern: the dot breathes, changing color as it reaches
+ * full size, and a blurred ring in that color spreads out from it and fades. In light mode it rests in the glow's bright
+ * green and turns `success` at full size; in dark mode the other way round. The halo is `success-halo`, a lighter,
+ * more saturated green in light mode and the glow's in dark (Oct 31, 2026, user's call). Under reduced motion it stays still, in its resting color.
  */
 function LiveDot() {
 	const { prefersReducedMotion } = useMotionPreference();
 
 	return (
-		<span aria-hidden='true' className='relative size-[11px] shrink-0'>
+		<span aria-hidden='true' className='relative size-2.5 shrink-0'>
 			{prefersReducedMotion ? null : (
 				<motion.span
 					variants={liveHaloVariants}
 					animate='live'
-					className='absolute -inset-px rounded-full border-2 border-success-glow'
+					className='absolute -inset-px rounded-full border-2 border-success-halo'
 				/>
 			)}
+			{/* The resting color, then the full-size color fading in with the halo (no outline since Oct 31, 2026). The app's
+			    dark theme is a `.dark` class on the root, hence `in-[.dark]:`. */}
 			<motion.span
 				variants={liveDotVariants}
 				animate={prefersReducedMotion ? undefined : "live"}
-				className='absolute inset-0 rounded-full border border-success-glow bg-success ring-1 ring-success-glow'
+				className='absolute inset-0 rounded-full bg-success-glow in-[.dark]:bg-success'
 			/>
+			{prefersReducedMotion ? null : (
+				<motion.span
+					variants={liveGlowVariants}
+					animate='live'
+					className='absolute inset-0 rounded-full bg-success in-[.dark]:bg-success-glow'
+				/>
+			)}
 		</span>
 	);
 }
@@ -211,35 +231,28 @@ function StatusAndClock({ clock }: { clock: string }) {
 }
 
 /**
- * The Ask Intercept icon: a person (lucide `user-plus`'s figure) with the two-point AI sparkle where the plus would be,
- * in `currentColor`. Not in lucide.
+ * The Ask Intercept icon: archielabs.ds `ai-patient` (`6294:10248`), a person in a circle with the two-point AI sparkle
+ * breaking the circle at its top right; one filled shape in `currentColor`, drawn at 18px. Not in lucide.
  */
 function AskInterceptIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (
-		<svg xmlns='http://www.w3.org/2000/svg' width={18} height={18} viewBox='0 0 18 18' fill='none' aria-hidden='true' {...props}>
+		<svg xmlns='http://www.w3.org/2000/svg' width={18} height={18} viewBox='0 0 24 24' fill='none' aria-hidden='true' {...props}>
 			<path
-				d='M12 15.75V14.25C12 13.4544 11.6839 12.6913 11.1213 12.1287C10.5587 11.5661 9.79565 11.25 9 11.25H4.5C3.70435 11.25 2.94129 11.5661 2.37868 12.1287C1.81607 12.6913 1.5 13.4544 1.5 14.25V15.75M9.75 5.25C9.75 6.90685 8.40685 8.25 6.75 8.25C5.09315 8.25 3.75 6.90685 3.75 5.25C3.75 3.59315 5.09315 2.25 6.75 2.25C8.40685 2.25 9.75 3.59315 9.75 5.25Z'
-				stroke='currentColor'
-				strokeWidth={1.5}
-				strokeLinecap='round'
-				strokeLinejoin='round'
-			/>
-			<path
-				d='M13.6308 5.7123C13.7561 5.7123 13.8569 5.81487 13.8652 5.93984C13.9645 7.43831 15.0454 8.51842 16.5439 8.61758C16.6687 8.62602 16.7704 8.72689 16.7705 8.85195C16.7705 8.97707 16.6687 9.07788 16.5439 9.08633C15.0453 9.1855 13.9643 10.2664 13.8652 11.765C13.8568 11.8899 13.756 11.9916 13.6308 11.9916C13.5057 11.9915 13.4048 11.8899 13.3964 11.765C13.2973 10.2664 12.2172 9.18561 10.7187 9.08633C10.5937 9.07806 10.4912 8.9772 10.4912 8.85195C10.4912 8.72677 10.5938 8.62584 10.7187 8.61758C12.217 8.5183 13.2971 7.4382 13.3964 5.93984C13.4047 5.81492 13.5056 5.71238 13.6308 5.7123ZM16.9912 4.4916C17.041 4.4916 17.0816 4.53266 17.0849 4.58242C17.1246 5.17887 17.5548 5.60935 18.1513 5.64883C18.2008 5.65234 18.2411 5.69191 18.2412 5.7416C18.2412 5.79133 18.2009 5.83186 18.1513 5.83535C17.5547 5.87483 17.1244 6.30506 17.0849 6.90176C17.0814 6.95133 17.0409 6.9916 16.9912 6.9916C16.9415 6.99155 16.9019 6.95127 16.8984 6.90176C16.8589 6.30518 16.4285 5.87498 15.832 5.83535C15.7822 5.83206 15.7412 5.79147 15.7412 5.7416C15.7412 5.69176 15.7822 5.65212 15.832 5.64883C16.4284 5.60923 16.8588 5.1788 16.8984 4.58242C16.9017 4.53269 16.9413 4.49165 16.9912 4.4916Z'
+				d='M12 1C12.5523 1 13 1.44772 13 2C13 2.55228 12.5523 3 12 3C7.02944 3 3 7.02944 3 12C3 14.6717 4.165 17.0704 6.01367 18.7188C6.07886 18.0263 6.38299 17.3748 6.87891 16.8789C7.44151 16.3163 8.20435 16 9 16H15C15.7956 16 16.5585 16.3163 17.1211 16.8789C17.617 17.3748 17.9201 18.0263 17.9854 18.7188C19.8343 17.0704 21 14.6719 21 12C21 11.4477 21.4477 11 22 11C22.5523 11 23 11.4477 23 12C23 16.0441 20.8157 19.5751 17.5645 21.4863C17.5254 21.5131 17.4842 21.5365 17.4414 21.5576C15.8363 22.4734 13.9802 23 12 23C10.0195 23 8.16286 22.4737 6.55762 21.5576C6.51489 21.5365 6.47358 21.5131 6.43457 21.4863C3.18372 19.575 1 16.0438 1 12C1 5.92487 5.92487 1 12 1ZM9 18C8.73478 18 8.48051 18.1054 8.29297 18.293C8.10543 18.4805 8 18.7348 8 19V20.0615C9.20525 20.6607 10.5627 21 12 21C13.4373 21 14.7947 20.6607 16 20.0615V19C16 18.7348 15.8946 18.4805 15.707 18.293C15.5195 18.1054 15.2652 18 15 18H9ZM12 6C14.2091 6 16 7.79086 16 10C16 12.2091 14.2091 14 12 14C9.79086 14 8 12.2091 8 10C8 7.79086 9.79086 6 12 6ZM12 8C10.8954 8 10 8.89543 10 10C10 11.1046 10.8954 12 12 12C13.1046 12 14 11.1046 14 10C14 8.89543 13.1046 8 12 8ZM19.1855 0.62793C19.3525 0.628003 19.487 0.764096 19.498 0.930664C19.6303 2.9285 21.0707 4.36939 23.0684 4.50195C23.235 4.51298 23.3711 4.64746 23.3711 4.81445C23.3708 4.98123 23.2348 5.11496 23.0684 5.12598C21.0707 5.25854 19.6304 6.69947 19.498 8.69727C19.487 8.86383 19.3525 8.99993 19.1855 9C19.0187 8.99978 18.8841 8.86376 18.873 8.69727C18.7407 6.69918 17.2998 5.25818 15.3018 5.12598C15.1356 5.11465 14.9993 4.98101 14.999 4.81445C14.999 4.64768 15.1354 4.51329 15.3018 4.50195C17.2999 4.36976 18.7407 2.92879 18.873 0.930664C18.8841 0.764171 19.0187 0.628145 19.1855 0.62793Z'
 				fill='currentColor'
 			/>
 		</svg>
 	);
 }
 
-/** A 1px rule between the left side's parts. */
+/** A 1px rule after each of the left side's buttons. */
 function HeaderDivider() {
-	return <div aria-hidden='true' className='h-[33px] w-px shrink-0 bg-border' />;
+	return <div aria-hidden='true' className='h-9 w-px shrink-0 bg-border' />;
 }
 
 /**
- * Patient, left side: Ask Intercept and the patient list (each only when the app handles it, each followed by a rule),
- * then the source page and the patient's name. The source page is the link back.
+ * Patient, left side: Back, Ask Intercept and the patient list (each only when the app handles it, each followed by a
+ * rule), then the source page and the patient's name. Back and the source page both lead back.
  */
 function PatientNavigation({
 	sourcePage,
@@ -251,25 +264,60 @@ function PatientNavigation({
 	onTogglePatientList,
 	patientListOpen = false,
 }: AppHeaderPatientProps) {
-	// An open panel's button keeps its hover fill, so the toggle shows it's on. The back link is medium here, like the
-	// patient's name; Breadcrumb's own links are regular.
+	const hasBack = Boolean(backHref || onBack);
+	const backIcon = <ArrowLeftIcon aria-hidden='true' className='size-[18px]' />;
+
+	// Ask Intercept is filled while the chat is about this patient; the list button looks the same open or closed. The
+	// back link is medium here, like the patient's name; Breadcrumb's own links are regular.
 	return (
 		<div className='flex min-w-0 items-center gap-4'>
-			{onToggleAskIntercept ? (
-				<>
-					<Button variant='ghost' size='icon-md' className='aria-pressed:bg-accent' aria-pressed={askInterceptOpen} aria-label='Ask Intercept Live' onClick={onToggleAskIntercept}>
-						<AskInterceptIcon className='size-[18px]' />
-					</Button>
-					<HeaderDivider />
-				</>
-			) : null}
-			{onTogglePatientList ? (
-				<>
-					<Button variant='ghost' size='icon-md' className='aria-pressed:bg-accent' aria-pressed={patientListOpen} aria-label='Patient list' onClick={onTogglePatientList}>
-						<ListIcon aria-hidden='true' className='size-[18px]' />
-					</Button>
-					<HeaderDivider />
-				</>
+			{hasBack || onToggleAskIntercept || onTogglePatientList ? (
+				<div className='flex shrink-0 items-center gap-2'>
+					{hasBack ? (
+						<>
+							{backHref ? (
+								<Button asChild variant='ghost' size='icon-md'>
+									<a href={backHref} onClick={onBack} aria-label={`Back to ${sourcePage}`}>
+										{backIcon}
+									</a>
+								</Button>
+							) : (
+								<Button variant='ghost' size='icon-md' aria-label={`Back to ${sourcePage}`} onClick={onBack}>
+									{backIcon}
+								</Button>
+							)}
+							<HeaderDivider />
+						</>
+					) : null}
+					{onToggleAskIntercept ? (
+						<>
+							<Button
+								variant='ghost'
+								size='icon-md'
+								aria-expanded={askInterceptOpen}
+								aria-label='Ask Intercept Live'
+								onClick={onToggleAskIntercept}
+							>
+								<AskInterceptIcon className='size-[18px]' />
+							</Button>
+							<HeaderDivider />
+						</>
+					) : null}
+					{onTogglePatientList ? (
+						<>
+							<Button
+								variant='ghost'
+								size='icon-md'
+								aria-expanded={patientListOpen}
+								aria-label='Patient list'
+								onClick={onTogglePatientList}
+							>
+								<ListIcon aria-hidden='true' className='size-[18px]' />
+							</Button>
+							<HeaderDivider />
+						</>
+					) : null}
+				</div>
 			) : null}
 			<Breadcrumb className='min-w-0 px-2'>
 				<BreadcrumbList size='sm'>
@@ -409,14 +457,14 @@ function PatientActions({
 
 /**
  * Intercept Live's top bar. `default`: connection status and clock on the left; messages, theme, the team on shift and
- * the user's menu on the right. `patient`: Ask Intercept, the patient list and a breadcrumb back from a patient's page
- * on the left; the patient's actions, theme and a "…" menu on the right. Each button calls its own handler; the header holds no state.
+ * the user's menu on the right. `patient`: Back, Ask Intercept, the patient list and a breadcrumb back from a patient's
+ * page on the left; the patient's actions, theme and a "…" menu on the right. Each button calls its own handler; the header holds no state.
  *
  * Figma: [intercept.ds › app-header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1169-318)
  */
 function AppHeader(props: AppHeaderProps) {
-	// Take every variant's own props out, so only HTML attributes reach the <header>. `onSearch` is deprecated and
-	// ignored, but taking it out keeps it from reaching the DOM as a `search` listener.
+	// Take every variant's own props out, so only HTML attributes reach the <header>. `onSearch` and
+	// `askInterceptInContext` are deprecated and ignored, but taking them out keeps them off the DOM.
 	const {
 		variant = "default",
 		clock: _clock,
@@ -429,6 +477,7 @@ function AppHeader(props: AppHeaderProps) {
 		onBack: _onBack,
 		onToggleAskIntercept: _onToggleAskIntercept,
 		askInterceptOpen: _askInterceptOpen,
+		askInterceptInContext: _askInterceptInContext,
 		onTogglePatientList: _onTogglePatientList,
 		patientListOpen: _patientListOpen,
 		user: _user,

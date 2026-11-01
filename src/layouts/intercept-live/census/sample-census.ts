@@ -1,15 +1,21 @@
+import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { CensusPatient } from "./census";
 
-// Synthetic data (PRD PC-180). The first eight patients are Figma's; seven more fill the hospital counts (7 / 3 / 5).
+// Synthetic data (PRD PC-180). The first eight patients are Figma's; ten more fill the hospital counts (Harbor Point 7,
+// CVMC 5, Mercy West 4, Chadron 2).
 // Acuity is the NEWS2-style score, the same as on Monitoring (`sample-monitoring.ts` says how it's worked out).
 
 const news2 = "NEWS2";
 const change = "Change in last 24 h";
+// When the clinician last opened a patient, or a patient's last alert resolved (the Recently viewed and Recently
+// resolved sorts): Thompson, Davis, Miller and Clark were viewed; Wilson, Bennett, Harris and Taylor had one resolve.
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
 
 const samplePatients: CensusPatient[] = [
 	{
 		id: "p1",
 		hospitalId: "hpg",
+		photo: samplePatientPhotos.p1,
 		lastName: "Miller",
 		firstName: "Sarah",
 		mrn: "01033876",
@@ -22,6 +28,7 @@ const samplePatients: CensusPatient[] = [
 		acuity: { label: news2, score: 17, level: "high" },
 		trajectory: { label: change, value: "+7", trend: "up", trendVariant: "critical" },
 		scoreChange4h: 0,
+		lastViewedAt: hoursAgo(2),
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 128, variant: "destructive", range: "above" },
 			{ label: "MAP", value: 58, variant: "destructive", range: "below" },
@@ -35,6 +42,7 @@ const samplePatients: CensusPatient[] = [
 		id: "p2",
 		hospitalId: "mwh",
 		mine: true,
+		photo: samplePatientPhotos.p2,
 		lastName: "Johnson",
 		firstName: "Daniel",
 		mrn: "00482917",
@@ -60,6 +68,7 @@ const samplePatients: CensusPatient[] = [
 		hospitalId: "cvmc",
 		lastName: "Davis",
 		firstName: "Linda",
+		unreadMessages: 2,
 		mrn: "00519364",
 		sex: "F",
 		age: 67,
@@ -69,6 +78,7 @@ const samplePatients: CensusPatient[] = [
 		acuity: { label: news2, score: 10, level: "high" },
 		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
 		scoreChange4h: 0,
+		lastViewedAt: hoursAgo(0.7),
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 94 },
 			{ label: "MAP", value: 68 },
@@ -92,6 +102,7 @@ const samplePatients: CensusPatient[] = [
 		acuity: { label: news2, score: 5, level: "medium" },
 		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
 		scoreChange4h: 0,
+		lastViewedAt: hoursAgo(0.2),
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 88 },
 			{ label: "MAP", value: 66 },
@@ -103,6 +114,7 @@ const samplePatients: CensusPatient[] = [
 	{
 		id: "p5",
 		hospitalId: "hpg",
+		photo: samplePatientPhotos.p5,
 		lastName: "Carter",
 		firstName: "Emily",
 		mrn: "00956113",
@@ -159,6 +171,7 @@ const samplePatients: CensusPatient[] = [
 		acuity: { label: news2, score: 0, level: "low" },
 		trajectory: { label: change, value: "−3", trend: "down", trendVariant: "success" },
 		scoreChange4h: 0,
+		lastResolvedAt: hoursAgo(20),
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 84 },
 			{ label: "MAP", value: 82 },
@@ -181,6 +194,7 @@ const samplePatients: CensusPatient[] = [
 		acuity: { label: news2, score: 0, level: "low" },
 		trajectory: { label: change, value: "0" },
 		scoreChange4h: 0,
+		lastResolvedAt: hoursAgo(0.4),
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 76 },
 			{ label: "MAP", value: 90 },
@@ -203,6 +217,7 @@ const samplePatients: CensusPatient[] = [
 		acuity: { label: news2, score: 16, level: "high" },
 		trajectory: { label: change, value: "+6", trend: "up", trendVariant: "critical" },
 		scoreChange4h: 2,
+		lastResolvedAt: hoursAgo(6),
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 112, variant: "destructive", range: "above" },
 			{ label: "MAP", value: 64 },
@@ -217,6 +232,7 @@ const samplePatients: CensusPatient[] = [
 		hospitalId: "hpg",
 		lastName: "Moore",
 		firstName: "Patricia",
+		unreadMessages: 1,
 		mrn: "01120438",
 		sex: "F",
 		age: 61,
@@ -249,6 +265,7 @@ const samplePatients: CensusPatient[] = [
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "0" },
 		scoreChange4h: 0,
+		lastViewedAt: hoursAgo(5),
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 92 },
 			{ label: "MAP", value: 118, variant: "destructive", range: "above" },
@@ -306,6 +323,7 @@ const samplePatients: CensusPatient[] = [
 		hospitalId: "cvmc",
 		lastName: "Bennett",
 		firstName: "Karen",
+		unreadMessages: 1,
 		mrn: "00499320",
 		sex: "F",
 		age: 50,
@@ -315,6 +333,7 @@ const samplePatients: CensusPatient[] = [
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "−6", trend: "down", trendVariant: "success" },
 		scoreChange4h: -6,
+		lastResolvedAt: hoursAgo(1.5),
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 88 },
 			{ label: "MAP", value: 77 },
@@ -344,6 +363,73 @@ const samplePatients: CensusPatient[] = [
 			{ label: "Resp. Rate", shortLabel: "RR", value: 26 },
 		],
 		tags: [{ label: "Fall risk" }],
+	},
+	{
+		id: "p16",
+		hospitalId: "chadron",
+		lastName: "Erickson",
+		firstName: "Walter",
+		mrn: "00731942",
+		sex: "M",
+		age: 79,
+		hospital: "Chadron Community Hospital",
+		unit: "Med-Surg",
+		bed: "Bed 6",
+		acuity: { label: news2, score: 2, level: "low" },
+		trajectory: { label: change, value: "−3", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 84 },
+			{ label: "MAP", value: 90 },
+			{ label: "SpO₂", value: "96%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 18 },
+		],
+		tags: [{ label: "DNR" }, { label: "Fall risk" }],
+	},
+	{
+		id: "p17",
+		hospitalId: "mwh",
+		photo: samplePatientPhotos.p17,
+		lastName: "Ortega",
+		firstName: "Lucía",
+		mrn: "00658213",
+		sex: "F",
+		age: 67,
+		hospital: "Mercy West Hospital",
+		unit: "SICU",
+		bed: "Bed 10",
+		acuity: { label: news2, score: 6, level: "medium" },
+		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
+		scoreChange4h: 1,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 104 },
+			{ label: "MAP", value: 80 },
+			{ label: "SpO₂", value: "95%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 21 },
+		],
+	},
+	{
+		id: "p18",
+		hospitalId: "mwh",
+		photo: samplePatientPhotos.p18,
+		lastName: "Nakamura",
+		firstName: "Kenji",
+		mrn: "00914370",
+		sex: "M",
+		age: 54,
+		hospital: "Mercy West Hospital",
+		unit: "MICU",
+		bed: "Bed 5",
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "−4", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 92 },
+			{ label: "MAP", value: 92 },
+			{ label: "SpO₂", value: "98%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+		tags: [{ label: "Insulin infusion" }],
 	},
 ];
 

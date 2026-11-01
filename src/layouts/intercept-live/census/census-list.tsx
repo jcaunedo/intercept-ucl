@@ -1,12 +1,14 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-import { PatientCardAlert, patientCardAcuityLevels } from "@/components/cards/patient-card";
+import { PatientCardAlert, patientCardAcuityLevels, scoreTrendClassName } from "@/components/cards/patient-card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Badge } from "@/components/data-display/badge";
 import { HospitalSectionHeader } from "@/components/data-display/hospital-section-header";
 import { exitTransition, resolvedFadeTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+import { patientInitials } from "../shared/patient-avatar";
 import { activeAlertCount, type PanelHospital } from "../shared/patient-panel";
 import type { CensusPatient } from "./census-panel";
 
@@ -14,7 +16,6 @@ import type { CensusPatient } from "./census-panel";
 // 24 h change and tags) as columns. Built like Monitoring's List (`monitoring/monitoring-list.tsx`), without vitals:
 // live values belong on Monitoring.
 
-const trendColors = { critical: "text-severity-critical", success: "text-success" } as const;
 
 /** One patient's row. The name opens the patient; the whole row does too, for the mouse. */
 function CensusListRow({ patient, onOpenPatient }: { patient: CensusPatient; onOpenPatient?: (id: string) => void }) {
@@ -30,25 +31,34 @@ function CensusListRow({ patient, onOpenPatient }: { patient: CensusPatient; onO
 			onClick={onOpenPatient ? () => onOpenPatient(patient.id) : undefined}
 			className={cn("border-b border-border-muted last:border-b-0", onOpenPatient && "cursor-pointer hover:bg-accent")}
 		>
-			<td className='max-w-64 px-4 py-2.5'>
-				{onOpenPatient ? (
-					<button
-						type='button'
-						title={name}
-						onClick={(event) => {
-							event.stopPropagation();
-							onOpenPatient(patient.id);
-						}}
-						className='block max-w-full truncate rounded-sm text-left font-bold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
-					>
-						{name}
-					</button>
-				) : (
-					<span title={name} className='block truncate font-bold text-foreground'>
-						{name}
-					</span>
-				)}
-				{identity ? <div className='text-xs text-muted-foreground'>{identity}</div> : null}
+			<td className='max-w-72 px-4 py-2.5'>
+				{/* The patient's avatar, as on their card: the photo, or the initials in their color. Decorative. */}
+				<div className='flex items-center gap-3'>
+					<Avatar aria-hidden='true'>
+						{patient.photo ? <AvatarImage src={patient.photo} alt='' /> : null}
+						<AvatarFallback tone={patient.tone}>{patient.initials ?? patientInitials(patient)}</AvatarFallback>
+					</Avatar>
+					<div className='min-w-0'>
+						{onOpenPatient ? (
+							<button
+								type='button'
+								title={name}
+								onClick={(event) => {
+									event.stopPropagation();
+									onOpenPatient(patient.id);
+								}}
+								className='block max-w-full truncate rounded-sm text-left font-bold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+							>
+								{name}
+							</button>
+						) : (
+							<span title={name} className='block truncate font-bold text-foreground'>
+								{name}
+							</span>
+						)}
+						{identity ? <div className='text-xs text-muted-foreground'>{identity}</div> : null}
+					</div>
+				</div>
 			</td>
 			<td className='px-4 py-2.5'>
 				<div className='text-sm whitespace-nowrap text-foreground'>
@@ -59,7 +69,7 @@ function CensusListRow({ patient, onOpenPatient }: { patient: CensusPatient; onO
 				<div className='text-xs text-muted-foreground'>{patient.hospital}</div>
 			</td>
 			<td className='px-4 py-2.5'>
-				{/* As on the cards, a "Resolved" pill moves with its row, then fades out slowly; the dash follows it. */}
+				{/* As on the cards, a "Resolved" pill fades out slowly; the dash follows it. */}
 				<AnimatePresence initial={false} mode='wait'>
 					{patient.alert ? (
 						<motion.div
@@ -102,7 +112,7 @@ function CensusListRow({ patient, onOpenPatient }: { patient: CensusPatient; onO
 						{change.trend ? (
 							<span
 								aria-hidden='true'
-								className={cn("mr-0.5", change.trendVariant ? trendColors[change.trendVariant] : undefined)}
+								className={cn("mr-0.5", scoreTrendClassName(change))}
 							>
 								{change.trend === "up" ? "▲" : "▼"}
 							</span>
@@ -168,10 +178,11 @@ function CensusList({
 						))}
 					</tr>
 				</thead>
-				{sections.map(({ hospital, patients: rows }) => (
+				{sections.map(({ hospital, patients: rows }, index) => (
 					<tbody key={hospital?.id ?? "all"}>
 						{hospital ? (
-							<tr className='border-b border-border'>
+							// A line between one hospital's last patient and the next hospital.
+							<tr className={cn("border-b border-border", index > 0 && "border-t")}>
 								<td colSpan={headers.length} className='px-4 pt-4 pb-3'>
 									<HospitalSectionHeader name={hospital.name} patientCount={rows.length} alertCount={activeAlertCount(rows)} />
 								</td>

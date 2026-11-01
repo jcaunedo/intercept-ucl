@@ -1,12 +1,20 @@
 import { defaultMonitorLimits, type MonitorVitals } from "@/components/cards/patient-monitoring-card";
 
-import type { AskInterceptAnswer, AskInterceptContext, AskInterceptResponder } from "../ask-intercept-panel";
+import * as React from "react";
+
+import type {
+	AskInterceptAnswer,
+	AskInterceptContext,
+	AskInterceptNotice,
+	AskInterceptResponder,
+} from "../ask-intercept-panel";
 import type { CensusPatient } from "../census/census-panel";
 import { samplePatients } from "../census/sample-census";
 import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
-import { compareTriageAlerts, isOpenAlert, type TriageAlert } from "../monitoring/triage-queue";
+import { compareTriageAlerts, isOpenAlert, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
+import { useAddressedAlerts } from "../shared/live-feed";
 import { sampleHospitals, sampleTeam, sampleUser } from "./sample-workspace";
 
 // Synthetic Ask Intercept Live (PRD Patient details PD-100): a stand-in for the Conversational Clinical Data Agent that
@@ -28,12 +36,23 @@ type Patient = {
 	alerts: TriageAlert[];
 };
 
-const patients: Patient[] = samplePatients.map((census) => ({
-	census,
-	vitals: sampleMonitoringPatients.find((item) => item.id === census.id)?.vitals,
-	record: samplePatientRecords.find((item) => item.id === census.id),
-	alerts: sampleMonitoringAlerts.filter((alert) => alert.patientId === census.id && isOpenAlert(alert)).sort(compareTriageAlerts),
-}));
+/**
+ * Every patient with their monitor values, record and open alerts (worst first, then oldest). `alerts` and `vitals` are
+ * what the page shows now (the live feed, the queue's actions, the monitors' live values); without them, the sample as
+ * it starts.
+ */
+const joinPatients = (alerts: TriageAlert[], vitals: Partial<Record<string, MonitorVitals>> = {}): Patient[] =>
+	samplePatients.map((census) => ({
+		census,
+		vitals: vitals[census.id] ?? sampleMonitoringPatients.find((item) => item.id === census.id)?.vitals,
+		record: samplePatientRecords.find((item) => item.id === census.id),
+		alerts: alerts.filter((alert) => alert.patientId === census.id && isOpenAlert(alert)).sort(compareTriageAlerts),
+	}));
+
+const startingPatients = joinPatients(sampleMonitoringAlerts);
+
+// The data the answer being built reads; `answerWith` sets it for one answer, so every helper below sees the same.
+let patients: Patient[] = startingPatients;
 
 /* -------------------------------------------------------------------------- */
 /* Words                                                                      */
@@ -639,10 +658,26 @@ function answerForPatientTopic(patient: Patient, topic: Topic, question: string)
 /* -------------------------------------------------------------------------- */
 
 const severityRank = { critical: 4, high: 3, medium: 2, low: 1 } as const;
+const bandRank = { critical: 5, high: 4, medium: 3, moderate: 3, low: 1, unknown: 0 } as const;
 
-/** How urgent a patient is: their worst open alert, then their score, then a rising trend. */
-function urgency({ census, alerts }: Patient) {
-	return (alerts[0] ? severityRank[alerts[0].severity] * 100 : 0) + Number(census.acuity?.score ?? 0) * 2 + (census.trajectory?.trend === "up" ? 3 : 0);
+/**
+ * Who to see first, the cards' order with Active alerts on (`byAlertPriority`) and the live feed's work list (DU-09):
+ * the worst open alert's severity, then the acuity band, then the larger score rise over 4 h, then the alert that has
+ * waited longest, then the higher score, then name. Negative when `a` comes first.
+ */
+function comparePriority(a: Patient, b: Patient) {
+	const severity = (patient: Patient) => (patient.alerts[0] ? severityRank[patient.alerts[0].severity] : 0);
+	const band = (patient: Patient) => (patient.census.acuity?.level ? bandRank[patient.census.acuity.level] : -1);
+	const waited = (patient: Patient) => (patient.alerts[0] ? -Date.parse(patient.alerts[0].firedAt) : -Infinity);
+	const score = (patient: Patient) => (typeof patient.census.acuity?.score === "number" ? patient.census.acuity.score : -1);
+	return (
+		severity(b) - severity(a) ||
+		band(b) - band(a) ||
+		(b.census.scoreChange4h ?? 0) - (a.census.scoreChange4h ?? 0) ||
+		waited(b) - waited(a) ||
+		score(b) - score(a) ||
+		patientName(a).localeCompare(patientName(b))
+	);
 }
 
 function answerForCensus(topic: Topic | undefined, question: string, scope: Patient[], label: string): AskInterceptAnswer {
@@ -662,7 +697,7 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			};
 		case "shift": {
 			const mine = scope.filter((patient) => patient.census.mine);
-			const ranked = [...scope].sort((a, b) => urgency(b) - urgency(a)).slice(0, 3);
+			const ranked = [...scope].sort(comparePriority).slice(0, 3);
 			const overdueAlerts = scope.flatMap((patient) =>
 				patient.alerts.filter((alert) => alert.respondBy && Date.parse(alert.respondBy) < Date.now()).map((alert) => `${alert.title}: ${patientName(patient)}`),
 			);
@@ -700,14 +735,14 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			};
 		}
 		case "attention": {
-			const ranked = [...scope].sort((a, b) => urgency(b) - urgency(a)).slice(0, 3);
+			const ranked = [...scope].sort(comparePriority).slice(0, 3);
 			return {
 				text: `${ranked.length === 1 ? "One patient needs" : `${ranked.length} patients need`} you first${among}:\n${list(
 					ranked.map(
 						(patient) =>
 							`${who(patient)}: ${patient.alerts.length ? `${severityWords[patient.alerts[0].severity]}, ${patient.alerts.map((alert) => alert.title).join("; ")}.` : `${scoreWords(patient.census.acuity)}.`} ${patient.record?.brief ? sentence(patient.record.brief.text) : ""}`.trim(),
 					),
-				)}\nRanked by alert severity, then score and how fast it's changing.`,
+				)}\nRanked as the cards are with Active alerts on: alert severity, then score band, how much the score rose in 4 h, and how long the alert has waited.`,
 				sources: ["Alerts", "Census", "Monitor"],
 			};
 		}
@@ -745,7 +780,10 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			};
 		}
 		case "alerts": {
-			const alerts = scope.flatMap((patient) => patient.alerts.map((alert) => ({ patient, alert }))).sort((a, b) => compareTriageAlerts(a.alert, b.alert));
+			// Worst first; within a severity, the patients in the cards' priority order.
+			const alerts = scope
+				.flatMap((patient) => patient.alerts.map((alert) => ({ patient, alert })))
+				.sort((a, b) => severityRank[b.alert.severity] - severityRank[a.alert.severity] || comparePriority(a.patient, b.patient) || compareTriageAlerts(a.alert, b.alert));
 			return {
 				text: alerts.length
 					? `${alerts.length} open alert${alerts.length === 1 ? "" : "s"}${among}, highest first:\n${list(alerts.map(({ patient, alert }) => `**${severityWords[alert.severity]}** · ${alert.title}: ${patientName(patient)}, ${ago(alert.firedAt)}${alert.respondBy && Date.parse(alert.respondBy) < Date.now() ? ", overdue" : ""}`))}`
@@ -933,11 +971,218 @@ const commandQuestions: Record<string, string> = {
 // Outside the agent's limits: what to do, not what's in the chart.
 const asksForAdvice = /\b(should (i|we)|do you (recommend|suggest|think)|would you (recommend|give|start)|what (should|would) (i|we|you)|diagnose|prescribe|what dose|how much .* (give|start)|is it (safe|ok) to)\b/i;
 
+/* -------------------------------------------------------------------------- */
+/* How the product works                                                      */
+/* -------------------------------------------------------------------------- */
+
+// Questions about the product's own rules ("how do active alerts work?", "how are alerts displayed? tell me the
+// formula"; Oct 31, 2026, user's call): the answer is the rule the app follows, from the PRDs, the specs and the design
+// rules (each section notes which), cited as "Intercept Live". Not about a patient: "how is Miller doing" stays a
+// patient question.
+const asksHowItWorks =
+	/\b(how|why|formula|logic|rules?|explain\w*|works?|working|calculated|decide[sd]?|criteria|algorithm|mean(s|ing)?|based on|what does|what do|what's the|what is the|walk me|describe|tell me about|behind)\b/i;
+const aboutAlertRules =
+	/\b(active alerts?|alerts?|alarms?|sort(ed|ing)?|order(ed|ing)?|rank(ed|ing)?|priorit\w*|display(ed)?|shown|shows?|appear\w*|colou?rs?|arrows?|bar|chip|filter)\b/i;
+
+function isRulesQuestion(question: string) {
+	return asksHowItWorks.test(question) && aboutAlertRules.test(question) && !/how many/i.test(question) && !namedPatients(question).length;
+}
+
+const ruleSections = {
+	ranking: {
+		text: [
+			"**Active alerts** (the chip on the Census and Monitoring) shows only patients with an open alert, any severity. Resolved alerts and family messages don't count. It keeps the patients who matched when you pressed it, so cards don't come and go as alerts change; its count stays live.",
+			"While it's on, the cards are ranked by who to see first:",
+			list([
+				"**1. Severity** of the worst open alert: Critical, High, Medium, Low",
+				"**2. Acuity band** (NEWS2): High, Medium, Low",
+				"**3. Score rise** over the last 4 h, the biggest first",
+				"**4. Time waiting**: the alert that has waited longest first",
+				"**5. NEWS2 score**, the highest first",
+				"**6. Patient name**, so ties never jump around",
+			]),
+			"It's the live feed's work-list order, so the first card and the first item in the queue agree.",
+		].join("\n"),
+		// PRD Monitoring MON-014, spec DU-09, DESIGN.md.
+	},
+	display: {
+		text: [
+			"On a Monitoring card, the alert is a bar under the name and location:",
+			list([
+				"**Its color** is the worst open alert's severity: Critical red, High red-orange, Medium orange, Low blue, with white text",
+				'**"Critical · 3 in the last 24 h"**: that severity, and how many alerts the patient had in the last 24 h, resolved ones included',
+				'**How long ago** it started, ticking: "3:34 m ago" under an hour, then "1:05 h ago"',
+				'**Resolved**, in green, for 24 h after the last alert resolves, its time in whole units from "Just now"',
+				'**No active alerts**, in grey, otherwise',
+			]),
+			"A new alert also rings the card in its color, pulsing until someone opens the card or acknowledges it. The Census cards show no alerts; the Census List keeps an Alert column.",
+		].join("\n"),
+		// PRD Monitoring MON-014, DESIGN.md (PatientMonitoringCard).
+	},
+	recent: {
+		text: "**Sort by Recent alerts** (Monitoring) puts patients with an open alert first, the one whose newest alert fired most recently on top; everyone else follows by name. It answers \"what just happened\"; with Active alerts on, the chip's ranking by who to see first applies instead.",
+		// PRD Monitoring (Sort by), DESIGN.md.
+	},
+	arrows: {
+		text: `The NEWS2 **change in the last 24 h** is colored by how much it moved, the same on every card, the patient header and the Census List:\n${list([
+			"**▲ +1**: orange, the medium alert color",
+			"**▲ +2 or more**: red",
+			"**▼ any fall**: green",
+		])}`,
+		// PRD Patient card PC-031, DESIGN.md (change arrow colors).
+	},
+	device: {
+		text: `A value outside its alarm limits gets a **▲ / ▼** beside its label. With the bedside monitor's priority, its number shows as the device shows it (GE CARESCAPE):\n${list([
+			"**High**: white on red, flashing about 1.5 times a second",
+			"**Medium**: black on yellow, flashing about every 2 s",
+			"**Low**: black on cyan, steady",
+		])}\nThe color clears once the alarm is acknowledged at the bedside; the ▲ / ▼ stays.`,
+		// PRD Monitoring MON-073, DESIGN.md (device alarms).
+	},
+} satisfies Record<string, { text: string }>;
+
+/**
+ * The ranking at work on the patients' alerts now (Oct 31, 2026, user's call: from the app's current alerts, not a
+ * scenario): who comes first and which step put them there, then the first few in order.
+ */
+function rankingNow(scope: Patient[]) {
+	const ranked = scope.filter((patient) => patient.alerts.length).sort(comparePriority);
+	if (!ranked.length) return "**Right now** no patient has an open alert, so Active alerts shows no one.";
+	const rise = (patient: Patient) => patient.census.scoreChange4h ?? 0;
+	const signed = (value: number) => (value > 0 ? `+${value}` : value < 0 ? `−${-value}` : "0");
+	const waiting = (patient: Patient) => {
+		const since = ago(patient.alerts[0].firedAt);
+		return since === "just now" ? "just fired" : `waiting ${since.replace(/ ago$/, "")}`;
+	};
+	const line = (patient: Patient, index: number) =>
+		`**${index + 1}. ${fullName(patient)}**: ${severityWords[patient.alerts[0].severity]}, ${scoreWords(patient.census.acuity)}, ${signed(rise(patient))} in 4 h, ${waiting(patient)}`;
+	const [first, second] = ranked;
+	if (!second) return `**Right now** only ${patientName(first)} has an open alert:\n${list([line(first, 0)])}`;
+	// The first step of the ranking where the two differ.
+	const severity = (patient: Patient) => severityRank[patient.alerts[0].severity];
+	const band = (patient: Patient) => (patient.census.acuity?.level ? bandRank[patient.census.acuity.level] : -1);
+	const score = (patient: Patient) => (typeof patient.census.acuity?.score === "number" ? patient.census.acuity.score : -1);
+	const reason =
+		severity(first) !== severity(second)
+			? "a more severe alert"
+			: band(first) !== band(second)
+				? "the same severity, but a higher acuity band"
+				: rise(first) !== rise(second)
+					? `the same severity and band, but a bigger rise in 4 h (${signed(rise(first))} against ${signed(rise(second))})`
+					: first.alerts[0].firedAt !== second.alerts[0].firedAt
+						? "the same severity, band and rise, but an alert that has waited longer"
+						: score(first) !== score(second)
+							? "the same severity, band, rise and wait, but a higher NEWS2"
+							: "everything else equal, so by name";
+	return `**Right now** ${patientName(first)} comes first, ahead of ${patientName(second)}: ${reason}.\n${list(ranked.slice(0, 4).map(line))}`;
+}
+
+/** The rules a question asks about; a broad one gets how active alerts work and how they're displayed. */
+function rulesFor(question: string): AskInterceptAnswer {
+	const wanted: (keyof typeof ruleSections)[] = [];
+	if (/recent|newest|latest/i.test(question)) wanted.push("recent");
+	if (/arrow|change|trend|triangle/i.test(question)) wanted.push("arrows");
+	if (/device|monitor|alarm|limit|flash/i.test(question)) wanted.push("device");
+	if (/display|shown|shows?|look|appear|bar|colou?r|time|ago|resolved/i.test(question) && !wanted.includes("arrows")) wanted.push("display");
+	// The ranking when asked for by name ("active alerts", the formula, the order), or for a general "how does it work"
+	// that matched nothing more specific.
+	const asksRanking = /active alert|formula|rank|order|sort|priorit|first|criteria|algorithm|decide/i.test(question);
+	if ((asksRanking && !wanted.includes("recent")) || (!wanted.length && /works?|working|logic/i.test(question)))
+		wanted.unshift("ranking");
+	if (!wanted.length) wanted.push("ranking", "display");
+	// From the product's own documentation (the PRDs, the specs, the design rules), cited as the product itself (Oct 31,
+	// 2026, user's call).
+	const text = wanted
+		.map((key) => (key === "ranking" ? `${ruleSections.ranking.text}\n${rankingNow(patients)}` : ruleSections[key].text))
+		.join("\n");
+	return { text, sources: ["Intercept Live"] };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Drug lookup                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A short drug reference for a lookup ("penicillin", "what is vancomycin?"; Oct 31, 2026, user's call): what it is and
+ * what it's generally used for, then the census in its light. `family` matches the drug and the drugs of its class (in
+ * medication lists and allergies), e.g. a penicillin allergy for piperacillin-tazobactam. Reference text, kept general;
+ * the real agent would use the hospital's drug database.
+ */
+type DrugReference = { name: string; kind: string; use: string; match: RegExp; family?: RegExp; familyName?: string };
+
+const penicillins = /penicillin|amoxicillin|ampicillin|piperacillin|nafcillin|oxacillin|dicloxacillin/i;
+const opioids = /fentanyl|morphine|hydromorphone|codeine|oxycodone|opioid/i;
+
+const drugReference: DrugReference[] = [
+	{ name: "Penicillin", kind: "a beta-lactam antibiotic", use: "treats bacterial infections such as streptococcal infections, some skin and soft-tissue infections and syphilis. Its family includes amoxicillin, ampicillin and piperacillin.", match: /\bpenicillins?\b/i, family: penicillins, familyName: "penicillins" },
+	{ name: "Piperacillin-tazobactam", kind: "a broad-spectrum penicillin with a beta-lactamase inhibitor", use: "covers many gram-negative bacteria, including Pseudomonas, and anaerobes; common empiric therapy for sepsis, pneumonia and intra-abdominal infection.", match: /piperacillin|pip.?tazo|zosyn/i, family: penicillins, familyName: "penicillins" },
+	{ name: "Ampicillin-sulbactam", kind: "a penicillin with a beta-lactamase inhibitor", use: "treats skin, intra-abdominal and some respiratory infections, including aspiration pneumonia.", match: /ampicillin|unasyn/i, family: penicillins, familyName: "penicillins" },
+	{ name: "Vancomycin", kind: "a glycopeptide antibiotic", use: "treats serious gram-positive infections, including MRSA. Dosing follows blood levels, and kidney function is watched.", match: /vancomycin|\bvanc\b/i },
+	{ name: "Ceftriaxone", kind: "a third-generation cephalosporin antibiotic", use: "treats pneumonia, meningitis, urinary and other infections. It's a beta-lactam, a cousin of the penicillins.", match: /ceftriaxone|rocephin/i },
+	{ name: "Meropenem", kind: "a carbapenem antibiotic", use: "is a very broad-spectrum antibiotic kept for serious or resistant infections.", match: /meropenem/i },
+	{ name: "Aztreonam", kind: "a monobactam antibiotic", use: "covers gram-negative bacteria; it's often chosen when a patient has a penicillin allergy.", match: /aztreonam/i },
+	{ name: "Azithromycin", kind: "a macrolide antibiotic", use: "is used for community-acquired pneumonia, covering atypical bacteria.", match: /azithromycin|zithromax/i },
+	{ name: "Sulfa drugs", kind: "the sulfonamide antibiotics, e.g. trimethoprim-sulfamethoxazole", use: "treat urinary, skin and some opportunistic infections. A sulfa allergy is recorded against this class.", match: /\bsulfa\b|sulfonamide|sulfamethoxazole|bactrim/i, family: /sulfa|sulfonamide|sulfamethoxazole/i, familyName: "sulfa drugs" },
+	{ name: "Norepinephrine", kind: "a vasopressor", use: "raises blood pressure in shock by tightening blood vessels; it's titrated to a MAP goal, usually 65 mmHg or more.", match: /norepinephrine|norepi|levophed|\blevo\b/i },
+	{ name: "Vasopressin", kind: "a vasopressor hormone", use: "is often added to norepinephrine in septic shock to raise blood pressure.", match: /vasopressin|\bvaso\b/i },
+	{ name: "Epinephrine", kind: "a catecholamine", use: "is used in cardiac arrest, anaphylaxis and as a vasopressor and inotrope in shock.", match: /(?<!nor)epinephrine|\bepi\b/i },
+	{ name: "Dobutamine", kind: "an inotrope", use: "strengthens the heart's contraction when cardiac output is low, e.g. cardiogenic shock.", match: /dobutamine/i },
+	{ name: "Heparin", kind: "an anticoagulant", use: "treats and prevents blood clots; an infusion is adjusted to blood tests (aPTT or anti-Xa).", match: /heparin/i },
+	{ name: "Insulin", kind: "a hormone", use: "lowers blood glucose, by infusion in DKA or critical illness, or on a sliding scale.", match: /insulin/i },
+	{ name: "Propofol", kind: "a sedative-hypnotic", use: "sedates ventilated patients; it can lower blood pressure, and triglycerides are watched on long infusions.", match: /propofol|diprivan/i },
+	{ name: "Fentanyl", kind: "an opioid analgesic", use: "treats pain and helps sedation in ventilated patients.", match: /fentanyl/i, family: opioids, familyName: "opioids" },
+	{ name: "Morphine", kind: "an opioid analgesic", use: "treats moderate to severe pain.", match: /morphine/i, family: opioids, familyName: "opioids" },
+	{ name: "Codeine", kind: "an opioid analgesic and cough suppressant", use: "treats mild to moderate pain.", match: /codeine/i, family: opioids, familyName: "opioids" },
+	{ name: "Pantoprazole", kind: "a proton pump inhibitor", use: "reduces stomach acid: stress-ulcer prophylaxis and GI bleeding.", match: /pantoprazole|protonix/i },
+	{ name: "Amiodarone", kind: "an antiarrhythmic", use: "treats atrial fibrillation and ventricular arrhythmias.", match: /amiodarone/i },
+	{ name: "Acetaminophen", kind: "an analgesic and antipyretic", use: "treats pain and fever.", match: /acetaminophen|paracetamol|tylenol/i },
+];
+
+/** The drug a question looks up, when it names no patient. */
+const drugLookedUp = (question: string) =>
+	namedPatients(question).length ? undefined : drugReference.find((drug) => drug.match.test(question));
+
+/** A drug's reference summary, then who's on it (or a drug of its class) and who's allergic, across `scope`. */
+function drugLookup(drug: DrugReference, scope: Patient[]): AskInterceptAnswer {
+	const family = drug.family ?? drug.match;
+	const meds = (patient: Patient) => [
+		...(patient.record?.medications?.continuous ?? []).map((item) => ({ drug: item.drug, detail: item.pumpRate ?? item.orderedRate })),
+		...(patient.record?.medications?.scheduled ?? []).map((item) => ({ drug: item.drug, detail: `${item.dose} ${item.route} ${item.frequency}` })),
+		...(patient.record?.medications?.prn ?? []).map((item) => ({ drug: item.drug, detail: `${item.dose} ${item.route} as needed` })),
+	];
+	const onIt = scope.flatMap((patient) =>
+		meds(patient)
+			.filter((item) => family.test(item.drug))
+			.map((item) => ({ patient, line: `${patientName(patient)}: ${item.drug}${item.detail ? `, ${item.detail}` : ""}` })),
+	);
+	const allergic = scope.flatMap((patient) =>
+		(patient.record?.allergies ?? [])
+			.filter((substance) => family.test(substance) || drug.match.test(substance))
+			.map((substance) => {
+				const detail = patient.record?.chart?.allergies.find((allergy) => allergy.substance === substance);
+				const reaction = detail?.reaction ? ` (${detail.reaction}${detail.severity ? `, ${detail.severity}` : ""})` : "";
+				const alsoOn = onIt.some((item) => item.patient === patient) ? ", and is on one" : "";
+				return `${patientName(patient)}: ${substance} allergy${reaction}${alsoOn}`;
+			}),
+	);
+	const what = drug.familyName && drug.family ? `${drug.name} or another of the ${drug.familyName}` : drug.name;
+	return {
+		text: [
+			`**${drug.name}** is ${drug.kind}. It ${drug.use}`,
+			onIt.length ? `**On ${what} now:**\n${list(onIt.map((item) => item.line))}` : `No patient in your census is on ${what}.`,
+			allergic.length ? `**Allergic:**\n${list(allergic)}` : `No patient in your census has an allergy recorded against it.`,
+			"Reference information to find patients and context, not a recommendation; the prescriber decides.",
+		].join("\n"),
+		sources: ["Drug reference", "MAR", "Chart"],
+	};
+}
+
 const outOfScope: AskInterceptAnswer = {
 	text: "I can't recommend a treatment or make a diagnosis. I can bring up the data behind the decision, like a trend, the latest results or the sepsis criteria.",
 };
 
-const sampleAskIntercept: AskInterceptResponder = (input, context: AskInterceptContext) => {
+/** Builds the answer from `patients` (set by `answerWith`). */
+const answer: AskInterceptResponder = (input, context: AskInterceptContext) => {
 	// A slash command: "/handoff Miller", or "/labs" for the patient on screen.
 	const command = /^\/(\w+)\s*(.*)$/.exec(input.trim());
 	if (command) {
@@ -950,10 +1195,13 @@ const sampleAskIntercept: AskInterceptResponder = (input, context: AskInterceptC
 		if (!target && name !== "changes") {
 			return { text: `Which patient? Add a name after the command, like **/${name} Miller**, or open the patient first.` };
 		}
-		return sampleAskIntercept(`${commandQuestions[name]} ${rest}`.trim(), target ? { ...context, patientName: fullName(target) } : context);
+		return answer(`${commandQuestions[name]} ${rest}`.trim(), target ? { ...context, patientName: fullName(target) } : context);
 	}
 	const question = input;
 	if (asksForAdvice.test(question)) return outOfScope;
+	if (isRulesQuestion(question)) return rulesFor(question);
+	const lookedUp = drugLookedUp(question);
+	if (lookedUp) return drugLookup(lookedUp, censusScope(question).scope);
 	const named = namedPatients(question);
 	const onScreen = context.patientName ? patients.filter((patient) => fullName(patient) === context.patientName) : [];
 	const subjects = named.length ? named : /\b(everyone|all patients|census|unit|my patients|which patients|who)\b/i.test(question) ? [] : onScreen;
@@ -961,6 +1209,11 @@ const sampleAskIntercept: AskInterceptResponder = (input, context: AskInterceptC
 
 	if (subjects.length) {
 		const answers = subjects.slice(0, 3).map((patient) => answerForPatient(patient, topic ?? "summary", question));
+		// A summary opens with the patient's full name (Nov 1, 2026, user's call), so "/summarize William" says which
+		// William; answers about several patients already open each with it.
+		if (answers.length === 1 && (topic ?? "summary") === "summary") {
+			return { ...answers[0], text: `${patientName(subjects[0])}\n${answers[0].text}` };
+		}
 		if (answers.length === 1) return answers[0];
 		return {
 			text: subjects
@@ -975,4 +1228,92 @@ const sampleAskIntercept: AskInterceptResponder = (input, context: AskInterceptC
 	return answerForCensus(topic, question, scope, label);
 };
 
-export { sampleAskIntercept };
+/**
+ * Answers from `data`, then puts the module's data back. An answer to a question about alerts (the "alerts" topic:
+ * alert, alarm, concern, flag) turns on the chat's alert updates; any other question turns them off.
+ */
+function answerWith(data: Patient[], input: string, context: AskInterceptContext): AskInterceptAnswer {
+	const previous = patients;
+	patients = data;
+	try {
+		// Any question about alerts turns the updates on, how they work included (Oct 31, 2026, user's call).
+		const aboutAlerts = isRulesQuestion(input)
+			? /alert|alarm/i.test(input)
+			: topicOf(input, Boolean(context.patientName)) === "alerts";
+		return { ...answer(input, context), followAlerts: aboutAlerts };
+	} finally {
+		patients = previous;
+	}
+}
+
+/** Answers from the sample as it starts: its alerts and monitor values. */
+const sampleAskIntercept: AskInterceptResponder = (input, context) => answerWith(startingPatients, input, context);
+
+/**
+ * What changed between two sets of the feed's alerts, one line each: a new alert, a severity change, a status change
+ * (acknowledged, escalated), a resolution. The clinician's own queue actions aren't in the feed, so they aren't repeated
+ * back to them.
+ */
+function alertChanges(before: TriageAlert[], after: TriageAlert[]) {
+	const name = (patientId: string) => {
+		const census = samplePatients.find((patient) => patient.id === patientId);
+		return census ? `${census.lastName}, ${census.firstName}` : "A patient";
+	};
+	const open = (alerts: TriageAlert[]) => new Map(alerts.filter(isOpenAlert).map((alert) => [alert.id, alert]));
+	const was = open(before);
+	const now = open(after);
+	const lines: string[] = [];
+	const statusWords = { active: "active again", acknowledged: "acknowledged", escalated: "escalated" } as const;
+	for (const [id, alert] of now) {
+		const previous = was.get(id);
+		if (!previous) lines.push(`**${severityWords[alert.severity]}** alert for **${name(alert.patientId)}**: ${alert.title}.`);
+		else if (previous.severity !== alert.severity)
+			lines.push(
+				`**${name(alert.patientId)}**: ${alert.title}, ${severityWords[previous.severity].toLowerCase()} to **${severityWords[alert.severity].toLowerCase()}**.`,
+			);
+		// A status the feed changed (someone else acknowledged or escalated it; Oct 31, 2026, user's call).
+		else if ((previous.status ?? "active") !== (alert.status ?? "active")) {
+			const status = (alert.status ?? "active") as keyof typeof statusWords;
+			lines.push(`**${name(alert.patientId)}**: ${alert.title}, **${statusWords[status] ?? status}**.`);
+		}
+	}
+	for (const [id, alert] of was) if (!now.has(id)) lines.push(`**${name(alert.patientId)}**: ${alert.title}, resolved.`);
+	return lines;
+}
+
+/**
+ * Ask Intercept Live answering from what the page shows now (Oct 31, 2026, user's call: its answers and the cards must
+ * match): `alerts` (the live feed's) with the clinician's queue actions applied, and the monitors' live `patients`.
+ * Returns the responder, the `onAlertAction` to give the page (which records those actions here too) and a `notice`
+ * for the chat whenever the feed changes a patient's alert (user's call: the chat tells the user). Story-only.
+ */
+function useLiveAskIntercept(
+	alerts: TriageAlert[],
+	monitored: { id: string; vitals?: MonitorVitals }[],
+	onAlertAction?: (alertId: string, action: TriageAlertAction) => void,
+) {
+	const { alerts: current, handleAlertAction } = useAddressedAlerts(alerts, onAlertAction);
+	const vitals = Object.fromEntries(monitored.map((patient) => [patient.id, patient.vitals]));
+	const askIntercept: AskInterceptResponder = (input, context) => answerWith(joinPatients(current, vitals), input, context);
+
+	// Each change in the feed's alerts becomes one notice; the first set (the page opening) doesn't.
+	const [notice, setNotice] = React.useState<AskInterceptNotice>();
+	const previous = React.useRef(alerts);
+	const count = React.useRef(0);
+	React.useEffect(() => {
+		if (previous.current === alerts) return;
+		const lines = alertChanges(previous.current, alerts);
+		previous.current = alerts;
+		if (!lines.length) return;
+		count.current += 1;
+		setNotice({
+			id: String(count.current),
+			text: lines.length === 1 ? `Alert update: ${lines[0]}` : `Alert update:\n${list(lines)}`,
+			sources: ["Alerts"],
+		});
+	}, [alerts]);
+
+	return { askIntercept, onAlertAction: handleAlertAction, notice };
+}
+
+export { sampleAskIntercept, useLiveAskIntercept };

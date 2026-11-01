@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
@@ -27,6 +27,8 @@ const meta = {
 		return <Census {...args} monitoringPatients={useLivePatients(args.monitoringPatients ?? [])} />;
 	},
 	args: {
+		// Opened from the Census (the app opens on Monitoring).
+		defaultPage: "Census",
 		hospitals: sampleHospitals,
 		patients: samplePatients,
 		monitoringPatients: sampleMonitoringPatients,
@@ -82,7 +84,9 @@ export const BackToCensus: Story = {
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		const breadcrumb = within(canvas.getByRole("navigation", { name: "Breadcrumb" }));
 		await userEvent.click(breadcrumb.getByRole("button", { name: "Census" }));
-		await expect(await canvas.findByRole("heading", { level: 1, name: /15 patients/ })).toBeVisible();
+		// The Census glides back in.
+		const title = await canvas.findByRole("heading", { level: 1, name: /18 patients/ });
+		await waitFor(() => expect(title).toBeVisible());
 	},
 };
 

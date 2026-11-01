@@ -1,11 +1,14 @@
+import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 
-// Synthetic data (PRD MON-080): the Census's 15 patients on the monitoring panel, with live bedside values, and the
+// Synthetic data (PRD MON-080): the Census's 18 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
 // match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller and Johnson
 // (with alerts), Walker, Moore, Clark and Hayes (without one, so "Outside limits" finds them first). Carter has no SpO₂
 // and Whitfield no RR (Data gap). Hayes (Chadron, Med-Surg) is Scenario 1 at 01:40 (Demo Use Cases): heart failure getting
 // worse, RR 26 and SpO₂ 89% on 4 L; her early-warning alert is the live feed's first step (`sample-live-scenario.ts`).
+// Erickson (Chadron) is the floor's other patient, Ortega and Nakamura (Mercy West) fill its count; all three inside the
+// limits, with no alert.
 //
 // Acuity is the NEWS2-style current-state score (DU-14, scale 1), worked out from each patient's charted vitals in
 // `sample-vitals.ts`: ventilated patients are sedated (not Alert), Anderson is newly confused, and oxygen follows each
@@ -14,6 +17,10 @@ import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitor
 
 const news2 = "NEWS2";
 const change = "Change in last 24 h";
+// When the clinician last opened a patient (the Recently viewed sort): Thompson, Davis, Miller and Clark. Unread family
+// messages (the card's message icon, the Family messages sort): Davis 2, Bennett and Moore 1. Recently resolved comes
+// from the resolved alerts at the end.
+const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
 
 const monitoringPatients: MonitoringPatient[] = [
 	{
@@ -21,6 +28,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		hospitalId: "hpg",
 		lastName: "Miller",
 		firstName: "Sarah",
+		photo: samplePatientPhotos.p1,
 		mrn: "01033876",
 		sex: "F",
 		age: 39,
@@ -30,6 +38,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		acuity: { label: news2, score: 17, level: "high" },
 		trajectory: { label: change, value: "+7", trend: "up" },
 		scoreChange4h: 0,
+		lastViewedAt: hoursAgo(2),
 		tags: [{ label: "Ventilated" }, { label: "On pressors" }],
 		vitals: { hr: 128, spo2: 89, systolic: 82, diastolic: 46, map: 58, rr: 32 },
 	},
@@ -39,6 +48,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mine: true,
 		lastName: "Johnson",
 		firstName: "Daniel",
+		photo: samplePatientPhotos.p2,
 		mrn: "00482917",
 		sex: "M",
 		age: 58,
@@ -65,6 +75,8 @@ const monitoringPatients: MonitoringPatient[] = [
 		acuity: { label: news2, score: 10, level: "high" },
 		trajectory: { label: change, value: "−2", trend: "down" },
 		scoreChange4h: 0,
+		unreadMessages: 2,
+		lastViewedAt: hoursAgo(0.7),
 		tags: [{ label: "Ventilated" }, { label: "On pressors" }],
 		vitals: { hr: 94, spo2: 93, systolic: 98, diastolic: 53, map: 68, rr: 18 },
 	},
@@ -83,6 +95,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		acuity: { label: news2, score: 5, level: "medium" },
 		trajectory: { label: change, value: "+1", trend: "up" },
 		scoreChange4h: 0,
+		lastViewedAt: hoursAgo(0.2),
 		tags: [{ label: "On pressors" }, { label: "DNR" }],
 		vitals: { hr: 88, spo2: 95, systolic: 96, diastolic: 51, map: 66, rr: 18 },
 	},
@@ -91,6 +104,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		hospitalId: "hpg",
 		lastName: "Carter",
 		firstName: "Emily",
+		photo: samplePatientPhotos.p5,
 		mrn: "00956113",
 		sex: "F",
 		age: 29,
@@ -185,6 +199,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		acuity: { label: news2, score: 7, level: "high" },
 		trajectory: { label: change, value: "+1", trend: "up" },
 		scoreChange4h: 0,
+		unreadMessages: 1,
 		tags: [{ label: "On pressors" }, { label: "Dialysis" }],
 		vitals: { hr: 98, spo2: 96, systolic: 88, diastolic: 48, map: 61, rr: 19 },
 	},
@@ -202,6 +217,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "0" },
 		scoreChange4h: 0,
+		lastViewedAt: hoursAgo(5),
 		tags: [{ label: "Droplet isolation" }],
 		vitals: { hr: 92, spo2: 98, systolic: 162, diastolic: 96, map: 118, rr: 20 },
 	},
@@ -253,6 +269,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "−6", trend: "down" },
 		scoreChange4h: -6,
+		unreadMessages: 1,
 		vitals: { hr: 88, spo2: 97, systolic: 110, diastolic: 61, map: 77, rr: 17 },
 	},
 	{
@@ -273,6 +290,58 @@ const monitoringPatients: MonitoringPatient[] = [
 		tags: [{ label: "Fall risk" }],
 		vitals: { hr: 112, spo2: 89, systolic: 148, diastolic: 86, map: 107, rr: 26 },
 	},
+	{
+		id: "p16",
+		hospitalId: "chadron",
+		lastName: "Erickson",
+		firstName: "Walter",
+		mrn: "00731942",
+		sex: "M",
+		age: 79,
+		hospital: "Chadron Community Hospital",
+		unit: "Med-Surg",
+		bed: "Bed 6",
+		acuity: { label: news2, score: 2, level: "low" },
+		trajectory: { label: change, value: "−3", trend: "down" },
+		scoreChange4h: 0,
+		tags: [{ label: "DNR" }, { label: "Fall risk" }],
+		vitals: { hr: 84, spo2: 96, systolic: 126, diastolic: 72, map: 90, rr: 18 },
+	},
+	{
+		id: "p17",
+		hospitalId: "mwh",
+		lastName: "Ortega",
+		firstName: "Lucía",
+		photo: samplePatientPhotos.p17,
+		mrn: "00658213",
+		sex: "F",
+		age: 67,
+		hospital: "Mercy West Hospital",
+		unit: "SICU",
+		bed: "Bed 10",
+		acuity: { label: news2, score: 6, level: "medium" },
+		trajectory: { label: change, value: "+2", trend: "up" },
+		scoreChange4h: 1,
+		vitals: { hr: 104, spo2: 95, systolic: 112, diastolic: 64, map: 80, rr: 21 },
+	},
+	{
+		id: "p18",
+		hospitalId: "mwh",
+		lastName: "Nakamura",
+		firstName: "Kenji",
+		photo: samplePatientPhotos.p18,
+		mrn: "00914370",
+		sex: "M",
+		age: 54,
+		hospital: "Mercy West Hospital",
+		unit: "MICU",
+		bed: "Bed 5",
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "−4", trend: "down" },
+		scoreChange4h: 0,
+		tags: [{ label: "Insulin infusion" }],
+		vitals: { hr: 92, spo2: 98, systolic: 128, diastolic: 74, map: 92, rr: 16 },
+	},
 ];
 
 // The last hour of each primary numeric, one point a minute, ending at the current value: a rising acuity drifts in
@@ -287,11 +356,19 @@ function lastHour(end: number | undefined, worseBy: number, wobble: number, seed
 	});
 }
 
+// Each bed's monitor alarm priorities, as its device profile would set them (illustrative, pending the client's CARESCAPE
+// configuration, SQ-13): SpO₂ high (red, fast flash), HR and systolic medium (yellow, slow flash), RR low (cyan, steady).
+// So Miller, Johnson and Hayes flash red for SpO₂, Miller's RR is cyan, Clark and Moore flash yellow for ABP. Walker's HR
+// alarm was acknowledged at the bedside, so it keeps its ▲ without the color.
+const sampleAlarmPriorities: MonitoringPatient["alarmPriorities"] = { hr: "medium", spo2: "high", systolic: "medium", rr: "low" };
+
 const sampleMonitoringPatients: MonitoringPatient[] = monitoringPatients.map((patient, index) => {
 	const { hr, spo2, systolic, rr } = patient.vitals ?? {};
 	const direction = patient.trajectory?.trend === "up" ? 1 : patient.trajectory?.trend === "down" ? -0.5 : 0;
 	return {
 		...patient,
+		alarmPriorities: sampleAlarmPriorities,
+		acknowledgedAlarms: patient.lastName === "Walker" ? ["hr"] : [],
 		trends: {
 			hr: lastHour(hr, 12 * direction, 2, index),
 			// SpO₂ tops out at 100%.
@@ -305,9 +382,17 @@ const sampleMonitoringPatients: MonitoringPatient[] = monitoringPatients.map((pa
 // Times are relative to when the sample loads, so ages ("6 min") and Overdue read the same in every session.
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
-// Three alerts on three patients, as the Census's pills (Oct 29, 2026, user request: 1 Critical and 2 Low to start):
-// Miller's Sepsis candidate (Critical), Johnson's SpO₂ and Anderson's bed exit (Low). The live feed adds and changes the
-// rest (`sample-live-scenario.ts`).
+// Three open alerts on three patients, as the Census's pills (Oct 29, 2026, user request: 1 Critical and 2 Low to start):
+// Miller's Sepsis candidate (Critical), Johnson's SpO₂ and Anderson's bed exit (Low). Their times run against their
+// severity (Anderson's Low is the newest, Miller's Critical the oldest; Oct 31, 2026), so the Alerts sort (newest
+// first) and the Active alerts chip (most severe first) visibly differ. The live feed adds and changes the
+// rest (`sample-live-scenario.ts`). Then alerts resolved earlier in the last 24 h (Oct 31, 2026, user request), so cards
+// show the Resolved bar: Wilson 24 min ago, Bennett (3 in 24 h) 1.5 h ago, Harris 6 h ago, Taylor 20 h ago.
+const resolved = (minutes: number, reason: string) => ({
+	status: "resolved" as const,
+	addressed: { at: minutesAgo(minutes), reason },
+});
+
 const sampleMonitoringAlerts: TriageAlert[] = [
 	{
 		id: "a1",
@@ -315,7 +400,7 @@ const sampleMonitoringAlerts: TriageAlert[] = [
 		severity: "critical",
 		title: "Sepsis candidate",
 		source: { kind: "ai", name: "Sepsis Sniffer" },
-		firedAt: minutesAgo(2),
+		firedAt: minutesAgo(16),
 		respondBy: minutesAgo(-3),
 		recommendation: "Review against the sepsis bundle.",
 		evidence: ["Lactate 4.1 mmol/L, up from 2.2 at 08:10", "MAP 58 mmHg on norepinephrine 0.22", "Temp 38.9 °C · WBC 17.2"],
@@ -335,8 +420,62 @@ const sampleMonitoringAlerts: TriageAlert[] = [
 		severity: "low",
 		title: "Bed exit alarm",
 		source: { kind: "device", name: "Bed sensor" },
-		firedAt: minutesAgo(41),
+		firedAt: minutesAgo(1),
 		respondBy: minutesAgo(-19),
+	},
+	{
+		id: "r1",
+		patientId: "p8",
+		severity: "high",
+		title: "Heart rate above 120 for 10 min",
+		source: { kind: "rule", name: "Vitals" },
+		firedAt: minutesAgo(52),
+		...resolved(24, "Treated"),
+	},
+	{
+		id: "r2",
+		patientId: "p14",
+		severity: "medium",
+		title: "Out of bed without assistance",
+		source: { kind: "device", name: "Bed sensor" },
+		firedAt: minutesAgo(250),
+		...resolved(238, "Treated"),
+	},
+	{
+		id: "r3",
+		patientId: "p14",
+		severity: "low",
+		title: "SpO₂ probe off",
+		source: { kind: "device", name: "Pulse oximeter" },
+		firedAt: minutesAgo(152),
+		...resolved(146, "Treated"),
+	},
+	{
+		id: "r4",
+		patientId: "p14",
+		severity: "medium",
+		title: "MAP below 65 for 5 min",
+		source: { kind: "rule", name: "Hemodynamics" },
+		firedAt: minutesAgo(110),
+		...resolved(90, "Treated"),
+	},
+	{
+		id: "r5",
+		patientId: "p9",
+		severity: "low",
+		title: "Vitals check overdue",
+		source: { kind: "rule", name: "Nursing" },
+		firedAt: minutesAgo(420),
+		...resolved(360, "Treated"),
+	},
+	{
+		id: "r6",
+		patientId: "p7",
+		severity: "high",
+		title: "Respiratory rate above 28 for 10 min",
+		source: { kind: "rule", name: "Vitals" },
+		firedAt: minutesAgo(1260),
+		...resolved(1200, "Expected for this patient"),
 	},
 ];
 

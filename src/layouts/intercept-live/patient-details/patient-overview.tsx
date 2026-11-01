@@ -238,6 +238,8 @@ function PatientOverview({
 								aria-label={`Bedside monitor, ${name}`}
 								vitals={monitor.vitals}
 								limits={monitor.limits}
+								alarmPriorities={monitor.alarmPriorities}
+								acknowledgedAlarms={monitor.acknowledgedAlarms}
 								trends={monitor.trends}
 								className='h-80'
 							/>

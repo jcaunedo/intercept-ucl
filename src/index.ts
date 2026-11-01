@@ -63,6 +63,8 @@ export {
 	patientCardAcuityLevels,
 	patientCardAlertVariants,
 	patientCardMetricVariants,
+	scoreTrendClassName,
+	scoreTrendVariant,
 	type PatientCardAlertProps,
 	type PatientCardAcuityLevel,
 	type PatientCardAlertStatus,
@@ -77,9 +79,11 @@ export {
 	PatientMonitor,
 	PatientMonitoringCard,
 	patientMonitoringCardVariants,
+	type MonitorAlarmPriorities,
 	type MonitorLimits,
 	type MonitorTrends,
 	type MonitorVitals,
+	type PatientMonitoringCardAction,
 	type PatientMonitoringCardProps,
 	type PatientMonitoringCardSize,
 	type PatientMonitorProps,
@@ -136,6 +140,16 @@ export {
 	type FieldLegendProps,
 	type FieldProps,
 } from "@/components/forms/field";
+export {
+	FilterBar,
+	FilterBarChip,
+	FilterBarControls,
+	FilterBarFilters,
+	type FilterBarChipProps,
+	type FilterBarControlsProps,
+	type FilterBarFiltersProps,
+	type FilterBarProps,
+} from "@/components/forms/filter-bar";
 export { Input, inputVariants, type InputProps } from "@/components/forms/input";
 export { Label, type LabelProps } from "@/components/forms/label";
 export {
@@ -144,6 +158,7 @@ export {
 	type RadioGroupItemProps,
 	type RadioGroupProps,
 } from "@/components/forms/radio-group";
+export { SearchInput, searchInputVariants, type SearchInputProps } from "@/components/forms/search-input";
 export {
 	Select,
 	SelectContent,
@@ -176,6 +191,7 @@ export { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-mo
 export { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
 // Monitor view: condensed and full monitor (PatientMonitoringCard), custom in archielabs.ds.
 export { MonitorViewExpandedIcon } from "@/components/icons/monitor-view-expanded-icon";
+export { MonitorViewMinimalIcon } from "@/components/icons/monitor-view-minimal-icon";
 export { MonitorViewMinimizedIcon } from "@/components/icons/monitor-view-minimized-icon";
 export { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 export { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
@@ -253,6 +269,19 @@ export {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/overlays/dropdown-menu";
+export {
+	Sheet,
+	SheetClose,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+	sheetContentVariants,
+	type SheetContentProps,
+	type SheetSide,
+} from "@/components/overlays/sheet";
 export {
 	SidebarTooltip,
 	type SidebarTooltipProps,

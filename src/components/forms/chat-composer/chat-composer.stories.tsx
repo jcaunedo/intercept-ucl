@@ -10,6 +10,9 @@ const commands: ChatCommand[] = [
 	{ name: "handoff", description: "Draft a handoff (I-PASS)" },
 ];
 
+// As Ask Intercept Live shows them (Oct 31, 2026): names only.
+const namesOnly: ChatCommand[] = commands.map(({ name }) => ({ name }));
+
 const meta = {
 	title: "Forms/Chat Composer",
 	component: ChatComposer,
@@ -18,7 +21,7 @@ const meta = {
 	},
 	tags: ["autodocs"],
 	args: {
-		placeholder: "How can I help?",
+		placeholder: "Ask a question or search",
 		label: "Ask Intercept Live",
 		onSubmit: fn(),
 		onAttach: fn(),
@@ -80,6 +83,68 @@ export const Commands: Story = {
 		await expect(field).toHaveValue("/");
 		await userEvent.keyboard("{Escape}");
 		await expect(canvas.queryByRole("listbox")).toBeNull();
+	},
+};
+
+/** Commands without descriptions, as Ask Intercept Live lists them: the menu shows the names alone. */
+export const CommandNamesOnly: Story = {
+	args: { commands: namesOnly },
+	parameters: { layout: "padded" },
+	render: (args) => (
+		<div className='flex h-80 items-end justify-center'>
+			<ChatComposer {...args} />
+		</div>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.type(canvas.getByRole("combobox", { name: "Ask Intercept Live" }), "/");
+		const options = canvas.getAllByRole("option");
+		await expect(options.map((option) => option.textContent)).toEqual(["/summarize", "/changes", "/labs", "/handoff"]);
+	},
+};
+
+/** A command that acts on its own (`onSelect`, e.g. /clear): picking it runs it at once and leaves the field empty. */
+export const CommandThatActs: Story = {
+	args: { commands: [...namesOnly, { name: "clear", onSelect: fn() }] },
+	parameters: { layout: "padded" },
+	render: (args) => (
+		<div className='flex h-80 items-end justify-center'>
+			<ChatComposer {...args} />
+		</div>
+	),
+	play: async ({ args, canvasElement }) => {
+		const canvas = within(canvasElement);
+		const field = canvas.getByRole("combobox", { name: "Ask Intercept Live" });
+		await userEvent.type(field, "/cl");
+		await userEvent.keyboard("{Enter}");
+		await expect(args.commands?.at(-1)?.onSelect).toHaveBeenCalledOnce();
+		await expect(field).toHaveValue("");
+		await expect(args.onSubmit).not.toHaveBeenCalled();
+	},
+};
+
+/**
+ * A command's `hint` guides what to write next: once the command is picked ("/labs "), the hint shows after it in the
+ * field, muted, and the field is described by it. It's gone as soon as something follows the command.
+ */
+export const CommandHint: Story = {
+	args: { commands: namesOnly.map((command) => ({ ...command, hint: "Add a patient's name" })) },
+	parameters: { layout: "padded" },
+	render: (args) => (
+		<div className='flex h-80 items-end justify-center'>
+			<ChatComposer {...args} />
+		</div>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const field = canvas.getByRole("combobox", { name: "Ask Intercept Live" });
+		await userEvent.type(field, "/la");
+		await userEvent.keyboard("{Enter}");
+		await expect(field).toHaveValue("/labs ");
+		await expect(field).toHaveAccessibleDescription("Add a patient's name");
+		await userEvent.type(field, "M");
+		await expect(field).not.toHaveAccessibleDescription();
+		await expect(canvas.queryByText("Add a patient's name")).not.toBeInTheDocument();
 	},
 };
 

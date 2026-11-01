@@ -2,7 +2,21 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { Counter } from "./counter";
 
-const variants = ["default", "neutral", "secondary", "outline", "critical", "high", "medium", "low", "resolved"] as const;
+const variants = [
+	"default",
+	"neutral",
+	"secondary",
+	"outline",
+	"critical",
+	"high",
+	"medium",
+	"low",
+	"resolved",
+	"critical-muted",
+	"high-muted",
+	"medium-muted",
+	"low-muted",
+] as const;
 const sizes = ["xxs", "xs"] as const;
 
 const meta = {
@@ -36,6 +50,20 @@ export const Severities: Story = {
 	render: (args) => (
 		<div className='flex items-center gap-2'>
 			{(["critical", "high", "medium", "low", "resolved"] as const).map((variant) => (
+				<Counter key={variant} {...args} variant={variant} />
+			))}
+		</div>
+	),
+};
+
+/**
+ * The severities at rest: a pale fill with a dark number in the severity's hue (the `severity-*-muted` and
+ * `-prominent` tokens). An inactive hospital tab's alert count uses these; the active tab's turns solid.
+ */
+export const MutedSeverities: Story = {
+	render: (args) => (
+		<div className='flex items-center gap-2'>
+			{(["critical-muted", "high-muted", "medium-muted", "low-muted"] as const).map((variant) => (
 				<Counter key={variant} {...args} variant={variant} />
 			))}
 		</div>

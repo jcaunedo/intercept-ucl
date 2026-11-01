@@ -597,6 +597,63 @@ const chartSpecs: Record<string, ChartSpec> = {
 			report("Chest X-ray, portable", 19, "Pulmonary vascular congestion with small bilateral pleural effusions.", "Enlarged heart. Upper-lobe vascular redistribution and interstitial edema. Small effusions on both sides. No consolidation.", chadron),
 		],
 	},
+	// Erickson: pneumonia on ceftriaxone and azithromycin; sputum grew pneumococcus, sensitive to both.
+	p16: {
+		onsets: ["2016", "2012"],
+		medical: ["COPD, mild · no home oxygen", "Benign prostatic hyperplasia"],
+		surgical: ["Left hip replacement · 2017"],
+		social: ["Former smoker, quit 2005", "A beer on weekends", "Lives with his wife on their ranch", "Retired rancher"],
+		home: [
+			["Tiotropium", "18 mcg inhaled daily", "continued"],
+			["Tamsulosin", "0.4 mg by mouth at bedtime", "continued"],
+		],
+		extras: [["Hemoglobin", "13.2"], ["Platelets", "212"], ["Glucose", "112"], ["Bicarbonate", "26"]],
+		cultures: [
+			culture("Sputum culture", 64, "final", "Moderate growth.", {
+				organism: "Streptococcus pneumoniae",
+				susceptibilities: [
+					{ antibiotic: "Ceftriaxone", result: "S" },
+					{ antibiotic: "Azithromycin", result: "S" },
+					{ antibiotic: "Penicillin", result: "S" },
+				],
+				updatedHours: 20,
+			}),
+			culture("Blood cultures ×2 (admission)", 66, "preliminary", "No growth at 2 days.", { updatedHours: 6 }),
+		],
+		imaging: [report("Chest X-ray, 2 views", 66, "Right lower lobe pneumonia.", "Consolidation in the right lower lobe with air bronchograms. No effusion. Heart size normal.", chadron)],
+	},
+	// Ortega: adhesions from a hysterectomy 12 years ago; 20 cm of small bowel resected.
+	p17: {
+		onsets: ["2010", "2018"],
+		medical: ["Hypertension", "Osteoarthritis, both knees"],
+		surgical: ["Small bowel resection · post-op day 1", "Abdominal hysterectomy · 2013"],
+		social: ["Never smoker", "No alcohol", "Married, two adult children nearby", "Retired school cook"],
+		home: [
+			["Amlodipine", "5 mg by mouth daily", "held"],
+			["Acetaminophen", "500 mg by mouth as needed", "changed"],
+		],
+		extras: [["Sodium", "137"], ["Bicarbonate", "23"], ["Glucose", "132"], ["Platelets", "231"], ["Albumin", "3.1"]],
+		cultures: [],
+		imaging: [
+			report("CT abdomen and pelvis, with contrast", 28, "Small bowel obstruction with a transition point in the right lower quadrant, likely adhesive.", "Dilated small bowel loops up to 4 cm with a transition point in the right lower quadrant. Collapsed distal bowel. No free air. Small amount of free fluid.", mwh),
+			report("Chest X-ray, portable", 14, "Low lung volumes with basilar atelectasis.", "Low lung volumes. Linear atelectasis at both bases. No consolidation or effusion.", mwh),
+		],
+	},
+	// Nakamura: type 1 diabetes since childhood; ran out of insulin for three days.
+	p18: {
+		onsets: ["1989", "2015"],
+		medical: ["Type 1 diabetes · A1c 9.8%, insulin pump until last year", "Hypothyroidism"],
+		surgical: [],
+		social: ["Never smoker", "Alcohol socially", "Lives alone", "Line cook"],
+		home: [
+			["Insulin glargine", "22 units at bedtime", "held"],
+			["Insulin lispro", "Carb ratio 1:10 with meals", "held"],
+			["Levothyroxine", "88 mcg by mouth daily", "continued"],
+		],
+		extras: [["Sodium", "138", { previous: ["131", 1260] }], ["Phosphate", "2.4", { previous: ["4.8", 1260] }], ["Hemoglobin A1c", "9.8", { minutes: 1250 }], ["WBC", "11.2", { previous: ["16.4", 1260] }]],
+		cultures: [],
+		imaging: [report("Chest X-ray, portable", 21, "No acute findings.", "Clear lungs. Normal heart size. No effusion.", mwh)],
+	},
 };
 
 const sampleChartByPatient: Record<string, PatientChart> = Object.fromEntries(

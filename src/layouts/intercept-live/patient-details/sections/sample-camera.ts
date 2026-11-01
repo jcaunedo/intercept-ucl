@@ -174,6 +174,14 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 	]),
 	// Hayes: no one from Intercept has looked in yet; Dr. Weller is on call from home.
 	p15: camera("p15", "chadron", "Bed 4", { "Kayla Brandt": "At the bedside", "Tom Weller": "On call from home" }, []),
+	// Erickson: asleep; his nurse is with Hayes next door.
+	p16: camera("p16", "chadron", "Bed 6", { "Kayla Brandt": "With another patient", "Tom Weller": "On call from home" }, []),
+	p17: camera("p17", "mwh", "Bed 10", { "Hannah Cole": "At the bedside", "Marcus Lee": "Away · in the OR" }, [
+		["look-in", "James Tan", 180, 3],
+	]),
+	p18: camera("p18", "mwh", "Bed 5", { "Aisha Bello": "At the bedside", "Marcus Lee": "Viewing the chart" }, [
+		["look-in", "Joanna Smith", 240, 5],
+	]),
 };
 
 export { sampleCameraByPatient };

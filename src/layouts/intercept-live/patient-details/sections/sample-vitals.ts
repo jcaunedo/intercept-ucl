@@ -448,6 +448,51 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		temps: [36.7, 36.8, 36.6, 36.7, 36.8],
 		lastTemp: 40,
 	}),
+	// Erickson: pneumonia, day 3. Yesterday's fever (38.2 °C) and HR in the 90s made NEWS2 5; now 2, the oxygen alone.
+	p16: buildVitals({
+		seed: 16,
+		hr: [94, 84],
+		systolic: [118, 126],
+		diastolic: [68, 72],
+		spo2: [95, 96],
+		rr: [20, 18],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Kayla Brandt",
+		temps: [38.2, 38.0, 37.6, 37.4, 37.3, 37.2],
+		lastTemp: 110,
+	}),
+	// Ortega: post-op day 1, out of the OR 20 h ago. NEWS2 4 on arrival (SpO₂ 95%, oxygen, HR 96), 5 four hours ago as
+	// RR reached 21, 6 now with SpO₂ back to 95%.
+	p17: buildVitals({
+		seed: 17,
+		hours: 20,
+		hr: [96, 104],
+		systolic: [118, 112],
+		diastolic: [66, 64],
+		spo2: [95, 95],
+		rr: [18, 21],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Hannah Cole",
+		temps: [37.2, 37.5, 37.7, 37.8, 37.9],
+		lastTemp: 45,
+	}),
+	// Nakamura: DKA, admitted 21 h ago breathing deep and fast (RR 24) with HR 112 and SBP 104, NEWS2 5; now 1.
+	p18: buildVitals({
+		seed: 18,
+		hours: 21,
+		hr: [112, 92],
+		systolic: [104, 128],
+		diastolic: [60, 74],
+		spo2: [98, 98],
+		rr: [24, 16],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Aisha Bello",
+		temps: [36.4, 36.6, 36.8, 36.9, 36.9, 36.9],
+		lastTemp: 70,
+	}),
 };
 
 export { sampleVitalsByPatient };

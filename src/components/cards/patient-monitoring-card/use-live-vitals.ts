@@ -34,7 +34,7 @@ function nextOffsets(current: Offsets): Offsets {
 
 /**
  * Keeps a varied value on the same side of its alarm limits as the value it varies around, so the noise never sets or
- * clears an alarm (the ↑ / ↓ tags and "Outside limits" stay put); only a real change in the reading does.
+ * clears an alarm (the ▲ / ▼ marks and "Outside limits" stay put); only a real change in the reading does.
  */
 function sameSide(base: number, value: number, [low, high]: [number, number]) {
 	if (base > high) return Math.max(value, high + 1);

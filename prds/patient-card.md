@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 30, 2026
+Last updated: Nov 1, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -107,6 +107,13 @@ Includes:
 - Hospital and bed location
 - Highest-priority unresolved alert, when present
 - Selected physiological observations
+
+✅ **Decision (Oct 31, 2026, product):** the Census's cards show no alert: the Census is for managing patients, and Monitoring and the live feed show alerts. intercept.ds's card sets dropped the alert badge. The component keeps the alert slot for other pages.
+
+✅ **Decision (Oct 31, 2026, product):** the card shows the patient's avatar before the name: their photo, or their initials in a color of their own, the same avatar as on their Patient details header.
+
+ℹ️ Whether the avatar may show a photo, and where, is open: see PC-016.
+
 - Access to patient detail (the whole card is clickable, PC-100)
 
 ℹ️ The compact card has no freshness indicator: it always shows live data. When connectivity fails or data is significantly delayed, a connectivity alert appears in the alert slot with a refresh CTA (PC-128).
@@ -311,6 +318,65 @@ The card shows an initials avatar next to the name. It adds a human element and 
 
 **Display:** Conditional. Admission duration is not required in every compact card.
 
+### PC-016 — Patient avatar
+
+**Definition:** A visual cue to who the patient is, before their name: their photo from the EHR, or, without one, their initials in a color of their own.
+
+**Display:** Compact card (Census), the monitoring card (Monitoring; Nov 1, 2026), the Census's and Monitoring's tables (List; 32px, Nov 1, 2026) and the Patient details header, the same avatar in each (Oct 31, 2026, product). 44px on the card, 32px on the small card, 64px in the header.
+
+**Behavior:**
+
+- The photo comes from the EHR (e.g. Epic's patient photo). Intercept never captures, uploads or edits one.
+- Without a photo: the initials ("MS" for Miller, Sarah) on one of ten avatar colors, dealt across the clinician's patients so that patients in the same hospital never share a color, a repeated color goes to patients far apart, and similar colors (told apart by lightness too) never sit side by side (Nov 1, 2026), for telling patients apart at a glance. A patient keeps the same color everywhere.
+- The avatar never replaces the name and MRN, which always show beside it (PC-010, PC-011).
+- Decorative for screen readers: the name says who it is.
+
+**Prototype (Oct 31, 2026):** five sample patients have a photo (Miller, Johnson, Carter, Ortega, Nakamura; Johnson's, Carter's and Ortega's from intercept.ds's avatar set, Nakamura's an AI-generated portrait of a fictional person); the other 13 show initials. The prototype can't tell a shared display from a clinician's own screen.
+
+#### References: patient photos in clinical software (web research, Oct 31, 2026)
+
+| Source | What it says | Link |
+|---|---|---|
+| ONC SAFER Guide 6, Patient Identification (2024–25 update) | Recommends capturing a photo at registration and showing it in the EHR, as an extra visual check that the clinician is in the right patient's record. Also recommends barcode or similar checks at the point of care | [Guide](https://healthit.gov/wp-content/uploads/2025/01/Safer-Guide-6.-Patient-Identification-Final.pdf), [review (JAMIA Open)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12772641/) |
+| JAMA Network Open, 2020 (2.56 million orders, 71,851 patients) | Showing the patient's photo in the EHR banner was associated with fewer wrong-patient order errors (odds ratio 0.72). Errors still happened when clinicians didn't look at the photo, or didn't know what the patient looked like | [Study](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7658731/), [AHRQ summary](https://digital.ahrq.gov/program-overview/research-stories/displaying-patient-photos-medical-records-reduces-errors-improves) |
+| ECRI (2016) and an AHRQ-funded toolkit (Columbia, Johns Hopkins, ECRI) | Recommend photos in the record. The toolkit covers photo quality, sample policies, workflows, training and patient education. Patients rarely refuse: 0 of 172 registrations in one study | [AHRQ project](https://digital.ahrq.gov/ahrq-funded-projects/providing-evidence-and-developing-toolkit-accelerate-adoption-patient), [refusals study](https://www.pubmed.ncbi.nlm.nih.gov/35948287/), [ECRI coverage](https://aapc.com/codes/coding-newsletters/my-health-information-compliance-alert/adverse-events-ehr-is-often-a-culprit-in-patient-identification-errors-152456-article) |
+| The Joint Commission, NPSG.01.01.01 | At least two identifiers, e.g. name, assigned ID number, date of birth; a room number isn't one. A color photo is suggested alongside the other identifiers, not as one of the two | [FAQ](https://jointcommission.org/standards/standard-faqs/home-care/national-patient-safety-goals-npsg/000001545), [advisory](https://www.clinician.com/articles/143537-joint-commission-advisory-addresses-ensuring-accurate-patient-identification) |
+| HIPAA, 45 CFR 164.514(b)(2) | A full-face photo is one of the 18 identifiers, so it's protected health information, like the name | [eCFR](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-E/section-164.514) |
+| HHS OCR, incidental uses and disclosures | Information others may glimpse (e.g. on a screen) is allowed only when reasonable safeguards and the minimum-necessary standard are in place | [Guidance](https://www.hhs.gov/guidance/document/incidental-uses-and-disclosures) |
+| Hospital photography policies (example: an NHS trust) | Consent varies. A photo for care is often covered by the general consent to treatment; for an unconscious patient, some policies ask a surrogate, others wait until the patient can consent | [Example policy](https://www.dbth.nhs.uk/wp-content/uploads/2017/07/PAT-PA-14-v.4-Photography-and-Video-Policy-FINAL.pdf) |
+
+ℹ️ These are summaries from a web search, not legal advice; the client's privacy officer and the current official texts decide.
+
+#### ⚠️ To clarify with the client: patient photos (Oct 31, 2026)
+
+**Context:** federal patient-safety guidance recommends photos in the record, and the evidence shows fewer wrong-patient errors. But a photo is protected health information, and Intercept's Census and Monitoring often run on shared or wall-mounted tele-ICU displays, where more people can see them than a clinician's own screen.
+
+| # | Question for the client | What the prototype does now | Why it needs an answer |
+|---|---|---|---|
+| 1 | Does the EHR hold patient photos, and can Intercept read them through the integration? | One sample photo (Miller) | Intercept only shows photos the EHR already holds (PC-016) |
+| 2 | Under what consent are photos taken, and what happens for patients admitted unconscious? | Not handled | Consent rules vary by hospital; the guidance doesn't settle the ICU case |
+| 3 | May photos show on shared or wall-mounted displays, or only on a clinician's own screen? | Shown everywhere the avatar shows | HIPAA allows what others might glimpse only with reasonable safeguards; a grid of faces is more exposure than a list of names |
+| 4 | Is a photo shown on every surface (Census, Monitoring, Patient details, the patient list), or only some? | Census cards and the Patient details header | The safety benefit comes from seeing the photo where orders are placed and patients are opened |
+| 5 | How current must a photo be? Should its date show? | No date | ICU patients can look unlike their photo (intubated, swollen, bandaged), which could mislead as easily as help |
+
+#### ⚠️ To confirm with the team (Oct 31, 2026)
+
+| # | Question for the team | What the prototype does now | Why it needs an answer |
+|---|---|---|---|
+| 1 | Keep the avatar on the card at all? | Shown on the Census's compact card and the Patient details header | Added "to see how it looks"; it takes 52px of the name row's width |
+| 2 | Show it on the expanded card and the monitoring card too? | Neither | intercept.ds's expanded card still hides it; the monitoring card has none |
+| 3 | A per-device or per-display setting to hide photos (e.g. for wall displays)? | None | Depends on client answer #3; it would fall back to initials |
+| 4 | Initials colors: each patient their own (now), or one color for all, as Figma draws it? | Ten colors, stable per patient | Varied colors help tell neighbors apart, but could be read as meaning something (e.g. a severity) |
+
+**Proposed answers (Oct 31, 2026, for the client and team to confirm):**
+
+| # | Proposed answer |
+|---|---|
+| Client 1–2 | Show a photo only when the EHR has one and the hospital's own consent process covers it; never capture or upload in Intercept |
+| Client 3 | Photos on a clinician's own screen; initials on shared and wall displays, set per display by the hospital |
+| Client 5 | Show the photo's date in its tooltip, and use initials when it's older than the current admission |
+| Team 3 | Yes: a display setting, "Show patient photos", off by default on shared displays |
+
 ---
 
 ## 5. Patient census lifecycle
@@ -440,12 +506,12 @@ The change in the score matters more than the number. Sepsis-3 treats a rise of 
 
 | # | Question for the client | What the prototype does now | Why it needs an answer |
 |---|---|---|---|
-| 1 | Which score: NEWS2 for every patient, NEWS2 on wards and another score (e.g. SOFA) in the ICU, or something else? | NEWS2-style (scale 1) for all 15 sample patients, worked out from their vitals | NEWS2 is built for wards and fits Scenario 1 (a med-surg floor at 2 a.m.). It isn't validated in the ICU: sedation and oxygen alone add 5 points, so every ventilated patient reads High (Miller 17, Harris 16, Johnson 15) and the score barely tells them apart. SOFA needs labs and updates about daily, so it can't "cross a threshold at 01:40". ⚠️ **Constraint:** if both are kept, one view can't rank them together: the scales differ (NEWS2 0–20 with official bands, SOFA 0–24 with none), so a mixed census can only sort by an agreed band, or keep wards and ICUs apart. Today the Score sorts and the List column take one score's name for the whole view |
+| 1 | Which score: NEWS2 for every patient, NEWS2 on wards and another score (e.g. SOFA) in the ICU, or something else? | NEWS2-style (scale 1) for all 18 sample patients, worked out from their vitals | NEWS2 is built for wards and fits Scenario 1 (a med-surg floor at 2 a.m.). It isn't validated in the ICU: sedation and oxygen alone add 5 points, so every ventilated patient reads High (Miller 17, Harris 16, Johnson 15) and the score barely tells them apart. SOFA needs labs and updates about daily, so it can't "cross a threshold at 01:40". ⚠️ **Constraint:** if both are kept, one view can't rank them together: the scales differ (NEWS2 0–20 with official bands, SOFA 0–24 with none), so a mixed census can only sort by an agreed band, or keep wards and ICUs apart. Today the Score sorts and the List column take one score's name for the whole view |
 | 2 | Scale 2 for hypercapnic patients (target SpO₂ 88–92%): who decides a patient is on it, and is it shown? | Not used | The specs name it, and Scenario 2's Dale (COPD) would score wrongly on scale 1 |
 | 3 | What does the screen call it: the score's name ("NEWS2"), "deterioration score" or "acuity score"? | The score's name: "NEWS2" on the card, "NEWS2 10 High" in the patient header, "NEWS2 10 · High" in the patient list, "NEWS2 10, High" in Ask Intercept Live. The Census sorts read "NEWS2" / "NEWS2 change" (the score's name from the data) and the quick view "Rising score". "Acuity" stays in the code and as this PRD's general term | "Acuity" usually means care intensity or nurse staffing, and NEWS2 measures how far vitals are from normal. PC-030 asks for the score's name with the number. The specs say "deterioration score". Figma's Patient Header still reads "acuity score" |
 | 4 | Bands and their words: NEWS2's Low / Medium / High, with no Critical? Is "Medium" acceptable when alerts also have a Medium? How is NEWS2's "3 in one parameter" (low–medium, urgent ward response) shown? | Low (0–4), Medium (5–6), High (7+). A single 3 shows as Low (Anderson's new confusion) | No sample patient reads Critical acuity now. The band and an alert's severity can share a word |
 | 5 | Where do the contributing factors show (each input's value and points)? | Only in a deterioration alert's evidence ("RR 26/min, 3 points") | SV-09 and DU-14 ask for them with the score: on the card, in the patient header's breakdown (PD-012) or in the Overview Brief |
-| 6 | Work-list ranking: severity, then band, then the rise over **4 h**, then oldest first. Is 4 h the right window, next to the card's 24 h change? | As described (DU-09); the Census and Monitoring Alert sort ranks the same way | This is what puts Margaret above Miller in Scenario 1: her score rose 5 in 4 h, his held steady. Overdue sepsis elements (DU-09) aren't in it yet |
+| 6 | Work-list ranking: severity, then band, then the rise over **4 h**, then oldest first. Is 4 h the right window, next to the card's 24 h change? | As described (DU-09); the Active alerts chip ranks the cards the same way on the Census and Monitoring (then the score, then name) | This is what puts Margaret above Miller in Scenario 1: her score rose 5 in 4 h, his held steady. Overdue sepsis elements (DU-09) aren't in it yet |
 | 7 | What severity does a score crossing into High raise, and what does the alert say? | Critical, "NEWS2 10, High: up 5 in 4 h", source "Rule · Deterioration score", with a reason line ("Rising work of breathing, positive fluid balance, HFrEF") | NEWS2's own response for 7+ is an emergency assessment, which could map to High or Critical. The reason line's wording comes from rules, and the client should approve it |
 | 8 | Beyond NEWS2, which scores will Intercept Live support, and for which units? | NEWS2 only; SIRS criteria for sepsis episodes (a separate track, not the card's score) | The specs name one deterioration score. SOFA (ICUs), PEWS / MEOWS (pediatric, maternity: NEWS2 isn't valid there) or a hospital's own Epic Deterioration Index / Rothman Index would each be the client's addition |
 | 9 | If several are supported, who chooses the one a card shows: a setting per unit or hospital, or each user? Can a view switch between them? | One score for every card; no setting, no switch | The work list ranks by the score, and clinicians at a handoff or escalation must see the same number for the same patient |
@@ -1108,7 +1174,7 @@ The full set of Patient card scenarios for design and prototype work. They are l
 | P1 | Device / therapy tags | Ventilated, On pressors, Dialysis, ECMO |
 | P2 | Safety tags | Isolation (contact/droplet), Fall risk, Allergy |
 | P3 | Code status | DNR / DNI badge, often in red outline |
-| P4 | No tags | Tag row hidden |
+| P4 | No tags | "No tags" in muted text, in a row the height of a tag, so cards keep the same height (Oct 30, 2026) |
 | P5 | Transfer pending | "MICU · Bed 9 → CCU" |
 | P6 | Discharged / deceased | Card greyed out, read-only |
 | P7 | Multi-site | Site badge visible (CVMC); hidden in single-site setups |

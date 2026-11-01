@@ -629,6 +629,59 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 			["diet", "Cardiac diet", "2 g sodium · 1.5 L fluid restriction", "Tom Weller", 1130],
 		],
 	}),
+
+	// Pneumonia on the same floor, improving. Nothing in the v1 classes applies.
+	p16: patientOrders("p16", {
+		hospital: "chadron",
+		checks: [
+			noVentilator("Nasal cannula at 2 L/min"),
+			nothingToRecommend("Sodium 136 and creatinine 1.1 are in range."),
+		],
+		active: [
+			["medication", "Ceftriaxone", "1 g IV daily", "Tom Weller", 3950],
+			["medication", "Azithromycin", "500 mg by mouth daily · 5 days", "Tom Weller", 3950],
+			["medication", "Tiotropium", "18 mcg inhaled daily", "Tom Weller", 3950],
+			["medication", "Enoxaparin", "40 mg SC daily", "Tom Weller", 3950],
+			["lab", "Complete blood count", "Daily at 05:00", "Tom Weller", 3950, "Scheduled"],
+			["respiratory", "Oxygen by nasal cannula", "Titrate to SpO₂ 90% or more · COPD", "Tom Weller", 3950],
+			["nursing", "Code status", "DNR · do not resuscitate", "Tom Weller", 3950],
+			["nursing", "Fall precautions", "Bed alarm on · walker", "Tom Weller", 3950],
+			["diet", "Regular diet", "", "Tom Weller", 3950],
+		],
+	}),
+
+	// Post-op day 1, potassium 3.8 is in range. Nothing in the v1 classes applies.
+	p17: patientOrders("p17", {
+		hospital: "mwh",
+		checks: [noVentilator("Nasal cannula at 2 L/min"), nothingToRecommend("Potassium 3.8 and creatinine 0.8 are in range.")],
+		active: [
+			["medication", "Lactated Ringer's", "100 mL/h IV", "Marcus Lee", 600],
+			["medication", "Hydromorphone PCA", "0.3 mg every 10 min · 4-hour limit 6 mg", "Marcus Lee", 60],
+			["medication", "Cefazolin", "2 g IV every 8 h · 24 h after surgery", "Marcus Lee", 1200],
+			["medication", "Enoxaparin", "40 mg SC daily · from tomorrow", "Marcus Lee", 1200],
+			["lab", "Complete blood count", "Daily at 04:00", "Marcus Lee", 1200, "Scheduled"],
+			["lab", "Basic metabolic panel", "Daily at 04:00", "Marcus Lee", 1200, "Scheduled"],
+			["nursing", "Nasogastric tube to low suction", "Record output every 4 h", "Marcus Lee", 1200],
+			["respiratory", "Incentive spirometry", "Every hour awake", "Marcus Lee", 1200],
+			["diet", "Nothing by mouth", "Ice chips", "Marcus Lee", 1200],
+		],
+	}),
+
+	// DKA, nearly closed: the move to subcutaneous insulin is the team's plan, not a v1 class.
+	p18: patientOrders("p18", {
+		hospital: "mwh",
+		checks: [noVentilator("Room air"), nothingToRecommend("Potassium 4.1 and phosphate 2.4 are covered by the DKA protocol.")],
+		active: [
+			["medication", "Insulin regular infusion", "DKA protocol · 3 units/h", "Marcus Lee", 1250],
+			["medication", "Dextrose 5% with 0.45% saline", "125 mL/h IV", "Marcus Lee", 540],
+			["medication", "Insulin glargine", "18 units SC once at 09:00", "Marcus Lee", 40, "Pending"],
+			["medication", "Levothyroxine", "88 mcg by mouth daily", "Marcus Lee", 1200],
+			["lab", "Glucose, point of care", "Every hour", "Marcus Lee", 1250],
+			["lab", "Basic metabolic panel", "Every 4 h", "Marcus Lee", 1250, "Scheduled"],
+			["nursing", "Diabetes education", "Today", "Marcus Lee", 40],
+			["diet", "Consistent carbohydrate diet", "", "Marcus Lee", 120],
+		],
+	}),
 };
 
 export { sampleOrdersByPatient };

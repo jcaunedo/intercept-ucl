@@ -11,13 +11,12 @@ import {
 	HomeIcon,
 	LayoutGridIcon,
 	LifeBuoyIcon,
+	MenuIcon,
 	MessageCircleMoreIcon,
-	SearchIcon,
 	ShieldIcon,
 	SparklesIcon,
 	SquareActivityIcon,
 	Undo2Icon,
-	ZapIcon,
 } from "lucide-react";
 
 import { BoxSolidIcon } from "@/components/icons/box-solid-icon";
@@ -37,16 +36,14 @@ import {
 } from "@/components/overlays/dropdown-menu";
 import { Sidebar, SidebarMenuButton, type SidebarNavItem } from "./sidebar";
 
-// Solid icons show while an item is active. Search, Ask Intercept and the footer items have none yet, so they keep
-// their outline icon. lucide has no AI icon for Ask Intercept; Sparkles stands in.
+// Solid icons show while an item is active. Ask Intercept and the footer items have none yet, so they keep their outline
+// icon. lucide has no AI icon for Ask Intercept; Sparkles stands in. No Search item since Oct 31, 2026: search is in the
+// chat.
 const groups: SidebarNavItem[][] = [
+	[{ icon: SparklesIcon, label: "Ask Intercept" }],
 	[
-		{ icon: SearchIcon, label: "Search" },
-		{ icon: SparklesIcon, label: "Ask Intercept" },
-	],
-	[
-		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census" },
 		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring" },
+		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census" },
 		{ icon: BellRingIcon, label: "Alert Queue" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis" },
@@ -67,7 +64,7 @@ const footerItems: SidebarNavItem[] = [
 	{ icon: BookOpenTextIcon, label: "Documentation" },
 	{ icon: LifeBuoyIcon, label: "Support" },
 	{
-		icon: ZapIcon,
+		icon: MenuIcon,
 		label: "Prototype",
 		menu: (
 			<>
@@ -97,7 +94,7 @@ const meta = {
 	args: {
 		groups,
 		footerItems,
-		// The first item (Search) is an action, not a page.
+		// The first item (Ask Intercept) is an action, not a page. Monitoring is the first page and the default one.
 		defaultActiveItem: "Monitoring",
 	},
 	decorators: [
@@ -138,7 +135,7 @@ export const ActiveItemAndSuffix: Story = {
 export const Controlled: Story = {
 	render: (args) => {
 		const [collapsed, setCollapsed] = React.useState(false);
-		const [active, setActive] = React.useState("Census");
+		const [active, setActive] = React.useState("Monitoring");
 		const routed = args.groups.map((group) => group.map((item) => ({ ...item, navigateTo: item.label })));
 
 		return (

@@ -24,6 +24,7 @@ import { LayoutGridSolidIcon } from "./layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "./message-circle-more-solid-icon";
 import { MessageCircleSolidIcon } from "./message-circle-solid-icon";
 import { MonitorViewExpandedIcon } from "./monitor-view-expanded-icon";
+import { MonitorViewMinimalIcon } from "./monitor-view-minimal-icon";
 import { MonitorViewMinimizedIcon } from "./monitor-view-minimized-icon";
 import { ShieldSolidIcon } from "./shield-solid-icon";
 import { SquareActivitySolidIcon } from "./square-activity-solid-icon";
@@ -91,6 +92,7 @@ export const MonitorView: Story = {
 				[
 					["monitor-view-minimized", MonitorViewMinimizedIcon],
 					["monitor-view-expanded", MonitorViewExpandedIcon],
+					["minimal-view", MonitorViewMinimalIcon],
 				] as const
 			).map(([name, Icon]) => (
 				<div key={name} className='contents'>

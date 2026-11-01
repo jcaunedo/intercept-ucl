@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FilterXIcon, GaugeIcon } from "lucide-react";
+import { ArrowUpIcon, BellRingIcon, FilterXIcon, FlagIcon, GaugeIcon, TriangleIcon, WebcamIcon, WifiOffIcon } from "lucide-react";
 
 import {
 	defaultMonitorLimits,
@@ -8,25 +8,34 @@ import {
 	type PatientMonitoringCardProps,
 } from "@/components/cards/patient-monitoring-card";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { FilterBar, FilterBarControls, FilterBarFilters } from "@/components/forms/filter-bar";
+import { SearchInput } from "@/components/forms/search-input";
 import { Switch } from "@/components/forms/switch";
 import { Typography } from "@/components/typography/typography";
 
 import {
 	activeAlertCount,
+	hasActiveAlert,
+	hasRisingAcuity,
 	HospitalTabs,
+	matchesSearch,
 	MyPatientsChip,
 	PanelEmpty,
 	PanelGrid,
 	QuickViewChips,
 	PanelBoard,
+	useChangedSinceMount,
+	useSnapOrder,
 	panelOrder,
+	resolvedTimes,
 	useGrouping,
 	type GroupedView,
 	SortSelect,
-	UnitSelect,
 	shownAlert,
 	useHeldOrder,
+	useRecentActivity,
 	useResolvedHolds,
+	useSortBy,
 	useSortCadence,
 	useSortPause,
 	withResolvedHolds,
@@ -40,13 +49,33 @@ import { usePatientNavigation } from "../patient-navigation";
 import {
 	compareTriageAlerts,
 	isOpenAlert,
+	lastFiredAt,
 	type EscalationTarget,
 	type TriageAlert,
 	type TriageAlertAction,
 } from "./triage-queue";
 import { LiveFeed, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
+import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
+import {
+	alertFilterGroup,
+	FiltersButton,
+	FiltersPanel,
+	passesFilters,
+	tagFilterGroups,
+	unitFilterGroup,
+	usePatientFilters,
+	type FilterGroup,
+	type PatientFilters,
+} from "../shared/patient-filters";
 import { MonitoringList } from "./monitoring-list";
-import { DensityToggle, MonitorPlotToggle, MonitorViewToggle, type MonitorPlot, type PanelDensity } from "./view-controls";
+import {
+	DensityToggle,
+	MonitorPlotToggle,
+	MonitorViewToggle,
+	type MonitorPlot,
+	type MonitorView,
+	type PanelDensity,
+} from "./view-controls";
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -55,12 +84,24 @@ import { DensityToggle, MonitorPlotToggle, MonitorViewToggle, type MonitorPlot, 
 type MonitoringHospital = PanelHospital;
 
 /**
- * A patient on the monitoring panel: the card's identity, location and live values. Acuity, its 24h change and tags
- * aren't on the monitoring card; acuity only breaks ties in the Alert order. The card's alert pill comes from the
- * patient's alerts in the triage queue, so the two never disagree.
+ * A patient on the monitoring panel: the card's identity, location and live values, plus the acuity score, its 24h
+ * change and the tags. The card's alert bar comes from the patient's alerts in the triage queue, so the two never
+ * disagree.
  */
 type MonitoringPatient = Omit<PanelPatient, "alert"> &
-	Pick<PatientMonitoringCardProps, "mrn" | "sex" | "age" | "room" | "vitals" | "limits" | "trends">;
+	Pick<
+		PatientMonitoringCardProps,
+		| "mrn"
+		| "sex"
+		| "age"
+		| "room"
+		| "photo"
+		| "vitals"
+		| "limits"
+		| "alarmPriorities"
+		| "acknowledgedAlarms"
+		| "trends"
+	>;
 
 /** A monitoring patient with the alert pill worked out from their alerts. */
 type PanelMonitoringPatient = MonitoringPatient & Pick<PanelPatient, "alert">;
@@ -89,8 +130,9 @@ type MonitoringPanelProps = {
 /* -------------------------------------------------------------------------- */
 
 /**
- * The card's alert pill from the patient's open alerts: the top severity, how many are open, and whether one at that
- * severity is still unaddressed (the card's ring pulses until it is).
+ * The card's alert from the patient's open alerts: the top severity, how many are open, and whether one at that
+ * severity is still unaddressed (the card's ring pulses until it is); for the alert bar, when the top alert fired and
+ * how many alerts the patient had in the last 24 h, resolved ones included.
  */
 function alertPill(patientAlerts: TriageAlert[]): PanelPatient["alert"] {
 	const open = patientAlerts.filter(isOpenAlert).sort(compareTriageAlerts);
@@ -98,49 +140,156 @@ function alertPill(patientAlerts: TriageAlert[]): PanelPatient["alert"] {
 	const top = open.filter((alert) => alert.severity === open[0].severity);
 	const unaddressed = top.some((alert) => (alert.status ?? "active") === "active");
 	const status = unaddressed ? "active" : top[0].status === "escalated" ? "escalated" : "acknowledged";
-	return { variant: open[0].severity, count: open.length, status };
+	const dayAgo = Date.now() - 24 * 3_600_000;
+	const inLast24h = patientAlerts.filter((alert) => Date.parse(alert.firedAt) >= dayAgo).length;
+	return { variant: open[0].severity, count: open.length, status, since: open[0].firedAt, inLast24h };
 }
 
-// The filters stay in context (Oct 27, 2026): Monitoring narrows the panel's scope (hospital, My patients, unit),
-// sets how it looks, and has one status filter of its own, Outside limits. What needs attention is the triage queue's
-// job, and acuity and tags aren't on the monitoring card, so the Census's other quick views stay there. Acuity sorts are
-// left out too; Group by location is a switch, as on the Census.
-const sortOrderIds: readonly SortOrderId[] = ["alert", "name"];
+/** An alert the feed resolved in this session: it dropped out of the alerts, so the page keeps when. */
+type FeedResolution = { patientId: string; firedAt: string; resolvedAt: string };
 
-/** Whether any primary numeric is outside the patient's alarm limits (the card's own limits, defaults included). */
-const isOutsideLimits = ({ vitals = {}, limits }: PanelMonitoringPatient) => {
-	const { hr, spo2, systolic, rr }: MonitorLimits = { ...defaultMonitorLimits, ...limits };
-	const outside = (value: number | undefined, [low, high]: [number, number]) =>
-		value !== undefined && (value < low || value > high);
-	return (
-		outside(vitals.hr, hr) || outside(vitals.spo2, spo2) || outside(vitals.systolic, systolic) || outside(vitals.rr, rr)
-	);
-};
+/**
+ * A patient without an open alert whose last alert resolved in the last 24 h: the card's Resolved bar, with when the
+ * latest one resolved and how many alerts they had in that window (Oct 31, 2026, intercept.ds
+ * `patient-monitoring-card-2` resolved example `1232:5526`). Resolved by the clinician, an alert carries when
+ * (`addressed.at`); resolved by the feed, it's in `feedResolved`. The newest wins, so a fresh resolution reads "Just now"
+ * (user's call), not an older one's time.
+ */
+function recentResolution(patientAlerts: TriageAlert[], feedResolved: FeedResolution[] = []): PanelPatient["alert"] {
+	const dayAgo = Date.now() - 24 * 3_600_000;
+	const times = [
+		...patientAlerts.filter((alert) => alert.status === "resolved" && alert.addressed).map((alert) => alert.addressed!.at),
+		...feedResolved.map((resolution) => resolution.resolvedAt),
+	].filter((at) => Date.parse(at) >= dayAgo);
+	if (!times.length) return undefined;
+	const since = times.reduce((latest, at) => (Date.parse(at) > Date.parse(latest) ? at : latest));
+	const inLast24h = [...patientAlerts, ...feedResolved].filter((alert) => Date.parse(alert.firedAt) >= dayAgo).length;
+	return { variant: "resolved", since, inLast24h };
+}
 
-// The drift a filter finds better than the card's ↑ / ↓ tags on a large panel. "Limits", not the Census's "Out of
-// range": these are the monitor's alarm limits.
+/**
+ * The open alerts the feed resolved in this session, by alert id, with when: they drop out of `alerts` rather than
+ * turning `resolved`. One that comes back (the feed restarting) is forgotten.
+ */
+function useFeedResolutions(alerts: TriageAlert[]) {
+	const [resolutions, setResolutions] = React.useState<Record<string, FeedResolution>>({});
+	const previous = React.useRef<TriageAlert[] | null>(null);
+	React.useEffect(() => {
+		const before = previous.current;
+		previous.current = alerts;
+		if (!before) return;
+		const ids = new Set(alerts.map((alert) => alert.id));
+		const dropped = before.filter((alert) => isOpenAlert(alert) && !ids.has(alert.id));
+		const back = Object.keys(resolutions).filter((id) => ids.has(id));
+		if (!dropped.length && !back.length) return;
+		const resolvedAt = new Date().toISOString();
+		setResolutions((current) => {
+			const next = { ...current };
+			for (const id of back) delete next[id];
+			for (const alert of dropped) next[alert.id] = { patientId: alert.patientId, firedAt: alert.firedAt, resolvedAt };
+			return next;
+		});
+	}, [alerts, resolutions]);
+	return Object.values(resolutions);
+}
+
+// The card's "…" menu: the patient's actions, as in the patient's header (AppHeader `patient`). The app wires them up.
+const cardActions: PatientMonitoringCardProps["moreActions"] = [
+	{ label: "Raise concern", icon: FlagIcon },
+	{ label: "Huddle team", icon: WebcamIcon },
+	{ label: "Escalate", icon: ArrowUpIcon },
+];
+
+// The chips stay in context (Oct 27, 2026): Monitoring narrows the panel's scope (hospital, My patients), sets how it
+// looks, and has status chips of its own, Active alerts (Oct 31, 2026, user request) and Outside limits. The rest of
+// what needs attention is the triage queue's job, so the Census's other quick views stay there. Acuity sorts are left out too (the score can be hidden from the cards); Group
+// by location is a switch, as on the Census. The Filters panel (Oct 30, 2026, user's call) adds Unit, Highest alert, alarm
+// limits per parameter and the tags.
+// Recent alerts first in the menu (Oct 31, 2026, user's call; "Alert", then "Alerts"): patients with an open alert first,
+// the newest alert first (the Active alerts chip orders by severity). Name stays the default.
+const sortOrderIds: readonly SortOrderId[] = ["alert", "name", "viewed", "resolved", "messages"];
+
+/** The primary numerics with alarm limits, by the card's labels. */
+const limitParameters = [
+	{ id: "hr", label: "HR" },
+	{ id: "spo2", label: "SpO₂" },
+	{ id: "systolic", label: "ABP" },
+	{ id: "rr", label: "RR" },
+] as const satisfies readonly { id: keyof MonitorLimits; label: string }[];
+
+/** Whether a numeric is outside the patient's alarm limits (the card's own limits, defaults included). */
+const isOutside =
+	(parameter: keyof MonitorLimits) =>
+	({ vitals = {}, limits }: PanelMonitoringPatient) => {
+		const value = vitals[parameter];
+		const [low, high] = { ...defaultMonitorLimits, ...limits }[parameter];
+		return value !== undefined && (value < low || value > high);
+	};
+
+/** Whether any primary numeric is outside the patient's alarm limits. */
+const isOutsideLimits = (patient: PanelMonitoringPatient) => limitParameters.some(({ id }) => isOutside(id)(patient));
+
+/** Whether a primary numeric isn't reporting: the card shows "--". */
+const isNotReporting = ({ vitals = {} }: PanelMonitoringPatient) => limitParameters.some(({ id }) => vitals[id] === undefined);
+
+/**
+ * The Filters panel's groups: Unit (the hospital tab's units, plus any picked), Highest alert, Outside alarm limits per
+ * parameter with Not reporting, and the tags. The limits options read live numbers, so they hold the patients who
+ * matched when picked, as the Outside limits chip does (PRD MON-013).
+ */
+function monitoringFilterGroups(
+	patients: PanelMonitoringPatient[],
+	filters: PatientFilters,
+): FilterGroup<PanelMonitoringPatient>[] {
+	return [
+		unitFilterGroup(patients, filters),
+		alertFilterGroup(),
+		{
+			id: "limits",
+			title: "Outside alarm limits",
+			description: "Keeps the patients who matched when picked, so cards stay put as readings move.",
+			options: [
+				...limitParameters.map(({ id, label }) => ({ id, label, live: true, matches: isOutside(id) })),
+				{ id: "missing", label: "Not reporting", live: true, matches: isNotReporting },
+			],
+		},
+		...tagFilterGroups<PanelMonitoringPatient>(),
+	];
+}
+
+// The panel's status chips, one at a time: patients with an active alert (any severity; resolved alerts and messages
+// don't count), a rising score, the drift a filter finds better than the card's ▲ / ▼ marks on a large panel
+// ("Limits": the monitor's alarm limits), and data gaps.
 const statusFilters: QuickView<PanelMonitoringPatient>[] = [
+	{ id: "alerts", label: "Active alerts", icon: BellRingIcon, matches: hasActiveAlert },
+	// Deterioration, as the card's score row shows it (Nov 1, 2026, user's call; the Census's chip of the same name).
+	// Held when pressed, like the others, since scores change.
+	{ id: "rising", label: "Rising score", icon: TriangleIcon, matches: hasRisingAcuity },
 	{ id: "limits", label: "Outside limits", icon: GaugeIcon, matches: isOutsideLimits },
+	// A vital that isn't reporting, the card's "--" (Nov 1, 2026, user's call: data gaps are live monitoring data, PRD
+	// Census CEN-OD-07). Held when pressed, like Outside limits.
+	{ id: "missing", label: "Not reporting", icon: WifiOffIcon, matches: isNotReporting },
 ];
 
 // Columns follow the page's width (a container query), fewer while the live feed panel takes room beside the canvas.
-// Comfortable shows 3 cards a row above lg (1024), 4 above xl (1280), 5 above 2xl (1536) and 6 above 2.5xl (1728), with
-// the rail collapsed and no panel open: the page is the window less the 64px rail. Above 3xl (1920) a column joins every
-// 296px (a ~280px card and its gap), 7 from a 2168px window up to 13 from 3944px, the same windows as the Census.
+// Comfortable shows 3 cards a row above lg (1024), 4 above xl (1280), 5 above 2xl (1536), still 5 at 3xl (Oct 30, 2026,
+// user's call) and 6 above 3xl (1920), with the rail collapsed and no panel open: the page is the window less the 64px
+// rail. From there a column joins every 296px (a ~280px card and its gap), 7 from a 2168px window up to 13 from 3944px,
+// the same windows as the Census.
 // Compact (`sm` cards) shows one more a row at every width (Oct 30, 2026), from 2 at 608px. All in px: Tailwind can't order container queries in mixed units, and a px one placed
 // before a rem one loses to it. `items-start`: a card showing the full monitor grows on its own, without stretching its
 // row.
 // The Kanban board's columns share the width, at least one card wide each (Compact's small card is narrower).
 const boardClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 	comfortable: "[--board-column:minmax(340px,1fr)]",
-	compact: "[--board-column:minmax(260px,1fr)] gap-3",
+	compact: "[--board-column:minmax(260px,1fr)]",
 };
 
 const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 	comfortable:
-		"items-start @min-[744px]:grid-cols-2 @min-[961px]:grid-cols-3 @min-[1217px]:grid-cols-4 @min-[1473px]:grid-cols-5 @min-[1665px]:grid-cols-6 @min-[2104px]:grid-cols-7 @min-[2400px]:grid-cols-8 @min-[2696px]:grid-cols-9 @min-[2992px]:grid-cols-10 @min-[3288px]:grid-cols-11 @min-[3584px]:grid-cols-12 @min-[3880px]:grid-cols-13",
+		"items-start @min-[744px]:grid-cols-2 @min-[961px]:grid-cols-3 @min-[1217px]:grid-cols-4 @min-[1473px]:grid-cols-5 @min-[1857px]:grid-cols-6 @min-[2104px]:grid-cols-7 @min-[2400px]:grid-cols-8 @min-[2696px]:grid-cols-9 @min-[2992px]:grid-cols-10 @min-[3288px]:grid-cols-11 @min-[3584px]:grid-cols-12 @min-[3880px]:grid-cols-13",
 	compact:
-		"items-start gap-3 @min-[608px]:grid-cols-2 @min-[744px]:grid-cols-3 @min-[961px]:grid-cols-4 @min-[1217px]:grid-cols-5 @min-[1473px]:grid-cols-6 @min-[1665px]:grid-cols-7 @min-[2104px]:grid-cols-8 @min-[2400px]:grid-cols-9 @min-[2696px]:grid-cols-10 @min-[2992px]:grid-cols-11 @min-[3288px]:grid-cols-12 @min-[3584px]:grid-cols-13 @min-[3880px]:grid-cols-14",
+		"items-start gap-3 @min-[608px]:grid-cols-2 @min-[744px]:grid-cols-3 @min-[961px]:grid-cols-4 @min-[1217px]:grid-cols-5 @min-[1473px]:grid-cols-6 @min-[1857px]:grid-cols-7 @min-[2104px]:grid-cols-8 @min-[2400px]:grid-cols-9 @min-[2696px]:grid-cols-10 @min-[2992px]:grid-cols-11 @min-[3288px]:grid-cols-12 @min-[3584px]:grid-cols-13 @min-[3880px]:grid-cols-14",
 };
 
 /* -------------------------------------------------------------------------- */
@@ -164,11 +313,16 @@ function MonitoringPanel({
 }: MonitoringPanelProps) {
 	const [hospitalId, setHospitalId] = React.useState("all");
 	const [scope, setScope] = React.useState<PatientScope>("all");
-	// Outside limits keeps the patients who matched when it was pressed: readings move every second, and a live filter
-	// would add and drop cards under the clinician's eyes (PRD MON-013). Its count stays live; pressing it again clears it.
+	// A status chip keeps the patients who matched when it was pressed: readings move every second and alerts come and go,
+	// and a live filter would add and drop cards under the clinician's eyes (PRD MON-013). Its count stays live; pressing
+	// it again clears it.
 	const [statusFilter, setStatusFilter] = React.useState<{ id: string; ids: ReadonlySet<string> } | null>(null);
-	const [unit, setUnit] = React.useState("all");
-	const [sortBy, setSortBy] = React.useState<SortOrderId>("alert");
+	// The Filters panel's options, by group (Unit among them since Oct 30, 2026: the Unit menu moved there).
+	const { filters, setFilters, apply: holdFilters } = usePatientFilters<PanelMonitoringPatient>();
+	// The filter bar's search: name, MRN, unit, room or bed.
+	const [query, setQuery] = React.useState("");
+	// Remembered across pages and patient details (`useSortBy`).
+	const [sortBy, setSortBy] = useSortBy("monitoring", "name");
 	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
 	// Group by location: a Kanban column per hospital, the sort inside each; or, with the sections view, a grid section each.
 	// A view picked in the Prototype menu shows at once: cards, across all hospitals.
@@ -180,11 +334,16 @@ function MonitoringPanel({
 	// hospitals brings back the user's choice (Oct 30, 2026, user's call).
 	const grouped = groupedChoice && hospitalId === "all";
 	const board = grouped && groupedView === "board" && density !== "list";
+	// The board fades its columns in when the user switches to it, not when the page opens on it.
+	const boardSwitched = useChangedSinceMount(board);
 	const [plot, setPlot] = React.useState<MonitorPlot>("waveform");
-	// Condensed or full monitors, for every card at once (the cards have no toggle of their own).
-	const [monitorView, setMonitorView] = React.useState<"condensed" | "full">("condensed");
-	// The live feed panel, right of the canvas: the triage queue.
-	const [feedOpen, setFeedOpen] = React.useState(false);
+	// Full, condensed or minimal view, for every card at once (the cards have no toggle of their own). Full by default.
+	const [monitorView, setMonitorView] = React.useState<MonitorView>("full");
+	// The panel right of the canvas: the live feed (the triage queue) or Filters, one at a time, as on the Census.
+	// The live feed sits beside the canvas; Filters floats over everything (a Sheet), so the two no longer take turns.
+	const [rightPanel, setRightPanel] = React.useState<"feed" | null>(null);
+	const toggleRightPanel = (panel: "feed") => setRightPanel((current) => (current === panel ? null : panel));
+	const [filtersOpen, setFiltersOpen] = React.useState(false);
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 	const { paused, pauseProps } = useSortPause();
 	const { sorts, sortNow } = useSortCadence(paused);
@@ -203,34 +362,90 @@ function MonitoringPanel({
 		onOpenPatient?.(patientId);
 	};
 	const canOpenPatient = Boolean(navigation || onOpenPatient);
-	const withAlerts = patientsProp.map((patient) => ({
-		...patient,
-		alert: alertPill(alerts.filter((alert) => alert.patientId === patient.id)),
-	}));
+	// Every patient's avatar color, from the whole roster, so the page's sort and filters don't change them.
+	const tones = React.useMemo(() => avatarTones(patientsProp), [patientsProp]);
+	const withAlerts = patientsProp.map((patient) => {
+		const own = alerts.filter((alert) => alert.patientId === patient.id);
+		return { ...patient, alert: alertPill(own), lastAlertAt: lastFiredAt(own.filter(isOpenAlert)) };
+	});
 	// A patient whose last alert just resolved keeps its old place for a moment while its card says "Resolved", then sorts
 	// as a patient without an alert and moves at once, still saying it, so the clinician can follow the card to its new
 	// place; the pill fades out once it has landed (useResolvedHolds).
 	const resolvedHolds = useResolvedHolds(withAlerts, sortNow);
 	const patients: PanelMonitoringPatient[] = withResolvedHolds(withAlerts, resolvedHolds);
-	/** The pill the card shows: "Resolved" while held and moving, then nothing (it fades out), otherwise its own. */
+	/**
+	 * The alert the card shows: its own; "Resolved" while held and moving; then, while the last alert resolved in the last
+	 * 24 h, the Resolved bar with when; otherwise none. The List's Alert column shows the same.
+	 */
 	const ownAlerts = new Map(withAlerts.map((patient) => [patient.id, patient.alert]));
-	const cardAlert = (id: string) => shownAlert(ownAlerts.get(id), resolvedHolds[id]);
-
-	// Scope only: My patients applies to everything below it, the tab counters included; then hospital and unit.
-	// Hospital and unit run on both scopes, so the summary can say "6 of 14 patients", as on the Census.
-	const located = (scoped: PanelMonitoringPatient[]) => {
-		const inHospital = hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
-		return unit === "all" ? inHospital : inHospital.filter((patient) => patient.unit === unit);
+	const feedResolutions = useFeedResolutions(alerts);
+	const recentResolutions = new Map(
+		patientsProp.map((patient) => [
+			patient.id,
+			recentResolution(
+				alerts.filter((alert) => alert.patientId === patient.id),
+				feedResolutions.filter((resolution) => resolution.patientId === patient.id),
+			),
+		]),
+	);
+	const cardAlert = (id: string) => {
+		const shown = shownAlert(ownAlerts.get(id), resolvedHolds[id]);
+		return !shown || shown.variant === "resolved" ? (recentResolutions.get(id) ?? shown) : shown;
 	};
+
+	const inTab = (scoped: PanelMonitoringPatient[]) =>
+		hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
+	// The Filters panel's groups, from the hospital tab's patients (its units); picked limits options hold their patients.
+	const rawFilterGroups = monitoringFilterGroups(inTab(patients), filters);
+	const filterGroups = holdFilters(rawFilterGroups);
+	// Scope only: My patients applies to everything below it, the tab counters included; then hospital and the search
+	// (`searched`, where the Filters panel's counts start), then the panel's filters. They run on both scopes, so the
+	// summary can say "6 of 14 patients", as on the Census.
+	const searched = (scoped: PanelMonitoringPatient[]) =>
+		// The card's live numbers count too: HR, SpO₂, ABP and MAP, RR.
+		inTab(scoped).filter(({ vitals = {}, ...patient }) =>
+			matchesSearch(patient, query, [
+				vitals.hr,
+				vitals.spo2 === undefined ? undefined : `${vitals.spo2}%`,
+				vitals.systolic === undefined ? undefined : `${vitals.systolic}/${vitals.diastolic ?? "--"}`,
+				vitals.map,
+				vitals.rr,
+			]),
+		);
+	const located = (scoped: PanelMonitoringPatient[]) =>
+		searched(scoped).filter((patient) => passesFilters(patient, filterGroups, filters));
 	const filtered = (scoped: PanelMonitoringPatient[]) =>
 		statusFilter ? located(scoped).filter((patient) => statusFilter.ids.has(patient.id)) : located(scoped);
-	const assigned = scope === "mine" ? patients.filter((patient) => patient.mine) : patients;
+	// The Recently viewed and Recently resolved sorts count what happened in this session too: the patients opened, and the
+	// alerts resolved in the live feed.
+	const recent = useRecentActivity(patients, resolvedTimes(alerts));
+	const assigned = scope === "mine" ? recent.filter((patient) => patient.mine) : recent;
+	const inStatus = (scoped: PanelMonitoringPatient[]) =>
+		statusFilter ? scoped.filter((patient) => statusFilter.ids.has(patient.id)) : scoped;
 	// The panel re-sorts now and then (useSortCadence), never while the pointer is over it (or keyboard focus is in it),
 	// so cards and rows don't move under the clinician's hand; a re-sort that came due runs when they leave.
-	const visible = useHeldOrder([...filtered(assigned)].sort(panelOrder(sortBy, grouped)), sorts, `${sortBy}:${grouped}`);
+	// With Active alerts on, who to see first (severity, acuity band, 4 h rise, time waiting, score), whatever the sort.
+	const alertPriority = statusFilter?.id === "alerts";
+	const visible = useHeldOrder(
+		[...filtered(assigned)].sort(panelOrder(sortBy, grouped, alertPriority)),
+		sorts,
+		`${sortBy}:${grouped}:${alertPriority}`,
+	);
 	const everyoneCount = scope === "mine" ? filtered(patients).length : visible.length;
+	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
+	// As on the Census: one hospital, picked on its tab or the only one the filters leave, reads by name ("7 patients at
+	// Harbor Point General"); otherwise "across 4 hospitals".
+	const singleHospital =
+		hospitalId !== "all"
+			? hospitals.find((hospital) => hospital.id === hospitalId)
+			: hospitalCount === 1
+				? hospitals.find((hospital) => hospital.id === visible[0].hospitalId)
+				: undefined;
 
+	// Active alerts re-sorts by who to see first on the click itself: the cards land in their places, no glide.
+	const [snapOrder, snapNextOrder] = useSnapOrder();
 	const pressStatusFilter = (id: string | null) => {
+		if (id === "alerts" || statusFilter?.id === "alerts") snapNextOrder();
 		const filter = statusFilters.find((view) => view.id === id);
 		setStatusFilter(
 			filter ? { id: filter.id, ids: new Set(patients.filter(filter.matches).map((patient) => patient.id)) } : null,
@@ -241,26 +456,43 @@ function MonitoringPanel({
 		id,
 		hospitalId: _hospitalId,
 		mine: _mine,
-		acuity: _acuity,
-		trajectory: _trajectory,
-		tags: _tags,
+		scoreChange4h: _scoreChange4h,
+		lastViewedAt: _lastViewedAt,
+		lastResolvedAt: _lastResolvedAt,
+		lastAlertAt: _lastAlertAt,
+		acuity,
+		trajectory,
+		tags,
 		...card
 	}: PanelMonitoringPatient) => (
+		// The avatar, as on the Census's cards and the Patient details header: the photo, or the initials in the patient's
+		// color (`shared/patient-avatar.ts`).
 		<PatientMonitoringCard
 			{...card}
+			initials={patientInitials(card)}
+			tone={tones.get(id) ?? avatarTone(id)}
+			// The score and tags show except in Minimal view (Oct 31, 2026, user's call), where the card is the condensed
+			// monitor alone; a patient without tags says "No tags", so the cards line up.
+			acuity={monitorView === "minimal" ? undefined : acuity}
+			trajectory={monitorView === "minimal" ? undefined : trajectory}
+			tags={monitorView === "minimal" ? undefined : (tags ?? [])}
 			alert={cardAlert(id)}
 			size={density === "compact" ? "sm" : "md"}
 			plot={plot}
 			expanded={monitorView === "full"}
+			moreActions={cardActions}
 			onOpen={canOpenPatient ? () => openPatient(id) : undefined}
 		/>
 	);
 
+	const changeFilters = (next: PatientFilters) => setFilters(next, rawFilterGroups, patients);
+
 	const clearFilters = () => {
 		setHospitalId("all");
-		setUnit("all");
+		changeFilters({});
 		setScope("all");
 		setStatusFilter(null);
+		setQuery("");
 	};
 
 	return (
@@ -288,26 +520,31 @@ function MonitoringPanel({
 					    apart; 24px between the rows. */}
 					<div className='flex flex-col gap-6'>
 						<div className='flex min-h-9 items-center gap-2'>
-							{/* The panel summary (PRD Monitoring §3.1): patients shown and their active alerts. */}
+							{/* The panel summary (PRD Monitoring §3.1): patients shown, where, and their active alerts. */}
 							<Typography as='h1' size='2xl' weight='regular' aria-live='polite' className='min-w-0 flex-1'>
 								<span className='font-bold'>
 									{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
-									{everyoneCount === 1 ? "patient" : "patients"}
+									{everyoneCount === 1 ? "patient" : "patients"}{" "}
+									{singleHospital
+										? `at ${singleHospital.name}`
+										: `across ${hospitalCount} ${hospitalCount === 1 ? "hospital" : "hospitals"}`}
 								</span>{" "}
 								· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
 							</Typography>
 							<LiveFeed
 								change={liveFeed}
-								open={feedOpen}
+								open={rightPanel === "feed"}
 								onOpen={() => {
-									setFeedOpen((open) => !open);
+									toggleRightPanel("feed");
 									onOpenLiveFeed?.();
 								}}
 							/>
 						</div>
 
-						<div className='flex flex-wrap items-center justify-between gap-4'>
-							<div className='flex flex-wrap items-center gap-1'>
+						<FilterBar aria-label='Patient filters'>
+							{/* The search leads the chips, as on the Census, and pushes them along as it opens. */}
+							<FilterBarFilters>
+								<SearchInput label='Search patients' value={query} onValueChange={setQuery} />
 								<MyPatientsChip
 									value={scope}
 									onValueChange={setScope}
@@ -319,9 +556,10 @@ function MonitoringPanel({
 									onValueChange={pressStatusFilter}
 									patients={located(assigned)}
 								/>
-							</div>
-							{/* View controls (PRD MON-015): card monitor, monitor view, then density, the switches of one view. */}
-							<div className='ml-auto flex flex-wrap items-center gap-2'>
+							</FilterBarFilters>
+							{/* View controls (PRD MON-015): card monitor, monitor view, then density, the switches of one view, and the
+							    cards' details; then Sort and Filters, as on the Census. */}
+							<FilterBarControls>
 								<MonitorPlotToggle value={plot} onValueChange={setPlot} density={density} />
 								<MonitorViewToggle
 									density={density}
@@ -329,16 +567,26 @@ function MonitoringPanel({
 									onValueChange={(view) => view && setMonitorView(view)}
 								/>
 								<DensityToggle value={density} onValueChange={setDensity} />
-								<UnitSelect value={unit} onValueChange={setUnit} />
 								<SortSelect value={sortBy} onValueChange={setSortBy} orders={sortOrderIds} />
-							</div>
-						</div>
+								{/* Opens the Filters panel (Unit is one of its groups). */}
+								<FiltersButton
+									panelId='monitoring-filters'
+									open={filtersOpen}
+									filters={filters}
+									onClick={() => setFiltersOpen((current) => !current)}
+								/>
+							</FilterBarControls>
+						</FilterBar>
 					</div>
 
 					{density === "list" ? (
 						<MonitoringList
 							{...pauseProps}
-							patients={visible.map((patient) => ({ ...patient, alert: cardAlert(patient.id) }))}
+							patients={visible.map((patient) => ({
+								...patient,
+								tone: tones.get(patient.id) ?? avatarTone(patient.id),
+								alert: cardAlert(patient.id),
+							}))}
 							hospitals={hospitals}
 							grouped={grouped}
 							onOpenPatient={canOpenPatient ? openPatient : undefined}
@@ -346,15 +594,19 @@ function MonitoringPanel({
 					) : board ? (
 						<PanelBoard
 							{...pauseProps}
+							animateIn={boardSwitched}
 							patients={visible}
+							snap={snapOrder}
 							hospitals={hospitals}
 							className={boardClassNames[density]}
+							spareColumns={density === "compact" ? 1 : 0}
 							renderCard={renderCard}
 						/>
 					) : (
 						<PanelGrid
 							{...pauseProps}
 							patients={visible}
+							snap={snapOrder}
 							hospitals={hospitals}
 							grouped={grouped}
 							className={gridClassNames[density]}
@@ -384,9 +636,18 @@ function MonitoringPanel({
 				</main>
 			</div>
 
+			<FiltersPanel
+				id='monitoring-filters'
+				open={filtersOpen}
+				onOpenChange={setFiltersOpen}
+				groups={filterGroups}
+				filters={filters}
+				onFiltersChange={changeFilters}
+				patients={inStatus(searched(assigned))}
+			/>
 			<LiveFeedPanel
-				open={feedOpen}
-				onOpenChange={setFeedOpen}
+				open={rightPanel === "feed"}
+				onOpenChange={(open) => setRightPanel(open ? "feed" : null)}
 				alerts={alerts}
 				patients={patients}
 				escalationTargets={escalationTargets}

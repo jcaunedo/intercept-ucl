@@ -3,11 +3,22 @@ import { ArrowUpIcon, AudioLinesIcon, MicIcon, PlusIcon, SlashIcon, SquareIcon }
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
-import { enterTransition, motionDistance, motionScale, useMotionPreference } from "@/lib/motion";
+import {
+	enterTransition,
+	motionDistance,
+	motionScale,
+	standardTransition,
+	useMotionPreference,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-/** A slash command: typed as "/name", described in the commands menu. */
-type ChatCommand = { name: string; description: string };
+/**
+ * A slash command: typed as "/name". `description`, when given, shows beside it in the commands menu. `hint` guides
+ * what to write next: it shows in the field, muted, right after "/name " until something follows it (e.g. "Add a
+ * patient's name"). With `onSelect`, picking it runs it at once and clears the field (e.g. /clear), instead of writing
+ * "/name " to be sent.
+ */
+type ChatCommand = { name: string; description?: string; hint?: string; onSelect?: () => void };
 
 type ChatComposerProps = Omit<React.ComponentProps<"form">, "onSubmit" | "children"> & {
 	/** The message, controlled. Without it, the composer keeps its own and clears it once sent. */
@@ -77,6 +88,10 @@ function ChatComposer({
 	const typed = /^\/(\S*)$/.exec(value)?.[1];
 	const query = typed ?? (menuForced ? "" : undefined);
 	const matches = query === undefined ? [] : commands.filter((command) => command.name.startsWith(query.toLowerCase()));
+	// A command written alone ("/sepsis "), nothing after it yet: its hint shows after it in the field.
+	const written = /^\/(\S+) $/.exec(value)?.[1];
+	const hint = written ? commands.find((command) => command.name === written.toLowerCase())?.hint : undefined;
+	const hintId = React.useId();
 	const menuOpen = matches.length > 0 && !menuDismissed && !disabled;
 	const active = matches[Math.min(activeIndex, matches.length - 1)];
 
@@ -87,12 +102,18 @@ function ChatComposer({
 		setActiveIndex(0);
 	};
 
-	// A picked command replaces the one being typed, or goes before the text already there.
+	// A picked command replaces the one being typed, or goes before the text already there. One that acts on its own
+	// (`onSelect`) runs at once and leaves the field empty.
 	const pick = (command: ChatCommand) => {
-		const rest = value.replace(/^\/\S*\s?/, "");
-		setValue(`/${command.name} ${rest}`);
 		setMenuForced(false);
 		fieldRef.current?.focus();
+		if (command.onSelect) {
+			setValue("");
+			command.onSelect();
+			return;
+		}
+		const rest = value.replace(/^\/\S*\s?/, "");
+		setValue(`/${command.name} ${rest}`);
 	};
 
 	const openMenu = () => {
@@ -126,82 +147,113 @@ function ChatComposer({
 			)}
 			{...props}
 		>
-			{/* The commands menu, above the box: styled and animated like the library's menus (fade, a small rise). */}
+			{/* The commands menu, above the box: the library's menu surface and motion (fade, a small rise), with the box's own
+			    radius, 10px sides and 16px top and bottom; items 12px. The padding is the surface's and only the list
+			    scrolls, so it shows on every side, the bottom included, even when the list is longer than fits. */}
 			<AnimatePresence>
 				{menuOpen ? (
-					<motion.ul
+					<motion.div
 						key='commands'
-						id={menuId}
-						role='listbox'
-						aria-label='Commands'
 						initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: motionScale.popIn, y: motionDistance.subtle }}
 						animate={{ opacity: 1, scale: 1, y: 0, transition: resolve(enterTransition) }}
 						exit={{ opacity: 0, transition: { duration: 0 } }}
-						className='absolute inset-x-0 bottom-full z-50 mb-2 flex max-h-64 origin-bottom flex-col gap-0.5 overflow-y-auto rounded-input border border-border bg-popover p-1 text-popover-foreground shadow-xl'
+						className='absolute inset-x-0 bottom-full z-50 mb-2 flex origin-bottom flex-col rounded-3xl border border-border bg-popover px-2.5 py-4 text-popover-foreground shadow-xl'
 					>
-						{matches.map((command) => (
-							<li
-								key={command.name}
-								id={`${menuId}-${command.name}`}
-								role='option'
-								aria-selected={command === active}
-								// Keeps focus in the field, so picking doesn't close the menu first.
-								onMouseDown={(event) => event.preventDefault()}
-								onClick={() => pick(command)}
-								onMouseMove={() => setActiveIndex(matches.indexOf(command))}
-								className='flex cursor-pointer items-baseline gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent aria-selected:text-accent-foreground'
-							>
-								<span className='font-medium'>/{command.name}</span>
-								<span className='truncate text-xs text-muted-foreground'>{command.description}</span>
-							</li>
-						))}
-					</motion.ul>
+						<ul
+							id={menuId}
+							role='listbox'
+							aria-label='Commands'
+							className='flex max-h-64 flex-col gap-0.5 overflow-y-auto scrollbar-soft'
+						>
+							{matches.map((command) => (
+								<li
+									key={command.name}
+									id={`${menuId}-${command.name}`}
+									role='option'
+									aria-selected={command === active}
+									// Keeps focus in the field, so picking doesn't close the menu first.
+									onMouseDown={(event) => event.preventDefault()}
+									onClick={() => pick(command)}
+									onMouseMove={() => setActiveIndex(matches.indexOf(command))}
+									className='flex cursor-pointer items-baseline gap-2 rounded-xl px-2 py-1.5 text-sm aria-selected:bg-accent aria-selected:text-accent-foreground'
+								>
+									<span className='font-medium'>/{command.name}</span>
+									{command.description ? (
+										<span className='truncate text-xs text-muted-foreground'>{command.description}</span>
+									) : null}
+								</li>
+							))}
+						</ul>
+					</motion.div>
 				) : null}
 			</AnimatePresence>
-			<textarea
-				ref={fieldRef}
-				value={value}
-				onChange={(event) => setValue(event.target.value)}
-				onBlur={() => setMenuForced(false)}
-				onKeyDown={(event) => {
-					if (menuOpen) {
-						if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-							event.preventDefault();
-							const step = event.key === "ArrowDown" ? 1 : -1;
-							setActiveIndex((matches.indexOf(active) + step + matches.length) % matches.length);
-							return;
+			{/* The field and its command hint share one cell: the hint is the text laid out again, invisible, then the hint in
+			    `foreground-subtle`, so it starts right where the text ends and a long hint wraps and grows the box. */}
+			<div className='grid'>
+				<AnimatePresence>
+					{hint ? (
+						<motion.div
+							key={hint}
+							aria-hidden='true'
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1, transition: resolve(standardTransition) }}
+							// Gone at once when the user types after the command, so the hint never overlaps their text.
+							exit={{ opacity: 0, transition: { duration: 0 } }}
+							className='pointer-events-none col-start-1 row-start-1 text-sm break-words whitespace-pre-wrap'
+						>
+							<span className='invisible'>{value}</span>
+							<span id={hintId} className='text-foreground-subtle'>
+								{hint}
+							</span>
+						</motion.div>
+					) : null}
+				</AnimatePresence>
+				<textarea
+					ref={fieldRef}
+					value={value}
+					onChange={(event) => setValue(event.target.value)}
+					onBlur={() => setMenuForced(false)}
+					onKeyDown={(event) => {
+						if (menuOpen) {
+							if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+								event.preventDefault();
+								const step = event.key === "ArrowDown" ? 1 : -1;
+								setActiveIndex((matches.indexOf(active) + step + matches.length) % matches.length);
+								return;
+							}
+							if ((event.key === "Enter" || event.key === "Tab") && !event.shiftKey && !event.nativeEvent.isComposing) {
+								event.preventDefault();
+								pick(active);
+								return;
+							}
+							if (event.key === "Escape") {
+								// Closes the menu only, not a panel or dialog around the composer.
+								event.preventDefault();
+								event.stopPropagation();
+								setMenuDismissed(true);
+								setMenuForced(false);
+								return;
+							}
 						}
-						if ((event.key === "Enter" || event.key === "Tab") && !event.shiftKey && !event.nativeEvent.isComposing) {
+						// Enter sends, unless it's ending an IME composition or Shift asks for a new line.
+						if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
 							event.preventDefault();
-							pick(active);
-							return;
+							send();
 						}
-						if (event.key === "Escape") {
-							// Closes the menu only, not a panel or dialog around the composer.
-							event.preventDefault();
-							event.stopPropagation();
-							setMenuDismissed(true);
-							setMenuForced(false);
-							return;
-						}
-					}
-					// Enter sends, unless it's ending an IME composition or Shift asks for a new line.
-					if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-						event.preventDefault();
-						send();
-					}
-				}}
-				rows={1}
-				placeholder={placeholder}
-				aria-label={label ?? placeholder}
-				role={commands.length ? "combobox" : undefined}
-				aria-autocomplete={commands.length ? "list" : undefined}
-				aria-expanded={commands.length ? menuOpen : undefined}
-				aria-controls={menuOpen ? menuId : undefined}
-				aria-activedescendant={menuOpen && active ? `${menuId}-${active.name}` : undefined}
-				disabled={disabled}
-				className='field-sizing-content max-h-40 min-h-5 w-full resize-none bg-transparent text-sm text-foreground outline-none placeholder:text-foreground-subtle disabled:cursor-not-allowed'
-			/>
+					}}
+					rows={1}
+					placeholder={placeholder}
+					aria-label={label ?? placeholder}
+					role={commands.length ? "combobox" : undefined}
+					aria-autocomplete={commands.length ? "list" : undefined}
+					aria-expanded={commands.length ? menuOpen : undefined}
+					aria-controls={menuOpen ? menuId : undefined}
+					aria-activedescendant={menuOpen && active ? `${menuId}-${active.name}` : undefined}
+					aria-describedby={hint ? hintId : undefined}
+					disabled={disabled}
+					className='col-start-1 row-start-1 field-sizing-content max-h-40 min-h-5 w-full resize-none bg-transparent text-sm text-foreground outline-none placeholder:text-foreground-subtle disabled:cursor-not-allowed'
+				/>
+			</div>
 			<div className='flex items-center justify-between gap-2'>
 				<div className='flex items-center gap-2'>
 					{onAttach ? (

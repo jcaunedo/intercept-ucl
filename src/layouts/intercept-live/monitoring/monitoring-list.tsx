@@ -4,13 +4,18 @@ import { AnimatePresence, motion } from "motion/react";
 import { PatientCardAlert } from "@/components/cards/patient-card";
 import {
 	defaultMonitorLimits,
+	DeviceAlarmValue,
+	MonitorAlarmIcon,
+	type MonitorAlarmPriorities,
 	type MonitorLimits,
 	type MonitorVitals,
 } from "@/components/cards/patient-monitoring-card";
+import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { HospitalSectionHeader } from "@/components/data-display/hospital-section-header";
 import { exitTransition, resolvedFadeTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+import { patientInitials } from "../shared/patient-avatar";
 import { activeAlertCount, type PanelHospital, type PanelPatient } from "../shared/patient-panel";
 
 // The panel's List density (PRD Monitoring MON-012): one row per patient, the primary numerics as columns, for large
@@ -20,8 +25,13 @@ type MonitoringListPatient = PanelPatient & {
 	mrn?: string;
 	sex?: string;
 	age?: number | string;
+	/** The avatar's photo; without it, the initials in `tone` (the panel's `avatarTones`, as on the card). */
+	photo?: string;
+	tone?: AvatarFallbackProps["tone"];
 	vitals?: MonitorVitals;
 	limits?: Partial<MonitorLimits>;
+	alarmPriorities?: MonitorAlarmPriorities;
+	acknowledgedAlarms?: (keyof MonitorLimits)[];
 };
 
 type Column = {
@@ -50,9 +60,13 @@ function reading(patient: MonitoringListPatient, column: Column) {
 				? `${vitals.systolic}/${vitals.diastolic}`
 				: undefined
 			: raw;
-	if (!column.limit || raw === undefined) return { text, alarm: undefined };
+	if (!column.limit || raw === undefined) return { text, alarm: undefined, priority: undefined };
 	const [low, high] = { ...defaultMonitorLimits, ...patient.limits }[column.limit];
-	return { text, alarm: raw > high ? "above" : raw < low ? "below" : undefined };
+	const alarm = raw > high ? ("above" as const) : raw < low ? ("below" as const) : undefined;
+	// The device's alarm, as on the card, until it's acknowledged at the bedside.
+	const acknowledged = patient.acknowledgedAlarms?.includes(column.limit);
+	const priority = alarm && !acknowledged ? patient.alarmPriorities?.[column.limit] : undefined;
+	return { text, alarm, priority };
 }
 
 /** One patient's row. The name opens the patient; the whole row does too, for the mouse. */
@@ -67,21 +81,30 @@ function ListRow({ patient, onOpenPatient }: { patient: MonitoringListPatient; o
 			className={cn("border-b border-border-muted last:border-b-0", onOpenPatient && "cursor-pointer hover:bg-accent")}
 		>
 			<td className='px-4 py-2.5'>
-				{onOpenPatient ? (
-					<button
-						type='button'
-						onClick={(event) => {
-							event.stopPropagation();
-							onOpenPatient(patient.id);
-						}}
-						className='rounded-sm text-left font-bold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
-					>
-						{name}
-					</button>
-				) : (
-					<span className='font-bold text-foreground'>{name}</span>
-				)}
-				{identity ? <div className='text-xs text-muted-foreground'>{identity}</div> : null}
+				{/* The patient's avatar, as on their card: the photo, or the initials in their color. Decorative. */}
+				<div className='flex items-center gap-3'>
+					<Avatar aria-hidden='true'>
+						{patient.photo ? <AvatarImage src={patient.photo} alt='' /> : null}
+						<AvatarFallback tone={patient.tone}>{patientInitials(patient)}</AvatarFallback>
+					</Avatar>
+					<div className='min-w-0'>
+						{onOpenPatient ? (
+							<button
+								type='button'
+								onClick={(event) => {
+									event.stopPropagation();
+									onOpenPatient(patient.id);
+								}}
+								className='rounded-sm text-left font-bold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+							>
+								{name}
+							</button>
+						) : (
+							<span className='font-bold text-foreground'>{name}</span>
+						)}
+						{identity ? <div className='text-xs text-muted-foreground'>{identity}</div> : null}
+					</div>
+				</div>
 			</td>
 			<td className='px-4 py-2.5'>
 				<div className='text-sm text-foreground'>{[patient.unit, patient.bed].filter(Boolean).join(" · ")}</div>
@@ -112,7 +135,7 @@ function ListRow({ patient, onOpenPatient }: { patient: MonitoringListPatient; o
 				</AnimatePresence>
 			</td>
 			{columns.map((column) => {
-				const { text, alarm } = reading(patient, column);
+				const { text, alarm, priority } = reading(patient, column);
 				return (
 					<td
 						key={column.key}
@@ -122,17 +145,14 @@ function ListRow({ patient, onOpenPatient }: { patient: MonitoringListPatient; o
 							text === undefined ? "text-muted-foreground" : column.color,
 						)}
 					>
-						{/* The same ↑ / ↓ tag as on the card's monitor, in the page's ink (PRD MON-014, MON-073). */}
+						{/* The same triangle as on the card's monitor, in the page's ink (PRD MON-014, MON-073). */}
+						{alarm ? <MonitorAlarmIcon side={alarm} className='mr-1.5 align-[1px] text-foreground' /> : null}
+						<DeviceAlarmValue priority={priority}>{text ?? "--"}</DeviceAlarmValue>
 						{alarm ? (
-							<span
-								aria-hidden='true'
-								className='mr-1.5 inline-grid size-3.5 place-items-center rounded-sm bg-foreground align-[1px] text-[10px] leading-none font-bold text-background'
-							>
-								{alarm === "above" ? "↑" : "↓"}
+							<span className='sr-only'>
+								, {alarm} alarm limits{priority ? `, ${priority} priority alarm` : ""}
 							</span>
 						) : null}
-						{text ?? "--"}
-						{alarm ? <span className='sr-only'>, {alarm} alarm limits</span> : null}
 					</td>
 				);
 			})}
@@ -185,10 +205,11 @@ function MonitoringList({
 						))}
 					</tr>
 				</thead>
-				{sections.map(({ hospital, patients: rows }) => (
+				{sections.map(({ hospital, patients: rows }, index) => (
 					<tbody key={hospital?.id ?? "all"}>
 						{hospital ? (
-							<tr className='border-b border-border'>
+							// A line between one hospital's last patient and the next hospital.
+							<tr className={cn("border-b border-border", index > 0 && "border-t")}>
 								<td colSpan={3 + columns.length} className='px-4 pt-4 pb-3'>
 									<HospitalSectionHeader
 										name={hospital.name}

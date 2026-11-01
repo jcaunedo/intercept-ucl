@@ -1,33 +1,37 @@
 import * as React from "react";
 import { ArrowDownUpIcon, UsersIcon, type LucideIcon } from "lucide-react";
-import { AnimatePresence, motion, type Transition, type Variants } from "motion/react";
+import { AnimatePresence, motion, type TargetAndTransition, type Transition, type Variants } from "motion/react";
 
-import type { PatientCardAcuityLevel, PatientCardAlertVariant, PatientCardProps } from "@/components/cards/patient-card";
-import { Badge } from "@/components/data-display/badge";
-import { Counter, type CounterProps } from "@/components/data-display/counter";
+import {
+	patientCardAcuityLevels,
+	type PatientCardAcuityLevel,
+	type PatientCardAlertVariant,
+	type PatientCardProps,
+} from "@/components/cards/patient-card";
+import { Counter } from "@/components/data-display/counter";
+import { FilterBarChip } from "@/components/forms/filter-bar";
 import { HospitalSectionHeader } from "@/components/data-display/hospital-section-header";
 import {
 	Select,
 	SelectContent,
-	SelectGroup,
 	SelectItem,
-	SelectLabel,
-	SelectSeparator,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/forms/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import {
+	fadeVariants,
 	motionDuration,
-	pressPattern,
 	reducedMotionTransition,
 	reorderSpring,
 	revealVariants,
+	scrollContainerOf,
 	useMotionPreference,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import { usePagePreferences } from "../page-preferences";
+import { usePagePreferences, type SortPage } from "../page-preferences";
 import { usePatientNavigation } from "../patient-navigation";
 
 // The patient list both Census and Monitoring filter, sort and group, so the two pages behave the same (PRD Monitoring
@@ -41,7 +45,19 @@ type PanelHospital = { id: string; name: string };
 
 type PanelPatient = Pick<
 	PatientCardProps,
-	"lastName" | "firstName" | "hospital" | "unit" | "bed" | "alert" | "acuity" | "trajectory" | "tags"
+	| "lastName"
+	| "firstName"
+	| "mrn"
+	| "sex"
+	| "age"
+	| "hospital"
+	| "unit"
+	| "room"
+	| "bed"
+	| "alert"
+	| "acuity"
+	| "trajectory"
+	| "tags"
 > & {
 	id: string;
 	hospitalId: string;
@@ -49,21 +65,19 @@ type PanelPatient = Pick<
 	mine?: boolean;
 	/** The acuity score's change over the last 4 h, which ranks patients within an alert severity (DU-09). */
 	scoreChange4h?: number;
+	/** When the signed-in clinician last opened the patient's details, ISO 8601. For the Recently viewed sort. */
+	lastViewedAt?: string;
+	/** When the patient's most recent alert was resolved, ISO 8601. For the Recently resolved sort. */
+	lastResolvedAt?: string;
+	/** Unread messages from the patient's family. For the Family messages sort (Monitoring's cards show them). */
+	unreadMessages?: number;
+	/** When the patient's most recent open alert fired, ISO 8601. For the Alerts sort (newest first). */
+	lastAlertAt?: string;
 };
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
-
-// The units the menu offers: the most common critical-care units, plus step-down. Product content, not data: a hospital
-// may not have every unit, and choosing one with no patients shows the no-matches state.
-const unitGroups = [
-	{
-		label: "Intensive care",
-		units: ["MICU", "SICU", "CVICU", "CCU", "Neuro ICU", "Trauma ICU", "Burn ICU", "OB-ICU"],
-	},
-	{ label: "Step-down", units: ["PCU"] },
-];
 
 const severityRank: Record<PatientCardAlertVariant, number> = {
 	critical: 4,
@@ -75,6 +89,46 @@ const severityRank: Record<PatientCardAlertVariant, number> = {
 };
 
 const organSupportTags = ["Ventilated", "On pressors", "NIV", "ECMO", "Dialysis"];
+
+// Search text: any case, and the card's minus sign (−) matches a typed hyphen.
+const searchable = (text: string) => text.toLowerCase().replace(/[−–]/g, "-");
+
+/**
+ * Whether a patient matches the filter bar's search: every word typed (commas ignored, so "Miller, Sarah" works)
+ * appears in what their card shows: name, MRN, sex and age, hospital, unit, room and bed, the alert, the score with its
+ * name and band ("NEWS2 17 High"), its 24 h change and the tags, plus any `extra` the page's card adds (Monitoring's
+ * live vitals). An empty search matches everyone.
+ */
+const matchesSearch = (patient: PanelPatient, query: string, extra: (string | number | undefined)[] = []) => {
+	const words = searchable(query).split(/[\s,]+/).filter(Boolean);
+	if (!words.length) return true;
+	const { acuity, alert, trajectory } = patient;
+	// The band the card shows: a score without a value reads Unknown.
+	const level = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
+	const text = searchable(
+		[
+			patient.lastName,
+			patient.firstName,
+			patient.mrn,
+			patient.sex,
+			patient.age,
+			patient.hospital,
+			patient.unit,
+			patient.room,
+			patient.bed,
+			alert?.label ?? alert?.variant,
+			acuity?.label,
+			acuity?.score,
+			level ? patientCardAcuityLevels[level].label : undefined,
+			trajectory?.value,
+			...(patient.tags ?? []).map((tag) => tag.label),
+			...extra,
+		]
+			.filter((part) => part !== undefined && part !== "")
+			.join(" "),
+	);
+	return words.every((word) => text.includes(word));
+};
 
 /** Whether a patient has an active alert: a severity, not a resolved alert or a message. */
 const hasActiveAlert = (patient: PanelPatient) =>
@@ -89,13 +143,13 @@ const hasOrganSupport = (patient: PanelPatient) =>
 const activeAlertCount = (patients: PanelPatient[]) =>
 	patients.reduce((total, patient) => (hasActiveAlert(patient) ? total + (patient.alert?.count ?? 1) : total), 0);
 
-/** The counter on a hospital tab takes the color of the worst alert among its patients. */
-function topSeverity(patients: PanelPatient[]): CounterProps["variant"] {
+/** The worst active alert among the patients, which colors a hospital tab's alert count. */
+function topSeverity(patients: PanelPatient[]): AlertSeverity | undefined {
 	const worst = patients.reduce<PatientCardAlertVariant | undefined>((current, patient) => {
-		if (!patient.alert) return current;
+		if (!patient.alert || !hasActiveAlert(patient)) return current;
 		return !current || severityRank[patient.alert.variant] > severityRank[current] ? patient.alert.variant : current;
 	}, undefined);
-	return worst === "critical" || worst === "high" || worst === "medium" || worst === "low" ? worst : "secondary";
+	return isSeverity(worst) ? worst : undefined;
 }
 
 const byName = (a: PanelPatient, b: PanelPatient) =>
@@ -131,14 +185,39 @@ const acuityBands: Record<PatientCardAcuityLevel, number> = { critical: 5, high:
 const byBand = descending((patient) => (patient.acuity?.level ? acuityBands[patient.acuity.level] : undefined));
 const byRise = descending((patient) => patient.scoreChange4h);
 
+// Most recent first; patients never viewed, or with nothing resolved, last.
+const time = (value?: string) => (value ? Date.parse(value) : undefined);
+const byViewed = descending((patient) => time(patient.lastViewedAt));
+const byResolved = descending((patient) => time(patient.lastResolvedAt));
+// The newest open alert first (Oct 31, 2026, user's call); an open alert without a time after those, then patients
+// without an open alert.
+const byNewestAlert = descending((patient) => (hasActiveAlert(patient) ? (time(patient.lastAlertAt) ?? 0) : undefined));
+// The longest-waiting open alert first (`alert.since`, when the top alert started); patients without a time last.
+const byLongestActive = descending((patient) =>
+	hasActiveAlert(patient) && patient.alert?.since ? -Date.parse(patient.alert.since) : undefined,
+);
+
+/**
+ * Who to see first, for the Active alerts chip (Oct 31, 2026, user's call), in the live feed's work-list order (DU-09)
+ * so the first card and the queue's first alert agree: the worst alert's severity; then the acuity band; then the larger
+ * score rise over 4 h (a jumping score outranks a high, steady one: Scenario 1's Hayes above Miller); then the alert
+ * that has waited longest; then the higher score; then name, so ties never flicker.
+ */
+const byAlertPriority = (a: PanelPatient, b: PanelPatient) =>
+	byAlert(a, b) || byBand(a, b) || byRise(a, b) || byLongestActive(a, b) || byAcuity(a, b) || byName(a, b);
+
+// The most unread family messages first; patients without any last.
+const byMessages = descending((patient) => patient.unreadMessages || undefined);
+
 // Sort orders. Alert ranks like the triage queue (severity, band, 4 h rise), then by score; Acuity breaks ties by
 // alert, so both signals count in either lens; then by name, so the order is stable.
 const sortOrders = [
 	{
 		id: "alert",
-		label: "Alert",
-		compare: (a: PanelPatient, b: PanelPatient) =>
-			byAlert(a, b) || byBand(a, b) || byRise(a, b) || byAcuity(a, b) || byName(a, b),
+		// "Recent alerts", so the label says it's by time (Oct 31, 2026, user's call; "Alert", then "Alerts").
+		label: "Recent alerts",
+		// Newest first, not by severity (Oct 31, 2026, user's call): the Active alerts chip orders by severity.
+		compare: (a: PanelPatient, b: PanelPatient) => byNewestAlert(a, b) || byName(a, b),
 	},
 	{ id: "acuity", label: "Score", compare: (a: PanelPatient, b: PanelPatient) => byAcuity(a, b) || byAlert(a, b) || byName(a, b) },
 	{
@@ -146,7 +225,19 @@ const sortOrders = [
 		label: "Score change",
 		compare: (a: PanelPatient, b: PanelPatient) => descending(acuityChange)(a, b) || byName(a, b),
 	},
-	{ id: "name", label: "Name", compare: byName },
+	// Last name, then first name, A–Z. "Patient name" (Oct 31, 2026, user's call; was "Name"), next to Family messages.
+	{ id: "name", label: "Patient name", compare: byName },
+	{ id: "viewed", label: "Recently viewed", compare: (a: PanelPatient, b: PanelPatient) => byViewed(a, b) || byName(a, b) },
+	{
+		id: "resolved",
+		label: "Recently resolved",
+		compare: (a: PanelPatient, b: PanelPatient) => byResolved(a, b) || byName(a, b),
+	},
+	{
+		id: "messages",
+		label: "Family messages",
+		compare: (a: PanelPatient, b: PanelPatient) => byMessages(a, b) || byName(a, b),
+	},
 ] as const;
 
 type SortOrderId = (typeof sortOrders)[number]["id"];
@@ -156,14 +247,48 @@ const sortOrderById = (id: SortOrderId) => sortOrders.find((order) => order.id =
 /**
  * The panel's order: the sort, and with Group by location, hospital by hospital (in name order) first, the sort inside
  * each. PanelGrid and the List tables start a section wherever the hospital changes. Location is no longer a sort (Oct
- * 30, 2026, Intercept-Live Census `167:5543`): grouping is its own switch.
+ * 30, 2026, Intercept-Live Census `167:5543`): grouping is its own switch. `alertPriority` (the Active alerts chip, Oct
+ * 31, 2026, user's call) orders by who to see first (`byAlertPriority`) instead of the sort.
  */
-const panelOrder = (sortBy: SortOrderId, grouped: boolean) => {
-	const { compare } = sortOrderById(sortBy);
+const panelOrder = (sortBy: SortOrderId, grouped: boolean, alertPriority = false) => {
+	const compare = alertPriority ? byAlertPriority : sortOrderById(sortBy).compare;
 	return grouped
 		? (a: PanelPatient, b: PanelPatient) => (a.hospital ?? "").localeCompare(b.hospital ?? "") || compare(a, b)
 		: compare;
 };
+
+/** The later of two ISO 8601 times. */
+const latest = (a?: string, b?: string) => (!a ? b : !b ? a : Date.parse(a) >= Date.parse(b) ? a : b);
+
+/**
+ * When each patient's last alert was resolved, from the page's alerts: the ones resolved in the live feed carry when
+ * (`addressed.at`). Merged over the patient's own `lastResolvedAt` by `useRecentActivity`.
+ */
+function resolvedTimes(alerts: readonly { patientId: string; status?: string; addressed?: { at: string } }[]) {
+	const times: Record<string, string> = {};
+	for (const alert of alerts) {
+		if (alert.status === "resolved" && alert.addressed) {
+			times[alert.patientId] = latest(times[alert.patientId], alert.addressed.at) as string;
+		}
+	}
+	return times;
+}
+
+/**
+ * The patients with this session's activity merged over what the data says, for the Recently viewed and Recently
+ * resolved sorts: the details the clinician opened in the shell (each patient stepped to counts), and the alerts
+ * resolved on the page (`resolvedAt`, by patient). An app gets both back from its API.
+ */
+function useRecentActivity<Patient extends PanelPatient>(patients: Patient[], resolvedAt: Record<string, string>): Patient[] {
+	const viewedAt = usePatientNavigation()?.viewedAt;
+	return patients.map((patient) => {
+		const lastViewedAt = latest(viewedAt?.[patient.id], patient.lastViewedAt);
+		const lastResolvedAt = latest(resolvedAt[patient.id], patient.lastResolvedAt);
+		return lastViewedAt === patient.lastViewedAt && lastResolvedAt === patient.lastResolvedAt
+			? patient
+			: { ...patient, lastViewedAt, lastResolvedAt };
+	});
+}
 
 /* -------------------------------------------------------------------------- */
 /* Holding the order                                                          */
@@ -352,13 +477,14 @@ function useHeldOrder<Patient extends { id: string }>(patients: Patient[], sorts
  * A "Resolved" pill stays while its card moves to its new place, then fades `motionDuration.resolvedHold` after the
  * card lands (MOTION.md Urgency: the pill fades on `resolvedFadeTransition`). The card moves at the first re-sort
  * (`sorts`) after its alert resolved, so the hold doesn't start before that, nor while the order is held. A patient
- * whose alert stops being resolved (a new one fired) shows the next "Resolved" again.
+ * whose alert stops being resolved (a new one fired) shows the next "Resolved" again. Without `sorts` (a page that
+ * doesn't re-sort on its own, the Census), nothing moves: the pill fades `resolvedHold` after it appears.
  */
-function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient[], paused: boolean, sorts: number): Patient[] {
+function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient[], paused: boolean, sorts?: number): Patient[] {
 	const [faded, setFaded] = React.useState<ReadonlySet<string>>(() => new Set());
 	const timers = React.useRef(new Map<string, number>());
 	// The re-sort count when each pill turned "Resolved".
-	const resolvedAt = React.useRef(new Map<string, number>());
+	const resolvedAt = React.useRef(new Map<string, number | undefined>());
 	const resolvedIds = patients.filter((patient) => patient.alert?.variant === "resolved").map((patient) => patient.id);
 	const resolvedKey = resolvedIds.join();
 
@@ -377,10 +503,11 @@ function useFadingResolvedAlerts<Patient extends PanelPatient>(patients: Patient
 			return;
 		}
 		if (paused) return;
-		// The card's move (Reorder settles within `slow`), then the hold.
-		const delay = (motionDuration.slow + motionDuration.resolvedHold) * 1000;
+		// The card's move (Reorder settles within `slow`), then the hold; just the hold when nothing moves.
+		const delay = ((sorts === undefined ? 0 : motionDuration.slow) + motionDuration.resolvedHold) * 1000;
 		for (const id of resolved) {
-			if (faded.has(id) || timers.current.has(id) || resolvedAt.current.get(id) === sorts) continue;
+			const awaitingMove = sorts !== undefined && resolvedAt.current.get(id) === sorts;
+			if (faded.has(id) || timers.current.has(id) || awaitingMove) continue;
 			timers.current.set(
 				id,
 				window.setTimeout(() => {
@@ -419,9 +546,76 @@ type QuickView<Patient> = {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * What a hospital tab's counters say: "6 patients", and, when any have an active alert, "4 active alerts, highest
+ * Medium". Shared by the counters' tooltips and the tab's accessible name, so the two never disagree.
+ */
+function hospitalTabCounts(patients: PanelPatient[]) {
+	const severity = topSeverity(patients);
+	const alerts = activeAlertCount(patients);
+	return {
+		severity,
+		alerts,
+		patientsText: `${patients.length} ${patients.length === 1 ? "patient" : "patients"}`,
+		alertsText:
+			severity && alerts > 0
+				? `${alerts} active ${alerts === 1 ? "alert" : "alerts"}, highest ${severity[0].toUpperCase()}${severity.slice(1)}`
+				: undefined,
+	};
+}
+
+/**
+ * One tab's counters: how many patients, then, when any have an active alert, how many alerts, in the color of the
+ * worst one. Both are muted at rest and solid on the active tab (patients `secondary` → `neutral`, alerts
+ * `<severity>-muted` → `<severity>`), easing between the two with the label. Hovering a counter names it in a
+ * tooltip; screen readers get the same words from the tab's name, so the counters are hidden from them.
+ */
+function HospitalTabCounters({ patients, active }: { patients: PanelPatient[]; active: boolean }) {
+	const { severity, alerts, patientsText, alertsText } = hospitalTabCounts(patients);
+
+	return (
+		<>
+			<Tooltip>
+				{/* TooltipTrigger's own `data-slot` would replace the counter's, which TabsTrigger needs to set the pair 2px
+				    apart, so the counters restate theirs. */}
+				<TooltipTrigger asChild>
+					<Counter
+						data-slot='counter'
+						aria-hidden
+						variant={active ? "neutral" : "secondary"}
+						count={patients.length}
+						className='transition-colors'
+					/>
+				</TooltipTrigger>
+				<TooltipContent side='top'>{patientsText}</TooltipContent>
+			</Tooltip>
+			{severity && alertsText ? (
+				<Tooltip>
+					<TooltipTrigger asChild>
+						<Counter
+							data-slot='counter'
+							aria-hidden
+							variant={active ? severity : `${severity}-muted`}
+							count={alerts}
+							className='transition-colors'
+						/>
+					</TooltipTrigger>
+					<TooltipContent side='top'>{alertsText}</TooltipContent>
+				</Tooltip>
+			) : null}
+		</>
+	);
+}
+
+/** The tab's accessible name: "CVMC, 6 patients, 4 active alerts, highest Medium". */
+function hospitalTabLabel(name: string, patients: PanelPatient[]) {
+	const { patientsText, alertsText } = hospitalTabCounts(patients);
+	return [name, patientsText, alertsText].filter(Boolean).join(", ");
+}
+
+/**
  * Hospital tabs: All hospitals, then one per hospital in alphabetical order (as Sort by Location groups them), each
- * with its patient count in the color of its worst alert. Fills the page's hospital bar: 40px tall, the active tab's
- * underline over the bar's bottom border.
+ * with its patient count and its active alert count (`HospitalTabCounters`). Fills the page's hospital bar: 40px tall,
+ * the active tab's underline over the bar's bottom border.
  */
 function HospitalTabs({
 	hospitals,
@@ -440,71 +634,36 @@ function HospitalTabs({
 	return (
 		// When side panels leave the bar too little room, the tabs scroll sideways (scrollbar hidden; trackpads and the
 		// arrow keys still reach every tab) instead of pushing the live feed out of the bar. The 1px overlap with the bar's
-		// line is on the scroll box, so the active underline isn't clipped.
-		<Tabs
-			value={value}
-			onValueChange={onValueChange}
-			className='-mb-px min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
-		>
-			<TabsList variant='line' size='lg' aria-label='Hospital'>
-				<TabsTrigger value='all'>
-					All hospitals
-					<Counter variant='neutral' count={patients.length} />
-				</TabsTrigger>
-				{alphabetical.map((hospital) => {
-					const hospitalPatients = patients.filter((patient) => patient.hospitalId === hospital.id);
-					return (
-						<TabsTrigger key={hospital.id} value={hospital.id}>
-							{hospital.name}
-							<Counter variant={topSeverity(hospitalPatients)} count={hospitalPatients.length} />
-						</TabsTrigger>
-					);
-				})}
-			</TabsList>
-		</Tabs>
-	);
-}
-
-/**
- * One filter chip: a toggle button with its icon, label and how many patients it matches (" · n", Badge's `count`).
- * An unpressed chip cross-fades to the outline look, with a `foreground` border, on hover (160ms, the `fast` duration)
- * and presses on tap (Press). Both are instant under reduced motion.
- */
-function FilterChip({
-	icon: Icon,
-	label,
-	count,
-	pressed,
-	onPressedChange,
-}: {
-	icon: LucideIcon;
-	label: string;
-	count: number;
-	pressed: boolean;
-	onPressedChange: (pressed: boolean) => void;
-}) {
-	const { prefersReducedMotion } = useMotionPreference();
-
-	return (
-		<Badge
-			asChild
-			variant={pressed ? "neutral" : "secondary"}
-			count={count}
-			className={cn(
-				"transition-[color,background-color,border-color,box-shadow] duration-160 ease-out motion-reduce:transition-none",
-				!pressed && "hover:border-foreground hover:bg-background",
-			)}
-		>
-			<motion.button
-				type='button'
-				aria-pressed={pressed}
-				onClick={() => onPressedChange(!pressed)}
-				{...(prefersReducedMotion ? {} : pressPattern)}
+		// line is on the scroll box, so the active underline isn't clipped. The counters' tooltips close as soon as the
+		// pointer leaves: they're only text, and the two counters are 2px apart, so keeping one open while the pointer
+		// heads for it would block the other.
+		<TooltipProvider disableHoverableContent>
+			<Tabs
+				value={value}
+				onValueChange={onValueChange}
+				className='-mb-px min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
 			>
-				<Icon aria-hidden='true' />
-				{label}
-			</motion.button>
-		</Badge>
+				<TabsList variant='line' size='lg' aria-label='Hospital'>
+					<TabsTrigger value='all' aria-label={hospitalTabLabel("All hospitals", patients)}>
+						All hospitals
+						<HospitalTabCounters patients={patients} active={value === "all"} />
+					</TabsTrigger>
+					{alphabetical.map((hospital) => {
+						const hospitalPatients = patients.filter((patient) => patient.hospitalId === hospital.id);
+						return (
+							<TabsTrigger
+								key={hospital.id}
+								value={hospital.id}
+								aria-label={hospitalTabLabel(hospital.name, hospitalPatients)}
+							>
+								{hospital.name}
+								<HospitalTabCounters patients={hospitalPatients} active={value === hospital.id} />
+							</TabsTrigger>
+						);
+					})}
+				</TabsList>
+			</Tabs>
+		</TooltipProvider>
 	);
 }
 
@@ -523,13 +682,14 @@ function MyPatientsChip({
 	count: number;
 }) {
 	return (
-		<FilterChip
-			icon={UsersIcon}
-			label='My patients'
+		<FilterBarChip
 			count={count}
 			pressed={value === "mine"}
 			onPressedChange={(pressed) => onValueChange(pressed ? "mine" : "all")}
-		/>
+		>
+			<UsersIcon aria-hidden='true' />
+			My patients
+		</FilterBarChip>
 	);
 }
 
@@ -550,51 +710,26 @@ function QuickViewChips<Patient>({
 	patients: Patient[];
 }) {
 	return (
-		<div role='group' aria-label='Quick views' className='flex flex-wrap gap-1'>
-			{views.map((view) => (
-				<FilterChip
-					key={view.id}
-					icon={view.icon}
-					label={view.label}
-					count={patients.filter(view.matches).length}
-					pressed={value === view.id}
-					onPressedChange={(pressed) => onValueChange(pressed ? view.id : null)}
-				/>
+		// `contents`: the chips flow with the search and My patients in the filter bar's own row, wrapping one at a time
+		// instead of as a block; the group keeps its name for screen readers.
+		<div role='group' aria-label='Quick views' className='contents'>
+			{views.map(({ id, icon: Icon, label, matches }) => (
+				<FilterBarChip
+					key={id}
+					count={patients.filter(matches).length}
+					pressed={value === id}
+					onPressedChange={(pressed) => onValueChange(pressed ? id : null)}
+				>
+					<Icon aria-hidden='true' />
+					{label}
+				</FilterBarChip>
 			))}
 		</div>
 	);
 }
 
-// Both menus show the chosen value in semibold and any label ("Sort by:") in regular. Radix drops `className` on
-// SelectValue, so the trigger styles it.
+// The sort menu shows the chosen value in semibold. Radix drops `className` on SelectValue, so the trigger styles it.
 const menuTriggerClassName = "gap-1.5 [&_[data-slot=select-value]]:font-semibold";
-
-/** The unit menu: All Units, then the common units, grouped. */
-function UnitSelect({ value, onValueChange }: { value: string; onValueChange: (value: string) => void }) {
-	return (
-		<Select value={value} onValueChange={onValueChange}>
-			<SelectTrigger aria-label='Unit' className={menuTriggerClassName}>
-				<SelectValue />
-			</SelectTrigger>
-			<SelectContent position='popper' align='start'>
-				<SelectItem value='all'>All Units</SelectItem>
-				{unitGroups.map((group) => (
-					<React.Fragment key={group.label}>
-						<SelectSeparator />
-						<SelectGroup>
-							<SelectLabel>{group.label}</SelectLabel>
-							{group.units.map((name) => (
-								<SelectItem key={name} value={name}>
-									{name}
-								</SelectItem>
-							))}
-						</SelectGroup>
-					</React.Fragment>
-				))}
-			</SelectContent>
-		</Select>
-	);
-}
 
 /**
  * The sort menu. Re-sorting reuses the grid's glide: cards are keyed by patient, so they move to their new slots. A page
@@ -652,19 +787,64 @@ const cardReducedVariants: Variants = {
 	exit: { opacity: 0, transition: reducedMotionTransition },
 };
 
+// A card's shared-element id, the same in the grid and the board, so switching Group by location glides each card from
+// one to the other (Connect) instead of remounting it in place.
+const panelCardLayoutId = (patientId: string) => `panel-card-${patientId}`;
+
+/**
+ * Whether `value` has changed since the component mounted: a view that appears because the user switched to it animates
+ * in, one that's there from the start (page load, a page switch) doesn't.
+ */
+function useChangedSinceMount(value: unknown) {
+	const first = React.useRef(value);
+	const [changed, setChanged] = React.useState(false);
+	if (!changed && !Object.is(value, first.current)) setChanged(true);
+	return changed;
+}
+
+/**
+ * A short window in which the grid's next order lands at once: no glide, and leaving cards vanish instead of fading.
+ * Open it from a click that should re-sort on the spot (the Active alerts chip, Nov 1, 2026, user's call: "sorted by
+ * severity in that click, without any delay"); it closes after `motionDuration.normal`, so later changes glide again.
+ */
+function useSnapOrder() {
+	const [snap, setSnap] = React.useState(false);
+	React.useEffect(() => {
+		if (!snap) return;
+		const timer = window.setTimeout(() => setSnap(false), motionDuration.normal * 1000);
+		return () => window.clearTimeout(timer);
+	}, [snap]);
+	return [snap, () => setSnap(true)] as const;
+}
+
+// A leaving card's exit, by AnimatePresence's `custom`: gone at once while the grid snaps, its usual fade otherwise.
+const snapExit: TargetAndTransition = { opacity: 0, transition: { duration: 0 } };
+const withSnapExit = (variants: Variants): Variants => ({
+	...variants,
+	exit: (snap?: boolean) => (snap ? snapExit : (variants.exit as TargetAndTransition)),
+});
+const cardVariants = withSnapExit(revealVariants);
+const cardReducedSnapVariants = withSnapExit(cardReducedVariants);
+
 /**
  * One grid item, wrapped for the filter motion: Reveal in, fade out, and Reorder between slots (the reorder spring, and
- * while it travels it rises above the other cards with a larger shadow, so crossing cards stay readable).
+ * while it travels it rises above the other cards with a larger shadow, so crossing cards stay readable). With a
+ * `layoutId`, it also glides in from the item with the same id that just left another container (Connect).
  */
 function PanelItem({
 	reducedMotion,
 	layoutTransition,
+	snap = false,
+	layoutId,
 	className,
 	children,
 	ref,
 }: {
 	reducedMotion: boolean;
 	layoutTransition: Transition;
+	/** Move to the new slot at once (`useSnapOrder`). */
+	snap?: boolean;
+	layoutId?: string;
 	className?: string;
 	children: React.ReactNode;
 	ref?: React.Ref<HTMLDivElement>;
@@ -675,11 +855,12 @@ function PanelItem({
 		<motion.div
 			ref={ref}
 			layout='position'
-			variants={reducedMotion ? cardReducedVariants : revealVariants}
+			layoutId={layoutId}
+			variants={reducedMotion ? cardReducedSnapVariants : cardVariants}
 			initial='initial'
 			animate='animate'
 			exit='exit'
-			transition={{ layout: layoutTransition }}
+			transition={{ layout: snap ? { duration: 0 } : layoutTransition }}
 			onLayoutAnimationStart={() => setMoving(true)}
 			onLayoutAnimationComplete={() => setMoving(false)}
 			data-moving={moving ? "" : undefined}
@@ -700,6 +881,7 @@ function PanelGrid<Patient extends PanelPatient>({
 	patients,
 	hospitals,
 	grouped,
+	snap = false,
 	renderCard,
 	className,
 	...props
@@ -707,6 +889,8 @@ function PanelGrid<Patient extends PanelPatient>({
 	patients: Patient[];
 	hospitals: PanelHospital[];
 	grouped: boolean;
+	/** This order lands at once, without the glide (`useSnapOrder`). */
+	snap?: boolean;
 	renderCard: (patient: Patient) => React.ReactNode;
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
@@ -728,13 +912,14 @@ function PanelGrid<Patient extends PanelPatient>({
 		// same grid, so cards keep their parent and key and glide into their section instead of remounting. Hidden once
 		// empty (after any exits), so it adds no gap above the empty state.
 		<div className={cn("relative grid grid-cols-1 gap-4 empty:hidden", className)} {...props}>
-			<AnimatePresence initial={false} mode='popLayout'>
+			<AnimatePresence initial={false} mode='popLayout' custom={snap}>
 				{items.map((item) =>
 					item.kind === "section" ? (
 						<PanelItem
 							key={`section-${item.id}`}
 							reducedMotion={reducedMotion}
 							layoutTransition={layoutTransition}
+							snap={snap}
 							className='col-span-full first:mt-2 not-first:mt-4'
 						>
 							<HospitalSectionHeader
@@ -748,6 +933,8 @@ function PanelGrid<Patient extends PanelPatient>({
 							key={item.patient.id}
 							reducedMotion={reducedMotion}
 							layoutTransition={layoutTransition}
+							snap={snap}
+							layoutId={panelCardLayoutId(item.patient.id)}
 							// `grid-cols-1` is minmax(0, 1fr): the card takes the cell's width and its hospital truncates. An `auto`
 							// column would grow to the card's one-line location and push it past the cell.
 							className='grid grid-cols-1'
@@ -792,15 +979,36 @@ function useGrouping(groupedView: GroupedView, onViewChange: () => void) {
 }
 
 /**
+ * The page's Sort by choice, `initial` to start. Inside the shell it's kept there, per page, so it holds when the user
+ * switches pages or opens a patient and comes back (`usePagePreferences`); a page on its own keeps it itself.
+ */
+function useSortBy(page: SortPage, initial: SortOrderId) {
+	const preferences = usePagePreferences();
+	const [ownSortBy, setOwnSortBy] = React.useState(initial);
+	const sortBy = preferences ? (preferences.sortBy[page] ?? initial) : ownSortBy;
+	const setSortBy = preferences ? (next: SortOrderId) => preferences.onSortByChange(page, next) : setOwnSortBy;
+	return [sortBy, setSortBy] as const;
+}
+
+// Where the board's header row sticks: under the page's sticky header, compact while the page scrolls (AppHeader).
+const stickyTop = 52;
+// How far above the screen's bottom a column taller than the screen stops.
+const columnBottomGap = 16;
+
+/**
  * Group by location as a Kanban board (its default view since Oct 30, 2026): a column per hospital, in the panel's order
  * (hospital name, then the sort), each with its HospitalSectionHeader over its cards. The columns share the width, at
  * least the width `className` sets in `--board-column` (`[--board-column:minmax(…,1fr)]`); more than fit scroll
  * sideways. Every hospital keeps its column while filters empty it, so the columns don't move or widen as filters
- * change (Oct 30, 2026). With no patients at all it renders nothing, and the page's empty state takes over.
+ * change (Oct 30, 2026). `spareColumns` adds empty tracks after them: Compact passes one, so its columns are narrower,
+ * as its grid has a card more a row. With no patients at all it renders nothing, and the page's empty state takes over.
  */
 function PanelBoard<Patient extends PanelPatient>({
 	patients,
 	hospitals,
+	spareColumns = 0,
+	animateIn = false,
+	snap = false,
 	renderCard,
 	className,
 	style,
@@ -808,12 +1016,142 @@ function PanelBoard<Patient extends PanelPatient>({
 }: Omit<React.ComponentProps<"div">, "children"> & {
 	patients: Patient[];
 	hospitals: PanelHospital[];
+	/** Empty tracks after the hospitals' columns, so each column is narrower (Compact: 1). */
+	spareColumns?: number;
+	/**
+	 * The columns' headers and backgrounds fade in as the board mounts: on when the user switched to it (Group by
+	 * location), off when it's there from the start. Its cards glide in from the grid either way, when they were in it.
+	 */
+	animateIn?: boolean;
+	/** This order lands at once, without the glide (`useSnapOrder`). */
+	snap?: boolean;
 	renderCard: (patient: Patient) => React.ReactNode;
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const reducedMotion = Boolean(prefersReducedMotion);
 	const layoutTransition = resolve(reorderSpring);
-	if (!patients.length) return null;
+	// The columns' chrome only: fading the columns themselves would fade the cards gliding into them.
+	const chromeMotion = {
+		variants: reducedMotion ? cardReducedVariants : fadeVariants,
+		initial: animateIn ? "initial" : false,
+		animate: "animate",
+	} as const;
+	// The header row follows the columns' sideways scroll (it can't share their scroll box: that box would hold it, and a
+	// sticky row must stick to the page's scroll).
+	const headRef = React.useRef<HTMLDivElement>(null);
+	const hasPatients = patients.length > 0;
+	// Each column follows the page like a two-way sticky sidebar (Oct 30, 2026, user's call; two-way since Oct 31, 2026):
+	// one that fits on screen stays under the header row while longer ones scroll on. A taller one scrolls with the page
+	// until its last card reaches the screen's bottom (16px above it) and stays there while the page goes on down;
+	// scrolling back up, it moves down with the page (every column does, not just the tallest) until its top reaches the
+	// header row, and stays there. None leaves the board. Sticky can't do it inside the sideways scroll box, so each
+	// column gets a transform driven by the page's scroll: a scroll-driven animation (ScrollTimeline), which the browser
+	// runs with the scroll itself. Its keyframes are worked out from where the column is when the scroll changes
+	// direction (or on a resize or render), and hold until it turns again. Moving it from a scroll listener instead lags a
+	// frame behind the scroll and shakes; that's only the fallback where ScrollTimeline isn't supported.
+	const bodyRef = React.useRef<HTMLDivElement>(null);
+	const placeRef = React.useRef<(anchorAt?: number) => void>(undefined);
+	// While cards glide in from the grid, the columns stay unmoved: a transformed column is a stacking context of its own,
+	// so a card crossing it on its way to another column would pass under its fill. They follow the page once landed.
+	const settling = React.useRef(animateIn && !reducedMotion);
+	React.useEffect(() => {
+		if (!settling.current) return;
+		const timer = window.setTimeout(() => {
+			settling.current = false;
+			placeRef.current?.();
+		}, motionDuration.deliberate * 1000);
+		return () => window.clearTimeout(timer);
+	}, []);
+	React.useEffect(() => {
+		const body = bodyRef.current;
+		const head = headRef.current;
+		if (!body || !head) return;
+		// The page's scroll, found from the header row: from the body it would be the board's own sideways scroll box.
+		const scroller = scrollContainerOf(head);
+		const timeline = typeof ScrollTimeline === "undefined" ? null : new ScrollTimeline({ source: scroller, axis: "block" });
+		let animations: Animation[] = [];
+		// Each column's offset (px down its board) as a function of the page's scroll, from its last anchor.
+		const offsets = new Map<Element, (at: number) => number>();
+		// Works each column's movement out again from where it is at the scroll position `anchorAt` (default: now).
+		const place = (anchorAt = scroller.scrollTop) => {
+			for (const animation of animations) animation.cancel();
+			animations = [];
+			const box = scroller.getBoundingClientRect();
+			const board = body.getBoundingClientRect();
+			const scrolled = scroller.scrollTop;
+			const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+			// The board's top in the page's scroll, so the numbers below don't depend on where the page is now.
+			const boardTop = board.top - box.top + scrolled;
+			const topRest = stickyTop + head.offsetHeight;
+			for (const column of Array.from(body.children) as HTMLElement[]) {
+				const height = column.offsetHeight;
+				// How far the column can move down its board: the tallest one can't, and stays put.
+				const travel = board.height - height;
+				column.style.transform = "";
+				if (travel <= 0 || maxScroll <= 0 || settling.current) {
+					offsets.delete(column);
+					continue;
+				}
+				// Its two resting places on screen: its top under the header row, and (taller than the screen) its end 16px
+				// above the bottom; a column that fits has only the first. Each holds from the scroll that brings it there.
+				const bottomRest = Math.min(topRest, box.height - columnBottomGap - height);
+				const startTop = boardTop - topRest;
+				const startBottom = boardTop - bottomRest;
+				const clampTravel = (at: number) => Math.min(Math.max(at, 0), travel);
+				// The offsets that hold it at each resting place; between the two, it moves with the page.
+				const atBottom = (at: number) => clampTravel(at - startBottom);
+				const atTop = (at: number) => clampTravel(at - startTop);
+				const held = offsets.get(column)?.(anchorAt) ?? atBottom(anchorAt);
+				const offsetAt = (at: number) => Math.min(Math.max(held, atBottom(at)), atTop(at));
+				offsets.set(column, offsetAt);
+				if (!timeline) {
+					const now = offsetAt(scrolled);
+					column.style.transform = now ? `translateY(${now}px)` : "";
+					continue;
+				}
+				// Keyframes where the movement can change: where each resting place starts and ends, and where the column,
+				// moving with the page from where it's held, reaches one.
+				const kinks = [startTop, startTop + travel, startBottom, startBottom + travel, startTop + held, startBottom + held];
+				const stops = [...new Set([0, maxScroll, ...kinks].map((at) => Math.min(Math.max(at, 0), maxScroll)))].sort(
+					(x, y) => x - y,
+				);
+				animations.push(
+					column.animate(
+						stops.map((at) => ({ offset: at / maxScroll, transform: `translateY(${offsetAt(at)}px)` })),
+						{ timeline, fill: "both", easing: "linear" },
+					),
+				);
+			}
+		};
+		placeRef.current = place;
+		place();
+		// The columns' movement depends on the way the page is going: when it turns, work it out again from where the
+		// page turned. Without ScrollTimeline, every scroll moves the columns this way.
+		let lastScroll = scroller.scrollTop;
+		let direction = 0;
+		const onScroll = () => {
+			const now = scroller.scrollTop;
+			const way = Math.sign(now - lastScroll);
+			if (!timeline) place(lastScroll);
+			else if (way && direction && way !== direction) place(lastScroll);
+			if (way) direction = way;
+			lastScroll = now;
+		};
+		scroller.addEventListener("scroll", onScroll, { passive: true });
+		const resize = new ResizeObserver(() => place());
+		resize.observe(scroller);
+		resize.observe(body);
+		for (const column of Array.from(body.children)) resize.observe(column);
+		return () => {
+			scroller.removeEventListener("scroll", onScroll);
+			resize.disconnect();
+			for (const animation of animations) animation.cancel();
+			placeRef.current = undefined;
+		};
+	}, [hasPatients, hospitals.length]);
+	// Content above or inside the board can move it without resizing anything observed.
+	React.useEffect(() => placeRef.current?.());
+	if (!hasPatients) return null;
 	// One column per hospital, by name as `panelOrder` groups them; the patients come in the sort's order.
 	const columns = [...hospitals]
 		.sort((a, b) => a.name.localeCompare(b.name))
@@ -822,46 +1160,77 @@ function PanelBoard<Patient extends PanelPatient>({
 			name: hospital.name,
 			patients: patients.filter((patient) => patient.hospitalId === hospital.id),
 		}));
+	// One track per hospital, so a column's width doesn't depend on how many have patients, plus any spare ones.
+	const tracks = { gridTemplateColumns: `repeat(${hospitals.length + spareColumns}, var(--board-column))` };
 
+	// The columns are 8px apart (Oct 31, 2026, user's call; 16px, 12px in Compact, before): the header row and the
+	// columns take this gap (`[gap:inherit]`).
 	return (
-		<div
-			className={cn("grid items-start gap-4 overflow-x-auto pb-2 scrollbar-soft", className)}
-			// One track per hospital, so a column's width doesn't depend on how many have patients.
-			style={{ gridTemplateColumns: `repeat(${hospitals.length}, var(--board-column))`, ...style }}
-			{...props}
-		>
-			{columns.map((column) => (
-				<section
-					key={column.id}
-					aria-label={column.name}
-					className='flex min-w-0 flex-col gap-3 rounded-card bg-background-subtle p-3'
-				>
-					<HospitalSectionHeader
-						name={column.name}
-						patientCount={column.patients.length}
-						alertCount={activeAlertCount(column.patients)}
-						className='px-1'
-					/>
-					{column.patients.length === 0 ? (
-						<p className='px-1 pb-1 text-sm text-muted-foreground'>No patients match these filters</p>
-					) : null}
-					{/* As in the grid: a leaving card pops out at once while the others glide. */}
-					<div className='relative flex flex-col gap-3 empty:hidden'>
-						<AnimatePresence initial={false} mode='popLayout'>
-							{column.patients.map((patient) => (
-								<PanelItem
-									key={patient.id}
-									reducedMotion={reducedMotion}
-									layoutTransition={layoutTransition}
-									className='grid grid-cols-1'
-								>
-									{renderCard(patient)}
-								</PanelItem>
-							))}
-						</AnimatePresence>
-					</div>
-				</section>
-			))}
+		<div className={cn("gap-2", className)} style={style} {...props}>
+			{/* The columns' headers stay under the page's sticky header (52px once the page scrolls, AppHeader `compact`),
+			    16px below it, while the board scrolls, so a long column keeps its hospital in view (Oct 30, 2026, user's
+			    call). Opaque, the 16px band too, so cards pass under it; the band overlaps the space above the board, so the
+			    board doesn't move before it sticks. No shadow (removed Oct 30, 2026, user's call). */}
+			<div ref={headRef} className='sticky top-[52px] z-10 -mt-4 overflow-hidden bg-background pt-4 [gap:inherit]'>
+				<motion.div {...chromeMotion} className='grid [gap:inherit]' style={tracks}>
+					{columns.map((column) => (
+						<HospitalSectionHeader
+							key={column.id}
+							name={column.name}
+							patientCount={column.patients.length}
+							alertCount={activeAlertCount(column.patients)}
+							className='rounded-t-card bg-background-subtle px-4 pt-3'
+						/>
+					))}
+				</motion.div>
+			</div>
+			<div
+				onScroll={(event) => {
+					if (headRef.current) headRef.current.scrollLeft = event.currentTarget.scrollLeft;
+				}}
+				className='overflow-x-auto pb-2 scrollbar-soft [gap:inherit]'
+			>
+				<div ref={bodyRef} className='grid items-start [gap:inherit]' style={tracks}>
+					{columns.map((column) => (
+						<section
+							key={column.id}
+							aria-label={column.name}
+							// The 12px between the header and the first card is the column's, not the header's: a card lifting on hover
+							// (Lift, 3px, with its shadow) stays inside the column, clear of the header row and of the sideways scroll
+							// box's top edge, which would cut it.
+							className='relative flex min-w-0 flex-col gap-3 px-3 pt-3 pb-3'
+						>
+							{/* The column's fill, a layer of its own so it can fade in under the cards (positioned, so the content
+							    after it is too). */}
+							<motion.div
+								{...chromeMotion}
+								aria-hidden='true'
+								className='absolute inset-0 rounded-b-card bg-background-subtle'
+							/>
+							{column.patients.length === 0 ? (
+								<p className='relative px-1 pb-1 text-sm text-muted-foreground'>No patients match these filters</p>
+							) : null}
+							{/* As in the grid: a leaving card pops out at once while the others glide. */}
+							<div className='relative flex flex-col gap-3 empty:hidden'>
+								<AnimatePresence initial={false} mode='popLayout' custom={snap}>
+									{column.patients.map((patient) => (
+										<PanelItem
+											key={patient.id}
+											reducedMotion={reducedMotion}
+											layoutTransition={layoutTransition}
+											snap={snap}
+											layoutId={panelCardLayoutId(patient.id)}
+											className='grid grid-cols-1'
+										>
+											{renderCard(patient)}
+										</PanelItem>
+									))}
+								</AnimatePresence>
+							</div>
+						</section>
+					))}
+				</div>
+			</div>
 		</div>
 	);
 }
@@ -884,6 +1253,7 @@ function PanelEmpty({ children }: { children: React.ReactNode }) {
 
 export {
 	activeAlertCount,
+	matchesSearch,
 	hasActiveAlert,
 	hasOrganSupport,
 	hasRisingAcuity,
@@ -894,17 +1264,21 @@ export {
 	PanelGrid,
 	QuickViewChips,
 	panelOrder,
+	resolvedTimes,
 	sortOrderById,
 	shownAlert,
+	useChangedSinceMount,
+	useSnapOrder,
 	useFadingResolvedAlerts,
 	useGrouping,
 	useHeldOrder,
+	useRecentActivity,
 	useResolvedHolds,
+	useSortBy,
 	useSortCadence,
 	useSortPause,
 	withResolvedHolds,
 	SortSelect,
-	UnitSelect,
 	type PanelHospital,
 	type PanelPatient,
 	type PatientScope,

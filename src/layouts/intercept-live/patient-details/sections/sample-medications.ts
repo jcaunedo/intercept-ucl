@@ -512,6 +512,48 @@ const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 			prn("Melatonin", "3 mg", "PO", "Nightly as needed", "Sleep", 280, 1),
 		],
 	),
+	// Erickson: pneumococcal pneumonia, day 3; mild COPD.
+	p16: medicationsFor(
+		"p16",
+		[
+			scheduled("Ceftriaxone", "1 g", "IV", daily, 600, "Pneumonia"),
+			scheduled("Azithromycin", "500 mg", "PO", daily, 600, "Pneumonia, day 3 of 5"),
+			scheduled("Tiotropium", "18 mcg", "Inhaled", daily, 600, "COPD"),
+			scheduled("Tamsulosin", "0.4 mg", "PO", nightly, 280),
+			scheduled("Enoxaparin", "40 mg", "SC", daily, 600, "VTE prophylaxis"),
+		],
+		[
+			prn("Albuterol", "2.5 mg", "Nebulized", "Every 4 h as needed", "Wheeze or shortness of breath", 900, 1),
+			prn("Acetaminophen", "650 mg", "PO", "Every 6 h as needed", "Fever or pain", 1300, 2),
+		],
+	),
+	// Ortega: post-op day 1, nothing by mouth; sulfa allergy.
+	p17: medicationsFor(
+		"p17",
+		[
+			scheduled("Cefazolin", "2 g", "IV", every(8), 300, "Surgical prophylaxis, 24 h"),
+			scheduled("Acetaminophen", "1,000 mg", "IV", every(6), 180, "Pain, with the PCA"),
+			scheduled("Pantoprazole", "40 mg", "IV", daily, 600, "Stress ulcer prophylaxis"),
+			scheduled("Enoxaparin", "40 mg", "SC", daily, { firstDueIn: 240, ordered: 1200 }, "DVT prophylaxis, from today"),
+		],
+		[
+			prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea", 420, 1),
+			prn("Labetalol", "10 mg", "IV push", "Every 2 h as needed", "SBP over 170"),
+		],
+	),
+	// Nakamura: DKA on an insulin infusion; glargine due before the drip comes off.
+	p18: medicationsFor(
+		"p18",
+		[
+			scheduled("Insulin glargine", "18 units", "SC", daily, { firstDueIn: 20, ordered: 40 }, "Before stopping the insulin drip"),
+			scheduled("Levothyroxine", "88 mcg", "PO", daily, 120, "Hypothyroidism"),
+			scheduled("Potassium phosphate", "15 mmol", "IV", ["Once", 24], 90, "Phosphate 2.4"),
+		],
+		[
+			prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea", 1100, 2),
+			prn("Dextrose 50%", "25 mL", "IV push", "As needed", "Glucose under 70"),
+		],
+	),
 };
 
 export { sampleMedicationsByPatient };

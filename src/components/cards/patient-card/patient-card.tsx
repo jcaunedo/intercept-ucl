@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { BellRingIcon, MapPinIcon } from "lucide-react";
 
+import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
 import {
@@ -122,13 +123,20 @@ type PatientCardMetricProps = Omit<React.ComponentProps<"div">, "children"> &
 		trend?: "up" | "down";
 		/** Which side of the normal range the reading is on, shown after the value (↑ / ↓). */
 		range?: "above" | "below";
-		/** Colors the trend arrow only, e.g. a rising acuity in `critical`, a falling one in `success`. */
-		trendVariant?: "critical" | "success";
+		/**
+		 * Colors the trend arrow only, e.g. a rising acuity in `critical`, a slight rise in `medium`, a falling one in
+		 * `success`.
+		 */
+		trendVariant?: "critical" | "medium" | "success";
 		/** `sm` sets the value at 16px instead of 20px, for the small card. */
 		size?: "md" | "sm";
 	};
 
-const trendVariantClassNames = { critical: "text-severity-critical", success: "text-success" } as const;
+const trendVariantClassNames = {
+	critical: "text-severity-critical",
+	medium: "text-severity-medium",
+	success: "text-success",
+} as const;
 
 const trendGlyphs = { up: ["▲", "rising"], down: ["▼", "falling"] } as const;
 const rangeGlyphs = { above: ["↑", "above range"], below: ["↓", "below range"] } as const;
@@ -214,6 +222,29 @@ type PatientCardVital = Pick<PatientCardMetricProps, "label" | "value" | "varian
 /** A vital's metric props, without `shortLabel`, which isn't a DOM attribute. */
 const toMetric = ({ shortLabel: _shortLabel, ...metric }: PatientCardVital) => metric;
 
+/**
+ * The color of a score's change arrow, the same everywhere the app shows it (the cards, the patient header, the Census
+ * List; Oct 31, 2026, user's call): by the change itself, since a rising early-warning score is worse. ▲ by 1 is
+ * `medium` (the medium alert color), ▲ by more `critical` red, ▼ `success` green. Only a change that isn't a number
+ * falls back to the data's `trendVariant`.
+ */
+function scoreTrendVariant(
+	trajectory?: Pick<PatientCardVital, "trend" | "trendVariant" | "value">,
+): "critical" | "medium" | "success" | undefined {
+	if (!trajectory?.trend) return undefined;
+	if (trajectory.trend === "down") return "success";
+	// The change arrives preformatted ("+1", "−2"); an API would send the number.
+	const change = Math.abs(Number(String(trajectory.value ?? "").replace(/[−–]/g, "-")));
+	if (Number.isFinite(change) && String(trajectory.value ?? "").trim() !== "") return change <= 1 ? "medium" : "critical";
+	return trajectory.trendVariant ?? "critical";
+}
+
+/** `scoreTrendVariant` as the arrow's text color class. */
+const scoreTrendClassName = (trajectory?: Pick<PatientCardVital, "trend" | "trendVariant" | "value">) => {
+	const variant = scoreTrendVariant(trajectory);
+	return variant ? trendVariantClassNames[variant] : undefined;
+};
+
 // A card with an active alert takes a 2px border in the alert's severity color. The padding drops to 14px so the
 // content stays 16px in, as with the 1px border.
 // `medium` is NEWS2's band between Low and High; `moderate` stays for scores whose bands use that word.
@@ -273,6 +304,16 @@ type PatientCardProps = Omit<
 		 * `resolved` variant.
 		 */
 		status?: PatientCardAlertStatus;
+		/**
+		 * When the alert started, ISO 8601; for `resolved`, when it resolved. PatientMonitoringCard's alert bar shows how
+		 * long ago ("3:34 m ago"); PatientCard doesn't show it.
+		 */
+		since?: string;
+		/**
+		 * How many alerts the patient had in the last 24 h, resolved ones included. PatientMonitoringCard's alert bar shows
+		 * it ("Critical · 3 in the last 24 h") in place of `count`; PatientCard doesn't show it.
+		 */
+		inLast24h?: number;
 	};
 	/** Acuity score with its level, e.g. NEWS2 10, High. `label` is the score's name ("NEWS2"), shown with it. Without a score the level is Unknown. */
 	acuity?: {
@@ -286,13 +327,75 @@ type PatientCardProps = Omit<
 	vitals?: PatientCardVital[];
 	/** Interventions and context, e.g. Ventilated, Contact isolation. */
 	tags?: PatientCardTag[];
+	/**
+	 * The patient's photo URL. With it or `initials`, an avatar leads the name row (44px; 32px on the small card); without
+	 * either, there's none.
+	 */
+	photo?: string;
+	/** Shown in the avatar until the photo loads, or without one, e.g. "MS". */
+	initials?: string;
+	/** The initials' color (Avatar's tones, 1–10); neutral by default. */
+	tone?: AvatarFallbackProps["tone"];
 	/** Opens the patient. Makes the whole card one click target. */
 	onOpen?: () => void;
 	/** Opens the patient as a link. Use instead of `onOpen` when the app routes with URLs. */
 	href?: string;
+	/**
+	 * Whether a severity alert rings the card in its color over a light tint, pulsing while it's active. `false` keeps the
+	 * card's default border and fill, so the alert pill alone shows the alert: for pages where patients are managed rather
+	 * than watched, e.g. the Census. Defaults to `true`.
+	 */
+	alertRing?: boolean;
 	/** @deprecated Ignored: the card has no "…" button since Oct 30, 2026 (intercept.ds `patient-card-compact`). */
 	onMoreActions?: React.MouseEventHandler<HTMLButtonElement>;
 };
+
+/**
+ * The acuity score and its change, side by side between two rules: "NEWS2 7 High" and "Change in last 24 h ▲ +1".
+ * Shared by PatientCard and PatientMonitoringCard. 6px above and below on both variants.
+ */
+function PatientCardScore({
+	acuity,
+	trajectory,
+	size = "md",
+}: Pick<PatientCardProps, "acuity" | "trajectory"> & { size?: "md" | "sm" }) {
+	const small = size === "sm";
+	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
+
+	return (
+		// 16px between the score and its change, so a long level ("Moderate") never runs into the change column.
+		<div
+			className={cn(
+				"flex border-b border-border-muted px-2 py-1.5 first:border-t",
+				small ? "gap-3" : "gap-4",
+			)}
+		>
+			{acuity ? (
+				<div className='flex min-w-0 flex-1 flex-col whitespace-nowrap'>
+					<span className='text-xs font-medium text-muted-foreground'>{acuity.label}</span>
+					<span className='flex items-center gap-2'>
+						<span className={cn("font-semibold text-foreground", small ? "text-base" : "text-xl")}>
+							{acuity.score ?? "--"}
+						</span>
+						{acuityLevel ? (
+							<span className={cn("font-normal", small ? "text-base" : "text-xl", acuityLevels[acuityLevel].className)}>
+								{acuityLevels[acuityLevel].label}
+							</span>
+						) : null}
+					</span>
+				</div>
+			) : null}
+			{trajectory ? (
+				<PatientCardMetric
+					{...toMetric(trajectory)}
+					trendVariant={scoreTrendVariant(trajectory)}
+					size={size}
+					className='flex-1'
+				/>
+			) : null}
+		</div>
+	);
+}
 
 /**
  * The tags on one line. When they're wider than the card, the row scrolls sideways (wheel, trackpad, touch, or the
@@ -302,15 +405,18 @@ type PatientCardProps = Omit<
 function PatientCardTags({
 	tags,
 	name,
-	size,
-	onClick,
+	size = "md",
+	openRef,
 }: {
 	tags: PatientCardTag[];
 	name: string;
-	/** Badge size: `sm` (32px) on the card, `xs` (24px) on the small card. */
-	size: "xs" | "sm";
-	onClick?: React.MouseEventHandler<HTMLDivElement>;
+	/** The card's size: `sm` (32px) tags on the card, `xs` (24px) on the small card. */
+	size?: "md" | "sm";
+	/** The card's open target. A click on the row is re-sent to it with its modifier keys, so ⌘/Ctrl-click still opens
+	 * a link in a new tab. */
+	openRef?: React.RefObject<HTMLElement | null>;
 }) {
+	const small = size === "sm";
 	const rowRef = React.useRef<HTMLDivElement>(null);
 	const [overflowing, setOverflowing] = React.useState(false);
 
@@ -326,20 +432,39 @@ function PatientCardTags({
 		return () => observer.disconnect();
 	}, [tags]);
 
+	if (!tags.length) {
+		// No tags: a line of text the height of a tag, so cards with and without tags line up.
+		return <p className={cn("flex items-center text-muted-foreground", small ? "h-6 text-xs" : "h-8 text-sm")}>No tags</p>;
+	}
+
 	return (
 		<div
 			ref={rowRef}
 			role={overflowing ? "group" : undefined}
 			aria-label={overflowing ? `Tags for ${name}` : undefined}
 			tabIndex={overflowing ? 0 : undefined}
-			onClick={onClick}
+			onClick={
+				openRef
+					? (event) =>
+							openRef.current?.dispatchEvent(
+								new MouseEvent("click", {
+									bubbles: true,
+									cancelable: true,
+									ctrlKey: event.ctrlKey,
+									metaKey: event.metaKey,
+									shiftKey: event.shiftKey,
+									altKey: event.altKey,
+								}),
+							)
+					: undefined
+			}
 			className={cn(
 				"relative z-10 flex gap-1.5 overflow-x-auto rounded-md scrollbar-soft outline-none focus-visible:ring-2 focus-visible:ring-ring",
-				onClick && "cursor-pointer",
+				openRef && "cursor-pointer",
 			)}
 		>
 			{tags.map((tag) => (
-				<Badge key={tag.label} variant={tag.variant ?? "outline"} size={size} className='shrink-0'>
+				<Badge key={tag.label} variant={tag.variant ?? "outline"} size={small ? "xs" : "sm"} className='shrink-0'>
 					{tag.label}
 				</Badge>
 			))}
@@ -370,8 +495,12 @@ function PatientCard({
 	trajectory,
 	vitals = [],
 	tags = [],
+	photo,
+	initials,
+	tone,
 	onOpen,
 	href,
+	alertRing: showAlertRing = true,
 	onMoreActions: _onMoreActions,
 	className,
 	onClickCapture,
@@ -380,9 +509,8 @@ function PatientCard({
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const interactive = Boolean(onOpen || href);
 	const small = size === "sm";
-	const alertRing = usePatientCardAlertRing({ alert, interactive });
+	const alertRing = usePatientCardAlertRing({ alert, interactive, show: showAlertRing });
 	const compact = variant === "compact";
-	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
 	const name = `${lastName}, ${firstName}`;
 	const demographics = [sex, age].filter((part) => part !== undefined && part !== "").join(", ");
 	const identity = [mrn, demographics].filter(Boolean).join(" - ");
@@ -412,11 +540,12 @@ function PatientCard({
 			whileHover={interactive && !prefersReducedMotion ? liftPattern.whileHover : undefined}
 			transition={liftPattern.transition}
 			className={cn(
-				// 15px padding + the 1px border: content sits 16px in, as in Figma, where the stroke is drawn inside. The
-				// compact card's sections sit closer (10px; 12px on the expanded card). `min-w-0`, so in a flex or grid cell the
-				// card can be narrower than its one-line location, and the hospital truncates instead.
+				// 15px padding + the 1px border: content sits 16px in, as in Figma, where the stroke is drawn inside. Sections
+				// are 16px apart on the compact card, 12px on the expanded one; the name and the location are a section of their
+				// own, 8px apart. `min-w-0`, so in a flex or grid cell the card can be narrower than its one-line location, and
+				// the hospital truncates instead.
 				"group/card relative isolate flex min-w-0 flex-col rounded-card border border-border-defined bg-card p-[15px] text-card-foreground shadow-sm transition-[border-color,box-shadow] duration-160 ease-in-out",
-				compact ? "gap-2.5" : "gap-3",
+				compact ? "gap-4" : "gap-3",
 				// The small card: 12px in (11px + the border) and 8px between sections, as PatientMonitoringCard `sm`.
 				small && "gap-2 p-[11px]",
 				// Hover (interactive cards only): a 2px `foreground` border (the alert ring hides meanwhile) and `shadow-lg`.
@@ -433,109 +562,91 @@ function PatientCard({
 			{...props}
 		>
 			{alertRing.ring}
-			<div className='flex items-start gap-2'>
-				<div className='flex min-w-0 flex-1 flex-col'>
-					{/* The name stays on one line and truncates, full name in `title` (screen readers get it whole); the identity
-					    line wraps. The open target is a block, so it truncates too (`max-w-full`: a button shrinks to fit). */}
-					<h3
-						title={name}
-						className={cn(
-							"-mb-0.5 truncate font-bold text-foreground [&>*]:max-w-full [&>*]:truncate",
-							small ? "text-base" : "text-xl",
-						)}
-					>
-						{nameContent}
-					</h3>
-					{identity ? (
-						<p className={cn("break-words text-muted-foreground", small ? "text-xs" : "text-sm")}>{identity}</p>
+			{/* Name and location, 8px apart: one section of the card. */}
+			<div className='flex flex-col gap-2'>
+				<div className='flex items-start gap-2'>
+					{/* Centered on the name and identity. Decorative: the name beside it says who it is. Above Avatar's sizes at
+					    44px, so its size is set here; the initials keep Avatar's proportion (11px at 32px). Avatar is positioned,
+					    so it would paint over the card's open target; clicks pass through it instead. */}
+					{photo || initials ? (
+						<Avatar aria-hidden='true' className={cn("pointer-events-none self-center", small ? "size-8" : "size-11")}>
+							{photo ? <AvatarImage src={photo} alt='' /> : null}
+							<AvatarFallback tone={tone} className={small ? "text-[11px]" : "text-[15px]"}>
+								{initials}
+							</AvatarFallback>
+						</Avatar>
 					) : null}
-				</div>
-				{/* The pill fades in when an alert appears and out when it's removed (Dismiss); a "Resolved" pill fades slowly
-				    (`resolvedFadeTransition`), so it's seen leaving after its card has moved. A severity change recolors it in
-				    place. As on PatientMonitoringCard. */}
-				<AnimatePresence initial={false}>
-					{alert ? (
-						<motion.div
-							key='alert'
-							variants={{
-								initial: { opacity: 0 },
-								animate: { opacity: 1, transition: resolve(standardTransition) },
-								exit:
-									alert.variant === "resolved"
-										? { opacity: 0, transition: resolve(resolvedFadeTransition) }
-										: prefersReducedMotion
-											? { opacity: 0 }
-											: dismissVariants.exit,
-							}}
-							initial='initial'
-							animate='animate'
-							exit='exit'
-							className='flex'
+					<div className='flex min-w-0 flex-1 flex-col'>
+						{/* The name stays on one line and truncates, full name in `title` (screen readers get it whole); the identity
+						    line wraps. The open target is a block, so it truncates too (`max-w-full`: a button shrinks to fit). */}
+						<h3
+							title={name}
+							className={cn(
+								"-mb-0.5 truncate font-bold text-foreground [&>*]:max-w-full [&>*]:truncate",
+								small ? "text-base" : "text-xl",
+							)}
 						>
-							<PatientCardAlert variant={alert.variant} count={alert.count}>
-								{alert.label}
-							</PatientCardAlert>
-						</motion.div>
-					) : null}
-				</AnimatePresence>
-			</div>
+							{nameContent}
+						</h3>
+						{identity ? (
+							<p className={cn("break-words text-muted-foreground", small ? "text-xs" : "text-sm")}>{identity}</p>
+						) : null}
+					</div>
+					{/* The pill fades in when an alert appears and out when it's removed (Dismiss); a "Resolved" pill fades slowly
+					    (`resolvedFadeTransition`), so it's seen leaving after its card has moved. A severity change recolors it in
+					    place. As on PatientMonitoringCard. */}
+					<AnimatePresence initial={false}>
+						{alert ? (
+							<motion.div
+								key='alert'
+								variants={{
+									initial: { opacity: 0 },
+									animate: { opacity: 1, transition: resolve(standardTransition) },
+									exit:
+										alert.variant === "resolved"
+											? { opacity: 0, transition: resolve(resolvedFadeTransition) }
+											: prefersReducedMotion
+												? { opacity: 0 }
+												: dismissVariants.exit,
+								}}
+								initial='initial'
+								animate='animate'
+								exit='exit'
+								className='flex'
+							>
+								<PatientCardAlert variant={alert.variant} count={alert.count}>
+									{alert.label}
+								</PatientCardAlert>
+							</motion.div>
+						) : null}
+					</AnimatePresence>
+				</div>
 
-			{hospital || placeInHospital ? (
-				<p className={cn("flex items-center gap-1 font-medium text-foreground", small ? "text-xs" : "text-sm")}>
-					<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
-					{/* Only the hospital truncates; unit, room and bed always stay visible. The full name is in `title`. */}
-					<span className='flex min-w-0 flex-1'>
-						{hospital ? (
-							<span title={hospital} className='min-w-0 truncate'>
-								{hospital}
-							</span>
-						) : null}
-						{placeInHospital ? (
-							<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
-						) : null}
-					</span>
-				</p>
-			) : null}
+				{hospital || placeInHospital ? (
+					<p className={cn("flex items-center gap-1 font-medium text-foreground", small ? "text-xs" : "text-sm")}>
+						<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
+						{/* Only the hospital truncates; unit, room and bed always stay visible. The full name is in `title`. */}
+						<span className='flex min-w-0 flex-1'>
+							{hospital ? (
+								<span title={hospital} className='min-w-0 truncate'>
+									{hospital}
+								</span>
+							) : null}
+							{placeInHospital ? (
+								<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
+							) : null}
+						</span>
+					</p>
+				) : null}
+			</div>
 
 			{acuity || trajectory || (!compact && vitals.length > 0) ? (
 				<div className='flex flex-col'>
 					{acuity || trajectory ? (
-						// 16px between the score and its change, so a long level ("Moderate") never runs into the change column.
-						<div
-							className={cn(
-								"flex border-b border-border-muted px-2 first:border-t",
-								compact ? "py-1.5" : "py-3",
-								small ? "gap-3" : "gap-4",
-							)}
-						>
-							{acuity ? (
-								<div className='flex min-w-0 flex-1 flex-col whitespace-nowrap'>
-									<span className='text-xs font-medium text-muted-foreground'>{acuity.label}</span>
-									<span className='flex items-center gap-2'>
-										<span className={cn("font-semibold text-foreground", small ? "text-base" : "text-xl")}>
-											{acuity.score ?? "--"}
-										</span>
-										{acuityLevel ? (
-											<span
-												className={cn(
-													"font-normal",
-													small ? "text-base" : "text-xl",
-													acuityLevels[acuityLevel].className,
-												)}
-											>
-												{acuityLevels[acuityLevel].label}
-											</span>
-										) : null}
-									</span>
-								</div>
-							) : null}
-							{trajectory ? (
-								<PatientCardMetric {...toMetric(trajectory)} size={size} className='flex-1' />
-							) : null}
-						</div>
+						<PatientCardScore acuity={acuity} trajectory={trajectory} size={size} />
 					) : null}
 					{!compact && vitals.length > 0 ? (
-						<div className='flex gap-2 border-b border-border-muted px-2 py-3 first:border-t'>
+						<div className='flex gap-2 border-b border-border-muted px-2 py-1.5 first:border-t'>
 							{vitals.map((vital) => (
 								<PatientCardMetric key={vital.label} {...toMetric(vital)} size={size} className='flex-1' />
 							))}
@@ -544,29 +655,8 @@ function PatientCard({
 				</div>
 			) : null}
 
-			{tags.length > 0 ? (
-				<PatientCardTags
-					tags={tags}
-					name={name}
-					size={small ? "xs" : "sm"}
-					// Re-sent to the open target with its modifier keys, so ⌘/Ctrl-click still opens a link in a new tab.
-					onClick={
-						interactive
-							? (event) =>
-									openRef.current?.dispatchEvent(
-										new MouseEvent("click", {
-											bubbles: true,
-											cancelable: true,
-											ctrlKey: event.ctrlKey,
-											metaKey: event.metaKey,
-											shiftKey: event.shiftKey,
-											altKey: event.altKey,
-										}),
-									)
-							: undefined
-					}
-				/>
-			) : null}
+			{/* With no tags the row stays, so every card in a row or column is the same height (Oct 30, 2026, user's call). */}
+			<PatientCardTags tags={tags} name={name} size={size} openRef={interactive ? openRef : undefined} />
 		</motion.article>
 	);
 }
@@ -575,9 +665,13 @@ export {
 	PatientCard,
 	PatientCardAlert,
 	PatientCardMetric,
+	PatientCardScore,
+	PatientCardTags,
 	acuityLevels as patientCardAcuityLevels,
 	patientCardAlertVariants,
 	patientCardMetricVariants,
+	scoreTrendClassName,
+	scoreTrendVariant,
 	type PatientCardAlertProps,
 	type PatientCardAcuityLevel,
 	type PatientCardAlertStatus,

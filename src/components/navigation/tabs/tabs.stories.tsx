@@ -118,26 +118,39 @@ export const IconOnly: Story = {
 	},
 };
 
-/** A Counter after the label, as Figma's Line tabs draw it: Solid · Default (`default`), the same in every state. */
+/**
+ * Counters after the label, as Figma's Line tabs draw them: a count (`secondary`), an alert count in its severity's
+ * color, or both, 2px apart. They look the same in every tab state. Name each tab with what the numbers count, since a
+ * number alone has no context.
+ */
 export const WithCounters: Story = {
+	args: { defaultValue: "active" },
 	render: (args) => (
 		<Tabs {...args}>
 			<TabsList variant='line'>
-				<TabsTrigger value='account'>
-					Account
-					<Counter count={3} />
+				<TabsTrigger value='active' aria-label='Active, 12 patients, 3 critical alerts'>
+					Active
+					<Counter variant='secondary' count={12} />
+					<Counter variant='critical' count={3} />
 				</TabsTrigger>
-				<TabsTrigger value='password'>
-					Password
-					<Counter count={12} />
+				<TabsTrigger value='watching' aria-label='Watching, 5 patients, 1 low alert'>
+					Watching
+					<Counter variant='secondary' count={5} />
+					<Counter variant='low' count={1} />
 				</TabsTrigger>
-				<TabsTrigger value='settings'>
-					Settings
-					<Counter count={0} />
+				<TabsTrigger value='resolved' aria-label='Resolved, 8 patients'>
+					Resolved
+					<Counter variant='secondary' count={8} />
 				</TabsTrigger>
 			</TabsList>
 		</Tabs>
 	),
+	play: async ({ canvas }) => {
+		const [count, alerts] = canvas
+			.getByRole("tab", { name: /^Active/ })
+			.querySelectorAll<HTMLElement>("[data-slot='counter']");
+		await expect(alerts.getBoundingClientRect().left - count.getBoundingClientRect().right).toBeCloseTo(2, 0);
+	},
 };
 
 /** A disabled tab can't be selected or focused with the arrow keys. */

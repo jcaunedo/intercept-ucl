@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ArrowRightLeftIcon, FilePenLineIcon, LinkIcon } from "lucide-react";
-import { fn } from "storybook/test";
+import { expect, fn } from "storybook/test";
 
 import samplePhoto1 from "@/components/data-display/avatar/images/sample-photo-1.png";
 import samplePhoto2 from "@/components/data-display/avatar/images/sample-photo-2.png";
@@ -95,7 +95,7 @@ const patientArgs = {
 } as const;
 
 /**
- * On a patient's page: Ask Intercept and the patient list (toggles, shown when the app handles them), then a breadcrumb
+ * On a patient's page: Back, Ask Intercept and the patient list (shown when the app handles them), then a breadcrumb
  * back to where the user came from; Raise concern, Huddle team, Escalate, Theme and "…".
  */
 export const PatientContext: Story = {

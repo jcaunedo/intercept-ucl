@@ -18,7 +18,7 @@ import {
 
 import { Button } from "@/components/buttons/button";
 import type { PatientCardProps } from "@/components/cards/patient-card";
-import type { MonitorLimits, MonitorTrends, MonitorVitals } from "@/components/cards/patient-monitoring-card";
+import type { MonitorLimits, MonitorTrends, MonitorVitals, PatientMonitorProps } from "@/components/cards/patient-monitoring-card";
 import type { AvatarFallbackProps } from "@/components/data-display/avatar";
 import { PatientHeader, type PatientHeaderProps } from "@/components/data-display/patient-header";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -27,6 +27,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
+import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
 import { PatientOverview } from "./patient-overview";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { ChartSection, type PatientChart } from "./sections/chart-section";
@@ -50,7 +51,19 @@ import { VitalsSection, type PatientVitals } from "./sections/vitals-section";
 /** Who the patient is and where, as the Census and Monitoring know them. */
 type PatientDetailsPatient = Pick<
 	PatientCardProps,
-	"lastName" | "firstName" | "mrn" | "sex" | "age" | "hospital" | "unit" | "room" | "bed" | "acuity" | "trajectory" | "tags"
+	| "lastName"
+	| "firstName"
+	| "photo"
+	| "mrn"
+	| "sex"
+	| "age"
+	| "hospital"
+	| "unit"
+	| "room"
+	| "bed"
+	| "acuity"
+	| "trajectory"
+	| "tags"
 > & {
 	id: string;
 	/** Under sepsis screening or tracking: adds the Sepsis section (PRD PD-080). */
@@ -188,10 +201,15 @@ type PatientRecord = {
 };
 
 /** The patient's live bedside values, from Monitoring. */
-type PatientMonitorData = { vitals?: MonitorVitals; limits?: Partial<MonitorLimits>; trends?: MonitorTrends };
+type PatientMonitorData = Pick<
+	PatientMonitorProps,
+	"vitals" | "limits" | "alarmPriorities" | "acknowledgedAlarms" | "trends"
+>;
 
 type PatientDetailsProps = {
 	patient: PatientDetailsPatient;
+	/** The avatar's color, as on the patient's card (`avatarTones` over the roster). Without it, one from their id. */
+	tone?: AvatarFallbackProps["tone"];
 	record?: PatientRecord;
 	monitor?: PatientMonitorData;
 	/** The patient's alerts, for the Overview's alerts (PRD PD-020). */
@@ -390,6 +408,7 @@ const patientName = (patient: Pick<PatientDetailsPatient, "lastName" | "firstNam
  */
 function PatientDetails({
 	patient,
+	tone,
 	record,
 	monitor,
 	alerts = [],
@@ -428,7 +447,8 @@ function PatientDetails({
 				lastName={patient.lastName}
 				firstName={patient.firstName}
 				photo={record?.photo}
-				initials={`${patient.lastName[0] ?? ""}${patient.firstName?.[0] ?? ""}`}
+				initials={patientInitials(patient)}
+				tone={tone ?? avatarTone(patient.id)}
 				mrn={patient.mrn}
 				sex={patient.sex}
 				age={patient.age}
@@ -542,7 +562,14 @@ function patientDetailsView(
 	const patient = find(patientId);
 	if (!patient) return null;
 	const live = monitoringPatients.find((item) => item.id === patientId);
-	const { vitals: _vitals, limits: _limits, trends: _trends, ...identity } = patient as PatientDetailsPatient & PatientMonitorData;
+	const {
+		vitals: _vitals,
+		limits: _limits,
+		alarmPriorities: _alarmPriorities,
+		acknowledgedAlarms: _acknowledgedAlarms,
+		trends: _trends,
+		...identity
+	} = patient as PatientDetailsPatient & PatientMonitorData;
 
 	const act = (action: PatientAction) => () => onAction?.(patientId, action);
 
@@ -571,8 +598,19 @@ function patientDetailsView(
 		content: (
 			<PatientDetails
 				patient={identity}
+				tone={avatarTones([...patients, ...monitoringPatients]).get(patientId)}
 				record={records.find((item) => item.id === patientId)}
-				monitor={live ? { vitals: live.vitals, limits: live.limits, trends: live.trends } : undefined}
+				monitor={
+					live
+						? {
+								vitals: live.vitals,
+								limits: live.limits,
+								alarmPriorities: live.alarmPriorities,
+								acknowledgedAlarms: live.acknowledgedAlarms,
+								trends: live.trends,
+							}
+						: undefined
+				}
 				alerts={alerts.filter((alert) => alert.patientId === patientId)}
 				escalationTargets={escalationTargets}
 				onAlertAction={onAlertAction}

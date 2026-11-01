@@ -826,6 +826,81 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[25, "note", "Nursing note: net +1.8 L, weight up 2.1 kg in 48 h"],
 		],
 	}),
+
+	// Erickson: pneumonia, day 3. Last fever (38.2 °C) yesterday morning; oxygen 3 → 2 L; WBC 15.2 → 10.4.
+	p16: timeline({
+		seed: 151,
+		hr: [[1440, 94], [900, 88], [0, 84]],
+		map: [[1440, 85], [0, 90]],
+		bp: [126, 72],
+		spo2: [[1440, 95], [700, 94], [0, 96]],
+		rr: [[1440, 20], [0, 18]],
+		temp: [[1310, 38.2], [1070, 38.0], [830, 37.6], [590, 37.4], [350, 37.3], [110, 37.2]],
+		lanes: [
+			oxygenFlow([[1440, 3], [700, 2]]),
+			labLane("WBC", "K/µL", [[1740, 15.2], [300, 10.4]], { high: 11 }),
+		],
+		events: [
+			[1200, "care", "Ceftriaxone 1 g IV"],
+			[1150, "note", "Progress note signed"],
+			[700, "care", "Oxygen 3 → 2 L/min, SpO₂ 95%"],
+			[420, "care", "Walked the hall with a walker"],
+			[300, "lab", "WBC 10.4 K/µL, procalcitonin 0.4 ng/mL resulted"],
+		],
+	}),
+
+	// Ortega: out of the OR 20 h ago after a small bowel resection. RR 18 → 21 and HR 96 → 104 as she splints with pain;
+	// the PCA went up 1 h ago. NEWS2 4 → 5 → 6 (`sample-vitals.ts`).
+	p17: timeline({
+		span: 1200,
+		seed: 161,
+		hr: [[1200, 96], [480, 100], [240, 102], [0, 104]],
+		map: [[1200, 83], [0, 80]],
+		bp: [112, 64],
+		spo2: [[1200, 95], [600, 96], [240, 96], [0, 95]],
+		rr: [[1200, 18], [600, 19], [240, 21], [0, 21]],
+		temp: [[1050, 37.2], [810, 37.5], [570, 37.7], [330, 37.8], [45, 37.9]],
+		lanes: [
+			pump("Lactated Ringer's", "mL/h", [[1200, 125], [600, 100]], "fluid"),
+			pump("Hydromorphone PCA", "mg", [[1200, 0.2], [60, 0.3]]),
+			oxygenFlow([[1200, 2]]),
+			labLane("Hemoglobin", "g/dL", [[1300, 12.6], [210, 10.8]], { low: 12 }),
+		],
+		events: [
+			[1200, "note", "Operative note signed"],
+			[1190, "care", "Arrived from the OR"],
+			[600, "drip", "Lactated Ringer's 125 → 100 mL/h"],
+			[210, "lab", "Hemoglobin 10.8 g/dL, lactate 1.4 mmol/L resulted"],
+			[120, "care", "Incentive spirometry: 750 mL"],
+			[60, "drip", "Hydromorphone PCA 0.2 → 0.3 mg"],
+		],
+	}),
+
+	// Nakamura: DKA, admitted 21 h ago. Insulin 6 → 3 units/h as glucose fell, dextrose added; the anion gap 28 → 12.
+	p18: timeline({
+		span: 1260,
+		seed: 171,
+		hr: [[1260, 112], [900, 104], [480, 96], [0, 92]],
+		map: [[1260, 75], [600, 86], [0, 92]],
+		bp: [128, 74],
+		spo2: [[1260, 98], [0, 98]],
+		rr: [[1260, 24], [900, 21], [480, 18], [0, 16]],
+		temp: [[1200, 36.4], [960, 36.6], [720, 36.8], [480, 36.9], [240, 36.9], [70, 36.9]],
+		lanes: [
+			pump("Insulin regular", "units/h", [[1250, 6], [240, 3]]),
+			labLane("Anion gap", "mmol/L", [[1260, 28], [900, 22], [540, 16], [90, 12]], { high: 12 }),
+			labLane("Glucose", "mg/dL", [[1260, 512], [900, 342], [540, 246], [25, 168]], { high: 180 }, "lab-2"),
+		],
+		events: [
+			[1250, "drip", "Insulin started at 6 units/h"],
+			[1240, "care", "Lactated Ringer's 1 L bolus"],
+			[1200, "note", "History and physical signed"],
+			[540, "drip", "Dextrose 5% with 0.45% saline added at 125 mL/h"],
+			[240, "drip", "Insulin 6 → 3 units/h"],
+			[90, "lab", "Anion gap 12, bicarbonate 20 mmol/L resulted"],
+			[30, "care", "Breakfast tray: ate half"],
+		],
+	}),
 };
 
 export { sampleTimelineByPatient };

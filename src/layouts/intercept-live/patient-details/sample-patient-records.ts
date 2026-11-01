@@ -2,7 +2,7 @@ import samplePhoto1 from "@/components/data-display/avatar/images/sample-photo-1
 import samplePhoto2 from "@/components/data-display/avatar/images/sample-photo-2.png";
 import samplePhoto3 from "@/components/data-display/avatar/images/sample-photo-3.png";
 
-import samplePatientPhoto from "./images/sample-patient-photo.png";
+import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { CareTeamMember, PatientLab, PatientRecord, PatientVentilator } from "./patient-details";
 // Synthetic data (PRD Patient details PD-150). The reference patient is Sarah Miller (`p1`: Harbor Point General, MICU
 // Bed 11, SOFA 13, ventilated, on pressors), in step with her alerts in `sample-monitoring.ts`: lactate 4.1 up from 2.2,
@@ -58,7 +58,7 @@ const charted = (support: string, minutes: number, settings: PatientVentilator["
 const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		id: "p1",
-		photo: samplePatientPhoto,
+		photo: samplePatientPhotos.p1,
 		weight: "64 kg",
 		unreadMessages: 3,
 		// The brief Intercept-Live draws (`157:9660`), in step with her alerts and values.
@@ -159,6 +159,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p2",
+		photo: samplePatientPhotos.p2,
 		weight: "92 kg",
 		unreadMessages: 1,
 		brief: {
@@ -294,6 +295,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p5",
+		photo: samplePatientPhotos.p5,
 		weight: "61 kg",
 		brief: {
 			text: "SpO₂ stopped reporting 14 min ago, so oxygenation is unknown right now. On BiPAP since last night. Last ABG showed PaCO₂ 52, and potassium is low at 3.2 on continuous albuterol.",
@@ -708,6 +710,102 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		],
 		careTeam: [
 			...hospitalStaff("Chadron Community Hospital", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// Hayes's neighbor on the med-surg floor, with the same night nurse: pneumonia, improving on day 3.
+		id: "p16",
+		weight: "71 kg",
+		brief: {
+			text: "Improving on day 3 of community-acquired pneumonia. Fever is gone since yesterday afternoon, oxygen is down from 3 to 2 L with SpO₂ 96%, and WBC fell from 15.2 to 10.4. NEWS2 is 2 (Low), down from 5.",
+			sourceCount: 9,
+			updatedAt: minutesAgo(95),
+		},
+		codeStatus: "DNR",
+		allergies: [],
+		diagnosis: "Community-acquired pneumonia, right lower lobe",
+		problems: ["COPD, mild", "Benign prostatic hyperplasia"],
+		admittedAt: hoursAgo(66),
+		admittedFrom: "Emergency department",
+		ventilator: charted("Oxygen", 110, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
+		labs: [
+			lab("WBC", "10.4", "K/µL", 300, undefined, ["15.2", 1740]),
+			lab("Procalcitonin", "0.4", "ng/mL", 300, "high", ["1.8", 1740]),
+			lab("Creatinine", "1.1", "mg/dL", 300, undefined, ["1.3", 1740]),
+			lab("Sodium", "136", "mmol/L", 300, undefined, ["133", 1740]),
+		],
+		careTeam: [
+			...hospitalStaff("Chadron Community Hospital", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// Post-op day 1 after a small bowel resection: breathing a little faster and HR up, so NEWS2 is Medium. Pain and
+		// splinting are the likely cause; nothing has fired.
+		id: "p17",
+		photo: samplePatientPhotos.p17,
+		weight: "62 kg",
+		brief: {
+			text: "Post-op day 1 after a small bowel resection for an adhesive obstruction. NEWS2 is 6 (Medium), up from 4: RR 21, HR 104 and SpO₂ 95% on 2 L. She's splinting with pain; the PCA was increased 1 h ago. Urine output 40 mL/h, lactate 1.4.",
+			sourceCount: 11,
+			updatedAt: minutesAgo(30),
+		},
+		codeStatus: "Full code",
+		allergies: ["Sulfa drugs"],
+		diagnosis: "Adhesive small bowel obstruction, after small bowel resection",
+		problems: ["Hypertension", "Osteoarthritis"],
+		admittedAt: hoursAgo(20),
+		admittedFrom: "Operating room",
+		icuAdmittedAt: hoursAgo(20),
+		ventilator: charted("Oxygen", 40, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
+		infusions: [
+			{ drug: "Lactated Ringer's", rate: "100 mL/h", updatedAt: minutesAgo(4) },
+			{ drug: "Hydromorphone PCA", rate: "0.3 mg every 10 min", change: { direction: "up", from: "0.2", at: minutesAgo(60) }, updatedAt: minutesAgo(4) },
+		],
+		labs: [
+			lab("Hemoglobin", "10.8", "g/dL", 210, "low", ["12.6", 1300]),
+			lab("WBC", "11.9", "K/µL", 210, "high", ["9.8", 1300]),
+			lab("Lactate", "1.4", "mmol/L", 210, undefined, ["2.1", 1180]),
+			lab("Potassium", "3.8", "mmol/L", 210, undefined),
+			lab("Creatinine", "0.8", "mg/dL", 210, undefined),
+		],
+		careTeam: [
+			...hospitalStaff("Mercy West Hospital", ["Hannah Cole", "HC", 10, "online"], ["Marcus Lee", "ML", 2, "away"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// Diabetic ketoacidosis, nearly closed: the insulin drip comes off once the gap stays closed and he's eating.
+		id: "p18",
+		photo: samplePatientPhotos.p18,
+		weight: "74 kg",
+		brief: {
+			text: "Diabetic ketoacidosis, resolving. The anion gap is 12, down from 28, and bicarbonate 20 from 9. Glucose 168 on insulin at 3 units/h with dextrose. Eating breakfast, so the plan is subcutaneous insulin and the drip off 2 h later. NEWS2 is 1 (Low), down from 5.",
+			sourceCount: 14,
+			updatedAt: minutesAgo(50),
+		},
+		codeStatus: "Full code",
+		allergies: [],
+		diagnosis: "Diabetic ketoacidosis, from missed insulin doses",
+		problems: ["Type 1 diabetes", "Hypothyroidism"],
+		admittedAt: hoursAgo(22),
+		admittedFrom: "Emergency department",
+		icuAdmittedAt: hoursAgo(21),
+		ventilator: charted("Room air", 120),
+		infusions: [
+			{ drug: "Insulin regular", rate: "3 units/h", change: { direction: "down", from: "6", at: minutesAgo(240) }, updatedAt: minutesAgo(3) },
+			{ drug: "Dextrose 5% with 0.45% saline", rate: "125 mL/h", updatedAt: minutesAgo(3) },
+		],
+		labs: [
+			lab("Anion gap", "12", "mmol/L", 90, undefined, ["28", 1260]),
+			lab("Bicarbonate", "20", "mmol/L", 90, "low", ["9", 1260]),
+			lab("Glucose", "168", "mg/dL", 25, "high", ["512", 1260]),
+			lab("Potassium", "4.1", "mmol/L", 90, undefined, ["5.6", 1260]),
+			lab("Beta-hydroxybutyrate", "0.8", "mmol/L", 90, "high", ["6.4", 1260]),
+		],
+		careTeam: [
+			...hospitalStaff("Mercy West Hospital", ["Aisha Bello", "AB", 7, "online"], ["Marcus Lee", "ML", 2, "online"]),
 			...interceptTeam,
 		],
 	},

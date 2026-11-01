@@ -159,8 +159,8 @@ const tabsIndicatorVariants = cva("absolute", {
 type TabsTriggerProps = React.ComponentProps<typeof TabsPrimitive.Trigger>;
 
 /**
- * One tab: a label, a 16px icon before it, or the icon alone (then give the tab an `aria-label`). An outlined Counter
- * can follow the label.
+ * One tab: a label, a 16px icon before it, or the icon alone (then give the tab an `aria-label`). Counters can follow
+ * the label: a count, an alert count, or both, 2px apart.
  *
  * Figma: [intercept.ds › Tabs Items](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1090-54)
  */
@@ -203,7 +203,10 @@ function TabsTrigger({ className, value, children, onPointerDown, onKeyDown, onB
 					className={tabsIndicatorVariants({ variant })}
 				/>
 			) : null}
-			<span className='relative inline-flex items-center gap-1.5'>{children}</span>
+			{/* Two counters in a row (a count, then an alert count) read as one pair: 2px apart, not the 6px gap. */}
+			<span className='relative inline-flex items-center gap-1.5 [&>[data-slot=counter]+[data-slot=counter]]:-ml-1'>
+				{children}
+			</span>
 		</TabsPrimitive.Trigger>
 	);
 }

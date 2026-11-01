@@ -25,6 +25,13 @@ const counterVariants = cva(
 				medium: "bg-severity-medium text-severity-foreground",
 				low: "bg-severity-low text-severity-foreground",
 				resolved: "bg-success text-severity-foreground",
+				// Flat · Critical / High / Medium / Low: the severity at rest, e.g. an inactive tab's alert count. A
+				// pale fill with a dark number in the severity's hue, at least 4.5:1, which white on High, Medium and Low
+				// isn't.
+				"critical-muted": "bg-severity-critical-muted text-severity-critical-prominent",
+				"high-muted": "bg-severity-high-muted text-severity-high-prominent",
+				"medium-muted": "bg-severity-medium-muted text-severity-medium-prominent",
+				"low-muted": "bg-severity-low-muted text-severity-low-prominent",
 			},
 			size: {
 				// 20px

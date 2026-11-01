@@ -320,26 +320,28 @@ function Sidebar({
 					</div>
 				) : (
 					<div className='flex h-12 w-full items-center justify-between py-2 pr-1 pl-0.5'>
-						{homeItem ? (
-							<button
-								type='button'
-								data-slot='sidebar-home'
-								aria-label={`Go to ${homeItem.label}`}
-								onClick={() => handleItemClick(homeItem)}
-								className='flex shrink-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar'
-							>
-								<Logo aria-hidden='true' />
-							</button>
-						) : (
+						{/* Clicking the wordmark collapses the rail, as clicking the collapsed mark expands it. Mouse only, like the
+						    rail's empty space: the collapse button beside it is the keyboard path. It used to go to the first
+						    item, which is an action in Intercept Live (Ask Intercept Live) and opened the chat. */}
+						<button
+							type='button'
+							data-slot='sidebar-logo-toggle'
+							tabIndex={-1}
+							aria-hidden='true'
+							onClick={handleToggleCollapsed}
+							className='peer/logo flex shrink-0 cursor-w-resize rounded-md outline-none'
+						>
 							<Logo />
-						)}
-						{/* Hover matches Button's ghost variant. */}
+						</button>
+
+						{/* Hover matches Button's ghost variant. Hovering the wordmark darkens the icon (no fill), since a click
+						    there does the same thing. */}
 						<button
 							type='button'
 							data-slot='sidebar-collapse'
 							aria-label='Collapse sidebar'
 							onClick={handleToggleCollapsed}
-							className='flex size-6 shrink-0 items-center justify-center rounded-md text-icon-subtle outline-none transition-colors duration-160 ease-in-out hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar'
+							className='flex size-6 shrink-0 items-center justify-center rounded-md text-icon-subtle outline-none transition-colors duration-160 ease-in-out hover:bg-accent hover:text-accent-foreground peer-hover/logo:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar'
 						>
 							<PanelLeftAltIcon className='size-4' />
 						</button>

@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Oct 30, 2026
+Last updated: Nov 1, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -236,6 +236,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Alert lifecycle** | *Proposed* UI states. **Active:** unresolved. **Acknowledged:** an authorized clinician has seen it. **Escalated:** routed for more clinical attention. **Resolved:** has a documented resolution. Acknowledging doesn't resolve an alert, escalating doesn't close it, and resolved alerts stay in history. | PRD PC-071 |
 | **Alert severity** | *Proposed* taxonomy: Critical, High, Medium, Low. ⚠️ **Decision needed:** final names, ordering and clinical behaviors (OD-05). | PRD PC-070 |
 | **Alert source** | *Proposed* origin shown on an alert: AI agent (agent chip), Device (e.g. "Bedside monitor"), Rule ("Protocol"), Manual ("Flagged by…", a Clinician Intuition Alert) or System. ⚠️ **Decision needed:** OD-15. | PRD §15.1 |
+| **Device alarm priority** | The bedside device's own alarm priority (IEC 60601-1-8): High (red, flashing fast), Medium (yellow, flashing slowly), Low (cyan, steady). GE calls them Crisis, Warning and Advisory. Separate from the platform's alert severity. | Requirements AL-02; GE CARESCAPE Central Station manual |
 | **Avatar (patient)** | The initials avatar next to the patient's name on the Patient card (e.g. JS). A generic icon when the name is missing or restricted. Decorative colors only, never status tones. | PRD PC-010 |
 | **Clinical trajectory** | The change in a patient's condition over a defined period. *Proposed* statuses: Improving, Relatively stable, Deteriorating, Insufficient data. Never inferred from a single observation. Observed trends must stay distinct from predictions. | PRD PC-031 |
 | **Clinician Intuition Alert** | A human-generated alert raised by an on-shift clinician whose judgment flags a concern no machine threshold has caught yet. Carries a rationale, watch-list category, monitoring focus and suggested timeline. Persists across shifts. ⚠️ **Gap:** the spec glossary says "Clinical Intuition Alert"; spec §5.6 and the PRD say "Clinician Intuition Alert". | Spec §5.6, PRD PC-073 |
@@ -278,7 +279,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Burn ICU** | Intensive care unit for patients with severe burns. A unit code in the Census unit menu. | General |
 | **CAM-ICU** | Confusion Assessment Method for the ICU. A bedside delirium screen. | Spec Appendix A |
 | **CCU** | Coronary Care Unit, the ICU for acute heart conditions. Some hospitals use it for Critical Care Unit instead. | General, PRD §15.1 P5 |
-| **Census** | The set of patients a clinician or unit is currently responsible for. *Proposed* census states: Admitted, Transferred, Discharged, Pending reconciliation, Unknown. A transfer is never read as a discharge. | PRD §5 |
+| **Census** | The set of patients a clinician or unit is currently responsible for. *Proposed* census states: Admitted, Transferred, Discharged, Pending reconciliation, Unknown. A transfer is never read as a discharge. The **Census page** is where the clinician manages these patients, with a general picture of how each is doing; real-time clinical status is Monitoring's (PRD Census). | PRD §5, PRD Census |
 | **Code status (DNR / DNI)** | The patient's documented resuscitation wishes. DNR: Do Not Resuscitate (no CPR). DNI: Do Not Intubate. Shown as a badge on the Patient card. ⚠️ **Gap:** not in the data model yet (OD-16). | General, PRD §15.1 P3 |
 | **Critical care** | The specialty that manages life-threatening conditions needing organ support and invasive monitoring. Intercept's v1 clinical anchor. | Spec Appendix A |
 | **CVICU** | Cardiovascular Intensive Care Unit. The ICU for patients with heart and major-vessel conditions, often after cardiac surgery. A unit code shown in the Patient card location. | General, PRD PC-014 |

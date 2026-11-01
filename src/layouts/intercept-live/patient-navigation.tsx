@@ -15,6 +15,8 @@ type PatientNavigation = {
 	compact: boolean;
 	/** Whether a patient's details are open, so the page under them is hidden. */
 	patientOpen: boolean;
+	/** When the clinician opened each patient's details in this session, ISO 8601 by patient id (Recently viewed). */
+	viewedAt: Record<string, string>;
 };
 
 const PatientNavigationContext = React.createContext<PatientNavigation | null>(null);

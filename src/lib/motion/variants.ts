@@ -1,4 +1,4 @@
-import type { Variants } from "motion/react";
+import type { Easing, Variants } from "motion/react";
 
 import { motionBlur, motionDistance, motionDuration, motionScale, motionStagger } from "./tokens";
 import { enterTransition, exitTransition, settleSpring, standardTransition, swapEnterTransition } from "./transitions";
@@ -187,35 +187,55 @@ const pendingSurfaceVariants: Variants = {
 /**
  * Live: a status that is ongoing right now (e.g. a connection that's up). A slow loop on a small dot, for as long as
  * the status holds. Put both on `animate="live"`:
- * - `liveDotVariants` — the dot grows from `motionScale.liveDotMin` to full size over the first half of the beat and
- *   shrinks back over the second, at constant speed with no hold.
- * - `liveHaloVariants` — a blurred copy of the dot's ring fades in as the dot grows, then spreads out from it,
- *   softening and fading, as the dot shrinks. The two read as one beat.
+ * - `liveDotVariants` — the dot grows from `motionScale.liveDotMin` to full size, holds there a moment, and shrinks
+ *   back, easing in and out of each turn like a breath (`liveBeatTimes`).
+ * - `liveHaloVariants` — a blurred copy of the dot's ring fades in as the dot grows, holds with it, then spreads out from
+ *   it, softening and fading, as the dot shrinks. It leaves fast and slows as it spreads, like a ripple. The two read as
+ *   one beat.
  * Under reduced motion, render the dot still and leave the halo out: a continuous loop is nonessential motion.
  */
-// Linear throughout: constant speed, no acceleration or overshoot.
-const liveLoop = { duration: motionDuration.liveLoop, repeat: Infinity, ease: "linear" } as const;
+const liveLoop = { duration: motionDuration.liveLoop, repeat: Infinity } as const;
 
-// Half the beat growing, half shrinking: no hold, so the motion never stops dead.
-const liveBeatTimes = [0, 0.5, 1];
+// Growing over 30% of the beat, held at full size for 40%, shrinking over 30% (300 / 400 / 300ms at 1s; Oct 31, 2026,
+// user's call: a pause at full size, then twice as long). It turns at its smallest without stopping, so the loop keeps
+// breathing.
+const liveBeatTimes = [0, 0.3, 0.7, 1];
+const liveBeatEase: Easing[] = ["easeInOut", "linear", "easeInOut"];
+
 
 const liveDotVariants: Variants = {
   live: {
-    scale: [motionScale.liveDotMin, 1, motionScale.liveDotMin],
-    transition: { ...liveLoop, times: liveBeatTimes },
+    scale: [motionScale.liveDotMin, 1, 1, motionScale.liveDotMin],
+    // Each move eases in and out: the dot slows into full size and into its smallest, never turning at full speed.
+    transition: { ...liveLoop, times: liveBeatTimes, ease: liveBeatEase },
+  },
+};
+
+/**
+ * The dot's glow color: a copy of the dot in the halo's color, over it, that breathes with it and fades in as the dot
+ * reaches full size, when the halo glows, and out as it shrinks, so the dot itself lights up with the glow (Oct 31, 2026,
+ * user's call; the dot had a fixed ring in that color before). Under reduced motion, leave it out.
+ */
+const liveGlowVariants: Variants = {
+  live: {
+    scale: [motionScale.liveDotMin, 1, 1, motionScale.liveDotMin],
+    opacity: [0, 1, 1, 0],
+    transition: { ...liveLoop, times: liveBeatTimes, ease: liveBeatEase },
   },
 };
 
 const liveHaloVariants: Variants = {
   live: {
-    scale: [1, 1, motionScale.liveHalo],
-    opacity: [0, 0.9, 0],
+    scale: [1, 1, 1, motionScale.liveHalo],
+    opacity: [0, 0.9, 0.9, 0],
     filter: [
+      `blur(${motionBlur.liveHaloStart}px)`,
       `blur(${motionBlur.liveHaloStart}px)`,
       `blur(${motionBlur.liveHaloStart}px)`,
       `blur(${motionBlur.liveHaloEnd}px)`,
     ],
-    transition: { ...liveLoop, times: liveBeatTimes },
+    // Fades in with the dot, glows while it holds, then spreads fast and slows as it fades.
+    transition: { ...liveLoop, times: liveBeatTimes, ease: ["easeInOut", "linear", "easeOut"] },
   },
 };
 
@@ -251,5 +271,6 @@ export {
   pendingSurfaceVariants,
   liveDotVariants,
   liveHaloVariants,
+  liveGlowVariants,
   urgencyRingVariants,
 };

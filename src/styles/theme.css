@@ -9,6 +9,7 @@
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
+	--color-overlay: var(--overlay);
 	--color-card-foreground: var(--card-foreground);
 	--color-popover: var(--popover);
 	--color-popover-foreground: var(--popover-foreground);
@@ -78,6 +79,7 @@
 	--color-success-subtle: var(--success-subtle);
 	--color-success-muted: var(--success-muted);
 	--color-success-glow: var(--success-glow);
+	--color-success-halo: var(--success-halo);
 	--color-warning: var(--warning);
 	--color-warning-subtle: var(--warning-subtle);
 	--color-warning-muted: var(--warning-muted);
@@ -141,6 +143,26 @@
 	--color-severity-medium: var(--severity-medium);
 	--color-severity-low: var(--severity-low);
 	--color-severity-foreground: var(--severity-foreground);
+	--color-severity-critical-subtle: var(--severity-critical-subtle);
+	--color-severity-critical-muted: var(--severity-critical-muted);
+	--color-severity-critical-defined: var(--severity-critical-defined);
+	--color-severity-critical-prominent: var(--severity-critical-prominent);
+	--color-severity-critical-strong: var(--severity-critical-strong);
+	--color-severity-high-subtle: var(--severity-high-subtle);
+	--color-severity-high-muted: var(--severity-high-muted);
+	--color-severity-high-defined: var(--severity-high-defined);
+	--color-severity-high-prominent: var(--severity-high-prominent);
+	--color-severity-high-strong: var(--severity-high-strong);
+	--color-severity-medium-subtle: var(--severity-medium-subtle);
+	--color-severity-medium-muted: var(--severity-medium-muted);
+	--color-severity-medium-defined: var(--severity-medium-defined);
+	--color-severity-medium-prominent: var(--severity-medium-prominent);
+	--color-severity-medium-strong: var(--severity-medium-strong);
+	--color-severity-low-subtle: var(--severity-low-subtle);
+	--color-severity-low-muted: var(--severity-low-muted);
+	--color-severity-low-defined: var(--severity-low-defined);
+	--color-severity-low-prominent: var(--severity-low-prominent);
+	--color-severity-low-strong: var(--severity-low-strong);
 	--color-monitor: var(--monitor);
 	--color-monitor-grid: var(--monitor-grid);
 	--color-monitor-foreground: var(--monitor-foreground);
@@ -152,6 +174,12 @@
 	--color-monitor-spo2-ink: var(--monitor-spo2-ink);
 	--color-monitor-abp-ink: var(--monitor-abp-ink);
 	--color-monitor-resp-ink: var(--monitor-resp-ink);
+	--color-device-alarm-high: var(--device-alarm-high);
+	--color-device-alarm-high-foreground: var(--device-alarm-high-foreground);
+	--color-device-alarm-medium: var(--device-alarm-medium);
+	--color-device-alarm-medium-foreground: var(--device-alarm-medium-foreground);
+	--color-device-alarm-low: var(--device-alarm-low);
+	--color-device-alarm-low-foreground: var(--device-alarm-low-foreground);
 
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
@@ -172,6 +200,9 @@
 	--shadow-2xl: 0 16px 50px -12px var(--shadow-color-lg);
 	/* shadow/card: a soft lift for floating labels, e.g. SidebarTooltip. */
 	--shadow-card: 0 4px 30px 0 oklch(0 0 0 / 8%);
+	/* A right-hand Sheet's shadow, cast left over the page (Intercept-Live Filter example `205:6104`; a raw effect there,
+	   no effect style yet). */
+	--shadow-sheet: -16px 0 122px 0 oklch(0 0 0 / 18%);
 }
 
 /* ---------- Breakpoints ----------
@@ -535,6 +566,8 @@
 	--shadow-color-sm: oklch(0 0 0 / 5%);
 	--shadow-color-md: oklch(0 0 0 / 10%);
 	--shadow-color-lg: oklch(0 0 0 / 25%);
+	/* The scrim behind a modal surface, e.g. a Sheet (Intercept-Live `overlay`, #0b1222 at 20%). */
+	--overlay: oklch(0.185 0.035 265.25 / 20%);
 
 	/* Badge tones (badge/<tone>/background, /foreground): 50 fill, 700 label. */
 	--badge-blue: var(--blue-50);
@@ -554,19 +587,23 @@
 	--badge-amber-foreground: var(--flamingo-700);
 
 	/* Avatar initials fills (intercept.ds avatar i1–i10). Raw values in Figma, no variables yet; white initials on each.
-	   Same in both modes. */
-	--avatar-1: oklch(0.502 0.146 262.28);
+	   Same in both modes. Figma's hue and chroma; 1, 3, 8, 9 and 10 are darker than Figma's, so look-alikes differ in
+	   lightness too (DESIGN.md "Avatar" → Colors). */
+	--avatar-1: oklch(0.4 0.146 262.28);
 	--avatar-2: oklch(0.691 0.146 157.47);
-	--avatar-3: oklch(0.534 0.208 319.6);
+	--avatar-3: oklch(0.44 0.208 319.6);
 	--avatar-4: oklch(0.737 0.153 104.9);
 	--avatar-5: oklch(0.587 0.124 48.59);
 	--avatar-6: oklch(0.643 0.12 223.24);
 	--avatar-7: oklch(0.663 0.207 333.08);
-	--avatar-8: oklch(0.563 0.178 141.06);
-	--avatar-9: oklch(0.533 0.191 25.81);
-	--avatar-10: oklch(0.671 0.183 248.48);
+	--avatar-8: oklch(0.54 0.178 141.06);
+	--avatar-9: oklch(0.47 0.191 25.81);
+	--avatar-10: oklch(0.56 0.153 248.48);
 	/* The ring around AppHeader's Online dot. Raw value in Figma, no variable yet. */
 	--success-glow: oklch(0.886 0.215 149.32);
+	/* The Online dot's halo (Oct 31, 2026, user's call): in light mode a lighter, more saturated green than `success`
+	   (#0ed860), so the glow reads on the pale badge; in dark mode the glow's own green. */
+	--success-halo: oklch(0.77 0.215 149);
 
 	/* Alert severity (PatientCardAlert). Critical, High and Low are raw values in intercept.ds with no variable, so
 	   they hold the same value in both modes (DESIGN.md "Patient card"). Medium follows `warning`. */
@@ -575,6 +612,29 @@
 	--severity-medium: var(--warning);
 	--severity-low: oklch(0.652 0.135 233.13); /* #029cd4 */
 	--severity-foreground: var(--white);
+	/* Each severity's tone steps (intercept.ds `alerts-patient/<severity>-<step>`, Oct 31, 2026), named like
+	   archielabs.ds's tone scale: `subtle` and `muted` fills, a `defined` border, `prominent` and `strong` text. Raw
+	   values in Figma too, built from each base color's hue; `prominent` on `muted` is at least 4.5:1 in both modes. */
+	--severity-critical-subtle: oklch(0.97 0.014 29.23); /* #fef2f0 */
+	--severity-critical-muted: oklch(0.925 0.038 29.23); /* #ffddd8 */
+	--severity-critical-defined: oklch(0.82 0.101 29.23); /* #ffab9e */
+	--severity-critical-prominent: oklch(0.5 0.196 29.23); /* #b9130c */
+	--severity-critical-strong: oklch(0.42 0.159 29.23); /* #90140d */
+	--severity-high-subtle: oklch(0.97 0.015 37.74); /* #fff2ee */
+	--severity-high-muted: oklch(0.925 0.038 37.74); /* #feded4 */
+	--severity-high-defined: oklch(0.82 0.103 37.74); /* #ffad94 */
+	--severity-high-prominent: oklch(0.5 0.164 37.74); /* #ac3401 */
+	--severity-high-strong: oklch(0.42 0.138 37.74); /* #882700 */
+	--severity-medium-subtle: oklch(0.97 0.017 53.13); /* #fff2eb */
+	--severity-medium-muted: oklch(0.925 0.044 53.13); /* #ffdfcc */
+	--severity-medium-defined: oklch(0.82 0.098 53.13); /* #f7b388 */
+	--severity-medium-prominent: oklch(0.5 0.126 53.13); /* #994b02 */
+	--severity-medium-strong: oklch(0.42 0.106 53.13); /* #783901 */
+	--severity-low-subtle: oklch(0.97 0.014 233.13); /* #ecf7fd */
+	--severity-low-muted: oklch(0.925 0.034 233.13); /* #d1ebfa */
+	--severity-low-defined: oklch(0.82 0.074 233.13); /* #94cded */
+	--severity-low-prominent: oklch(0.5 0.103 233.13); /* #026c94 */
+	--severity-low-strong: oklch(0.42 0.087 233.13); /* #005475 */
 
 	/* Bedside monitor screen (PatientMonitoringCard). Light in intercept mode, a dark screen in intercept-dark. Parameter
 	   colors avoid the alert hues (red, orange, amber, blue) so a colored number never reads as an alarm (PRD Monitoring
@@ -593,12 +653,24 @@
 	--monitor-spo2-ink: var(--monitor-spo2);
 	--monitor-abp-ink: var(--monitor-abp);
 	--monitor-resp-ink: var(--monitor-resp);
+	/* Bedside monitor alarm colors, by the device's alarm priority (IEC 60601-1-8), for a vital in alarm: GE CARESCAPE's
+	   visual alarm indicators (Central Station manual 2048001-001E, "Visual alarm indicator characteristics"): red
+	   (255, 50, 50) with white text, yellow (255, 255, 0) with black text, cyan with black text. Cyan is #00e7ff, brighter
+	   than GE's (30, 165, 255) for contrast (13.9:1 with black, was 7.9:1). The same in both modes, as on the device. Not
+	   the platform's alert severities (`severity-*`). */
+	--device-alarm-high: oklch(0.648 0.238 27);
+	--device-alarm-high-foreground: oklch(1 0 0);
+	--device-alarm-medium: oklch(0.968 0.211 109.8);
+	--device-alarm-medium-foreground: oklch(0 0 0);
+	--device-alarm-low: oklch(0.849 0.146 208.1);
+	--device-alarm-low-foreground: oklch(0 0 0);
 }
 
 /* ---------- Semantic: intercept-dark mode ----------
    Only tokens whose value differs from intercept. A token that is var(--x) in
    both modes needs no override: it follows --x. */
 .dark {
+	--success-halo: var(--success-glow);
 	--background: var(--graphite-950);
 	--foreground: var(--graphite-100);
 	--muted-foreground: var(--graphite-400);
@@ -678,6 +750,28 @@
 	--shadow-color-sm: oklch(0 0 0 / 30%);
 	--shadow-color-md: oklch(0 0 0 / 60%);
 	--shadow-color-lg: oklch(0 0 0 / 80%);
+
+	/* Dark fills, light text: the ladder flips, as the tone scales do. */
+	--severity-critical-subtle: oklch(0.23 0.061 29.23); /* #340f0b */
+	--severity-critical-muted: oklch(0.29 0.086 29.23); /* #4e1510 */
+	--severity-critical-defined: oklch(0.42 0.147 29.23); /* #8c1e15 */
+	--severity-critical-prominent: oklch(0.82 0.101 29.23); /* #ffab9e */
+	--severity-critical-strong: oklch(0.9 0.051 29.23); /* #fed2cb */
+	--severity-high-subtle: oklch(0.23 0.054 37.74); /* #321209 */
+	--severity-high-muted: oklch(0.29 0.076 37.74); /* #4a1b0c */
+	--severity-high-defined: oklch(0.42 0.131 37.74); /* #852a09 */
+	--severity-high-prominent: oklch(0.82 0.103 37.74); /* #ffad94 */
+	--severity-high-strong: oklch(0.9 0.053 37.74); /* #ffd3c5 */
+	--severity-medium-subtle: oklch(0.23 0.045 53.13); /* #2d1607 */
+	--severity-medium-muted: oklch(0.29 0.063 53.13); /* #432108 */
+	--severity-medium-defined: oklch(0.42 0.106 53.13); /* #783901 */
+	--severity-medium-prominent: oklch(0.82 0.098 53.13); /* #f7b388 */
+	--severity-medium-strong: oklch(0.9 0.054 53.13); /* #fcd5bd */
+	--severity-low-subtle: oklch(0.23 0.034 233.13); /* #0a202a */
+	--severity-low-muted: oklch(0.29 0.047 233.13); /* #0f2f3f */
+	--severity-low-defined: oklch(0.42 0.081 233.13); /* #0e5472 */
+	--severity-low-prominent: oklch(0.82 0.074 233.13); /* #94cded */
+	--severity-low-strong: oklch(0.9 0.041 233.13); /* #c4e3f5 */
 
 	--monitor: var(--background);
 	--monitor-grid: oklch(1 0 0 / 8%);

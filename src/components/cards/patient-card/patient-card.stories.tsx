@@ -62,6 +62,30 @@ type Story = StoryObj<typeof meta>;
  */
 export const Default: Story = {};
 
+/**
+ * With an avatar leading the name row (intercept.ds `patient-card-compact`): `initials` (here in tone 1, Figma's blue),
+ * or a `photo` with them as the fallback. 44px, centered on the name and identity; 32px on the small card.
+ */
+export const WithAvatar: Story = {
+	args: { initials: "MS", tone: 1, alert: undefined },
+	decorators: [
+		(Story) => (
+			<div className='flex items-start gap-4'>
+				<Story />
+			</div>
+		),
+	],
+	render: (args) => (
+		<>
+			<PatientCard {...args} />
+			<PatientCard {...args} size='sm' />
+		</>
+	),
+	play: async ({ canvasElement }) => {
+		await expect(canvasElement.querySelectorAll("[data-slot=avatar]")).toHaveLength(2);
+	},
+};
+
 /** `variant="expanded"`: the vitals get their own row of metrics, for monitoring dashboards. */
 export const Expanded: Story = {
 	args: { variant: "expanded" },
@@ -70,6 +94,14 @@ export const Expanded: Story = {
 /** Opens through a link instead of a handler, for apps that route with URLs. */
 export const AsLink: Story = {
 	args: { onOpen: undefined, href: "#patient-01033876" },
+};
+
+/**
+ * `alertRing={false}`: no ring or tint, the card's default look, and the pill alone shows the alert. For pages where
+ * patients are managed rather than watched (the Census).
+ */
+export const WithoutAlertRing: Story = {
+	args: { alertRing: false },
 };
 
 /** Without `onOpen` or `href`: a static card, no hover. */
@@ -92,9 +124,12 @@ export const AbnormalAndMissingVitals: Story = {
 	},
 };
 
-/** No alert, no acuity and no tags: the card keeps only what it has. */
+/** No alert, no acuity and no tags: the card keeps only what it has, and "No tags" holds the tag row's height. */
 export const Minimal: Story = {
 	args: { alert: undefined, acuity: undefined, trajectory: undefined, tags: [] },
+	play: async ({ canvas }) => {
+		await expect(canvas.getByText("No tags")).toBeVisible();
+	},
 };
 
 /** The small card (`size="sm"`), for the Census's Compact density: 12px padding, 16px name and score, 12px lines, `xs` tags. */

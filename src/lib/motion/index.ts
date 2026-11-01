@@ -31,6 +31,7 @@ export {
   pendingSurfaceVariants,
   liveDotVariants,
   liveHaloVariants,
+  liveGlowVariants,
   urgencyRingVariants,
 } from "./variants";
 
@@ -48,6 +49,8 @@ export { scrollContainerOf, scrollIntoViewSmoothly, scrollMetrics } from "./scro
 export { useExpandClip } from "./expand-clip";
 
 export { useUrgencyPhase, type UrgencyPhase } from "./urgency";
+
+export { deviceAlarmFlashHz, useDeviceAlarmFlash, type DeviceAlarmPriority } from "./device-alarm";
 
 export {
   reducedMotionTransition,

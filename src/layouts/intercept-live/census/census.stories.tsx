@@ -8,7 +8,7 @@ import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
-import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
+import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { prototypeShortcuts, resetPrototype } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Census } from "./census";
@@ -20,11 +20,24 @@ const meta = {
 	parameters: {
 		layout: "fullscreen",
 	},
-	// The Monitoring page's monitors are live here too (`useLivePatients`).
+	// The Monitoring page's monitors are live here too (`useLivePatients`), and Ask Intercept Live answers from the same
+	// alerts (with the queue's actions) and values (`useLiveAskIntercept`).
 	render: function Render(args) {
-		return <Census {...args} monitoringPatients={useLivePatients(args.monitoringPatients ?? [])} />;
+		const monitoringPatients = useLivePatients(args.monitoringPatients ?? []);
+		const live = useLiveAskIntercept(args.alerts ?? [], monitoringPatients, args.onAlertAction);
+		return (
+			<Census
+				{...args}
+				monitoringPatients={monitoringPatients}
+				askIntercept={live.askIntercept}
+			askInterceptNotice={live.notice}
+				onAlertAction={live.onAlertAction}
+			/>
+		);
 	},
 	args: {
+		// The app opens on Monitoring; these stories show the Census page.
+		defaultPage: "Census",
 		hospitals: sampleHospitals,
 		patients: samplePatients,
 		monitoringPatients: sampleMonitoringPatients,
@@ -47,23 +60,22 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Hospital tabs, the My patients chip and the quick views filter the grid; cards are sorted by alert severity.
+ * Hospital tabs, the My patients chip and the quick views filter the grid; cards are sorted by score (NEWS2).
  * The live feed plays as on Monitoring (PRD SV-081): at 1.5 s, at 8 s, then every 15 to 30 s, an alert fires, changes
- * severity or resolves. The hospital bar says what changed ("Live feed: …"), the live feed panel's queue follows, and so
- * do the cards' alert pills (`withFeedAlerts`). The cards move to their new places at the grid's next re-sort: 2 s after
- * the page opens, then every 15 to 30 s (`useSortCadence`). A resolve doesn't wait: the card says "Resolved" in place
- * for a moment, then moves (Johnson, at 8 s). Then it loops.
+ * severity or resolves. The hospital bar says what changed ("Live feed: …"), and the live feed panel's queue, the counts
+ * and the List's Alert column follow (`withFeedAlerts`). The cards hold still and show no alert: the Census is for
+ * managing patients, so it never re-sorts on its own (Monitoring does, and shows alerts on its cards). Then it loops.
  */
 export const Default: Story = {
 	render: (args) => <LiveCensus {...args} />,
 };
 
-/** The same screen without the scripted feed: the sample as it starts, the cards' own alert pills, nothing changing. */
+/** The same screen without the scripted feed: the sample as it starts, nothing changing. */
 export const Static: Story = {};
 
 /**
  * My patients: a chip like the quick views, off by default, so the grid starts with everyone. Pressed, it narrows the
- * grid to the user's own and the title reads "6 of 15 patients"; pressed again, everyone is back.
+ * grid to the user's own and the title reads "6 of 18 patients"; pressed again, everyone is back.
  */
 export const MyPatients: Story = {
 	play: async ({ canvas, userEvent }) => {
@@ -150,6 +162,76 @@ export const GroupingAcrossPages: Story = {
 	},
 };
 
+/**
+ * The search leads the filter chips: it opens on click, narrows the cards and the chips' counts, and clears. It
+ * searches everything the card shows, the score included.
+ */
+export const Search: Story = {
+	play: async ({ canvas, userEvent }) => {
+		const search = canvas.getByRole("searchbox", { name: "Search patients" });
+		await userEvent.click(search);
+		await userEvent.type(search, "hayes");
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^1 patient at /));
+		await expect(canvas.getByRole("button", { name: /^My patients/ })).toHaveTextContent(/1$/);
+		await userEvent.click(canvas.getByRole("button", { name: "Clear search" }));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^18 patients/));
+		// Anything the card shows: Miller's score, "NEWS2 17".
+		await userEvent.type(search, "17");
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^2 patients/));
+		await expect(canvas.getByText("Miller, Sarah")).toBeInTheDocument();
+	},
+};
+
+/**
+ * Filters opens a panel on the right (where the live feed opens). Options narrow the cards as they're picked, the
+ * button counts them, and Clear all brings everyone back.
+ */
+export const Filters: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
+		const ventilated = await screen.findByRole("checkbox", { name: "Ventilated" });
+		await userEvent.click(ventilated);
+		await expect(screen.getByText("5 of 18 patients in this view")).toBeInTheDocument();
+		// A modal: the page behind is hidden from assistive tech until Apply closes the sheet.
+		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
+		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^5 patients/);
+		const filtersButton = canvas.getByRole("button", { name: "Filters, 1 picked" });
+		await expect(filtersButton).toHaveAttribute("aria-expanded", "false");
+		await userEvent.click(filtersButton);
+		await userEvent.click(await screen.findByRole("button", { name: "Clear all" }));
+		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^18 patients/));
+	},
+};
+
+/**
+ * The Filters panel's search narrows the options it shows: "vent" leaves Ventilated, a group's title ("unit") shows its
+ * whole group, and a miss says so. Escape clears the search first, then closes the panel.
+ */
+export const FiltersSearch: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
+		const search = await screen.findByRole("searchbox", { name: "Search filters" });
+		await waitFor(() => expect(search).toHaveFocus());
+		await userEvent.type(search, "vent");
+		await expect(screen.getByRole("checkbox", { name: "Ventilated" })).toBeInTheDocument();
+		await expect(screen.queryByRole("checkbox", { name: "OB-ICU" })).not.toBeInTheDocument();
+		await userEvent.clear(search);
+		await userEvent.type(search, "unit");
+		await expect(screen.getByRole("checkbox", { name: "OB-ICU" })).toBeInTheDocument();
+		await expect(screen.queryByRole("checkbox", { name: "Ventilated" })).not.toBeInTheDocument();
+		await userEvent.clear(search);
+		await userEvent.type(search, "zzz");
+		await expect(screen.getByText('No filters match "zzz"')).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		await expect(search).toHaveValue("");
+		await expect(screen.getByRole("dialog", { name: "Filters" })).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
+	},
+};
+
 /** Group by location's other view (`groupedView="sections"`, the Prototype menu's Sections by location): a grid section each. */
 export const GroupedGrid: Story = {
 	args: { groupedView: "sections" },
@@ -225,12 +307,12 @@ export const Empty: Story = {
 	args: { patients: [] },
 };
 
-/** Filters that match nobody (Data gap in OB-ICU): an empty state with Clear filters, which brings every patient back. */
+/** Filters that match nobody (Rising score in OB-ICU): an empty state with Clear filters, which brings every patient back. */
 export const NoMatches: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: /Data gap/ }));
-		await userEvent.click(canvas.getByRole("combobox", { name: "Unit" }));
-		await userEvent.click(await screen.findByRole("option", { name: "OB-ICU" }));
+		await userEvent.click(canvas.getByRole("button", { name: /Rising score/ }));
+		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
+		await userEvent.click(await screen.findByRole("checkbox", { name: "OB-ICU" }));
 		// The empty state Reveals in (opacity 0 → 1), so wait for it to finish appearing.
 		await waitFor(() => expect(canvas.getByText("No patients match these filters")).toBeVisible());
 	},
@@ -241,18 +323,22 @@ export const EmptyPage: Story = {
 	args: { defaultPage: "Alert Queue" },
 };
 
-/** Plays the sample live feed into the Census: its alerts, the cards' pills from them, and the Monitoring page's values. */
+/** Plays the sample live feed into the Census: its alerts and the Monitoring page's values. */
 function LiveCensus(props: React.ComponentProps<typeof Census>) {
 	const { patients: monitoring, alerts, caption, restart } = useSampleLiveFeed();
 	// The Prototype menu's Sections by location view (Group by location's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	const monitoringPatients = useLivePatients(monitoring);
+	const live = useLiveAskIntercept(alerts, monitoringPatients, props.onAlertAction);
 	return (
 		<Census
 			{...props}
 			patients={withFeedAlerts(props.patients, alerts)}
 			monitoringPatients={monitoringPatients}
 			alerts={alerts}
+			askIntercept={live.askIntercept}
+			askInterceptNotice={live.notice}
+			onAlertAction={live.onAlertAction}
 			liveFeed={caption}
 			prototype={prototypeShortcuts({
 				restartLiveFeed: restart,

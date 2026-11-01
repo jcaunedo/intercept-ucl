@@ -17,7 +17,10 @@ type CensusProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		 * takes the same `alerts` for its triage queue and its cards' alert pills.
 		 */
 		monitoringPatients?: MonitoringPatient[];
-		/** The page shown first. The Sidebar switches between the Census, Monitoring and the pages that aren't built. */
+		/**
+		 * The page shown first, Monitoring by default (the app's default page). The Sidebar switches between Monitoring, the
+		 * Census and the pages that aren't built.
+		 */
 		defaultPage?: InterceptLivePage;
 		/** What's known about each patient beyond the card, for their details page. A patient without one shows the card's. */
 		patientRecords?: PatientRecord[];
@@ -43,7 +46,7 @@ function Census({
 	onOpenLiveFeed,
 	groupedView,
 	onOpenPatient,
-	defaultPage = "Census",
+	defaultPage,
 	patientRecords,
 	defaultPatient,
 	onPatientDetailsAction,

@@ -3,6 +3,7 @@ import * as React from "react";
 import {
 	PatientCardAlert,
 	patientCardAcuityLevels,
+	scoreTrendClassName,
 	type PatientCardProps,
 } from "@/components/cards/patient-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
@@ -10,7 +11,6 @@ import { Badge } from "@/components/data-display/badge";
 import { Typography } from "@/components/typography/typography";
 import { cn } from "@/lib/utils";
 
-const trendVariantClassNames = { critical: "text-severity-critical", success: "text-success" } as const;
 
 type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 	Pick<
@@ -120,7 +120,7 @@ function PatientHeader({
 											aria-hidden='true'
 											className={cn(
 												"font-bold",
-												trajectory.trendVariant ? trendVariantClassNames[trajectory.trendVariant] : undefined,
+												scoreTrendClassName(trajectory),
 											)}
 										>
 											{trajectory.trend === "up" ? "▲" : "▼"}{" "}

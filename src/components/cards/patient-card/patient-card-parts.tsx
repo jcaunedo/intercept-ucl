@@ -99,17 +99,22 @@ function AlertRing({
  * A card's alert ring and its state. Render `ring` first inside the card (which needs `group/card relative isolate`),
  * and call `markSeen` from the card's `onClickCapture`: the ring pulses until the card is clicked or the alert is
  * acknowledged or escalated (a new severity pulses again). When the alert becomes `resolved`, the severity ring fades
- * out as the green one blinks once.
+ * out as the green one blinks once. With `show` false, there's no ring: the card keeps its default look.
  */
 function usePatientCardAlertRing({
 	alert,
 	interactive,
+	show = true,
 }: {
-	alert?: { variant: PatientCardAlertVariant; status?: PatientCardAlertStatus };
+	alert?: { variant: PatientCardAlertVariant; status?: PatientCardAlertStatus; since?: string };
 	interactive: boolean;
+	show?: boolean;
 }) {
 	const { resolve } = useMotionPreference();
-	const severity = alert && alertRingClassNames[alert.variant] ? alert.variant : undefined;
+	// The green ring marks the moment an alert resolves: one that resolved a while ago (`since`, e.g. a Resolved bar
+	// kept for the day) has none, so cards don't all blink when the page opens.
+	const settled = alert?.variant === "resolved" && alert.since !== undefined && Date.now() - Date.parse(alert.since) > blinkMs;
+	const severity = show && alert && alertRingClassNames[alert.variant] && !settled ? alert.variant : undefined;
 	// The severity the user clicked the card for. A click stops the pulse for that severity; a new one pulses again.
 	const [seenSeverity, setSeenSeverity] = React.useState<PatientCardAlertVariant | undefined>(undefined);
 	const addressed =
