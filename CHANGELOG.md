@@ -84,7 +84,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Ask Intercept Live: a patient's summary opens with their full name ("**Harris, William**"), as answers about several patients already did.
 - ChatComposer: the commands menu takes the message box's 24px radius, with 10px padding at the sides and 16px top and bottom (was 10px radius, 4px padding); its items are rounded 12px. The padding stays visible at the bottom when the list scrolls: only the list inside scrolls now.
 - Census and Monitoring: the Filters panel floats over the page in a Sheet (Intercept-Live Filter example), 400px and no longer resizable; it doesn't close the live feed or narrow the grid. Its button reads **Apply** (was "Show n patients").
-- Census and Monitoring: turning Active alerts on or off re-sorts the cards on the click, with no glide: they land in their places at once and the others vanish.
+- Monitoring: turning Active alerts on or off re-sorts the cards on the click, with no glide: they land in their places at once and the others vanish.
 - AppHeader: the patient variant's Ask Intercept button is a plain ghost button again; it no longer turns Solid · Neutral while the chat is about the patient. `askInterceptInContext` is deprecated and ignored. Its accessible name is always "Ask Intercept Live".
 - Census, Monitoring and Patient details: patients' avatar colors are dealt across the roster (`avatarTones`), so patients in one hospital never share a color, a repeated color goes to patients far apart by name (most sorts end on the name), and look-alike colors never sit on name neighbors. Patients with a photo take no color. A patient keeps the same color on every page. Before, a hash of the id put the same color side by side (Clark and Davis, Harris and Hayes, Erickson and Moore).
 - Avatar: tones 1, 3, 8, 9 and 10 are darker (navy, plum, forest, deep red, a deeper azure), so the blues, greens, purples and reds of the palette differ in lightness as well as hue. Same hues and saturation (azure's slightly lower, to stay in sRGB); the white initials gain contrast. Visual change.
@@ -137,6 +137,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Removed
 
+- Census: the Active alerts chip, with its who-to-see-first order. Alerts are Monitoring's; on the Census, the Filters panel's Highest alert still finds patients by alert.
 - Census: the Recently resolved sort; alert history is Monitoring's.
 - Census: the Out of range and Data gap quick views and the Filters panel's Vitals out of range group. They filter on live monitoring data the Census card doesn't show; Monitoring covers them (Outside limits, Not reporting). The NEWS2 group's No score still finds patients without a score. (PRD Census CEN-OD-07)
 - `debug-storybook.log` (a committed dev log that leaked a local path); moved the root screenshots to `explorations/screenshots/`. [I-19]

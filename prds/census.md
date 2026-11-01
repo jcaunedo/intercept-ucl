@@ -110,7 +110,7 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 |---|---|---|
 | **Hospital bar** | Hospital tabs (All hospitals, then each hospital), each with its patient count and active-alert count; **Group by location** at the right | CEN-001, CEN-020 |
 | **Summary row** | "18 patients across 4 hospitals"; the live feed line ("Live feed: …"), which opens the live feed panel | CEN-001, CEN-021 ⚠️ |
-| **Filter bar** | Search, My patients, quick views (Active alerts, Rising score, Organ support, Sepsis watch); Density, Sort by, Filters | CEN-002, CEN-003 |
+| **Filter bar** | Search, My patients, quick views (Rising score, Organ support, Sepsis watch); Density, Sort by, Filters | CEN-002, CEN-003 |
 | **Patients** | Cards (Comfortable, Compact) or a table (List); with Group by location, a column per hospital (board) | CEN-010–CEN-013 |
 | **Panels** | The live feed panel beside the canvas; the Filters panel floating over the page (a Sheet, Nov 1, 2026) | CEN-003, CEN-021 |
 
@@ -147,7 +147,7 @@ The Census isn't where alerts are handled (§1.1), but a clinician scanning the 
 
 | ID | Requirement | Status |
 |---|---|---|
-| **CEN-020 Orientation, not action** | The Census shows **where** alerts are, never asks for action on them: the hospital tabs' alert counts (colored by the worst severity), the Active alerts quick view and Highest alert filter, the List's Alert column. Cards show no alert pill or ring. | ✅ Built. ✅ **Decision (Nov 1, 2026, product):** the Active alerts chip and Highest alert filter stay, as orientation. ⚠️ **Decision needed:** the live feed (CEN-021, CEN-OD-01) |
+| **CEN-020 Orientation, not action** | The Census shows **where** alerts are, never asks for action on them: the hospital tabs' alert counts (colored by the worst severity), the Filters panel's Highest alert, the List's Alert column. Cards show no alert pill or ring. | ✅ Built. ✅ **Decision (Nov 1, 2026, product):** the Highest alert filter stays, as orientation; the Active alerts chip is Monitoring's alone (removed from the Census later the same day, user's call), as are its who-to-see-first ranking and its sort on the click. ⚠️ **Decision needed:** the live feed (CEN-021, CEN-OD-01) |
 | **CEN-021 Live feed** | The summary row's "Live feed: …" line names the latest change and opens the live feed panel (the triage queue) beside the census. | ✅ Built. ⚠️ **Decision needed:** whether the triage queue belongs on the Census at all (CEN-OD-01) |
 | **CEN-022 Opening resolves (prototype only)** | In the prototype, opening a patient with an active alert from the Census marks it resolved for the session. | ⚠️ **Risk:** conflicts with PRD PC-071 (resolving needs a documented resolution) and with CEN-020. Proposal: remove it (CEN-OD-03) |
 
@@ -196,7 +196,7 @@ The Census isn't where alerts are handled (§1.1), but a clinician scanning the 
 
 | ID | Decision | Options | Proposal |
 |---|---|---|---|
-| CEN-OD-01 | How much alert information stays on the Census | (a) Counts, filters and the List column only (today, minus the feed); (b) today's set, with the live feed panel; (c) nothing: alerts only on Monitoring | **(a)**: enough to know where to look, nothing to act on. The live feed and triage queue move to Monitoring only. ✅ **Partly decided (Nov 1, 2026, product):** counts, the Active alerts chip and Highest alert stay as orientation; Recently resolved moved to Monitoring. The live feed is still open |
+| CEN-OD-01 | How much alert information stays on the Census | (a) Counts, filters and the List column only (today, minus the feed); (b) today's set, with the live feed panel; (c) nothing: alerts only on Monitoring | **(a)**: enough to know where to look, nothing to act on. The live feed and triage queue move to Monitoring only. ✅ **Partly decided (Nov 1, 2026, product):** counts and Highest alert stay as orientation; the Active alerts chip and Recently resolved moved to Monitoring. The live feed is still open |
 | CEN-OD-02 | Who is on the Monitoring panel, against the Census | (a) The same patients on both; (b) Monitoring shows a watchlist the clinician builds from the Census; (c) Monitoring shows the shift assignment | **(b)** or **(c)**, with the Census always complete. Settles MON-OD-01 too |
 | CEN-OD-03 | Opening a patient from the Census resolves their alert (prototype) | Keep; remove | **Remove**: it breaks PC-071 and CEN-020 |
 | CEN-OD-04 | PD-04's fields not on the card: diagnosis, tier, key vitals, open alerts | Add to the card; show in the List only; leave to Patient details | Diagnosis on the card if it fits one line; vitals and alerts stay on Monitoring |

@@ -564,7 +564,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 
 ## Intercept Live › Every filter shows its count (`src/layouts/intercept-live/shared/patient-panel.tsx`)
 
-**Rule (Oct 27, 2026, global):** every filter chip shows how many patients it matches, " · n" after its label (Badge's `count`), like With alerts and Out of range did first. The count is taken among the patients in the current hospital tab, unit and patient scope, so switching hospitals updates every chip. A chip that matches nobody shows "· 0" rather than hiding the number. `QuickViewChips` always passes the count; the old per-chip `showCount` flag is gone, so a new filter can't leave it out. Applies to the Census's quick views (Active alerts, Rising score, Organ support, Sepsis watch; Out of range and Data gap until Nov 1, 2026) and Monitoring's Outside limits, and to any filter added later on any Intercept Live page.
+**Rule (Oct 27, 2026, global):** every filter chip shows how many patients it matches, " · n" after its label (Badge's `count`), like With alerts and Out of range did first. The count is taken among the patients in the current hospital tab, unit and patient scope, so switching hospitals updates every chip. A chip that matches nobody shows "· 0" rather than hiding the number. `QuickViewChips` always passes the count; the old per-chip `showCount` flag is gone, so a new filter can't leave it out. Applies to the Census's quick views (Rising score, Organ support, Sepsis watch; Active alerts, Out of range and Data gap until Nov 1, 2026) and Monitoring's Outside limits, and to any filter added later on any Intercept Live page.
 
 ---
 
