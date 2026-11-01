@@ -13,6 +13,36 @@ Translate complex product specifications into clear, approachable language that 
 
 The output should sound like a natural Slack message written by the designer, not an AI-generated summary or formal documentation.
 
+## Step 1: ask what to cover
+
+Before reading anything, ask the user what the update should cover, with one question (AskUserQuestion when available). Offer these options:
+
+| Option | What to gather |
+|---|---|
+| **A time window** (today, since a date, the last N days) | `git log --since="<date>"` with messages and changed files, plus the CHANGELOG's entries and the PRD changes from that window |
+| **Commits** (the last N commits, a range like `abc123..HEAD`, or specific SHAs) | `git log` and `git show --stat` for exactly those commits, and the PRD and CHANGELOG lines they touched |
+| **Uncommitted work** | `git status` and `git diff` (work not committed yet; the user commits manually) |
+| **A PRD, feature or file** | That PRD or spec, as before |
+
+Skip the question only when the request already says what to cover (e.g. "summarize yesterday's commits", or a PRD pasted in). If the answer is vague ("recent work"), propose a concrete window or range and confirm it.
+
+Then read what the scope points to. Commit messages and the CHANGELOG say what changed; the PRDs and DESIGN.md say why. Combine them as described below. Changes made but not confirmed by a PRD decision are proposals, not approved behavior.
+
+## Step 2: pick what's worth telling
+
+The message is for the team: what changed in the product and why. From everything in scope, keep:
+
+- **Design decisions and their rationale:** what we decided and the reason behind it.
+- **Changes to how something works or what it's for:** a page's purpose, a new behavior, something removed.
+- **Improvements users will notice:** clearer, faster, safer, easier to scan.
+- **UX and UI changes and improvements:** what a screen now shows and how it feels to use.
+- **Important layout changes:** how a screen is organized, what moved where, a new view or panel (a board view, a floating panel, controls moved beside the summary).
+- **UX decisions:** why something works the way it does (cards hold still on one page, re-sort on another).
+- **UI behaviors:** how controls and content respond (a chip that sorts on the tap, a menu that appears on hover, a hint that shows after a command, what a page remembers).
+- **How it was before**, only when the contrast explains the change ("cards used to glide into place; now they land on the click").
+
+Leave out minor technical details: padding, radii, sizes, token names, refactors, renamed props, test changes, doc updates, typo fixes. A layout change is about where things are and how the screen is organized, not spacing values. If an item only matters to whoever writes the code, it doesn't go in. When several small changes add up to one visible improvement, describe the improvement once, not the changes.
+
 ## Inputs
 
 Accept any combination of:
@@ -49,6 +79,8 @@ Answer five questions when the available information supports them:
 Prioritize the most relevant questions. Do not force all five into every message.
 
 ## Writing principles
+
+Overall tone: casual, short, simple, clear, easy to read, and confident. Say what we did and why, plainly. No hedging ("I think maybe", "hopefully"), no filler, no hype.
 
 ### 1. Conversational
 
@@ -142,13 +174,17 @@ Simple feature: 40–80 words.
 
 Complex experience: 150–220 words maximum.
 
+A recap of several days of work: up to about 300 words, with the bullets grouped by area (e.g. Layout, Cards, Interactions, Ask Intercept), a short label leading each group.
+
 Prioritize clarity over reaching a specific word count.
 
 ## Quality check
 
 Before producing the response, verify:
 
-- Does this sound like a designer explaining their work?
+- Does this sound like a designer explaining their work, casually and confidently?
+- Is every point a decision, a UX or UI change, a layout change, a behavior or an improvement, with its why? No padding, sizes or other minor technical details?
+- Does a "before" appear only where it makes the change clearer?
 - Can teammates understand it without opening the PRD?
 - Are the important decisions and behaviors preserved?
 - Is the design rationale understandable?
@@ -156,6 +192,6 @@ Before producing the response, verify:
 - Have unnecessary details and repetition been removed?
 - Is the message ready to paste directly into Slack?
 
-Return only the final Slack message.
+Return only the final Slack message (after the scope question in Step 1, when it was asked).
 
 Do not explain how the summary was generated.
