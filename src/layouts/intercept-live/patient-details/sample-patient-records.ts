@@ -447,7 +447,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		problems: ["COPD", "Dysphagia after stroke", "Atrial fibrillation"],
 		admittedAt: hoursAgo(30),
 		admittedFrom: "Medical ward",
-		icuAdmittedAt: hoursAgo(26),
+		icuAdmittedAt: hoursAgo(16),
 		ventilator: {
 			support: "Invasive",
 			mode: "Volume control (AC/VC)",
@@ -553,7 +553,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p12",
 		weight: "52 kg",
 		brief: {
-			text: "Respiratory rate stopped reporting 27 min ago. Day 2 after thrombectomy for a right MCA stroke; neuro checks unchanged overnight. Glucose is 182. DNR, per her advance directive.",
+			text: "Respiratory rate stopped reporting 27 min ago. Day 2 after thrombectomy for a right MCA stroke, with early swelling on last night's CT: 3% saline is running and sodium is 141, aiming for 145 to 155. Neuro checks unchanged overnight. Glucose is 182. DNR, per her advance directive.",
 			sourceCount: 11,
 			updatedAt: minutesAgo(27),
 			lastViewedAt: minutesAgo(260),
@@ -566,10 +566,10 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		admittedFrom: "Emergency department",
 		icuAdmittedAt: hoursAgo(47),
 		ventilator: charted("Oxygen", 75, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
-		infusions: [{ drug: "Normal saline", rate: "75 mL/h", updatedAt: minutesAgo(5) }],
+		infusions: [{ drug: "Sodium chloride 3%", rate: "30 mL/h", updatedAt: minutesAgo(5) }],
 		labs: [
 			lab("Glucose", "182", "mg/dL", 90, "high", ["156", 450]),
-			lab("Sodium", "134", "mmol/L", 300, "low", ["136", 1740]),
+			lab("Sodium", "141", "mmol/L", 120, undefined, ["138", 480]),
 			lab("Creatinine", "0.9", "mg/dL", 300, undefined, ["0.9", 1740]),
 			lab("Potassium", "4.1", "mmol/L", 300, undefined, ["3.9", 1740]),
 			lab("Hemoglobin", "11.6", "g/dL", 300, "low", ["12.0", 1740]),

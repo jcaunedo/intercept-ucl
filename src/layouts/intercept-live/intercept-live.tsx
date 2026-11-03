@@ -209,6 +209,8 @@ type PatientDetailsView = {
 	headerActions?: Pick<AppHeaderPatientProps, "onRaiseConcern" | "onHuddleTeam" | "onEscalate" | "moreActions">;
 	/** The patients of the list the patient was opened from, in its order, for the patient list (PRD PD-015). */
 	patientList?: PatientListEntry[];
+	/** The patient's tags ("Ventilated"…), for Ask Intercept Live's questions about them. */
+	tags?: string[];
 };
 
 /** Where the open patient sits in the list it was opened from, to step to the previous or next one (PRD PD-015). */
@@ -217,7 +219,7 @@ type PatientStepper = {
 	nextId?: string;
 	/** 1-based, e.g. 3 of 14. Missing when the patient wasn't opened from a list. */
 	position?: { index: number; count: number };
-	/** The ids of the list the patient was opened from, in its order. Missing when there's no list (e.g. from an alert). */
+	/** The ids of the list the patient was opened from, in its order; the page's own list when opened from elsewhere. */
 	list?: string[];
 	onSelectPatient: (patientId: string) => void;
 };
@@ -494,7 +496,7 @@ function InterceptLive({
 	// screen, with no name of its own: it holds while their details are open. From Ask in an alert toast (Nov 2, 2026,
 	// user's call) it carries the name, so it holds on any page. Removing the patient (the chip over the message box),
 	// closing the chat or opening another patient's details ends it. From the Sidebar, the chat is general.
-	const [chatPatient, setChatPatient] = React.useState<{ id: string; name?: string } | null>(null);
+	const [chatPatient, setChatPatient] = React.useState<{ id: string; name?: string; tags?: string[] } | null>(null);
 	// The question asked for the user when Ask in a toast opens the chat (AskInterceptPanel's `opener`).
 	const [chatOpener, setChatOpener] = React.useState<{ id: string; question: string } | undefined>(undefined);
 	const openerCount = React.useRef(0);
@@ -509,6 +511,24 @@ function InterceptLive({
 	React.useEffect(() => {
 		if (openPatientId !== null) setViewedAt((current) => ({ ...current, [openPatientId]: new Date().toISOString() }));
 	}, [openPatientId]);
+	// The patients the current page shows, as it last reported them (`setPageList`), tagged with the page.
+	const [pageList, setPageList] = React.useState<{ page: InterceptLivePage; ids: string[] }>({ page, ids: [] });
+	const reportPageList = React.useCallback(
+		(ids: string[]) =>
+			setPageList((current) =>
+				current.page === page && current.ids.join() === ids.join() ? current : { page, ids },
+			),
+		[page],
+	);
+	// A patient opened without a list (an alert, a toast, the live feed, the chat, a shortcut) takes the page's list as it
+	// shows now, so the header's patient list is always there (Nov 3, 2026, user's call; it was only for a patient opened
+	// from a card or a row). A patient the page filters out comes first. Taken once, so the list doesn't reorder under
+	// the clinician; before paint, so the header doesn't jump.
+	React.useLayoutEffect(() => {
+		if (!openPatient || openPatient.list) return;
+		const ids = pageList.page === page ? pageList.ids : [];
+		setOpenPatient({ id: openPatient.id, list: ids.includes(openPatient.id) ? ids : [openPatient.id, ...ids] });
+	}, [openPatient, pageList, page]);
 	const navigation = React.useMemo<PatientNavigation>(
 		() => ({
 			openPatient: (patientId, list) => {
@@ -521,16 +541,17 @@ function InterceptLive({
 					setOpenAlert((current) => ({ patientId, alertId, consult: options?.consult, open: true, key: (current?.key ?? 0) + 1 }));
 				else if (renderPatientDetails) setOpenPatient({ id: patientId });
 			},
-			askAboutPatient: (patientId, patientName) => {
-				setChatPatient({ id: patientId, name: patientName });
+			askAboutPatient: (patientId, patientName, tags) => {
+				setChatPatient({ id: patientId, name: patientName, tags });
 				setChatOpener({ id: String(openerCount.current++), question: patientOverviewQuestion });
 				setChatOpen(true);
 			},
+			setPageList: reportPageList,
 			compact: headerCompact,
 			patientOpen: openPatientId !== null,
 			viewedAt,
 		}),
-		[renderPatientDetails, renderAlert, headerCompact, openPatientId, viewedAt, setChatOpen],
+		[renderPatientDetails, renderAlert, reportPageList, headerCompact, openPatientId, viewedAt, setChatOpen],
 	);
 	const openAlertPatient = (patientId: string) => {
 		setOpenAlert((current) => (current ? { ...current, open: false } : current));
@@ -581,6 +602,9 @@ function InterceptLive({
 			: openPatientId === null
 				? chatPatient.name
 				: undefined;
+	// Their tags, from the same place as the name.
+	const chatPatientTags =
+		chatPatientName === undefined ? undefined : chatPatient?.id === openPatientId ? patientView?.tags : chatPatient?.tags;
 	// The app header's button is filled while the chat is about someone.
 	const chatInPatientContext = chatPatientName !== undefined;
 	React.useEffect(() => {
@@ -627,7 +651,7 @@ function InterceptLive({
 								carded={sidebarCollapsed}
 								width={chatWidth}
 								onWidthChange={setChatWidth}
-								context={{ page, patientName: chatPatientName }}
+								context={{ page, patientName: chatPatientName, patientTags: chatPatientTags }}
 								respond={askIntercept}
 								notice={askInterceptNotice}
 								onRemovePatientContext={chatInPatientContext ? () => setChatPatient(null) : undefined}
@@ -636,7 +660,7 @@ function InterceptLive({
 								onOpenAlert={renderAlert ? (patientId, alertId) => navigation.openAlert(patientId, alertId) : undefined}
 							/>
 
-							{/* On a patient's page opened from a list: that list, to switch patient (PRD PD-015). */}
+							{/* On a patient's page: the list they were opened from, else the page's, to switch patient (PRD PD-015). */}
 							{patientView?.patientList && openPatient ? (
 								<PatientListPanel
 									open={patientListOpen}
@@ -687,7 +711,7 @@ function InterceptLive({
 											}
 										}}
 										askInterceptOpen={chatOpen}
-										// Only with a list to switch through (not when the patient was opened from an alert).
+										// Always: a patient opened from an alert gets the page's list (Nov 3, 2026, user's call).
 										onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
 										patientListOpen={patientListOpen}
 										{...patientView.headerActions}

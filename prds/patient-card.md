@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 2, 2026
+Last updated: Nov 3, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines proposed presentation behavior, states and acceptance criteria 
 **Component:** Patient card  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** October 29, 2026
+**Last updated:** November 3, 2026
 
 ---
 
@@ -1173,7 +1173,7 @@ The full set of Patient card scenarios for design and prototype work. They are l
 
 | # | Scenario | Display |
 |---|---|---|
-| P1 | Device / therapy tags | Ventilated, On pressors, Dialysis, ECMO |
+| P1 | Device / therapy tags | Ventilated, NIV, **1 pressor** / **2 pressors** (how many are running), Dialysis, ECMO; high-risk drips: **Insulin infusion**, **3% NaCl** |
 | P2 | Safety tags | Isolation (contact/droplet), Fall risk, Allergy |
 | P3 | Code status | DNR / DNI badge, often in red outline |
 | P4 | No tags | "No tags" in muted text, in a row the height of a tag, so cards keep the same height (Oct 30, 2026) |
@@ -1182,6 +1182,9 @@ The full set of Patient card scenarios for design and prototype work. They are l
 | P7 | Multi-site | Site badge visible (CVMC); hidden in single-site setups |
 
 - ℹ️ Each tag shows as a pill (UCL Badge). In P1, the **Ventilated** pill means invasive mechanical ventilation only (PC-050). A patient on noninvasive ventilation (a BiPAP or CPAP mask, no tube) gets its own **NIV** pill, never "Ventilated". Neither pill shows for room air or supplemental oxygen.
+- ✅ **Pressors counted (Nov 3, 2026, client feedback):** the pressor flag says how many are running, "1 pressor", "2 pressors" (it was "On pressors"): the pressors among the patient's continuous infusions (PC-060), from epinephrine, phenylephrine, norepinephrine, vasopressin, dopamine, dobutamine and angiotensin II (Giapreza). The Organ support quick view and Filters still group them as On pressors, any count.
+- ✅ **High-risk drips (Nov 3, 2026, client feedback):** a continuous infusion that's high-risk gets its own flag, as **Insulin infusion** has: **3% NaCl** (hypertonic saline). In the sample, Grace Whitfield (right MCA stroke, early swelling) is on it.
+- ✅ **Flag details (Nov 3, 2026, user's call):** a click on a flag opens a popover and doesn't open the patient: what the flag means, what's behind it now (the pressors and their rates; the ventilator's mode and settings; a high-risk drip's rate and the lab watched with it: sodium for 3% NaCl, glucose for insulin) and its source and age ("Pump · 1 min ago"). It closes as soon as the pointer leaves the flag; on touch or with the keyboard, with Escape or a tap outside. Every known flag has its meaning; one the app doesn't know stays a plain pill. The same on the Patient details header. ⚠️ **Decision needed:** clinical review of the meanings' wording.
 - ⚠️ **Gap:** safety tags (P2) and code status (P3) aren't in the PRD's data model yet. P1 partly maps to respiratory support (PC-050) and infusions (PC-060). Include them in OD-01 (mandatory fields).
 - ⚠️ **Gap:** "Transfer pending" (P5) isn't a census state in §5, and "Deceased" (P6) isn't one either. PC-130 says a discharged card leaves the active census; decide whether it shows greyed out first, and for how long.
 - ✅ **Resolved:** P4 matches PC-110 (no empty containers), and P7 matches PC-013 (facility context in multi-hospital views).

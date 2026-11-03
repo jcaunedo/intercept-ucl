@@ -9,6 +9,14 @@ import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
 import {
+	Popover,
+	PopoverContent,
+	PopoverDescription,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
+} from "@/components/overlays/popover";
+import {
 	dismissVariants,
 	liftPattern,
 	pressPattern,
@@ -16,12 +24,16 @@ import {
 	standardTransition,
 	useMotionPreference,
 } from "@/lib/motion";
+import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import {
+	PatientCardMoreActions,
 	patientCardInteractiveClassName,
 	patientCardOpenTargetClassName,
+	usePatientCardActionsReveal,
 	usePatientCardAlertRing,
+	type PatientCardAction,
 } from "./patient-census-card-parts";
 
 /* -------------------------------------------------------------------------- */
@@ -297,10 +309,24 @@ const acuityLevels: Record<PatientCardAcuityLevel, { label: string; className: s
 
 type PatientCardAlertStatus = "active" | "acknowledged" | "escalated";
 
+/** What a tag's popover says: what it means, what's behind it now, and where that comes from. */
+type PatientCardTagDetails = {
+	/** What the tag means, e.g. "Drips that raise blood pressure, running now." */
+	description?: string;
+	/** What's behind it now, one line each, e.g. `{ label: "Norepinephrine", value: "0.22 mcg/kg/min" }`. */
+	items?: { label: string; value?: string }[];
+	/** Where the lines come from, e.g. "Pump". */
+	source?: string;
+	/** When the newest line was updated, ISO 8601; shown after the source as it opens ("Pump · 1 min ago"). */
+	updatedAt?: string;
+};
+
 type PatientCardTag = {
 	label: string;
 	/** Badge variant. Defaults to `outline`. */
 	variant?: BadgeProps["variant"];
+	/** Makes the tag a button that opens these details in a popover, without opening the patient. */
+	details?: PatientCardTagDetails;
 };
 
 type PatientCensusCardProps = Omit<
@@ -383,7 +409,12 @@ type PatientCensusCardProps = Omit<
 	 * than watched, e.g. the Census. Defaults to `true`.
 	 */
 	alertRing?: boolean;
-	/** @deprecated Ignored: the card has no "…" button since Oct 30, 2026 (intercept.ds `patient-card-compact`). */
+	/**
+	 * The "…" menu right of the name, shown on hover or keyboard focus in the card, as on PatientMonitoringCard (Nov 3,
+	 * 2026). Without items there's no button.
+	 */
+	moreActions?: PatientCardAction[];
+	/** @deprecated Ignored: use `moreActions`, the "…" menu's items (Nov 3, 2026). */
 	onMoreActions?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
@@ -431,6 +462,74 @@ function PatientCardScore({
 				/>
 			) : null}
 		</div>
+	);
+}
+
+/**
+ * A tag with details: a button that opens them in a popover above the card, and a mouse leaving the tag closes it, so
+ * it's there only while the clinician points at it. Touch and keyboard close it with Escape or a click outside (a tap
+ * also sends a leave). Its clicks, and the popover's, stop at the tag, so they never reach the card's open target
+ * through the row.
+ */
+function PatientCardTagPopover({
+	tag,
+	details,
+	size = "sm",
+}: {
+	tag: PatientCardTag;
+	details: PatientCardTagDetails;
+	/** The Badge's size. */
+	size?: BadgeProps["size"];
+}) {
+	const [open, setOpen] = React.useState(false);
+	const stop = (event: React.SyntheticEvent) => event.stopPropagation();
+
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger
+				asChild
+				onClick={stop}
+				onPointerLeave={(event) => {
+					if (event.pointerType === "mouse") setOpen(false);
+				}}
+			>
+				{/* On hover, and while its popover is open: the hover fill and a `foreground` border. */}
+				<Badge
+					asChild
+					variant={tag.variant ?? "outline"}
+					size={size}
+					className='shrink-0 transition-[color,background-color,border-color,box-shadow] hover:border-foreground hover:bg-accent data-[state=open]:border-foreground data-[state=open]:bg-accent'
+				>
+					<button type='button'>{tag.label}</button>
+				</Badge>
+			</PopoverTrigger>
+			{/* React sends a portal's events up its component tree, so the popover's clicks stop here too. */}
+			<PopoverContent align='start' aria-label={tag.label} onClick={stop}>
+				{/* The meaning in `foreground`, set apart by a rule from what's behind it now. */}
+				<PopoverHeader className={cn((details.items?.length || details.source) && "border-b border-border pb-3")}>
+					<PopoverTitle>{tag.label}</PopoverTitle>
+					{details.description ? (
+						<PopoverDescription className='text-foreground'>{details.description}</PopoverDescription>
+					) : null}
+				</PopoverHeader>
+				{details.items?.length ? (
+					<dl className='flex flex-col gap-1.5'>
+						{details.items.map((item) => (
+							<div key={item.label} className='flex items-baseline justify-between gap-3'>
+								<dt className='font-medium text-foreground'>{item.label}</dt>
+								{item.value ? <dd className='text-right tabular-nums text-foreground'>{item.value}</dd> : null}
+							</div>
+						))}
+					</dl>
+				) : null}
+				{details.source ? (
+					<p className='text-xs text-muted-foreground'>
+						{details.source}
+						{details.updatedAt ? ` · ${formatRelativeDate(details.updatedAt).label}` : null}
+					</p>
+				) : null}
+			</PopoverContent>
+		</Popover>
 	);
 }
 
@@ -500,11 +599,15 @@ function PatientCardTags({
 				openRef && "cursor-pointer",
 			)}
 		>
-			{tags.map((tag) => (
-				<Badge key={tag.label} variant={tag.variant ?? "outline"} size={small ? "xs" : "sm"} className='shrink-0'>
-					{tag.label}
-				</Badge>
-			))}
+			{tags.map((tag) =>
+				tag.details ? (
+					<PatientCardTagPopover key={tag.label} tag={tag} details={tag.details} size={small ? "xs" : "sm"} />
+				) : (
+					<Badge key={tag.label} variant={tag.variant ?? "outline"} size={small ? "xs" : "sm"} className='shrink-0'>
+						{tag.label}
+					</Badge>
+				),
+			)}
 		</div>
 	);
 }
@@ -539,9 +642,14 @@ function PatientCensusCard({
 	href,
 	onOpenAlert,
 	alertRing: showAlertRing = true,
+	moreActions = [],
 	onMoreActions: _onMoreActions,
 	className,
 	onClickCapture,
+	onPointerEnter,
+	onPointerLeave,
+	onFocus,
+	onBlur,
 	...props
 }: PatientCensusCardProps) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
@@ -554,6 +662,8 @@ function PatientCensusCard({
 	const identity = [mrn, demographics].filter(Boolean).join(" - ");
 	const roomAndBed = room && bed ? `${room} - ${bed}` : (room ?? bed);
 	const placeInHospital = [unit, roomAndBed].filter(Boolean).join(" · ");
+	// The "…" menu shows while the pointer is on the card, keyboard focus is in it or its menu is open.
+	const actionsReveal = usePatientCardActionsReveal({ onPointerEnter, onPointerLeave, onFocus, onBlur });
 
 	// The name is the card's one open control. Its ::after covers the card, so a click anywhere opens the patient.
 	const openTargetClassName = patientCardOpenTargetClassName;
@@ -597,17 +707,19 @@ function PatientCensusCard({
 				alertRing.markSeen();
 				onClickCapture?.(event);
 			}}
+			{...actionsReveal.handlers}
 			{...props}
 		>
 			{alertRing.ring}
 			{/* Name and location, 8px apart: one section of the card. */}
 			<div className='flex flex-col gap-2'>
-				<div className='flex items-start gap-2'>
+				{/* 8px between its parts, as margins, not the row's gap, so the hidden "…" slot adds no space. */}
+				<div className='flex items-start'>
 					{/* Centered on the name and identity. Decorative: the name beside it says who it is. Above Avatar's sizes at
 					    44px, so its size is set here; the initials keep Avatar's proportion (11px at 32px). Avatar is positioned,
 					    so it would paint over the card's open target; clicks pass through it instead. */}
 					{photo || initials ? (
-						<Avatar aria-hidden='true' className={cn("pointer-events-none self-center", small ? "size-8" : "size-11")}>
+						<Avatar aria-hidden='true' className={cn("pointer-events-none mr-2 self-center", small ? "size-8" : "size-11")}>
 							{photo ? <AvatarImage src={photo} alt='' /> : null}
 							<AvatarFallback tone={tone} className={small ? "text-[11px]" : "text-[15px]"}>
 								{initials}
@@ -650,7 +762,7 @@ function PatientCensusCard({
 								initial='initial'
 								animate='animate'
 								exit='exit'
-								className='flex'
+								className='ml-2 flex'
 							>
 								{onOpenAlert ? (
 									// Raised above the open target. On hover a 32% gray-700 layer darkens the fill under the icon and count
@@ -680,6 +792,14 @@ function PatientCensusCard({
 							</motion.div>
 						) : null}
 					</AnimatePresence>
+					{moreActions.length ? (
+						<PatientCardMoreActions
+							actions={moreActions}
+							name={name}
+							shown={actionsReveal.shown}
+							onMenuOpenChange={actionsReveal.onMenuOpenChange}
+						/>
+					) : null}
 				</div>
 
 				{hospital || placeInHospital ? (
@@ -732,6 +852,7 @@ export {
 	PatientCardAlert,
 	PatientCardMetric,
 	PatientCardScore,
+	PatientCardTagPopover,
 	PatientCardTags,
 	acuityLevels as patientCardAcuityLevels,
 	patientCardAlertVariants,
@@ -746,5 +867,6 @@ export {
 	type PatientCardProps,
 	type PatientCensusCardProps,
 	type PatientCardTag,
+	type PatientCardTagDetails,
 	type PatientCardVital,
 };

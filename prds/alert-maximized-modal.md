@@ -78,9 +78,9 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | Entry point | Opens | Notes |
 |---|---|---|
 | A Monitoring card's alert bar (`AlertBar`) | The patient's alert the bar shows: their highest-priority open alert, else their latest | Every alert, every severity, Resolved and message bars too |
-| An alert toast's header row | That toast's alert | The whole header (pill, change, time, maximize icon) is one button; a resolved alert's toast opens it too, shown resolved |
-| A Monitoring card's "…" menu › **Expand alert** | The alert the card's bar shows | While the card shows an alert, Resolved and messages too; after Ask Intercept Live (Nov 3, 2026, user's call) |
-| A Monitoring card's "…" menu › **Video consult** | The patient's open alert, with the call to the bedside already ringing | Only for a patient with an open alert; step 3's one click |
+| An alert toast's header row | That toast's alert | The whole header (pill, change, time) is one button; a resolved alert's toast opens it too, shown resolved |
+| Any patient card's "…" menu (Census and Monitoring) › **Video consult** | The patient's latest alert, with the call to the bedside already ringing | On every card, right after Ask Intercept Live (Nov 3, 2026, user's call); step 3's one click. ⚠️ **Gap:** the call lives only in the alert modal, so for a patient with no alert to open, Video consult opens their page with no call; the patient's page has no consult yet. |
+| A Monitoring card's "…" menu › **Expand alert** | The alert the card's bar shows | While the card shows an alert, Resolved and messages too; after Video consult (Nov 3, 2026, user's call) |
 | An alert with no detail | The patient's details instead | ℹ️ Fallback while not every alert has modal data |
 
 ✅ **Resolved (Nov 2, 2026):** the Census card no longer shows an alert badge, so it isn't an entry point; the Census List and the triage queue aren't either yet. ⚠️ **Decision needed:** should a triage queue row open the modal?
@@ -94,7 +94,7 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | **Frame** | UCL's Dialog: 1400px wide, three columns (Patient flexible at 600px; Clinical info 400px; Pathway 400px), each scrolling on its own. Below about 1432px of screen the Patient column narrows. When it grows tall it keeps 80px from the viewport's top and bottom edges. |
 | **Close** | A ghost × at the Patient column's top right; Escape; a click on the scrim. Escape first closes an open form or dose edit, then the modal. |
 | **Column labels** | "Clinical info" and "Pathway", small uppercase labels that name each column's region for screen readers. |
-| **Footer** | Under the Patient column: **Open patient** and **Video call Kayla, RN** (the bedside nurse's first name and role, so it says who picks up; "Video call bedside" without one), equal widths. ✅ **Copy (Nov 2, 2026, user's call):** was Start video consult; while the call is on, **End call**. |
+| **Footer** | Under the Patient column: **Open patient** and **Video consult**, equal widths. ✅ **Copy (Nov 3, 2026, user's call):** **Video consult** everywhere in the app, the footer and every card's menu (it was Video call Kayla, RN from Nov 2, 2026; Start video consult before that); the call itself says who picks up ("Calling Kayla Brandt…"). While the call is on, **End call**. |
 | **Toasts** | Hidden while the modal is open, back when it closes; new ones wait. |
 
 ---
@@ -115,7 +115,7 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | AMM-010 | **Score, monitor, tags** | The patient's NEWS2-style score with its 24 h change (DU-14), between two rules as on their card, their live bedside monitor, and their tags as on their card. |
 | AMM-011 | **Key clinical findings** | Each phrase of the reason line with the numbers behind it. Without a reason line, the alert's evidence and recommendation. With nothing, "No key findings for this alert." |
 | AMM-012 | **History and labs** | What the consult needs: home meds, last echo, trending labs, each value colored by how much it matters now (critical, or abnormal but known). With nothing, "No history or labs on file for this patient." |
-| AMM-013 | **One-click video consult** | **Video call Kayla, RN** rings the patient's bedside nurse ("Calling Kayla Brandt…"), then opens the room's camera ("Kayla Brandt, RN joined", Live with a running time, Mute, End). The call floats over the bottom of Clinical info; the findings scroll under it. **End call** (in the footer) or End (on the call) ends it (SV-07, CC-05). |
+| AMM-013 | **One-click video consult** | **Video consult** rings the patient's bedside nurse ("Calling Kayla Brandt…"), then opens the room's camera ("Kayla Brandt, RN joined", Live with a running time, Mute, End). The call floats over the bottom of Clinical info; the findings scroll under it. **End call** (in the footer) or End (on the call) ends it (SV-07, CC-05). The camera session itself is PRD Bedside camera (CAM-007). |
 | AMM-014 | **Suggested pathway** | Every alert suggests a pathway for its kind (e.g. the CHF exacerbation pathway, the hour-1 sepsis bundle), with its source protocol and each order's evidence. Without one, "No care pathway suggested for this alert." |
 | AMM-015 | **Edit, accept, decline** | Each dose can be edited inline (an edited dose is marked, the suggestion struck through beside it). **Accept and send** sends the orders to the local physician for co-signature; once co-signed they're active and the bedside team carries them out. **Decline** asks why (required). **Add note**, under the orders, opens an optional note for the co-signer ("Note for Dr. Tom Weller"), sent with the orders and shown as "Note: …" under Awaiting co-signature and Active. Nothing becomes an order on its own (BR-06, OE-02). |
 | AMM-016 | **Tiers** | A Critical alert's toast interrupts (AL-02); the modal itself doesn't change by tier beyond its colors. One alert per condition (AL-11): a repeat updates the alert the modal shows. |
@@ -183,7 +183,7 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | AMM-AC-05 | The modal is open | The clinician opens Mark as resolved, picks Treated and sends | The alert is resolved with that reason, and the modal closes |
 | AMM-AC-06 | A form is open | The clinician presses Escape | The form closes and the modal stays open |
 | AMM-AC-07 | A resolved alert's toast | The clinician clicks it | The modal opens with the green Resolved bar, a neutral panel, no actions and "Resolved by … · time · reason" |
-| AMM-AC-08 | The modal is open | The clinician clicks Video call Kayla, RN | "Calling Kayla Brandt…", then "Kayla Brandt, RN joined" with the room's camera over the bottom of Clinical info; the footer reads End call |
+| AMM-AC-08 | The modal is open | The clinician clicks Video consult | "Calling Kayla Brandt…", then "Kayla Brandt, RN joined" with the room's camera over the bottom of Clinical info; the footer reads End call |
 | AMM-AC-09 | Hayes's card "…" menu | The clinician picks Video consult | The modal opens with the call already ringing |
 | AMM-AC-10 | The CHF pathway is suggested | The intensivist edits the furosemide dose and accepts | The dose is marked Edited, the orders go to Dr. Tom Weller for co-signature, then show Active |
 | AMM-AC-11 | An alert with no findings or history | The modal opens | Both sections show, each with its empty line |

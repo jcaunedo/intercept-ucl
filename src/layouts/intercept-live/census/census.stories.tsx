@@ -96,6 +96,18 @@ export const MyPatients: Story = {
 	},
 };
 
+/** New patients, right after My patients: the seven who arrived on their unit in the last 24 h. */
+export const NewPatients: Story = {
+	play: async ({ canvas, userEvent }) => {
+		const chip = canvas.getByRole("button", { name: /^New patients/ });
+		await expect(chip).toHaveTextContent(/·\s*7$/);
+		await userEvent.click(chip);
+		await waitFor(() =>
+			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^7 patients/),
+		);
+	},
+};
+
 /**
  * The Sidebar's Ask Intercept Live opens the chat panel from the left, on any page: the page narrows beside it. Its
  * close button, Escape or Ask Intercept Live again closes it.

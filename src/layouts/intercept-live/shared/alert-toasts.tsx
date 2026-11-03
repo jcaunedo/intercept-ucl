@@ -40,7 +40,7 @@ const changeWords = (change: AlertChange) => {
 const needsAttention = (change: AlertChange) =>
 	change.kind === "new" || change.kind === "raised" || (change.kind === "status" && change.status === "active");
 
-type AlertToastPatient = TriageQueuePatient & { photo?: string; mine?: boolean };
+type AlertToastPatient = TriageQueuePatient & { photo?: string; mine?: boolean; tags?: { label: string }[] };
 
 type AlertToastsProps = {
 	/** The feed's alerts, without the clinician's queue actions, so their own actions don't toast back at them. */
@@ -130,7 +130,9 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 				// Outside the shell there's nowhere to open the patient.
 				onOpen: openPatient ? () => openPatient(patient.id) : undefined,
 				// Ask Intercept Live about the patient, starting with a quick overview (Nov 2, 2026, user's call).
-				onAsk: askAboutPatient ? () => askAboutPatient(patient.id, name) : undefined,
+				onAsk: askAboutPatient
+					? () => askAboutPatient(patient.id, name, patient.tags?.map((tag) => tag.label))
+					: undefined,
 				onOpenAlert: openAlert ? () => openAlert(patient.id, alert.id) : undefined,
 				onClose: () => {
 					closeToast(alert.id, alert.severity);

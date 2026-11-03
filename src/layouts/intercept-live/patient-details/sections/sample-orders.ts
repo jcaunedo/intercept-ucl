@@ -538,7 +538,8 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 			nothingToRecommend("Glucose 182 is one result over 180; enrollment needs two in 12 h. Potassium 4.1. DNR, per her advance directive."),
 		],
 		active: [
-			["medication", "Normal saline", "75 mL/h IV", "Victor Hale", 2800],
+			["medication", "Sodium chloride 3%", "30 mL/h IV by central line · sodium goal 145–155 · hold for sodium over 155", "Victor Hale", 1150],
+			["lab", "Sodium", "Every 6 h while on 3% saline", "Victor Hale", 1150],
 			["medication", "Aspirin", "81 mg by feeding tube daily · from 24 h after thrombectomy", "Victor Hale", 1500],
 			["medication", "Atorvastatin", "80 mg by feeding tube nightly", "Victor Hale", 2800],
 			["medication", "Heparin", "5,000 units subcut every 12 h", "Victor Hale", 1500],

@@ -40,7 +40,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		trajectory: { label: change, value: "+7", trend: "up" },
 		scoreChange4h: 0,
 		lastViewedAt: hoursAgo(2),
-		tags: [{ label: "Ventilated" }, { label: "On pressors" }],
+		tags: [{ label: "Ventilated" }, { label: "2 pressors" }],
 		vitals: { hr: 128, spo2: 89, systolic: 82, diastolic: 46, map: 58, rr: 32 },
 	},
 	{
@@ -78,7 +78,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		scoreChange4h: 0,
 		unreadMessages: 2,
 		lastViewedAt: hoursAgo(0.7),
-		tags: [{ label: "Ventilated" }, { label: "On pressors" }],
+		tags: [{ label: "Ventilated" }, { label: "1 pressor" }],
 		vitals: { hr: 94, spo2: 93, systolic: 98, diastolic: 53, map: 68, rr: 18 },
 	},
 	{
@@ -97,7 +97,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		trajectory: { label: change, value: "+1", trend: "up" },
 		scoreChange4h: 0,
 		lastViewedAt: hoursAgo(0.2),
-		tags: [{ label: "On pressors" }, { label: "DNR" }],
+		tags: [{ label: "2 pressors" }, { label: "DNR" }],
 		vitals: { hr: 88, spo2: 95, systolic: 96, diastolic: 51, map: 66, rr: 18 },
 	},
 	{
@@ -201,7 +201,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		trajectory: { label: change, value: "+1", trend: "up" },
 		scoreChange4h: 0,
 		unreadMessages: 1,
-		tags: [{ label: "On pressors" }, { label: "Dialysis" }],
+		tags: [{ label: "1 pressor" }, { label: "Dialysis" }],
 		vitals: { hr: 98, spo2: 96, systolic: 88, diastolic: 48, map: 61, rr: 19 },
 	},
 	{
@@ -235,7 +235,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		bed: "Bed 2",
 		acuity: { label: news2 },
 		trajectory: { label: change, variant: "missing" },
-		tags: [{ label: "DNR" }, { label: "Fall risk" }],
+		tags: [{ label: "3% NaCl" }, { label: "DNR" }, { label: "Fall risk" }],
 		vitals: { hr: 80, spo2: 94, systolic: 104, diastolic: 59, map: 74 },
 	},
 	{
@@ -253,7 +253,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		acuity: { label: news2, score: 14, level: "high" },
 		trajectory: { label: change, value: "+5", trend: "up" },
 		scoreChange4h: 1,
-		tags: [{ label: "Ventilated" }, { label: "On pressors" }, { label: "ECMO" }],
+		tags: [{ label: "Ventilated" }, { label: "2 pressors" }, { label: "ECMO" }],
 		vitals: { hr: 134, spo2: 94, systolic: 84, diastolic: 41, map: 55, rr: 22 },
 	},
 	{

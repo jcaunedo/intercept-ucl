@@ -365,7 +365,7 @@ function LiveDot() {
 }
 
 /**
- * The video consult, once the footer's Video call button calls the bedside nurse: ringing, then the room's camera.
+ * The video consult, once the footer's Video consult button calls the bedside nurse: ringing, then the room's camera.
  * Dark in both themes, as the camera feed is; the live view fades in over the ringing one (`fadeVariants`), so the tile
  * never changes size.
  */
@@ -515,7 +515,7 @@ function ConsultReveal({ children }: { children: React.ReactNode }) {
 
 /**
  * An alert, opened, 1400px wide in three columns. The patient: who they are, the alert (its bar, title, source and
- * lifecycle actions), their score, monitor and tags, then Open patient and Video call (the bedside nurse). Clinical
+ * lifecycle actions), their score, monitor and tags, then Open patient and Video consult (the bedside nurse). Clinical
  * info: the key clinical findings and the history and labs, with the video consult floating over its bottom once it's on. Pathway,
  * for acting on it: the suggested care pathway with its decision at the bottom, then keep or transfer once the orders are
  * sent. Each column scrolls on its own.
@@ -761,12 +761,12 @@ function AlertDetailModal({
 								Open patient
 							</Button>
 						) : null}
-						{/* Calls the bedside nurse, by first name and role so it's clear who picks up; while the call is on, ends it (the call's
-						own End does too). */}
+						{/* Calls the bedside nurse ("Video consult" everywhere in the app; the call names who picks up); while the call is on,
+						ends it (the call's own End does too). */}
 						{consult === "idle" ? (
 							<Button variant='neutral' size='md' onClick={() => setConsult("connecting")} className='flex-1'>
 								<VideoIcon />
-								{data.bedside ? `Video call ${data.bedside.name.split(" ")[0]}, ${data.bedside.role}` : "Video call bedside"}
+								Video consult
 							</Button>
 						) : consult === "connecting" ? (
 							<Button variant='neutral' size='md' disabled className='flex-1'>

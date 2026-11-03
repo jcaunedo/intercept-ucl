@@ -1,5 +1,5 @@
 import * as React from "react";
-import { GermIcon, HandHeartIcon, TriangleIcon, XIcon } from "lucide-react";
+import { GermIcon, HandHeartIcon, TriangleIcon, UserPlusIcon, XIcon } from "lucide-react";
 
 import { PatientCensusCard, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -22,6 +22,7 @@ import {
 	PanelBoard,
 	useChangedSinceMount,
 	panelOrder,
+	patientCardActions,
 	resolvedTimes,
 	useGrouping,
 	type GroupedView,
@@ -41,7 +42,7 @@ import {
 import { usePatientNavigation } from "../patient-navigation";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
 import { LiveFeed, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
-import type { EscalationTarget, TriageAlert, TriageAlertAction } from "../monitoring/triage-queue";
+import { isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import { DensityToggle, type PanelDensity } from "../monitoring/view-controls";
 import { FiltersButton, FiltersPanel, passesFilters, type PatientFilters } from "../shared/patient-filters";
 import { censusFilterGroups } from "./census-filters";
@@ -62,6 +63,8 @@ type CensusPatient = Omit<PatientCensusCardProps, "onOpen" | "href" | "alertRing
 	sepsisWatch?: boolean;
 	/** The acuity score's change over the last 4 h, which ranks patients within an alert severity (DU-09). */
 	scoreChange4h?: number;
+	/** When the patient arrived on their unit, admitted or moved in (ADT), ISO 8601. For New patients. */
+	arrivedAt?: string;
 	/** When the signed-in clinician last opened the patient's details, ISO 8601. For the Recently viewed sort. */
 	lastViewedAt?: string;
 	/** When the patient's most recent alert was resolved, ISO 8601. For the Recently resolved sort. */
@@ -119,11 +122,18 @@ type CensusPanelProps = {
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
+// New patients: arrived on their unit in the last 24 h, admitted or moved in (Nov 3, 2026, user's call; PRD Census CEN-030).
+const newPatientWindow = 24 * 3_600_000;
+const isNewPatient = (patient: CensusPatient) =>
+	patient.arrivedAt !== undefined && Date.now() - Date.parse(patient.arrivedAt) < newPatientWindow;
+
 // Quick views. At most one is active; pressing it again turns it off. My patients is its own chip before them, so it
 // combines with any quick view. Only what the card shows: Out of range and Data gap are live monitoring data, so they're
 // Monitoring's (Nov 1, 2026, PRD Census CEN-OD-07), and so is Active alerts (Nov 1, 2026, user's call): its cards show
 // no alert, and the Filters panel's Highest alert still finds them.
+// New patients first, beside My patients (Nov 3, 2026, user's call).
 const quickViews: QuickView<CensusPatient>[] = [
+	{ id: "new", label: "New patients", icon: UserPlusIcon, matches: isNewPatient },
 	{ id: "rising", label: "Rising score", icon: TriangleIcon, matches: hasRisingAcuity },
 	{ id: "organ", label: "Organ support", icon: HandHeartIcon, matches: hasOrganSupport },
 	{ id: "sepsis", label: "Sepsis watch", icon: GermIcon, matches: (patient) => Boolean(patient.sepsisWatch) },
@@ -168,7 +178,7 @@ function CensusPanel({
 	const resolvedHolds = useResolvedHolds(patients, () => {});
 	const ownAlerts = new Map(patients.map((patient) => [patient.id, patient.alert]));
 	// Inside the shell, a card opens the patient's details over the page, stepping through the grid as it's shown now; an
-	// alert in the live feed opens them on their own (PRD PD-015).
+	// alert in the live feed opens them with the page's list as it stands (PRD PD-015).
 	const navigation = usePatientNavigation();
 	const openPatient = (patientId: string) => {
 		const resolvesAlert = patientsProp.some((patient) => patient.id === patientId && hasActiveAlert(patient));
@@ -236,6 +246,12 @@ function CensusPanel({
 	const assigned = scope === "mine" ? recent.filter((patient) => patient.mine) : recent;
 	const { inView, inUnit, visible: unsorted } = filtered(assigned);
 	const visible = useHeldOrder(unsorted.sort(panelOrder(sortBy, grouped)), 0, `${sortBy}:${grouped}`);
+	// Tells the shell what the page shows, so a patient opened from an alert, a toast or the chat gets this list too.
+	const setPageList = navigation?.setPageList;
+	const visibleKey = visible.map((patient) => patient.id).join(",");
+	React.useLayoutEffect(() => {
+		setPageList?.(visibleKey ? visibleKey.split(",") : []);
+	}, [setPageList, visibleKey]);
 	const everyoneCount = scope === "mine" ? filtered(patients).visible.length : visible.length;
 	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
 	// One hospital, picked on its tab or the only one the filters leave, reads by name: "7 patients at CVMC".
@@ -259,6 +275,7 @@ function CensusPanel({
 		lastViewedAt: _lastViewedAt,
 		lastResolvedAt: _lastResolvedAt,
 		unreadMessages: _unreadMessages,
+		arrivedAt: _arrivedAt,
 		...card
 	}: CensusPatient) => (
 		// The avatar (Oct 31, 2026, user request; intercept.ds `patient-card-compact`): the patient's photo, or their initials
@@ -268,6 +285,13 @@ function CensusPanel({
 			initials={patientInitials(card)}
 			tone={tones.get(id) ?? avatarTone(id)}
 			size={density === "compact" ? "sm" : "md"}
+			// The "…" menu on hover, as on Monitoring's cards (Nov 3, 2026, user's call). The card shows no alert, so no
+			// Expand alert.
+			moreActions={patientCardActions(navigation, {
+				id,
+				name: `${card.lastName}, ${card.firstName}`,
+				tags: card.tags,
+			})}
 			onOpen={() => openPatient(id)}
 		/>
 	);

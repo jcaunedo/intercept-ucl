@@ -1,18 +1,12 @@
 import * as React from "react";
 import {
 	ArrowUpFromLineIcon,
-	ArrowUpIcon,
 	BellRingIcon,
 	CheckCheckIcon,
-	FlagIcon,
 	GaugeIcon,
-	Maximize2Icon,
 	ScanEyeIcon,
-	SparklesIcon,
 	TriangleIcon,
 	Undo2Icon,
-	VideoIcon,
-	WebcamIcon,
 	WifiOffIcon,
 	XIcon,
 	type LucideIcon,
@@ -44,6 +38,7 @@ import {
 	useChangedSinceMount,
 	useSnapOrder,
 	panelOrder,
+	patientCardActions,
 	resolvedTimes,
 	useGrouping,
 	type GroupedView,
@@ -227,15 +222,6 @@ function useFeedResolutions(alerts: TriageAlert[]) {
 	}, [alerts, resolutions]);
 	return Object.values(resolutions);
 }
-
-// The card's "…" menu: the patient's actions, as in the patient's header (AppHeader `patient`), in alphabetical order.
-// The app wires them up. Ask Intercept Live comes first, then Expand alert, set apart by a divider (Nov 2 and 3, 2026,
-// user's calls).
-const cardActions: NonNullable<PatientMonitoringCardProps["moreActions"]> = [
-	{ label: "Escalate", icon: ArrowUpIcon },
-	{ label: "Huddle team", icon: WebcamIcon },
-	{ label: "Raise concern", icon: FlagIcon },
-];
 
 // The chips stay in context (Oct 27, 2026): Monitoring narrows the panel's scope (hospital, My patients), sets how it
 // looks, and has status chips of its own, Active alerts (Oct 31, 2026, user request) and Outside limits. The rest of
@@ -421,7 +407,7 @@ function MonitoringPanel({
 	const { paused, pauseProps } = useSortPause(statusFilter?.id !== "alerts");
 	const { sorts, sortNow } = useSortCadence(paused);
 	// Inside the shell, a card or a list row opens the patient's details over the page, stepping through the panel as it's
-	// shown now; an alert in the live feed opens them on their own (PRD PD-015).
+	// shown now; an alert in the live feed opens them with the page's list as it stands (PRD PD-015).
 	const navigation = usePatientNavigation();
 	const openPatient = (patientId: string) => {
 		navigation?.openPatient(
@@ -531,6 +517,12 @@ function MonitoringPanel({
 		sorts,
 		`${sortBy}:${grouped}:${alertPriority}`,
 	);
+	// Tells the shell what the page shows, so a patient opened from an alert, a toast or the chat gets this list too.
+	const setPageList = navigation?.setPageList;
+	const visibleKey = visible.map((patient) => patient.id).join(",");
+	React.useLayoutEffect(() => {
+		setPageList?.(visibleKey ? visibleKey.split(",") : []);
+	}, [setPageList, visibleKey]);
 	const everyoneCount = scope === "mine" ? filtered(patients).length : visible.length;
 	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
 	// As on the Census: one hospital, picked on its tab or the only one the filters leave, reads by name ("7 patients at
@@ -584,29 +576,12 @@ function MonitoringPanel({
 			size={density === "compact" ? "sm" : "md"}
 			plot={plot}
 			expanded={monitorView === "full"}
-			moreActions={[
-				// Opens the chat about this patient with a quick overview, as Ask in an alert toast does; then Expand alert, the
-				// alert modal the alert bar opens, while the card shows an alert (Nov 3, 2026, user's call). Only inside the shell.
-				...(navigation
-					? [
-							{
-								label: "Ask Intercept Live",
-								icon: SparklesIcon,
-								onSelect: () => navigation.askAboutPatient(id, `${card.lastName}, ${card.firstName}`),
-								divider: !cardAlert(id),
-							},
-							...(cardAlert(id)
-								? [{ label: "Expand alert", icon: Maximize2Icon, onSelect: () => navigation.openAlert(id), divider: true }]
-								: []),
-						]
-					: []),
-				...cardActions,
-				// The one-click consult (Scenario 1, step 3): the patient's alert modal with the call to the bedside already
-				// ringing. Only for a patient with an open alert, inside the shell.
-				...(navigation && alerts.some((alert) => alert.patientId === id && isOpenAlert(alert))
-					? [{ label: "Video consult", icon: VideoIcon, onSelect: () => navigation.openAlert(id, undefined, { consult: true }) }]
-					: []),
-			]}
+			moreActions={patientCardActions(navigation, {
+				id,
+				name: `${card.lastName}, ${card.firstName}`,
+				tags,
+				showsAlert: Boolean(cardAlert(id)),
+			})}
 			onOpen={canOpenPatient ? () => openPatient(id) : undefined}
 			// The alert bar opens the alert; only inside the shell, which holds where it opens.
 			onOpenAlert={navigation ? () => navigation.openAlert(id) : undefined}

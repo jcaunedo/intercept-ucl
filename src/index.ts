@@ -66,6 +66,7 @@ export {
 	patientCardMetricVariants,
 	scoreTrendClassName,
 	scoreTrendVariant,
+	type PatientCardAction,
 	type PatientCardAlertProps,
 	type PatientCardAcuityLevel,
 	type PatientCardAlertStatus,
@@ -74,6 +75,7 @@ export {
 	type PatientCardProps,
 	type PatientCensusCardProps,
 	type PatientCardTag,
+	type PatientCardTagDetails,
 	type PatientCardVital,
 } from "@/components/cards/patient-census-card";
 export {
@@ -284,6 +286,15 @@ export {
 /* Overlays                                                                   */
 /* -------------------------------------------------------------------------- */
 
+export {
+	Popover,
+	PopoverAnchor,
+	PopoverContent,
+	PopoverDescription,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
+} from "@/components/overlays/popover";
 export {
 	Dialog,
 	DialogClose,

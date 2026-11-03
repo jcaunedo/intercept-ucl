@@ -17,6 +17,8 @@ import type { PatientRecord } from "../patient-details/patient-details";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { alertChanges } from "../shared/alert-changes";
 import { useAddressedAlerts } from "../shared/live-feed";
+import { flagSummary } from "../shared/flag-details";
+import { isPressorFlag, pressorPattern } from "../shared/pressors";
 import { sampleHospitals, sampleTeam, sampleUser } from "./sample-workspace";
 
 // Synthetic Ask Intercept Live (PRD Patient details PD-100): a stand-in for the Conversational Clinical Data Agent that
@@ -201,7 +203,7 @@ function namedLabs(question: string) {
 
 // Drug groups clinicians ask about.
 const drugGroups: Record<string, RegExp> = {
-	pressors: /norepinephrine|epinephrine|vasopressin|phenylephrine|dopamine|dobutamine|milrinone/i,
+	pressors: pressorPattern,
 	sedation: /propofol|midazolam|dexmedetomidine|fentanyl|ketamine|lorazepam|hydromorphone/i,
 	antibiotics: /vancomycin|aztreonam|cefepime|ceftriaxone|meropenem|piperacillin|azithromycin|ampicillin|clindamycin|cefazolin|metronidazole|oseltamivir/i,
 };
@@ -378,6 +380,7 @@ function medLines(patient: Patient, filter?: RegExp, names?: string[]) {
 
 function summaryOf(patient: Patient): AskInterceptAnswer {
 	const { census, record } = patient;
+	const flags = flagSummary(census.tags, record);
 	const trend = census.trajectory?.value && census.trajectory.value !== "0" ? ` (${census.trajectory.value} in 24 h)` : "";
 	const lines = [
 		record?.diagnosis ? `**Diagnosis:** ${record.diagnosis}${record.icuAdmittedAt ? `, ICU day ${Math.floor((Date.now() - Date.parse(record.icuAdmittedAt)) / (24 * 60 * MINUTE)) + 1}` : ""}` : undefined,
@@ -386,7 +389,8 @@ function summaryOf(patient: Patient): AskInterceptAnswer {
 			? `**Alerts:** ${patient.alerts.map((alert) => `${alert.title} (${severityWords[alert.severity]})`).join("; ")}`
 			: "**Alerts:** none open",
 		`**Vitals:** ${vitalLines(patient).slice(0, 4).join(", ")}`,
-		record?.ventilator ? `**Breathing:** ${[record.ventilator.support, record.ventilator.mode].filter(Boolean).join(", ")}${record.ventilator.settings.length ? `, ${record.ventilator.settings.slice(0, 2).map((setting) => `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}`).join(", ")}` : ""}` : undefined,
+		...flags.lines,
+		record?.ventilator && !flags.coversVentilator ? `**Breathing:** ${[record.ventilator.support, record.ventilator.mode].filter(Boolean).join(", ")}${record.ventilator.settings.length ? `, ${record.ventilator.settings.slice(0, 2).map((setting) => `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}`).join(", ")}` : ""}` : undefined,
 		record?.infusions?.length ? `**Infusions:** ${record.infusions.map((item) => `${item.drug} ${item.rate ?? "rate unavailable"}`).join(", ")}` : undefined,
 		record?.labs?.length
 			? `**Labs:** ${record.labs.filter((lab) => lab.flag).map((lab) => `${lab.name} ${lab.value}${lab.unit ? ` ${lab.unit}` : ""}`).join(", ") || "nothing flagged"}`
@@ -532,7 +536,7 @@ function overviewActions(patient: Patient, asked = ""): AskInterceptAction[] {
 		else if (status === "active" && (alert.severity === "critical" || alert.severity === "high")) actions.push(changes);
 	}
 	if (tags.includes("Ventilated") || tags.includes("NIV")) actions.push(ask(`Show ${name}'s ventilator settings`, "Show ventilator settings"));
-	if (tags.includes("On pressors")) actions.push(ask(`What drips is ${name} on?`, "Show drips and doses"));
+	if (tags.some(isPressorFlag)) actions.push(ask(`What drips is ${name} on?`, "Show drips and doses"));
 	if (!alert && census.trajectory?.trend === "up") actions.push(changes);
 	if (!alert) actions.push(ask(`Summarize ${name}'s last 24 hours`, "Summarize the last 24 hours"));
 	actions.push(ask(`Show ${name}'s latest labs`, "Show latest labs"));
@@ -545,8 +549,9 @@ function overviewActions(patient: Patient, asked = ""): AskInterceptAction[] {
 }
 
 /**
- * A quick overview, what the patient's card would show (Scenario 1, step 3): conditions, oxygen, latest vitals, and the
- * score with its 24 h change. Shorter than the summary: no brief, alerts or labs. Right after the score crosses into its
+ * A quick overview, what the patient's card would show (Scenario 1, step 3): conditions, their flags with what's behind
+ * each (the pressors and their rates, the ventilator, high-risk drips and their lab; Nov 3, 2026, user's call), oxygen,
+ * latest vitals, and the score with its 24 h change. Shorter than the summary: no brief, alerts or labs. Right after the score crosses into its
  * alert band, it leads with why the patient is at the top of the list (`rankingFor`) and what the consult needs
  * (`consultFor`), as Ask in the alert toast and the card's Ask Intercept Live are asked then.
  */
@@ -554,14 +559,21 @@ function overviewOf(patient: Patient): AskInterceptAnswer {
 	const { census, record } = patient;
 	const trend = census.trajectory?.value && census.trajectory.value !== "0" ? ` (${census.trajectory.value} in 24 h)` : "";
 	const conditions = [record?.diagnosis, ...(record?.problems ?? [])].filter(Boolean);
+	const flags = flagSummary(census.tags, record);
 	const lines = [
 		conditions.length ? `**Conditions:** ${conditions.join("; ")}` : undefined,
-		record?.ventilator ? `**Breathing:** ${record.ventilator.settings.length ? record.ventilator.settings.map((setting) => `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}`).join(", ") : [record.ventilator.support, record.ventilator.mode].filter(Boolean).join(", ")}` : undefined,
+		...flags.lines,
+		record?.ventilator && !flags.coversVentilator ? `**Breathing:** ${record.ventilator.settings.length ? record.ventilator.settings.map((setting) => `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}`).join(", ") : [record.ventilator.support, record.ventilator.mode].filter(Boolean).join(", ")}` : undefined,
 		`**Vitals:** ${vitalLines(patient).slice(0, 4).join(", ")}`,
 		`**Score:** ${scoreWords(census.acuity)}${trend}`,
 	].filter((line): line is string => Boolean(line));
 	const glance = `${who(patient)} at a glance:\n${list(lines)}`;
-	const sources = ["Census", "Monitor", ...(record?.ventilator ? [record.ventilator.source] : [])];
+	const sources = unique([
+		"Census",
+		"Monitor",
+		...(record?.ventilator ? [record.ventilator.source] : []),
+		...(record?.infusions?.length && flags.lines.length ? ["Pump"] : []),
+	]);
 	const actions = overviewActions(patient);
 	if (!recentCrossing(patient)) return { text: glance, sources, actions };
 	const ranking = rankingFor(patient);
@@ -1102,11 +1114,12 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			const byHospital = sampleHospitals
 				.map((hospital) => ({ hospital, count: scope.filter((patient) => patient.census.hospitalId === hospital.id).length }))
 				.filter((row) => row.count);
-			const tagged = (tag: string) => scope.filter((patient) => patient.census.tags?.some((item) => item.label === tag)).length;
+			const tagged = (tag: string | ((label: string) => boolean)) =>
+				scope.filter((patient) => patient.census.tags?.some((item) => (typeof tag === "string" ? item.label === tag : tag(item.label)))).length;
 			return {
 				text: `${scope.length} patient${scope.length === 1 ? "" : "s"}${among}: ${byHospital.map((row) => `${row.count} at ${row.hospital.name}`).join(", ")}.\n${list([
 					`${tagged("Ventilated")} ventilated, ${tagged("NIV")} on NIV`,
-					`${tagged("On pressors")} on pressors`,
+					`${tagged(isPressorFlag)} on pressors`,
 					`${scope.filter((patient) => patient.alerts.length).length} with open alerts`,
 					`${scope.filter((patient) => patient.census.mine).length} assigned to you`,
 				])}`,

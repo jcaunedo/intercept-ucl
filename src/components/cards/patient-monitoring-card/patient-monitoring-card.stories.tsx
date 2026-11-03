@@ -209,7 +209,7 @@ export const ScoreAndTags: Story = {
 	args: {
 		acuity: { label: "NEWS2", score: 7, level: "high" },
 		trajectory: { label: "Change in last 24 h", value: "+1", trend: "up", trendVariant: "critical" },
-		tags: [{ label: "On pressors" }, { label: "Dialysis" }],
+		tags: [{ label: "2 pressors" }, { label: "Dialysis" }],
 	},
 };
 

@@ -30,8 +30,11 @@ import { SidePanel } from "./side-panel";
 /* Data shapes (the app's Conversational Clinical Data Agent fills these)     */
 /* -------------------------------------------------------------------------- */
 
-/** Where the user is when they ask, so an answer can be about the patient on screen. */
-type AskInterceptContext = { page: string; patientName?: string };
+/**
+ * Where the user is when they ask, so an answer can be about the patient on screen. `patientTags` are that patient's
+ * tags ("Ventilated"…), for the questions to start with.
+ */
+type AskInterceptContext = { page: string; patientName?: string; patientTags?: string[] };
 
 /**
  * An answer. `text` is plain text with two marks: a line starting "- " is a list item, and `**words**` are bold.
@@ -109,12 +112,16 @@ function commandHint(name: string, patientName?: string) {
 	return "Add a patient's name";
 }
 
-/** Questions to start with, about the page or the patient on screen. Shown until the first question. */
-function suggestionsFor({ patientName }: AskInterceptContext) {
+/**
+ * Questions to start with, about the page or the patient on screen. Shown until the first question. A ventilated
+ * patient gets one about the ventilator too (Nov 3, 2026, user's call).
+ */
+function suggestionsFor({ patientName, patientTags = [] }: AskInterceptContext) {
 	return patientName
 		? [
 				`Summarize ${firstName(patientName)}'s last 24 hours`,
 				`What changed for ${firstName(patientName)} since I last looked?`,
+				...(patientTags.includes("Ventilated") ? [`Show ${firstName(patientName)}'s ventilator settings`] : []),
 				`Show ${firstName(patientName)}'s latest labs`,
 				`What meds is ${firstName(patientName)} on?`,
 				`Show ${firstName(patientName)}'s sepsis criteria`,

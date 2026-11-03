@@ -1,10 +1,21 @@
 import * as React from "react";
-import { ArrowDownUpIcon, UsersIcon, type LucideIcon } from "lucide-react";
+import {
+	ArrowDownUpIcon,
+	ArrowUpIcon,
+	FlagIcon,
+	Maximize2Icon,
+	SparklesIcon,
+	UsersIcon,
+	VideoIcon,
+	WebcamIcon,
+	type LucideIcon,
+} from "lucide-react";
 import { AnimatePresence, motion, type TargetAndTransition, type Transition, type Variants } from "motion/react";
 
 import {
 	patientCardAcuityLevels,
 	type PatientCardAcuityLevel,
+	type PatientCardAction,
 	type PatientCardAlertVariant,
 	type PatientCensusCardProps,
 } from "@/components/cards/patient-census-card";
@@ -32,7 +43,8 @@ import {
 import { cn } from "@/lib/utils";
 
 import { usePagePreferences, type SortPage } from "../page-preferences";
-import { usePatientNavigation } from "../patient-navigation";
+import { usePatientNavigation, type PatientNavigation } from "../patient-navigation";
+import { isPressorFlag } from "./pressors";
 
 // The patient list both Census and Monitoring filter, sort and group, so the two pages behave the same (PRD Monitoring
 // MON-AC-11). Each page adds the data its own card needs.
@@ -88,7 +100,8 @@ const severityRank: Record<PatientCardAlertVariant, number> = {
 	message: 0,
 };
 
-const organSupportTags = ["Ventilated", "On pressors", "NIV", "ECMO", "Dialysis"];
+// With the pressor flags, which carry their count ("2 pressors").
+const organSupportTags = ["Ventilated", "NIV", "ECMO", "Dialysis"];
 
 // Search text: any case, and the card's minus sign (−) matches a typed hyphen.
 const searchable = (text: string) => text.toLowerCase().replace(/[−–]/g, "-");
@@ -137,7 +150,7 @@ const hasActiveAlert = (patient: PanelPatient) =>
 const hasRisingAcuity = (patient: PanelPatient) => patient.trajectory?.trend === "up";
 
 const hasOrganSupport = (patient: PanelPatient) =>
-	(patient.tags ?? []).some((tag) => organSupportTags.includes(tag.label));
+	(patient.tags ?? []).some((tag) => organSupportTags.includes(tag.label) || isPressorFlag(tag.label));
 
 /** Active alerts across patients: each card's count (1 when it has none), leaving out resolved alerts and messages. */
 const activeAlertCount = (patients: PanelPatient[]) =>
@@ -562,6 +575,47 @@ type QuickView<Patient> = {
 	icon: LucideIcon;
 	matches: (patient: Patient) => boolean;
 };
+
+/* -------------------------------------------------------------------------- */
+/* Card menu                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A patient card's "…" menu, the same on every card, Census and Monitoring (Nov 3, 2026, user's call). Ask Intercept Live
+ * first (the chat about the patient with a quick overview, as Ask in an alert toast does), then Video consult (the alert
+ * modal with the call to the bedside already ringing; Scenario 1, step 3), then Expand alert while the card shows an
+ * alert (the alert modal its alert bar opens), set apart by a divider; then the patient's actions, as in the patient's
+ * header, in alphabetical order (the app wires them up). Ask, Video consult and Expand only inside the shell
+ * (`navigation`).
+ */
+function patientCardActions(
+	navigation: PatientNavigation | null,
+	{ id, name, tags, showsAlert = false }: { id: string; name: string; tags?: { label: string }[]; showsAlert?: boolean },
+): PatientCardAction[] {
+	return [
+		...(navigation
+			? [
+					{
+						label: "Ask Intercept Live",
+						icon: SparklesIcon,
+						onSelect: () => navigation.askAboutPatient(id, name, tags?.map((tag) => tag.label)),
+					},
+					{
+						label: "Video consult",
+						icon: VideoIcon,
+						onSelect: () => navigation.openAlert(id, undefined, { consult: true }),
+						divider: !showsAlert,
+					},
+					...(showsAlert
+						? [{ label: "Expand alert", icon: Maximize2Icon, onSelect: () => navigation.openAlert(id), divider: true }]
+						: []),
+				]
+			: []),
+		{ label: "Escalate", icon: ArrowUpIcon },
+		{ label: "Huddle team", icon: WebcamIcon },
+		{ label: "Raise concern", icon: FlagIcon },
+	];
+}
 
 /* -------------------------------------------------------------------------- */
 /* Filter bar parts                                                           */
@@ -1307,6 +1361,7 @@ function PanelEmpty({ children }: { children: React.ReactNode }) {
 }
 
 export {
+	patientCardActions,
 	activeAlertCount,
 	matchesSearch,
 	hasActiveAlert,

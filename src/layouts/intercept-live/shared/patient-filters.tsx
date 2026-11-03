@@ -11,6 +11,7 @@ import {
 
 import { useHideToasts } from "../side-panel";
 import { hasActiveAlert, type PanelPatient } from "./patient-panel";
+import { isPressorFlag } from "./pressors";
 
 // The Filters shared by the Census and Monitoring (Oct 30, 2026, user's call; from the "Census Hospital Filters"
 // artifact): the patients' filter groups, what each option matches, and UCL's FilterPanel with their counts. Options in
@@ -137,7 +138,15 @@ function tagFilterGroups<Patient extends FilterablePatient>(): FilterGroup<Patie
 		{
 			id: "support",
 			title: "Organ support",
-			options: ["Ventilated", "NIV", "On pressors", "ECMO", "Dialysis"].map((label) => ({ id: label, label, matches: tagged(label) })),
+			// On pressors matches any count ("1 pressor", "2 pressors").
+			options: ["Ventilated", "NIV", "On pressors", "ECMO", "Dialysis"].map((label) => ({
+				id: label,
+				label,
+				matches:
+					label === "On pressors"
+						? (patient: Patient) => (patient.tags ?? []).some((tag) => isPressorFlag(tag.label))
+						: tagged(label),
+			})),
 		},
 		{
 			id: "safety",

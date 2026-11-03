@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 1, 2026
+Last updated: Nov 3, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -301,6 +301,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Neuro ICU** | Neurocritical care unit for patients with stroke, brain injury, seizures or after neurosurgery. A unit code in the Census unit menu. | General |
 | **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. Since Oct 30, 2026 the prototype's acuity score is NEWS2-style (scale 1), a current-state score shown with its band and 24 h change; it replaces the SOFA placeholder, pending clinical approval (OD-02, D-04). **Scale 2** is NEWS2's oxygen-saturation scale for patients with hypercapnic respiratory failure (target SpO₂ 88–92%, e.g. COPD); the specs name it, and the prototype doesn't use it yet (OD-18). | General, PRD PC-030, SV-09, DU-14 |
 | **NICU** | Neonatal Intensive Care Unit. The ICU for premature or critically ill newborns. A unit code shown in the Patient card location. | General, PRD PC-014 |
+| **Flag details** | *Proposed* the popover a patient's flag opens when clicked: what it means, what's behind it now (the drips and their rates, the ventilator's settings, the lab watched with a drip) and where that comes from. | PRD Patient card §15.1 |
 | **NIV (Noninvasive ventilation)** | Breathing support through a mask (BiPAP or CPAP), with no tube in the windpipe. Shown as an "NIV" pill on the Patient card, never as "Ventilated". | General, PRD PC-050, §15.1 P1 |
 | **Numerics** | The large numeric readings on a patient monitor (HR, SpO₂, BP, RR…), as opposed to waveforms and trends. On the Surveillance page, HR, SpO₂, BP and RR are the primary numerics. | General, PRD Monitoring MON-071 |
 | **OB exclusion** | Pregnant patients are screened for sepsis under different criteria. | Spec Appendix A |
@@ -311,7 +312,8 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **PEEP** | Positive end-expiratory pressure, a ventilator setting. | General, PRD PC-051 |
 | **PEWS (Pediatric Early Warning Score)** | Early-warning score for children, with normal ranges by age; NEWS2 isn't valid under 16. A candidate score only if pediatric units are in scope (OD-18). | General, PRD PC-030 |
 | **Plateau pressure** | Ventilator measurement of alveolar pressure at the end-inspiratory pause. Kept under about 30 cmH₂O in ARDS. | Spec Appendix A |
-| **Pressors (vasopressors)** | Drugs given by continuous infusion to raise blood pressure. "On pressors" is a therapy tag. | General, PRD PC-060, §15.1 P1 |
+| **Pressors (vasopressors)** | Drugs given by continuous infusion to raise blood pressure that is dangerously low (shock), titrated to a MAP target (usually 65 mmHg or more). The ones Intercept counts: epinephrine, phenylephrine, norepinephrine, vasopressin, dopamine, dobutamine and angiotensin II (Giapreza); dobutamine is strictly an inotrope, but clinicians count it with them; milrinone isn't one. The patient's flag says how many are running, "1 pressor", "2 pressors", since the count is how sick the shock is ("On pressors" until Nov 3, 2026); the filters still group them as On pressors. | Client feedback (Nov 3, 2026), PRD PC-060, §15.1 P1 |
+| **3% NaCl (hypertonic saline)** | 3% sodium chloride by continuous infusion, a high-risk drip: to bring down brain swelling or treat severe low sodium, with sodium checked often so it doesn't rise too fast. Shown as a "3% NaCl" flag, as "Insulin infusion" is. | Client feedback (Nov 3, 2026), PRD §15.1 P1 |
 | **Procalcitonin** | A bacterial-infection biomarker. An example of a hospital-specific bundle element added on top of SEP-1. | Spec Appendix A |
 | **Prone positioning** | Placing a severe-ARDS patient face-down to improve oxygenation. | Spec Appendix A |
 | **qSOFA (quick SOFA)** | A bedside sepsis screen of three signs, one point each: respiratory rate 22/min or more, altered mental state, systolic BP 100 mmHg or less. A screen, not a severity score: it belongs with sepsis, not on the card (OD-18). | General, PRD PC-030 |
@@ -413,6 +415,8 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
 | **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (MON-OD-01). | Spec §5.2, PRD Monitoring MON-010 |
 | **Order recommendation** | An order change an AI agent suggests (Order-Entry Suggestion or Vent-Order Mismatch Agent) with its evidence and protocol. The clinician accepts, modifies or declines; it never becomes an order on its own. | Spec §5.5, §8.5, PRD PD-061 |
+| **Bedside camera** | The camera, microphone and speaker in each covered room, which the remote clinician uses to see the patient and their devices and talk to the bedside team. One use of it is a **camera session**. | Spec §5.2, PRD Bedside camera |
+| **Camera session** | *Proposed* one use of the bedside camera: off, connecting, live, ended, with the live values over the picture. Live Camera, Video consult and Huddle are all camera sessions. | PRD Bedside camera CAM-001 |
 | **Care pathway (order set)** | A protocol's suggested set of orders for a condition, e.g. Scenario 1's CHF exacerbation pathway (BiPAP, escalated IV diuretic with a urine-output target, nitrate if blood pressure allows). The intensivist reviews it, may edit a dose, then accepts it (sent for co-signature) or declines it with a reason. A suggestion until accepted; the protocol is the hospital's. | Demo Use Cases Scenario 1, BR-15 |
 | **Co-signature (local)** | The hospital physician's sign-off on orders the remote intensivist accepted, before the bedside team carries them out. In Scenario 1, the family physician on call. Distinct from an APP's orders co-signed by the supervising intensivist (BR-11). | Demo Use Cases Scenario 1, OE-07 |
 | **Panel order prompt** | *Proposed* "Panel order changed · Update" bar on the Monitoring page. When alerts change priority, cards keep their place until the clinician accepts the new order, so nothing moves under the pointer. ⚠️ **Decision needed:** auto-reorder rules (MON-OD-05). | PRD Monitoring MON-013 |
@@ -420,10 +424,12 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Patient switcher** | *Proposed* previous / next control in the Patient details header that steps through the list the clinician came from, in its order and filters. | PRD PD-015 |
 | **Patient timeline** | *Proposed* Patient details section with vitals, infusions, ventilator settings, labs and events on one time axis, read with one crosshair. | PRD PD-030 |
 | **Shift brief** | *Proposed* answer to "Brief me for the start of my shift": the census at a glance, who needs attention first, what's overdue, concerns carried over, pending results and data gaps. | PRD CC-040 |
+| **Live Camera (look in)** | *Proposed* a camera session to see the patient's room, with nobody called. ⚠️ **Decision needed:** one name (the PRDs say Look in). | PRD Patient details PD-090, PRD Bedside camera |
 | **Single Pane of Glass** | The Provider Desktop's promise: one workspace replacing 10–12 applications per shift. | Spec §5.1 |
 | **Telemetry-and-camera fusion** | Live drips, vent settings and pump rates overlaid on the bedside camera feed (the spec's "fighter-jet HUD" for the camera). | Spec §5.2, PRD Monitoring MON-031 |
 | **Three-cell-phone problem** | Clinicians carry up to three phones because desktop notifications (especially Epic Haiku) are unreliable. The reason the mobile companion exists. | Spec §6.10, §9.3 |
 | **Triage queue** | The Monitoring page's rail of active alerts for the panel, highest priority first, with Open, Acknowledge, Escalate and Resolve. The Alert Queue page is the full alert surface. ⚠️ **Decision needed:** whether both exist in v1 (MON-OD-03). | Spec §5.2, PRD Monitoring MON-020 |
+| **Video consult** | *Proposed* a camera session with the bedside nurse called in: the clinician reaches her through the hospital's messaging, and they talk through the room's camera, with the patient in view. Not a video conference: the bedside nurse has no Intercept screen (roadmap). Distinct from the specialist consult (SC-*). | Scenario 1 step 3, PRD Bedside camera CAM-007, PRD Alert maximized modal AMM-013 |
 | **What changed** | *Proposed* Patient details list of everything that changed since this clinician last viewed the patient. ⚠️ **Decision needed:** how "last viewed" is recorded (PD-OD-06). | PRD PD-023 |
 
 ---
@@ -455,3 +461,5 @@ Resolve each one with Intercept or the doc owner, then update the entry above.
 | 5 | "Tele-critical care" vs "Tele-Critical Care" | Spec, inconsistently, in module names | Title case in module names (**Tele-Critical Care Clinical Surveillance**), lowercase in prose |
 | 6 | "Intercept Live", "Virtual Care OS" and "Intercept Live – Virtual Care OS" | Spec, Brief | ⚠️ **Decision needed:** product naming is open for brand review. Record the answer in DESIGN.md "Brand names" |
 | 7 | Vent-Order Mismatch Agent vs Ventilator Optimization agent family | Spec §8.3 | Use **Vent-Order Mismatch Agent** for the v1 capability, and Ventilator Optimization only for the roadmap family |
+| 8 | "Consult": the nurse call (Video consult) vs the specialist consult | Scenario 1 step 3 vs Spec §5.11, SC-*, DU-27 | ⚠️ **Decision needed:** keep Video consult for the nurse call and call the other **Request specialist** (SC-01), or rename the nurse call. PRD Bedside camera §8 |
+| 9 | Live Camera vs Look in | Patient details header vs PRD Patient details PD-014, PD-090 | ⚠️ **Decision needed:** one name, sentence case. PRD Bedside camera §8 |

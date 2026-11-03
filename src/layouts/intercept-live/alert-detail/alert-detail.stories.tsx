@@ -68,7 +68,7 @@ function Demo(props: AlertDetailModalProps) {
 }
 
 /**
- * Video call Kayla (footer) rings Kayla Brandt, RN at the bedside, then opens the room's camera at the top of the
+ * Video consult (footer) rings Kayla Brandt, RN at the bedside, then opens the room's camera at the top of the
  * right column. Acknowledge, Escalate and Mark as resolved, in the alert, run its lifecycle; Open patient opens their
  * details.
  */
@@ -92,12 +92,12 @@ export const Default: Story = {
 		await expect(await dialog.findByRole("button", { name: "Acknowledge" })).toHaveAttribute("aria-pressed", "false");
 		await waitFor(() => expect(dialog.queryByText(/Acknowledged by you/)).not.toBeInTheDocument());
 		await userEvent.click(dialog.getByRole("button", { name: "Acknowledge" }));
-		await dialog.getByRole("button", { name: "Video call Kayla, RN" }).click();
+		await dialog.getByRole("button", { name: "Video consult" }).click();
 		await expect(await dialog.findByText("Calling Kayla Brandt…")).toBeInTheDocument();
 		await waitFor(() => expect(dialog.getByText("Kayla Brandt, RN joined")).toBeInTheDocument(), { timeout: 3000 });
 		await expect(args.onConsultChange).toHaveBeenLastCalledWith("live");
 		await dialog.getByRole("button", { name: "End" }).click();
-		await expect(await dialog.findByRole("button", { name: "Video call Kayla, RN" })).toBeInTheDocument();
+		await expect(await dialog.findByRole("button", { name: "Video consult" })).toBeInTheDocument();
 	},
 };
 

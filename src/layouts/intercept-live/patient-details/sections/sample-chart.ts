@@ -528,7 +528,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 		extras: [["Bicarbonate", "25"], ["Platelets", "201"], ["INR", "1.0"], ["Hemoglobin A1c", "6.8"]],
 		cultures: [culture("Urine culture", 24, "no-growth", "No growth at 24 hours.", { updatedHours: 2 })],
 		imaging: [
-			report("CT head, without contrast", 20, "Evolving right MCA infarct without hemorrhage. No midline shift.", "Hypodensity in the right frontal and temporal lobes and insula, as expected after the stroke. No hemorrhage. No mass effect.", hpg),
+			report("CT head, without contrast", 20, "Evolving right MCA infarct with early swelling, without hemorrhage. No midline shift.", "Hypodensity in the right frontal and temporal lobes and insula, as expected after the stroke, with early effacement of the nearby sulci. No hemorrhage. No midline shift.", hpg),
 			report("CT angiography, head and neck", 50, "Occlusion of the right M1 segment.", "Abrupt occlusion of the right middle cerebral artery's M1 segment. Carotids patent without significant narrowing.", hpg),
 		],
 	},

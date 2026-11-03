@@ -728,8 +728,9 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		],
 	}),
 
-	// Whitfield: day 2 after thrombectomy for a right MCA stroke, DNR. Neuro checks unchanged overnight; RR stopped
-	// reporting 27 min ago (a gap to now). Glucose up to 182.
+	// Whitfield: day 2 after thrombectomy for a right MCA stroke, DNR. Early swelling on the CT 20 h ago, so normal saline
+	// gave way to 3% saline, sodium 134 → 141 toward 145–155. Neuro checks unchanged overnight; RR stopped reporting 27 min
+	// ago (a gap to now). Glucose up to 182.
 	p12: timeline({
 		seed: 111,
 		hr: [[1440, 84], [0, 80]],
@@ -740,20 +741,26 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		gaps: { rr: [[28, 0]] },
 		temp: [[1320, 37.4], [1080, 37.2], [840, 37.3], [600, 37.1], [360, 37.2], [75, 37.2]],
 		lanes: [
-			pump("Normal saline", "mL/h", [[1440, 75]], "fluid"),
+			pump("Normal saline", "mL/h", [[1440, 75], [1150, 0]], "fluid"),
+			pump("Sodium chloride 3%", "mL/h", [[1440, 0], [1150, 30]]),
 			oxygenFlow([[1440, 2]]),
 			labLane("Glucose", "mg/dL", [[1200, 148], [450, 156], [90, 182]], { high: 180 }),
-			labLane("Sodium", "mmol/L", [[1740, 136], [300, 134]], { low: 135 }, "lab-2"),
+			labLane("Sodium", "mmol/L", [[1740, 136], [1200, 134], [840, 136], [480, 138], [120, 141]], { low: 135 }, "lab-2"),
 		],
 		events: [
 			[1400, "note", "Advance directive on file: DNR"],
 			[1320, "care", "Neuro check unchanged · NIHSS 9"],
+			[1200, "note", "CT head: early swelling of the infarct, no midline shift"],
+			[1200, "lab", "Sodium 134 mmol/L resulted"],
+			[1150, "drip", "3% saline started at 30 mL/h, normal saline stopped · sodium goal 145–155"],
 			[1080, "care", "Neuro check unchanged · NIHSS 9"],
+			[840, "lab", "Sodium 136 mmol/L resulted"],
 			[840, "care", "Neuro check unchanged · NIHSS 9"],
 			[600, "care", "Neuro check unchanged · NIHSS 9"],
+			[480, "lab", "Sodium 138 mmol/L resulted"],
 			[450, "lab", "Glucose 156 mg/dL resulted"],
 			[360, "care", "Neuro check unchanged · NIHSS 9"],
-			[300, "lab", "Sodium 134 mmol/L resulted"],
+			[120, "lab", "Sodium 141 mmol/L resulted"],
 			[120, "care", "Neuro check unchanged · NIHSS 9"],
 			[90, "lab", "Glucose 182 mg/dL resulted"],
 		],

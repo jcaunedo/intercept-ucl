@@ -1,9 +1,21 @@
 "use client";
 
 import * as React from "react";
+import { EllipsisIcon, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
+import { Button } from "@/components/buttons/button";
 import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
+import {
+	exitTransition,
+	motionDistance,
 	motionDuration,
 	standardTransition,
 	urgencyRingVariants,
@@ -141,4 +153,110 @@ function usePatientCardAlertRing({
 	return { ring, markSeen: () => setSeenSeverity(severity) };
 }
 
-export { patientCardInteractiveClassName, patientCardOpenTargetClassName, usePatientCardAlertRing };
+/** An item in a card's "…" menu. `divider` draws a separator under it, setting it apart from the items below. */
+type PatientCardAction = { label: string; icon?: LucideIcon; onSelect?: () => void; divider?: boolean };
+
+type CardRevealHandlers = Pick<React.ComponentProps<"article">, "onPointerEnter" | "onPointerLeave" | "onFocus" | "onBlur">;
+
+/**
+ * Whether a card's "…" menu shows: while the pointer is on the card, keyboard focus is in it or its menu is open; always
+ * where the device can't hover. Spread `handlers` on the card (they call the card's own handlers too) and pass
+ * `shown` and `onMenuOpenChange` to PatientCardMoreActions.
+ */
+function usePatientCardActionsReveal({ onPointerEnter, onPointerLeave, onFocus, onBlur }: CardRevealHandlers) {
+	const [hovered, setHovered] = React.useState(false);
+	const [focused, setFocused] = React.useState(false);
+	const [menuOpen, setMenuOpen] = React.useState(false);
+	const canHover = useMediaQuery("(hover: hover)");
+	const handlers: CardRevealHandlers = {
+		onPointerEnter: (event) => {
+			setHovered(true);
+			onPointerEnter?.(event);
+		},
+		onPointerLeave: (event) => {
+			setHovered(false);
+			onPointerLeave?.(event);
+		},
+		onFocus: (event) => {
+			setFocused(true);
+			onFocus?.(event);
+		},
+		onBlur: (event) => {
+			if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+			onBlur?.(event);
+		},
+	};
+	return { shown: hovered || focused || menuOpen || !canHover, onMenuOpenChange: setMenuOpen, handlers };
+}
+
+/**
+ * A card's "…" menu, raised above its open target. Its slot opens as it shows, so what sits left of it glides aside
+ * rather than jumps (as SearchInput opens: `standardTransition` in, `exitTransition` out), and the button fades in from
+ * the right. Hidden, it's only clipped, so Tab still reaches it (and shows it). The slot's 8px gap is built in, and it
+ * reaches 4px past the button on three sides (offset by negative margins) so its focus ring isn't clipped.
+ */
+function PatientCardMoreActions({
+	actions,
+	name,
+	shown,
+	onMenuOpenChange,
+}: {
+	actions: PatientCardAction[];
+	/** The patient's name, for the button's label: "More actions for Miller, Sarah". */
+	name: string;
+	shown: boolean;
+	onMenuOpenChange: (open: boolean) => void;
+}) {
+	const { resolve } = useMotionPreference();
+	const transition = resolve(shown ? standardTransition : exitTransition);
+
+	return (
+		<motion.div
+			initial={false}
+			animate={shown ? { width: 48, opacity: 1 } : { width: 0, opacity: 0 }}
+			transition={transition}
+			className='-my-1 -mr-1 flex shrink-0 justify-end overflow-hidden py-1 pr-1'
+		>
+			<DropdownMenu onOpenChange={onMenuOpenChange}>
+				<DropdownMenuTrigger asChild>
+					<Button
+						asChild
+						variant='ghost'
+						size='icon-md'
+						aria-label={`More actions for ${name}`}
+						className='relative z-10 text-foreground'
+					>
+						<motion.button
+							type='button'
+							initial={false}
+							animate={{ x: shown ? 0 : motionDistance.subtle }}
+							transition={transition}
+						>
+							<EllipsisIcon aria-hidden='true' />
+						</motion.button>
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align='end'>
+					{actions.map(({ label, icon: Icon, onSelect, divider }, index) => (
+						<React.Fragment key={label}>
+							<DropdownMenuItem onSelect={onSelect}>
+								{Icon ? <Icon aria-hidden='true' /> : null}
+								{label}
+							</DropdownMenuItem>
+							{divider && index < actions.length - 1 ? <DropdownMenuSeparator /> : null}
+						</React.Fragment>
+					))}
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</motion.div>
+	);
+}
+
+export {
+	PatientCardMoreActions,
+	patientCardInteractiveClassName,
+	patientCardOpenTargetClassName,
+	usePatientCardActionsReveal,
+	usePatientCardAlertRing,
+	type PatientCardAction,
+};

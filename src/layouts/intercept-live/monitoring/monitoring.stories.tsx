@@ -116,7 +116,7 @@ export const Scenario1HeartFailure: Story = {
 		const reason = "Rising work of breathing, positive fluid balance, HFrEF";
 		const modal = within(await screen.findByRole("dialog", { name: reason }));
 		await expect(modal.getByText("2,400 pg/mL")).toBeInTheDocument();
-		await expect(modal.getByRole("button", { name: "Video call Kayla, RN" })).toBeInTheDocument();
+		await expect(modal.getByRole("button", { name: "Video consult" })).toBeInTheDocument();
 		// The toasts hide while the modal is open and come back when it closes.
 		const toasts = () => document.querySelector("[data-slot='toaster-region']");
 		await expect(toasts()).toHaveAttribute("data-hidden");
@@ -133,6 +133,10 @@ export const Scenario1HeartFailure: Story = {
 		await userEvent.click(consult.getByRole("button", { name: "Open patient" }));
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(toasts()).toHaveAttribute("data-hidden");
+		// Opened from the alert, her page still has the patient list: Monitoring's, as it shows now.
+		await userEvent.click(canvas.getByRole("button", { name: "Patient list" }));
+		const list = within(await canvas.findByRole("complementary", { name: "Patients" }));
+		await expect(list.getByText(/^From the Monitoring, in its order · \d+ of \d+$/)).toBeInTheDocument();
 	},
 };
 

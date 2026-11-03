@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import { alertModalRenderer, type AlertDetailData } from "../alert-detail/alert-detail";
 import type { CarePathwayDecision } from "../alert-detail/care-pathway";
 import type { KeepOrTransferDecision } from "../alert-detail/keep-or-transfer";
@@ -5,6 +7,7 @@ import { CensusPanel, type CensusPatient } from "../census/census-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
 import { AlertToasts, useClosedResolutions } from "../shared/alert-toasts";
+import { withFlagDetails } from "../shared/flag-details";
 import { useAddressedAlerts } from "../shared/live-feed";
 import {
 	MonitoringPanel,
@@ -72,6 +75,12 @@ function Monitoring({
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 	// Closing a Resolved toast resets that patient's Monitoring card to no alert.
 	const { closedResolutions, closeResolved } = useClosedResolutions();
+	// Each flag opens what it means and what's behind it now, from the patient's record.
+	const flaggedPatients = React.useMemo(() => withFlagDetails(patients, patientRecords), [patients, patientRecords]);
+	const flaggedCensusPatients = React.useMemo(
+		() => censusPatients && withFlagDetails(censusPatients, patientRecords),
+		[censusPatients, patientRecords],
+	);
 
 	return (
 		<InterceptLive
@@ -94,8 +103,8 @@ function Monitoring({
 			}
 			renderPatientDetails={(patientId, stepper) =>
 				patientDetailsView(patientId, stepper, {
-					patients: censusPatients,
-					monitoringPatients: patients,
+					patients: flaggedCensusPatients,
+					monitoringPatients: flaggedPatients,
 					records: patientRecords,
 					alerts,
 					escalationTargets,
@@ -107,7 +116,7 @@ function Monitoring({
 				Monitoring: (
 					<MonitoringPanel
 						hospitals={hospitals}
-						patients={patients}
+						patients={flaggedPatients}
 						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onOpenPatient={onOpenPatient}
@@ -118,10 +127,10 @@ function Monitoring({
 						closedResolutions={closedResolutions}
 					/>
 				),
-				Census: censusPatients ? (
+				Census: flaggedCensusPatients ? (
 					<CensusPanel
 						hospitals={hospitals}
-						patients={censusPatients}
+						patients={flaggedCensusPatients}
 						onOpenPatient={onOpenPatient}
 						alerts={alerts}
 						escalationTargets={escalationTargets}

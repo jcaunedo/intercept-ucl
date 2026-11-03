@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn } from "storybook/test";
+import { ArrowUpIcon, FlagIcon, SparklesIcon, WebcamIcon } from "lucide-react";
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
 import {
 	PatientCensusCard,
@@ -30,7 +31,7 @@ const patient = {
 		{ label: "SpO₂", value: "97%" },
 		{ label: "Resp. Rate", shortLabel: "RR", value: 18 },
 	],
-	tags: [{ label: "Ventilated" }, { label: "On pressors" }],
+	tags: [{ label: "Ventilated" }, { label: "2 pressors" }],
 } satisfies PatientCensusCardProps;
 
 const meta = {
@@ -120,6 +121,34 @@ export const OpensAlert: Story = {
 	},
 };
 
+/**
+ * The "…" menu right of the name (`moreActions`), as on PatientMonitoringCard: it shows on hover, on keyboard focus in
+ * the card, while its menu is open, and always where the device can't hover. It slides in as its slot opens, so the
+ * alert badge glides aside.
+ */
+export const MoreActions: Story = {
+	args: {
+		alert: { variant: "critical", count: 2 },
+		alertRing: false,
+		moreActions: [
+			{ label: "Ask Intercept Live", icon: SparklesIcon, onSelect: fn(), divider: true },
+			{ label: "Escalate", icon: ArrowUpIcon, onSelect: fn() },
+			{ label: "Huddle team", icon: WebcamIcon, onSelect: fn() },
+			{ label: "Raise concern", icon: FlagIcon, onSelect: fn() },
+		],
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// Tab reaches it while it's hidden, and focus shows it (it slides in).
+		const button = canvas.getByRole("button", { name: "More actions for Miller, Sarah" });
+		button.focus();
+		await waitFor(() => expect(button).toBeVisible());
+		await userEvent.click(button);
+		await expect(await within(document.body).findByRole("menuitem", { name: "Escalate" })).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+	},
+};
+
 /** Without `onOpen` or `href`: a static card, no hover. */
 export const Static: Story = {
 	args: { onOpen: undefined },
@@ -150,7 +179,7 @@ export const Minimal: Story = {
 
 /** The small card (`size="sm"`), for the Census's Compact density: 12px padding, 16px name and score, 12px lines, `xs` tags. */
 export const Small: Story = {
-	args: { size: "sm", tags: [{ label: "Ventilated" }, { label: "On pressors" }] },
+	args: { size: "sm", tags: [{ label: "Ventilated" }, { label: "2 pressors" }] },
 	decorators: [
 		(Story) => (
 			<div className='w-56'>
@@ -158,6 +187,47 @@ export const Small: Story = {
 			</div>
 		),
 	],
+};
+
+/**
+ * A tag with `details` is a button: a click opens what it means and what's behind it now in a popover, and doesn't
+ * open the patient. Escape closes it and focus returns to the tag; so does moving the mouse off the tag.
+ */
+export const TagDetails: Story = {
+	args: {
+		tags: [
+			{ label: "Ventilated" },
+			{
+				label: "2 pressors",
+				details: {
+					description: "Drips that raise blood pressure, running now.",
+					items: [
+						{ label: "Norepinephrine", value: "0.22 mcg/kg/min" },
+						{ label: "Vasopressin", value: "0.03 units/min" },
+					],
+					source: "Pump",
+					updatedAt: new Date(Date.now() - 60_000).toISOString(),
+				},
+			},
+		],
+	},
+	play: async ({ args, canvas }) => {
+		const tag = canvas.getByRole("button", { name: "2 pressors" });
+		await userEvent.click(tag);
+		const popover = within(await screen.findByRole("dialog", { name: "2 pressors" }));
+		await expect(popover.getByText("0.22 mcg/kg/min")).toBeInTheDocument();
+		await expect(popover.getByText("Pump · 1 min ago")).toBeInTheDocument();
+		await userEvent.click(popover.getByText("Norepinephrine"));
+		await expect(args.onOpen).not.toHaveBeenCalled();
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		await expect(tag).toHaveFocus();
+		// Opened again, it closes as soon as the mouse leaves the tag.
+		await userEvent.click(tag);
+		await screen.findByRole("dialog", { name: "2 pressors" });
+		await userEvent.unhover(tag);
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+	},
 };
 
 /** A long name truncates on one line (full name on hover). A long hospital name truncates, so the unit, room and bed stay visible. */
@@ -178,7 +248,7 @@ export const ManyTags: Story = {
 	args: {
 		tags: [
 			{ label: "Ventilated" },
-			{ label: "On pressors" },
+			{ label: "2 pressors" },
 			{ label: "ECMO" },
 			{ label: "Contact isolation" },
 			{ label: "Fall risk" },

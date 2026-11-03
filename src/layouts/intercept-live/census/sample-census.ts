@@ -9,6 +9,8 @@ const news2 = "NEWS2";
 const change = "Change in last 24 h";
 // When the clinician last opened a patient, or a patient's last alert resolved (the Recently viewed and Recently
 // resolved sorts): Thompson, Davis, Miller and Clark were viewed; Wilson, Bennett, Harris and Taylor had one resolve.
+// When each arrived on their unit, as their record says (ICU admission, else hospital admission): seven in the last
+// 24 h for New patients, Carter, Harris, Moore, Bennett, Hayes, Ortega and Norman.
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
 
 const samplePatients: CensusPatient[] = [
@@ -24,6 +26,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 11",
+		arrivedAt: hoursAgo(52),
 		alert: { variant: "critical" },
 		acuity: { label: news2, score: 17, level: "high" },
 		trajectory: { label: change, value: "+7", trend: "up", trendVariant: "critical" },
@@ -35,7 +38,7 @@ const samplePatients: CensusPatient[] = [
 			{ label: "SpO₂", value: "90%", variant: "destructive", range: "below" },
 			{ label: "Resp. Rate", shortLabel: "RR", value: 30, variant: "destructive", range: "above" },
 		],
-		tags: [{ label: "Ventilated" }, { label: "On pressors" }],
+		tags: [{ label: "Ventilated" }, { label: "2 pressors" }],
 		sepsisWatch: true,
 	},
 	{
@@ -51,6 +54,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Mercy West Hospital",
 		unit: "MICU",
 		bed: "Bed 3",
+		arrivedAt: hoursAgo(38),
 		alert: { variant: "low" },
 		acuity: { label: news2, score: 15, level: "high" },
 		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
@@ -75,6 +79,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "MICU",
 		bed: "Bed 7",
+		arrivedAt: hoursAgo(116),
 		acuity: { label: news2, score: 10, level: "high" },
 		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
 		scoreChange4h: 0,
@@ -85,7 +90,7 @@ const samplePatients: CensusPatient[] = [
 			{ label: "SpO₂", value: "93%" },
 			{ label: "Resp. Rate", shortLabel: "RR", value: 18 },
 		],
-		tags: [{ label: "Ventilated" }, { label: "On pressors" }],
+		tags: [{ label: "Ventilated" }, { label: "1 pressor" }],
 	},
 	{
 		id: "p4",
@@ -99,6 +104,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "CVICU",
 		bed: "Bed 5",
+		arrivedAt: hoursAgo(75),
 		acuity: { label: news2, score: 5, level: "medium" },
 		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
 		scoreChange4h: 0,
@@ -109,7 +115,7 @@ const samplePatients: CensusPatient[] = [
 			{ label: "SpO₂", value: "95%" },
 			{ label: "Resp. Rate", shortLabel: "RR", value: 18 },
 		],
-		tags: [{ label: "On pressors" }, { label: "DNR" }],
+		tags: [{ label: "2 pressors" }, { label: "DNR" }],
 	},
 	{
 		id: "p5",
@@ -123,6 +129,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 6",
+		arrivedAt: hoursAgo(19),
 		acuity: { label: news2 },
 		trajectory: { label: change, variant: "missing" },
 		vitals: [
@@ -144,6 +151,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "SICU",
 		bed: "Bed 2",
+		arrivedAt: hoursAgo(44),
 		alert: { variant: "low" },
 		acuity: { label: news2, score: 3, level: "low" },
 		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
@@ -168,6 +176,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Mercy West Hospital",
 		unit: "SICU",
 		bed: "Bed 12",
+		arrivedAt: hoursAgo(80),
 		acuity: { label: news2, score: 0, level: "low" },
 		trajectory: { label: change, value: "−3", trend: "down", trendVariant: "success" },
 		scoreChange4h: 0,
@@ -191,6 +200,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "PCU",
 		bed: "Bed 14",
+		arrivedAt: hoursAgo(33),
 		acuity: { label: news2, score: 0, level: "low" },
 		trajectory: { label: change, value: "0" },
 		scoreChange4h: 0,
@@ -214,6 +224,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 8",
+		arrivedAt: hoursAgo(16),
 		acuity: { label: news2, score: 16, level: "high" },
 		trajectory: { label: change, value: "+6", trend: "up", trendVariant: "critical" },
 		scoreChange4h: 2,
@@ -239,6 +250,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "SICU",
 		bed: "Bed 4",
+		arrivedAt: hoursAgo(22),
 		acuity: { label: news2, score: 7, level: "high" },
 		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "critical" },
 		scoreChange4h: 0,
@@ -248,7 +260,7 @@ const samplePatients: CensusPatient[] = [
 			{ label: "SpO₂", value: "96%" },
 			{ label: "Resp. Rate", shortLabel: "RR", value: 19 },
 		],
-		tags: [{ label: "On pressors" }, { label: "Dialysis" }],
+		tags: [{ label: "1 pressor" }, { label: "Dialysis" }],
 		sepsisWatch: true,
 	},
 	{
@@ -262,6 +274,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "OB-ICU",
 		bed: "Bed 1",
+		arrivedAt: hoursAgo(26),
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "0" },
 		scoreChange4h: 0,
@@ -285,6 +298,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Harbor Point General",
 		unit: "Neuro ICU",
 		bed: "Bed 2",
+		arrivedAt: hoursAgo(47),
 		acuity: { label: news2 },
 		trajectory: { label: change, variant: "missing" },
 		vitals: [
@@ -293,7 +307,7 @@ const samplePatients: CensusPatient[] = [
 			{ label: "SpO₂", value: "94%" },
 			{ label: "Resp. Rate", shortLabel: "RR", variant: "missing" },
 		],
-		tags: [{ label: "DNR" }, { label: "Fall risk" }],
+		tags: [{ label: "3% NaCl" }, { label: "DNR" }, { label: "Fall risk" }],
 	},
 	{
 		id: "p13",
@@ -307,6 +321,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "CVICU",
 		bed: "Bed 3",
+		arrivedAt: hoursAgo(99),
 		acuity: { label: news2, score: 14, level: "high" },
 		trajectory: { label: change, value: "+5", trend: "up", trendVariant: "critical" },
 		scoreChange4h: 1,
@@ -316,7 +331,7 @@ const samplePatients: CensusPatient[] = [
 			{ label: "SpO₂", value: "94%" },
 			{ label: "Resp. Rate", shortLabel: "RR", value: 22 },
 		],
-		tags: [{ label: "Ventilated" }, { label: "On pressors" }, { label: "ECMO" }],
+		tags: [{ label: "Ventilated" }, { label: "2 pressors" }, { label: "ECMO" }],
 	},
 	{
 		id: "p14",
@@ -330,6 +345,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "CVMC",
 		unit: "CCU",
 		bed: "Bed 9",
+		arrivedAt: hoursAgo(5),
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "−6", trend: "down", trendVariant: "success" },
 		scoreChange4h: -6,
@@ -353,6 +369,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Chadron Community Hospital",
 		unit: "Med-Surg",
 		bed: "Bed 4",
+		arrivedAt: hoursAgo(20),
 		// Just before Scenario 1: NEWS2 5, up 1 from admission and steady over 4 h (`sampleScenario1Census`, 01:40).
 		acuity: { label: news2, score: 5, level: "medium" },
 		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "medium" },
@@ -376,6 +393,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Chadron Community Hospital",
 		unit: "Med-Surg",
 		bed: "Bed 6",
+		arrivedAt: hoursAgo(66),
 		acuity: { label: news2, score: 2, level: "low" },
 		trajectory: { label: change, value: "−3", trend: "down", trendVariant: "success" },
 		scoreChange4h: 0,
@@ -399,6 +417,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Chadron Community Hospital",
 		unit: "Med-Surg",
 		bed: "Bed 2",
+		arrivedAt: hoursAgo(40),
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
 		scoreChange4h: 0,
@@ -421,6 +440,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Chadron Community Hospital",
 		unit: "Med-Surg",
 		bed: "Bed 8",
+		arrivedAt: hoursAgo(30),
 		acuity: { label: news2, score: 0, level: "low" },
 		trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
 		scoreChange4h: 0,
@@ -443,6 +463,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Mercy West Hospital",
 		unit: "SICU",
 		bed: "Bed 10",
+		arrivedAt: hoursAgo(20),
 		acuity: { label: news2, score: 6, level: "medium" },
 		trajectory: { label: change, value: "+2", trend: "up", trendVariant: "critical" },
 		scoreChange4h: 1,
@@ -465,6 +486,7 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Mercy West Hospital",
 		unit: "MICU",
 		bed: "Bed 5",
+		arrivedAt: hoursAgo(21),
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "−4", trend: "down", trendVariant: "success" },
 		scoreChange4h: 0,

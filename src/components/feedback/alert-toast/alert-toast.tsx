@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { Maximize2Icon, SparklesIcon, XIcon } from "lucide-react";
+import { SparklesIcon, XIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { PatientCardAlert } from "@/components/cards/patient-census-card";
@@ -70,7 +70,7 @@ type AlertToastOwnProps = {
 	askLabel?: string;
 	/**
 	 * Opens the alert. The whole toast becomes one click target, except its buttons (Open patient, Ask Intercept Live
-	 * and the close button), and a maximize icon sits left of the close button. Without it, there's no maximize icon.
+	 * and the close button). No icon marks it since Nov 3, 2026; the hover border does.
 	 */
 	onOpenAlert?: () => void;
 	/** The click target's name, before the title: "Open alert: Deterioration score crossed threshold". */
@@ -196,17 +196,9 @@ function AlertToast({
 						{firedLabel.label}
 					</time>
 				) : null}
-				{onOpenAlert || closeButton ? (
-					// The maximize icon says what a click on the toast does, and darkens while it's hovered. The close button sits
-					// right after it, 0px apart, 4px into the padding.
-					<div className='-my-1 -mr-1 ml-auto flex items-center'>
-						{onOpenAlert ? (
-							<span aria-hidden='true' className='flex size-8 items-center justify-center'>
-								<Maximize2Icon className='size-4 text-muted-foreground transition-colors duration-160 ease-in-out group-hover/toast:text-foreground' />
-							</span>
-						) : null}
-						{closeButton ? <div className='relative z-2 flex'>{closeButton}</div> : null}
-					</div>
+				{closeButton ? (
+					// 4px into the padding.
+					<div className='relative z-2 -my-1 -mr-1 ml-auto flex'>{closeButton}</div>
 				) : null}
 			</div>
 
@@ -288,7 +280,7 @@ type ToastAlertOptions = AlertToastOwnProps & {
 };
 
 /**
- * Shows an AlertToast in the app's Toaster and returns its id. Open patient, Ask Intercept Live and maximize run their
+ * Shows an AlertToast in the app's Toaster and returns its id. Open patient, Ask Intercept Live and opening the alert run their
  * handler, then close the toast; the close button and the Toaster's Close all close it and call `onClose`. An unaddressed Critical toast can't be swiped away, so
  * it isn't lost by accident. While toasts are muted (the Toaster's Don't show, `muteToasts()`), it shows nothing and
  * returns undefined, an unaddressed Critical included (Nov 3, 2026, user's call; until then it still interrupted, AL-02).

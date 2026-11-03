@@ -2,6 +2,7 @@ import * as React from "react";
 
 import {
 	PatientCardAlert,
+	PatientCardTagPopover,
 	patientCardAcuityLevels,
 	scoreTrendClassName,
 	type PatientCensusCardProps,
@@ -137,9 +138,14 @@ function PatientHeader({
 						<ul aria-label='Badges' className='flex flex-wrap gap-1.5'>
 							{tags.map((tag) => (
 								<li key={tag.label}>
-									<Badge variant={tag.variant ?? "secondary"} size='xs'>
-										{tag.label}
-									</Badge>
+									{/* A tag with details opens them in a popover, as on the patient's card. */}
+									{tag.details ? (
+										<PatientCardTagPopover tag={{ ...tag, variant: tag.variant ?? "secondary" }} details={tag.details} size='xs' />
+									) : (
+										<Badge variant={tag.variant ?? "secondary"} size='xs'>
+											{tag.label}
+										</Badge>
+									)}
 								</li>
 							))}
 						</ul>

@@ -110,7 +110,7 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 |---|---|---|
 | **Hospital bar** | Hospital tabs (All hospitals, then each hospital), each with its patient count and active-alert count; **Group by hospital** at the right ("Group by location" until Nov 3, 2026, user's call: it groups by hospital, and "location" also reads as unit or bed) | CEN-001, CEN-020 |
 | **Summary row** | "18 patients across 4 hospitals"; the live feed line ("Live feed: …"), which opens the live feed panel | CEN-001, CEN-021 ⚠️ |
-| **Filter bar** | Search, My patients, quick views (Rising score, Organ support, Sepsis watch); Density, Sort by, Filters | CEN-002, CEN-003 |
+| **Filter bar** | Search, My patients, quick views (New patients, Rising score, Organ support, Sepsis watch); Density, Sort by, Filters | CEN-002, CEN-003 |
 | **Patients** | Cards (Comfortable, Compact) or a table (List); with Group by hospital, a column per hospital with patients (board; a hospital the filters empty has none, Nov 3, 2026) | CEN-010–CEN-013 |
 | **Panels** | The live feed panel beside the canvas (while it's open, the alert toasts are hidden and paused, Nov 2, 2026, user's call); the Filters panel floating over the page (a Sheet, Nov 1, 2026; the toasts hide while it's open too, Nov 3, 2026, user's call). A closed toast stays closed until the app reloads, unless its alert goes above the severity it had (Nov 3, 2026; PRD Monitoring §5) | CEN-003, CEN-021 |
 
@@ -157,7 +157,7 @@ The Census isn't where alerts are handled (§1.1), but a clinician scanning the 
 
 | ID | Requirement | Status |
 |---|---|---|
-| **CEN-030 Roster changes** | An admission, transfer or discharge from ADT shows on the census as it happens: a new patient joins with a "New" mark, a transfer moves with a "Transferred from …" note, a discharge leaves after a short "Discharged" state. A transfer is never read as a discharge (SV-11; glossary "Census"). | ⚠️ Not built |
+| **CEN-030 Roster changes** | An admission, transfer or discharge from ADT shows on the census as it happens: a new patient joins with a "New" mark, a transfer moves with a "Transferred from …" note, a discharge leaves after a short "Discharged" state. A transfer is never read as a discharge (SV-11; glossary "Census"). | ⚠️ Partly built: the New patients quick view finds patients who arrived on their unit in the last 24 h (Nov 3, 2026); no "New" mark, transfer note or Discharged state yet |
 | **CEN-031 Reconciliation** | Where ADT isn't automated, a patient whose census state is uncertain shows "Pending reconciliation", and the clinician can confirm it (Spec §5.2). | ⚠️ Not built |
 | **CEN-032 Watchlist** | The clinician flags a patient to watch; the flag persists across views and feeds the handoff (PD-09). | ⚠️ Not built. ⚠️ **Decision needed:** whether the watchlist is also how a patient joins the Monitoring panel (CEN-OD-02) |
 | **CEN-033 Handoff** | From the Census, the clinician starts the end-of-shift handoff for their patients (HO-01, DU-31). | ⚠️ Not built. ⚠️ **Decision needed:** whether handoff starts here or on its own page |

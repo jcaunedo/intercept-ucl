@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Oct 31, 2026
+Last updated: Nov 3, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Patient details page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** October 29, 2026
+**Last updated:** November 3, 2026
 
 ---
 
@@ -228,7 +228,7 @@ As on the card: "NEWS2 10 High" with "▲ +6 in last 24 h" (PC-030, PC-031); the
 
 ### PD-013 — Organ support tags
 
-The interventions that answer "who's on a vent, who's on pressors" at a glance: Ventilated (invasive only) or NIV, On pressors, CRRT, and others as configured (PRD §15.1 P1). Each tag links to its section (Ventilated → Respiratory; On pressors → Infusions).
+The interventions that answer "who's on a vent, who's on pressors" at a glance: Ventilated (invasive only) or NIV, the pressor count ("2 pressors"), CRRT, high-risk drips (Insulin infusion, 3% NaCl), and others as configured (PRD Patient card §15.1 P1). ✅ **Flag details (Nov 3, 2026, user's call):** each flag opens a popover with what it means and what's behind it now, as on the patient's card (PRD Patient card §15.1); it replaced linking each tag to its section (Ventilated → Respiratory, pressors → Infusions), which wasn't built.
 
 ### PD-014 — Header actions
 
@@ -250,7 +250,7 @@ Previous / next buttons step through the list the clinician came from (the Censu
 - The switch is sub-second (Spec §5.1 "sub-second patient pivots") and lands on the same section.
 - The name changes visibly (a short Reveal, MOTION.md) and the new patient is announced to screen readers, so a switch is never mistaken for an update.
 - Never navigate to another patient because of stale or recycled bed information (PC-100).
-- Opened from a link with no list (Search, a notification), the switcher is hidden.
+- ✅ **Always there (Nov 3, 2026, user's call):** opened from somewhere with no list of its own (an alert, a toast, the live feed, the chat), the patient gets the list of the page under them, in its order and filters as it shows then; a patient that list leaves out comes first. It was hidden before.
 - ✅ **Resolved (Oct 28, 2026, prototype):** the switcher is a patient list, opened from a list button at the left of the app header (intercept.ds `app-header` Patient Context). It shows the source list in its order, the open patient marked; picking one switches. Previous / next buttons and the ↑/↓, J/K shortcuts aren't built yet.
 
 ### PD-016 — Sticky header
@@ -458,6 +458,8 @@ Shown when the patient has a Sepsis Sniffer candidate or a confirmed case under 
 
 The bedside camera opens in the page panel, with telemetry-and-camera fusion and the controls from MON-031 (session state, presets, Talk / mute, overlay on or off). The Overview stays beside it.
 
+- ℹ️ The camera's sessions (look in, video consult, huddle), states and open decisions are specified in PRD — Bedside camera (`prds/bedside-camera.md`).
+
 - ⚠️ **Constraint:** synthetic or placeholder feed only in the prototype (Brief).
 - Overlay placement is shared with Monitoring (MON-OD-07).
 
@@ -487,6 +489,7 @@ The Conversational Clinical Data Agent answers questions about this patient (Spe
 | Rule | Behavior |
 |---|---|
 | **Scope** | This patient, in this tenant. A question about another patient is answered only in the global chat |
+| **Overview** | Asked about the open patient (the app header's Ask Intercept Live, a card's menu, a toast's Ask), the quick overview and the summary include the patient's flags with what's behind each, when the record has it: the pressor count with each pressor's rate, the ventilator's mode and settings, a high-risk drip's rate with its lab (3% NaCl with sodium, insulin with glucose), then the other flags by name (DNR, Fall risk) (Nov 3, 2026, user's call) |
 | **Citations** | Every fact cites its source; a citation opens it on the Timeline or in its section |
 | **Data in answers** | Answers can include tables, a timeline slice or criteria, not only prose |
 | **Limits** | No diagnosis, no therapy recommendation, no actions. Outside its limits it says so; with too little data it says "I don't have enough information" (Spec §9.1, Principle 12) |

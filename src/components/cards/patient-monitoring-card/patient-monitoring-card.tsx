@@ -1,35 +1,29 @@
 "use client";
 
 import * as React from "react";
-import { BellRingIcon, EllipsisIcon, Maximize2Icon, MapPinIcon, type LucideIcon } from "lucide-react";
+import { BellRingIcon, Maximize2Icon, MapPinIcon } from "lucide-react";
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { Button } from "@/components/buttons/button";
 import {
+	PatientCardMoreActions,
 	PatientCardScore,
 	PatientCardTags,
 	patientCardInteractiveClassName,
 	patientCardOpenTargetClassName,
+	usePatientCardActionsReveal,
 	usePatientCardAlertRing,
+	type PatientCardAction,
 	type PatientCardAlertVariant,
 	type PatientCensusCardProps,
 } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/overlays/dropdown-menu";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
-import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import {
 	exitTransition,
 	fadeVariants,
-	motionDistance,
 	liftPattern,
 	pressPattern,
 	resolvedFadeTransition,
@@ -197,8 +191,8 @@ const condensedColumns: Record<PatientMonitoringCardSize, string> = {
 	sm: "grid-cols-[1fr_1fr_1.5fr_1fr]",
 };
 
-/** An item in the card's "…" menu. `divider` draws a separator under it, setting it apart from the items below. */
-type PatientMonitoringCardAction = { label: string; icon?: LucideIcon; onSelect?: () => void; divider?: boolean };
+/** An item in the card's "…" menu: PatientCardAction, under the name it had first. */
+type PatientMonitoringCardAction = PatientCardAction;
 
 type PatientMonitoringCardProps = Omit<
 	React.ComponentProps<"article">,
@@ -687,13 +681,8 @@ function PatientMonitoringCard({
 	const identity = [mrn, demographics].filter(Boolean).join(" - ");
 	const roomAndBed = room && bed ? `${room} - ${bed}` : (room ?? bed);
 	const placeInHospital = [unit, roomAndBed].filter(Boolean).join(" · ");
-	// The "…" menu shows while the pointer is on the card, keyboard focus is in it or its menu is open; always where the
-	// device can't hover.
-	const [hovered, setHovered] = React.useState(false);
-	const [focused, setFocused] = React.useState(false);
-	const [menuOpen, setMenuOpen] = React.useState(false);
-	const canHover = useMediaQuery("(hover: hover)");
-	const actionsShown = hovered || focused || menuOpen || !canHover;
+	// The "…" menu shows while the pointer is on the card, keyboard focus is in it or its menu is open.
+	const actionsReveal = usePatientCardActionsReveal({ onPointerEnter, onPointerLeave, onFocus, onBlur });
 	const messagesLabel = unreadMessages === 1 ? "1 new message from family" : `${unreadMessages} new messages from family`;
 
 	const openRef = React.useRef<HTMLAnchorElement & HTMLButtonElement>(null);
@@ -729,22 +718,7 @@ function PatientMonitoringCard({
 				alertRing.markSeen();
 				onClickCapture?.(event);
 			}}
-			onPointerEnter={(event) => {
-				setHovered(true);
-				onPointerEnter?.(event);
-			}}
-			onPointerLeave={(event) => {
-				setHovered(false);
-				onPointerLeave?.(event);
-			}}
-			onFocus={(event) => {
-				setFocused(true);
-				onFocus?.(event);
-			}}
-			onBlur={(event) => {
-				if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
-				onBlur?.(event);
-			}}
+			{...actionsReveal.handlers}
 			{...props}
 		>
 			{alertRing.ring}
@@ -801,48 +775,12 @@ function PatientMonitoringCard({
 						)
 					) : null}
 					{moreActions.length ? (
-						// Its slot opens as it shows, so the name and the message icon glide aside rather than jump (as
-						// SearchInput opens: `standardTransition` in, `exitTransition` out), and the button fades in from the
-						// right. Hidden, it's only clipped, so Tab still reaches it (and shows it). The slot's 4px past the button
-						// on three sides (offset by negative margins) keeps its focus ring from being clipped.
-						<motion.div
-							initial={false}
-							animate={actionsShown ? { width: 48, opacity: 1 } : { width: 0, opacity: 0 }}
-							transition={resolve(actionsShown ? standardTransition : exitTransition)}
-							className='-my-1 -mr-1 flex shrink-0 justify-end overflow-hidden py-1 pr-1'
-						>
-							<DropdownMenu onOpenChange={setMenuOpen}>
-								<DropdownMenuTrigger asChild>
-									<Button
-										asChild
-										variant='ghost'
-										size='icon-md'
-										aria-label={`More actions for ${name}`}
-										className='relative z-10'
-									>
-										<motion.button
-											type='button'
-											initial={false}
-											animate={{ x: actionsShown ? 0 : motionDistance.subtle }}
-											transition={resolve(actionsShown ? standardTransition : exitTransition)}
-										>
-											<EllipsisIcon aria-hidden='true' />
-										</motion.button>
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align='end'>
-									{moreActions.map(({ label, icon: Icon, onSelect, divider }, index) => (
-										<React.Fragment key={label}>
-											<DropdownMenuItem onSelect={onSelect}>
-												{Icon ? <Icon aria-hidden='true' /> : null}
-												{label}
-											</DropdownMenuItem>
-											{divider && index < moreActions.length - 1 ? <DropdownMenuSeparator /> : null}
-										</React.Fragment>
-									))}
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</motion.div>
+						<PatientCardMoreActions
+							actions={moreActions}
+							name={name}
+							shown={actionsReveal.shown}
+							onMenuOpenChange={actionsReveal.onMenuOpenChange}
+						/>
 					) : null}
 				</div>
 

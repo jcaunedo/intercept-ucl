@@ -4,6 +4,7 @@ export {
 	PatientCardAlert,
 	PatientCardMetric,
 	PatientCardScore,
+	PatientCardTagPopover,
 	PatientCardTags,
 	patientCardAcuityLevels,
 	patientCardAlertVariants,
@@ -18,10 +19,14 @@ export {
 	type PatientCardProps,
 	type PatientCensusCardProps,
 	type PatientCardTag,
+	type PatientCardTagDetails,
 	type PatientCardVital,
 } from "./patient-census-card";
 export {
+	PatientCardMoreActions,
 	patientCardInteractiveClassName,
 	patientCardOpenTargetClassName,
+	usePatientCardActionsReveal,
 	usePatientCardAlertRing,
+	type PatientCardAction,
 } from "./patient-census-card-parts";

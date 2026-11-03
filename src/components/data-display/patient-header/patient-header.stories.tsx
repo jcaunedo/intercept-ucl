@@ -34,7 +34,7 @@ const meta = {
 			{ label: "Allergy: Penicillin", variant: "red" },
 			{ label: "Droplet isolation", variant: "amber" },
 			{ label: "Ventilated" },
-			{ label: "On pressors" },
+			{ label: "2 pressors" },
 		],
 		actions: (
 			<>

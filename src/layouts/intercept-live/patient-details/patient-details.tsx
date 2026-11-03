@@ -602,6 +602,7 @@ function patientDetailsView(
 	return {
 		name: patientName(patient),
 		patientList,
+		tags: patient.tags?.map((tag) => tag.label),
 		headerActions: {
 			onRaiseConcern: act("raise-concern"),
 			onHuddleTeam: act("huddle-team"),

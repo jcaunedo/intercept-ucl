@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import { alertModalRenderer, type AlertDetailData } from "../alert-detail/alert-detail";
 import type { CarePathwayDecision } from "../alert-detail/care-pathway";
 import type { KeepOrTransferDecision } from "../alert-detail/keep-or-transfer";
@@ -6,6 +8,7 @@ import { MonitoringPanel, type MonitoringPatient } from "../monitoring/monitorin
 import { worstOpenSeverity } from "../monitoring/triage-queue";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
 import { AlertToasts, useClosedResolutions } from "../shared/alert-toasts";
+import { withFlagDetails } from "../shared/flag-details";
 import { useAddressedAlerts } from "../shared/live-feed";
 import {
 	CensusPanel,
@@ -73,6 +76,12 @@ function Census({
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 	// Closing a Resolved toast resets that patient's Monitoring card to no alert.
 	const { closedResolutions, closeResolved } = useClosedResolutions();
+	// Each flag opens what it means and what's behind it now, from the patient's record.
+	const flaggedPatients = React.useMemo(() => withFlagDetails(patients, patientRecords), [patients, patientRecords]);
+	const flaggedMonitoringPatients = React.useMemo(
+		() => monitoringPatients && withFlagDetails(monitoringPatients, patientRecords),
+		[monitoringPatients, patientRecords],
+	);
 
 	return (
 		<InterceptLive
@@ -95,8 +104,8 @@ function Census({
 			}
 			renderPatientDetails={(patientId, stepper) =>
 				patientDetailsView(patientId, stepper, {
-					patients,
-					monitoringPatients,
+					patients: flaggedPatients,
+					monitoringPatients: flaggedMonitoringPatients,
 					records: patientRecords,
 					alerts,
 					escalationTargets,
@@ -108,7 +117,7 @@ function Census({
 				Census: (
 					<CensusPanel
 						hospitals={hospitals}
-						patients={patients}
+						patients={flaggedPatients}
 						onOpenPatient={onOpenPatient}
 						alerts={alerts}
 						escalationTargets={escalationTargets}
@@ -118,10 +127,10 @@ function Census({
 						groupedView={groupedView}
 					/>
 				),
-				Monitoring: monitoringPatients ? (
+				Monitoring: flaggedMonitoringPatients ? (
 					<MonitoringPanel
 						hospitals={hospitals}
-						patients={monitoringPatients}
+						patients={flaggedMonitoringPatients}
 						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onOpenPatient={onOpenPatient}

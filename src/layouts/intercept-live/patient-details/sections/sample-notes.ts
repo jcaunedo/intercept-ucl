@@ -400,9 +400,9 @@ const notesSpecs: Record<string, NotesSpec> = {
 		admitPlan: "Admit to Neuro ICU. Neuro checks every hour, BP under 180/105, swallow screen before food, start aspirin at 24 hours.",
 		nursing: ["Neuro checks unchanged overnight. RR probe disconnected 27 min ago and replaced. Failed the swallow screen; nothing by mouth. Daughter at the bedside.", 25],
 		yesterday: "Day 1 after thrombectomy. CT head without hemorrhage. Aspirin started. Failed the swallow screen. Speech therapy tomorrow.",
-		events: "Neuro checks unchanged. Glucose 182 to 156. RR not reporting at times.",
+		events: "CT head with early swelling of the infarct, no midline shift; 3% saline started, sodium 134 to 141. Neuro checks unchanged. Glucose 182 to 156. RR not reporting at times.",
 		apPlan: "Insulin sliding scale. Speech therapy today. Talk with the family about a feeding tube.",
-		plan: "Check that respiratory rate is reporting again. Insulin sliding scale. Family meeting about feeding within her DNR wishes.",
+		plan: "3% saline to sodium 145–155, sodium every 6 h. Check that respiratory rate is reporting again. Insulin sliding scale. Family meeting about feeding within her DNR wishes.",
 	},
 	p13: {
 		history: "63-year-old man, anterior STEMI with cardiac arrest in the field, ROSC after 12 min. PCI to the proximal LAD, then VA-ECMO for refractory cardiogenic shock.",
