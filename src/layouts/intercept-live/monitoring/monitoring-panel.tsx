@@ -49,6 +49,7 @@ import {
 	usePatientScope,
 	useSortBy,
 	useSortCadence,
+	useSortOnNewAlert,
 	useSortPause,
 	withResolvedHolds,
 	type PanelHospital,
@@ -409,6 +410,8 @@ function MonitoringPanel({
 		const own = alerts.filter((alert) => alert.patientId === patient.id);
 		return { ...patient, alert: alertPill(own), lastAlertAt: lastFiredAt(own.filter(isOpenAlert)) };
 	});
+	// A new alert re-sorts the panel at once (the cadence otherwise waits 15–30 s).
+	useSortOnNewAlert(withAlerts, sortNow);
 	// A patient whose last alert just resolved keeps its old place for a moment while its card says "Resolved", then sorts
 	// as a patient without an alert and moves at once, still saying it, so the clinician can follow the card to its new
 	// place; the pill fades out once it has landed (useResolvedHolds).

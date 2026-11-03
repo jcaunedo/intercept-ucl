@@ -442,6 +442,26 @@ function useResolvedHolds(patients: Pick<PanelPatient, "id" | "alert">[], onMove
 }
 
 /**
+ * Re-sorts at once (`onFire`, the cadence's `sortNow`) when a patient's newest open alert fires, so the Alerts order
+ * shows it without waiting for the next gap (Nov 3, 2026, user's call: Scenario 1's alert sorts right away). Still not
+ * while the order is held. Alerts that drop out don't count: a resolve moves on its own clock (useResolvedHolds).
+ */
+function useSortOnNewAlert(patients: Pick<PanelPatient, "id" | "lastAlertAt">[], onFire: () => void) {
+	const previous = React.useRef<Record<string, string> | null>(null);
+	const firedAt: Record<string, string> = {};
+	for (const patient of patients) if (patient.lastAlertAt) firedAt[patient.id] = patient.lastAlertAt;
+	const firedKey = JSON.stringify(firedAt);
+
+	React.useEffect(() => {
+		const before = previous.current;
+		previous.current = firedAt;
+		if (!before) return;
+		if (Object.entries(firedAt).some(([id, at]) => !before[id] || Date.parse(at) > Date.parse(before[id]))) onFire();
+		// Keyed on the fire times, not the object (a new one every render).
+	}, [firedKey]);
+}
+
+/**
  * The patients as they sort: one whose last alert just resolved keeps its severity until it moves, so it holds its place
  * through any re-sort meanwhile. The held severity counts no alerts (count 0), so the counters already drop it.
  */
@@ -1289,6 +1309,7 @@ export {
 	usePatientScope,
 	useSortBy,
 	useSortCadence,
+	useSortOnNewAlert,
 	useSortPause,
 	withResolvedHolds,
 	SortSelect,
