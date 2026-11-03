@@ -387,7 +387,8 @@ function MonitoringPanel({
 	const toggleRightPanel = (panel: "feed") => setRightPanel((current) => (current === panel ? null : panel));
 	const [filtersOpen, setFiltersOpen] = React.useState(false);
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
-	const { paused, pauseProps } = useSortPause();
+	// With Active alerts on, the order follows the alerts even under the pointer, so who to see first is always on top.
+	const { paused, pauseProps } = useSortPause(statusFilter?.id !== "alerts");
 	const { sorts, sortNow } = useSortCadence(paused);
 	// Inside the shell, a card or a list row opens the patient's details over the page, stepping through the panel as it's
 	// shown now; an alert in the live feed opens them on their own (PRD PD-015).
@@ -480,7 +481,8 @@ function MonitoringPanel({
 	const inStatus = (scoped: PanelMonitoringPatient[]) =>
 		scoped.filter(inStatusFilter);
 	// The panel re-sorts now and then (useSortCadence), never while the pointer is over it (or keyboard focus is in it),
-	// so cards and rows don't move under the clinician's hand; a re-sort that came due runs when they leave.
+	// so cards and rows don't move under the clinician's hand; a re-sort that came due runs when they leave. Except
+	// with Active alerts on, which re-sorts under the hand too (useSortPause above).
 	// With Active alerts on, who to see first (severity, acuity band, 4 h rise, time waiting, score), whatever the sort.
 	const alertPriority = statusFilter?.id === "alerts";
 	const visible = useHeldOrder(

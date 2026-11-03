@@ -299,8 +299,10 @@ function useRecentActivity<Patient extends PanelPatient>(patients: Patient[], re
  * move under the clinician's hand or eyes (Oct 28, 2026). `pauseProps` go on the grid. Touch doesn't hold it (a tap
  * isn't a hover), and neither does focus left by a click, so moving the mouse away always resumes. It's also held while
  * a patient's details hide the page, and for a moment after Back, so a card that has to move does it in sight.
+ * `holdUnderHand={false}` lets the order change under the pointer or focus (Monitoring's Active alerts, Nov 3, 2026,
+ * user's call: who to see first stays current); the hold while the page is hidden still applies.
  */
-function useSortPause() {
+function useSortPause(holdUnderHand = true) {
 	const [hovered, setHovered] = React.useState(false);
 	const [focused, setFocused] = React.useState(false);
 	const grid = React.useRef<HTMLElement | null>(null);
@@ -341,7 +343,7 @@ function useSortPause() {
 			if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
 		},
 	} satisfies React.HTMLAttributes<HTMLElement>;
-	return { paused: hovered || focused || !shown, pauseProps };
+	return { paused: (holdUnderHand && (hovered || focused)) || !shown, pauseProps };
 }
 
 // Seconds before the first re-sort after the page opens, and the range each later gap is drawn from (Oct 29, 2026).

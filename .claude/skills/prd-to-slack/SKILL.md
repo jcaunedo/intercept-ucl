@@ -41,6 +41,8 @@ The message is for the team: what changed in the product and why. From everythin
 - **UI behaviors:** how controls and content respond (a chip that sorts on the tap, a menu that appears on hover, a hint that shows after a command, what a page remembers).
 - **How it was before**, only when the contrast explains the change ("cards used to glide into place; now they land on the click").
 
+**Always cover new flows and interactions.** For every new flow (a sequence of steps, like opening an alert into a video consult) or new interaction (a control or behavior users didn't have before, like cards sorting the moment an alert fires), say what it is and how it improves the experience for the user: what they can now do, what got faster, clearer or safer, or what they no longer have to do. Name the benefit in the user's terms ("the nurse sees the new alert at the top right away, without waiting or scanning"), not as a feature list. If the scope has none, don't invent one.
+
 Leave out minor technical details: padding, radii, sizes, token names, refactors, renamed props, test changes, doc updates, typo fixes. A layout change is about where things are and how the screen is organized, not spacing values. If an item only matters to whoever writes the code, it doesn't go in. When several small changes add up to one visible improvement, describe the improvement once, not the changes.
 
 ## Inputs
@@ -185,6 +187,7 @@ Before producing the response, verify:
 - Does this sound like a designer explaining their work, casually and confidently?
 - Is every word one a teammate would use out loud? No fancy words where a plain one works.
 - Is every point a decision, a UX or UI change, a layout change, a behavior or an improvement, with its why? No padding, sizes or other minor technical details?
+- Is every new flow and interaction named, with how it improves the user's experience?
 - Does a "before" appear only where it makes the change clearer?
 - Can teammates understand it without opening the PRD?
 - Are the important decisions and behaviors preserved?
