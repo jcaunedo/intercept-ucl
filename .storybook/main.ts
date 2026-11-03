@@ -5,6 +5,8 @@ import remarkGfm from "remark-gfm";
 
 const config: StorybookConfig = {
 	stories: ["../src/**/*.mdx", "../src/**/*.stories.@(ts|tsx)"],
+	// Demo storyboards (standalone pages), served beside the prototype; the Prototype menu opens them in a new tab.
+	staticDirs: [{ from: "../storyboards", to: "/storyboards" }],
 	addons: [
 		{
 			name: "@storybook/addon-docs",

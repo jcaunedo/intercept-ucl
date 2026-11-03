@@ -102,6 +102,14 @@ export const Scenario1HeartFailure: Story = {
 		await expect(await chat.findByText(/#1/, { selector: "strong" }, { timeout: 20000 })).toBeInTheDocument();
 		// The answer types out, so the consult's last line comes later.
 		await expect(await chat.findByText(/Normal is under 100 pg\/mL/, {}, { timeout: 20000 })).toBeInTheDocument();
+		// Then its follow-ups: her details first, then her active Critical alert and what led to it.
+		const followUps = within(await chat.findByRole("list", { name: "Follow-up actions" }, { timeout: 20000 }));
+		await expect(followUps.getAllByRole("button").map((button) => button.textContent)).toEqual([
+			"Open patient details",
+			"Open the Critical alert",
+			"What changed since I last looked?",
+			"Show latest labs",
+		]);
 		// Her card's alert bar opens the alert modal: the reason line as its title, her labs, and the one-click consult.
 		const card = canvas.getAllByRole("article").find((article) => within(article).queryByText("Hayes, Margaret"));
 		await userEvent.click(within(card as HTMLElement).getByRole("button", { name: /Open alert/ }));
@@ -125,6 +133,50 @@ export const Scenario1HeartFailure: Story = {
 		await userEvent.click(consult.getByRole("button", { name: "Open patient" }));
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(toasts()).toHaveAttribute("data-hidden");
+	},
+};
+
+/**
+ * Scenario 1, steps 4 to 6: in Hayes's alert modal the intensivist accepts the CHF pathway and keeps her at Chadron. A
+ * few seconds later it's 06:00: both checkpoints pass, the panel logs Transfer avoided, her alert resolves (by her
+ * bedside nurse) and her card settles at NEWS2 3, Low. Reopened, the modal keeps the decision.
+ */
+export const Scenario1Resolution: Story = {
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Prototype" }));
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Scenario 1: Heart failure" }));
+		const hayes = () => canvas.getAllByRole("article").find((article) => within(article).queryByText("Hayes, Margaret"));
+		await waitFor(() => expect(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ })).toBeInTheDocument(), {
+			timeout: 4000,
+		});
+		await userEvent.click(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ }));
+		const modal = within(await screen.findByRole("dialog"));
+		await userEvent.click(modal.getByRole("button", { name: "Accept and send" }));
+		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
+		await userEvent.click(panel.getByRole("button", { name: "Keep at Chadron" }));
+		// The form's own button: the one that opened it may still be fading out.
+		const form = within(await panel.findByRole("form", { name: "Keep at Chadron" }));
+		await userEvent.type(form.getByRole("textbox", { name: "Why keep at Chadron?" }), "BiPAP and RT are here");
+		await userEvent.click(form.getByRole("button", { name: "Keep at Chadron" }));
+		// 06:00, while the modal is open: the checkpoints pass and the transfer is avoided.
+		await expect(await panel.findByText("Transfer avoided", {}, { timeout: 10000 })).toBeInTheDocument();
+		await expect(panel.getAllByText(/Passed/)).toHaveLength(2);
+		// The Pathway column scrolls to its end, so the result is in view.
+		const column = (await panel.findByText("Transfer avoided")).closest(".overflow-y-auto") as HTMLElement;
+		await waitFor(() => expect(column.scrollHeight - column.clientHeight - column.scrollTop).toBeLessThan(2));
+		await expect(await modal.findByText(/Resolved by Kayla Brandt, RN/)).toBeInTheDocument();
+		// Closed and reopened, the decision and the outcome stay.
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		const card = within(hayes() as HTMLElement);
+		await waitFor(() => expect(card.getByText("3")).toBeInTheDocument());
+		// Once the Critical bar has faded out, only the Resolved one is left.
+		await waitFor(() => expect(card.getAllByRole("button", { name: /Open alert/ })).toHaveLength(1));
+		await userEvent.click(card.getByRole("button", { name: /Open alert/ }));
+		const reopened = within(await screen.findByRole("dialog"));
+		await expect(await reopened.findByText(/Keeping at Chadron/)).toBeInTheDocument();
+		await expect(reopened.getByText("Transfer avoided")).toBeInTheDocument();
 	},
 };
 
@@ -203,7 +255,7 @@ export const NoMatches: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
 		await userEvent.click(await screen.findByRole("checkbox", { name: "OB-ICU" }));
 		await userEvent.click(screen.getByRole("checkbox", { name: "ECMO" }));
-		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+		await userEvent.click(screen.getByRole("button", { name: "Done" }));
 		// The empty state Reveals in (opacity 0 → 1), so wait for it to finish appearing.
 		await waitFor(() => expect(canvas.getByText("No patients match these filters")).toBeVisible());
 	},
@@ -220,15 +272,17 @@ export const Filters: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
 		await userEvent.click(await screen.findByRole("checkbox", { name: "Ventilated" }));
 		await expect(screen.getByText(`5 of ${sampleMonitoringPatients.length} patients in this view`)).toBeInTheDocument();
-		// A modal: the page behind is hidden from assistive tech until Apply closes the sheet.
-		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+		// A modal: the page behind is hidden from assistive tech until Done closes the sheet.
+		await userEvent.click(screen.getByRole("button", { name: "Done" }));
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
 		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^5 patients/);
 		const filtersButton = canvas.getByRole("button", { name: "Filters, 1 picked" });
 		await expect(filtersButton).toHaveAttribute("aria-expanded", "false");
 		await userEvent.click(filtersButton);
 		await userEvent.click(await screen.findByRole("button", { name: "Clear all" }));
-		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+		// With nothing picked, the footer (Clear all, Done) leaves; the close button closes the sheet.
+		await waitFor(() => expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument());
+		await userEvent.click(screen.getByRole("button", { name: "Close Filters" }));
 		await waitFor(() =>
 			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(
 				new RegExp(`^${sampleMonitoringPatients.length} patients`),
@@ -362,7 +416,18 @@ export const OutsideLimitsFilter: Story = {
 };
 
 function LiveMonitoring(props: MonitoringProps) {
-	const { patients: fed, alerts, everyAlert, caption, startScenario1, withScenarioCensus, withScenarioRecords } = useSampleLiveFeed();
+	const {
+		patients: fed,
+		alerts,
+		everyAlert,
+		caption,
+		startScenario1,
+		withScenarioCensus,
+		withScenarioRecords,
+		withScenarioAlertDetails,
+		onPathwayDecision,
+		onTransferDecision,
+	} = useSampleLiveFeed();
 	// The Prototype menu's Sections by hospital view (Group by hospital's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
@@ -387,7 +452,11 @@ function LiveMonitoring(props: MonitoringProps) {
 			liveFeed={caption}
 			censusPatients={censusPatients && withFeedAlerts(censusPatients, alerts)}
 			patientRecords={patientRecords}
-			alertDetails={sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients: patients, records: patientRecords })}
+			alertDetails={withScenarioAlertDetails(
+				sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients: patients, records: patientRecords }),
+			)}
+			onPathwayDecision={onPathwayDecision}
+			onTransferDecision={onTransferDecision}
 			prototype={prototypeShortcuts({
 				startScenario1,
 				groupedGrid,

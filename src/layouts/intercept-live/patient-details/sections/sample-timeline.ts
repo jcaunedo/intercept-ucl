@@ -855,6 +855,45 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		],
 	}),
 
+	// Carlson: cellulitis, day 2. Last fever (38.3 °C) yesterday morning; WBC 13.8 → 9.6.
+	p19: timeline({
+		seed: 171,
+		hr: [[1440, 92], [900, 82], [0, 76]],
+		map: [[1440, 94], [0, 97]],
+		bp: [134, 78],
+		spo2: [[1440, 95], [0, 95]],
+		rr: [[1440, 18], [0, 16]],
+		temp: [[1300, 38.3], [1060, 37.8], [820, 37.3], [580, 37.1], [340, 37.0], [130, 37.0]],
+		lanes: [labLane("WBC", "K/µL", [[1760, 13.8], [320, 9.6]], { high: 11 })],
+		events: [
+			[1260, "care", "Cefazolin 2 g IV"],
+			[1180, "note", "Progress note signed"],
+			[780, "care", "Redness inside the marked border"],
+			[320, "lab", "WBC 9.6 K/µL, glucose 164 mg/dL resulted"],
+		],
+	}),
+
+	// Hansen: kidney injury from dehydration, day 2. Saline 150 → 100 mL/h; creatinine 2.3 → 1.4.
+	p20: timeline({
+		seed: 181,
+		hr: [[1440, 96], [900, 86], [0, 80]],
+		map: [[1440, 84], [0, 93]],
+		bp: [128, 76],
+		spo2: [[1440, 97], [0, 97]],
+		rr: [[1440, 17], [0, 16]],
+		temp: [[1320, 37.1], [1080, 37.0], [840, 36.9], [600, 36.8], [360, 36.8], [150, 36.8]],
+		lanes: [
+			pump("Normal saline", "mL/h", [[1440, 150], [600, 100]], "fluid"),
+			labLane("Creatinine", "mg/dL", [[1740, 2.3], [300, 1.4]], { high: 1.3 }),
+		],
+		events: [
+			[1100, "note", "Progress note signed"],
+			[600, "drip", "Normal saline 150 → 100 mL/h"],
+			[540, "care", "Ate dinner, no nausea"],
+			[300, "lab", "Creatinine 1.4 mg/dL, potassium 4.2 mmol/L resulted"],
+		],
+	}),
+
 	// Ortega: out of the OR 20 h ago after a small bowel resection. RR 18 → 21 and HR 96 → 104 as she splints with pain;
 	// the PCA went up 1 h ago. NEWS2 4 → 5 → 6 (`sample-vitals.ts`).
 	p17: timeline({

@@ -9,7 +9,7 @@ import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { setToastCloseHandler, toast, toastsMuted } from "@/components/feedback/sonner";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
-import { pressPattern, urgencyRingVariants, useMotionPreference, useUrgencyPhase } from "@/lib/motion";
+import { urgencyRingVariants, useMotionPreference, useUrgencyPhase } from "@/lib/motion";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
@@ -61,18 +61,19 @@ type AlertToastOwnProps = {
 	/** Opens the patient. Without it, there's no Open patient button. */
 	onOpen?: () => void;
 	openLabel?: string;
-	/** Acknowledges the alert. Without it, there's no Acknowledge button. */
+	/** @deprecated Ignored since Nov 3, 2026: the toast has no Acknowledge button (user's call). */
 	onAcknowledge?: () => void;
+	/** @deprecated Ignored, with `onAcknowledge`. */
 	acknowledgeLabel?: string;
-	/** Asks Intercept about this alert. Without it, there's no Ask button. */
+	/** Asks Intercept Live about this alert. Without it, there's no Ask Intercept Live button. */
 	onAsk?: () => void;
 	askLabel?: string;
 	/**
-	 * Opens the alert. The whole header row (the severity, what changed, the time and a maximize icon at its end) becomes
-	 * one button, as the monitoring card's alert bar is. Without it, there's no maximize icon.
+	 * Opens the alert. The whole toast becomes one click target, except its buttons (Open patient, Ask Intercept Live
+	 * and the close button), and a maximize icon sits left of the close button. Without it, there's no maximize icon.
 	 */
 	onOpenAlert?: () => void;
-	/** Read before the header's words, e.g. "Open alert: Medium, Just now". */
+	/** The click target's name, before the title: "Open alert: Deterioration score crossed threshold". */
 	openAlertLabel?: string;
 	/** Closes the toast; the alert stays in the queue. Without it, there's no close button. */
 	onClose?: () => void;
@@ -83,7 +84,7 @@ type AlertToastProps = Omit<React.ComponentProps<"div">, keyof AlertToastOwnProp
 
 /**
  * A change in a patient's alert: severity and what changed, when, what happened, why, and the patient, with Open
- * patient, Acknowledge and Ask. Until it's addressed, its ring pulses (Urgency, in step with the patient cards) until the
+ * patient and Ask Intercept Live. Until it's addressed, its ring pulses (Urgency, in step with the patient cards) until the
  * pointer or keyboard focus reaches it. An unaddressed Critical toast is announced at once (`role='alert'`); the others
  * politely, by the Toaster's live region.
  * Show it with `toastAlert()`; render it directly only for a static preview.
@@ -107,10 +108,10 @@ function AlertToast({
 	tone,
 	onOpen,
 	openLabel = "Open patient",
-	onAcknowledge,
-	acknowledgeLabel = "Acknowledge",
+	onAcknowledge: _onAcknowledge,
+	acknowledgeLabel: _acknowledgeLabel,
 	onAsk,
-	askLabel = "Ask",
+	askLabel = "Ask Intercept Live",
 	onOpenAlert,
 	openAlertLabel = "Open alert",
 	onClose,
@@ -129,28 +130,7 @@ function AlertToast({
 	// Re-renders on each minute boundary, so "Just now" becomes "1 min ago" while the toast is open. Null on the server.
 	const now = useCurrentMinute();
 	const firedLabel = hasTime && now !== null ? formatRelativeDate(firedTime, now) : undefined;
-	const hasActions = Boolean(onOpen || onAcknowledge || onAsk);
-	const header = (
-		<>
-			{/* With `onOpenAlert`, the pill darkens while the row is hovered, as the cards' alert badge and alert bar do:
-			    `--gray-700` at 32% over its fill, under its icon and words. */}
-			<PatientCardAlert
-				variant={severity}
-				count={count}
-				className={
-					onOpenAlert
-						? "relative isolate before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-(--gray-700)/32 before:opacity-0 before:transition-opacity group-hover/open:before:opacity-100"
-						: undefined
-				}
-			/>
-			{change ? <span className='text-sm font-medium text-muted-foreground'>{change}</span> : null}
-			{firedLabel ? (
-				<time dateTime={firedTime?.toISOString()} title={firedLabel.title} className='text-sm text-foreground'>
-					{firedLabel.label}
-				</time>
-			) : null}
-		</>
-	);
+	const hasActions = Boolean(onOpen || onAsk);
 	const closeButton = onClose ? (
 		<Button variant='ghost' size='icon-sm' className='text-muted-foreground' aria-label={closeLabel} onClick={onClose}>
 			<XIcon aria-hidden='true' />
@@ -164,7 +144,10 @@ function AlertToast({
 			data-addressed={addressed || undefined}
 			role={severity === "critical" && !addressed ? "alert" : undefined}
 			className={cn(
-				"relative isolate flex w-[var(--width,400px)] max-w-full flex-col gap-3 rounded-card border border-border bg-popover p-4 font-sans text-popover-foreground shadow-toast",
+				"group/toast relative isolate flex w-[var(--width,400px)] max-w-full flex-col gap-3 rounded-card border border-border bg-popover p-4 font-sans text-popover-foreground shadow-toast transition-[border-color] duration-160 ease-in-out",
+				// Opening the alert, it takes the patient cards' hover: a 2px `foreground` border (the ring hides meanwhile), the
+				// padding 1px less so the content stays put.
+				onOpenAlert && "hover:border-2 hover:border-foreground hover:p-[15px]",
 				className,
 			)}
 			onPointerEnter={(event) => {
@@ -178,7 +161,11 @@ function AlertToast({
 			{...props}
 		>
 			{/* A static wrapper, so a collapsed stack can hide the ring without fighting its animated opacity. */}
-			<span data-slot='alert-toast-ring' aria-hidden='true' className='pointer-events-none absolute -inset-px -z-10'>
+			<span
+				data-slot='alert-toast-ring'
+				aria-hidden='true'
+				className={cn("pointer-events-none absolute -inset-px -z-10", onOpenAlert && "group-hover/toast:opacity-0")}
+			>
 				<motion.span
 					initial={false}
 					animate={pulse}
@@ -188,34 +175,40 @@ function AlertToast({
 			</span>
 
 			{onOpenAlert ? (
-				// The row is one target for opening the alert, reaching 4px past the pill (its focus ring); no hover fill, the
-				// maximize icon darkens instead. The close button stays its own, right after it, 4px into the padding.
-				<div className='-m-1 flex items-center'>
-					<motion.button
-						type='button'
-						onClick={onOpenAlert}
-						// Sonner starts a swipe (and captures the pointer) on any press that doesn't land on a <button> itself, which
-						// would swallow a click on the pill, the time or the icon. Keep the press here.
-						onPointerDown={(event) => event.stopPropagation()}
-						className='group/open flex min-w-0 flex-1 items-center gap-2 rounded-button-md p-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring'
-						{...(prefersReducedMotion ? {} : pressPattern)}
-					>
-						<span className='sr-only'>{openAlertLabel}: </span>
-						{header}
-						{/* The icon darkens with the row's hover, so it reads as what the row does. */}
-						<Maximize2Icon
-							aria-hidden='true'
-							className='mr-1 ml-auto size-4 shrink-0 text-muted-foreground transition-colors duration-160 ease-in-out group-hover/open:text-foreground'
-						/>
-					</motion.button>
-					{closeButton}
-				</div>
-			) : (
-				<div className='flex items-center gap-2'>
-					{header}
-					{closeButton ? <div className='-my-1 -mr-1 ml-auto flex'>{closeButton}</div> : null}
-				</div>
-			)}
+				// The whole toast opens the alert: one button over it, under its own buttons (z-2), which keep their clicks. It's
+				// over the avatar too, which is positioned. Sonner starts a swipe (and captures the pointer) on a press that
+				// doesn't land on a <button>; this is one, and the press stays here, so the toast isn't swiped away.
+				<button
+					type='button'
+					data-slot='alert-toast-open'
+					aria-label={`${openAlertLabel}: ${title}`}
+					onClick={onOpenAlert}
+					onPointerDown={(event) => event.stopPropagation()}
+					className='absolute inset-0 z-1 cursor-pointer rounded-card outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset'
+				/>
+			) : null}
+
+			<div className='flex items-center gap-2'>
+				<PatientCardAlert variant={severity} count={count} />
+				{change ? <span className='text-sm font-medium text-muted-foreground'>{change}</span> : null}
+				{firedLabel ? (
+					<time dateTime={firedTime?.toISOString()} title={firedLabel.title} className='text-sm text-foreground'>
+						{firedLabel.label}
+					</time>
+				) : null}
+				{onOpenAlert || closeButton ? (
+					// The maximize icon says what a click on the toast does, and darkens while it's hovered. The close button sits
+					// right after it, 0px apart, 4px into the padding.
+					<div className='-my-1 -mr-1 ml-auto flex items-center'>
+						{onOpenAlert ? (
+							<span aria-hidden='true' className='flex size-8 items-center justify-center'>
+								<Maximize2Icon className='size-4 text-muted-foreground transition-colors duration-160 ease-in-out group-hover/toast:text-foreground' />
+							</span>
+						) : null}
+						{closeButton ? <div className='relative z-2 flex'>{closeButton}</div> : null}
+					</div>
+				) : null}
+			</div>
 
 			<div className='flex flex-col'>
 				<p className='text-base font-bold text-foreground'>{title}</p>
@@ -240,15 +233,10 @@ function AlertToast({
 			</div>
 
 			{hasActions ? (
-				<div className='flex items-center gap-2'>
+				<div className='relative z-2 flex items-center gap-2 self-start'>
 					{onOpen ? (
-						<Button variant='neutral' size='sm' onClick={onOpen}>
+						<Button variant='outline' size='sm' onClick={onOpen}>
 							{openLabel}
-						</Button>
-					) : null}
-					{onAcknowledge ? (
-						<Button size='sm' variant='outline' onClick={onAcknowledge}>
-							{acknowledgeLabel}
 						</Button>
 					) : null}
 					{onAsk ? (
@@ -286,6 +274,9 @@ const stackedToastClassName = cn(
 	"data-[expanded=false]:data-[front=false]:[&_[data-slot=alert-toast]>*:not([data-slot=alert-toast-ring])]:opacity-0",
 );
 
+// Where each severity stacks in the Toaster: the higher in front. Sonner's own toasts (`toast()`) have 0, behind every alert.
+const alertToastPriority: Record<AlertToastSeverity, number> = { critical: 5, high: 4, medium: 3, low: 2, resolved: 1 };
+
 type ToastAlertOptions = AlertToastOwnProps & {
 	/** The alert's id. A second toast with the same id updates the first instead of stacking a new one (AL-11). */
 	id?: string | number;
@@ -297,12 +288,12 @@ type ToastAlertOptions = AlertToastOwnProps & {
 };
 
 /**
- * Shows an AlertToast in the app's Toaster and returns its id. Open patient, Acknowledge, Ask and maximize run their
+ * Shows an AlertToast in the app's Toaster and returns its id. Open patient, Ask Intercept Live and maximize run their
  * handler, then close the toast; the close button and the Toaster's Close all close it and call `onClose`. An unaddressed Critical toast can't be swiped away, so
  * it isn't lost by accident. While toasts are muted (the Toaster's Don't show, `muteToasts()`), it shows nothing and
  * returns undefined, an unaddressed Critical included (Nov 3, 2026, user's call; until then it still interrupted, AL-02).
  */
-function toastAlert({ id, duration, onOpen, onAcknowledge, onAsk, onOpenAlert, onClose, ...props }: ToastAlertOptions) {
+function toastAlert({ id, duration, onOpen, onAcknowledge: _onAcknowledge, onAsk, onOpenAlert, onClose, ...props }: ToastAlertOptions) {
 	const interrupts = (props.severity ?? "critical") === "critical" && !props.addressed;
 	if (toastsMuted()) return undefined;
 	// Its handler leaves with it, however it goes.
@@ -315,13 +306,6 @@ function toastAlert({ id, duration, onOpen, onAcknowledge, onAsk, onOpenAlert, o
 					onOpen &&
 					(() => {
 						onOpen();
-						toast.dismiss(toastId);
-					})
-				}
-				onAcknowledge={
-					onAcknowledge &&
-					(() => {
-						onAcknowledge();
 						toast.dismiss(toastId);
 					})
 				}
@@ -355,6 +339,8 @@ function toastAlert({ id, duration, onOpen, onAcknowledge, onAsk, onOpenAlert, o
 						? resolvedToastDuration
 						: alertToastDuration),
 			dismissible: !interrupts,
+			// The most severe alert is in front, the newest first within a severity (Nov 3, 2026, user's call).
+			priority: alertToastPriority[props.severity ?? "critical"],
 			className: stackedToastClassName,
 			onDismiss: forget,
 			onAutoClose: forget,

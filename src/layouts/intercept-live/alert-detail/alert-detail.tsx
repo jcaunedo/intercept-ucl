@@ -54,12 +54,20 @@ import {
 } from "../monitoring/triage-queue";
 import { RoomScene, RoomVideo, type RoomEquipment } from "../patient-details/sections/camera-section";
 import { SourceLabel } from "../shared/source-label";
-import { CarePathwayPanel, type CarePathway, type CarePathwayDecision } from "./care-pathway";
+import {
+	CarePathwayPanel,
+	Expand,
+	type CarePathway,
+	type CarePathwayDecision,
+	type CarePathwayStatus,
+} from "./care-pathway";
+import { KeepOrTransferPanel, type KeepOrTransfer, type KeepOrTransferDecision } from "./keep-or-transfer";
 
 // The alert modal that a Monitoring card's alert bar and an alert toast's maximize button open (DESIGN.md "Alert
 // modal"). Scenario 1, steps 2 to 4. Left, what's happening: the alert, the patient's score, monitor and score inputs,
 // the key clinical findings behind the alert and the history and labs the intensivist needs. Right, what to do about it:
-// a one-click video consult to the bedside and step 4's care pathway (`care-pathway.tsx`, exploration).
+// a one-click video consult to the bedside, step 4's care pathway (`care-pathway.tsx`) and, once its orders are sent,
+// step 5's keep or transfer (`keep-or-transfer.tsx`), both explorations.
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -134,6 +142,13 @@ type AlertDetailData = {
 	video?: string;
 	/** A suggested care pathway and its order set, e.g. Scenario 1's CHF exacerbation pathway (exploration). */
 	pathway?: CarePathway;
+	/** Where the pathway is when the modal opens, e.g. `active` once its orders were co-signed. Suggested by default. */
+	pathwayStatus?: CarePathwayStatus;
+	/**
+	 * Keep or transfer, for a hospital that may not be able to hold the patient (Scenario 1, step 5; exploration). It
+	 * shows under the pathway once its orders are sent, or at once when a decision was already made.
+	 */
+	transfer?: KeepOrTransfer;
 };
 
 /** The consult call: not started, ringing the bedside, or on video. */
@@ -166,6 +181,8 @@ type AlertDetailModalProps = {
 	onOpenPatient?: () => void;
 	/** The intensivist accepted the pathway's orders (with any edited dose) or declined it. */
 	onPathwayDecision?: (decision: CarePathwayDecision) => void;
+	/** The intensivist decided to keep or transfer the patient, or took the decision back. */
+	onTransferDecision?: (decision: KeepOrTransferDecision) => void;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -231,8 +248,14 @@ function formatElapsed(seconds: number) {
 
 /** A column's label, e.g. "Clinical info": what the column holds, over its sections. */
 function ColumnLabel({ id, children }: { id: string; children: React.ReactNode }) {
+	// Sticks to the top of its column as the column scrolls, on the column's background. It takes over the column's top
+	// padding (24px) and the 16px gap under it, so the label keeps its space above and below, at rest and stuck. Sticky
+	// offsets count from inside the column's padding, hence `-top-6`.
 	return (
-		<h2 id={id} className='text-xs font-medium tracking-[0.04em] text-muted-foreground uppercase'>
+		<h2
+			id={id}
+			className='sticky -top-6 z-10 -mx-6 -mt-6 -mb-4 bg-background px-6 pt-6 pb-4 text-xs font-medium tracking-[0.04em] text-muted-foreground uppercase'
+		>
 			{children}
 		</h2>
 	);
@@ -494,7 +517,8 @@ function ConsultReveal({ children }: { children: React.ReactNode }) {
  * An alert, opened, 1400px wide in three columns. The patient: who they are, the alert (its bar, title, source and
  * lifecycle actions), their score, monitor and tags, then Open patient and Video call (the bedside nurse). Clinical
  * info: the key clinical findings and the history and labs, with the video consult floating over its bottom once it's on. Pathway,
- * for acting on it: the suggested care pathway with its decision at the bottom. Each column scrolls on its own.
+ * for acting on it: the suggested care pathway with its decision at the bottom, then keep or transfer once the orders are
+ * sent. Each column scrolls on its own.
  *
  * Figma: [intercept.ds › alert-modal](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1321-10102)
  */
@@ -510,6 +534,7 @@ function AlertDetailModal({
 	escalationTargets = [],
 	onOpenPatient,
 	onPathwayDecision,
+	onTransferDecision,
 }: AlertDetailModalProps) {
 	const { alert, patient } = data;
 	const [consult, setConsultState] = React.useState<AlertConsultState>(defaultConsult);
@@ -561,6 +586,12 @@ function AlertDetailModal({
 	const state = stateLine(alert, escalationTargets);
 	// An open dose edit or decline in the pathway takes Escape before the modal does.
 	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
+	const transferEscape = React.useRef<(() => boolean) | null>(null);
+	// Keep or transfer follows the plan: it shows once the pathway's orders are sent (or a decision was already made).
+	const [pathwayStatus, setPathwayStatus] = React.useState<CarePathwayStatus>(data.pathwayStatus ?? "suggested");
+	const showTransfer = Boolean(
+		data.transfer && (data.transfer.decided || pathwayStatus === "pending" || pathwayStatus === "active"),
+	);
 
 	return (
 		<Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
@@ -571,7 +602,7 @@ function AlertDetailModal({
 					if (form) {
 						setForm(null);
 						event.preventDefault();
-					} else if (pathwayEscape.current?.()) event.preventDefault();
+					} else if (pathwayEscape.current?.() || transferEscape.current?.()) event.preventDefault();
 				}}
 				// When it grows tall it keeps 80px from the viewport's top and bottom edges (user's call, Nov 2, 2026).
 				className='max-h-[calc(100dvh-160px)] w-[1400px] flex-row'
@@ -793,21 +824,39 @@ function AlertDetailModal({
 					</AnimatePresence>
 				</div>
 
+				{/* Its own layer, under the other columns, so its sticky label stays under the shadow Clinical info casts on it. */}
 				<section
 					aria-labelledby='alert-modal-pathway'
-					className='flex w-[400px] shrink-0 flex-col gap-4 overflow-y-auto bg-background px-6 pt-6 pb-4'
+					className='relative z-0 flex w-[400px] shrink-0 flex-col gap-4 overflow-y-auto bg-background px-6 pt-6 pb-4'
 				>
 					<ColumnLabel id='alert-modal-pathway'>Pathway</ColumnLabel>
 					{data.pathway ? (
 						<CarePathwayPanel
 							pathway={data.pathway}
+							defaultStatus={data.pathwayStatus}
 							onDecision={onPathwayDecision}
+							onStatusChange={setPathwayStatus}
 							escapeRef={pathwayEscape}
-							className='flex-1'
+							// Alone, it fills the column so its decision sits at the bottom; keep or transfer follows it once shown.
+							className={cn(!showTransfer && "flex-1")}
 						/>
 					) : (
 						<p className='text-sm text-muted-foreground'>No care pathway suggested for this alert.</p>
 					)}
+					<AnimatePresence initial={false}>
+						{showTransfer && data.transfer ? (
+							<Expand key='transfer'>
+								<div className='flex flex-col gap-4 pt-4'>
+									<hr className='border-border' />
+									<KeepOrTransferPanel
+										data={data.transfer}
+										onDecision={onTransferDecision}
+										escapeRef={transferEscape}
+									/>
+								</div>
+							</Expand>
+						) : null}
+					</AnimatePresence>
 				</section>
 			</DialogContent>
 		</Dialog>
@@ -822,14 +871,19 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * The detail for an opened alert: by its id, or, from a card's bar (no id), the patient's alert the bar shows: their
- * highest-priority open alert, else their latest.
+ * highest-priority open alert, else their latest. One that has left the page's alerts (resolved by the feed) still
+ * has its detail, so a Resolved bar opens it, and a modal open on it stays open when it resolves.
  */
 function pickAlertDetail(details: AlertDetailData[], alerts: TriageAlert[], { patientId, alertId }: OpenAlert) {
 	const id =
 		alertId ??
 		[...alerts.filter((alert) => alert.patientId === patientId)].sort(
 			(a, b) => Number(isOpenAlert(b)) - Number(isOpenAlert(a)) || compareTriageAlerts(a, b),
-		)[0]?.id;
+		)[0]?.id ??
+		details
+			.map((detail) => detail.alert)
+			.filter((alert) => alert.patientId === patientId)
+			.sort((a, b) => b.firedAt.localeCompare(a.firedAt))[0]?.id;
 	return details.find((detail) => detail.alert.id === id);
 }
 
@@ -844,11 +898,17 @@ function alertModalRenderer({
 	alerts,
 	escalationTargets,
 	onAlertAction,
+	onPathwayDecision,
+	onTransferDecision,
 }: {
 	details: AlertDetailData[];
 	alerts: TriageAlert[];
 	escalationTargets?: EscalationTarget[];
 	onAlertAction: (alertId: string, action: TriageAlertAction) => void;
+	/** The pathway decided in the modal, by alert, so the app keeps it after the modal closes. */
+	onPathwayDecision?: (alertId: string, decision: CarePathwayDecision) => void;
+	/** Keep or transfer decided in the modal, by alert. */
+	onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision) => void;
 }) {
 	return (target: OpenAlert, { open, onOpenChange, openPatient }: AlertControls) => {
 		const detail = pickAlertDetail(details, alerts, target);
@@ -868,6 +928,8 @@ function alertModalRenderer({
 				onOpenChange={onOpenChange}
 				onOpenPatient={openPatient}
 				escalationTargets={escalationTargets}
+				onPathwayDecision={onPathwayDecision && ((decision) => onPathwayDecision(alert.id, decision))}
+				onTransferDecision={onTransferDecision && ((decision) => onTransferDecision(alert.id, decision))}
 				onAction={(action) => {
 					onAlertAction(alert.id, action);
 					// Acknowledging (or undoing it) keeps the modal open, confirmed in place: the clinician often goes on to the

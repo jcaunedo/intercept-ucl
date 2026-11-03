@@ -3,6 +3,7 @@ import { defaultMonitorLimits, type MonitorVitals } from "@/components/cards/pat
 import * as React from "react";
 
 import type {
+	AskInterceptAction,
 	AskInterceptAnswer,
 	AskInterceptContext,
 	AskInterceptNotice,
@@ -95,6 +96,8 @@ const firstName = ({ census }: Patient) => `**${census.firstName ?? census.lastN
 const where = ({ census }: Patient) => [census.unit, census.bed].filter(Boolean).join(" ");
 /** "**Miller, Sarah** (MICU Bed 11)". */
 const who = (patient: Patient) => `${patientName(patient)} (${where(patient)})`;
+// The record system a patient's chart comes from, for an answer's Sources (Epic, or Meditech at Chadron).
+const ehrOf = (record: PatientRecord | undefined) => record?.emr?.name ?? record?.chart?.source ?? "Hospital record";
 
 const severityWords = { critical: "Critical", high: "High", medium: "Medium", low: "Low" } as const;
 // The score's band words, as on the card. An answer always names the score with them ("NEWS2 10, High"), so a band is
@@ -502,6 +505,46 @@ function consultFor(patient: Patient): string | undefined {
 }
 
 /**
+ * What to do after an answer about one patient (Nov 3, 2026, user's call: the quick overview, then every answer after
+ * it), four at most: open the patient's details, always first;
+ * then by their worst open alert's status and severity (open it; with an active Critical or High one, what changed;
+ * escalated, who's caring for them), what they're on (ventilator, sepsis tags), and how their score moves (rising:
+ * what changed; without an alert: their last 24 hours), then their labs. The questions are ones the chat answers; the
+ * one just `asked` isn't offered again, so the next one takes its place. Opening the details and the alert always stay.
+ */
+function overviewActions(patient: Patient, asked = ""): AskInterceptAction[] {
+	const { census } = patient;
+	const name = census.firstName ?? census.lastName;
+	const alert = patient.alerts[0];
+	const status = alert?.status ?? "active";
+	const tags = (census.tags ?? []).map((tag) => tag.label);
+	const ask = (question: string, label = question): AskInterceptAction => ({ type: "ask", label, question });
+	const changes = ask(`What changed for ${name} since I last looked?`, "What changed since I last looked?");
+	const actions: AskInterceptAction[] = [{ type: "open-patient", label: "Open patient details", patientId: census.id }];
+	if (alert) {
+		actions.push({
+			type: "open-alert",
+			label: `Open the ${severityWords[alert.severity]} alert${status === "active" ? "" : `, ${status}`}`,
+			patientId: census.id,
+			alertId: alert.id,
+		});
+		if (status === "escalated") actions.push(ask(`Who's caring for ${name}?`, "Who's caring for them?"));
+		else if (status === "active" && (alert.severity === "critical" || alert.severity === "high")) actions.push(changes);
+	}
+	if (tags.includes("Ventilated") || tags.includes("NIV")) actions.push(ask(`Show ${name}'s ventilator settings`, "Show ventilator settings"));
+	if (tags.includes("On pressors")) actions.push(ask(`What drips is ${name} on?`, "Show drips and doses"));
+	if (!alert && census.trajectory?.trend === "up") actions.push(changes);
+	if (!alert) actions.push(ask(`Summarize ${name}'s last 24 hours`, "Summarize the last 24 hours"));
+	actions.push(ask(`Show ${name}'s latest labs`, "Show latest labs"));
+	actions.push(ask(`What meds is ${name} on?`, "What meds are they on?"));
+	const same = (question: string) => question.trim().toLowerCase() === asked.trim().toLowerCase();
+	return actions
+		.filter((action, index) => actions.findIndex((other) => other.label === action.label) === index)
+		.filter((action) => action.type !== "ask" || !same(action.question))
+		.slice(0, 4);
+}
+
+/**
  * A quick overview, what the patient's card would show (Scenario 1, step 3): conditions, oxygen, latest vitals, and the
  * score with its 24 h change. Shorter than the summary: no brief, alerts or labs. Right after the score crosses into its
  * alert band, it leads with why the patient is at the top of the list (`rankingFor`) and what the consult needs
@@ -519,11 +562,13 @@ function overviewOf(patient: Patient): AskInterceptAnswer {
 	].filter((line): line is string => Boolean(line));
 	const glance = `${who(patient)} at a glance:\n${list(lines)}`;
 	const sources = ["Census", "Monitor", ...(record?.ventilator ? [record.ventilator.source] : [])];
-	if (!recentCrossing(patient)) return { text: glance, sources };
+	const actions = overviewActions(patient);
+	if (!recentCrossing(patient)) return { text: glance, sources, actions };
 	const ranking = rankingFor(patient);
 	const consult = consultFor(patient);
 	return {
 		text: [ranking, consult, `**At a glance:**\n${list(lines)}`].filter(Boolean).join("\n\n"),
+		actions,
 		sources: unique([
 			...sources,
 			"Alerts",
@@ -753,12 +798,12 @@ function answerForPatientTopic(patient: Patient, topic: Topic, question: string)
 					`**Allergies:** ${record?.allergies === undefined ? "unknown" : record.allergies.length ? (record.chart?.allergies.map((allergy) => `${allergy.substance}${allergy.reaction ? ` (${allergy.reaction}${allergy.severity ? `, ${allergy.severity}` : ""})` : ""}`).join(", ") ?? record.allergies.join(", ")) : "no known allergies"}`,
 					`**Isolation:** ${record?.isolation ?? "none"}`,
 				]),
-				sources: ["Epic"],
+				sources: [ehrOf(record)],
 			};
 		case "diagnosis":
 			return {
 				text: `${record?.diagnosis ? `${name} was admitted ${record.admittedAt ? `${ago(record.admittedAt)} ` : ""}${record.admittedFrom ? `from the ${record.admittedFrom.toLowerCase()} ` : ""}with ${record.diagnosis.charAt(0).toLowerCase()}${record.diagnosis.slice(1)}.` : `No diagnosis is recorded for ${name}.`}${record?.chart?.problems.length ? `\nActive problems:\n${list(record.chart.problems.filter((problem) => problem.status === "active").map((problem) => problem.name))}` : ""}`,
-				sources: ["Epic"],
+				sources: [ehrOf(record)],
 			};
 		case "history": {
 			const chart = record?.chart;
@@ -772,7 +817,7 @@ function answerForPatientTopic(patient: Patient, topic: Topic, question: string)
 						]),
 						sources: [chart.source],
 					}
-				: { text: `There's no history for ${name} in the record.`, sources: ["Epic"] };
+				: { text: `There's no history for ${name} in the record.`, sources: [ehrOf(record)] };
 		}
 		case "camera": {
 			const camera = record?.camera;
@@ -1041,7 +1086,7 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			const rows = scope.filter((patient) => patient.record?.codeStatus !== "Full code" || patient.record?.isolation);
 			return {
 				text: `${list(rows.map((patient) => `${who(patient)}: ${[patient.record?.codeStatus ?? "code status not documented", patient.record?.isolation].filter(Boolean).join(", ")}`))}\nEveryone else${among} is full code with no isolation.`,
-				sources: ["Epic"],
+				sources: [...new Set(rows.map((patient) => ehrOf(patient.record)))],
 			};
 		}
 		case "team":
@@ -1109,7 +1154,7 @@ function handoffFor(patient: Patient): AskInterceptAnswer {
 			`**Situation awareness:**\n${list(watch)}`,
 			"**Synthesis by receiver:** for the incoming clinician.",
 		].join("\n"),
-		sources: ["Alerts", "MAR", "Lab", "Orders", "Pump", "Epic"],
+		sources: ["Alerts", "MAR", "Lab", "Orders", "Pump", ehrOf(record)],
 	};
 }
 
@@ -1369,10 +1414,12 @@ const answer: AskInterceptResponder = (input, context: AskInterceptContext) => {
 		const answers = subjects.slice(0, 3).map((patient) => answerForPatient(patient, topic ?? "summary", question));
 		// A summary opens with the patient's full name (Nov 1, 2026, user's call), so "/summarize William" says which
 		// William; answers about several patients already open each with it.
+		// Every answer about one patient ends with what to do next (Nov 3, 2026, user's call).
+		const actions = overviewActions(subjects[0], question);
 		if (answers.length === 1 && (topic ?? "summary") === "summary") {
-			return { ...answers[0], text: `${patientName(subjects[0])}\n${answers[0].text}` };
+			return { ...answers[0], text: `${patientName(subjects[0])}\n${answers[0].text}`, actions };
 		}
-		if (answers.length === 1) return answers[0];
+		if (answers.length === 1) return { ...answers[0], actions };
 		return {
 			text: subjects
 				.slice(0, 3)

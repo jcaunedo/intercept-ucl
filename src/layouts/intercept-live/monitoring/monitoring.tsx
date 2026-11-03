@@ -1,4 +1,6 @@
 import { alertModalRenderer, type AlertDetailData } from "../alert-detail/alert-detail";
+import type { CarePathwayDecision } from "../alert-detail/care-pathway";
+import type { KeepOrTransferDecision } from "../alert-detail/keep-or-transfer";
 import { CensusPanel, type CensusPatient } from "../census/census-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
@@ -35,6 +37,10 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		 * toast's maximize button open the alert modal; an alert without one opens the patient.
 		 */
 		alertDetails?: AlertDetailData[];
+		/** A pathway accepted, declined or written in the alert modal, by alert. */
+		onPathwayDecision?: (alertId: string, decision: CarePathwayDecision) => void;
+		/** Keep or transfer decided in the alert modal, by alert (Scenario 1, step 5). */
+		onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision) => void;
 	};
 
 /**
@@ -58,6 +64,8 @@ function Monitoring({
 	defaultPatient,
 	onPatientDetailsAction,
 	alertDetails,
+	onPathwayDecision,
+	onTransferDecision,
 	...shell
 }: MonitoringProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on Monitoring and the Census.
@@ -74,7 +82,14 @@ function Monitoring({
 			defaultPatient={defaultPatient}
 			renderAlert={
 				alertDetails
-					? alertModalRenderer({ details: alertDetails, alerts, escalationTargets, onAlertAction: handleAlertAction })
+					? alertModalRenderer({
+							details: alertDetails,
+							alerts,
+							escalationTargets,
+							onAlertAction: handleAlertAction,
+							onPathwayDecision,
+							onTransferDecision,
+						})
 					: shell.renderAlert
 			}
 			renderPatientDetails={(patientId, stepper) =>
@@ -122,7 +137,6 @@ function Monitoring({
 			<AlertToasts
 				alerts={alertsProp}
 				patients={patients}
-				onAlertAction={handleAlertAction}
 				onCloseResolved={closeResolved}
 			/>
 		</InterceptLive>

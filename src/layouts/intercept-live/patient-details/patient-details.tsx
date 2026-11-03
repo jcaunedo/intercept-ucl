@@ -424,7 +424,14 @@ function PatientDetails({
 }: PatientDetailsProps) {
 	const [section, setSection] = React.useState<SectionId>("overview");
 	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080).
-	const sections = pendingSections.filter((item) => item.id !== "sepsis" || patient.sepsisWatch);
+	// The hospital's record section is named after its system (Epic, Meditech…).
+	const sections = pendingSections
+		.filter((item) => item.id !== "sepsis" || patient.sepsisWatch)
+		.map((item) =>
+			item.id === "epic" && record?.emr
+				? { ...item, label: record.emr.name, title: `Nothing from ${record.emr.name} yet` }
+				: item,
+		);
 	const shownSection = sections.some((item) => item.id === section) ? section : "overview";
 
 	// A switch is announced, so it's never mistaken for an update; the first patient isn't (the page title says it).

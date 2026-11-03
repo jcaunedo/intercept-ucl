@@ -45,7 +45,19 @@ type AskInterceptAnswer = {
 	 * (Oct 31, 2026, user's call).
 	 */
 	followAlerts?: boolean;
+	/** What to do next, as buttons under the answer while it's the latest (Nov 3, 2026, user's call). */
+	actions?: AskInterceptAction[];
 };
+
+/**
+ * A follow-up under an answer: open the patient's details or an alert (shown only when the panel has the matching
+ * handler), or ask the next question as if typed.
+ */
+type AskInterceptAction = { label: string } & (
+	| { type: "open-patient"; patientId: string }
+	| { type: "open-alert"; patientId: string; alertId: string }
+	| { type: "ask"; question: string }
+);
 
 /** Answers a question. The prototype's answers are canned (`sample-ask-intercept.ts`). */
 type AskInterceptResponder = (question: string, context: AskInterceptContext) => AskInterceptAnswer;
@@ -136,6 +148,7 @@ type ChatMessage =
 			text: string;
 			shown: number;
 			sources?: string[];
+			actions?: AskInterceptAction[];
 			status: "thinking" | "streaming" | "done" | "stopped";
 			/** Posted unasked (an alert update): shown in a grey box, without the copy button. */
 			notice?: boolean;
@@ -300,6 +313,8 @@ function AskInterceptPanel({
 	notice,
 	onRemovePatientContext,
 	opener,
+	onOpenPatient,
+	onOpenAlert,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -320,6 +335,10 @@ function AskInterceptPanel({
 	 * Each new `id` is asked once, as if typed, as soon as the panel is open and no answer is being written.
 	 */
 	opener?: { id: string; question: string };
+	/** Opens a patient's details, for an answer's "open-patient" follow-up. Without it, those aren't offered. */
+	onOpenPatient?: (patientId: string) => void;
+	/** Opens an alert, for an answer's "open-alert" follow-up. Without it, those aren't offered. */
+	onOpenAlert?: (patientId: string, alertId: string) => void;
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const patientContextClip = useExpandClip();
@@ -435,11 +454,34 @@ function AskInterceptPanel({
 		const id = String(nextId.current++);
 		const asked: ChatMessage[] = [
 			{ id: `${id}-question`, role: "user", text: question, patientName: context.patientName },
-			{ id: `${id}-answer`, role: "assistant", text: answer.text, sources: answer.sources, shown: 0, status: "thinking" },
+			{
+				id: `${id}-answer`,
+				role: "assistant",
+				text: answer.text,
+				sources: answer.sources,
+				actions: answer.actions,
+				shown: 0,
+				status: "thinking",
+			},
 		];
 		setMessages((current) => (fresh ? asked : [...current, ...asked]));
 		stickToBottom.current = true;
 		return `${id}-question`;
+	};
+
+	// The latest answer's follow-ups, once it's written, without those the panel can't do.
+	const lastMessage = messages.at(-1);
+	const followUps =
+		lastMessage?.role === "assistant" && lastMessage.status === "done" && !lastMessage.notice
+			? (lastMessage.actions ?? []).filter(
+					(action) =>
+						action.type === "ask" || (action.type === "open-patient" ? Boolean(onOpenPatient) : Boolean(onOpenAlert)),
+				)
+			: [];
+	const runAction = (action: AskInterceptAction) => {
+		if (action.type === "ask") ask(action.question);
+		else if (action.type === "open-patient") onOpenPatient?.(action.patientId);
+		else onOpenAlert?.(action.patientId, action.alertId);
 	};
 
 	// The app's opening question, asked once per id with the context it came with (Nov 2, 2026, user's call). A
@@ -549,6 +591,30 @@ function AskInterceptPanel({
 						))}
 					</AnimatePresence>
 
+					{/* The latest answer's follow-ups, once it's written (Nov 3, 2026, user's call): open the patient first, then what
+					    fits the patient, their alert's status and severity. They go with the next question. */}
+					<AnimatePresence>
+						{followUps.length ? (
+							<motion.ul
+								key={`follow-ups-${lastMessage?.id}`}
+								aria-label='Follow-up actions'
+								variants={staggerContainerVariants}
+								initial='initial'
+								animate='animate'
+								exit={{ opacity: 0, transition: resolve(reducedMotionTransition) }}
+								className='-mt-2 flex flex-col items-start gap-2'
+							>
+								{followUps.map((action) => (
+									<motion.li key={action.label} variants={prefersReducedMotion ? undefined : revealVariants}>
+										<Button variant='outline' size='sm' className='rounded-full font-normal' onClick={() => runAction(action)}>
+											{action.label}
+										</Button>
+									</motion.li>
+								))}
+							</motion.ul>
+						) : null}
+					</AnimatePresence>
+
 					{/* Questions to start with, once the greeting has finished and until the first question (Flow). */}
 					<AnimatePresence>
 						{greeted && !asked ? (
@@ -625,6 +691,7 @@ function AskInterceptPanel({
 
 export {
 	AskInterceptPanel,
+	type AskInterceptAction,
 	type AskInterceptAnswer,
 	type AskInterceptContext,
 	type AskInterceptNotice,

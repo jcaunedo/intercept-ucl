@@ -171,6 +171,16 @@ export {
 	type FilterBarFiltersProps,
 	type FilterBarProps,
 } from "@/components/forms/filter-bar";
+export {
+	FilterPanel,
+	FilterPanelButton,
+	filterPanelCount,
+	type FilterPanelButtonProps,
+	type FilterPanelGroup,
+	type FilterPanelOption,
+	type FilterPanelProps,
+	type FilterPanelValue,
+} from "@/components/forms/filter-panel";
 export { Input, inputVariants, type InputProps } from "@/components/forms/input";
 export { Label, type LabelProps } from "@/components/forms/label";
 export {

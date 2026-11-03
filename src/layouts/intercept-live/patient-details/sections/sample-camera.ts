@@ -176,6 +176,9 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 	p15: camera("p15", "chadron", "Bed 4", { "Kayla Brandt": "At the bedside", "Tom Weller": "On call from home" }, []),
 	// Erickson: asleep; his nurse is with Hayes next door.
 	p16: camera("p16", "chadron", "Bed 6", { "Kayla Brandt": "With another patient", "Tom Weller": "On call from home" }, []),
+	// Carlson and Hansen: asleep on the same floor.
+	p19: camera("p19", "chadron", "Bed 2", { "Kayla Brandt": "With another patient", "Tom Weller": "On call from home" }, []),
+	p20: camera("p20", "chadron", "Bed 8", { "Kayla Brandt": "With another patient", "Tom Weller": "On call from home" }, []),
 	p17: camera("p17", "mwh", "Bed 10", { "Hannah Cole": "At the bedside", "Marcus Reed": "Away · in the OR" }, [
 		["look-in", "James Turner", 180, 3],
 	]),

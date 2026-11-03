@@ -19,7 +19,7 @@ Purpose: Defines the modal's structure, behavior, states, data and acceptance cr
 **Surface:** a modal over the Monitoring and Census pages, and over a patient's details  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 2, 2026
+**Last updated:** November 3, 2026
 
 ---
 
@@ -33,9 +33,9 @@ It answers three questions, one column each:
 |---|---|---|
 | **Patient** | What is happening, to whom? | The patient, the alert and its lifecycle actions, the score, the live monitor, the patient's tags |
 | **Clinical info** | Why does it matter for this patient? | The key clinical findings behind the alert, and the history and labs the intensivist needs; the video consult floats here while it's on |
-| **Pathway** | What do we do about it? | A suggested care pathway: an order set the intensivist reviews, edits and accepts or declines |
+| **Pathway** | What do we do about it? | A suggested care pathway: an order set the intensivist reviews, edits and accepts or declines; then, where the hospital may not be able to hold the patient, keep or transfer |
 
-It is Scenario 1's steps 2 to 4 in one place (Demo Use Cases, Margaret Hayes at 01:40): what fired and why (step 2), a one-click consult to the bedside with the history and labs (step 3), and the pathway sent for local co-signature (step 4).
+It is Scenario 1's steps 2 to 5 in one place (Demo Use Cases, Margaret Hayes at 01:40): what fired and why (step 2), a one-click consult to the bedside with the history and labs (step 3), the pathway sent for local co-signature (step 4), and the decision to keep her at Chadron with checkpoints (step 5).
 
 The modal is not the patient's chart. It shows what this alert needs; **Open patient** goes to the full record (PRD Patient details).
 
@@ -53,7 +53,7 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 
 1. Intercept Live — Virtual Care OS System Specification, May 2026 (`documents/Intercept Live - Virtual Care OS - System Specifications.md`), §5.2, §5.3, §5.6.
 2. Requirements specification snapshot (`documents/specs/requirements-specification.md`): AL-02, AL-03, AL-04, AL-07, AL-09, AL-11, SV-07, SV-10, CC-05, OE-02, BR-06, BR-07, WF-02.
-3. Design update spec snapshot (`documents/specs/design-update-spec.md`): DU-09 (one ranked work list), DU-12 (one alert per condition), DU-13 (alert detail and lifecycle), DU-14 (NEWS2-style score).
+3. Design update spec snapshot (`documents/specs/design-update-spec.md`): DU-09 (one ranked work list), DU-12 (one alert per condition), DU-13 (alert detail and lifecycle), DU-14 (NEWS2-style score), DU-22 (keep or transfer).
 4. InterceptLIVE Demo Use Cases, Scenario 1 (`documents/scenarios/`).
 5. PRD — Monitoring (`prds/monitoring.md`) and PRD — Patient card (`prds/patient-card.md`): the alert bar, the triage queue and its forms.
 6. Figma: intercept.ds › Alert Modal page, `alert-modal` (`1321:10102`), the video reference (`1337:12288`), `alert-modal-video`, `care-pathway`.
@@ -124,6 +124,10 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | AMM-019 | **Toasts wait** | While the modal is open, the alert toasts are hidden and paused, and come back when it closes (as on a patient's page and with the live feed open). |
 | AMM-020 | **Own pathway** | After declining, **Create your own pathway** opens a form in place of the declined order set: the pathway's name, then each order's name, dose or settings, and an optional target or condition; **Add order** adds one, × removes one, a blank one is left out. **Send for co-signature** (enabled once the name and every order's name and dose are filled) sends it to the same co-signer as the suggestion; it then shows in the suggestion's place, titled with its name, "Source: Created by you · Declined suggestion: …", awaiting co-signature, then active. Cancel or Escape closes the form and keeps what was typed. ✅ **Decision (Nov 3, 2026, user's call).** |
 | AMM-021 | **Undo decline** | Once declined, **Undo decline** puts the suggestion back as it was (Suggested; Decline and Accept and send again; a second Decline asks why again, the first reason prefilled). It's there until the intensivist sends their own pathway. ✅ **Decision (Nov 3, 2026, user's call).** |
+| AMM-022 | **Keep or transfer** | For an alert that carries one (Scenario 1, step 5; DU-22), **Keep or transfer** opens under the pathway once its orders are sent (awaiting co-signature or active), or at once when a decision was already made. It sets **what the plan needs** (BiPAP, respiratory therapist, hourly vitals, nurse capacity) against what the hospital has tonight, each covered, limited or not available (an icon and words), and, **if transferred**, the receiving hospitals (bed, distance; one that can't take the patient is dimmed) and the transport (ground, air, with times). Source line: the hospital tonight and the regional transfer center. The platform doesn't pick one. ✅ **Placement (Nov 3, 2026, user's call):** the Pathway column, under the pathway. |
+| AMM-023 | **Decide, with a reason** | **Keep at {hospital}** shows the checkpoints it sets and asks why (required). **Transfer** asks for the receiving hospital and the transport (radio choices; the first available picked) and why (required), then **Request transfer**: "Transfer requested to … , by air · time", and the transfer center confirms the bed and the crew. **Change decision** takes either back. Escape closes an open form before the modal. |
+| AMM-024 | **Checkpoints** | Keeping sets checkpoints at 1 h and 4 h, each with what has to hold by then (from the pathway's targets) and its due time; once due, Passed or Missed with the readings behind it. A missed checkpoint raises a High alert (requirements spec, keep-or-transfer checkpoints) and the panel says so. |
+| AMM-025 | **Transfer avoided** | Kept, with every checkpoint passed, the panel logs **Transfer avoided**: the trip the family didn't make, the estimated transfer cost avoided (a placeholder until sourced) and the ICU-level care delivered at the hospital (Scenario 1, step 6; its metrics). |
 
 ---
 
@@ -140,6 +144,8 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | **Consult: live** | — | Footer: **End call** (flat destructive) | The room's camera, Live with its time |
 | **Pathway: suggested / awaiting co-signature / active / declined** | — | Decline · Accept and send while suggested; Undo decline · Create your own pathway once declined | Status badge and line in the Pathway column |
 | **Own pathway: writing / awaiting co-signature / active** | The suggestion was declined | Cancel · Send for co-signature while writing | The form in place of the order set; once sent, the clinician's pathway with its status |
+| **Keep or transfer: to decide / keep / transfer requested** | — | Transfer · Keep at {hospital}; then each form's Cancel · Keep / Request transfer; Change decision once decided | Badge "To decide", "Keep at Chadron" or "Transfer requested"; the decision with its reason and time, then the checkpoints (keep) |
+| **Checkpoint missed / transfer avoided** | — | Change decision (missed); none (avoided) | "A checkpoint was missed, so a High alert was raised"; or the Transfer avoided panel |
 
 ---
 
@@ -161,6 +167,8 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | `room` | The room's equipment, for the drawn camera feed |
 | `video` | The room's camera as a video URL. The prototype loops an AI-generated clip (fictional people, never a real patient), graded like a bedside camera; without one, or if it can't load, the room is drawn |
 | `pathway` | The suggested pathway: title, source protocol, orders (name, dose, target, evidence), co-signer |
+| `pathwayStatus` | Where the pathway is when the modal opens (suggested by default) |
+| `transfer` | Keep or transfer: the hospital's short name, source, needs (label, what's available, covered / limited / not available), receiving hospitals (name, place and distance, bed, accepting), transport (label, status and time, available), checkpoints (minutes after, criteria, result and readings), the decision already made (keep or transfer, reason, time, receiving hospital and transport) and the outcome (distance, cost, ICU-level care hours) |
 
 ---
 
@@ -183,6 +191,11 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | AMM-AC-13 | A short viewport | The modal's content is taller than the screen | The modal keeps 80px from the top and bottom, and each column scrolls |
 | AMM-AC-14 | The CHF pathway was declined | The intensivist creates their own pathway with a name and two orders and sends it | The pathway shows under its name, "Created by you", goes to Dr. Tom Weller for co-signature, then shows Active |
 | AMM-AC-15 | The CHF pathway was declined | The intensivist clicks Undo decline | The pathway is Suggested again, with Decline and Accept and send |
+| AMM-AC-16 | Hayes's CHF pathway is suggested | The intensivist accepts and sends it | Keep or transfer opens under it, "To decide", with Chadron's needs, the receiving hospitals and the transport |
+| AMM-AC-17 | Keep or transfer is open | The intensivist picks Keep at Chadron, writes why and confirms | "Keeping at Chadron · time" with the reason, and the 1 h and 4 h checkpoints with their due times |
+| AMM-AC-18 | Keep or transfer is open | The intensivist picks Transfer, Regional West, Air, writes why and requests it | "Transfer requested to Regional West Medical Center, by air · time" |
+| AMM-AC-19 | Hayes was kept and both checkpoints passed | The modal opens | Both checkpoints read Passed with their readings, and Transfer avoided shows the distance, the cost and the care hours |
+| AMM-AC-20 | Hayes was kept and the 1 h checkpoint was missed | The modal opens | The checkpoint reads Missed with its readings, the panel says a High alert was raised, and Change decision is there |
 
 ---
 
@@ -199,8 +212,11 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | ⚠️ **Escalate and resolve close the modal** | Keep closing it, or keep it open as Acknowledge does. |
 | ⚠️ **Triage queue undo** | The queue's rows can't undo an acknowledgment yet; add the same toggle. |
 | ⚠️ **Button variant** | End call uses a flat destructive look set in the modal; add it to Button as a variant (minor version). |
+| ⚠️ **Keep or transfer: suggest one?** | The platform lays out the facts and doesn't pick keep or transfer (Spec §8.7: the AI doesn't recommend). Whether a rule (every need covered, transport over 90 min) should mark one as suggested, as the pathway is. |
+| ⚠️ **Keep or transfer: data** | Needs, capacities, transport times and the second receiving hospital (Rapid City) are illustrative; the checkpoint criteria need clinical review. Where the transport and bed status come from (a transfer center feed, or entered by hand). |
+| ⚠️ **Missed checkpoint** | The panel says a High alert was raised; the prototype doesn't raise it yet. Whether a missed checkpoint reopens the decision on its own or waits for Change decision. |
 | ⚠️ **Component or layout** | The modal is a layout (exploration); promote it to `overlays/alert-modal` once these decisions settle. |
-| ⚠️ **Scenario data** | Hayes's creatinine trend has two points; her records say Epic where the scenario says Meditech. |
+| ⚠️ **Scenario data** | Hayes's creatinine trend has two points. ✅ **Resolved (Nov 3, 2026):** Chadron's records say Meditech, as the scenario does. |
 | ⚠️ **ID prefix** | `AMM-` and `AMM-AC-` are new repo-local IDs, to confirm with the team. |
 
 ---
@@ -212,6 +228,7 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | Figma | intercept.ds › Alert Modal page: `alert-modal` (`1321:10102`), the video reference (`1337:12288`), `alert-modal-video`, `care-pathway` |
 | Modal | `src/layouts/intercept-live/alert-detail/alert-detail.tsx` (`AlertDetailModal`, `alertModalRenderer`) |
 | Pathway | `src/layouts/intercept-live/alert-detail/care-pathway.tsx` |
+| Keep or transfer | `src/layouts/intercept-live/alert-detail/keep-or-transfer.tsx` (`KeepOrTransferPanel`) |
 | Sample data | `src/layouts/intercept-live/alert-detail/sample-alert-detail.ts` (Hayes's Scenario 1 detail; a detail and a pathway for every feed alert) |
 | Forms | `src/layouts/intercept-live/monitoring/triage-queue.tsx` (`EscalateForm`, `ResolveForm`, `stateLine`) |
 | Decisions | DESIGN.md › "Alert modal" |

@@ -1,8 +1,8 @@
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { CensusPatient } from "./census";
 
-// Synthetic data (PRD PC-180). The first eight patients are Figma's; ten more fill the hospital counts (Harbor Point 7,
-// CVMC 5, Mercy West 4, Chadron 2).
+// Synthetic data (PRD PC-180). The first eight patients are Figma's; twelve more fill the hospital counts (Harbor Point 7,
+// CVMC 5, Mercy West 4, Chadron 4).
 // Acuity is the NEWS2-style score, the same as on Monitoring (`sample-monitoring.ts` says how it's worked out).
 
 const news2 = "NEWS2";
@@ -388,6 +388,50 @@ const samplePatients: CensusPatient[] = [
 		tags: [{ label: "DNR" }, { label: "Fall risk" }],
 	},
 	{
+		id: "p19",
+		hospitalId: "chadron",
+		mine: true,
+		lastName: "Carlson",
+		firstName: "Linda",
+		mrn: "00749318",
+		sex: "F",
+		age: 68,
+		hospital: "Chadron Community Hospital",
+		unit: "Med-Surg",
+		bed: "Bed 2",
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 76 },
+			{ label: "MAP", value: 97 },
+			{ label: "SpO₂", value: "95%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+	},
+	{
+		id: "p20",
+		hospitalId: "chadron",
+		mine: true,
+		lastName: "Hansen",
+		firstName: "Robert",
+		mrn: "00862047",
+		sex: "M",
+		age: 61,
+		hospital: "Chadron Community Hospital",
+		unit: "Med-Surg",
+		bed: "Bed 8",
+		acuity: { label: news2, score: 0, level: "low" },
+		trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 80 },
+			{ label: "MAP", value: 93 },
+			{ label: "SpO₂", value: "97%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+	},
+	{
 		id: "p17",
 		hospitalId: "mwh",
 		photo: samplePatientPhotos.p17,
@@ -447,4 +491,17 @@ const sampleScenario1Census: Partial<CensusPatient> = {
 	],
 };
 
-export { samplePatients, sampleScenario1Census };
+/** Hayes's card at Scenario 1's resolution (06:00): NEWS2 3, Low, 1 below yesterday's; RR 20, SpO₂ 95% on 2 L. */
+const sampleScenario1ResolvedCensus: Partial<CensusPatient> = {
+	acuity: { label: news2, score: 3, level: "low" },
+	trajectory: { label: change, value: "-1", trend: "down", trendVariant: "success" },
+	scoreChange4h: -7,
+	vitals: [
+		{ label: "Heart Rate", shortLabel: "HR", value: 88 },
+		{ label: "MAP", value: 92 },
+		{ label: "SpO₂", value: "95%" },
+		{ label: "Resp. Rate", shortLabel: "RR", value: 20 },
+	],
+};
+
+export { samplePatients, sampleScenario1Census, sampleScenario1ResolvedCensus };

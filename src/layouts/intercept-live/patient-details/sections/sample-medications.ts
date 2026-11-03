@@ -527,6 +527,29 @@ const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 			prn("Acetaminophen", "650 mg", "PO", "Every 6 h as needed", "Fever or pain", 1300, 2),
 		],
 	),
+	// Carlson: cellulitis on cefazolin (a penicillin rash, not anaphylaxis); type 2 diabetes on insulin.
+	p19: medicationsFor(
+		"p19",
+		[
+			scheduled("Cefazolin", "2 g", "IV", every(8), 300, "Cellulitis"),
+			scheduled("Insulin glargine", "20 units", "SC", nightly, 280, "Home dose"),
+			scheduled("Insulin lispro, sliding scale", "Per scale", "SC", ["Before meals and at bedtime", 6], 280, "Last dose 2 units for glucose 172"),
+			scheduled("Enoxaparin", "40 mg", "SC", daily, 600, "VTE prophylaxis"),
+		],
+		[
+			prn("Acetaminophen", "650 mg", "PO", "Every 6 h as needed", "Pain or fever", 1300, 2),
+			prn("Oxycodone", "5 mg", "PO", "Every 4 h as needed", "Moderate pain", 900, 1),
+		],
+	),
+	// Hansen: kidney injury on IV fluids; lisinopril and metformin held.
+	p20: medicationsFor(
+		"p20",
+		[
+			scheduled("Insulin lispro, sliding scale", "Per scale", "SC", ["Before meals and at bedtime", 6], 280, "Metformin on hold"),
+			scheduled("Heparin", "5,000 units", "SC", every(8), 220, "VTE prophylaxis"),
+		],
+		[prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea", 1500, 1)],
+	),
 	// Ortega: post-op day 1, nothing by mouth; sulfa allergy.
 	p17: medicationsFor(
 		"p17",

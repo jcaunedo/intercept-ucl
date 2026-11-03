@@ -14,6 +14,9 @@ export default defineConfig({
 				plugins: [storybookTest({ configDir: path.join(import.meta.dirname, ".storybook") })],
 				test: {
 					name: "storybook",
+					// The Intercept Live prototype stories play scripted scenarios in real time (Ask Intercept Live types its answers
+					// out, Scenario 1's beats wait seconds apart), so a story can take longer than Vitest's 15 s default.
+					testTimeout: 30_000,
 					browser: {
 						enabled: true,
 						headless: true,

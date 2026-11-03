@@ -141,7 +141,7 @@ const hospitals = {
 	hpg: { hospital: "Harbor Point General", source: "Epic" },
 	mwh: { hospital: "Mercy West Hospital", source: "Epic" },
 	cvmc: { hospital: "CVMC", source: "Epic" },
-	chadron: { hospital: "Chadron Community Hospital", source: "Epic" },
+	chadron: { hospital: "Chadron Community Hospital", source: "Meditech" },
 };
 
 /** An evidence value with its source, `minutes` ago or at a clock time. */
@@ -647,6 +647,35 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 			["nursing", "Code status", "DNR · do not resuscitate", "Tom Weller", 3950],
 			["nursing", "Fall precautions", "Bed alarm on · walker", "Tom Weller", 3950],
 			["diet", "Regular diet", "", "Tom Weller", 3950],
+		],
+	}),
+
+	// Cellulitis on the same floor, improving. Nothing in the v1 classes applies.
+	p19: patientOrders("p19", {
+		hospital: "chadron",
+		checks: [noVentilator("Room air"), nothingToRecommend("Creatinine 0.9 is in range; glucose is on the sliding scale.")],
+		active: [
+			["medication", "Cefazolin", "2 g IV every 8 h", "Tom Weller", 2350],
+			["medication", "Insulin glargine", "20 units SC at bedtime", "Tom Weller", 2350],
+			["medication", "Insulin lispro", "Sliding scale SC before meals and at bedtime", "Tom Weller", 2350],
+			["medication", "Enoxaparin", "40 mg SC daily", "Tom Weller", 2350],
+			["lab", "Complete blood count", "Daily at 05:00", "Tom Weller", 2350, "Scheduled"],
+			["lab", "Glucose, point of care", "Before meals and at bedtime", "Tom Weller", 2350],
+			["nursing", "Elevate the left leg", "Mark the redness border every shift", "Tom Weller", 2350],
+			["diet", "Carbohydrate-controlled diet", "", "Tom Weller", 2350],
+		],
+	}),
+
+	// Kidney injury from dehydration, improving. Nothing in the v1 classes applies.
+	p20: patientOrders("p20", {
+		hospital: "chadron",
+		checks: [noVentilator("Room air"), nothingToRecommend("Potassium 4.2 is in range; creatinine 1.4 is falling.")],
+		active: [
+			["medication", "Normal saline", "100 mL/h IV", "Tom Weller", 600],
+			["medication", "Heparin", "5,000 units SC every 8 h", "Tom Weller", 1750],
+			["lab", "Basic metabolic panel", "Daily at 05:00", "Tom Weller", 1750, "Scheduled"],
+			["nursing", "Strict intake and output", "Every 4 h", "Tom Weller", 1750],
+			["diet", "Regular diet", "Encourage fluids by mouth", "Tom Weller", 1750],
 		],
 	}),
 

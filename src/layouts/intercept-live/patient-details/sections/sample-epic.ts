@@ -1,10 +1,11 @@
 import { samplePatients } from "../../census/sample-census";
+import { sampleEhrByHospital } from "../../sample-data/sample-ehr";
 import type { PatientRecord } from "../patient-details";
 import { samplePatientBaseRecords } from "../sample-patient-records";
 import type { EmrFeed, EmrWriteBack, PatientEmr } from "./epic-section";
 import { sampleNotesByPatient } from "./sample-notes";
 
-// Synthetic data (PRD Patient details PD-150): each Census patient's Epic, at their hospital. Each hospital tells a
+// Synthetic data (PRD Patient details PD-150): each Census patient's hospital record (Epic, or Meditech at Chadron). Each hospital tells a
 // different data-depth story, in plain words (PD-121, PD-134):
 // - Harbor Point General: charted vitals are behind, so a charted temperature can read stale (Sarah Miller's 38.9 °C);
 //   signed Intercept notes are written back.
@@ -98,7 +99,7 @@ function buildEmr(record: PatientRecord, index: number): PatientEmr | undefined 
 		}));
 
 	return {
-		name: "Epic",
+		name: sampleEhrByHospital[hospital] ?? "Epic",
 		hospital,
 		state: profile.state,
 		checkedAt: minutesAgo(1),

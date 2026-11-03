@@ -164,7 +164,7 @@ A filter on live status would also add and remove cards as readings change, whic
 
 ℹ️ Since Nov 1, 2026, Outside limits and Data gap are Monitoring's alone: the Census dropped its Out of range and Data gap quick views and its Vitals out of range filters, because they're live monitoring data (PRD Census CEN-OD-07).
 
-ℹ️ Since Nov 1, 2026 the Filters panel floats over the page on a scrim, 400px, with **Apply** to close it (Intercept-Live Filter example `205:5447`), instead of sitting in the live feed's place.
+ℹ️ Since Nov 1, 2026 the Filters panel floats over the page on a scrim, 400px, with **Done** to close it (Apply until Nov 3, 2026) (Intercept-Live Filter example `205:5447`), instead of sitting in the live feed's place.
 
 ✅ **Resolved (Oct 30, 2026, user's call): a Filters panel, as on the Census.** This reopens "filters in context" above. The toolbar's **Filters** button opens the Census's panel (on the right, in the live feed's place, one at a time) with Monitoring's groups: **Unit** (the Unit menu moved into it), **Highest alert**, **Alert status** (Acknowledged, Escalated, Resolved, Feedback: where the patient's alerts stand after the team's actions; Nov 3, 2026), **Outside alarm limits** (HR, SpO₂, ABP, RR, and Not reporting), **Organ support** and **Code status & safety** (the patient's tags, though the monitoring card doesn't show them). The limits options read live numbers, so once picked they keep the patients who matched then, as the Outside limits chip does (MON-013). The quick-view chips stay as they are: My patients and Outside limits. Rising score and Sepsis watch aren't in the panel: the monitoring card doesn't show acuity, and Monitoring patients carry no sepsis status.
 

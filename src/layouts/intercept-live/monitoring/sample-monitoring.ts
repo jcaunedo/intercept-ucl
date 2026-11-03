@@ -1,15 +1,15 @@
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 
-// Synthetic data (PRD MON-080): the Census's 18 patients on the monitoring panel, with live bedside values, and the
+// Synthetic data (PRD MON-080): the Census's 20 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
 // match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller and Johnson
 // (with alerts), Walker, Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and
 // Whitfield no RR (Data gap). Hayes (Chadron, Med-Surg) is Scenario 1 (Demo Use Cases) just before it starts: heart
 // failure, holding at SpO₂ 92% on 4 L and NEWS2 5. The Prototype menu's Scenario 1 plays her early warning at 01:40
 // (`sampleScenario1Monitoring`, `sample-data/sample-scenario-1.ts`).
-// Erickson (Chadron) is the floor's other patient, Ortega and Norman (Mercy West) fill its count; all three inside the
-// limits, with no alert.
+// Erickson, Carlson and Hansen (Chadron) are the floor's other patients, Ortega and Norman (Mercy West) fill its count;
+// all five inside the limits, with no alert. Carlson and Hansen are the clinician's own, as Hayes is.
 //
 // Acuity is the NEWS2-style current-state score (DU-14, scale 1), worked out from each patient's charted vitals in
 // `sample-vitals.ts`: ventilated patients are sedated (not Alert), Anderson is newly confused, and oxygen follows each
@@ -313,6 +313,40 @@ const monitoringPatients: MonitoringPatient[] = [
 		vitals: { hr: 84, spo2: 96, systolic: 126, diastolic: 72, map: 90, rr: 18 },
 	},
 	{
+		id: "p19",
+		hospitalId: "chadron",
+		mine: true,
+		lastName: "Carlson",
+		firstName: "Linda",
+		mrn: "00749318",
+		sex: "F",
+		age: 68,
+		hospital: "Chadron Community Hospital",
+		unit: "Med-Surg",
+		bed: "Bed 2",
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "−2", trend: "down" },
+		scoreChange4h: 0,
+		vitals: { hr: 76, spo2: 95, systolic: 134, diastolic: 78, map: 97, rr: 16 },
+	},
+	{
+		id: "p20",
+		hospitalId: "chadron",
+		mine: true,
+		lastName: "Hansen",
+		firstName: "Robert",
+		mrn: "00862047",
+		sex: "M",
+		age: 61,
+		hospital: "Chadron Community Hospital",
+		unit: "Med-Surg",
+		bed: "Bed 8",
+		acuity: { label: news2, score: 0, level: "low" },
+		trajectory: { label: change, value: "−1", trend: "down" },
+		scoreChange4h: 0,
+		vitals: { hr: 80, spo2: 97, systolic: 128, diastolic: 76, map: 93, rr: 16 },
+	},
+	{
 		id: "p17",
 		hospitalId: "mwh",
 		lastName: "Ortega",
@@ -507,4 +541,27 @@ const sampleScenario1Monitoring: Partial<MonitoringPatient> = {
 	},
 };
 
-export { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients, sampleScenario1Monitoring };
+/**
+ * Hayes's monitor at Scenario 1's resolution (06:00): RR 20, SpO₂ 95% on 2 L, HR 88, BP 128/74, so NEWS2 3, Low (SpO₂ 1
+ * point, oxygen 2), down 7 since 02:00 and 1 below yesterday's. Her last hour settles to these from a little worse.
+ */
+const sampleScenario1ResolvedMonitoring: Partial<MonitoringPatient> = {
+	acuity: { label: news2, score: 3, level: "low" },
+	trajectory: { label: change, value: "-1", trend: "down" },
+	scoreChange4h: -7,
+	vitals: { hr: 88, spo2: 95, systolic: 128, diastolic: 74, map: 92, rr: 20 },
+	trends: {
+		hr: lastHour(88, -8, 2, hayesIndex),
+		spo2: lastHour(95, 2, 0.6, hayesIndex + 1)?.map((value) => Math.min(100, value)),
+		systolic: lastHour(128, -6, 2.5, hayesIndex + 2),
+		rr: lastHour(20, -3, 1, hayesIndex + 3),
+	},
+};
+
+export {
+	sampleEscalationTargets,
+	sampleMonitoringAlerts,
+	sampleMonitoringPatients,
+	sampleScenario1Monitoring,
+	sampleScenario1ResolvedMonitoring,
+};

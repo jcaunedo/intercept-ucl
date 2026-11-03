@@ -85,7 +85,7 @@ export const BackToCensus: Story = {
 		const breadcrumb = within(canvas.getByRole("navigation", { name: "Breadcrumb" }));
 		await userEvent.click(breadcrumb.getByRole("button", { name: "Census" }));
 		// The Census glides back in.
-		const title = await canvas.findByRole("heading", { level: 1, name: /18 patients/ });
+		const title = await canvas.findByRole("heading", { level: 1, name: /20 patients/ });
 		await waitFor(() => expect(title).toBeVisible());
 	},
 };

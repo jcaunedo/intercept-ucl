@@ -5,6 +5,7 @@ import {
 	BoxIcon,
 	ChartColumnIcon,
 	CircleUserIcon,
+	ExternalLinkIcon,
 	HeartCrackIcon,
 	LayoutGridIcon,
 	LifeBuoyIcon,
@@ -321,6 +322,8 @@ type PrototypeShortcut = {
 	onSelect?: () => void;
 	/** A view that stays on until chosen again (e.g. the Kanban board): shown with a check while it's on. */
 	checked?: boolean;
+	/** A page outside the prototype it opens in a new tab instead (e.g. a demo storyboard), with an external-link icon. */
+	href?: string;
 };
 
 /**
@@ -430,7 +433,15 @@ function InterceptLive({
 						{prototype
 							.filter((shortcut) => shortcut.group === group)
 							.map((shortcut) =>
-								shortcut.checked === undefined ? (
+								shortcut.href ? (
+									<DropdownMenuItem key={shortcut.label} asChild>
+										<a href={shortcut.href} target='_blank' rel='noopener noreferrer'>
+											{shortcut.label}
+											<ExternalLinkIcon aria-hidden='true' className='ml-auto size-3.5 text-muted-foreground' />
+											<span className='sr-only'>(opens in a new tab)</span>
+										</a>
+									</DropdownMenuItem>
+								) : shortcut.checked === undefined ? (
 									<DropdownMenuItem key={shortcut.label} onSelect={() => openShortcut(shortcut)}>
 										{shortcut.label}
 									</DropdownMenuItem>
@@ -621,6 +632,8 @@ function InterceptLive({
 								notice={askInterceptNotice}
 								onRemovePatientContext={chatInPatientContext ? () => setChatPatient(null) : undefined}
 								opener={chatOpener}
+								onOpenPatient={renderPatientDetails ? (patientId) => navigation.openPatient(patientId) : undefined}
+								onOpenAlert={renderAlert ? (patientId, alertId) => navigation.openAlert(patientId, alertId) : undefined}
 							/>
 
 							{/* On a patient's page opened from a list: that list, to switch patient (PRD PD-015). */}

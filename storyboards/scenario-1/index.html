@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenario 1 Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* A presenter's script: one column of beats, each with what to click, what to say, and the screen it lands on.
+   Colors follow Intercept Live's tokens (theme.css): neutral surfaces, the severity red as the only accent. */
+:root {
+	--bg: oklch(0.985 0.002 250);
+	--surface: oklch(1 0 0);
+	--fg: oklch(0.21 0.01 260);
+	--muted: oklch(0.5 0.012 260);
+	--border: oklch(0.91 0.005 260);
+	--critical: oklch(0.58 0.22 27);
+	--critical-subtle: oklch(0.96 0.025 20);
+	--success: oklch(0.55 0.14 150);
+	--success-subtle: oklch(0.96 0.035 150);
+	--note: oklch(0.96 0.03 85);
+	--note-fg: oklch(0.42 0.09 70);
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Roboto Mono", ui-monospace, monospace;
+	color-scheme: light;
+	/* archielabs.ds icons (lucide paths): `mouse-pointer` before Steps, `text` before each screenshot's note. */
+	--icon-pointer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 12.586 19 19'/%3E%3Cpath d='M3.688 3.037a.497.497 0 0 0-.651.651l6.5 15.999a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z'/%3E%3C/svg%3E");
+	--icon-text: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 6.1H3'/%3E%3Cpath d='M21 12.1H3'/%3E%3Cpath d='M15.1 18H3'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: oklch(0.17 0.006 260);
+		--surface: oklch(0.21 0.008 260);
+		--fg: oklch(0.96 0.003 260);
+		--muted: oklch(0.7 0.01 260);
+		--border: oklch(0.32 0.01 260);
+		--critical: oklch(0.68 0.19 25);
+		--critical-subtle: oklch(0.27 0.06 25);
+		--success: oklch(0.72 0.14 150);
+		--success-subtle: oklch(0.26 0.05 150);
+		--note: oklch(0.28 0.04 85);
+		--note-fg: oklch(0.85 0.08 85);
+		color-scheme: dark;
+	}
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font: 400 16px/1.55 var(--font-sans);
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 4px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: max(16px, 4vw); }
+
+header.top { padding-block: 48px 32px; }
+.eyebrow { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 10px 0 12px; text-wrap: balance; }
+/* The line under the title: the title's type, muted. */
+h1:has(+ .h1-sub) { margin-bottom: 0; }
+.h1-sub { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 400; margin: 0 0 12px; color: var(--muted); }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; }
+.setting { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+
+nav.beats {
+	position: sticky; top: 0; z-index: 5;
+	background: color-mix(in oklch, var(--bg) 92%, transparent);
+	backdrop-filter: blur(8px);
+	border-block: 1px solid var(--border);
+}
+nav.beats ol { list-style: none; display: flex; gap: 4px; margin: 0 auto; padding-block: 10px; overflow-x: auto; }
+nav.beats li:first-child a { margin-left: -12px; }
+nav.beats a { display: block; white-space: nowrap; text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 10px; color: var(--muted); }
+nav.beats a:hover { background: var(--surface); color: var(--fg); }
+nav.beats .num { font-family: var(--font-mono); margin-right: 6px; }
+
+section.prep, section.beat, section.gaps { padding-block: 72px; border-bottom: 1px solid var(--border); }
+h2 { font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.beat-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.time { font: 500 14px/1 var(--font-mono); color: var(--muted); }
+
+/* One column: what to say under the title, then what to do. */
+.script { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px; max-width: 72ch; }
+.script > div { min-width: 0; }
+.label { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.label.steps { display: flex; align-items: center; gap: 6px; }
+.label.steps::before {
+	content: "";
+	flex: none;
+	width: 14px;
+	height: 14px;
+	background: currentColor;
+	-webkit-mask: var(--icon-pointer) center / contain no-repeat;
+	mask: var(--icon-pointer) center / contain no-repeat;
+}
+.script ol, .script ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.say { margin: 0; font-size: 16px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+kbd, .ui { font: 600 0.92em var(--font-sans); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+
+/* One screenshot per row, full width, so the screen can be read. */
+.frames { display: grid; grid-template-columns: 1fr; gap: 40px; }
+figure { margin: 0; min-width: 0; }
+figure img { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+figure.narrow img { max-width: 420px; }
+figcaption { font-size: 16px; color: var(--fg); margin-top: 16px; display: flex; align-items: flex-start; gap: 8px; }
+/* archielabs.ds `text`, as a mask so it takes the caption's color; centered on the first line. */
+figcaption::before {
+	content: "";
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin-top: 4px;
+	background: currentColor;
+	-webkit-mask: var(--icon-text) center / contain no-repeat;
+	mask: var(--icon-text) center / contain no-repeat;
+}
+
+.callout { border-radius: 12px; padding: 14px 16px; font-size: 15px; margin-top: 16px; }
+.callout.note { background: var(--note); color: var(--note-fg); }
+.callout.done { background: var(--success-subtle); }
+.callout strong { font-weight: 600; }
+.pending { display: inline-block; font: 600 12px/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--note-fg); background: var(--note); border-radius: 999px; padding: 6px 10px; }
+
+.prep ol { display: grid; gap: 8px; padding-left: 20px; max-width: 72ch; }
+.prep ol ol { list-style: upper-alpha; margin-top: 8px; }
+.gaps table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+	<p class="eyebrow">Intercept Live · Demo storyboard</p>
+	<h1>Scenario 1: Heart failure at 2 a.m. in a 25-bed hospital</h1>
+	<p class="h1-sub">Patient: Margaret Hayes</p>
+	<p class="lede">The platform spots Margaret Hayes, 72, decompensating with heart failure on a med-surg floor, hours before a transfer would normally be called. A remote intensivist manages her in place. Follow the beats in order: each one says what to click, what to say, and what the screen should look like.</p>
+	<div class="setting">
+		<span class="chip">Chadron Community Hospital, NE</span>
+		<span class="chip">01:40</span>
+		<span class="chip">One RN on the floor</span>
+		<span class="chip">Family physician on call from home</span>
+		<span class="chip">No ICU beds</span>
+		<span class="chip">Scottsbluff ICU is 100 mi away</span>
+	</div>
+</header>
+
+<nav class="beats" aria-label="Beats">
+	<ol class="wrap">
+		<li><a href="#prep">Before you start</a></li>
+		<li><a href="#beat-1"><span class="num">1</span>Early warning</a></li>
+		<li><a href="#beat-2"><span class="num">2</span>Network ranking</a></li>
+		<li><a href="#beat-3"><span class="num">3</span>One-click consult</a></li>
+		<li><a href="#beat-4"><span class="num">4</span>CHF pathway</a></li>
+		<li><a href="#beat-5"><span class="num">5</span>Keep or transfer</a></li>
+		<li><a href="#beat-6"><span class="num">6</span>Resolution</a></li>
+		<li><a href="#gaps">Known gaps</a></li>
+	</ol>
+</nav>
+
+<main>
+<section class="prep wrap" id="prep">
+	<div class="beat-head"><h2>Before you start, a few things to know</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">This is the hub: 20 patients across four rural hospitals, one intensivist watching all of them overnight. Right now Margaret Hayes, at Chadron, looks stable. Her score is 5.</p>
+		</div>
+		<div>
+			<ol>
+				<li>Open the prototype on <strong>Monitoring</strong>. If you've already played it, use <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span> first.</li>
+				<li>The <a href="https://shottr.cc/s/2zCc/SCR-20261103-gof.png" target="_blank" rel="noopener">hospital tabs</a> across the top start on <span class="ui">All hospitals</span>. Click a hospital to see only its patients. Each tab has two counters: the number of patients, then the number of alerts. On the right, <span class="ui">Group by hospital</span> groups the patients by hospital.</li>
+				<li>Under the tabs, the <a href="https://shottr.cc/s/2Iuv/SCR-20261103-gqq.png" target="_blank" rel="noopener">quick filters and controls bar</a>. On the left, a search over the patients on the page, then the quick filters (<span class="ui">My patients</span>, <span class="ui">Active alerts</span>, <span class="ui">Rising score</span>…), each with a count of the patients it shows. On the right, the controls change how the patients are shown, then sort them. <span class="ui">Filters</span>, last, opens a side panel with more filters.</li>
+				<li>Each patient has a <a href="https://shottr.cc/s/2RJn/SCR-20261103-guf.png" target="_blank" rel="noopener">monitoring card</a>. There are three ways to use it:
+					<ol>
+						<li><strong>Click the card</strong> to open the patient's details page.</li>
+						<li><strong>Hover the card</strong> and a <a href="https://shottr.cc/s/2d57/SCR-20261103-gwo.png" target="_blank" rel="noopener">more actions button</a> (<span class="ui">…</span>) appears next to the name. Click it for more actions.</li>
+						<li><strong>Click the alert bar</strong> to <a href="https://shottr.cc/s/2x6k/SCR-20261103-gww.png" target="_blank" rel="noopener">open the alert</a> with more information, so you can act on it faster. You can also open it by clicking the <a href="https://shottr.cc/s/2bwf/SCR-20261103-h0m.png" target="_blank" rel="noopener">alert notification</a> at the bottom right of the page. The buttons along the bottom of the notification take other actions.</li>
+					</ol>
+				</li>
+				<li>Alert notifications appear at the bottom right on every page, so you hear about an alert even when you're not on Monitoring. You can pause them with <span class="ui">Don't show</span>, above the notifications, or close them. Once closed, they come back when you reload the app or use <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span>.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames one">
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: 18 patients across 4 hospitals, 3 active alerts, cards with live monitors." loading="lazy"><figcaption>Monitoring before the scenario starts.</figcaption></figure>
+	</div>
+	<div class="callout note"><strong>The clock shows today's time, not 01:40.</strong> The prototype runs on the real clock. Ask the audience to picture 1:40 in the morning.</div>
+</section>
+
+<section class="beat wrap" id="beat-1">
+	<div class="beat-head"><h2>1. Early warning</h2><span class="time">01:40</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Overnight her breathing rate climbed from 18 to 26. Her oxygen fell to 89% on 4 liters, her heart rate is 112, and she's 1.8 liters positive and up 2.1 kg in two days. At 01:40 her deterioration score crosses the line: NEWS2 10, up 5 in four hours. Nobody had to be looking at her for this to happen.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Open <span class="ui">Prototype</span> at the bottom of the Sidebar.</li>
+				<li>Pick <span class="ui">Scenario 1: Heart failure</span>.</li>
+				<li>Wait about 2 seconds. Margaret's <strong>Critical</strong> toast appears at the bottom right.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 1: Heart failure." loading="lazy"><figcaption>Prototype › Scenario 1: Heart failure.</figcaption></figure>
+		<figure><img src="frames/02-alert.jpg" alt="A Critical toast: NEWS2 10, High: up 5 in 4 h, Hayes, Margaret, Chadron Community Hospital." loading="lazy"><figcaption>Her Critical alert arrives as a toast: NEWS2 10, up 5 in 4 h.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-2">
+	<div class="beat-head"><h2>2. Network ranking</h2><span class="time">01:41</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Across every patient in every hospital, she jumps to number one, with a reason line a clinician reads in a second: rising work of breathing, positive fluid balance, heart failure with reduced ejection fraction. She's above a patient whose Critical alert is older, because her score is moving fastest.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>On her toast, click <span class="ui">Ask</span>. Ask Intercept Live opens about her and explains why she's #1, then her history and labs.</li>
+				<li>Close the chat with its ×.</li>
+				<li>Click <span class="ui">Live feed</span> at the top right. Her alert is first, above Sarah Miller's older Critical sepsis alert.</li>
+				<li>Close the live feed.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/03-ask.jpg" alt="Ask Intercept Live answering about Hayes, Margaret: history and labs, and at a glance." loading="lazy"><figcaption>Ask, from her toast: why she's #1, then her history and labs. Her card now leads the grid.</figcaption></figure>
+		<figure><img src="frames/04-feed.jpg" alt="The Live feed panel with Hayes's Critical alert first." loading="lazy"><figcaption>The live feed: her alert first, above Miller's.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-3">
+	<div class="beat-head"><h2>3. One-click consult</h2><span class="time">01:43</span></div>
+	<div class="script">
+		<div>
+			<p class="say">One click and the intensivist is looking at the patient with her nurse. Everything they'd normally phone around for is already here: home meds, the last echo, the creatinine trend, a BNP of 2,400, pulled from the hospital's record into one panel.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>On Margaret's card (first in the grid), click the red <span class="ui">Critical</span> bar. The alert opens in full.</li>
+				<li>Point out <strong>Clinical info</strong>: key findings, home meds, last echo (EF 25%), creatinine 1.6 → 1.9, BNP 2,400.</li>
+				<li>Click <span class="ui">Video call Kayla, RN</span> in the footer. It rings, then the bedside camera opens.</li>
+			</ol>
+			<p style="margin-top:10px;color:var(--muted);font-size:15px">Shortcut: her card's <span class="ui">…</span> › <span class="ui">Video consult</span> opens the same modal with the call already ringing.</p>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/05-modal.jpg" alt="The alert modal: Hayes, Margaret, the alert, her score and monitor; Clinical info; the CHF exacerbation pathway." loading="lazy"><figcaption>The alert modal: patient, clinical info, pathway.</figcaption></figure>
+		<figure><img src="frames/06-consult.jpg" alt="The video consult live: Kayla Brandt, RN joined, at Bed 4." loading="lazy"><figcaption>Kayla Brandt, RN, live from Bed 4.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-4">
+	<div class="beat-head"><h2>4. CHF exacerbation pathway</h2><span class="time">01:50</span></div>
+	<div class="script">
+		<div>
+			<p class="say">The platform suggests the hospital's heart failure pathway: BiPAP, a stronger IV diuretic with a urine-output target, and a nitrate if her blood pressure allows. The intensivist changes one dose and accepts. Nothing is ordered until the family physician on call co-signs it, from home.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>In the <strong>Pathway</strong> column, click the pencil on <span class="ui">Furosemide IV</span>.</li>
+				<li>Change the dose to <em>120 mg IV bolus, then 10 mg/h infusion</em> and click <span class="ui">Save</span>. It's marked Edited.</li>
+				<li>Optional: <span class="ui">Add note</span> for Dr. Tom Weller.</li>
+				<li>Click <span class="ui">Accept and send</span>. About 4 seconds later: <strong>Co-signed by Dr. Tom Weller</strong>, orders active.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/07a-edited.jpg" alt="The pathway with Furosemide IV edited to 120 mg, the suggestion struck through." loading="lazy"><figcaption>One dose edited; the suggestion stays visible.</figcaption></figure>
+		<figure><img src="frames/07b-active.jpg" alt="The pathway Active, co-signed by Dr. Tom Weller; Keep or transfer appears below." loading="lazy"><figcaption>Co-signed and active. Keep or transfer appears under it.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-5">
+	<div class="beat-head"><h2>5. Keep or transfer</h2><span class="time">01:55</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Can Chadron hold her? The plan needs BiPAP, a respiratory therapist, hourly vitals and nurse time. Chadron has all of it tonight, with the nurse stretched. The alternative is a two-hour ambulance ride. The decision is to keep her, with checkpoints at one and four hours. Miss one and the platform raises the alarm and transfer is back on the table.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Scroll the Pathway column down to <strong>Keep or transfer</strong>.</li>
+				<li>Walk through what the plan needs against Chadron tonight, then the transfer option: Regional West in Scottsbluff, about 2 hours by ground.</li>
+				<li>Click <span class="ui">Keep at Chadron</span>, type a reason (e.g. <em>BiPAP and RT are here; a 2 h ride is the bigger risk tonight</em>) and confirm.</li>
+				<li>The 1 h and 4 h checkpoints appear with their due times.</li>
+				<li>Keep the modal open to watch step 6 arrive on its own, about 6 seconds later.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/08a-transfer.jpg" alt="Keep or transfer: what the plan needs against Chadron tonight, and if transferred." loading="lazy"><figcaption>Needs against what Chadron has tonight.</figcaption></figure>
+		<figure><img src="frames/08b-kept.jpg" alt="Keeping at Chadron, with the reason and the 1 h and 4 h checkpoints." loading="lazy"><figcaption>Kept at Chadron, with checkpoints.</figcaption></figure>
+	</div>
+	<div class="callout note"><strong>Optional, before you keep her:</strong> click <span class="ui">Open patient</span> to show her full page: the brief written by Intercept, the live monitor, her alert and care team. Then reopen her alert from her card; the modal keeps the pathway you accepted. Her page doesn't show the orders or the keep decision yet.</div>
+	<div class="frames one" style="margin-top:16px">
+		<figure><img src="frames/09-patient.jpg" alt="Patient details for Hayes, Margaret: the brief, the monitor, alerts and care team." loading="lazy"><figcaption>Her Patient details page.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-6">
+	<div class="beat-head"><h2>6. Resolution</h2><span class="time">06:00</span></div>
+	<div class="script">
+		<div>
+			<p class="say">By six in the morning her breathing rate is 20 and her oxygen is 95% on 2 liters. Both checkpoints passed. The platform logs a transfer avoided: no ambulance, no ICU bed taken 100 miles away, no 100-mile drive for her family, and more than four hours of ICU-level care delivered in her own town.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click. About 6 seconds after Keep at Chadron it's 06:00: both checkpoints read <strong>Passed</strong> and <strong>Transfer avoided</strong> appears at the bottom of the Pathway column.</li>
+				<li>Point out her alert: <strong>Resolved</strong>, by Kayla Brandt, RN, and her score now NEWS2 3, Low, with RR 20 and SpO₂ 95%.</li>
+				<li>Close the modal. Her Resolved toast is waiting, the live feed says "06:00: Hayes is stable on 2 L, transfer avoided", and her card has settled.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/10-resolved-modal.jpg" alt="The alert modal at 06:00: the alert resolved by Kayla Brandt, RN, NEWS2 3 Low, both checkpoints passed and Transfer avoided." loading="lazy"><figcaption>06:00 in her alert: resolved, NEWS2 3, both checkpoints passed, transfer avoided. The cost is a placeholder until it's sourced.</figcaption></figure>
+		<figure><img src="frames/11-resolved-monitoring.jpg" alt="Monitoring after the modal closes: Hayes's Resolved toast and the live feed caption about 06:00." loading="lazy"><figcaption>Back on Monitoring: her Resolved toast and the live feed's 06:00 line.</figcaption></figure>
+	</div>
+</section>
+
+<section class="gaps wrap" id="gaps">
+	<div class="beat-head"><h2>Known gaps</h2></div>
+	<p style="margin:0 0 16px;color:var(--muted);max-width:68ch">Where the prototype differs from the scenario, in case someone asks.</p>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>What the audience sees</th><th>The scenario</th><th>Why</th></tr></thead>
+			<tbody>
+				<tr><td>Four hospitals</td><td>Five sites</td><td>Kept at four for the prototype</td></tr>
+				<tr><td>Today's clock time; the night passes in about 6 seconds</td><td>01:40 to 06:00</td><td>The prototype runs on the real clock, so checkpoints pass before their due times</td></tr>
+				<tr><td>Her page shows no orders or keep decision, and its brief and charts stop at 01:40</td><td>The plan and her recovery are tracked on her record</td><td>Not built yet; the decisions show in her alert modal</td></tr>
+				<tr><td>Doses, capacities, transport times</td><td>—</td><td>Illustrative; need clinical review</td></tr>
+			</tbody>
+		</table>
+	</div>
+</section>
+</main>
+
+<footer class="wrap">
+	Source: InterceptLIVE Demo Use Cases, Scenario 1 (NETECH Rural Health Catalyst Fund). Margaret Hayes and everyone in the prototype are synthetic. To run it again: <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span>.
+</footer>
+</body>
+</html>

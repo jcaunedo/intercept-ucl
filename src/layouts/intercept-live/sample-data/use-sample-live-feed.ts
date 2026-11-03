@@ -2,6 +2,9 @@ import * as React from "react";
 
 import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
 
+import type { AlertDetailData } from "../alert-detail/alert-detail";
+import type { CarePathwayDecision, CarePathwayStatus } from "../alert-detail/care-pathway";
+import type { KeepOrTransferDecision, TransferChoice } from "../alert-detail/keep-or-transfer";
 import type { CensusPatient } from "../census/census-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleLiveScenario } from "../monitoring/sample-live-scenario";
@@ -22,6 +25,20 @@ const nextChangeIn = (tick: number) =>
 // Scenario 1's first beat plays this long after it's picked from the Prototype menu: just before the panel's first
 // re-sort when the menu opens Monitoring, so the change shows in the order at once.
 const scenarioDelay = 1.5;
+// Its resolution (06:00) plays this long after the clinician keeps her at Chadron: time to read "Keeping at Chadron"
+// and its checkpoints before they pass. The night goes by in these seconds.
+const resolutionDelay = 6;
+
+/** What the clinician decided in an alert's modal: where its pathway is, and keep or transfer. */
+type ScenarioDecision = { pathwayStatus?: CarePathwayStatus; transfer?: TransferChoice };
+
+// A pathway's status after each decision. Co-signature is simulated, so an accepted or written pathway counts as active.
+const pathwayStatusAfter: Record<CarePathwayDecision["type"], CarePathwayStatus> = {
+	accept: "active",
+	create: "active",
+	decline: "declined",
+	undecline: "suggested",
+};
 
 /** Patches each item whose id has changes. */
 function patch<T extends { id: string }>(items: T[], changes: Record<string, Partial<T>>): T[] {
@@ -36,6 +53,10 @@ function patch<T extends { id: string }>(items: T[], changes: Record<string, Par
  * `startScenario1` (the Prototype menu's Scenario 1) puts Margaret Hayes back to just before the scenario and plays
  * its beats (`sampleScenario1`): her alerts in `alerts`, her monitor in `patients`, and her Census card and record
  * through `withScenarioCensus` and `withScenarioRecords`, so every page and the chat follow. Until then she holds.
+ * `onPathwayDecision` and `onTransferDecision` take what the clinician decides in her alert modal, and
+ * `withScenarioAlertDetails` gives it back to the modal, so it doesn't start over when it reopens. Keeping her at
+ * Chadron plays the resolution (06:00) a few seconds later: her vitals recover, her alert resolves and the transfer is
+ * avoided. Taking the decision back before then cancels it.
  */
 function useSampleLiveFeed() {
 	const [step, setStep] = React.useState(0);
@@ -54,35 +75,72 @@ function useSampleLiveFeed() {
 		return () => window.clearTimeout(timer);
 	}, [tick, step]);
 
-	// Scenario 1: the beats played so far, each built when it played. A new run starts from none.
+	// Scenario 1: the beats played so far, each built when it played, and the clinician's decisions in the alert modal.
+	// A new run starts from none.
 	const [run, setRun] = React.useState(0);
 	const [beats, setBeats] = React.useState<{ changes: ScenarioChanges; at: string }[]>([]);
+	const [decisions, setDecisions] = React.useState<Record<string, ScenarioDecision>>({});
+	// When the clinician kept the patient, which plays the resolution.
+	const [keptAt, setKeptAt] = React.useState<string | null>(null);
 	const startScenario1 = React.useCallback(() => {
 		setBeats([]);
+		setDecisions({});
+		setKeptAt(null);
 		setRun((current) => current + 1);
+	}, []);
+	const play = React.useCallback((after: "start" | "keep") => {
+		const played = sampleScenario1.filter((beat) => beat.after === after);
+		if (!played.length) return;
+		const at = new Date().toISOString();
+		setBeats((current) => [...current, ...played.map((beat) => ({ changes: beat.changes(), at }))]);
+		setCaption(played[played.length - 1].label);
 	}, []);
 	React.useEffect(() => {
 		if (!run) return;
-		const beat = sampleScenario1[0];
-		const timer = window.setTimeout(() => {
-			setBeats([{ changes: beat.changes(), at: new Date().toISOString() }]);
-			setCaption(beat.label);
-		}, scenarioDelay * 1000);
+		const timer = window.setTimeout(() => play("start"), scenarioDelay * 1000);
 		return () => window.clearTimeout(timer);
-	}, [run]);
+	}, [run, play]);
+	React.useEffect(() => {
+		if (!keptAt) return;
+		const timer = window.setTimeout(() => play("keep"), resolutionDelay * 1000);
+		return () => window.clearTimeout(timer);
+	}, [keptAt, play]);
+
+	const onPathwayDecision = React.useCallback((alertId: string, decision: CarePathwayDecision) => {
+		setDecisions((current) => ({
+			...current,
+			[alertId]: { ...current[alertId], pathwayStatus: pathwayStatusAfter[decision.type] },
+		}));
+	}, []);
+	const onTransferDecision = React.useCallback(
+		(alertId: string, decision: KeepOrTransferDecision) => {
+			const at = new Date().toISOString();
+			const transfer: TransferChoice | undefined = decision.type === "undo" ? undefined : { ...decision, at };
+			setDecisions((current) => ({ ...current, [alertId]: { ...current[alertId], transfer } }));
+			// Only a run's first keep plays the resolution; once it has played, it stays.
+			const resolved = beats.some(({ changes }) => changes.details?.[alertId]);
+			if (resolved) return;
+			setKeptAt(decision.type === "keep" ? at : null);
+		},
+		[beats],
+	);
 
 	const scenario = React.useMemo(() => {
 		const census: Record<string, Partial<CensusPatient>> = {};
 		const monitoring: Record<string, Partial<MonitoringPatient>> = {};
 		const records: Record<string, Partial<PatientRecord>> = {};
 		const fired: TriageAlert[] = [];
+		const resolved: Record<string, NonNullable<TriageAlert["addressed"]>> = {};
+		const details: Record<string, ((detail: AlertDetailData) => AlertDetailData)[]> = {};
 		for (const { changes, at } of beats) {
 			for (const [id, change] of Object.entries(changes.census ?? {})) census[id] = { ...census[id], ...change };
 			for (const [id, change] of Object.entries(changes.monitoring ?? {})) monitoring[id] = { ...monitoring[id], ...change };
 			for (const [id, change] of Object.entries(changes.records ?? {})) records[id] = { ...records[id], ...change };
 			for (const alert of changes.fire ?? []) fired.push({ ...alert, firedAt: at });
+			for (const [id, addressed] of Object.entries(changes.resolve ?? {})) resolved[id] = { ...addressed, at };
+			for (const [id, change] of Object.entries(changes.details ?? {})) details[id] = [...(details[id] ?? []), change];
 		}
-		return { census, monitoring, records, fired };
+		return { census, monitoring, records, fired, resolved, details };
 	}, [beats]);
 
 	const feed = React.useMemo(() => {
@@ -93,8 +151,9 @@ function useSampleLiveFeed() {
 		const vitals: Record<string, Partial<MonitorVitals>> = {};
 		const updates: Record<string, Partial<TriageAlert>> = {};
 		const fired: TriageAlert[] = [];
-		const resolved = new Set<string>();
-		const resolutions: Record<string, TriageAlert["addressed"]> = {};
+		// The scenario's resolutions too.
+		const resolved = new Set<string>(Object.keys(scenario.resolved));
+		const resolutions: Record<string, TriageAlert["addressed"]> = { ...scenario.resolved };
 		for (const live of sampleLiveScenario.slice(0, step)) {
 			for (const [id, change] of Object.entries(live.vitals ?? {})) vitals[id] = { ...vitals[id], ...change };
 			for (const [id, change] of Object.entries(live.update ?? {})) updates[id] = { ...updates[id], ...change };
@@ -132,7 +191,32 @@ function useSampleLiveFeed() {
 		(records: PatientRecord[]) => patch(records, scenario.records),
 		[scenario],
 	);
-	return { ...feed, caption, startScenario1, withScenarioCensus, withScenarioRecords };
+	// The modal's data with what the clinician decided (so it reopens as they left it), then the beats' changes.
+	const withScenarioAlertDetails = React.useCallback(
+		(alertDetails: AlertDetailData[]) =>
+			alertDetails.map((detail) => {
+				const decided = decisions[detail.alert.id];
+				const withDecisions: AlertDetailData = decided
+					? {
+							...detail,
+							pathwayStatus: decided.pathwayStatus ?? detail.pathwayStatus,
+							transfer: detail.transfer && { ...detail.transfer, decided: decided.transfer },
+						}
+					: detail;
+				return (scenario.details[detail.alert.id] ?? []).reduce((current, change) => change(current), withDecisions);
+			}),
+		[decisions, scenario],
+	);
+	return {
+		...feed,
+		caption,
+		startScenario1,
+		withScenarioCensus,
+		withScenarioRecords,
+		withScenarioAlertDetails,
+		onPathwayDecision,
+		onTransferDecision,
+	};
 }
 
 const severityOrder = ["critical", "high", "medium", "low"] as const;

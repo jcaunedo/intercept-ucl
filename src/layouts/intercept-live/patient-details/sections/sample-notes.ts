@@ -1,6 +1,7 @@
 import type { PatientRecord } from "../patient-details";
 import { samplePatientBaseRecords } from "../sample-patient-records";
 import type { PatientNote, PatientNotes } from "./notes-section";
+import { sampleEhrFor } from "../../sample-data/sample-ehr";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's notes, newest first, written by their own care
 // team (`sample-patient-records.ts`). Where a hospital takes Intercept notes back, signed Intercept notes are written to
@@ -524,14 +525,73 @@ const ericksonNotes: PatientNote[] = [
 	},
 ];
 
+// Linda Carlson (`p19`) and Robert Hansen (`p20`), on the same floor: also only the hospital's notes.
+const carlsonNotes: PatientNote[] = [
+	{
+		id: "p19-n1",
+		type: "Nursing note",
+		author: { name: "Kayla Brandt", role: "RN", organization: chadron },
+		at: minutesAgo(130),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Resting. Left leg elevated; redness inside the border marked this morning, less warm. Afebrile, SpO₂ 95% on room air. Bedtime glucose 172, 2 units lispro given.",
+			},
+		],
+	},
+	{
+		id: "p19-n2",
+		type: "Progress note",
+		author: { name: "Tom Weller", role: "MD, Family medicine", organization: chadron },
+		at: hoursAgo(20),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{ heading: "Assessment", text: "Left lower leg cellulitis, day 2, improving. WBC 9.6 from 13.8. Ultrasound: no DVT, no abscess." },
+			{ heading: "Plan", text: "Continue cefazolin; switch to oral cephalexin tomorrow if the redness keeps receding. Metformin on hold while she eats less; sliding scale insulin with her glargine." },
+		],
+	},
+];
+
+const hansenNotes: PatientNote[] = [
+	{
+		id: "p20-n1",
+		type: "Nursing note",
+		author: { name: "Kayla Brandt", role: "RN", organization: chadron },
+		at: minutesAgo(150),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Sleeping. Saline at 100 mL/h. Urine output 70 mL/h over the last 4 h. Ate dinner and drank 600 mL, no nausea or diarrhea since this afternoon.",
+			},
+		],
+	},
+	{
+		id: "p20-n2",
+		type: "Progress note",
+		author: { name: "Tom Weller", role: "MD, Family medicine", organization: chadron },
+		at: hoursAgo(18),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{ heading: "Assessment", text: "Prerenal acute kidney injury from gastroenteritis, improving. Creatinine 1.4 from 2.3, potassium back to 4.2." },
+			{ heading: "Plan", text: "Saline down to 100 mL/h, stop once he's drinking well. Keep lisinopril and metformin on hold until creatinine is near his baseline of 1.0. Home tomorrow if it keeps falling." },
+		],
+	},
+];
+
 const sampleNotesByPatient: Record<string, PatientNotes> = {
 	p1: { emr: "Epic", notes: sarahNotes },
-	p15: { emr: "Epic", notes: hayesNotes },
-	p16: { emr: "Epic", notes: ericksonNotes },
+	p15: { emr: sampleEhrFor("p15"), notes: hayesNotes },
+	p16: { emr: sampleEhrFor("p16"), notes: ericksonNotes },
+	p19: { emr: sampleEhrFor("p19"), notes: carlsonNotes },
+	p20: { emr: sampleEhrFor("p20"), notes: hansenNotes },
 	...Object.fromEntries(
 		samplePatientBaseRecords
 			.filter((record) => notesSpecs[record.id])
-			.map((record) => [record.id, { emr: "Epic", notes: buildNotes(record, notesSpecs[record.id]) }]),
+			.map((record) => [record.id, { emr: sampleEhrFor(record.id), notes: buildNotes(record, notesSpecs[record.id]) }]),
 	),
 };
 

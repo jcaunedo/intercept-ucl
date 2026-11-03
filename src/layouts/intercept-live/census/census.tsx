@@ -1,4 +1,6 @@
 import { alertModalRenderer, type AlertDetailData } from "../alert-detail/alert-detail";
+import type { CarePathwayDecision } from "../alert-detail/care-pathway";
+import type { KeepOrTransferDecision } from "../alert-detail/keep-or-transfer";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { MonitoringPanel, type MonitoringPatient } from "../monitoring/monitoring-panel";
 import { worstOpenSeverity } from "../monitoring/triage-queue";
@@ -36,6 +38,10 @@ type CensusProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		 * toast's maximize button open the alert modal; an alert without one opens the patient.
 		 */
 		alertDetails?: AlertDetailData[];
+		/** A pathway accepted, declined or written in the alert modal, by alert. */
+		onPathwayDecision?: (alertId: string, decision: CarePathwayDecision) => void;
+		/** Keep or transfer decided in the alert modal, by alert (Scenario 1, step 5). */
+		onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision) => void;
 	};
 
 /**
@@ -59,6 +65,8 @@ function Census({
 	defaultPatient,
 	onPatientDetailsAction,
 	alertDetails,
+	onPathwayDecision,
+	onTransferDecision,
 	...shell
 }: CensusProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on the Census and Monitoring.
@@ -75,7 +83,14 @@ function Census({
 			defaultPatient={defaultPatient}
 			renderAlert={
 				alertDetails
-					? alertModalRenderer({ details: alertDetails, alerts, escalationTargets, onAlertAction: handleAlertAction })
+					? alertModalRenderer({
+							details: alertDetails,
+							alerts,
+							escalationTargets,
+							onAlertAction: handleAlertAction,
+							onPathwayDecision,
+							onTransferDecision,
+						})
 					: shell.renderAlert
 			}
 			renderPatientDetails={(patientId, stepper) =>
@@ -123,7 +138,6 @@ function Census({
 			<AlertToasts
 				alerts={alertsProp}
 				patients={patients}
-				onAlertAction={handleAlertAction}
 				onCloseResolved={closeResolved}
 			/>
 		</InterceptLive>

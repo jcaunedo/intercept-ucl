@@ -6,7 +6,6 @@ import { toast } from "@/components/feedback/sonner";
 import {
 	severityOrder,
 	type TriageAlert,
-	type TriageAlertAction,
 	type TriageAlertSeverity,
 	type TriageQueuePatient,
 } from "../monitoring/triage-queue";
@@ -48,8 +47,6 @@ type AlertToastsProps = {
 	alerts: TriageAlert[];
 	/** The page's patients, for the toast's name, location and avatar. */
 	patients: AlertToastPatient[];
-	/** Acknowledge in a toast, as in the triage queue. */
-	onAlertAction: (alertId: string, action: TriageAlertAction) => void;
 	/** A Resolved toast closed with its ×: the patient's card drops its Resolved bar (`useClosedResolutions`). */
 	onCloseResolved?: (patientId: string) => void;
 };
@@ -72,7 +69,7 @@ function useClosedResolutions() {
  * alert: a later change to the same alert replaces its toast (AL-11). With My patients on in the page on screen, only
  * their patients toast, and turning it on closes the toasts of the others.
  */
-function AlertToasts({ alerts, patients, onAlertAction, onCloseResolved }: AlertToastsProps) {
+function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 	const navigation = usePatientNavigation();
 	const openPatient = navigation?.openPatient;
 	const askAboutPatient = navigation?.askAboutPatient;
@@ -132,7 +129,6 @@ function AlertToasts({ alerts, patients, onAlertAction, onCloseResolved }: Alert
 				tone: tones.get(patient.id) ?? avatarTone(patient.id),
 				// Outside the shell there's nowhere to open the patient.
 				onOpen: openPatient ? () => openPatient(patient.id) : undefined,
-				onAcknowledge: attention ? () => onAlertAction(alert.id, { type: "acknowledge" }) : undefined,
 				// Ask Intercept Live about the patient, starting with a quick overview (Nov 2, 2026, user's call).
 				onAsk: askAboutPatient ? () => askAboutPatient(patient.id, name) : undefined,
 				onOpenAlert: openAlert ? () => openAlert(patient.id, alert.id) : undefined,
@@ -142,7 +138,7 @@ function AlertToasts({ alerts, patients, onAlertAction, onCloseResolved }: Alert
 				},
 			});
 		}
-	}, [alerts, patients, mineOnly, tones, openPatient, openAlert, askAboutPatient, onAlertAction, onCloseResolved, closed, closeToast]);
+	}, [alerts, patients, mineOnly, tones, openPatient, openAlert, askAboutPatient, onCloseResolved, closed, closeToast]);
 
 	return null;
 }

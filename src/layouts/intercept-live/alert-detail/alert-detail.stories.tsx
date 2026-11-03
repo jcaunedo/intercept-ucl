@@ -32,6 +32,7 @@ const meta = {
 		onOpenPatient: fn(),
 		onConsultChange: fn(),
 		onPathwayDecision: fn(),
+		onTransferDecision: fn(),
 	},
 	render: (args) => <Demo {...args} />,
 } satisfies Meta<typeof AlertDetailModal>;
@@ -223,7 +224,7 @@ export const Pathway: Story = {
 		const dose = pathway.getByRole("textbox", { name: "Furosemide IV dose" });
 		await userEvent.clear(dose);
 		await userEvent.type(dose, "120 mg IV bolus, then 10 mg/h infusion");
-		await userEvent.click(pathway.getByRole("button", { name: "Save dose" }));
+		await userEvent.click(pathway.getByRole("button", { name: "Save" }));
 		await expect(pathway.getByText("Edited")).toBeInTheDocument();
 		// Add note opens a note for the co-signer, which goes with the orders.
 		await userEvent.click(pathway.getByRole("button", { name: "Add note" }));
@@ -237,6 +238,18 @@ export const Pathway: Story = {
 		await waitFor(() => expect(pathway.getByText("On 80 mg PO at home").tagName).toBe("SPAN"));
 		await waitFor(() => expect(pathway.getByText(/Co-signed by Dr. Tom Weller/)).toBeInTheDocument(), { timeout: 6000 });
 		await expect(pathway.getAllByText("Active")).not.toHaveLength(0);
+	},
+};
+
+/** Exploration: while suggested, a click anywhere on an order opens its dose edit, as its pencil does. */
+export const PathwayClickToEdit: Story = {
+	play: async () => {
+		const dialog = within(
+			await screen.findByRole("dialog", { name: "Rising work of breathing, positive fluid balance, HFrEF" }),
+		);
+		const pathway = within(dialog.getByRole("region", { name: "CHF exacerbation pathway" }));
+		await userEvent.click(pathway.getByText("Target urine output ≥ 100 mL/h over the next 2 h"));
+		await expect(await pathway.findByRole("textbox", { name: "Furosemide IV dose" })).toHaveFocus();
 	},
 };
 
@@ -300,5 +313,153 @@ export const OwnPathway: Story = {
 		await expect(region).toHaveAttribute("data-status", "pending");
 		await expect(await pathway.findByText(/Sent to Dr. Tom Weller for co-signature/)).toBeInTheDocument();
 		await waitFor(() => expect(region).toHaveAttribute("data-status", "active"), { timeout: 6000 });
+	},
+};
+
+const scenario1 = sampleScenario1AlertDetail();
+const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+
+/**
+ * Exploration, Scenario 1 step 5: once the pathway's orders are sent, **Keep or transfer** opens under it: what the plan
+ * needs against what Chadron has tonight, the receiving hospitals and the transport. Keep asks why and shows the 1 h
+ * and 4 h checkpoints, then lists them with their due times.
+ */
+export const KeepOrTransfer: Story = {
+	play: async ({ args }) => {
+		const dialog = within(
+			await screen.findByRole("dialog", {
+				name: "Rising work of breathing, positive fluid balance, HFrEF",
+			}),
+		);
+		// Not before the plan: it follows the pathway's orders.
+		await expect(dialog.queryByRole("region", { name: "Keep or transfer" })).not.toBeInTheDocument();
+		await userEvent.click(dialog.getByRole("button", { name: "Accept and send" }));
+		const region = await dialog.findByRole("region", {
+			name: "Keep or transfer",
+		});
+		const panel = within(region);
+		await expect(panel.getByText("1 machine, free in the ER")).toBeInTheDocument();
+		await userEvent.click(panel.getByRole("button", { name: "Keep at Chadron" }));
+		const keep = await panel.findByRole("button", { name: "Keep at Chadron" });
+		await expect(keep).toBeDisabled();
+		await userEvent.type(panel.getByRole("textbox", { name: "Why keep at Chadron?" }), "BiPAP and RT are here");
+		await userEvent.click(keep);
+		await expect(args.onTransferDecision).toHaveBeenCalledWith({
+			type: "keep",
+			rationale: "BiPAP and RT are here",
+		});
+		await expect(region).toHaveAttribute("data-decision", "keep");
+		await expect(await panel.findByText(/Keeping at Chadron/)).toBeInTheDocument();
+		// Change decision takes it back.
+		await userEvent.click(await panel.findByRole("button", { name: "Change decision" }));
+		await expect(args.onTransferDecision).toHaveBeenLastCalledWith({
+			type: "undo",
+		});
+		await expect(region).toHaveAttribute("data-decision", "open");
+	},
+};
+
+/** Exploration: Transfer picks the receiving hospital and the transport, and asks why. */
+export const TransferRequested: Story = {
+	play: async ({ args }) => {
+		const dialog = within(
+			await screen.findByRole("dialog", {
+				name: "Rising work of breathing, positive fluid balance, HFrEF",
+			}),
+		);
+		await userEvent.click(dialog.getByRole("button", { name: "Accept and send" }));
+		const region = await dialog.findByRole("region", {
+			name: "Keep or transfer",
+		});
+		const panel = within(region);
+		await userEvent.click(panel.getByRole("button", { name: "Transfer" }));
+		await userEvent.click(await panel.findByRole("radio", { name: /Air/ }));
+		await userEvent.type(panel.getByRole("textbox", { name: "Why transfer?" }), "Needs more than the floor can give");
+		await userEvent.click(panel.getByRole("button", { name: "Request transfer" }));
+		await expect(args.onTransferDecision).toHaveBeenCalledWith({
+			type: "transfer",
+			rationale: "Needs more than the floor can give",
+			receivingId: "regional-west",
+			transportId: "air",
+		});
+		await expect(
+			await panel.findByText(/Transfer requested to Regional West Medical Center, by air/),
+		).toBeInTheDocument();
+	},
+};
+
+/**
+ * Exploration, Scenario 1 step 6 in the panel: kept at Chadron at 01:52, both checkpoints passed, and the platform logs
+ * **Transfer avoided** with the trip the family didn't make, the estimated cost avoided (a placeholder until sourced) and
+ * the ICU-level care delivered locally.
+ */
+export const TransferAvoided: Story = {
+	args: {
+		data: {
+			...scenario1,
+			pathwayStatus: "active",
+			transfer: {
+				...scenario1.transfer!,
+				decided: {
+					type: "keep",
+					rationale: "BiPAP and RT are here; a 2 h ride is the bigger risk tonight",
+					at: minutesAgo(250),
+				},
+				checkpoints: [
+					{
+						...scenario1.transfer!.checkpoints[0],
+						result: { status: "passed", detail: "RR 22, SpO₂ 94% on BiPAP" },
+					},
+					{
+						...scenario1.transfer!.checkpoints[1],
+						result: {
+							status: "passed",
+							detail: "Urine output 140 mL/h, SBP 128, RR 20, SpO₂ 95% on 2 L",
+						},
+					},
+				],
+				outcome: {
+					distance: "100 mi each way",
+					cost: "$ to be sourced",
+					careHours: "4 h 20 min",
+				},
+			},
+		},
+	},
+	play: async () => {
+		const panel = within(await screen.findByRole("region", { name: "Keep or transfer" }));
+		await expect(panel.getByText("Transfer avoided")).toBeInTheDocument();
+		await expect(panel.getAllByText(/Passed/)).toHaveLength(2);
+		await expect(panel.queryByRole("button", { name: "Change decision" })).not.toBeInTheDocument();
+	},
+};
+
+/** Exploration: the 1 h checkpoint missed. A High alert was raised, and transfer is back on the table. */
+export const CheckpointMissed: Story = {
+	args: {
+		data: {
+			...scenario1,
+			pathwayStatus: "active",
+			transfer: {
+				...scenario1.transfer!,
+				decided: {
+					type: "keep",
+					rationale: "BiPAP and RT are here",
+					at: minutesAgo(65),
+				},
+				checkpoints: [
+					{
+						...scenario1.transfer!.checkpoints[0],
+						result: { status: "missed", detail: "RR 28, SpO₂ 88% on BiPAP" },
+					},
+					scenario1.transfer!.checkpoints[1],
+				],
+			},
+		},
+	},
+	play: async () => {
+		const panel = within(await screen.findByRole("region", { name: "Keep or transfer" }));
+		await expect(panel.getByText(/A checkpoint was missed/)).toBeInTheDocument();
+		await expect(panel.getByRole("button", { name: "Change decision" })).toBeInTheDocument();
 	},
 };

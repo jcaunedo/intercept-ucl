@@ -13,7 +13,7 @@ import {
 	TriangleAlertIcon,
 	XIcon,
 } from "lucide-react";
-import { Toaster as Sonner, toast, useSonner, type ExternalToast, type ToasterProps } from "sonner";
+import { Toaster as Sonner, toast, useSonner, type ExternalToast, type ToasterProps } from "./vendor/sonner";
 
 import { Button } from "@/components/buttons/button";
 import {
@@ -312,14 +312,20 @@ function ToasterActions({
 					}}
 				>
 					{mutedUntilTime !== null ? (
-						<span className='inline-flex h-8 items-center gap-1 rounded-button-md border border-input bg-background pr-1 pl-3 text-sm text-foreground shadow-xs'>
-							<BellOffIcon aria-hidden='true' className='size-4 text-muted-foreground' />
+						<span className='inline-flex h-8 items-center gap-1 rounded-button-md bg-neutral/80 pr-1 pl-3 text-sm text-neutral-foreground shadow-xs'>
+							<BellOffIcon aria-hidden='true' className='size-4' />
 							<span className='px-1'>Muted until {muteTimeFormat.format(mutedUntilTime)}</span>
 							{/* Each named in a tooltip, over the toasts like the row (Nov 3, 2026, user's call). */}
 							<TooltipProvider>
 								<Tooltip>
 									<TooltipTrigger asChild>
-										<Button variant='ghost' size='icon-xs' aria-label='Resume toasts' onClick={() => muteToasts(null)}>
+										<Button
+											variant='ghost'
+											size='icon-xs'
+											aria-label='Resume toasts'
+											className='hover:bg-neutral-foreground/15 hover:text-neutral-foreground'
+											onClick={() => muteToasts(null)}
+										>
 											<PlayIcon aria-hidden='true' />
 										</Button>
 									</TooltipTrigger>
@@ -333,6 +339,7 @@ function ToasterActions({
 											variant='ghost'
 											size='icon-xs'
 											aria-label='Hide, and keep toasts muted until reload'
+											className='hover:bg-neutral-foreground/15 hover:text-neutral-foreground'
 											onClick={() => muteToasts("reload")}
 										>
 											<XIcon aria-hidden='true' />

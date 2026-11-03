@@ -108,6 +108,77 @@ const sampleScenario1AlertDetail = (): AlertDetailData => ({
 		// Her attending of record at Chadron, the family physician on call from home tonight.
 		cosigner: { name: "Dr. Tom Weller", role: "family physician on call" },
 	},
+	// Step 5: what the plan needs against what Chadron has tonight, and the transfer it would take. The checkpoints follow
+	// the pathway's targets. Capacities, times and the second receiving hospital are illustrative; the checkpoints need
+	// clinical review.
+	transfer: {
+		hospital: "Chadron",
+		source: "Chadron Community Hospital tonight, and the regional transfer center",
+		needs: [
+			{
+				id: "bipap",
+				label: "BiPAP",
+				available: "1 machine, free in the ER",
+				status: "met",
+			},
+			{
+				id: "rt",
+				label: "Respiratory therapist",
+				available: "On call from home, 20 min away",
+				status: "met",
+			},
+			{
+				id: "vitals",
+				label: "Hourly vitals",
+				available: "Kayla Brandt, RN, and the bedside monitor",
+				status: "met",
+			},
+			{
+				id: "rn",
+				label: "Nurse capacity",
+				available: "1 RN for the floor's 9 patients; the on-call nurse can come in",
+				status: "limited",
+			},
+		],
+		receiving: [
+			{
+				id: "regional-west",
+				name: "Regional West Medical Center",
+				place: "Scottsbluff, NE · 100 mi",
+				bed: "ICU, 2 beds open",
+				accepting: true,
+			},
+			{
+				id: "rapid-city",
+				name: "Monument Health Rapid City Hospital",
+				place: "Rapid City, SD · 105 mi",
+				bed: "ICU, 1 bed open",
+				accepting: true,
+			},
+		],
+		transport: [
+			{
+				id: "ground",
+				label: "Ground",
+				status: "Chadron's ambulance · about 2 h to Scottsbluff",
+				available: true,
+			},
+			{
+				id: "air",
+				label: "Air",
+				status: "35 min to launch, then a 40 min flight",
+				available: true,
+			},
+		],
+		checkpoints: [
+			{ id: "1h", after: 60, criteria: "RR under 24 and SpO₂ ≥ 92% on BiPAP" },
+			{
+				id: "4h",
+				after: 240,
+				criteria: "Urine output ≥ 100 mL/h, SBP ≥ 100 mmHg, RR and SpO₂ holding",
+			},
+		],
+	},
 });
 
 const airways = { Invasive: "ventilator", NIV: "niv", Oxygen: "oxygen" } as const;
@@ -348,4 +419,27 @@ function sampleAlertDetails({
 	});
 }
 
-export { sampleAlertDetails, sampleScenario1AlertDetail };
+/**
+ * Hayes's alert at Scenario 1's resolution (06:00): the pathway active, both checkpoints passed with her readings, and
+ * the transfer avoided (the scenario's metrics; the cost is a placeholder until it's sourced). Applied over her detail
+ * once she's kept at Chadron.
+ */
+function sampleScenario1ResolvedDetail(detail: AlertDetailData): AlertDetailData {
+	if (!detail.transfer) return detail;
+	const [oneHour, fourHours, ...rest] = detail.transfer.checkpoints;
+	return {
+		...detail,
+		pathwayStatus: "active",
+		transfer: {
+			...detail.transfer,
+			checkpoints: [
+				{ ...oneHour, result: { status: "passed", detail: "RR 22, SpO₂ 94% on BiPAP" } },
+				{ ...fourHours, result: { status: "passed", detail: "Urine output 140 mL/h, SBP 128, RR 20, SpO₂ 95% on 2 L" } },
+				...rest,
+			],
+			outcome: { distance: "100 mi each way", cost: "$ to be sourced", careHours: "4 h 20 min" },
+		},
+	};
+}
+
+export { sampleAlertDetails, sampleScenario1AlertDetail, sampleScenario1ResolvedDetail };

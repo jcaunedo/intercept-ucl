@@ -476,6 +476,34 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		temps: [38.2, 38.0, 37.6, 37.4, 37.3, 37.2],
 		lastTemp: 110,
 	}),
+	// Carlson: cellulitis, day 2. Yesterday's fever (38.3 °C) and HR 92 made NEWS2 3; now 1, SpO₂ 95% on room air.
+	p19: buildVitals({
+		seed: 19,
+		hr: [92, 76],
+		systolic: [128, 134],
+		diastolic: [76, 78],
+		spo2: [95, 95],
+		rr: [18, 16],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Kayla Brandt",
+		temps: [38.3, 37.8, 37.3, 37.1, 37.0, 37.0],
+		lastTemp: 130,
+	}),
+	// Hansen: dehydrated on arrival, HR 96 (NEWS2 1); now 0 on IV fluids.
+	p20: buildVitals({
+		seed: 20,
+		hr: [96, 80],
+		systolic: [112, 128],
+		diastolic: [70, 76],
+		spo2: [97, 97],
+		rr: [17, 16],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Kayla Brandt",
+		temps: [37.1, 37.0, 36.9, 36.8, 36.8, 36.8],
+		lastTemp: 150,
+	}),
 	// Ortega: post-op day 1, out of the OR 20 h ago. NEWS2 4 on arrival (SpO₂ 95%, oxygen, HR 96), 5 four hours ago as
 	// RR reached 21, 6 now with SpO₂ back to 95%.
 	p17: buildVitals({

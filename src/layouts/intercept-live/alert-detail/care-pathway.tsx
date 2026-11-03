@@ -128,11 +128,17 @@ function OrderRow({
 		if (editing) setDraft(dose);
 	}, [editing, dose]);
 	const save = () => (draft.trim() ? onSave(draft.trim()) : onCancel());
+	const opensEdit = editable && !editing;
 
 	return (
-		<li className='flex flex-col gap-1 py-3 first:pt-0 last:pb-0'>
+		// While it can be edited, a click anywhere on the order opens its dose edit, as the pencil does (Nov 3, 2026, user's
+		// call); the pencil stays the keyboard's way in, and takes its hover fill while the order is hovered.
+		<li
+			onClick={opensEdit ? onEdit : undefined}
+			className={cn("group/order flex flex-col gap-1 py-3 first:pt-0 last:pb-0", opensEdit && "cursor-pointer")}
+		>
 			<div className='flex items-center gap-2'>
-				<span className='text-sm font-semibold text-foreground'>{order.name}</span>
+				<span className='text-sm font-bold text-foreground'>{order.name}</span>
 				{edited ? (
 					<Badge variant='blue' size='xs'>
 						Edited
@@ -148,8 +154,12 @@ function OrderRow({
 						variant='ghost'
 						size='icon-xs'
 						aria-label={`Edit ${order.name} dose`}
-						onClick={onEdit}
-						className='ml-auto text-muted-foreground'
+						onClick={(event) => {
+							// The order's own click would open it again.
+							event.stopPropagation();
+							onEdit();
+						}}
+						className='ml-auto group-hover/order:bg-accent'
 					>
 						<PencilIcon />
 					</Button>
@@ -174,7 +184,7 @@ function OrderRow({
 									Cancel
 								</Button>
 								<Button type='submit' variant='neutral' size='sm'>
-									Save dose
+									Save
 								</Button>
 							</div>
 						</form>
@@ -524,12 +534,12 @@ function CarePathwayPanel({
 						<div
 							className={cn(
 								"rounded-card border bg-background p-4 transition-colors",
-								status === "suggested" ? "border-dashed border-border" : "border-border",
+								status === "suggested" ? "border-dashed border-muted-foreground" : "border-border",
 							)}
 						>
 							<ol
 								aria-label='Orders'
-								className={cn("flex flex-col divide-y divide-border-muted", status === "declined" && "opacity-60")}
+								className={cn("flex flex-col divide-y divide-border", status === "declined" && "opacity-60")}
 							>
 								{shown.orders.map((order) => (
 									<OrderRow
@@ -729,6 +739,7 @@ function CarePathwayPanel({
 
 export {
 	CarePathwayPanel,
+	Expand,
 	type CarePathway,
 	type CarePathwayCosigner,
 	type CarePathwayDecision,

@@ -2,6 +2,7 @@ import { samplePatients } from "../../census/sample-census";
 import type { PatientRecord } from "../patient-details";
 import { samplePatientBaseRecords } from "../sample-patient-records";
 import type { ChartCulture, ChartHomeMedication, ChartImagingReport, ChartProblem, ChartResult, ChartResultPanel, PatientChart } from "./chart-section";
+import { sampleEhrFor } from "../../sample-data/sample-ehr";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's record at their hospital. Each chart is built
 // from the patient's base record (`sample-patient-records.ts`), so its results hold their key labs with the same values
@@ -232,7 +233,7 @@ function buildChart(record: PatientRecord, spec: ChartSpec): PatientChart {
 	);
 
 	return {
-		source: "Epic",
+		source: sampleEhrFor(record.id),
 		updatedAt,
 		problems,
 		allergies: (record.allergies ?? []).map((substance) => ({ substance, ...allergyDetails[substance] })),
@@ -621,6 +622,36 @@ const chartSpecs: Record<string, ChartSpec> = {
 			culture("Blood cultures ×2 (admission)", 66, "preliminary", "No growth at 2 days.", { updatedHours: 6 }),
 		],
 		imaging: [report("Chest X-ray, 2 views", 66, "Right lower lobe pneumonia.", "Consolidation in the right lower lobe with air bronchograms. No effusion. Heart size normal.", chadron)],
+	},
+	// Carlson: cellulitis on cefazolin; blood cultures negative so far.
+	p19: {
+		onsets: ["2011", "2014", "2019"],
+		medical: ["Type 2 diabetes · on insulin", "Obesity", "Chronic venous insufficiency, both legs"],
+		surgical: ["Cholecystectomy · 2008"],
+		social: ["Never smoker", "No alcohol", "Lives with her husband in town", "Retired postal clerk"],
+		home: [
+			["Insulin glargine", "20 units under the skin at bedtime", "continued"],
+			["Metformin", "1,000 mg by mouth twice daily", "held"],
+			["Lisinopril", "10 mg by mouth daily", "continued"],
+		],
+		extras: [["Hemoglobin", "12.8"], ["Platelets", "268"], ["Sodium", "138"], ["Hemoglobin A1c", "8.1"]],
+		cultures: [culture("Blood cultures ×2 (admission)", 40, "preliminary", "No growth at 1 day.", { updatedHours: 8 })],
+		imaging: [report("Ultrasound, left leg veins", 38, "No deep vein thrombosis.", "Compressible deep veins from the groin to the calf. Subcutaneous edema in the lower leg. No abscess.", chadron)],
+	},
+	// Hansen: kidney injury from dehydration; lisinopril and metformin held until his creatinine is back.
+	p20: {
+		onsets: ["2015", "2018"],
+		medical: ["Hypertension", "Type 2 diabetes"],
+		surgical: ["Right knee arthroscopy · 2012"],
+		social: ["Former smoker, quit 2010", "A beer now and then", "Lives with his wife on a farm outside town", "Farmer"],
+		home: [
+			["Lisinopril", "20 mg by mouth daily", "held"],
+			["Metformin", "500 mg by mouth twice daily", "held"],
+			["Atorvastatin", "20 mg by mouth at bedtime", "continued"],
+		],
+		extras: [["Hemoglobin", "14.6"], ["Platelets", "241"], ["Bicarbonate", "23"], ["Glucose", "138"]],
+		cultures: [culture("Stool culture", 30, "final", "No Salmonella, Shigella, Campylobacter or E. coli O157 isolated.", { updatedHours: 4 })],
+		imaging: [report("Ultrasound, kidneys", 28, "Normal-size kidneys. No hydronephrosis.", "Right kidney 11.2 cm, left 11.0 cm. Normal echogenicity. No hydronephrosis or stones. Bladder decompressed.", chadron)],
 	},
 	// Ortega: adhesions from a hysterectomy 12 years ago; 20 cm of small bowel resected.
 	p17: {

@@ -1,28 +1,20 @@
 import * as React from "react";
-import { ListFilterIcon, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-import { Button } from "@/components/buttons/button";
-import { Counter } from "@/components/data-display/counter";
-import { Checkbox } from "@/components/forms/checkbox";
-import { FieldLegend, FieldSet } from "@/components/forms/field";
-import { Label } from "@/components/forms/label";
-import { SearchInput } from "@/components/forms/search-input";
 import {
-	Sheet,
-	SheetContent,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/overlays/sheet";
-import { cn } from "@/lib/utils";
+	FilterPanel,
+	FilterPanelButton,
+	filterPanelCount,
+	type FilterPanelGroup,
+	type FilterPanelValue,
+} from "@/components/forms/filter-panel";
 
 import { useHideToasts } from "../side-panel";
 import { hasActiveAlert, type PanelPatient } from "./patient-panel";
 
-// The Filters panel shared by the Census and Monitoring (Oct 30, 2026, user's call; from the "Census Hospital Filters"
-// artifact, moved from its popover to a right side panel, then to a floating Sheet on Nov 1, 2026). Options in a group match any; groups match all. Each option's
-// count is how many patients it would show with the other groups as they are. Each page builds its own groups; the ones
-// both pages have are here.
+// The Filters shared by the Census and Monitoring (Oct 30, 2026, user's call; from the "Census Hospital Filters"
+// artifact): the patients' filter groups, what each option matches, and UCL's FilterPanel with their counts. Options in
+// a group match any; groups match all. Each page builds its own groups; the ones both pages have are here.
 
 type FilterOption<Patient> = {
 	id: string;
@@ -45,8 +37,8 @@ type FilterGroup<Patient> = {
 	options: FilterOption<Patient>[];
 };
 
-/** The options picked in each group, by group id. */
-type PatientFilters = Record<string, string[]>;
+/** The options picked in each group, by group id: UCL's FilterPanelValue. */
+type PatientFilters = FilterPanelValue;
 
 /** The patients each picked live option holds, by "group:option". */
 type HeldFilters = Record<string, ReadonlySet<string>>;
@@ -63,7 +55,7 @@ function passesFilters<Patient>(patient: Patient, groups: FilterGroup<Patient>[]
 }
 
 /** How many options are picked across the groups: the Filters button's count. */
-const filterCount = (filters: PatientFilters) => Object.values(filters).reduce((total, picked) => total + picked.length, 0);
+const filterCount = filterPanelCount;
 
 /**
  * The picked filters, and the patients each picked live option holds: snapshotted from `patients` when it's picked,
@@ -176,128 +168,39 @@ type FiltersPanelProps<Patient> = {
 };
 
 /**
- * The Filters, in a Sheet floating over the app from the right (Nov 1, 2026, Intercept-Live Filter example `205:5447`;
- * a side panel beside the canvas before). A checkbox per option with its count; options that would show no one are
- * muted, not disabled. The cards update behind the scrim as options change; Apply closes it.
+ * UCL's FilterPanel with the patients' counts (Nov 1, 2026, Intercept-Live Filter example `205:5447`): each option's is
+ * how many patients it would show with the other groups as they are, and the footer says how many of the view's are
+ * shown. The cards update behind the scrim as options change.
  */
 function FiltersPanel<Patient>({ id, open, onOpenChange, groups, filters, onFiltersChange, patients }: FiltersPanelProps<Patient>) {
 	// The alert toasts hide while it's open (Nov 3, 2026, user's call) and come back when it closes.
 	useHideToasts(open);
 	const shown = patients.filter((patient) => passesFilters(patient, groups, filters)).length;
-	// The search narrows the options shown, not the patients: an option whose name matches, or every option of a group
-	// whose title matches. Picked options stay picked while hidden. It starts empty each time the sheet opens.
-	const [query, setQuery] = React.useState("");
-	React.useEffect(() => {
-		if (!open) setQuery("");
-	}, [open]);
-	const needle = query.trim().toLocaleLowerCase();
-	const shownGroups = needle
-		? groups
-				.map((group) =>
-					group.title.toLocaleLowerCase().includes(needle)
-						? group
-						: { ...group, options: group.options.filter((option) => option.label.toLocaleLowerCase().includes(needle)) },
-				)
-				.filter((group) => group.options.length)
-		: groups;
-
-	const toggle = (groupId: string, optionId: string, checked: boolean) => {
-		const picked = filters[groupId] ?? [];
-		onFiltersChange({
-			...filters,
-			[groupId]: checked ? [...picked, optionId] : picked.filter((id) => id !== optionId),
-		});
-	};
+	const panelGroups: FilterPanelGroup[] = groups.map((group) => ({
+		id: group.id,
+		title: group.title,
+		description: group.description,
+		options: group.options.map((option) => ({
+			id: option.id,
+			label: option.label,
+			swatch: option.swatch,
+			icon: option.icon,
+			count: patients.filter((patient) => passesFilters(patient, groups, filters, group.id) && option.matches(patient))
+				.length,
+		})),
+	}));
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent
-				id={id}
-				closeLabel='Close Filters'
-				// No description under the title (Nov 3, 2026, user's call); Radix expects one unless this is unset.
-				aria-describedby={undefined}
-				// With text in the search, Escape clears it first and keeps the sheet open; the next one closes it. Radix hears
-				// Escape before the field does, so the clearing happens here.
-				onEscapeKeyDown={(event) => {
-					if (!query) return;
-					event.preventDefault();
-					setQuery("");
-				}}
-			>
-				<SheetHeader>
-					<SheetTitle>Filters</SheetTitle>
-					{/* First in the sheet, so it takes the focus when the sheet opens. */}
-					<SearchInput
-						collapsible={false}
-						expandedWidth='100%'
-						placeholder='Search filters'
-						value={query}
-						onValueChange={setQuery}
-						className='mt-2'
-					/>
-				</SheetHeader>
-				<div className='flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto border-t border-border px-8 py-5 scrollbar-soft'>
-					{needle && !shownGroups.length ? (
-						<p className='text-sm text-muted-foreground'>No filters match "{query.trim()}"</p>
-					) : null}
-					{shownGroups.map((group) =>
-						group.options.length ? (
-							<FieldSet key={group.id} className='gap-1'>
-								<FieldLegend
-									variant='label'
-									className={cn("text-xs font-semibold tracking-wide text-muted-foreground uppercase", group.description ? "mb-0.5" : "mb-2")}
-								>
-									{group.title}
-								</FieldLegend>
-								{group.description ? <p className='mb-2 text-xs text-muted-foreground'>{group.description}</p> : null}
-								{group.options.map((option) => {
-									const optionId = `${id}-${group.id}-${option.id}`;
-									const checked = (filters[group.id] ?? []).includes(option.id);
-									const count = patients.filter(
-										(patient) => passesFilters(patient, groups, filters, group.id) && option.matches(patient),
-									).length;
-									return (
-										<div
-											key={option.id}
-											className={cn(
-												"-mx-2 flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-accent",
-												!count && !checked && "text-muted-foreground",
-											)}
-										>
-											<Checkbox
-												id={optionId}
-												checked={checked}
-												onCheckedChange={(value) => toggle(group.id, option.id, value === true)}
-											/>
-											{option.swatch ? <span aria-hidden='true' className={cn("size-2 shrink-0 rounded-full", option.swatch)} /> : null}
-											{option.icon ? <option.icon aria-hidden='true' className='size-4 shrink-0 text-icon' /> : null}
-											<Label htmlFor={optionId} className='min-w-0 flex-1 cursor-pointer font-normal text-inherit'>
-												{option.label}
-											</Label>
-											<span className='text-sm text-muted-foreground tabular-nums'>
-												{count}
-												<span className='sr-only'> patients</span>
-											</span>
-										</div>
-									);
-								})}
-							</FieldSet>
-						) : null,
-					)}
-				</div>
-				<SheetFooter className='flex-wrap items-center justify-end border-t border-border pt-5'>
-					<p aria-live='polite' className='mr-auto text-sm text-muted-foreground tabular-nums'>
-						{shown} of {patients.length} patients in this view
-					</p>
-					<Button variant='ghost' disabled={!filterCount(filters)} onClick={() => onFiltersChange({})}>
-						Clear all
-					</Button>
-					{/* The cards already follow each option; Apply closes the sheet (Nov 1, 2026, user's call; it read "Show n
-					    patients" before). */}
-					<Button onClick={() => onOpenChange(false)}>Apply</Button>
-				</SheetFooter>
-			</SheetContent>
-		</Sheet>
+		<FilterPanel
+			id={id}
+			open={open}
+			onOpenChange={onOpenChange}
+			groups={panelGroups}
+			value={filters}
+			onValueChange={onFiltersChange}
+			countLabel='patients'
+			summary={`${shown} of ${patients.length} patients in this view`}
+		/>
 	);
 }
 
@@ -317,20 +220,7 @@ function FiltersButton({
 	filters: PatientFilters;
 	onClick: () => void;
 }) {
-	const picked = filterCount(filters);
-	return (
-		<Button
-			variant='outline'
-			aria-expanded={open}
-			aria-controls={panelId}
-			aria-label={picked ? `Filters, ${picked} picked` : undefined}
-			onClick={onClick}
-		>
-			<ListFilterIcon aria-hidden='true' />
-			Filters
-			{picked ? <Counter count={picked} /> : null}
-		</Button>
-	);
+	return <FilterPanelButton panelId={panelId} open={open} count={filterCount(filters)} onClick={onClick} />;
 }
 
 export {

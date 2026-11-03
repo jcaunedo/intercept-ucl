@@ -34,6 +34,17 @@ const moore = {
 	tone: 6,
 } satisfies ToastAlertOptions;
 
+const anderson = {
+	severity: "low",
+	title: "Heart rate trending up",
+	firedAt: justNow,
+	reason: "HR 102 bpm, up from 84 over 2 h",
+	patientName: "Anderson, James",
+	location: "CVMC · SICU · Bed 2",
+	initials: "AJ",
+	tone: 2,
+} satisfies ToastAlertOptions;
+
 const meta = {
 	title: "Feedback/AlertToast",
 	component: AlertToast,
@@ -44,7 +55,6 @@ const meta = {
 	args: {
 		...hayes,
 		onOpen: fn(),
-		onAcknowledge: fn(),
 		onAsk: fn(),
 		onOpenAlert: fn(),
 		onClose: fn(),
@@ -58,8 +68,12 @@ type Story = StoryObj<typeof meta>;
 export const Critical: Story = {
 	play: async ({ args, canvasElement }) => {
 		const canvas = within(canvasElement);
-		// Maximize sits left of the close button and opens the alert.
-		await userEvent.click(canvas.getByRole("button", { name: /^Open alert/ }));
+		// The whole toast opens the alert…
+		await userEvent.click(canvas.getByRole("button", { name: `Open alert: ${hayes.title}` }));
+		await expect(args.onOpenAlert).toHaveBeenCalledTimes(1);
+		// …except its own buttons, which do only what they say.
+		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+		await expect(args.onAsk).toHaveBeenCalledTimes(1);
 		await expect(args.onOpenAlert).toHaveBeenCalledTimes(1);
 	},
 };
@@ -80,7 +94,6 @@ export const Minimal: Story = {
 		reason: undefined,
 		initials: undefined,
 		onOpen: undefined,
-		onAcknowledge: undefined,
 		onAsk: undefined,
 		onOpenAlert: undefined,
 	},
@@ -97,20 +110,20 @@ export const AllVariants: Story = {
 };
 
 /**
- * What changed, after the pill. Up a severity needs the clinician (pulsing ring, Acknowledge); acknowledged by someone
- * else and resolved are addressed: a still ring, no Acknowledge, and they leave after 10 s.
+ * What changed, after the pill. Up a severity needs the clinician (pulsing ring); acknowledged by someone else and
+ * resolved are addressed: a still ring, and they leave after 10 s.
  */
 export const Changes: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-4'>
 			<AlertToast {...args} {...moore} severity='high' change='Up from Medium' />
-			<AlertToast {...args} {...moore} change='Acknowledged' addressed onAcknowledge={undefined} />
-			<AlertToast {...args} {...moore} severity='resolved' onAcknowledge={undefined} />
+			<AlertToast {...args} {...moore} change='Acknowledged' addressed />
+			<AlertToast {...args} {...moore} severity='resolved' />
 		</div>
 	),
 };
 
-// Moore's Open alert, so the story can check a click anywhere in the header opens it.
+// Moore's Open alert, so the story can check a click on the toast opens it.
 const openMooreAlert = fn();
 
 function ToasterExample() {
@@ -118,15 +131,15 @@ function ToasterExample() {
 	return (
 		<div className='flex flex-wrap gap-2'>
 			<Toaster />
-			<Button onClick={() => toastAlert({ ...hayes, id: "hayes", onOpen: fn(), onAcknowledge: fn(), onAsk: fn(), onOpenAlert: fn() })}>Critical alert</Button>
-			<Button variant='outline' onClick={() => toastAlert({ ...moore, id: "moore", onOpen: fn(), onAcknowledge: fn(), onAsk: fn(), onOpenAlert: openMooreAlert })}>
+			<Button onClick={() => toastAlert({ ...hayes, id: "hayes", onOpen: fn(), onAsk: fn(), onOpenAlert: fn() })}>Critical alert</Button>
+			<Button variant='outline' onClick={() => toastAlert({ ...moore, id: "moore", onOpen: fn(), onAsk: fn(), onOpenAlert: openMooreAlert })}>
 				Medium alert
 			</Button>
 			<Button
 				variant='outline'
 				onClick={() => {
 					repeats.current += 1;
-					toastAlert({ ...hayes, id: "hayes", count: repeats.current, onOpen: fn(), onAcknowledge: fn(), onAsk: fn(), onOpenAlert: fn() });
+					toastAlert({ ...hayes, id: "hayes", count: repeats.current, onOpen: fn(), onAsk: fn(), onOpenAlert: fn() });
 				}}
 			>
 				Repeat critical
@@ -151,13 +164,53 @@ export const InToaster: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Repeat critical" }));
 		await waitFor(() => expect(screen.getAllByRole("alert")).toHaveLength(1));
 
-		await userEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Acknowledge" }));
+		await userEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Open patient" }));
 		await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
 
-		// In the Toaster, a click on the header's words (not only the icon) opens the alert: Sonner doesn't take it as a swipe.
+		// In the Toaster, a click on the toast opens the alert: Sonner doesn't take it as a swipe.
 		await userEvent.click(canvas.getByRole("button", { name: "Medium alert" }));
-		const header = await screen.findByRole("button", { name: /^Open alert: Medium/ });
-		await userEvent.click(within(header).getByText("Medium"));
+		await userEvent.click(await screen.findByRole("button", { name: `Open alert: ${moore.title}` }));
 		await waitFor(() => expect(openMooreAlert).toHaveBeenCalled());
+	},
+};
+
+// The alert titles in the stack, front first.
+const stackOrder = () =>
+	[...document.querySelectorAll<HTMLElement>("[data-sonner-toast]:not([data-removed=true])")].map(
+		(element) => [hayes, moore, anderson].find((alert) => element.textContent?.includes(alert.title))?.title,
+	);
+
+/**
+ * The most severe alert is always in front, whatever arrives after it, and the newest within a severity. Hayes's
+ * Critical comes first, then Moore's Medium and Anderson's Low: Hayes stays in front. Anderson's alert going up to High
+ * moves it ahead of Moore's.
+ */
+export const SortedBySeverity: Story = {
+	parameters: { layout: "padded" },
+	render: () => (
+		<div className='flex flex-wrap gap-2'>
+			<Toaster />
+			<Button
+				onClick={() => {
+					toastAlert({ ...hayes, id: "sorted-hayes", onOpen: fn() });
+					toastAlert({ ...moore, id: "sorted-moore", onOpen: fn() });
+					toastAlert({ ...anderson, id: "sorted-anderson", onOpen: fn() });
+				}}
+			>
+				Three alerts
+			</Button>
+			<Button
+				variant='outline'
+				onClick={() => toastAlert({ ...anderson, id: "sorted-anderson", severity: "high", change: "Up from Low", onOpen: fn() })}
+			>
+				Anderson up to High
+			</Button>
+		</div>
+	),
+	play: async ({ canvas }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Three alerts" }));
+		await waitFor(() => expect(stackOrder()).toEqual([hayes.title, moore.title, anderson.title]));
+		await userEvent.click(canvas.getByRole("button", { name: "Anderson up to High" }));
+		await waitFor(() => expect(stackOrder()).toEqual([hayes.title, anderson.title, moore.title]));
 	},
 };

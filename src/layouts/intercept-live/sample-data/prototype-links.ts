@@ -22,6 +22,8 @@ const prototypeShortcuts = ({
 	onToggleGroupedGrid: () => void;
 }): PrototypeShortcut[] => [
 	{ group: "Scenarios", label: "Scenario 1: Heart failure", page: "Monitoring", onSelect: startScenario1 },
+	// Served by Storybook from `storyboards/` (`.storybook/main.ts`), relative to the story frame.
+	{ group: "Storyboard", label: "Scenario 1", href: "storyboards/scenario-1/index.html" },
 	{ group: "Views", label: "Sections by hospital", checked: groupedGrid, onSelect: onToggleGroupedGrid },
 ];
 

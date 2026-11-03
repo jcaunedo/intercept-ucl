@@ -744,6 +744,61 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		],
 	},
 	{
+		// On the same floor, stable: cellulitis improving on day 2 of IV antibiotics.
+		id: "p19",
+		weight: "84 kg",
+		brief: {
+			text: "Cellulitis of the left lower leg, day 2 of IV cefazolin and improving. The redness is inside the marked border, she's had no fever since yesterday morning, and WBC fell from 13.8 to 9.6. Glucose 140 to 180 on her home insulin. NEWS2 is 1 (Low), SpO₂ 95% on room air.",
+			sourceCount: 7,
+			updatedAt: minutesAgo(130),
+		},
+		codeStatus: "Full code",
+		allergies: ["Penicillin (rash)"],
+		diagnosis: "Cellulitis, left lower leg",
+		problems: ["Type 2 diabetes", "Obesity", "Chronic venous insufficiency"],
+		admittedAt: hoursAgo(40),
+		admittedFrom: "Emergency department",
+		ventilator: charted("Room air", 130),
+		labs: [
+			lab("WBC", "9.6", "K/µL", 320, undefined, ["13.8", 1760]),
+			lab("Glucose", "164", "mg/dL", 320, "high", ["248", 1760]),
+			lab("Creatinine", "0.9", "mg/dL", 320, undefined, ["1.0", 1760]),
+			lab("CRP", "4.2", "mg/dL", 320, "high", ["9.1", 1760]),
+		],
+		careTeam: [
+			...hospitalStaff("Chadron Community Hospital", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// On the same floor, stable: kidney injury from dehydration, back toward his baseline on IV fluids.
+		id: "p20",
+		weight: "88 kg",
+		brief: {
+			text: "Acute kidney injury from dehydration after three days of gastroenteritis, improving. Creatinine 1.4, down from 2.3, on IV fluids; urine output 70 mL/h. Eating and drinking since last evening, no vomiting. Lisinopril and metformin are on hold. NEWS2 is 0 (Low).",
+			sourceCount: 8,
+			updatedAt: minutesAgo(150),
+		},
+		codeStatus: "Full code",
+		allergies: [],
+		diagnosis: "Acute kidney injury, prerenal, from gastroenteritis",
+		problems: ["Hypertension", "Type 2 diabetes"],
+		admittedAt: hoursAgo(30),
+		admittedFrom: "Emergency department",
+		ventilator: charted("Room air", 150),
+		infusions: [{ drug: "Normal saline", rate: "100 mL/h", change: { direction: "down", from: "150", at: minutesAgo(600) }, updatedAt: minutesAgo(5) }],
+		labs: [
+			lab("Creatinine", "1.4", "mg/dL", 300, "high", ["2.3", 1740]),
+			lab("BUN", "28", "mg/dL", 300, "high", ["46", 1740]),
+			lab("Potassium", "4.2", "mmol/L", 300, undefined, ["3.3", 1740]),
+			lab("Sodium", "139", "mmol/L", 300, undefined, ["146", 1740]),
+		],
+		careTeam: [
+			...hospitalStaff("Chadron Community Hospital", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...interceptTeam,
+		],
+	},
+	{
 		// Post-op day 1 after a small bowel resection: breathing a little faster and HR up, so NEWS2 is Medium. Pain and
 		// splinting are the likely cause; nothing has fired.
 		id: "p17",

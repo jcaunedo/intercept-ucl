@@ -77,7 +77,7 @@ export const Static: Story = {};
 
 /**
  * My patients: a chip like the quick views, off by default, so the grid starts with everyone. Pressed, it narrows the
- * grid to the user's own and the title reads "6 of 18 patients"; pressed again, everyone is back.
+ * grid to the user's own and the title reads "8 of 20 patients"; pressed again, everyone is back.
  */
 export const MyPatients: Story = {
 	play: async ({ canvas, userEvent }) => {
@@ -182,7 +182,7 @@ export const Search: Story = {
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^1 patient at /));
 		await expect(canvas.getByRole("button", { name: /^My patients/ })).toHaveTextContent(/1$/);
 		await userEvent.click(canvas.getByRole("button", { name: "Clear search" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^18 patients/));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^20 patients/));
 		// Anything the card shows: Miller's score, "NEWS2 17".
 		await userEvent.type(search, "17");
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^2 patients/));
@@ -199,17 +199,19 @@ export const Filters: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
 		const ventilated = await screen.findByRole("checkbox", { name: "Ventilated" });
 		await userEvent.click(ventilated);
-		await expect(screen.getByText("5 of 18 patients in this view")).toBeInTheDocument();
-		// A modal: the page behind is hidden from assistive tech until Apply closes the sheet.
-		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
+		await expect(screen.getByText("5 of 20 patients in this view")).toBeInTheDocument();
+		// A modal: the page behind is hidden from assistive tech until Done closes the sheet.
+		await userEvent.click(screen.getByRole("button", { name: "Done" }));
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
 		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^5 patients/);
 		const filtersButton = canvas.getByRole("button", { name: "Filters, 1 picked" });
 		await expect(filtersButton).toHaveAttribute("aria-expanded", "false");
 		await userEvent.click(filtersButton);
 		await userEvent.click(await screen.findByRole("button", { name: "Clear all" }));
-		await userEvent.click(screen.getByRole("button", { name: "Apply" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^18 patients/));
+		// With nothing picked, the footer (Clear all, Done) leaves; the close button closes the sheet.
+		await waitFor(() => expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument());
+		await userEvent.click(screen.getByRole("button", { name: "Close Filters" }));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^20 patients/));
 	},
 };
 
@@ -333,7 +335,18 @@ export const EmptyPage: Story = {
 
 /** Plays the sample live feed into the Census: its alerts and the Monitoring page's values. */
 function LiveCensus(props: React.ComponentProps<typeof Census>) {
-	const { patients: monitoring, alerts, everyAlert, caption, startScenario1, withScenarioCensus, withScenarioRecords } = useSampleLiveFeed();
+	const {
+		patients: monitoring,
+		alerts,
+		everyAlert,
+		caption,
+		startScenario1,
+		withScenarioCensus,
+		withScenarioRecords,
+		withScenarioAlertDetails,
+		onPathwayDecision,
+		onTransferDecision,
+	} = useSampleLiveFeed();
 	// The Prototype menu's Sections by hospital view (Group by hospital's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
@@ -352,7 +365,11 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 			patients={withFeedAlerts(censusPatients, alerts)}
 			patientRecords={patientRecords}
 			monitoringPatients={monitoringPatients}
-			alertDetails={sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients, records: patientRecords })}
+			alertDetails={withScenarioAlertDetails(
+				sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients, records: patientRecords }),
+			)}
+			onPathwayDecision={onPathwayDecision}
+			onTransferDecision={onTransferDecision}
 			alerts={alerts}
 			askIntercept={live.askIntercept}
 			askInterceptNotice={live.notice}
