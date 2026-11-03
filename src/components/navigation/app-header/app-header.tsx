@@ -251,7 +251,7 @@ function HeaderDivider() {
 }
 
 /**
- * Patient, left side: Back, Ask Intercept and the patient list (each only when the app handles it, each followed by a
+ * Patient, left side: Back, the patient list and Ask Intercept (each only when the app handles it, each followed by a
  * rule), then the source page and the patient's name. Back and the source page both lead back.
  */
 function PatientNavigation({
@@ -289,20 +289,6 @@ function PatientNavigation({
 							<HeaderDivider />
 						</>
 					) : null}
-					{onToggleAskIntercept ? (
-						<>
-							<Button
-								variant='ghost'
-								size='icon-md'
-								aria-expanded={askInterceptOpen}
-								aria-label='Ask Intercept Live'
-								onClick={onToggleAskIntercept}
-							>
-								<AskInterceptIcon className='size-[18px]' />
-							</Button>
-							<HeaderDivider />
-						</>
-					) : null}
 					{onTogglePatientList ? (
 						<>
 							<Button
@@ -313,6 +299,20 @@ function PatientNavigation({
 								onClick={onTogglePatientList}
 							>
 								<ListIcon aria-hidden='true' className='size-[18px]' />
+							</Button>
+							<HeaderDivider />
+						</>
+					) : null}
+					{onToggleAskIntercept ? (
+						<>
+							<Button
+								variant='ghost'
+								size='icon-md'
+								aria-expanded={askInterceptOpen}
+								aria-label='Ask Intercept Live'
+								onClick={onToggleAskIntercept}
+							>
+								<AskInterceptIcon className='size-[18px]' />
 							</Button>
 							<HeaderDivider />
 						</>
