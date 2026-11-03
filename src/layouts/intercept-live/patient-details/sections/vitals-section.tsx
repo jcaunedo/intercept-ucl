@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 import type { PatientMonitorData } from "../patient-details";
 import { formatElapsed, formatTime, NoData, SectionCard } from "../section-parts";
+import { SourceLabel } from "../../shared/source-label";
 
 // Patient details › Vitals: each vital sign's latest value with its source, age and recent trend, then the hourly
 // flowsheet. Live monitor values replace the charted ones on the tiles when the patient is on Monitoring. Out-of-limit
@@ -23,7 +24,7 @@ type VitalReading = { at: string; value: number; diastolic?: number };
 
 type VitalSeries = {
 	parameter: VitalParameter;
-	/** Where the values come from, e.g. "Monitor", "Manual · Kevin Ortiz, RN", "Capnography". */
+	/** Where the values come from, e.g. "Monitor", "Manual · Kelly Ortiz, RN", "Capnography". */
 	source: string;
 	/** Alarm limits as [low, high]; for BP, the systolic's. */
 	limits?: [number, number];
@@ -255,11 +256,11 @@ function VitalTile({
 						Live · {series.source}
 					</span>
 				) : charted ? (
-					<>
+					<SourceLabel>
 						{series.source}
 						{now !== null ? ` · ${formatElapsed(charted.at, now)}` : null}
 						{stale ? <span className='font-semibold text-badge-amber-foreground'> · Stale</span> : null}
-					</>
+					</SourceLabel>
 				) : (
 					`No ${meta.name.toLowerCase()} recorded`
 				)}

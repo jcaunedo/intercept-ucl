@@ -130,7 +130,7 @@ Because `src/components/**` components are shared across every consumer (layouts
 - Confirm `src/components/<category>/<component-name>/<component-name>.tsx` exists. If the user only gave a Figma URL and it's unclear which component it maps to, check the folders under `src/components/*/` and match by name/shape before assuming.
 - Read the existing `<component-name>.tsx` (and its `.stories.tsx`) in full before touching Figma — you need the current `cva` variants, prop API, and class values as the baseline for the diff.
 - Read the component's DESIGN.md entry **and** the token sync notes (DESIGN.md "Figma → theme.css token map" and the sync drift lists) before touching Figma. Differences already decided there are not questions: don't ask about them again, and never reopen a resolved decision unless the user asks.
-- List every Figma component that renders through this code (e.g. PatientCard's `patient-card` and `patient-card-compact` sets). All of them are audited.
+- List every Figma component that renders through this code (e.g. PatientCensusCard's `patient-card` and `patient-card-compact` sets). All of them are audited.
 
 ### B1. Re-pull the current Figma state
 

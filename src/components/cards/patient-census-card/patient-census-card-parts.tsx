@@ -13,9 +13,9 @@ import {
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import type { PatientCardAlertStatus, PatientCardAlertVariant } from "./patient-card";
+import type { PatientCardAlertStatus, PatientCardAlertVariant } from "./patient-census-card";
 
-// Pieces shared by the patient cards (PatientCard, PatientMonitoringCard), so a patient with an alert looks and behaves
+// Pieces shared by the patient cards (PatientCensusCard, PatientMonitoringCard), so a patient with an alert looks and behaves
 // the same on every surface.
 
 /**

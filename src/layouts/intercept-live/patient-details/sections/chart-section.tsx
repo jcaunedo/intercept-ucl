@@ -7,6 +7,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
 import { Detail, formatDateTime, formatTime, freshness, NoData, SectionCard } from "../section-parts";
+import { SourceLabel } from "../../shared/source-label";
 
 // The Chart section (PRD Patient details §7, PD-040–PD-042): the slice of the hospital's record Intercept shows, read
 // only. Results by panel in the main column, with microbiology and imaging reports; problems, allergies, history and
@@ -21,7 +22,7 @@ type ChartProblem = {
 	status: "active" | "resolved";
 	/** Preformatted, e.g. "Oct 26" or "2019". */
 	onset?: string;
-	/** Who added it to the problem list, e.g. "Priya Shah, MD". */
+	/** Who added it to the problem list, e.g. "Laura Mitchell, MD". */
 	notedBy?: string;
 };
 
@@ -348,7 +349,7 @@ function ChartSection({ chart }: ChartSectionProps) {
 		<div className='@container'>
 			<div className='grid gap-6 @min-[64rem]:grid-cols-[minmax(0,1fr)_22rem]'>
 				<div className='flex min-w-0 flex-col gap-6 @container'>
-					<SectionCard title='Results' meta={source}>
+					<SectionCard title='Results' meta={<SourceLabel>{source}</SourceLabel>}>
 						{chart.panels.length ? (
 							<ResultsTable panels={chart.panels} now={now} />
 						) : (
@@ -357,7 +358,7 @@ function ChartSection({ chart }: ChartSectionProps) {
 					</SectionCard>
 
 					<div className='grid gap-6 @min-[44rem]:grid-cols-2'>
-						<SectionCard title='Microbiology' meta={chart.source}>
+						<SectionCard title='Microbiology' meta={<SourceLabel>{chart.source}</SourceLabel>}>
 							{chart.cultures.length ? (
 								<ul className='flex flex-col divide-y divide-border-muted'>
 									{chart.cultures.map((culture) => (
@@ -369,7 +370,7 @@ function ChartSection({ chart }: ChartSectionProps) {
 							)}
 						</SectionCard>
 
-						<SectionCard title='Imaging reports' meta={chart.source}>
+						<SectionCard title='Imaging reports' meta={<SourceLabel>{chart.source}</SourceLabel>}>
 							{chart.imaging.length ? (
 								<ul className='flex flex-col divide-y divide-border-muted'>
 									{chart.imaging.map((report) => (
@@ -384,7 +385,7 @@ function ChartSection({ chart }: ChartSectionProps) {
 				</div>
 
 				<div className='flex min-w-0 flex-col gap-6'>
-					<SectionCard title='Problems' meta={chart.source}>
+					<SectionCard title='Problems' meta={<SourceLabel>{chart.source}</SourceLabel>}>
 						{chart.problems.length ? (
 							<div className='flex flex-col gap-3'>
 								<ul className='flex flex-col gap-2'>
@@ -416,7 +417,7 @@ function ChartSection({ chart }: ChartSectionProps) {
 						)}
 					</SectionCard>
 
-					<SectionCard title='Allergies' meta={chart.source}>
+					<SectionCard title='Allergies' meta={<SourceLabel>{chart.source}</SourceLabel>}>
 						{chart.allergies.length ? (
 							<ul className='flex flex-col gap-2'>
 								{chart.allergies.map((allergy) => (
@@ -438,7 +439,7 @@ function ChartSection({ chart }: ChartSectionProps) {
 						)}
 					</SectionCard>
 
-					<SectionCard title='History' meta={chart.source}>
+					<SectionCard title='History' meta={<SourceLabel>{chart.source}</SourceLabel>}>
 						<dl className='flex flex-col gap-3'>
 							<Detail label='Medical'>
 								{chart.medicalHistory.length ? (
@@ -474,7 +475,7 @@ function ChartSection({ chart }: ChartSectionProps) {
 						</dl>
 					</SectionCard>
 
-					<SectionCard title='Home medications' meta={chart.source}>
+					<SectionCard title='Home medications' meta={<SourceLabel>{chart.source}</SourceLabel>}>
 						{chart.homeMedications.length ? (
 							<ul className='flex flex-col divide-y divide-border-muted'>
 								{chart.homeMedications.map((medication) => (

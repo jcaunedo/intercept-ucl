@@ -78,7 +78,7 @@ export const Group: Story = {
 				<AvatarFallback tone={3}>MR</AvatarFallback>
 			</Avatar>
 			<Avatar size='md'>
-				<AvatarImage src={samplePhoto1} alt='James Tan' />
+				<AvatarImage src={samplePhoto1} alt='James Turner' />
 				<AvatarFallback tone={6}>JT</AvatarFallback>
 			</Avatar>
 			<Avatar size='md'>

@@ -6,8 +6,8 @@ import {
 	patientCardAcuityLevels,
 	type PatientCardAcuityLevel,
 	type PatientCardAlertVariant,
-	type PatientCardProps,
-} from "@/components/cards/patient-card";
+	type PatientCensusCardProps,
+} from "@/components/cards/patient-census-card";
 import { Counter } from "@/components/data-display/counter";
 import { FilterBarChip } from "@/components/forms/filter-bar";
 import { HospitalSectionHeader } from "@/components/data-display/hospital-section-header";
@@ -44,7 +44,7 @@ import { usePatientNavigation } from "../patient-navigation";
 type PanelHospital = { id: string; name: string };
 
 type PanelPatient = Pick<
-	PatientCardProps,
+	PatientCensusCardProps,
 	| "lastName"
 	| "firstName"
 	| "mrn"
@@ -214,8 +214,8 @@ const byMessages = descending((patient) => patient.unreadMessages || undefined);
 const sortOrders = [
 	{
 		id: "alert",
-		// "Recent alerts", so the label says it's by time (Oct 31, 2026, user's call; "Alert", then "Alerts").
-		label: "Recent alerts",
+		// "Alerts" (Nov 2, 2026, user's call; "Alert", "Alerts", then "Recent alerts" from Oct 31, 2026).
+		label: "Alerts",
 		// Newest first, not by severity (Oct 31, 2026, user's call): the Active alerts chip orders by severity.
 		compare: (a: PanelPatient, b: PanelPatient) => byNewestAlert(a, b) || byName(a, b),
 	},
@@ -990,6 +990,18 @@ function useSortBy(page: SortPage, initial: SortOrderId) {
 	return [sortBy, setSortBy] as const;
 }
 
+/**
+ * The page's My patients chip, everyone's patients to start. Inside the shell it's kept there, per page, like the sort,
+ * so the alert toasts can follow it (`usePagePreferences`); a page on its own keeps it itself.
+ */
+function usePatientScope(page: SortPage) {
+	const preferences = usePagePreferences();
+	const [ownScope, setOwnScope] = React.useState<PatientScope>("all");
+	const scope = preferences ? (preferences.scope[page] ?? "all") : ownScope;
+	const setScope = preferences ? (next: PatientScope) => preferences.onScopeChange(page, next) : setOwnScope;
+	return [scope, setScope] as const;
+}
+
 // Where the board's header row sticks: under the page's sticky header, compact while the page scrolls (AppHeader).
 const stickyTop = 52;
 // How far above the screen's bottom a column taller than the screen stops.
@@ -1274,6 +1286,7 @@ export {
 	useHeldOrder,
 	useRecentActivity,
 	useResolvedHolds,
+	usePatientScope,
 	useSortBy,
 	useSortCadence,
 	useSortPause,

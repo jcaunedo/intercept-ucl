@@ -1,4 +1,4 @@
-import { patientCardAcuityLevels, type PatientCardAcuityLevel } from "@/components/cards/patient-card";
+import { patientCardAcuityLevels, type PatientCardAcuityLevel } from "@/components/cards/patient-census-card";
 
 import {
 	alertFilterGroup,

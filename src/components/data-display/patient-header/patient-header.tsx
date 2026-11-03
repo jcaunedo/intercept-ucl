@@ -4,8 +4,8 @@ import {
 	PatientCardAlert,
 	patientCardAcuityLevels,
 	scoreTrendClassName,
-	type PatientCardProps,
-} from "@/components/cards/patient-card";
+	type PatientCensusCardProps,
+} from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { Badge } from "@/components/data-display/badge";
 import { Typography } from "@/components/typography/typography";
@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 	Pick<
-		PatientCardProps,
+		PatientCensusCardProps,
 		| "lastName"
 		| "firstName"
 		| "mrn"

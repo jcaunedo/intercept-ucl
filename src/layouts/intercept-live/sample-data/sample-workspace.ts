@@ -35,7 +35,7 @@ const sampleShiftEndsAt = (() => {
 
 const sampleTeam: AppHeaderPerson[] = [
 	{ name: "Maria Ruiz", initials: "MR", src: samplePhoto2, tone: 3 },
-	{ name: "James Tan", initials: "JT", src: samplePhoto1, tone: 6 },
+	{ name: "James Turner", initials: "JT", src: samplePhoto1, tone: 6 },
 	{ name: "Ava Brooks", initials: "AB", tone: 2 },
 ];
 

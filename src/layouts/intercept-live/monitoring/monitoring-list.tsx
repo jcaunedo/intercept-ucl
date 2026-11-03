@@ -1,7 +1,7 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-import { PatientCardAlert } from "@/components/cards/patient-card";
+import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import {
 	defaultMonitorLimits,
 	DeviceAlarmValue,

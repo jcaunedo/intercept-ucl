@@ -1,7 +1,7 @@
 import * as React from "react";
 import { FilterXIcon, GermIcon, HandHeartIcon, TriangleIcon } from "lucide-react";
 
-import { PatientCard, type PatientCardProps } from "@/components/cards/patient-card";
+import { PatientCensusCard, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { FilterBar, FilterBarControls, FilterBarFilters } from "@/components/forms/filter-bar";
 import { SearchInput } from "@/components/forms/search-input";
@@ -31,6 +31,7 @@ import {
 	useHeldOrder,
 	useRecentActivity,
 	useResolvedHolds,
+	usePatientScope,
 	useSortBy,
 	type PanelHospital,
 	type PatientScope,
@@ -52,7 +53,7 @@ import { CensusList } from "./census-list";
 
 type CensusHospital = PanelHospital;
 
-type CensusPatient = Omit<PatientCardProps, "onOpen" | "href" | "alertRing" | "onMoreActions" | "className"> & {
+type CensusPatient = Omit<PatientCensusCardProps, "onOpen" | "href" | "alertRing" | "onMoreActions" | "className"> & {
 	id: string;
 	hospitalId: string;
 	/** Assigned to the signed-in clinician this shift. */
@@ -69,7 +70,7 @@ type CensusPatient = Omit<PatientCardProps, "onOpen" | "href" | "alertRing" | "o
 	unreadMessages?: number;
 };
 
-// The Census's sorts: managing patients (PRD Census). No Recent alerts (Oct 31, 2026, user's call): its cards show no
+// The Census's sorts: managing patients (PRD Census). No Alerts sort (Oct 31, 2026, user's call): its cards show no
 // alert, so the order wouldn't explain itself; no Recently resolved, alert history is Monitoring's (Nov 1, 2026, user's
 // call). Family messages, a patient-management task, joins Monitoring's (Nov 1, 2026, user's call).
 const sortOrderIds: readonly SortOrderId[] = ["acuity", "change", "name", "viewed", "messages"];
@@ -186,7 +187,7 @@ function CensusPanel({
 	};
 	const [hospitalId, setHospitalId] = React.useState("all");
 	const [quickView, setQuickView] = React.useState<string | null>(null);
-	const [scope, setScope] = React.useState<PatientScope>("all");
+	const [scope, setScope] = usePatientScope("census");
 	// The Filters panel's options, by group (unit among them since Oct 30, 2026: the Unit menu moved there).
 	const [filters, setFilters] = React.useState<PatientFilters>({});
 	// The filter bar's search: everything the card shows.
@@ -245,8 +246,9 @@ function CensusPanel({
 				? hospitals.find((hospital) => hospital.id === visible[0].hospitalId)
 				: undefined;
 
-	// The cards show no alert, pill or ring (Oct 31, 2026, intercept.ds patient-card-compact): the Census is for managing
-	// patients; Monitoring and the live feed show alerts. The List keeps its Alert column.
+	// The cards show no alert, badge or ring (Oct 31, 2026, intercept.ds patient-card-compact; again Nov 2, 2026,
+	// `patient-census-card` 1108:3964, user's call): the Census is for managing patients; Monitoring and the live feed show
+	// alerts. The List keeps its Alert column.
 	const renderCard = ({
 		id,
 		hospitalId: _hospitalId,
@@ -261,7 +263,7 @@ function CensusPanel({
 	}: CensusPatient) => (
 		// The avatar (Oct 31, 2026, user request; intercept.ds `patient-card-compact`): the patient's photo, or their initials
 		// in their own color, the same as on their Patient details header (`shared/patient-avatar.ts`).
-		<PatientCard
+		<PatientCensusCard
 			{...card}
 			initials={patientInitials(card)}
 			tone={tones.get(id) ?? avatarTone(id)}

@@ -58,7 +58,7 @@ const preview: Preview = {
 						"Design Contracts",
 					],
 					"PRDs",
-					["Census", "Patient card", "Monitoring", "Patient details", "Chat composer", "Glossary"],
+					["Census", "Patient card", "Monitoring", "Patient details", "Alert maximized modal", "Chat composer", "Glossary"],
 					"Documents",
 					["System Specifications", "Design Phase Team Brief", "Slack notes from client"],
 				],

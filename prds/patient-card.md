@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 1, 2026
+Last updated: Nov 2, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -109,6 +109,8 @@ Includes:
 - Selected physiological observations
 
 ✅ **Decision (Oct 31, 2026, product):** the Census's cards show no alert: the Census is for managing patients, and Monitoring and the live feed show alerts. intercept.ds's card sets dropped the alert badge. The component keeps the alert slot for other pages.
+
+✅ **Decision (Nov 2, 2026, design):** the alert is back on the Census's cards as a badge: the bell in the severity's color, with the number of alerts from 2, no label and no ring. Clicking it opens the alert in the alert modal, not the patient. ⚠️ **Accessibility:** without its label, the badge tells severities apart by color alone; screen readers hear the severity (DESIGN.md "Patient census card" → "Alert badge").
 
 ✅ **Decision (Oct 31, 2026, product):** the card shows the patient's avatar before the name: their photo, or their initials in a color of their own, the same avatar as on their Patient details header.
 
@@ -331,7 +333,7 @@ The card shows an initials avatar next to the name. It adds a human element and 
 - The avatar never replaces the name and MRN, which always show beside it (PC-010, PC-011).
 - Decorative for screen readers: the name says who it is.
 
-**Prototype (Oct 31, 2026):** five sample patients have a photo (Miller, Johnson, Carter, Ortega, Nakamura; Johnson's, Carter's and Ortega's from intercept.ds's avatar set, Nakamura's an AI-generated portrait of a fictional person); the other 13 show initials. The prototype can't tell a shared display from a clinician's own screen.
+**Prototype (Oct 31, 2026):** five sample patients have a photo (Miller, Johnson, Carter, Ortega, Norman; Johnson's, Carter's and Ortega's from intercept.ds's avatar set, Norman's an AI-generated portrait of a fictional person); the other 13 show initials. The prototype can't tell a shared display from a clinician's own screen.
 
 #### References: patient photos in clinical software (web research, Oct 31, 2026)
 
@@ -444,7 +446,7 @@ The following is a proposed presentation model derived from ADT and census-recon
 
 **Proposed tone treatment:**
 
-✅ **Resolved (Oct 27, 2026):** the UCL card shows the category as colored text after the score ("7 Moderate"; "7 Moderate risk" until Oct 29, 2026, when "risk" was dropped), with no pill, so it never looks like an alert. The colors follow the table below; Low uses the default text color. Only Moderate is drawn in Figma so far. Categories and colors still need clinical approval (OD-03). ⚠️ **On hold (Oct 29, 2026):** every level shows as neutral text, with no color, until acuity's design is decided (DESIGN.md "Patient card").
+✅ **Resolved (Oct 27, 2026):** the UCL card shows the category as colored text after the score ("7 Moderate"; "7 Moderate risk" until Oct 29, 2026, when "risk" was dropped), with no pill, so it never looks like an alert. The colors follow the table below; Low uses the default text color. Only Moderate is drawn in Figma so far. Categories and colors still need clinical approval (OD-03). ⚠️ **On hold (Oct 29, 2026):** every level shows as neutral text, with no color, until acuity's design is decided (DESIGN.md "Patient census card").
 
 | Category | Tone | Tokens |
 |---|---|---|
@@ -562,7 +564,7 @@ Why the overall condition stays off the card for now:
 - PC-031 allows trajectory only from an approved calculation or a documented clinical assessment.
 - Hospital condition terms (Good, Fair, Serious, Critical) are meant for families and the press. In an ICU almost every patient is Serious or Critical, so they wouldn't tell patients apart.
 
-If the client wants it, the only safe form is a clinician-set status, attributed and timestamped like a Clinician Intuition Alert (PC-073), e.g. "Marked unstable by Dr. Patel · 08:10".
+If the client wants it, the only safe form is a clinician-set status, attributed and timestamped like a Clinician Intuition Alert (PC-073), e.g. "Marked unstable by Dr. Palmer · 08:10".
 
 ⚠️ **Decision needed:** whether the card shows an overall condition at all, who sets it (clinician only, never the system) and with what vocabulary. To discuss with the client (OD-17). Until then the card shows the acuity score only.
 
@@ -1093,7 +1095,7 @@ Unresolved clinical concerns and relevant inherited work remain accessible to th
 
 The full set of Patient card scenarios for design and prototype work. They are layers to combine, not one flat list: a card shows one alert slot scenario (A), with a status modifier (S) when it has an alert, plus a vitals scenario (V), patient context (P) and a card-level state (K). Each scenario has an ID (e.g. A4 + S3 + V2) that Figma variants and prototype scenarios (OD-13) can refer to.
 
-ℹ️ All severities, statuses and colors here are *proposed* and follow the open decisions on severity (OD-03, OD-05) and freshness (OD-06). Names in the examples (RN Lee, Dr. Patel) are synthetic (PC-180).
+ℹ️ All severities, statuses and colors here are *proposed* and follow the open decisions on severity (OD-03, OD-05) and freshness (OD-06). Names in the examples (RN Lee, Dr. Palmer) are synthetic (PC-180).
 
 #### 1. Alert slot: what can appear
 
@@ -1123,7 +1125,7 @@ The full set of Patient card scenarios for design and prototype work. They are l
 | S2 | Active | "Active · 6 min" |
 | S3 | Active, overdue (past response target) | Timestamp in severity colour, "Active · 32 min · Overdue" |
 | S4 | Acknowledged | Lighter tint, "Ack'd by RT Lee · 2 min" |
-| S5 | Escalated | "Escalated to Dr. Patel" + escalate icon |
+| S5 | Escalated | "Escalated to Dr. Palmer" + escalate icon |
 | S6 | Snoozed | Collapsed one-liner, "Snoozed until 14:30" |
 | S7 | Resolved recently (under 15 min) | Green check, "Resolved · 3 min ago", fades out |
 

@@ -19,13 +19,13 @@ One branch per unit of work, named by type:
 Format: `type(scope): summary [REQ-ID…] [DEC-ID]`
 
 - `type` is one of the branch prefixes above (`feat`, `fix`, `chore`, `design`, `docs`), plus `ci` for CI config.
-- `scope` is the area touched (`census`, `patient-card`, `theme`, `prds`, `repo`, …).
+- `scope` is the area touched (`census`, `patient-census-card`, `theme`, `prds`, `repo`, …).
 - `[REQ-ID…]` cites the Cowork requirement IDs the change serves; `[DEC-ID]` cites the decision it came from. The PR body lists every ID touched.
 
 Examples, with the file each one touches:
 
 - `feat(census): group patient counts by hospital [PD-01][CL-06]` — `src/layouts/intercept-live/census/census-panel.tsx`
-- `fix(patient-card): colour acuity levels for clarity [PD-04]` — `src/components/cards/patient-card/patient-card.tsx`
+- `fix(patient-census-card): colour acuity levels for clarity [PD-04]` — `src/components/cards/patient-census-card/patient-census-card.tsx`
 - `docs(prds): renamespace PRD IDs off SV- [I-18]` — `prds/monitoring.md`
 
 ## IDs

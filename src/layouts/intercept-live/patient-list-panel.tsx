@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { PatientCardAlert, patientCardAcuityLevels, type PatientCardProps } from "@/components/cards/patient-card";
+import { PatientCardAlert, patientCardAcuityLevels, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import { cn } from "@/lib/utils";
 
 import { SidePanel } from "./side-panel";
@@ -17,8 +17,8 @@ type PatientListEntry = {
 	name: string;
 	/** "MICU · Bed 11 · Harbor Point General", broad to specific within the unit. */
 	location?: string;
-	alert?: PatientCardProps["alert"];
-	acuity?: PatientCardProps["acuity"];
+	alert?: PatientCensusCardProps["alert"];
+	acuity?: PatientCensusCardProps["acuity"];
 };
 
 /**

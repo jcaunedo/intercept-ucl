@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import aiIcon from "./patient-details/images/ai-brief.svg";
+import { SourceLabel } from "./shared/source-label";
 import { SidePanel } from "./side-panel";
 
 // The Ask Intercept Live chat (intercept.ds `Chat`, `1200:1431`; Intercept-Live "Chat open", `129:14814`): a global
@@ -60,7 +61,16 @@ type AskInterceptNotice = AskInterceptAnswer & { id: string };
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
-const greeting = "Have a question about your patients? Just ask. Intercept Live helps you find the answers you need.";
+// "Johnson, Daniel" → "Daniel Johnson", and its first name, for copy that talks about the patient.
+const spokenName = (patientName: string) => patientName.split(",").map((part) => part.trim()).reverse().join(" ");
+const firstName = (patientName: string) => patientName.split(",")[1]?.trim() || patientName;
+
+/** The chat's first message: about the patient on screen when it's about one (Nov 2, 2026, user's call), else general. */
+function greetingFor({ patientName }: AskInterceptContext) {
+	return patientName
+		? `Have a question about ${spokenName(patientName)}? Just ask. Intercept Live can sum up their day, what changed, their labs and meds.`
+		: "Have a question about your patients? Just ask. Intercept Live helps you find the answers you need.";
+}
 
 // Said when the app gives the chat nothing to answer with.
 const noAnswer: AskInterceptAnswer = { text: "I can't answer questions here yet." };
@@ -90,7 +100,13 @@ function commandHint(name: string, patientName?: string) {
 /** Questions to start with, about the page or the patient on screen. Shown until the first question. */
 function suggestionsFor({ patientName }: AskInterceptContext) {
 	return patientName
-		? ["Summarize the last 24 hours", "What changed since I last looked?", "Show the sepsis criteria"]
+		? [
+				`Summarize ${firstName(patientName)}'s last 24 hours`,
+				`What changed for ${firstName(patientName)} since I last looked?`,
+				`Show ${firstName(patientName)}'s latest labs`,
+				`What meds is ${firstName(patientName)} on?`,
+				`Show ${firstName(patientName)}'s sepsis criteria`,
+			]
 		: [
 				// Shift start first: what a clinician coming on asks before anything else.
 				"Brief me for the start of my shift",
@@ -106,7 +122,13 @@ function suggestionsFor({ patientName }: AskInterceptContext) {
 /* -------------------------------------------------------------------------- */
 
 type ChatMessage =
-	| { id: string; role: "user"; text: string }
+	| {
+			id: string;
+			role: "user";
+			text: string;
+			/** The patient the chat was about when it was asked, so Ask from another patient's toast starts afresh. */
+			patientName?: string;
+	  }
 	| {
 			id: string;
 			role: "assistant";
@@ -225,7 +247,7 @@ function AssistantMessage({ message }: { message: Extract<ChatMessage, { role: "
 				<div className={cn("mt-2 flex items-center gap-1.5", !message.notice && "-ml-1")}>
 					{message.id !== "greeting" && !message.notice ? <CopyButton text={message.text} /> : null}
 					{message.sources?.length ? (
-						<p className='text-xs text-muted-foreground'>Sources: {message.sources.join(" · ")}</p>
+						<SourceLabel className='text-xs text-muted-foreground'>Sources: {message.sources.join(" · ")}</SourceLabel>
 					) : null}
 				</div>
 			) : null}
@@ -277,6 +299,7 @@ function AskInterceptPanel({
 	respond,
 	notice,
 	onRemovePatientContext,
+	opener,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -292,6 +315,11 @@ function AskInterceptPanel({
 	 * about the census again. Without it, there's no chip.
 	 */
 	onRemovePatientContext?: () => void;
+	/**
+	 * A question the app asks for the user, e.g. a quick overview when Ask in an alert toast opens the chat about a patient.
+	 * Each new `id` is asked once, as if typed, as soon as the panel is open and no answer is being written.
+	 */
+	opener?: { id: string; question: string };
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const patientContextClip = useExpandClip();
@@ -309,10 +337,12 @@ function AskInterceptPanel({
 		setMessages((current) => current.map((message) => (message.id === id && message.role === "assistant" ? update(message) : message)));
 
 	// The greeting streams the first time the panel opens, once the panel has slid open, so it's seen from its start.
-	// Notices posted before then stay below it.
+	// Notices posted before then stay below it. A conversation the app starts (`opener`) has none: its question comes first.
 	const hasGreeting = Boolean(greetingMessage);
+	const [skipGreeting, setSkipGreeting] = React.useState(false);
+	const greeting = greetingFor(context);
 	React.useEffect(() => {
-		if (!open || hasGreeting) return;
+		if (!open || hasGreeting || skipGreeting) return;
 		const timer = window.setTimeout(
 			() =>
 				setMessages((current) => [
@@ -322,7 +352,17 @@ function AskInterceptPanel({
 			prefersReducedMotion ? 0 : motionDuration.slow * 1000,
 		);
 		return () => window.clearTimeout(timer);
-	}, [open, hasGreeting, prefersReducedMotion]);
+	}, [open, hasGreeting, skipGreeting, prefersReducedMotion, greeting]);
+	// Before the first question, a change of who the chat is about (the patient's sparkle, or removing the chip) greets
+	// again for them, so the greeting and the suggestions always match the context.
+	React.useEffect(() => {
+		if (asked) return;
+		setMessages((current) =>
+			current.some((message) => message.id === "greeting" && message.role === "assistant" && message.text !== greeting)
+				? current.filter((message) => message.id !== "greeting")
+				: current,
+		);
+	}, [greeting, asked]);
 
 	// Alert updates post while the conversation is about alerts: from a question about them until one that isn't. A
 	// notice that comes meanwhile is posted once per id, whole, after whatever is there (an answer being written keeps
@@ -375,6 +415,7 @@ function AskInterceptPanel({
 	const clearConversation = () => {
 		setMessages([]);
 		setFollowingAlerts(false);
+		setSkipGreeting(false);
 		stickToBottom.current = true;
 	};
 	const chatCommands: ChatCommand[] = [
@@ -382,22 +423,58 @@ function AskInterceptPanel({
 		{ name: "clear", onSelect: clearConversation },
 	];
 
-	const ask = (question: string) => {
+	// `fresh` starts the conversation over with this question (any answer being written stops with the rest).
+	const ask = (question: string, { fresh = false } = {}) => {
 		if (/^\/clear\b/i.test(question.trim())) {
 			clearConversation();
 			return;
 		}
-		if (active) return;
+		if (active && !fresh) return;
 		const answer = respond ? respond(question, context) : noAnswer;
 		setFollowingAlerts(Boolean(answer.followAlerts));
 		const id = String(nextId.current++);
-		setMessages((current) => [
-			...current,
-			{ id: `${id}-question`, role: "user", text: question },
+		const asked: ChatMessage[] = [
+			{ id: `${id}-question`, role: "user", text: question, patientName: context.patientName },
 			{ id: `${id}-answer`, role: "assistant", text: answer.text, sources: answer.sources, shown: 0, status: "thinking" },
-		]);
+		];
+		setMessages((current) => (fresh ? asked : [...current, ...asked]));
 		stickToBottom.current = true;
+		return `${id}-question`;
 	};
+
+	// The app's opening question, asked once per id with the context it came with (Nov 2, 2026, user's call). A
+	// conversation about this patient goes on: the question follows it, after any answer being written, and scrolls to the
+	// top of the view. Anything else (another patient, the census, alert updates, the greeting) is cleared first, so the
+	// question is the first message, at the top.
+	const askedOpeners = React.useRef(new Set<string>());
+	const [scrollToMessage, setScrollToMessage] = React.useState<string | null>(null);
+	React.useEffect(() => {
+		if (!open || !opener || askedOpeners.current.has(opener.id)) return;
+		const questions = messages.filter((message) => message.role === "user");
+		const samePatient =
+			questions.length > 0 && questions.every((message) => message.role === "user" && message.patientName === context.patientName);
+		if (samePatient && active) return;
+		askedOpeners.current.add(opener.id);
+		if (samePatient) {
+			const id = ask(opener.question);
+			if (id) setScrollToMessage(id);
+			return;
+		}
+		setSkipGreeting(true);
+		setFollowingAlerts(false);
+		ask(opener.question, { fresh: true });
+	}, [open, opener, active, messages, context.patientName]);
+
+	// Brings a question to the top of the view; the answer then streams under it and the view follows it down.
+	React.useEffect(() => {
+		if (!scrollToMessage) return;
+		const scroller = scrollRef.current;
+		const element = listRef.current?.querySelector<HTMLElement>(`[data-message-id="${scrollToMessage}"]`);
+		setScrollToMessage(null);
+		if (!scroller || !element) return;
+		stickToBottom.current = false;
+		scroller.scrollTo({ top: element.offsetTop, behavior: prefersReducedMotion ? "auto" : "smooth" });
+	}, [scrollToMessage, messages, prefersReducedMotion]);
 
 	// Stopping keeps what has streamed so far.
 	const stop = () => {
@@ -442,7 +519,7 @@ function AskInterceptPanel({
 					const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
 					stickToBottom.current = scrollHeight - scrollTop - clientHeight < 48;
 				}}
-				className='scrollbar-soft min-h-0 flex-1 overflow-y-auto px-5 pb-4'
+				className='scrollbar-soft relative min-h-0 flex-1 overflow-y-auto px-5 pb-4'
 			>
 				{/* A log: new messages are announced; a streaming answer is busy, so it's read once it's done. */}
 				<div ref={listRef} role='log' aria-label='Conversation' aria-busy={Boolean(active)} className='flex flex-col gap-5'>
@@ -450,6 +527,7 @@ function AskInterceptPanel({
 						{messages.map((message, index) => (
 							<motion.div
 								key={message.id}
+								data-message-id={message.id}
 								variants={revealVariants}
 								initial='initial'
 								animate='animate'

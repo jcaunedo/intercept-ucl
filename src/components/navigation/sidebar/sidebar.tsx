@@ -7,7 +7,14 @@ import { PanelLeftIcon } from "lucide-react";
 import { Logo, LogoSymbol } from "@/components/data-display/logo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/overlays/dropdown-menu";
 import { SidebarTooltip } from "@/components/overlays/sidebar-tooltip";
-import { enterTransition, iconSwapReducedVariants, iconSwapVariants, useMotionPreference } from "@/lib/motion";
+import {
+	enterTransition,
+	iconSwapReducedVariants,
+	iconSwapVariants,
+	urgencyRingVariants,
+	useMotionPreference,
+	useUrgencyPhase,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type SidebarIcon = React.ComponentType<{ className?: string }>;
@@ -33,6 +40,18 @@ function PanelLeftAltIcon(props: React.SVGProps<SVGSVGElement>) {
 	);
 }
 
+/** An item's alert, by severity (PatientCardAlert's names). `resolved` shows nothing, like no alert. */
+type SidebarAlert = "critical" | "high" | "medium" | "low" | "resolved";
+
+type ActiveSidebarAlert = Exclude<SidebarAlert, "resolved">;
+
+const sidebarAlertDot: Record<ActiveSidebarAlert, { className: string; label: string }> = {
+	critical: { className: "bg-severity-critical", label: "Critical alert" },
+	high: { className: "bg-severity-high", label: "High alert" },
+	medium: { className: "bg-severity-medium", label: "Medium alert" },
+	low: { className: "bg-severity-low", label: "Low alert" },
+};
+
 type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 	/** Leading icon, e.g. a lucide-react icon component. */
 	icon: SidebarIcon;
@@ -50,7 +69,48 @@ type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 	collapsed?: boolean;
 	/** A menu the row opens above itself instead of acting: DropdownMenu items (DropdownMenuItem, DropdownMenuLabel…). */
 	menu?: React.ReactNode;
+	/**
+	 * An active alert's severity: a dot on the icon's top-right corner in that severity's color, in both rail modes.
+	 * `resolved` or none shows no dot.
+	 */
+	alert?: SidebarAlert;
 };
+
+/**
+ * The alert dot on a row's icon. Always mounted, so it fades and scales in and out (`iconSwapVariants`) instead of
+ * popping, and keeps its last color while it fades out after the alert resolves. A new severity fades the color. While
+ * shown it flashes (MOTION.md Urgency), on the clock the alert cards' rings share, so they flash together; steady under
+ * reduced motion.
+ */
+function SidebarAlertDot({ alert }: { alert?: SidebarAlert }) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const active = alert && alert !== "resolved" ? alert : undefined;
+	const [shown, setShown] = React.useState(active);
+	if (active && active !== shown) setShown(active);
+	const phase = useUrgencyPhase(Boolean(active) && !prefersReducedMotion);
+
+	return (
+		<motion.span
+			data-slot='sidebar-menu-button-alert'
+			data-severity={active}
+			aria-hidden='true'
+			variants={prefersReducedMotion ? iconSwapReducedVariants : iconSwapVariants}
+			initial={false}
+			animate={active ? "shown" : "hidden"}
+			className='pointer-events-none absolute -top-1.25 -right-1 flex size-1.5'
+		>
+			<motion.span
+				variants={urgencyRingVariants}
+				initial={false}
+				animate={phase}
+				className={cn(
+					"size-full rounded-full transition-colors duration-160 ease-in-out",
+					shown && sidebarAlertDot[shown].className,
+				)}
+			/>
+		</motion.span>
+	);
+}
 
 /**
  * One row in the sidebar's nav.
@@ -65,16 +125,22 @@ function SidebarMenuButton({
 	active = false,
 	collapsed = false,
 	menu,
+	alert,
 	className,
 	...props
 }: SidebarMenuButtonProps) {
+	// Screen readers hear the alert after the label ("Monitoring, Critical alert"); the dot itself is hidden from them. An
+	// `aria-label` rather than visually hidden text, which would be read with a stray space before the comma.
+	const alertLabel = alert && alert !== "resolved" ? sidebarAlertDot[alert].label : undefined;
+	const accessibleName = alertLabel ? `${label}, ${alertLabel}` : collapsed ? label : undefined;
+
 	const button = (
 		<button
 			type='button'
 			data-slot='sidebar-menu-button'
 			data-active={active || undefined}
 			aria-current={active ? "page" : undefined}
-			aria-label={collapsed ? label : undefined}
+			aria-label={accessibleName}
 			className={cn(
 				// The row hugs its content: 32px tall (6px vertical padding around the 20px label line).
 				"flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium outline-none",
@@ -97,7 +163,10 @@ function SidebarMenuButton({
 			)}
 			{...props}
 		>
-			{active && ActiveIcon ? <ActiveIcon /> : <Icon />}
+			<span className='relative flex shrink-0'>
+				{active && ActiveIcon ? <ActiveIcon /> : <Icon />}
+				<SidebarAlertDot alert={alert} />
+			</span>
 			{collapsed ? null : (
 				<>
 					<span className='min-w-0 flex-1 truncate text-left'>{label}</span>
@@ -162,6 +231,8 @@ type SidebarNavItem = {
 	 * `navigateTo`, and the item never becomes active.
 	 */
 	menu?: React.ReactNode;
+	/** An active alert's severity: a dot on the item's icon. `resolved` or none shows no dot. */
+	alert?: SidebarAlert;
 };
 
 type SidebarProps = Omit<
@@ -244,6 +315,7 @@ function Sidebar({
 			active={activeItem === item.label}
 			collapsed={collapsed}
 			menu={item.menu}
+			alert={item.alert}
 			onClick={item.menu ? undefined : () => handleItemClick(item)}
 		/>
 	);
@@ -374,6 +446,7 @@ export {
 	Sidebar,
 	SidebarDivider,
 	SidebarMenuButton,
+	type SidebarAlert,
 	type SidebarMenuButtonProps,
 	type SidebarNavItem,
 	type SidebarProps,

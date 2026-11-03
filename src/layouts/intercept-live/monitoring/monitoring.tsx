@@ -1,6 +1,8 @@
+import { alertModalRenderer, type AlertDetailData } from "../alert-detail/alert-detail";
 import { CensusPanel, type CensusPatient } from "../census/census-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
+import { AlertToasts, useClosedResolutions } from "../shared/alert-toasts";
 import { useAddressedAlerts } from "../shared/live-feed";
 import {
 	MonitoringPanel,
@@ -11,6 +13,7 @@ import {
 	type TriageAlert,
 	type TriageAlertAction,
 } from "./monitoring-panel";
+import { worstOpenSeverity } from "./triage-queue";
 
 type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 	MonitoringPanelProps & {
@@ -27,6 +30,11 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		defaultPatient?: OpenPatient;
 		/** An action in a patient's details header (Look in, Message, Escalate…). */
 		onPatientDetailsAction?: (patientId: string, action: PatientAction) => void;
+		/**
+		 * What each alert's modal shows by alert id. With them, a monitoring card's alert bar and an alert
+		 * toast's maximize button open the alert modal; an alert without one opens the patient.
+		 */
+		alertDetails?: AlertDetailData[];
 	};
 
 /**
@@ -49,16 +57,26 @@ function Monitoring({
 	patientRecords,
 	defaultPatient,
 	onPatientDetailsAction,
+	alertDetails,
 	...shell
 }: MonitoringProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on Monitoring and the Census.
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
+	// Closing a Resolved toast resets that patient's Monitoring card to no alert.
+	const { closedResolutions, closeResolved } = useClosedResolutions();
 
 	return (
 		<InterceptLive
 			{...shell}
+			// The Sidebar's Monitoring shows the worst open alert, flashing, from any page.
+			navAlerts={shell.navAlerts ?? { Monitoring: worstOpenSeverity(alerts) }}
 			defaultPage={defaultPage}
 			defaultPatient={defaultPatient}
+			renderAlert={
+				alertDetails
+					? alertModalRenderer({ details: alertDetails, alerts, escalationTargets, onAlertAction: handleAlertAction })
+					: shell.renderAlert
+			}
 			renderPatientDetails={(patientId, stepper) =>
 				patientDetailsView(patientId, stepper, {
 					patients: censusPatients,
@@ -82,6 +100,7 @@ function Monitoring({
 						liveFeed={liveFeed}
 						onOpenLiveFeed={onOpenLiveFeed}
 						groupedView={groupedView}
+						closedResolutions={closedResolutions}
 					/>
 				),
 				Census: censusPatients ? (
@@ -98,7 +117,15 @@ function Monitoring({
 					/>
 				) : undefined,
 			}}
-		/>
+		>
+			{/* The feed's alerts, so the clinician's own actions don't toast. */}
+			<AlertToasts
+				alerts={alertsProp}
+				patients={patients}
+				onAlertAction={handleAlertAction}
+				onCloseResolved={closeResolved}
+			/>
+		</InterceptLive>
 	);
 }
 

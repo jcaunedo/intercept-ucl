@@ -353,14 +353,15 @@ const samplePatients: CensusPatient[] = [
 		hospital: "Chadron Community Hospital",
 		unit: "Med-Surg",
 		bed: "Bed 4",
-		acuity: { label: news2, score: 10, level: "high" },
-		trajectory: { label: change, value: "+6", trend: "up", trendVariant: "critical" },
-		scoreChange4h: 5,
+		// Just before Scenario 1: NEWS2 5, up 1 from admission and steady over 4 h (`sampleScenario1Census`, 01:40).
+		acuity: { label: news2, score: 5, level: "medium" },
+		trajectory: { label: change, value: "+1", trend: "up", trendVariant: "medium" },
+		scoreChange4h: 0,
 		vitals: [
-			{ label: "Heart Rate", shortLabel: "HR", value: 112 },
-			{ label: "MAP", value: 107 },
-			{ label: "SpO₂", value: "89%", variant: "destructive", range: "below" },
-			{ label: "Resp. Rate", shortLabel: "RR", value: 26 },
+			{ label: "Heart Rate", shortLabel: "HR", value: 106 },
+			{ label: "MAP", value: 106 },
+			{ label: "SpO₂", value: "92%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 20 },
 		],
 		tags: [{ label: "Fall risk" }],
 	},
@@ -412,8 +413,8 @@ const samplePatients: CensusPatient[] = [
 		id: "p18",
 		hospitalId: "mwh",
 		photo: samplePatientPhotos.p18,
-		lastName: "Nakamura",
-		firstName: "Kenji",
+		lastName: "Norman",
+		firstName: "Keith",
 		mrn: "00914370",
 		sex: "M",
 		age: 54,
@@ -433,4 +434,17 @@ const samplePatients: CensusPatient[] = [
 	},
 ];
 
-export { samplePatients };
+/** Hayes's card at Scenario 1's early warning (Demo Use Cases, 01:40): NEWS2 10, High, up 5 in 4 h and 6 in 24 h. */
+const sampleScenario1Census: Partial<CensusPatient> = {
+	acuity: { label: news2, score: 10, level: "high" },
+	trajectory: { label: change, value: "+6", trend: "up", trendVariant: "critical" },
+	scoreChange4h: 5,
+	vitals: [
+		{ label: "Heart Rate", shortLabel: "HR", value: 112 },
+		{ label: "MAP", value: 107 },
+		{ label: "SpO₂", value: "89%", variant: "destructive", range: "below" },
+		{ label: "Resp. Rate", shortLabel: "RR", value: 26 },
+	],
+};
+
+export { samplePatients, sampleScenario1Census };

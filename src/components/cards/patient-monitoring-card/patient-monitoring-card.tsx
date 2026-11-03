@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BellRingIcon, EllipsisIcon, MapPinIcon, type LucideIcon } from "lucide-react";
+import { BellRingIcon, EllipsisIcon, Maximize2Icon, MapPinIcon, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -13,14 +13,15 @@ import {
 	patientCardOpenTargetClassName,
 	usePatientCardAlertRing,
 	type PatientCardAlertVariant,
-	type PatientCardProps,
-} from "@/components/cards/patient-card";
+	type PatientCensusCardProps,
+} from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/overlays/dropdown-menu";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
@@ -30,6 +31,7 @@ import {
 	fadeVariants,
 	motionDistance,
 	liftPattern,
+	pressPattern,
 	resolvedFadeTransition,
 	standardTransition,
 	useDeviceAlarmFlash,
@@ -105,7 +107,7 @@ const parameters: Record<
 const parameterOrder: ParameterKey[] = ["hr", "spo2", "bp", "rr"];
 
 /**
- * The out-of-limits mark: ▲ above the alarm limits, ▼ below, the same triangles as PatientCard's "Change in last 24 h",
+ * The out-of-limits mark: ▲ above the alarm limits, ▼ below, the same triangles as PatientCensusCard's "Change in last 24 h",
  * a size smaller (12px). Its `className` sets the color. Decorative: say the side in words beside it for screen readers.
  * Shared with Monitoring's List table.
  */
@@ -195,15 +197,15 @@ const condensedColumns: Record<PatientMonitoringCardSize, string> = {
 	sm: "grid-cols-[1fr_1fr_1.5fr_1fr]",
 };
 
-/** An item in the card's "…" menu. */
-type PatientMonitoringCardAction = { label: string; icon?: LucideIcon; onSelect?: () => void };
+/** An item in the card's "…" menu. `divider` draws a separator under it, setting it apart from the items below. */
+type PatientMonitoringCardAction = { label: string; icon?: LucideIcon; onSelect?: () => void; divider?: boolean };
 
 type PatientMonitoringCardProps = Omit<
 	React.ComponentProps<"article">,
 	"children" | "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart" | "onAnimationEnd"
 > &
 	Pick<
-		PatientCardProps,
+		PatientCensusCardProps,
 		| "lastName"
 		| "firstName"
 		| "mrn"
@@ -224,10 +226,10 @@ type PatientMonitoringCardProps = Omit<
 	> &
 	VariantProps<typeof patientMonitoringCardVariants> & {
 		/**
-		 * The patient's tags (Ventilated, DNR…), on one line under the monitor, as on PatientCard. Without it there's no
+		 * The patient's tags (Ventilated, DNR…), on one line under the monitor, as on PatientCensusCard. Without it there's no
 		 * row; an empty list shows "No tags", so cards with and without tags line up.
 		 */
-		tags?: PatientCardProps["tags"];
+		tags?: PatientCensusCardProps["tags"];
 		vitals?: MonitorVitals;
 		/** Alarm limits; defaults to common adult ICU limits. */
 		limits?: Partial<MonitorLimits>;
@@ -265,6 +267,11 @@ type PatientMonitoringCardProps = Omit<
 		unreadMessages?: number;
 		/** Opens the patient's family messages, from the message icon. */
 		onOpenMessages?: () => void;
+		/**
+		 * Opens the patient's alert. The alert bar then becomes a button, with a maximize icon at its end, for any alert
+		 * (every severity, Resolved and a message); "No active alerts" stays plain.
+		 */
+		onOpenAlert?: () => void;
 		/** The "…" menu right of the name, shown on hover or keyboard focus in the card. Without items there's no button. */
 		moreActions?: PatientMonitoringCardAction[];
 	};
@@ -437,7 +444,7 @@ function MonitorTrendLane({ parameter, values }: { parameter: ParameterKey; valu
 
 // The alert bar, by state: a severity's fill with white text (PatientCardAlert's colors), green when the last alert
 // resolved, and a quiet grey without one. Stacked in one grid cell, so a change cross-fades without moving anything.
-const alertBarVariants = cva("col-start-1 row-start-1 flex min-w-0 items-center gap-[7px] rounded-lg [&_svg]:shrink-0", {
+const alertBarVariants = cva("col-start-1 row-start-1 flex min-w-0 items-center gap-[7px] rounded-card [&_svg]:shrink-0", {
 	variants: {
 		variant: {
 			critical: "bg-severity-critical text-severity-foreground",
@@ -449,10 +456,19 @@ const alertBarVariants = cva("col-start-1 row-start-1 flex min-w-0 items-center 
 			none: "bg-background-subtle text-muted-foreground",
 		},
 		size: {
-			md: "h-7 pr-2.5 pl-2 text-sm [&_svg]:size-3.5",
-			sm: "h-6 pr-2 pl-1.5 text-xs [&_svg]:size-3",
+			md: "h-7 px-2.5 text-sm [&_svg]:size-3.5",
+			sm: "h-6 px-2 text-xs [&_svg]:size-3",
+		},
+		// An alert's bar opens it (`onOpenAlert`). On hover a 32% gray-700 overlay darkens the fill; a
+		// primitive, not `foreground`, because the severity fills and their white text are the same in both modes. The
+		// button's z-index makes it a stacking context, so the overlay's negative z-index puts it over the fill but under
+		// the text.
+		interactive: {
+			true: "relative z-10 w-full cursor-pointer text-left outline-none before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-card before:bg-(--gray-700)/32 before:opacity-0 before:transition-opacity hover:before:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+			false: "",
 		},
 	},
+	defaultVariants: { interactive: false },
 });
 
 const alertBarLabels: Record<Exclude<PatientCardAlertVariant, "message">, string> = {
@@ -496,14 +512,29 @@ function AlertAge({ since, whole = false }: { since: string; whole?: boolean }) 
 
 /**
  * The patient's alert as a full-width bar: the top severity with how many alerts the patient had in the last 24 h, and
- * how long ago it started; "No active alerts" without one.
+ * how long ago it started; "No active alerts" without one. With `onOpen`, an alert's whole bar (any severity, Resolved or
+ * a message) is a button that opens it, raised above the card's open target, with a maximize icon at its end. The alert
+ * modal (Intercept Live) shows the same bar at the top of its alert.
  */
-function AlertBar({ alert, size }: { alert: PatientMonitoringCardProps["alert"]; size: PatientMonitoringCardSize }) {
+function AlertBar({
+	alert,
+	size,
+	onOpen,
+	className,
+}: {
+	alert: PatientMonitoringCardProps["alert"];
+	size: PatientMonitoringCardSize;
+	onOpen?: () => void;
+	className?: string;
+}) {
+	const { prefersReducedMotion } = useMotionPreference();
 	const variant = alert?.variant ?? "none";
 	const label = alert ? (alert.label ?? (alert.variant === "message" ? null : alertBarLabels[alert.variant])) : "No active alerts";
+	const interactive = Boolean(onOpen && alert);
 
-	return (
-		<div className={alertBarVariants({ variant, size })}>
+	const content = (
+		<>
+			{interactive ? <span className='sr-only'>Open alert: </span> : null}
 			<span className='flex min-w-0 flex-1 items-center gap-1.5'>
 				{variant === "message" ? <MessageCircleSolidIcon /> : <BellRingIcon aria-hidden='true' />}
 				<span className='truncate'>
@@ -520,7 +551,21 @@ function AlertBar({ alert, size }: { alert: PatientMonitoringCardProps["alert"];
 				</span>
 			</span>
 			{alert?.since ? <AlertAge since={alert.since} whole={alert.variant === "resolved"} /> : null}
-		</div>
+			{interactive ? <Maximize2Icon aria-hidden='true' /> : null}
+		</>
+	);
+
+	return interactive ? (
+		<motion.button
+			type='button'
+			onClick={onOpen}
+			className={cn(alertBarVariants({ variant, size, interactive: true }), className)}
+			{...(prefersReducedMotion ? {} : pressPattern)}
+		>
+			{content}
+		</motion.button>
+	) : (
+		<div className={cn(alertBarVariants({ variant, size }), className)}>{content}</div>
 	);
 }
 
@@ -577,7 +622,7 @@ function PatientMonitor({
  * (`unreadMessages`) and a "…" menu (`moreActions`) that shows on hover; left of it, an avatar with `photo` or `initials`. Condensed by default (an ECG strip and HR, SpO₂, BP and
  * RR, or 1-hour sparklines with `plot="trends"`); with `expanded`, the full monitor, one lane per parameter (its waveform, or
  * its last hour with `plot="trends"`) with its numbers and alarm limits. `size="sm"` is the compact card. An alert behaves
- * as on PatientCard (a ring that pulses until the card is clicked or the alert is addressed), and with `onOpen` or
+ * as on PatientCensusCard (a ring that pulses until the card is clicked or the alert is addressed), and with `onOpen` or
  * `href` the whole card opens the patient. Draft: the monitor follows PRD Monitoring §3.3, not a Figma design yet.
  *
  * Figma: [intercept.ds › patient-monitoring-card-2](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1232-5403)
@@ -612,6 +657,7 @@ function PatientMonitoringCard({
 	onExpandedChange: _onExpandedChange,
 	unreadMessages = 0,
 	onOpenMessages,
+	onOpenAlert,
 	moreActions = [],
 	onOpen,
 	href,
@@ -664,7 +710,7 @@ function PatientMonitoringCard({
 	);
 
 	return (
-		// Same card behavior as PatientCard: lift and hover border when it opens the patient, and the alert ring.
+		// Same card behavior as PatientCensusCard: lift and hover border when it opens the patient, and the alert ring.
 		<motion.article
 			data-slot='patient-monitoring-card'
 			data-size={cardSize}
@@ -705,7 +751,7 @@ function PatientMonitoringCard({
 			{/* Name and location, 8px apart: one section of the card. */}
 			<div className='flex flex-col gap-2'>
 				<div className='flex items-start'>
-					{/* As on PatientCard: centered on the name and identity, 44px (32px small). A margin, not the row's gap, so the
+					{/* As on PatientCensusCard: centered on the name and identity, 44px (32px small). A margin, not the row's gap, so the
 					    hidden "…" slot adds no space. */}
 					{photo || initials ? (
 						<Avatar
@@ -719,7 +765,7 @@ function PatientMonitoringCard({
 						</Avatar>
 					) : null}
 					<div className='flex min-w-0 flex-1 flex-col'>
-						{/* One line, truncated, full name in `title`, as on PatientCard. */}
+						{/* One line, truncated, full name in `title`, as on PatientCensusCard. */}
 						<h3
 							title={name}
 							className={cn(
@@ -785,11 +831,14 @@ function PatientMonitoringCard({
 									</Button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align='end'>
-									{moreActions.map(({ label, icon: Icon, onSelect }) => (
-										<DropdownMenuItem key={label} onSelect={onSelect}>
-											{Icon ? <Icon aria-hidden='true' /> : null}
-											{label}
-										</DropdownMenuItem>
+									{moreActions.map(({ label, icon: Icon, onSelect, divider }, index) => (
+										<React.Fragment key={label}>
+											<DropdownMenuItem onSelect={onSelect}>
+												{Icon ? <Icon aria-hidden='true' /> : null}
+												{label}
+											</DropdownMenuItem>
+											{divider && index < moreActions.length - 1 ? <DropdownMenuSeparator /> : null}
+										</React.Fragment>
 									))}
 								</DropdownMenuContent>
 							</DropdownMenu>
@@ -837,12 +886,12 @@ function PatientMonitoringCard({
 						exit='exit'
 						className='col-start-1 row-start-1 grid min-w-0'
 					>
-						<AlertBar alert={alert} size={cardSize} />
+						<AlertBar alert={alert} size={cardSize} onOpen={onOpenAlert} />
 					</motion.div>
 				</AnimatePresence>
 			</div>
 
-			{/* The acuity score and its change, as on PatientCard's compact card. */}
+			{/* The acuity score and its change, as on PatientCensusCard's compact card. */}
 			<AnimatePresence initial={false}>
 				{acuity || trajectory ? (
 					<motion.div
@@ -983,6 +1032,7 @@ function PatientMonitoringCard({
 }
 
 export {
+	AlertBar,
 	defaultMonitorLimits,
 	DeviceAlarmValue,
 	MonitorAlarmIcon,

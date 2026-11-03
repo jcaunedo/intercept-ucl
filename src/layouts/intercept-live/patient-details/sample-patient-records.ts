@@ -34,7 +34,7 @@ const lab = (
 // The Intercept team covers every patient this shift; the hospital's own staff differ by patient.
 const interceptTeam: CareTeamMember[] = [
 	{ role: "Intercept intensivist", name: "Joanna Smith", initials: "JS", src: samplePhoto3, tone: 1, presence: "online", you: true },
-	{ role: "Intercept APP", name: "James Tan", initials: "JT", src: samplePhoto1, tone: 6, presence: "online" },
+	{ role: "Intercept APP", name: "James Turner", initials: "JT", src: samplePhoto1, tone: 6, presence: "online" },
 	{ role: "Intercept RN", name: "Maria Ruiz", initials: "MR", src: samplePhoto2, tone: 3, presence: "away" },
 ];
 
@@ -150,10 +150,10 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			{ name: "Procalcitonin", collectedAt: minutesAgo(50) },
 		],
 		careTeam: [
-			{ role: "Bedside nurse", name: "Kevin Ortiz", initials: "KO", tone: 4, organization: "Harbor Point General", presence: "online" },
-			{ role: "Attending of record", name: "Priya Shah", initials: "PS", tone: 8, organization: "Harbor Point General", presence: "away" },
+			{ role: "Bedside nurse", name: "Kelly Ortiz", initials: "KO", tone: 4, organization: "Harbor Point General", presence: "online" },
+			{ role: "Attending of record", name: "Laura Mitchell", initials: "LM", tone: 8, organization: "Harbor Point General", presence: "away" },
 			{ role: "Intercept intensivist", name: "Joanna Smith", initials: "JS", src: samplePhoto3, tone: 1, presence: "online", you: true },
-			{ role: "Intercept APP", name: "James Tan", initials: "JT", src: samplePhoto1, tone: 6, presence: "online" },
+			{ role: "Intercept APP", name: "James Turner", initials: "JT", src: samplePhoto1, tone: 6, presence: "online" },
 			{ role: "Intercept RN", name: "Maria Ruiz", initials: "MR", src: samplePhoto2, tone: 3, presence: "away" },
 		],
 	},
@@ -204,7 +204,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Procalcitonin", "0.4", "ng/mL", 180, "high"),
 		],
 		careTeam: [
-			...hospitalStaff("Mercy West Hospital", ["Aisha Bello", "AB", 7, "online"], ["Marcus Lee", "ML", 2, "online"]),
+			...hospitalStaff("Mercy West Hospital", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -252,7 +252,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Procalcitonin", "3.2", "ng/mL", 260, "high", ["7.8", 1700]),
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Tom Becker", "TB", 5, "online"], ["Elena Petrova", "EP", 9, "away"]),
+			...hospitalStaff("CVMC", ["Tara Becker", "TB", 5, "online"], ["Ellen Parker", "EP", 9, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -289,7 +289,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			{ name: "Troponin I", collectedAt: minutesAgo(25) },
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Grace Okafor", "GO", 8, "online"], ["Daniel Reyes", "DR", 4, "online"]),
+			...hospitalStaff("CVMC", ["Grace Holloway", "GH", 8, "online"], ["Daniel Reyes", "DR", 4, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -333,7 +333,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Magnesium", "2.6", "mg/dL", 300, "high", ["1.9", 1150]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Kevin Ortiz", "KO", 4, "online"], ["Priya Shah", "PS", 8, "away"]),
+			...hospitalStaff("Harbor Point General", ["Kelly Ortiz", "KO", 4, "online"], ["Laura Mitchell", "LM", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -364,7 +364,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("INR", "1.1", "", 210, undefined),
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Lucy Nguyen", "LN", 2, "online"], ["Samuel Ortiz", "SO", 6, "offline"]),
+			...hospitalStaff("CVMC", ["Lucy Hart", "LH", 2, "online"], ["Samuel Grant", "SG", 6, "offline"]),
 			...interceptTeam,
 		],
 	},
@@ -396,7 +396,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("CRP", "88", "mg/L", 240, "high", ["164", 1680]),
 		],
 		careTeam: [
-			...hospitalStaff("Mercy West Hospital", ["Hannah Cole", "HC", 10, "online"], ["Marcus Lee", "ML", 2, "away"]),
+			...hospitalStaff("Mercy West Hospital", ["Hannah Cole", "HC", 10, "online"], ["Marcus Reed", "MR", 2, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -427,7 +427,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Lactate", "1.0", "mmol/L", 600, undefined, ["2.1", 1950]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Rosa Delgado", "RD", 3, "online"], ["Priya Shah", "PS", 8, "away"]),
+			...hospitalStaff("Harbor Point General", ["Rachel Dixon", "RD", 3, "online"], ["Laura Mitchell", "LM", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -475,7 +475,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Procalcitonin", "1.8", "ng/mL", 160, "high"),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Kevin Ortiz", "KO", 4, "online"], ["Priya Shah", "PS", 8, "away"]),
+			...hospitalStaff("Harbor Point General", ["Kelly Ortiz", "KO", 4, "online"], ["Laura Mitchell", "LM", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -509,7 +509,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("CK", "2,450", "U/L", 200, "high", ["1,380", 1460]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Rosa Delgado", "RD", 3, "online"], ["Nathan Brooks", "NB", 5, "online"]),
+			...hospitalStaff("Harbor Point General", ["Rachel Dixon", "RD", 3, "online"], ["Nathan Brooks", "NB", 5, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -545,7 +545,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Hemoglobin", "10.2", "g/dL", 120, "low", ["11.0", 900]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Amara Diallo", "AD", 7, "online"], ["Helen Park", "HP", 1, "online"]),
+			...hospitalStaff("Harbor Point General", ["Amy Dalton", "AD", 7, "online"], ["Helen Foster", "HF", 1, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -576,7 +576,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("WBC", "9.0", "K/µL", 300, undefined, ["8.4", 1740]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Amara Diallo", "AD", 7, "online"], ["Victor Hale", "VH", 9, "away"]),
+			...hospitalStaff("Harbor Point General", ["Amy Dalton", "AD", 7, "online"], ["Victor Hale", "VH", 9, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -626,7 +626,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			{ name: "Lactate (repeat)", collectedAt: minutesAgo(15) },
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Grace Okafor", "GO", 8, "online"], ["Daniel Reyes", "DR", 4, "online"]),
+			...hospitalStaff("CVMC", ["Grace Holloway", "GH", 8, "online"], ["Daniel Reyes", "DR", 4, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -655,19 +655,20 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			{ name: "TSH", collectedAt: minutesAgo(240) },
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Lucy Nguyen", "LN", 2, "online"], ["Elena Petrova", "EP", 9, "online"]),
+			...hospitalStaff("CVMC", ["Lucy Hart", "LH", 2, "online"], ["Ellen Parker", "EP", 9, "online"]),
 			...interceptTeam,
 		],
 	},
 	{
-		// Scenario 1 (Demo Use Cases): heart failure getting worse at 01:40 on a 25-bed hospital's med-surg floor. Not in an
-		// ICU, so no ICU day; no one from Intercept has looked in yet.
+		// Scenario 1 (Demo Use Cases), just before it starts: heart failure on a 25-bed hospital's med-surg floor, needing
+		// more oxygen overnight but holding. Not in an ICU, so no ICU day; no one from Intercept has looked in yet. At 01:40
+		// her score crosses into High: the Prototype menu's Scenario 1 plays that (`sampleScenario1Record`).
 		id: "p15",
 		weight: "78 kg",
 		brief: {
-			text: "Breathing harder in the last hour: RR up from 20 to 26 and SpO₂ down to 89% on 4 L, with HR 112, so NEWS2 is 10 (High), up from 5. Overnight her oxygen went from 2 to 4 L to hold SpO₂ at 92%. Net fluid balance is +1.8 L and weight is up 2.1 kg over 48 h on IV furosemide. BNP is 2,400, up from 1,850 on admission, and creatinine 1.9 from 1.6.",
+			text: "Holding overnight, but on more oxygen: SpO₂ 92% on 4 L, up from 2 L on admission, with RR 20 and HR 106, creeping up. NEWS2 is 5 (Medium), up from 4 on admission. Net fluid balance is +1.8 L and weight is up 2.1 kg over 48 h on IV furosemide. BNP is 2,400, up from 1,850 on admission, and creatinine 1.9 from 1.6.",
 			sourceCount: 12,
-			updatedAt: minutesAgo(2),
+			updatedAt: minutesAgo(20),
 		},
 		codeStatus: "Full code",
 		allergies: ["Codeine"],
@@ -676,30 +677,32 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		admittedAt: hoursAgo(20),
 		admittedFrom: "Emergency department",
 		ventilator: charted("Oxygen", 150, [{ label: "Nasal cannula", value: "4", unit: "L/min" }]),
-		// Scenario 1's early warning (01:40): NEWS2 from her vitals in `sample-vitals.ts`, 4 on admission, 5 overnight, 10
-		// now, crossing into High (7). Her net balance and weight are the nurse's 25 min ago.
+		// NEWS2 from her vitals in `sample-vitals.ts`: 4 on admission, 5 through the night, below High (7).
 		earlyWarning: {
 			score: "NEWS2",
-			band: "High",
+			value: 5,
+			band: "Medium",
+			alertBand: "High",
 			threshold: 7,
-			crossedAt: minutesAgo(2),
-			value: 10,
+			updatedAt: minutesAgo(2),
 			trend: [
 				{ at: hoursAgo(20), value: 4 },
 				{ at: hoursAgo(4), value: 5 },
 				{ at: hoursAgo(1), value: 5 },
+				{ at: minutesAgo(2), value: 5 },
 			],
 			inputs: [
-				{ label: "Respiratory rate", value: "26/min", points: 3 },
-				{ label: "SpO₂", value: "89%", points: 3 },
+				{ label: "Respiratory rate", value: "20/min", points: 0 },
+				{ label: "SpO₂", value: "92%", points: 2 },
 				{ label: "Oxygen", value: "4 L/min", points: 2 },
-				{ label: "Heart rate", value: "112 bpm", points: 2 },
-				{ label: "Systolic BP", value: "148 mmHg", points: 0 },
+				{ label: "Heart rate", value: "106 bpm", points: 1 },
+				{ label: "Systolic BP", value: "147 mmHg", points: 0 },
 				{ label: "Consciousness", value: "Alert", points: 0 },
 				{ label: "Temperature", value: "36.8 °C", points: 0 },
 			],
 		},
-		fluids: { netBalance: "+1.8 L", weightChange: "+2.1 kg", window: "48 h", chartedAt: minutesAgo(25) },
+		// The nurse's 25 min ago.
+		fluids: { netBalance: "+1.8 L", weightChange: "+2.1 kg", window: "48 h", chartedAt: minutesAgo(25), chartedBy: "Kayla Brandt, RN" },
 		labs: [
 			lab("BNP", "2,400", "pg/mL", 75, "high", ["1,850", 1180]),
 			lab("Creatinine", "1.9", "mg/dL", 75, "high", ["1.6", 1180]),
@@ -771,7 +774,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Creatinine", "0.8", "mg/dL", 210, undefined),
 		],
 		careTeam: [
-			...hospitalStaff("Mercy West Hospital", ["Hannah Cole", "HC", 10, "online"], ["Marcus Lee", "ML", 2, "away"]),
+			...hospitalStaff("Mercy West Hospital", ["Hannah Cole", "HC", 10, "online"], ["Marcus Reed", "MR", 2, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -805,10 +808,47 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Beta-hydroxybutyrate", "0.8", "mmol/L", 90, "high", ["6.4", 1260]),
 		],
 		careTeam: [
-			...hospitalStaff("Mercy West Hospital", ["Aisha Bello", "AB", 7, "online"], ["Marcus Lee", "ML", 2, "online"]),
+			...hospitalStaff("Mercy West Hospital", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "online"]),
 			...interceptTeam,
 		],
 	},
 ];
 
-export { samplePatientBaseRecords };
+/**
+ * Scenario 1's early warning (Demo Use Cases, Chadron at 01:40): what changes in Margaret Hayes's record when her NEWS2
+ * crosses into High, 5 an hour ago and 10 now, with RR 20 → 26, SpO₂ 89% and HR 112 (`sampleScenario1Vitals`). Built
+ * when the Prototype menu's Scenario 1 plays it, so its times read "just now".
+ */
+const sampleScenario1Record = (): Partial<PatientRecord> => ({
+	brief: {
+		text: "Breathing harder in the last hour: RR up from 20 to 26 and SpO₂ down to 89% on 4 L, with HR 112, so NEWS2 is 10 (High), up from 5. Overnight her oxygen went from 2 to 4 L to hold SpO₂ at 92%. Net fluid balance is +1.8 L and weight is up 2.1 kg over 48 h on IV furosemide. BNP is 2,400, up from 1,850 on admission, and creatinine 1.9 from 1.6.",
+		sourceCount: 12,
+		updatedAt: minutesAgo(0),
+	},
+	earlyWarning: {
+		score: "NEWS2",
+		value: 10,
+		band: "High",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		crossedAt: minutesAgo(0),
+		trend: [
+			{ at: hoursAgo(20), value: 4 },
+			{ at: hoursAgo(4), value: 5 },
+			{ at: hoursAgo(1), value: 5 },
+			{ at: minutesAgo(0), value: 10 },
+		],
+		inputs: [
+			{ label: "Respiratory rate", value: "26/min", points: 3 },
+			{ label: "SpO₂", value: "89%", points: 3 },
+			{ label: "Oxygen", value: "4 L/min", points: 2 },
+			{ label: "Heart rate", value: "112 bpm", points: 2 },
+			{ label: "Systolic BP", value: "148 mmHg", points: 0 },
+			{ label: "Consciousness", value: "Alert", points: 0 },
+			{ label: "Temperature", value: "36.8 °C", points: 0 },
+		],
+	},
+});
+
+export { samplePatientBaseRecords, sampleScenario1Record };

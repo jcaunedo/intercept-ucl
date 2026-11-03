@@ -11,14 +11,14 @@ import {
 	RepeatIcon,
 	ServerIcon,
 	SparklesIcon,
+	Undo2Icon,
 	UserRoundIcon,
-	XIcon,
 	type LucideIcon,
 } from "lucide-react";
 import { AnimatePresence, motion, type Variants } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
-import { PatientCardAlert, type PatientCardAcuityLevel, type PatientCardAlertStatus } from "@/components/cards/patient-card";
+import { PatientCardAlert, type PatientCardAcuityLevel, type PatientCardAlertStatus } from "@/components/cards/patient-census-card";
 import { Badge } from "@/components/data-display/badge";
 import { Counter } from "@/components/data-display/counter";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -78,8 +78,11 @@ type TriageAlert = {
 	rationale?: string;
 	/** Raised on an earlier shift and handed over (PRD MON-UC-06). */
 	carriedOver?: boolean;
-	/** When the signed-in clinician addressed it, ISO 8601, and the details of what they did. */
-	addressed?: { at: string; to?: string; reason?: string; note?: string };
+	/**
+	 * When it was addressed, ISO 8601, and the details: by the signed-in clinician, or by `by` when someone else did it
+	 * (e.g. "Ashley Bell, RN" resolving it at the bedside).
+	 */
+	addressed?: { at: string; by?: string; to?: string; reason?: string; note?: string };
 };
 
 /** Someone an alert can be escalated to (PRD MON-040). */
@@ -88,6 +91,8 @@ type EscalationTarget = { id: string; name: string; description: string };
 /** What the clinician did to an alert. The app sends it to Clinical Alerting, which records who and when. */
 type TriageAlertAction =
 	| { type: "acknowledge" }
+	/** Undoes the clinician's own Acknowledge: the alert is active again (the alert modal's Acknowledged toggle). */
+	| { type: "unacknowledge" }
 	| { type: "escalate"; targetId: string; note: string }
 	| { type: "resolve"; reason: string; note: string }
 	| { type: "decline"; note: string };
@@ -124,6 +129,10 @@ const resolutionReasons = ["Treated", "Artifact or false alarm", "Expected for t
 
 /** Resolved and declined alerts leave the queue. */
 const isOpenAlert = (alert: TriageAlert) => alert.status !== "resolved" && alert.status !== "declined";
+
+/** The highest severity among the open alerts, or none when nothing is open (e.g. for the Sidebar's alert dot). */
+const worstOpenSeverity = (alerts: TriageAlert[]): TriageAlertSeverity | undefined =>
+	severityOrder.find((severity) => alerts.some((alert) => isOpenAlert(alert) && alert.severity === severity));
 
 /** Queue order (PRD MON-021): severity first, then oldest first within a severity. */
 const compareTriageAlerts = (a: TriageAlert, b: TriageAlert) =>
@@ -183,10 +192,14 @@ function stateLine(alert: TriageAlert, targets: EscalationTarget[]) {
 			const to = targets.find((target) => target.id === alert.addressed?.to)?.name ?? alert.addressed?.to;
 			return { icon: ArrowUpRightIcon, text: `Escalated to ${to} by you · ${at}` };
 		}
-		case "resolved":
-			return { icon: CheckCheckIcon, text: `Resolved by you · ${at} · ${alert.addressed?.reason}` };
+		case "resolved": {
+			// Who resolved it (the clinician, or `by`), when, and why when there's a reason.
+			if (!alert.addressed) return { icon: CheckCheckIcon, text: "Resolved" };
+			const reason = alert.addressed.reason ? ` · ${alert.addressed.reason}` : "";
+			return { icon: CheckCheckIcon, text: `Resolved by ${alert.addressed.by ?? "you"} · ${at}${reason}` };
+		}
 		case "declined":
-			return { icon: XIcon, text: `${alert.addressed?.note ? "Declined with rationale" : "Declined"} by you · ${at}` };
+			return { icon: Undo2Icon, text: `Marked AI wrong by you · ${at}` };
 		default:
 			return alert.source.kind === "manual"
 				? { icon: UserRoundIcon, text: `Raised by ${alert.source.name} · ${formatTime(alert.firedAt)}` }
@@ -251,25 +264,30 @@ function NoteField({ id, label, value, onChange }: { id: string; label: string; 
 	);
 }
 
-/** Resolve needs a reason; declining an AI recommendation takes an optional rationale (PRD MON-022, MON-023). */
+/**
+ * Resolve needs a reason; declining an AI recommendation takes an optional rationale (PRD MON-022, MON-023). `kind`
+ * picks one; by default an AI alert declines and every other alert resolves.
+ */
 function ResolveForm({
 	alert,
+	kind,
 	onAction,
 	onCancel,
 }: {
 	alert: TriageAlert;
+	kind?: "resolve" | "decline";
 	onAction: (action: TriageAlertAction) => void;
 	onCancel: () => void;
 }) {
 	const id = React.useId();
 	const [reason, setReason] = React.useState<string>();
 	const [note, setNote] = React.useState("");
-	const ai = alert.source.kind === "ai";
+	const decline = (kind ?? (alert.source.kind === "ai" ? "decline" : "resolve")) === "decline";
 
-	if (ai) {
+	if (decline) {
 		return (
-			<RowForm submitLabel='Decline recommendation' onCancel={onCancel} onSubmit={() => onAction({ type: "decline", note })}>
-				<NoteField id={`${id}-note`} label='Why decline? (optional)' value={note} onChange={setNote} />
+			<RowForm submitLabel='Send feedback' onCancel={onCancel} onSubmit={() => onAction({ type: "decline", note })}>
+				<NoteField id={`${id}-note`} label='What did it get wrong? (optional)' value={note} onChange={setNote} />
 			</RowForm>
 		);
 	}
@@ -327,7 +345,7 @@ function EscalateForm({
 						<div key={target.id} className='flex items-start gap-2'>
 							<RadioGroupItem id={`${id}-${target.id}`} value={target.id} className='mt-0.5' />
 							<Label htmlFor={`${id}-${target.id}`} className='flex flex-col items-start gap-0'>
-								<span>{target.name}</span>
+								<span className='font-semibold'>{target.name}</span>
 								<span className='text-xs font-normal text-muted-foreground'>{target.description}</span>
 							</Label>
 						</div>
@@ -529,8 +547,8 @@ function TriageQueueRow({
 								</Button>
 							) : null}
 							<Button variant='ghost' size='xs' onClick={() => onFormChange({ alertId: alert.id, kind: "resolve" })}>
-								{ai ? <XIcon aria-hidden='true' /> : <CheckCheckIcon aria-hidden='true' />}
-								{ai ? "Decline" : "Resolve"}
+								{ai ? <Undo2Icon aria-hidden='true' /> : <CheckCheckIcon aria-hidden='true' />}
+								{ai ? "Feedback" : "Resolve"}
 							</Button>
 						</div>
 					)}
@@ -663,7 +681,12 @@ function TriageQueue({ alerts, patients, escalationTargets, onOpenPatient, onAct
 
 export {
 	compareTriageAlerts,
+	EscalateForm,
+	ResolveForm,
+	severityOrder,
+	stateLine,
 	isOpenAlert,
+	worstOpenSeverity,
 	lastFiredAt,
 	rankTriageAlerts,
 	sortAddressedAlerts,

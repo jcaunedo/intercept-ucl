@@ -5,11 +5,13 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
+import { sampleAlertDetails } from "../alert-detail/sample-alert-detail";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
-import { prototypeShortcuts, resetPrototype } from "../sample-data/prototype-links";
+import { interceptLivePages } from "../intercept-live";
+import { prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Census } from "./census";
 import { samplePatients } from "./sample-census";
@@ -154,7 +156,7 @@ export const KanbanFiltered: Story = {
 export const GroupingAcrossPages: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("switch", { name: "Group by location" }));
-		await userEvent.click(canvas.getByRole("button", { name: "Monitoring" }));
+		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
 		await waitFor(() => expect(canvas.getByRole("switch", { name: "Group by location" })).toBeChecked());
 		await userEvent.click(canvas.getByRole("button", { name: "Census" }));
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1, name: /across/ })).toBeInTheDocument());
@@ -278,7 +280,7 @@ export const Compact: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Compact" }));
 		await waitFor(() =>
-			expect(canvasElement.querySelectorAll("[data-slot='patient-card'][data-size='sm']")).toHaveLength(samplePatients.length),
+			expect(canvasElement.querySelectorAll("[data-slot='patient-census-card'][data-size='sm']")).toHaveLength(samplePatients.length),
 		);
 	},
 };
@@ -297,7 +299,7 @@ export const List: Story = {
 /** The Sidebar's Monitoring opens the Monitoring page: the same patients as live monitors. */
 export const GoToMonitoring: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: "Monitoring" }));
+		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
 		await waitFor(() => expect(canvas.getByRole("group", { name: "Density" })).toBeVisible());
 	},
 };
@@ -325,28 +327,41 @@ export const EmptyPage: Story = {
 
 /** Plays the sample live feed into the Census: its alerts and the Monitoring page's values. */
 function LiveCensus(props: React.ComponentProps<typeof Census>) {
-	const { patients: monitoring, alerts, caption, restart } = useSampleLiveFeed();
+	const { patients: monitoring, alerts, everyAlert, caption, startScenario1, withScenarioCensus, withScenarioRecords } = useSampleLiveFeed();
 	// The Prototype menu's Sections by location view (Group by location's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
+	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
+	const location = usePrototypeLocation(interceptLivePages, {
+		page: props.defaultPage ?? "Census",
+		patient: props.defaultPatient,
+	});
 	const monitoringPatients = useLivePatients(monitoring);
-	const live = useLiveAskIntercept(alerts, monitoringPatients, props.onAlertAction);
+	// Scenario 1 changes Hayes's Census card and record too, so her card, her details and the chat follow.
+	const censusPatients = withScenarioCensus(props.patients);
+	const patientRecords = props.patientRecords && withScenarioRecords(props.patientRecords);
+	const live = useLiveAskIntercept(alerts, monitoringPatients, props.onAlertAction, { censusPatients, patientRecords });
 	return (
 		<Census
 			{...props}
-			patients={withFeedAlerts(props.patients, alerts)}
+			patients={withFeedAlerts(censusPatients, alerts)}
+			patientRecords={patientRecords}
 			monitoringPatients={monitoringPatients}
+			alertDetails={sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients, records: patientRecords })}
 			alerts={alerts}
 			askIntercept={live.askIntercept}
 			askInterceptNotice={live.notice}
 			onAlertAction={live.onAlertAction}
 			liveFeed={caption}
 			prototype={prototypeShortcuts({
-				restartLiveFeed: restart,
+				startScenario1,
 				groupedGrid,
 				onToggleGroupedGrid: () => setGroupedGrid(!groupedGrid),
 			})}
 			groupedView={groupedGrid ? "sections" : "board"}
 			onResetPrototype={resetPrototype}
+			defaultPage={location.defaultPage}
+			defaultPatient={location.defaultPatient}
+			onLocationChange={location.onLocationChange}
 		/>
 	);
 }

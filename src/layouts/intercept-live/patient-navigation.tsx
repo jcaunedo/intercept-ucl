@@ -11,6 +11,17 @@ type PatientNavigation = {
 	 * stepping.
 	 */
 	openPatient: (patientId: string, list?: string[]) => void;
+	/**
+	 * Opens one of the patient's alerts, from its bar on a monitoring card or the maximize button in its toast: the alert
+	 * modal when the layout has one (`renderAlert`), else the patient's details. `consult` opens it with the video consult
+	 * already calling the bedside (a card's Video consult).
+	 */
+	openAlert: (patientId: string, alertId?: string, options?: { consult?: boolean }) => void;
+	/**
+	 * Opens Ask Intercept Live about the patient, from any page (e.g. Ask in an alert toast), and asks for a quick
+	 * overview. The chat stays about them until the chip is removed, the chat closes or another patient's details open.
+	 */
+	askAboutPatient: (patientId: string, patientName: string) => void;
 	/** Whether the canvas is scrolled, so the header and the patient header compact together. */
 	compact: boolean;
 	/** Whether a patient's details are open, so the page under them is hidden. */

@@ -28,6 +28,7 @@ export default defineConfig({
 		"lucide-react",
 		"motion",
 		"motion/react",
+		"sonner",
 	],
 	treeshake: true,
 	splitting: false,

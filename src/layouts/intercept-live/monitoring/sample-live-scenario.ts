@@ -9,9 +9,8 @@ import type { TriageAlert } from "./monitoring";
 // panel moves patients as their worst alert changes, highest severity first. After the last step the feed returns to
 // the start.
 //
-// The first step is Scenario 1's early warning (Demo Use Cases, Chadron at 01:40): Margaret Hayes's NEWS2 crosses into
-// the High band, 5 an hour ago and 10 now, and her Critical alert lands at #1, above Miller's older one, because her
-// score rose 5 in 4 h and Miller's held steady (DU-09). Her vitals are already the 01:40 values.
+// Margaret Hayes isn't in it: her story is Scenario 1 (`sample-data/sample-scenario-1.ts`), which plays only from the
+// Prototype menu.
 
 type LiveStep = {
 	/** What happens, for the story's caption. */
@@ -24,35 +23,17 @@ type LiveStep = {
 	fire?: Omit<TriageAlert, "firedAt">[];
 	/** Ids of alerts resolved now. */
 	resolve?: string[];
+	/** Who resolved each (by alert id), and why: someone at the hospital, not the signed-in clinician. */
+	resolvedBy?: Record<string, { by: string; reason?: string }>;
 };
 
 const sampleLiveScenario: LiveStep[] = [
-	{
-		label: "Hayes's NEWS2 rises to 10: a new Critical alert",
-		fire: [
-			{
-				id: "live-hayes",
-				patientId: "p15",
-				severity: "critical",
-				title: "NEWS2 10, High: up 5 in 4 h",
-				reason: "Rising work of breathing, positive fluid balance, HFrEF",
-				source: { kind: "rule", name: "Deterioration score" },
-				// The score's inputs with their points, then the trend that isn't in the score.
-				evidence: [
-					"RR 26/min, 3 points (20 an hour ago)",
-					"SpO₂ 89% on 4 L/min oxygen, 3 + 2 points",
-					"HR 112 bpm, 2 points",
-					"BP 148/86, temp 36.8 °C, alert: 0 points",
-					"Net fluid balance +1.8 L, weight +2.1 kg in 48 h (charted)",
-				],
-			},
-		],
-	},
 	{
 		// Johnson's card is in the first row, so the resolve (green blink, "Resolved", then the move) is easy to see.
 		label: "Johnson's SpO₂ recovers: the alert is resolved",
 		vitals: { p2: { hr: 104, spo2: 94 } },
 		resolve: ["a4"],
+		resolvedBy: { a4: { by: "Ashley Bell, RN", reason: "Treated" } },
 	},
 	{
 		label: "Moore's pressure drifts down: a new Medium alert",
@@ -88,7 +69,7 @@ const sampleLiveScenario: LiveStep[] = [
 				title: "PEEP differs from the active order",
 				source: { kind: "ai", name: "Vent-Order Mismatch" },
 				recommendation: "Check the ventilator against the order.",
-				evidence: ["Ventilator PEEP 8 cmH₂O", "Active order: PEEP 10 cmH₂O (James Tan, 10:42)"],
+				evidence: ["Ventilator PEEP 8 cmH₂O", "Active order: PEEP 10 cmH₂O (James Turner, 10:42)"],
 			},
 		],
 	},
@@ -100,6 +81,7 @@ const sampleLiveScenario: LiveStep[] = [
 	{
 		label: "Harris's PEEP is corrected: the alert is resolved",
 		resolve: ["live-3"],
+		resolvedBy: { "live-3": { by: "Kelly Ortiz, RN", reason: "Treated" } },
 	},
 ];
 

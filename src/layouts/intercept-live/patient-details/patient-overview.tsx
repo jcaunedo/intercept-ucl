@@ -17,12 +17,14 @@ import {
 	type TriageAlert,
 } from "../monitoring/triage-queue";
 import aiBriefIcon from "./images/ai-brief.svg";
-import type { PatientBrief, PatientDetailsProps, PatientLab } from "./patient-details";
+import type { PatientBrief, PatientDetailsProps, PatientEarlyWarning, PatientFluids, PatientLab } from "./patient-details";
 import { Detail, formatElapsed, formatTime, freshness, NoData, SectionCard } from "./section-parts";
+import { SourceLabel } from "../shared/source-label";
 
-// The Overview (PRD Patient details §5): what matters about the patient now. The AI brief, the live monitor, organ
-// support and key labs in the main column; alerts, the care team and the encounter in a narrow rail on the right. Data
-// that's missing says it's missing, and only an empty list says there's none.
+// The Overview (PRD Patient details §5): what matters about the patient now. The AI brief, the live monitor, the early
+// warning score with intake and output, organ support and key labs in the main column; alerts, the care team and the
+// encounter in a narrow rail on the right. Data that's missing says it's missing, and only an empty list says there's
+// none.
 
 // Flags in words and a letter, never color alone (PRD PD-040).
 const labFlags: Record<NonNullable<PatientLab["flag"]>, { letter: string; label: string; className: string }> = {
@@ -111,11 +113,151 @@ function BriefCard({ brief, now }: { brief: PatientBrief; now: number | null }) 
 			</p>
 			<p className='text-xl text-foreground'>{brief.text}</p>
 			<p className='text-xs text-muted-foreground'>
-				{footer}
+				<SourceLabel className='mr-1 align-[-2px]'>{footer}</SourceLabel>
 				{brief.lastViewedAt ? ` You last looked at ${formatTime(brief.lastViewedAt)}.` : null} What's new to you is
 				shaded on the timeline.
 			</p>
 		</section>
+	);
+}
+
+/**
+ * The score's trend as a line, oldest to newest, over a dashed line at the alert threshold. Decorative: the values and
+ * times are the list under it.
+ */
+function ScoreTrendLine({ trend, threshold }: Pick<PatientEarlyWarning, "trend" | "threshold">) {
+	const times = trend.map((point) => Date.parse(point.at));
+	const start = times[0];
+	const span = Math.max(1, times[times.length - 1] - start);
+	const top = Math.max(threshold + 3, ...trend.map((point) => point.value + 1));
+	const y = (value: number) => 40 - (value / top) * 40;
+	const points = trend.map((point, index) => `${((times[index] - start) / span) * 100},${y(point.value)}`).join(" ");
+
+	return (
+		<svg aria-hidden='true' viewBox='0 0 100 40' preserveAspectRatio='none' className='h-12 w-full overflow-visible'>
+			<line
+				x1='0'
+				x2='100'
+				y1={y(threshold)}
+				y2={y(threshold)}
+				className='stroke-severity-high'
+				strokeWidth='1'
+				strokeDasharray='4 3'
+				vectorEffect='non-scaling-stroke'
+			/>
+			<polyline
+				points={points}
+				fill='none'
+				className='stroke-foreground'
+				strokeWidth='2'
+				strokeLinejoin='round'
+				vectorEffect='non-scaling-stroke'
+			/>
+		</svg>
+	);
+}
+
+/**
+ * The deterioration score (PRD PC-030, DU-14): its value and band, whether it has crossed into the alert band, its
+ * trend and the inputs that make it up, each with its points. A current-state score: it says where the patient is now,
+ * never where they're going.
+ */
+function EarlyWarningCard({ warning, now }: { warning?: PatientEarlyWarning; now: number | null }) {
+	const crossed = warning?.crossedAt !== undefined;
+	return (
+		<SectionCard title='Early warning score' meta={warning ? <SourceLabel>{freshness("Vitals", warning.updatedAt, now)}</SourceLabel> : undefined}>
+			{warning ? (
+				<>
+					<div className='flex flex-wrap items-baseline gap-x-3 gap-y-1'>
+						<span className='text-3xl font-semibold text-foreground tabular-nums'>{warning.value}</span>
+						<span className='text-sm font-medium text-foreground'>
+							{warning.score} · {warning.band}
+						</span>
+						<span className={cn("text-sm", crossed ? "font-medium text-severity-high" : "text-muted-foreground")}>
+							{warning.crossedAt
+								? `Crossed into ${warning.alertBand} (${warning.threshold} or more) at ${formatTime(warning.crossedAt)}`
+								: `Below ${warning.alertBand} (${warning.threshold} or more)`}
+						</span>
+					</div>
+
+					{warning.trend.length > 1 ? (
+						<div className='flex flex-col gap-1.5'>
+							<ScoreTrendLine trend={warning.trend} threshold={warning.threshold} />
+							<ol aria-label='Trend' className='flex justify-between gap-2 text-xs text-muted-foreground'>
+								{warning.trend.map((point, index) => (
+									<li key={point.at} className='flex flex-col last:items-end'>
+										<span className='font-semibold text-foreground tabular-nums'>{point.value}</span>
+										{index === warning.trend.length - 1 ? "Now" : formatTime(point.at)}
+									</li>
+								))}
+							</ol>
+						</div>
+					) : null}
+
+					<table className='w-full text-sm'>
+						<caption className='sr-only'>What makes up the score</caption>
+						<thead className='sr-only'>
+							<tr>
+								<th scope='col'>Input</th>
+								<th scope='col'>Value</th>
+								<th scope='col'>Points</th>
+							</tr>
+						</thead>
+						<tbody className='divide-y divide-border-muted'>
+							{warning.inputs.map((input) => (
+								<tr key={input.label} className={input.points ? "text-foreground" : "text-muted-foreground"}>
+									<th scope='row' className='py-1.5 text-left font-normal'>
+										{input.label}
+									</th>
+									<td className='py-1.5 text-right tabular-nums'>{input.value}</td>
+									<td className={cn("w-20 py-1.5 text-right tabular-nums", input.points ? "font-semibold" : undefined)}>
+										{input.points} {input.points === 1 ? "point" : "points"}
+									</td>
+								</tr>
+							))}
+						</tbody>
+						<tfoot>
+							<tr className='border-t border-border font-semibold text-foreground'>
+								<th scope='row' className='pt-2 text-left'>
+									Total
+								</th>
+								<td />
+								<td className='pt-2 text-right tabular-nums'>{warning.value}</td>
+							</tr>
+						</tfoot>
+					</table>
+				</>
+			) : (
+				<NoData>No early warning score for this patient.</NoData>
+			)}
+		</SectionCard>
+	);
+}
+
+/** Charted intake and output (DU-18): the net fluid balance and the weight change over the same period. */
+function FluidsCard({ fluids, now }: { fluids?: PatientFluids; now: number | null }) {
+	return (
+		<SectionCard title='Intake and output' meta={fluids ? <SourceLabel>{freshness("Charted", fluids.chartedAt, now)}</SourceLabel> : undefined}>
+			{fluids ? (
+				<>
+					<dl className='grid grid-cols-2 gap-x-4 gap-y-3'>
+						<Detail label={`Net balance · ${fluids.window}`}>
+							<span className='text-2xl font-semibold tabular-nums'>{fluids.netBalance}</span>
+						</Detail>
+						<Detail label={`Weight · ${fluids.window}`}>
+							<span className='text-2xl font-semibold tabular-nums'>{fluids.weightChange}</span>
+						</Detail>
+					</dl>
+					{fluids.chartedBy ? (
+						<p className='text-xs text-muted-foreground'>
+							Charted by {fluids.chartedBy} at {formatTime(fluids.chartedAt)}
+						</p>
+					) : null}
+				</>
+			) : (
+				<NoData>No intake and output charted for this patient.</NoData>
+			)}
+		</SectionCard>
 	);
 }
 
@@ -175,10 +317,11 @@ const latest = (times: (string | undefined)[]) =>
 	times.reduce<string | undefined>((last, time) => (time && (!last || time > last) ? time : last), undefined);
 
 /**
- * The Overview: alerts and concerns (PD-020), the live monitor (PD-021), organ support (PD-022), the AI brief (PD-024),
- * key labs (PD-025) and context (PD-026).
+ * The Overview: alerts and concerns (PD-020), the live monitor (PD-021), the early warning score (PC-030, DU-14) and
+ * intake and output (DU-18), organ support (PD-022), the AI brief (PD-024), key labs (PD-025) and context (PD-026).
  *
- * On a wide canvas, the physiology is the main column (brief, monitor, ventilator and infusions, labs) and a 22rem rail
+ * On a wide canvas, the physiology is the main column (brief, monitor, score and fluids, ventilator and infusions,
+ * labs) and a 22rem rail
  * on the right holds the alerts, then the care team and encounter. On a narrow one it's a single column, with the
  * alerts straight after the brief: they're mandatory (PRD §3.4), so they never sink below the physiology.
  */
@@ -248,10 +391,17 @@ function PatientOverview({
 						)}
 					</SectionCard>
 
+					<div className='grid gap-6 @min-[36rem]:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]'>
+						<EarlyWarningCard warning={record?.earlyWarning} now={now} />
+						<div className='self-start'>
+							<FluidsCard fluids={record?.fluids} now={now} />
+						</div>
+					</div>
+
 					<div className='grid gap-6 @min-[36rem]:grid-cols-2'>
 						<SectionCard
 							title='Ventilator'
-							meta={ventilator ? freshness(ventilator.source, ventilator.updatedAt, now) : undefined}
+							meta={ventilator ? <SourceLabel>{freshness(ventilator.source, ventilator.updatedAt, now)}</SourceLabel> : undefined}
 						>
 							{ventilator ? (
 								<>
@@ -280,7 +430,7 @@ function PatientOverview({
 							)}
 						</SectionCard>
 
-						<SectionCard title='Infusions' meta={latestInfusion ? freshness("Pump", latestInfusion, now) : undefined}>
+						<SectionCard title='Infusions' meta={latestInfusion ? <SourceLabel>{freshness("Pump", latestInfusion, now)}</SourceLabel> : undefined}>
 							{infusions?.length ? (
 								<ul className='flex flex-col divide-y divide-border-muted'>
 									{infusions.map((infusion) => (
@@ -309,7 +459,7 @@ function PatientOverview({
 						</SectionCard>
 					</div>
 
-					<SectionCard title='Key labs' meta={latestLab ? freshness("Lab", latestLab, now) : undefined}>
+					<SectionCard title='Key labs' meta={latestLab ? <SourceLabel>{freshness("Lab", latestLab, now)}</SourceLabel> : undefined}>
 						{labs?.length ? (
 							<ul className='grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2'>
 								{labs.map((lab) => (

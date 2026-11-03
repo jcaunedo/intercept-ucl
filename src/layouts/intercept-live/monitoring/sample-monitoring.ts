@@ -4,10 +4,11 @@ import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitor
 // Synthetic data (PRD MON-080): the Census's 18 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
 // match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller and Johnson
-// (with alerts), Walker, Moore, Clark and Hayes (without one, so "Outside limits" finds them first). Carter has no SpO₂
-// and Whitfield no RR (Data gap). Hayes (Chadron, Med-Surg) is Scenario 1 at 01:40 (Demo Use Cases): heart failure getting
-// worse, RR 26 and SpO₂ 89% on 4 L; her early-warning alert is the live feed's first step (`sample-live-scenario.ts`).
-// Erickson (Chadron) is the floor's other patient, Ortega and Nakamura (Mercy West) fill its count; all three inside the
+// (with alerts), Walker, Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and
+// Whitfield no RR (Data gap). Hayes (Chadron, Med-Surg) is Scenario 1 (Demo Use Cases) just before it starts: heart
+// failure, holding at SpO₂ 92% on 4 L and NEWS2 5. The Prototype menu's Scenario 1 plays her early warning at 01:40
+// (`sampleScenario1Monitoring`, `sample-data/sample-scenario-1.ts`).
+// Erickson (Chadron) is the floor's other patient, Ortega and Norman (Mercy West) fill its count; all three inside the
 // limits, with no alert.
 //
 // Acuity is the NEWS2-style current-state score (DU-14, scale 1), worked out from each patient's charted vitals in
@@ -284,11 +285,15 @@ const monitoringPatients: MonitoringPatient[] = [
 		hospital: "Chadron Community Hospital",
 		unit: "Med-Surg",
 		bed: "Bed 4",
-		acuity: { label: news2, score: 10, level: "high" },
-		trajectory: { label: change, value: "+6", trend: "up" },
-		scoreChange4h: 5,
+		// Just before Scenario 1 (`sampleScenario1Monitoring`, 01:40): inside her alarm limits. Her med-surg bed alarms on
+		// RR above 24, where NEWS2 gives RR its full 3 points (illustrative, as the priorities below), so at 01:40 her RR
+		// 26 shows ▲ beside SpO₂'s ▼: breathing faster as her oxygen drops.
+		limits: { rr: [8, 24] },
+		acuity: { label: news2, score: 5, level: "medium" },
+		trajectory: { label: change, value: "+1", trend: "up" },
+		scoreChange4h: 0,
 		tags: [{ label: "Fall risk" }],
-		vitals: { hr: 112, spo2: 89, systolic: 148, diastolic: 86, map: 107, rr: 26 },
+		vitals: { hr: 106, spo2: 92, systolic: 147, diastolic: 85, map: 106, rr: 20 },
 	},
 	{
 		id: "p16",
@@ -327,8 +332,8 @@ const monitoringPatients: MonitoringPatient[] = [
 	{
 		id: "p18",
 		hospitalId: "mwh",
-		lastName: "Nakamura",
-		firstName: "Kenji",
+		lastName: "Norman",
+		firstName: "Keith",
 		photo: samplePatientPhotos.p18,
 		mrn: "00914370",
 		sex: "M",
@@ -358,8 +363,8 @@ function lastHour(end: number | undefined, worseBy: number, wobble: number, seed
 
 // Each bed's monitor alarm priorities, as its device profile would set them (illustrative, pending the client's CARESCAPE
 // configuration, SQ-13): SpO₂ high (red, fast flash), HR and systolic medium (yellow, slow flash), RR low (cyan, steady).
-// So Miller, Johnson and Hayes flash red for SpO₂, Miller's RR is cyan, Clark and Moore flash yellow for ABP. Walker's HR
-// alarm was acknowledged at the bedside, so it keeps its ▲ without the color.
+// So Miller and Johnson flash red for SpO₂ (Hayes too, from Scenario 1's early warning), Miller's RR is cyan, Clark and
+// Moore flash yellow for ABP. Walker's HR alarm was acknowledged at the bedside, so it keeps its ▲ without the color.
 const sampleAlarmPriorities: MonitoringPatient["alarmPriorities"] = { hr: "medium", spo2: "high", systolic: "medium", rr: "low" };
 
 const sampleMonitoringPatients: MonitoringPatient[] = monitoringPatients.map((patient, index) => {
@@ -480,8 +485,26 @@ const sampleMonitoringAlerts: TriageAlert[] = [
 ];
 
 const sampleEscalationTargets: EscalationTarget[] = [
-	{ id: "intensivist", name: "James Tan", description: "Intensivist on call, Tele-ICU" },
+	{ id: "intensivist", name: "James Turner", description: "Intensivist on call, Tele-ICU" },
 	{ id: "bedside", name: "Bedside charge nurse", description: "The patient's unit, through Messages" },
 ];
 
-export { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients };
+/**
+ * Hayes's monitor at Scenario 1's early warning (Demo Use Cases, 01:40): RR 26, SpO₂ 89% on 4 L, HR 112, so NEWS2 10,
+ * High, up 5 in 4 h. Her last hour climbs to these from the values before it.
+ */
+const hayesIndex = monitoringPatients.findIndex((patient) => patient.id === "p15");
+const sampleScenario1Monitoring: Partial<MonitoringPatient> = {
+	acuity: { label: news2, score: 10, level: "high" },
+	trajectory: { label: change, value: "+6", trend: "up" },
+	scoreChange4h: 5,
+	vitals: { hr: 112, spo2: 89, systolic: 148, diastolic: 86, map: 107, rr: 26 },
+	trends: {
+		hr: lastHour(112, 6, 2, hayesIndex),
+		spo2: lastHour(89, -3, 0.6, hayesIndex + 1)?.map((value) => Math.min(100, value)),
+		systolic: lastHour(148, 1, 2.5, hayesIndex + 2),
+		rr: lastHour(26, 6, 1, hayesIndex + 3),
+	},
+};
+
+export { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients, sampleScenario1Monitoring };

@@ -31,7 +31,7 @@ const sarahNotes: PatientNote[] = [
 			},
 			{
 				heading: "Plan",
-				text: "Vancomycin and aztreonam given 30 min ago, after blood cultures ×2, for MRSA colonization and the preliminary sputum Gram stain. Vasopressin started. Repeat lactate in 2 hours. Discuss with Dr. Shah whether to keep azithromycin.",
+				text: "Vancomycin and aztreonam given 30 min ago, after blood cultures ×2, for MRSA colonization and the preliminary sputum Gram stain. Vasopressin started. Repeat lactate in 2 hours. Discuss with Dr. Mitchell whether to keep azithromycin.",
 			},
 		],
 	},
@@ -44,21 +44,21 @@ const sarahNotes: PatientNote[] = [
 		status: "draft",
 		scribe: { sessionAt: minutesAgo(52) },
 		sections: [
-			{ heading: "Present", text: "Joanna Smith (Intercept intensivist), Kevin Ortiz (bedside RN), James Tan (Intercept APP)." },
+			{ heading: "Present", text: "Joanna Smith (Intercept intensivist), Kelly Ortiz (bedside RN), James Turner (Intercept APP)." },
 			{
 				heading: "Discussed",
-				text: "Sats dipping to 88–89% with suctioning, thick secretions. MAP 58 to 62 on norepinephrine 0.22. Kevin reports cool extremities and urine output under 20 mL/h for 2 hours.",
+				text: "Sats dipping to 88–89% with suctioning, thick secretions. MAP 58 to 62 on norepinephrine 0.22. Kelly reports cool extremities and urine output under 20 mL/h for 2 hours.",
 			},
 			{
 				heading: "Tasks captured",
-				text: "• Kevin: blood cultures ×2 now, then repeat lactate at 13:00.\n• James: ask pharmacy for vancomycin and aztreonam now, and vasopressin.\n• Joanna: call Dr. Shah about the antibiotics.",
+				text: "• Kelly: blood cultures ×2 now, then repeat lactate at 13:00.\n• James: ask pharmacy for vancomycin and aztreonam now, and vasopressin.\n• Joanna: call Dr. Mitchell about the antibiotics.",
 			},
 		],
 	},
 	{
 		id: "p1-n3",
 		type: "Nursing note",
-		author: { name: "Kevin Ortiz", role: "RN", organization: "Harbor Point General" },
+		author: { name: "Kelly Ortiz", role: "RN", organization: "Harbor Point General" },
 		at: minutesAgo(25),
 		origin: "hospital",
 		status: "signed",
@@ -84,7 +84,7 @@ const sarahNotes: PatientNote[] = [
 	{
 		id: "p1-n5",
 		type: "Tele-ICU progress note",
-		author: { name: "James Tan", role: "Intercept APP" },
+		author: { name: "James Turner", role: "Intercept APP" },
 		at: hoursAgo(5),
 		origin: "intercept",
 		status: "written-back",
@@ -115,7 +115,7 @@ const sarahNotes: PatientNote[] = [
 	{
 		id: "p1-n7",
 		type: "ICU progress note",
-		author: { name: "Priya Shah", role: "MD, Attending", organization: "Harbor Point General" },
+		author: { name: "Laura Mitchell", role: "MD, Attending", organization: "Harbor Point General" },
 		at: hoursAgo(26),
 		origin: "hospital",
 		status: "signed",
@@ -136,14 +136,14 @@ const sarahNotes: PatientNote[] = [
 		writtenBackAt: hoursAgo(50),
 		sections: [
 			{
-				text: "Tele-ICU admission. Septic shock from right lower lobe pneumonia, intubated in the ED. Reviewed with Dr. Shah and the bedside team on camera. Lung-protective ventilation, norepinephrine for MAP under 65, aztreonam and azithromycin after cultures.",
+				text: "Tele-ICU admission. Septic shock from right lower lobe pneumonia, intubated in the ED. Reviewed with Dr. Mitchell and the bedside team on camera. Lung-protective ventilation, norepinephrine for MAP under 65, aztreonam and azithromycin after cultures.",
 			},
 		],
 	},
 	{
 		id: "p1-n9",
 		type: "History and physical",
-		author: { name: "Priya Shah", role: "MD, Attending", organization: "Harbor Point General" },
+		author: { name: "Laura Mitchell", role: "MD, Attending", organization: "Harbor Point General" },
 		at: hoursAgo(52),
 		origin: "hospital",
 		status: "signed",
@@ -174,7 +174,7 @@ type NotesSpec = {
 	rt?: string;
 	/** The attending's progress note from yesterday, for a stay longer than a day. */
 	yesterday?: string;
-	/** James Tan's tele-ICU note this morning: events, then plan. */
+	/** James Turner's tele-ICU note this morning: events, then plan. */
 	events: string;
 	apPlan: string;
 	/** Joanna Smith's draft today: the plan (the assessment is the brief's story). */
@@ -183,7 +183,7 @@ type NotesSpec = {
 
 const therapists: Record<string, [name: string, role: string]> = {
 	"Harbor Point General": ["Dana Brooks", "RRT"],
-	"Mercy West Hospital": ["Luis Romero", "RRT"],
+	"Mercy West Hospital": ["Luke Rogers", "RRT"],
 	CVMC: ["Ben Carter", "RRT"],
 };
 
@@ -244,7 +244,7 @@ function buildNotes(record: PatientRecord, spec: NotesSpec): PatientNote[] {
 		{
 			id: id(4),
 			type: "Tele-ICU progress note",
-			author: { name: "James Tan", role: "Intercept APP" },
+			author: { name: "James Turner", role: "Intercept APP" },
 			at: minutesAgo(apMinutes),
 			origin: "intercept",
 			...signed(apMinutes),
@@ -349,7 +349,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		yesterday: "Post-op day 1, hemiarthroplasty. Delirium, no new medications to blame. Sodium 134. Restart levodopa on schedule. Physical therapy tomorrow.",
 		events: "Confused overnight, needed redirection. Hemoglobin 8.9 from 10.4, sodium 131 from 134.",
 		apPlan: "Repeat hemoglobin this afternoon. Fluid restriction 1.5 L. No sedatives.",
-		plan: "Bedside sitter or camera watch for the bed exits. Transfuse if hemoglobin is under 8 this afternoon. Ask Dr. Ortiz about a hip X-ray after the bed exit.",
+		plan: "Bedside sitter or camera watch for the bed exits. Transfuse if hemoglobin is under 8 this afternoon. Ask Dr. Grant about a hip X-ray after the bed exit.",
 	},
 	p7: {
 		history: "45-year-old woman with hypothyroidism, 2 days of left lower abdominal pain and fever. CT showed perforated sigmoid diverticulitis. Hartmann's procedure in the operating room.",
@@ -418,13 +418,13 @@ const notesSpecs: Record<string, NotesSpec> = {
 		admitPlan: "Admit to CCU. Diltiazem infusion to HR under 110, magnesium and potassium replacement, TSH, echo, anticoagulation decision with the team. Code status to discuss.",
 		nursing: ["HR 88 on diltiazem 10. BP 118/72. Magnesium replacement running. Asked about code status; she'd like to talk with her partner first.", 20],
 		events: "Rate down to 88 on diltiazem, now 10 from 15. Magnesium 1.7. TSH pending.",
-		apPlan: "Magnesium 2 g. Echo. Start heparin per Dr. Petrova if no bleeding risk.",
-		plan: "Document code status today with her and her partner. Decide on anticoagulation with Dr. Petrova after the echo.",
+		apPlan: "Magnesium 2 g. Echo. Start heparin per Dr. Parker if no bleeding risk.",
+		plan: "Document code status today with her and her partner. Decide on anticoagulation with Dr. Parker after the echo.",
 	},
 	p17: {
 		history: "67-year-old woman with hypertension and a hysterectomy 12 years ago, 2 days of cramping, vomiting and no stool. CT showed an adhesive small bowel obstruction. Laparotomy, adhesions released, 20 cm of ischemic small bowel resected.",
 		admitPlan: "Admit to SICU after surgery. Nasogastric tube to suction, fluids, hydromorphone PCA, enoxaparin from tomorrow. Incentive spirometry every hour awake.",
-		nursing: ["Splinting with pain at 6/10, RR 21, HR 104. PCA increased to 0.3 mg per Dr. Lee. Incentive spirometry 750 mL. NG draining 150 mL bilious since 06:00. Urine 40 mL/h.", 35],
+		nursing: ["Splinting with pain at 6/10, RR 21, HR 104. PCA increased to 0.3 mg per Dr. Reed. Incentive spirometry 750 mL. NG draining 150 mL bilious since 06:00. Urine 40 mL/h.", 35],
 		events: "RR up to 21 and HR to 104 overnight, SpO₂ 95% on 2 L, so NEWS2 is 6. Lactate 1.4 from 2.1, hemoglobin 10.8 after the OR.",
 		apPlan: "Pain control first; recheck RR and HR in an hour. Chest X-ray shows atelectasis only. Out of bed to the chair this morning.",
 		plan: "Recheck her in an hour after the PCA change. If RR stays over 20, ask Mercy West's surgical team about a chest exam and a CBC.",

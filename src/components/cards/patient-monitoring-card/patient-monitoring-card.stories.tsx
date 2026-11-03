@@ -77,7 +77,7 @@ const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).
 export const Default: Story = {};
 
 /**
- * With an avatar left of the name, as on PatientCard: `initials` (in an Avatar `tone`), or a `photo` with them as the
+ * With an avatar left of the name, as on PatientCensusCard: `initials` (in an Avatar `tone`), or a `photo` with them as the
  * fallback. 44px, centered on the name and identity; 32px on the small card. Clicks on it open the patient.
  */
 export const WithAvatar: Story = {
@@ -94,8 +94,10 @@ export const WithAvatar: Story = {
 /**
  * The alert bar under the name and location: the top severity, how many alerts the patient had in the last 24 h
  * (`inLast24h`), and how long ago it started (`since`), ticking each second; "Resolved" in green; "No active alerts".
+ * With `onOpenAlert`, every alert's bar opens it, with a maximize icon at its end.
  */
 export const AlertBar: Story = {
+	args: { onOpenAlert: fn() },
 	decorators: [
 		(Story) => (
 			<div className='w-[812px]'>
@@ -119,6 +121,48 @@ export const AlertBar: Story = {
 		const canvas = within(canvasElement);
 		await expect(canvas.getByText("No active alerts")).toBeVisible();
 		await expect(canvas.getAllByText(/in the last 24 h/)).toHaveLength(3);
+	},
+};
+
+/**
+ * With `onOpenAlert`, every alert's whole bar is a button that opens the alert, with a maximize icon at its end: each
+ * severity, Resolved and a message, and each darkens on hover. It sits above the card's open target, so it opens the
+ * alert, not the patient. "No active alerts" stays plain.
+ */
+export const OpenAlert: Story = {
+	args: { onOpen: fn(), onOpenAlert: fn() },
+	decorators: [
+		(Story) => (
+			<div className='w-[812px]'>
+				<Story />
+			</div>
+		),
+	],
+	render: (args) => (
+		<div className='grid grid-cols-2 items-start gap-4'>
+			<LiveCard
+				{...args}
+				vitals={deteriorating}
+				alert={{ variant: "critical", inLast24h: 3, since: minutesAgo(3.6) }}
+			/>
+			<LiveCard {...args} alert={{ variant: "high", inLast24h: 1, since: minutesAgo(12) }} />
+			<LiveCard {...args} alert={{ variant: "medium", inLast24h: 2, since: minutesAgo(27) }} />
+			<LiveCard {...args} alert={{ variant: "low", inLast24h: 1, since: minutesAgo(48) }} />
+			<LiveCard {...args} alert={{ variant: "resolved", inLast24h: 3, since: minutesAgo(905) }} />
+			<LiveCard {...args} alert={{ variant: "message", label: "1 message" }} />
+			<LiveCard {...args} />
+		</div>
+	),
+	play: async ({ args, canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(canvas.getAllByRole("button", { name: /^Open alert/ })).toHaveLength(6);
+		await expect(canvas.getByText("No active alerts").closest("button")).toBeNull();
+		const bar = canvas.getAllByRole("button", { name: /^Open alert/ })[0];
+		// The hover overlay is there, waiting: a 12% fill, hidden until hover.
+		await expect(getComputedStyle(bar, "::before").backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+		await userEvent.click(bar);
+		await expect(args.onOpenAlert).toHaveBeenCalledTimes(1);
+		await expect(args.onOpen).not.toHaveBeenCalled();
 	},
 };
 
@@ -158,7 +202,7 @@ export const MoreActions: Story = {
 };
 
 /**
- * With the acuity score and its change over the monitor, and the tags under it, as on PatientCard. The page shows or
+ * With the acuity score and its change over the monitor, and the tags under it, as on PatientCensusCard. The page shows or
  * hides them (Monitoring's Card details); without `tags` there's no row, and an empty list says "No tags".
  */
 export const ScoreAndTags: Story = {

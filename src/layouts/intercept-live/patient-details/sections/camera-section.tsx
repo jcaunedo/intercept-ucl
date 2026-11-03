@@ -27,7 +27,8 @@ import { formatDateTime, formatTime, NoData, SectionCard } from "../section-part
 
 // Camera view (PRD Patient details PD-090, PD-073; Monitoring SV-031): the bedside camera with telemetry-and-camera
 // fusion, the session and audio controls, the huddle that starts the AI Scribe, who's in the room, and the room's recent
-// camera sessions. The feed is a drawn, synthetic room: the prototype shows no real or placeholder video (Brief).
+// camera sessions. The feed is a drawn, synthetic room; the alert modal's video consult can show a video clip instead
+// (`RoomVideo`). Never a real patient (Brief: synthetic data only).
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -715,13 +716,65 @@ function ScribeBar({
 	);
 }
 
+// Sensor noise for `RoomVideo`: fractal noise, tiled, with no color of its own.
+const sensorNoise =
+	"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
+/**
+ * The room's camera as video: a clip that loops without sound, graded like a bedside camera (more contrast, less color,
+ * sensor noise, darker corners). Under reduced motion it holds its first frame. If the clip can't load, the drawn room
+ * (`fallback`) takes its place. Decorative: the feed's text alternative describes it.
+ */
+function RoomVideo({ src, fallback }: { src: string; fallback: React.ReactNode }) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const ref = React.useRef<HTMLVideoElement>(null);
+	const [failed, setFailed] = React.useState(false);
+	React.useEffect(() => setFailed(false), [src]);
+	React.useEffect(() => {
+		const video = ref.current;
+		if (!video) return;
+		if (prefersReducedMotion) video.pause();
+		// A browser that refuses to play keeps the first frame.
+		else video.play().catch(() => undefined);
+	}, [prefersReducedMotion, src, failed]);
+
+	if (failed) return <>{fallback}</>;
+	return (
+		<>
+			<video
+				ref={ref}
+				src={src}
+				muted
+				loop
+				playsInline
+				preload='auto'
+				aria-hidden='true'
+				onError={() => setFailed(true)}
+				className='absolute inset-0 size-full object-cover contrast-110 saturate-75'
+			/>
+			<span
+				aria-hidden='true'
+				className='pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay'
+				style={{ backgroundImage: sensorNoise }}
+			/>
+			<span
+				aria-hidden='true'
+				className='pointer-events-none absolute inset-0 bg-radial from-transparent from-50% to-(--gray-950)/60'
+			/>
+		</>
+	);
+}
+
 export {
 	CameraSection,
+	RoomScene,
+	RoomVideo,
 	type CameraAction,
 	type CameraPerson,
 	type CameraPreset,
 	type CameraSectionProps,
 	type CameraSession,
 	type PatientCamera,
+	type RoomEquipment,
 	type ScribeState,
 };

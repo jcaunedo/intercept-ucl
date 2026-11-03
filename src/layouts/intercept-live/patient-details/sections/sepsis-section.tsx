@@ -24,6 +24,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
 import { formatTime, freshness, NoData, SectionCard } from "../section-parts";
+import { SourceLabel } from "../../shared/source-label";
 
 // The Sepsis section (PRD Patient details PD-080): one screening or tracked case. Its state and who decided it, the
 // criteria with their values, the SEP-1 bundle's 3-hour and 6-hour elements counted from time zero, and the hospital's
@@ -202,7 +203,7 @@ function CriterionRow({ criterion, now }: { criterion: SepsisCriterion; now: num
 					{criterion.label}
 				</span>
 				{criterion.source && criterion.at ? (
-					<span className='text-xs text-muted-foreground'>{freshness(criterion.source, criterion.at, now)}</span>
+					<SourceLabel className='text-xs text-muted-foreground'>{freshness(criterion.source, criterion.at, now)}</SourceLabel>
 				) : null}
 			</div>
 			<span

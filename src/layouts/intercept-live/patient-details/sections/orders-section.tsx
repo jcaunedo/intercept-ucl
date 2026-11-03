@@ -19,6 +19,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { formatRelativeDate } from "@/lib/relative-date";
 
 import { formatDateTime, formatTime, freshness, NoData, SectionCard } from "../section-parts";
+import { SourceLabel } from "../../shared/source-label";
 
 // The Orders section (PRD Patient details PD-060–PD-062): order recommendations first, then the active orders from the
 // hospital's EMR, read-only. A recommendation is never an order (dashed edge, agent chip, "Recommendation"), never
@@ -224,7 +225,7 @@ function EvidenceList({ evidence, now }: { evidence: OrderRecommendation["eviden
 						className='inline-flex items-baseline gap-1.5 rounded-md border border-border bg-background-subtle px-2 py-0.5'
 					>
 						<span className='font-mono text-xs text-foreground'>{item.label}</span>
-						<span className='text-xs text-muted-foreground'>{freshness(item.source, item.at, now)}</span>
+						<SourceLabel className='text-xs text-muted-foreground'>{freshness(item.source, item.at, now)}</SourceLabel>
 					</li>
 				))}
 			</ul>
@@ -465,7 +466,7 @@ function OrdersSection({ orders, role = "intensivist", onRecommendationAction }:
 					) : null}
 				</SectionCard>
 
-				<SectionCard title='Active orders' meta={freshness(orders.source, orders.updatedAt, now)}>
+				<SectionCard title='Active orders' meta={<SourceLabel>{freshness(orders.source, orders.updatedAt, now)}</SourceLabel>}>
 					<p className='flex items-start gap-1.5 text-sm text-muted-foreground'>
 						<InfoIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0' />
 						Orders from {orders.hospital} are read-only here.

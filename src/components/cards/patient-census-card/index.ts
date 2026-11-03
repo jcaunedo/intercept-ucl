@@ -1,5 +1,6 @@
 export {
 	PatientCard,
+	PatientCensusCard,
 	PatientCardAlert,
 	PatientCardMetric,
 	PatientCardScore,
@@ -15,11 +16,12 @@ export {
 	type PatientCardAlertVariant,
 	type PatientCardMetricProps,
 	type PatientCardProps,
+	type PatientCensusCardProps,
 	type PatientCardTag,
 	type PatientCardVital,
-} from "./patient-card";
+} from "./patient-census-card";
 export {
 	patientCardInteractiveClassName,
 	patientCardOpenTargetClassName,
 	usePatientCardAlertRing,
-} from "./patient-card-parts";
+} from "./patient-census-card-parts";

@@ -18,7 +18,7 @@ import {
 	type TriageAlertAction,
 	type TriageQueuePatient,
 } from "../monitoring/triage-queue";
-import { PagePanel, SidePanel, sidePanelWidth } from "../side-panel";
+import { PagePanel, SidePanel, sidePanelWidth, useHideToasts } from "../side-panel";
 
 // The live feed, on the Census and Monitoring pages: the "Live feed: …" button right of the page's summary, and the
 // panel it opens right of the canvas, the triage queue of the page's alerts.
@@ -32,6 +32,8 @@ const appliedAction = (action: TriageAlertAction): Pick<TriageAlert, "status" | 
 	switch (action.type) {
 		case "acknowledge":
 			return { status: "acknowledged", addressed: { at } };
+		case "unacknowledge":
+			return { status: "active", addressed: undefined };
 		case "escalate":
 			return { status: "escalated", addressed: { at, to: action.targetId, note: action.note || undefined } };
 		case "resolve":
@@ -154,6 +156,8 @@ function LiveFeedPanel({
 	onAlertAction,
 }: LiveFeedPanelProps) {
 	const [width, setWidth] = React.useState<number>(sidePanelWidth.default);
+	// The feed lists every alert, so the toasts wait (hidden, timers paused) while it's open.
+	useHideToasts(open);
 
 	return (
 		<PagePanel>

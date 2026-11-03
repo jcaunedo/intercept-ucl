@@ -1,5 +1,16 @@
 import * as React from "react";
-import { ArrowUpIcon, BellRingIcon, FilterXIcon, FlagIcon, GaugeIcon, TriangleIcon, WebcamIcon, WifiOffIcon } from "lucide-react";
+import {
+	ArrowUpIcon,
+	BellRingIcon,
+	FilterXIcon,
+	FlagIcon,
+	GaugeIcon,
+	SparklesIcon,
+	TriangleIcon,
+	VideoIcon,
+	WebcamIcon,
+	WifiOffIcon,
+} from "lucide-react";
 
 import {
 	defaultMonitorLimits,
@@ -35,6 +46,7 @@ import {
 	useHeldOrder,
 	useRecentActivity,
 	useResolvedHolds,
+	usePatientScope,
 	useSortBy,
 	useSortCadence,
 	useSortPause,
@@ -123,19 +135,29 @@ type MonitoringPanelProps = {
 	groupedView?: GroupedView;
 	/** Called when the hospital bar's "Live feed" opens or closes the live feed panel (the triage queue). */
 	onOpenLiveFeed?: () => void;
+	/**
+	 * When each patient's Resolved toast was closed, ISO 8601 by patient id (`useClosedResolutions`). The card drops
+	 * resolutions up to then and shows no alert; a later one shows again.
+	 */
+	closedResolutions?: Record<string, string>;
 };
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
+// An acknowledged alert leaves the card (Nov 2, 2026, user's call): acknowledged in a toast, the live feed or the
+// patient's details, or by someone else, the card shows the patient's next alert or none. It stays in the triage queue
+// until it's resolved (MON-AC-04).
+const isCardAlert = (alert: TriageAlert) => isOpenAlert(alert) && alert.status !== "acknowledged";
+
 /**
- * The card's alert from the patient's open alerts: the top severity, how many are open, and whether one at that
- * severity is still unaddressed (the card's ring pulses until it is); for the alert bar, when the top alert fired and
- * how many alerts the patient had in the last 24 h, resolved ones included.
+ * The card's alert from the patient's open alerts (`shows`, the card's by default): the top severity, how many are open,
+ * and whether one at that severity is still unaddressed (the card's ring pulses until it is); for the alert bar, when
+ * the top alert fired and how many alerts the patient had in the last 24 h, resolved ones included.
  */
-function alertPill(patientAlerts: TriageAlert[]): PanelPatient["alert"] {
-	const open = patientAlerts.filter(isOpenAlert).sort(compareTriageAlerts);
+function alertPill(patientAlerts: TriageAlert[], shows = isCardAlert): PanelPatient["alert"] {
+	const open = patientAlerts.filter(shows).sort(compareTriageAlerts);
 	if (!open.length) return undefined;
 	const top = open.filter((alert) => alert.severity === open[0].severity);
 	const unaddressed = top.some((alert) => (alert.status ?? "active") === "active");
@@ -155,12 +177,18 @@ type FeedResolution = { patientId: string; firedAt: string; resolvedAt: string }
  * (`addressed.at`); resolved by the feed, it's in `feedResolved`. The newest wins, so a fresh resolution reads "Just now"
  * (user's call), not an older one's time.
  */
-function recentResolution(patientAlerts: TriageAlert[], feedResolved: FeedResolution[] = []): PanelPatient["alert"] {
+function recentResolution(
+	patientAlerts: TriageAlert[],
+	feedResolved: FeedResolution[] = [],
+	closedAt?: string,
+): PanelPatient["alert"] {
 	const dayAgo = Date.now() - 24 * 3_600_000;
+	// Resolutions up to when the patient's Resolved toast was closed are cleared from the card (Nov 2, 2026, user's call).
+	const from = Math.max(dayAgo, closedAt ? Date.parse(closedAt) + 1 : 0);
 	const times = [
 		...patientAlerts.filter((alert) => alert.status === "resolved" && alert.addressed).map((alert) => alert.addressed!.at),
 		...feedResolved.map((resolution) => resolution.resolvedAt),
-	].filter((at) => Date.parse(at) >= dayAgo);
+	].filter((at) => Date.parse(at) >= from);
 	if (!times.length) return undefined;
 	const since = times.reduce((latest, at) => (Date.parse(at) > Date.parse(latest) ? at : latest));
 	const inLast24h = [...patientAlerts, ...feedResolved].filter((alert) => Date.parse(alert.firedAt) >= dayAgo).length;
@@ -193,11 +221,12 @@ function useFeedResolutions(alerts: TriageAlert[]) {
 	return Object.values(resolutions);
 }
 
-// The card's "…" menu: the patient's actions, as in the patient's header (AppHeader `patient`). The app wires them up.
-const cardActions: PatientMonitoringCardProps["moreActions"] = [
-	{ label: "Raise concern", icon: FlagIcon },
-	{ label: "Huddle team", icon: WebcamIcon },
+// The card's "…" menu: the patient's actions, as in the patient's header (AppHeader `patient`), in alphabetical order.
+// The app wires them up. Ask Intercept Live comes first, set apart by a divider (Nov 2, 2026, user's call).
+const cardActions: NonNullable<PatientMonitoringCardProps["moreActions"]> = [
 	{ label: "Escalate", icon: ArrowUpIcon },
+	{ label: "Huddle team", icon: WebcamIcon },
+	{ label: "Raise concern", icon: FlagIcon },
 ];
 
 // The chips stay in context (Oct 27, 2026): Monitoring narrows the panel's scope (hospital, My patients), sets how it
@@ -205,8 +234,9 @@ const cardActions: PatientMonitoringCardProps["moreActions"] = [
 // what needs attention is the triage queue's job, so the Census's other quick views stay there. Acuity sorts are left out too (the score can be hidden from the cards); Group
 // by location is a switch, as on the Census. The Filters panel (Oct 30, 2026, user's call) adds Unit, Highest alert, alarm
 // limits per parameter and the tags.
-// Recent alerts first in the menu (Oct 31, 2026, user's call; "Alert", then "Alerts"): patients with an open alert first,
-// the newest alert first (the Active alerts chip orders by severity). Name stays the default.
+// Alerts first in the menu (Oct 31, 2026, user's call; labeled "Recent alerts" until Nov 2, 2026): patients with an open alert first,
+// the newest alert first (the Active alerts chip orders by severity). The default since Nov 2, 2026 (user's call; was
+// Patient name).
 const sortOrderIds: readonly SortOrderId[] = ["alert", "name", "viewed", "resolved", "messages"];
 
 /** The primary numerics with alarm limits, by the card's labels. */
@@ -261,6 +291,8 @@ function monitoringFilterGroups(
 // don't count), a rising score, the drift a filter finds better than the card's ▲ / ▼ marks on a large panel
 // ("Limits": the monitor's alarm limits), and data gaps.
 const statusFilters: QuickView<PanelMonitoringPatient>[] = [
+	// Live (Nov 2, 2026, user's call), as on the Census: a patient whose alert fires joins at once, as its toast says, and
+	// one whose alert resolves shows "Resolved" in place, then leaves. The view, the count and the summary always agree.
 	{ id: "alerts", label: "Active alerts", icon: BellRingIcon, matches: hasActiveAlert },
 	// Deterioration, as the card's score row shows it (Nov 1, 2026, user's call; the Census's chip of the same name).
 	// Held when pressed, like the others, since scores change.
@@ -272,10 +304,11 @@ const statusFilters: QuickView<PanelMonitoringPatient>[] = [
 ];
 
 // Columns follow the page's width (a container query), fewer while the live feed panel takes room beside the canvas.
-// Comfortable shows 3 cards a row above lg (1024), 4 above xl (1280), 5 above 2xl (1536), still 5 at 3xl (Oct 30, 2026,
-// user's call) and 6 above 3xl (1920), with the rail collapsed and no panel open: the page is the window less the 64px
-// rail. From there a column joins every 296px (a ~280px card and its gap), 7 from a 2168px window up to 13 from 3944px,
-// the same windows as the Census.
+// Comfortable shows 3 cards a row above lg (1024), 4 above xl (1280), 5 above 2xl (1536), still 5 at 3xl and 3.5xl
+// (Oct 30 and Nov 2, 2026, user's calls) and 6 above 3.5xl (2048), with the rail collapsed and no panel open: the page is
+// the window less the 64px rail. From there a column joins every 296px (a ~280px card and its gap), 7 from a 2168px
+// window up to 13 from 3944px, the same windows as the Census, which shows 6 from 1921px; except 8, which waits until
+// above 4xl (2560; Nov 2, 2026, user's call), so the 4xl frame shows 7 (the Census shows 8 from 2464px).
 // Compact (`sm` cards) shows one more a row at every width (Oct 30, 2026), from 2 at 608px. All in px: Tailwind can't order container queries in mixed units, and a px one placed
 // before a rem one loses to it. `items-start`: a card showing the full monitor grows on its own, without stretching its
 // row.
@@ -287,9 +320,9 @@ const boardClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 
 const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 	comfortable:
-		"items-start @min-[744px]:grid-cols-2 @min-[961px]:grid-cols-3 @min-[1217px]:grid-cols-4 @min-[1473px]:grid-cols-5 @min-[1857px]:grid-cols-6 @min-[2104px]:grid-cols-7 @min-[2400px]:grid-cols-8 @min-[2696px]:grid-cols-9 @min-[2992px]:grid-cols-10 @min-[3288px]:grid-cols-11 @min-[3584px]:grid-cols-12 @min-[3880px]:grid-cols-13",
+		"items-start @min-[744px]:grid-cols-2 @min-[961px]:grid-cols-3 @min-[1217px]:grid-cols-4 @min-[1473px]:grid-cols-5 @min-[1985px]:grid-cols-6 @min-[2104px]:grid-cols-7 @min-[2497px]:grid-cols-8 @min-[2696px]:grid-cols-9 @min-[2992px]:grid-cols-10 @min-[3288px]:grid-cols-11 @min-[3584px]:grid-cols-12 @min-[3880px]:grid-cols-13",
 	compact:
-		"items-start gap-3 @min-[608px]:grid-cols-2 @min-[744px]:grid-cols-3 @min-[961px]:grid-cols-4 @min-[1217px]:grid-cols-5 @min-[1473px]:grid-cols-6 @min-[1857px]:grid-cols-7 @min-[2104px]:grid-cols-8 @min-[2400px]:grid-cols-9 @min-[2696px]:grid-cols-10 @min-[2992px]:grid-cols-11 @min-[3288px]:grid-cols-12 @min-[3584px]:grid-cols-13 @min-[3880px]:grid-cols-14",
+		"items-start gap-3 @min-[608px]:grid-cols-2 @min-[744px]:grid-cols-3 @min-[961px]:grid-cols-4 @min-[1217px]:grid-cols-5 @min-[1473px]:grid-cols-6 @min-[1985px]:grid-cols-7 @min-[2104px]:grid-cols-8 @min-[2497px]:grid-cols-9 @min-[2696px]:grid-cols-10 @min-[2992px]:grid-cols-11 @min-[3288px]:grid-cols-12 @min-[3584px]:grid-cols-13 @min-[3880px]:grid-cols-14",
 };
 
 /* -------------------------------------------------------------------------- */
@@ -310,19 +343,27 @@ function MonitoringPanel({
 	liveFeed,
 	onOpenLiveFeed,
 	groupedView = "board",
+	closedResolutions = {},
 }: MonitoringPanelProps) {
 	const [hospitalId, setHospitalId] = React.useState("all");
-	const [scope, setScope] = React.useState<PatientScope>("all");
+	const [scope, setScope] = usePatientScope("monitoring");
 	// A status chip keeps the patients who matched when it was pressed: readings move every second and alerts come and go,
 	// and a live filter would add and drop cards under the clinician's eyes (PRD MON-013). Its count stays live; pressing
 	// it again clears it.
-	const [statusFilter, setStatusFilter] = React.useState<{ id: string; ids: ReadonlySet<string> } | null>(null);
+	// The pressed status chip. A held chip keeps the patients who matched when it was pressed (`ids`; readings move every
+	// second, MON-013); Active alerts has none and matches live.
+	const [statusFilter, setStatusFilter] = React.useState<{ id: string; ids?: ReadonlySet<string> } | null>(null);
+	const inStatusFilter = (patient: PanelMonitoringPatient) =>
+		!statusFilter ||
+		(statusFilter.ids
+			? statusFilter.ids.has(patient.id)
+			: Boolean(statusFilters.find((view) => view.id === statusFilter.id)?.matches(patient)));
 	// The Filters panel's options, by group (Unit among them since Oct 30, 2026: the Unit menu moved there).
 	const { filters, setFilters, apply: holdFilters } = usePatientFilters<PanelMonitoringPatient>();
 	// The filter bar's search: name, MRN, unit, room or bed.
 	const [query, setQuery] = React.useState("");
 	// Remembered across pages and patient details (`useSortBy`).
-	const [sortBy, setSortBy] = useSortBy("monitoring", "name");
+	const [sortBy, setSortBy] = useSortBy("monitoring", "alert");
 	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
 	// Group by location: a Kanban column per hospital, the sort inside each; or, with the sections view, a grid section each.
 	// A view picked in the Prototype menu shows at once: cards, across all hospitals.
@@ -371,7 +412,17 @@ function MonitoringPanel({
 	// A patient whose last alert just resolved keeps its old place for a moment while its card says "Resolved", then sorts
 	// as a patient without an alert and moves at once, still saying it, so the clinician can follow the card to its new
 	// place; the pill fades out once it has landed (useResolvedHolds).
-	const resolvedHolds = useResolvedHolds(withAlerts, sortNow);
+	// Holds follow every open alert, acknowledged ones included, so a card cleared by acknowledging doesn't say "Resolved".
+	const resolvedHolds = useResolvedHolds(
+		patientsProp.map((patient) => ({
+			id: patient.id,
+			alert: alertPill(
+				alerts.filter((alert) => alert.patientId === patient.id),
+				isOpenAlert,
+			),
+		})),
+		sortNow,
+	);
 	const patients: PanelMonitoringPatient[] = withResolvedHolds(withAlerts, resolvedHolds);
 	/**
 	 * The alert the card shows: its own; "Resolved" while held and moving; then, while the last alert resolved in the last
@@ -385,12 +436,15 @@ function MonitoringPanel({
 			recentResolution(
 				alerts.filter((alert) => alert.patientId === patient.id),
 				feedResolutions.filter((resolution) => resolution.patientId === patient.id),
+				closedResolutions[patient.id],
 			),
 		]),
 	);
 	const cardAlert = (id: string) => {
 		const shown = shownAlert(ownAlerts.get(id), resolvedHolds[id]);
-		return !shown || shown.variant === "resolved" ? (recentResolutions.get(id) ?? shown) : shown;
+		if (shown && shown.variant !== "resolved") return shown;
+		// A closed Resolved toast clears the card at once, even while its "Resolved" pill is still held.
+		return recentResolutions.get(id) ?? (closedResolutions[id] ? undefined : shown);
 	};
 
 	const inTab = (scoped: PanelMonitoringPatient[]) =>
@@ -415,13 +469,13 @@ function MonitoringPanel({
 	const located = (scoped: PanelMonitoringPatient[]) =>
 		searched(scoped).filter((patient) => passesFilters(patient, filterGroups, filters));
 	const filtered = (scoped: PanelMonitoringPatient[]) =>
-		statusFilter ? located(scoped).filter((patient) => statusFilter.ids.has(patient.id)) : located(scoped);
+		located(scoped).filter(inStatusFilter);
 	// The Recently viewed and Recently resolved sorts count what happened in this session too: the patients opened, and the
 	// alerts resolved in the live feed.
 	const recent = useRecentActivity(patients, resolvedTimes(alerts));
 	const assigned = scope === "mine" ? recent.filter((patient) => patient.mine) : recent;
 	const inStatus = (scoped: PanelMonitoringPatient[]) =>
-		statusFilter ? scoped.filter((patient) => statusFilter.ids.has(patient.id)) : scoped;
+		scoped.filter(inStatusFilter);
 	// The panel re-sorts now and then (useSortCadence), never while the pointer is over it (or keyboard focus is in it),
 	// so cards and rows don't move under the clinician's hand; a re-sort that came due runs when they leave.
 	// With Active alerts on, who to see first (severity, acuity band, 4 h rise, time waiting, score), whatever the sort.
@@ -448,7 +502,11 @@ function MonitoringPanel({
 		if (id === "alerts" || statusFilter?.id === "alerts") snapNextOrder();
 		const filter = statusFilters.find((view) => view.id === id);
 		setStatusFilter(
-			filter ? { id: filter.id, ids: new Set(patients.filter(filter.matches).map((patient) => patient.id)) } : null,
+			!filter
+				? null
+				: filter.id === "alerts"
+					? { id: filter.id }
+					: { id: filter.id, ids: new Set(patients.filter(filter.matches).map((patient) => patient.id)) },
 		);
 	};
 	const alertCount = activeAlertCount(visible);
@@ -480,8 +538,28 @@ function MonitoringPanel({
 			size={density === "compact" ? "sm" : "md"}
 			plot={plot}
 			expanded={monitorView === "full"}
-			moreActions={cardActions}
+			moreActions={[
+				// Opens the chat about this patient with a quick overview, as Ask in an alert toast does; only inside the shell.
+				...(navigation
+					? [
+							{
+								label: "Ask Intercept Live",
+								icon: SparklesIcon,
+								onSelect: () => navigation.askAboutPatient(id, `${card.lastName}, ${card.firstName}`),
+								divider: true,
+							},
+						]
+					: []),
+				...cardActions,
+				// The one-click consult (Scenario 1, step 3): the patient's alert modal with the call to the bedside already
+				// ringing. Only for a patient with an open alert, inside the shell.
+				...(navigation && alerts.some((alert) => alert.patientId === id && isOpenAlert(alert))
+					? [{ label: "Video consult", icon: VideoIcon, onSelect: () => navigation.openAlert(id, undefined, { consult: true }) }]
+					: []),
+			]}
 			onOpen={canOpenPatient ? () => openPatient(id) : undefined}
+			// The alert bar opens the alert; only inside the shell, which holds where it opens.
+			onOpenAlert={navigation ? () => navigation.openAlert(id) : undefined}
 		/>
 	);
 

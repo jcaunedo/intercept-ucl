@@ -20,7 +20,7 @@ const meta = {
 		unreadMessages: 3,
 		team: [
 			{ name: "Maria Ruiz", initials: "MR", src: samplePhoto2, tone: 3 },
-			{ name: "James Tan", initials: "JT", src: samplePhoto1, tone: 6 },
+			{ name: "James Turner", initials: "JT", src: samplePhoto1, tone: 6 },
 			{ name: "Ava Brooks", initials: "AB", tone: 2 },
 		],
 		user: { name: "Joanna Smith", initials: "JS", src: samplePhoto3, tone: 1, shiftEnds: "Shift ends on 3:45" },
@@ -52,7 +52,7 @@ export const InitialsOnly: Story = {
 	args: {
 		team: [
 			{ name: "Maria Ruiz", initials: "MR", tone: 3 },
-			{ name: "James Tan", initials: "JT", tone: 6 },
+			{ name: "James Turner", initials: "JT", tone: 6 },
 			{ name: "Ava Brooks", initials: "AB", tone: 2 },
 		],
 		user: { name: "Joanna Smith", initials: "JS", tone: 1, shiftEnds: "Shift ends on 3:45" },

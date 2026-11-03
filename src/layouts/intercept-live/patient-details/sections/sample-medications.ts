@@ -541,7 +541,7 @@ const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 			prn("Labetalol", "10 mg", "IV push", "Every 2 h as needed", "SBP over 170"),
 		],
 	),
-	// Nakamura: DKA on an insulin infusion; glargine due before the drip comes off.
+	// Norman: DKA on an insulin infusion; glargine due before the drip comes off.
 	p18: medicationsFor(
 		"p18",
 		[

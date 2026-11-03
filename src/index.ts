@@ -58,6 +58,7 @@ export {
 
 export {
 	PatientCard,
+	PatientCensusCard,
 	PatientCardAlert,
 	PatientCardMetric,
 	patientCardAcuityLevels,
@@ -71,9 +72,10 @@ export {
 	type PatientCardAlertVariant,
 	type PatientCardMetricProps,
 	type PatientCardProps,
+	type PatientCensusCardProps,
 	type PatientCardTag,
 	type PatientCardVital,
-} from "@/components/cards/patient-card";
+} from "@/components/cards/patient-census-card";
 export {
 	defaultMonitorLimits,
 	PatientMonitor,
@@ -117,7 +119,25 @@ export { Logo, LogoSymbol, type LogoProps, type LogoSymbolProps } from "@/compon
 /* Feedback                                                                   */
 /* -------------------------------------------------------------------------- */
 
+export {
+	AlertToast,
+	toastAlert,
+	alertToastDuration,
+	resolvedToastDuration,
+	type AlertToastProps,
+	type AlertToastSeverity,
+	type ToastAlertOptions,
+} from "@/components/feedback/alert-toast";
 export { EmptyState, type EmptyStateProps } from "@/components/feedback/empty-state";
+export {
+	Toaster,
+	toast,
+	muteToasts,
+	toastsMutedUntil,
+	setToastCloseHandler,
+	type ExternalToast,
+	type ToasterProps,
+} from "@/components/feedback/sonner";
 
 /* -------------------------------------------------------------------------- */
 /* Forms                                                                    */
@@ -230,6 +250,7 @@ export {
 	Sidebar,
 	SidebarDivider,
 	SidebarMenuButton,
+	type SidebarAlert,
 	type SidebarMenuButtonProps,
 	type SidebarNavItem,
 	type SidebarProps,
@@ -252,6 +273,17 @@ export {
 /* Overlays                                                                   */
 /* -------------------------------------------------------------------------- */
 
+export {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+	type DialogContentProps,
+} from "@/components/overlays/dialog";
 export {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,

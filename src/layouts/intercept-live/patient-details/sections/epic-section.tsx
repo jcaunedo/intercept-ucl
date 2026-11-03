@@ -7,6 +7,7 @@ import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import { Detail, formatDateTime, formatTime, freshness, NoData, SectionCard } from "../section-parts";
+import { SourceLabel } from "../../shared/source-label";
 
 // The Epic section (PRD Patient details PD-OD-01, PD-121): what Intercept receives from the hospital's record for
 // this patient, how fresh each part is, and what Intercept has written back. A status page, not a copy of the EMR: the
@@ -186,7 +187,7 @@ function EpicSection({ emr, onOpenChart }: EpicSectionProps) {
 						)}
 					</SectionCard>
 
-					<SectionCard title='Written back' meta={emr.writeBacks.length ? freshness(emr.name, emr.writeBacks[0].at, now) : undefined}>
+					<SectionCard title='Written back' meta={emr.writeBacks.length ? <SourceLabel>{freshness(emr.name, emr.writeBacks[0].at, now)}</SourceLabel> : undefined}>
 						{emr.writeBacks.length ? (
 							<ul className='flex flex-col divide-y divide-border-muted'>
 								{emr.writeBacks.map((item) => {

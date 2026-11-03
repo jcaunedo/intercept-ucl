@@ -26,13 +26,14 @@ import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-mo
 import { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { Toaster } from "@/components/feedback/sonner";
 import {
 	AppHeader,
 	type AppHeaderPatientProps,
 	type AppHeaderPerson,
 	type AppHeaderUser,
 } from "@/components/navigation/app-header";
-import { Sidebar, type SidebarNavItem } from "@/components/navigation/sidebar";
+import { Sidebar, type SidebarAlert, type SidebarNavItem } from "@/components/navigation/sidebar";
 import {
 	DropdownMenuCheckboxItem,
 	DropdownMenuGroup,
@@ -57,7 +58,7 @@ import { AskInterceptPanel, type AskInterceptNotice, type AskInterceptResponder 
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
 import { PatientNavigationProvider, type PatientNavigation } from "./patient-navigation";
-import { PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
+import { PageHidesToastsProvider, PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
 import { useLayoutSidebar } from "./use-layout-sidebar";
 
 // A patient's details reveal at twice Reveal's duration (1 s; Oct 31, 2026, user's call), so the page change reads. On
@@ -74,6 +75,8 @@ const detailsRevealVariants = {
 
 // The chat's Sidebar item: an action, matched by its label (Oct 27, 2026: "Ask Intercept Live", was "Ask Intercept").
 const askInterceptLabel = "Ask Intercept Live";
+// What Ask in an alert toast asks for the clinician (Scenario 1, step 3: the patient at a glance).
+const patientOverviewQuestion = "Quick overview";
 
 // No Search item (Oct 31, 2026, intercept.ds `sidebar` `1001:544`, user's call): search happens in Ask Intercept Live.
 const navGroups: SidebarNavItem[][] = [
@@ -138,6 +141,9 @@ const emptyPages = {
 } satisfies Record<string, { title: string; description: string }>;
 
 type InterceptLivePage = keyof typeof emptyPages;
+
+/** Every Sidebar page, in the Sidebar's order. */
+const interceptLivePages = Object.keys(emptyPages) as InterceptLivePage[];
 
 /** "Wed Oct 21 · 4:54 PM" in the user's locale: weekday, month and day (without the locale's commas), then the time. */
 function formatClock(date: Date) {
@@ -247,8 +253,20 @@ type InterceptLiveProps = {
 	 * opening a patient leaves the page as it is.
 	 */
 	renderPatientDetails?: (patientId: string, stepper: PatientStepper) => PatientDetailsView | null;
+	/**
+	 * An alert, opened (the alert modal), when a page opens one: a monitoring card's alert bar or an alert toast's maximize
+	 * button. Gets the patient and the alert (none from a card: the layout picks the one its bar shows), and `open` /
+	 * `onOpenChange` for the modal, kept after it closes so it can animate out. Without it, opening an alert opens the
+	 * patient's details.
+	 */
+	renderAlert?: (target: OpenAlert, controls: AlertControls) => React.ReactNode;
 	/** A patient whose details show first, over `defaultPage`, with the list to step through. */
 	defaultPatient?: OpenPatient;
+	/**
+	 * Where the user is, each time it changes (and once at the start): the Sidebar's page, and the patient whose details
+	 * are open over it, if any. E.g. to keep the address in step, so a shared link opens the same place.
+	 */
+	onLocationChange?: (location: { page: InterceptLivePage; patientId?: string }) => void;
 	/**
 	 * Answers questions in Ask Intercept Live, with the page and the patient on screen. Without it, the chat greets the
 	 * user and says it can't answer yet.
@@ -267,6 +285,27 @@ type InterceptLiveProps = {
 	prototype?: PrototypeShortcut[];
 	/** "Reset prototype": starts the prototype over, in its initial state. */
 	onResetPrototype?: () => void;
+	/**
+	 * An alert dot on Sidebar items, by page: the severity to show, e.g. Monitoring's worst open alert. It flashes while
+	 * shown; none, or `resolved`, shows no dot.
+	 */
+	navAlerts?: Partial<Record<InterceptLivePage, SidebarAlert>>;
+	/** Parts the layout adds inside the shell, where they can open patients, e.g. its alert toasts (`AlertToasts`). */
+	children?: React.ReactNode;
+};
+
+/**
+ * The alert a page opened: the patient's, and which one when the page knows (a toast does, a card's bar doesn't).
+ * `consult`: opened to start the video consult, so the call is already ringing.
+ */
+type OpenAlert = { patientId: string; alertId?: string; consult?: boolean };
+
+/** What the alert modal needs from the shell. */
+type AlertControls = {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	/** Closes the modal and opens the patient's details. */
+	openPatient: () => void;
 };
 
 /** One entry in the Sidebar's Prototype menu. */
@@ -298,17 +337,24 @@ function InterceptLive({
 	pages,
 	defaultPage = "Monitoring",
 	renderPatientDetails,
+	renderAlert,
 	defaultPatient,
+	onLocationChange,
 	askIntercept,
 	askInterceptNotice,
 	prototype = [],
 	onResetPrototype,
+	navAlerts,
+	children,
 }: InterceptLiveProps) {
 	// Collapsed to the rail by default, and always at lg (1024) and below.
 	const { sidebarCollapsed, handleSidebarCollapsedChange } = useLayoutSidebar(true);
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
 	// Patient details open over the page, which stays the Sidebar's active item (PRD PD-001).
 	const [openPatient, setOpenPatient] = React.useState<OpenPatient | null>(defaultPatient ?? null);
+	// The alert modal over everything. The last alert stays after it closes, so the modal can animate out.
+	// `key` counts the openings, so each one starts the modal afresh (its consult, its scroll).
+	const [openAlert, setOpenAlert] = React.useState<(OpenAlert & { open: boolean; key: number }) | null>(null);
 	// The left side panel: Ask Intercept Live (an action, not a page: it leaves the current page as it is) or, on a
 	// patient's page, the patient list. They share the place, so opening one closes the other.
 	const [leftPanel, setLeftPanel] = React.useState<"chat" | "patients" | null>(null);
@@ -319,31 +365,42 @@ function InterceptLive({
 		[],
 	);
 	const [patientListWidth, setPatientListWidth] = React.useState<number>(sidePanelWidth.min);
-	// View choices that hold across pages (Group by location, each page's sort), so switching pages, or opening a patient
-	// and coming back, keeps them.
+	// View choices that hold across pages (Group by location, each page's sort and My patients), so switching pages, or
+	// opening a patient and coming back, keeps them.
 	const [groupByLocation, setGroupByLocation] = React.useState(false);
 	const [sortBy, setSortBy] = React.useState<PagePreferences["sortBy"]>({});
+	const [scope, setScope] = React.useState<PagePreferences["scope"]>({});
+	const currentPage = page === "Census" ? "census" : page === "Monitoring" ? "monitoring" : undefined;
 	const pagePreferences = React.useMemo<PagePreferences>(
 		() => ({
 			groupByLocation,
 			onGroupByLocationChange: setGroupByLocation,
 			sortBy,
 			onSortByChange: (page, next) => setSortBy((current) => ({ ...current, [page]: next })),
+			scope,
+			onScopeChange: (page, next) => setScope((current) => ({ ...current, [page]: next })),
+			currentPage,
 		}),
-		[groupByLocation, sortBy],
+		[groupByLocation, sortBy, scope, currentPage],
 	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);
+	// Set while a page's panel hides the toasts (the live feed, useHideToasts).
+	const [panelHidesToasts, setPanelHidesToasts] = React.useState(false);
 	// Kept here, so the chat reopens at the width it was left at.
 	const [chatWidth, setChatWidth] = React.useState<number>(sidePanelWidth.default);
 	const groups = React.useMemo(
 		() =>
 			navGroups.map((group) =>
 				group.map((item) =>
-					item.label === askInterceptLabel ? { ...item, onClick: () => toggleLeftPanel("chat") } : item,
+					item.label === askInterceptLabel
+						? { ...item, onClick: () => toggleLeftPanel("chat") }
+						: item.navigateTo && navAlerts?.[item.navigateTo as InterceptLivePage]
+							? { ...item, alert: navAlerts[item.navigateTo as InterceptLivePage] }
+							: item,
 				),
 			),
-		[toggleLeftPanel],
+		[toggleLeftPanel, navAlerts],
 	);
 	// The Prototype menu: its shortcuts by group, a divider between groups, then "Reset prototype" after a divider (as in
 	// bethere-ucl).
@@ -412,6 +469,20 @@ function InterceptLive({
 		else if (patientWasOpen.current) canvas.scrollTop = pageScroll.current;
 		patientWasOpen.current = openPatientId !== null;
 	}, [openPatientId]);
+	// Who the chat is about. From the app header's Ask Intercept button (Oct 31, 2026, user's call) it's the patient on
+	// screen, with no name of its own: it holds while their details are open. From Ask in an alert toast (Nov 2, 2026,
+	// user's call) it carries the name, so it holds on any page. Removing the patient (the chip over the message box),
+	// closing the chat or opening another patient's details ends it. From the Sidebar, the chat is general.
+	const [chatPatient, setChatPatient] = React.useState<{ id: string; name?: string } | null>(null);
+	// The question asked for the user when Ask in a toast opens the chat (AskInterceptPanel's `opener`).
+	const [chatOpener, setChatOpener] = React.useState<{ id: string; question: string } | undefined>(undefined);
+	const openerCount = React.useRef(0);
+	// Reported after each navigation, not on every render: the latest callback is read when it fires.
+	const onLocationChangeRef = React.useRef(onLocationChange);
+	onLocationChangeRef.current = onLocationChange;
+	React.useEffect(() => {
+		onLocationChangeRef.current?.({ page, patientId: openPatientId ?? undefined });
+	}, [page, openPatientId]);
 	// Each patient whose details open, from a page or stepped to, for the pages' Recently viewed sort.
 	const [viewedAt, setViewedAt] = React.useState<Record<string, string>>({});
 	React.useEffect(() => {
@@ -423,12 +494,42 @@ function InterceptLive({
 				if (!renderPatientDetails) return;
 				setOpenPatient({ id: patientId, list });
 			},
+			// The alert modal (`renderAlert`); without one, the patient's details.
+			openAlert: (patientId, alertId, options) => {
+				if (renderAlert)
+					setOpenAlert((current) => ({ patientId, alertId, consult: options?.consult, open: true, key: (current?.key ?? 0) + 1 }));
+				else if (renderPatientDetails) setOpenPatient({ id: patientId });
+			},
+			askAboutPatient: (patientId, patientName) => {
+				setChatPatient({ id: patientId, name: patientName });
+				setChatOpener({ id: String(openerCount.current++), question: patientOverviewQuestion });
+				setChatOpen(true);
+			},
 			compact: headerCompact,
 			patientOpen: openPatientId !== null,
 			viewedAt,
 		}),
-		[renderPatientDetails, headerCompact, openPatientId, viewedAt],
+		[renderPatientDetails, renderAlert, headerCompact, openPatientId, viewedAt, setChatOpen],
 	);
+	const openAlertPatient = (patientId: string) => {
+		setOpenAlert((current) => (current ? { ...current, open: false } : current));
+		if (renderPatientDetails) setOpenPatient({ id: patientId });
+	};
+	const alertView =
+		openAlert && renderAlert
+			? renderAlert(openAlert, {
+					open: openAlert.open,
+					onOpenChange: (open) => setOpenAlert((current) => (current ? { ...current, open } : current)),
+					openPatient: () => openAlertPatient(openAlert.patientId),
+				})
+			: null;
+	// An alert the layout can't show (no detail for it): its patient's details instead, as without `renderAlert`.
+	const alertMissing = Boolean(openAlert?.open && renderAlert && alertView == null);
+	React.useEffect(() => {
+		if (!alertMissing || !openAlert) return;
+		setOpenAlert(null);
+		if (renderPatientDetails) setOpenPatient({ id: openAlert.patientId });
+	}, [alertMissing, openAlert, renderPatientDetails]);
 	const patientView = (() => {
 		if (!openPatient || !renderPatientDetails) return null;
 		const { id, list } = openPatient;
@@ -451,14 +552,22 @@ function InterceptLive({
 	React.useEffect(() => {
 		mounted.current = true;
 	}, []);
-	// The chat is about the patient on screen only when the user opens it from the app header's Ask Intercept button (Oct
-	// 31, 2026, user's call); the button is filled meanwhile. Removing the patient (the chip over the message box), closing
-	// the chat or opening another patient ends it. From the Sidebar, the chat is general.
-	const [chatPatientId, setChatPatientId] = React.useState<string | null>(null);
-	const chatInPatientContext = chatOpen && chatPatientId !== null && chatPatientId === openPatientId;
+	// The name the chat's context shows: the open patient's, or the one Ask in a toast gave while no details are open.
+	const chatPatientName = !chatOpen || !chatPatient
+		? undefined
+		: chatPatient.id === openPatientId
+			? patientView?.name
+			: openPatientId === null
+				? chatPatient.name
+				: undefined;
+	// The app header's button is filled while the chat is about someone.
+	const chatInPatientContext = chatPatientName !== undefined;
 	React.useEffect(() => {
-		if (!chatOpen) setChatPatientId(null);
+		if (!chatOpen) setChatPatient(null);
 	}, [chatOpen]);
+	React.useEffect(() => {
+		if (openPatientId !== null) setChatPatient((current) => (current && current.id !== openPatientId ? null : current));
+	}, [openPatientId]);
 	// The patient list shows only on a patient's page with a list; leaving it closes the list.
 	const patientListOpen = leftPanel === "patients" && Boolean(patientView?.patientList);
 	const { theme, toggleTheme } = useDocumentTheme();
@@ -475,157 +584,168 @@ function InterceptLive({
 		<PatientNavigationProvider value={navigation}>
 			<PagePreferencesProvider value={pagePreferences}>
 				<PagePanelSlotProvider value={panelSlot}>
-					<div className='flex h-screen bg-background-subtle'>
-						<Sidebar
-							groups={groups}
-							footerItems={footerItems}
-							activeItem={page}
-							onNavigate={(navigateTo) => {
-								setOpenPatient(null);
-								setPage(navigateTo as InterceptLivePage);
-							}}
-							collapsed={sidebarCollapsed}
-							onCollapsedChange={handleSidebarCollapsedChange}
-							className='h-full'
-						/>
-
-						{/* Global: opens on every page, between the Sidebar and the page. */}
-						<AskInterceptPanel
-							open={chatOpen}
-							onOpenChange={setChatOpen}
-							carded={sidebarCollapsed}
-							width={chatWidth}
-							onWidthChange={setChatWidth}
-							context={{ page, patientName: chatInPatientContext ? patientView?.name : undefined }}
-							respond={askIntercept}
-							notice={askInterceptNotice}
-							onRemovePatientContext={chatInPatientContext ? () => setChatPatientId(null) : undefined}
-						/>
-
-						{/* On a patient's page opened from a list: that list, to switch patient (PRD PD-015). */}
-						{patientView?.patientList && openPatient ? (
-							<PatientListPanel
-								open={patientListOpen}
-								onOpenChange={(open) => setLeftPanel(open ? "patients" : null)}
-								carded={sidebarCollapsed}
-								width={patientListWidth}
-								onWidthChange={setPatientListWidth}
-								sourcePage={page}
-								patients={patientView.patientList}
-								currentId={openPatient.id}
-								onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}
+					<PageHidesToastsProvider value={setPanelHidesToasts}>
+						<div className='flex h-screen bg-background-subtle'>
+							<Sidebar
+								groups={groups}
+								footerItems={footerItems}
+								activeItem={page}
+								onNavigate={(navigateTo) => {
+									setOpenPatient(null);
+									setPage(navigateTo as InterceptLivePage);
+								}}
+								collapsed={sidebarCollapsed}
+								onCollapsedChange={handleSidebarCollapsedChange}
+								className='h-full'
 							/>
-						) : null}
 
-						{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
-						    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
-						    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
-						    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
-						    stay right when it's scrolled. */}
-						<motion.div
-							ref={canvasRef}
-							layoutScroll
-							className={cn(
-								"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-								// With a left panel open the panel takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
-								// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
-								chatOpen || patientListOpen
-									? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
-									: sidebarCollapsed
-										? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
-										: "rounded-none shadow-none",
-							)}
-						>
-							{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). On
-							    a patient's details, the patient variant: a breadcrumb back to the page, and the patient's actions. */}
-							{patientView ? (
-								<AppHeader
-									variant='patient'
+							{/* Global: opens on every page, between the Sidebar and the page. */}
+							<AskInterceptPanel
+								open={chatOpen}
+								onOpenChange={setChatOpen}
+								carded={sidebarCollapsed}
+								width={chatWidth}
+								onWidthChange={setChatWidth}
+								context={{ page, patientName: chatPatientName }}
+								respond={askIntercept}
+								notice={askInterceptNotice}
+								onRemovePatientContext={chatInPatientContext ? () => setChatPatient(null) : undefined}
+								opener={chatOpener}
+							/>
+
+							{/* On a patient's page opened from a list: that list, to switch patient (PRD PD-015). */}
+							{patientView?.patientList && openPatient ? (
+								<PatientListPanel
+									open={patientListOpen}
+									onOpenChange={(open) => setLeftPanel(open ? "patients" : null)}
+									carded={sidebarCollapsed}
+									width={patientListWidth}
+									onWidthChange={setPatientListWidth}
 									sourcePage={page}
-									patientName={patientView.name}
-									onBack={() => setOpenPatient(null)}
-									// Opens the chat about this patient (or makes an open chat about them); pressed again, closes it.
-									onToggleAskIntercept={() => {
-										if (chatInPatientContext) setChatOpen(false);
-										else {
-											setChatPatientId(openPatientId);
-											setChatOpen(true);
-										}
-									}}
-									askInterceptOpen={chatOpen}
-									// Only with a list to switch through (not when the patient was opened from an alert).
-									onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
-									patientListOpen={patientListOpen}
-									{...patientView.headerActions}
-									compact={headerCompact}
-									theme={theme}
-									onToggleTheme={toggleTheme}
-									className={headerClassName(headerCompact)}
+									patients={patientView.patientList}
+									currentId={openPatient.id}
+									onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}
 								/>
-							) : (
-								<AppHeader
-									clock={shownClock}
-									user={shownUser}
-									team={team}
-									unreadMessages={unreadMessages}
-									compact={headerCompact}
-									theme={theme}
-									onToggleTheme={toggleTheme}
-									className={headerClassName(headerCompact)}
-								/>
-							)}
+							) : null}
 
-							{/* Under an open patient the page stays mounted, hidden, so its filters, sort and scroll are as they were on
-							    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. It leaves at once
-							    and glides back in on Back. */}
+							{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
+							    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
+							    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
+							    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
+							    stay right when it's scrolled. */}
 							<motion.div
-								initial={false}
-								animate={
-									patientView
-										? { opacity: 0, x: -glideDistance, transition: { duration: 0 } }
-										: { opacity: 1, x: 0, transition: enterTransition }
-								}
-								className={cn("flex min-w-0 flex-1 flex-col", patientView && "hidden")}
+								ref={canvasRef}
+								layoutScroll
+								className={cn(
+									"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+									// With a left panel open the panel takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
+									// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
+									chatOpen || patientListOpen
+										? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+										: sidebarCollapsed
+											? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+											: "rounded-none shadow-none",
+								)}
 							>
-								<PagePanelSlotProvider value={patientView ? null : panelSlot}>
-									{pages[page] ?? (
-										// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area
-										// below the header.
-										<main className='relative flex flex-1 flex-col p-6'>
-											<Typography as='h1' size='2xl' weight='bold'>
-												{page}
-											</Typography>
-											<EmptyState
-												className='absolute inset-0 px-6'
-												title={emptyPages[page].title}
-												description={emptyPages[page].description}
-											/>
-										</main>
-									)}
-								</PagePanelSlotProvider>
-							</motion.div>
-							{/* popLayout: on Back the leaving details are taken out of the flow (over the page) while they slide out, so
-							    the page takes its place at once and comes in beside them. */}
-							<AnimatePresence mode='popLayout' initial={false}>
+								{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). On
+								    a patient's details, the patient variant: a breadcrumb back to the page, and the patient's actions. */}
 								{patientView ? (
-									<motion.div
-										key='details'
-										variants={prefersReducedMotion ? fadeVariants : detailsRevealVariants}
-										initial={mounted.current ? "initial" : false}
-										animate='animate'
-										exit='exit'
-										className='flex min-w-0 flex-1 flex-col'
-									>
-										{patientView.content}
-									</motion.div>
-								) : null}
-							</AnimatePresence>
-						</motion.div>
+									<AppHeader
+										variant='patient'
+										sourcePage={page}
+										patientName={patientView.name}
+										onBack={() => setOpenPatient(null)}
+										// Opens the chat about this patient (or makes an open chat about them); pressed again, closes it.
+										onToggleAskIntercept={() => {
+											if (chatInPatientContext) setChatOpen(false);
+											else {
+												if (openPatientId !== null) setChatPatient({ id: openPatientId });
+												setChatOpen(true);
+											}
+										}}
+										askInterceptOpen={chatOpen}
+										// Only with a list to switch through (not when the patient was opened from an alert).
+										onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
+										patientListOpen={patientListOpen}
+										{...patientView.headerActions}
+										compact={headerCompact}
+										theme={theme}
+										onToggleTheme={toggleTheme}
+										className={headerClassName(headerCompact)}
+									/>
+								) : (
+									<AppHeader
+										clock={shownClock}
+										user={shownUser}
+										team={team}
+										unreadMessages={unreadMessages}
+										compact={headerCompact}
+										theme={theme}
+										onToggleTheme={toggleTheme}
+										className={headerClassName(headerCompact)}
+									/>
+								)}
 
-						{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
-						    `contents`, so the panel is a flex item of this row. */}
-						<div ref={setPanelSlot} className='contents' />
-					</div>
+								{/* Under an open patient the page stays mounted, hidden, so its filters, sort and scroll are as they were on
+								    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. It leaves at once
+								    and glides back in on Back. */}
+								<motion.div
+									initial={false}
+									animate={
+										patientView
+											? { opacity: 0, x: -glideDistance, transition: { duration: 0 } }
+											: { opacity: 1, x: 0, transition: enterTransition }
+									}
+									className={cn("flex min-w-0 flex-1 flex-col", patientView && "hidden")}
+								>
+									<PagePanelSlotProvider value={patientView ? null : panelSlot}>
+										{pages[page] ?? (
+											// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area
+											// below the header.
+											<main className='relative flex flex-1 flex-col p-6'>
+												<Typography as='h1' size='2xl' weight='bold'>
+													{page}
+												</Typography>
+												<EmptyState
+													className='absolute inset-0 px-6'
+													title={emptyPages[page].title}
+													description={emptyPages[page].description}
+												/>
+											</main>
+										)}
+									</PagePanelSlotProvider>
+								</motion.div>
+								{/* popLayout: on Back the leaving details are taken out of the flow (over the page) while they slide out, so
+								    the page takes its place at once and comes in beside them. */}
+								<AnimatePresence mode='popLayout' initial={false}>
+									{patientView ? (
+										<motion.div
+											key='details'
+											variants={prefersReducedMotion ? fadeVariants : detailsRevealVariants}
+											initial={mounted.current ? "initial" : false}
+											animate='animate'
+											exit='exit'
+											className='flex min-w-0 flex-1 flex-col'
+										>
+											{patientView.content}
+										</motion.div>
+									) : null}
+								</AnimatePresence>
+							</motion.div>
+
+							{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
+							    `contents`, so the panel is a flex item of this row. */}
+							<div ref={setPanelSlot} className='contents' />
+						</div>
+						{children}
+						{alertView ? (
+							<React.Fragment key={openAlert?.key}>{alertView}</React.Fragment>
+						) : null}
+						{/* The app's one toast region: alert toasts and any other message. Hidden while the alert modal or a patient's
+						    page is open, so a toast never covers them, and while the live feed is open, which already lists every
+						    alert; they come back, with any that arrived meanwhile, when it closes. */}
+						<Toaster hidden={Boolean((openAlert?.open && alertView) || patientView || panelHidesToasts)} />
+					</PageHidesToastsProvider>
 				</PagePanelSlotProvider>
 			</PagePreferencesProvider>
 		</PatientNavigationProvider>
@@ -634,8 +754,11 @@ function InterceptLive({
 
 export {
 	InterceptLive,
+	interceptLivePages,
+	type AlertControls,
 	type InterceptLivePage,
 	type InterceptLiveProps,
+	type OpenAlert,
 	type OpenPatient,
 	type PatientDetailsView,
 	type PatientStepper,

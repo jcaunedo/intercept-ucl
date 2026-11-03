@@ -122,7 +122,7 @@ const culture = (
 const radiologists = {
 	"Harbor Point General": "Alan Reyes, MD, Radiology",
 	"Mercy West Hospital": "Owen Mitchell, MD, Radiology",
-	CVMC: "Farah Haddad, MD, Radiology",
+	CVMC: "Farah Hadley, MD, Radiology",
 	"Chadron Community Hospital": "Neil Carver, MD, Teleradiology",
 } as Record<string, string>;
 
@@ -593,7 +593,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 		],
 		cultures: [],
 		imaging: [
-			report("Echocardiogram, transthoracic", 24 * 122, "EF 25%. Dilated left ventricle with global hypokinesis.", "Dilated left ventricle with global hypokinesis, EF about 25%. Moderate functional mitral regurgitation. Estimated pulmonary artery systolic pressure 48 mmHg.", "Elena Marsh, MD, Cardiology, Regional West"),
+			report("Echocardiogram, transthoracic", 24 * 122, "EF 25%. Dilated left ventricle with global hypokinesis.", "Dilated left ventricle with global hypokinesis, EF about 25%. Moderate functional mitral regurgitation. Estimated pulmonary artery systolic pressure 48 mmHg.", "Ellen Marsh, MD, Cardiology, Regional West"),
 			report("Chest X-ray, portable", 19, "Pulmonary vascular congestion with small bilateral pleural effusions.", "Enlarged heart. Upper-lobe vascular redistribution and interstitial edema. Small effusions on both sides. No consolidation.", chadron),
 		],
 	},
@@ -639,7 +639,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 			report("Chest X-ray, portable", 14, "Low lung volumes with basilar atelectasis.", "Low lung volumes. Linear atelectasis at both bases. No consolidation or effusion.", mwh),
 		],
 	},
-	// Nakamura: type 1 diabetes since childhood; ran out of insulin for three days.
+	// Norman: type 1 diabetes since childhood; ran out of insulin for three days.
 	p18: {
 		onsets: ["1989", "2015"],
 		medical: ["Type 1 diabetes · A1c 9.8%, insulin pump until last year", "Hypothyroidism"],

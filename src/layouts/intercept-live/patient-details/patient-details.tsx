@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
-import type { PatientCardProps } from "@/components/cards/patient-card";
+import type { PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import type { MonitorLimits, MonitorTrends, MonitorVitals, PatientMonitorProps } from "@/components/cards/patient-monitoring-card";
 import type { AvatarFallbackProps } from "@/components/data-display/avatar";
 import { PatientHeader, type PatientHeaderProps } from "@/components/data-display/patient-header";
@@ -50,7 +50,7 @@ import { VitalsSection, type PatientVitals } from "./sections/vitals-section";
 
 /** Who the patient is and where, as the Census and Monitoring know them. */
 type PatientDetailsPatient = Pick<
-	PatientCardProps,
+	PatientCensusCardProps,
 	| "lastName"
 	| "firstName"
 	| "photo"
@@ -132,19 +132,23 @@ type PatientBrief = {
 
 /** What the page knows about the patient beyond the card: safety, encounter, organ support, labs and care team. */
 /**
- * The deterioration score's last crossing into its alert band, with what drove it (PRD PC-030, SV-09, DU-14): a
- * current-state score, never a prediction.
+ * The deterioration score with what drove it (PRD PC-030, SV-09, DU-14): its value and band, its trend, each input with
+ * its points, and when it crossed into its alert band, if it has. A current-state score, never a prediction.
  */
 type PatientEarlyWarning = {
 	/** The score's name, e.g. "NEWS2". */
 	score: string;
-	/** The band it crossed into and that band's threshold, e.g. "High" at 7. */
-	band: string;
-	threshold: number;
-	/** When it crossed, ISO 8601. */
-	crossedAt: string;
 	value: number;
-	/** Earlier values, oldest first, for the trend. */
+	/** The band the value is in, e.g. "Medium". */
+	band: string;
+	/** The alert band and its threshold, e.g. "High" at 7. */
+	alertBand: string;
+	threshold: number;
+	/** When the score was last worked out, ISO 8601. */
+	updatedAt: string;
+	/** When it crossed into the alert band, ISO 8601. Missing while it's below the threshold. */
+	crossedAt?: string;
+	/** Earlier values, oldest first, for the trend. The current value is the last point. */
 	trend: { at: string; value: number }[];
 	/** Each input with its value and points, e.g. RR "26/min", 3. */
 	inputs: { label: string; value: string; points: number }[];
@@ -158,6 +162,8 @@ type PatientFluids = {
 	window: string;
 	/** When the nurse charted them, ISO 8601. */
 	chartedAt: string;
+	/** Who charted them, e.g. "Kayla Brandt, RN". */
+	chartedBy?: string;
 };
 
 type PatientRecord = {
@@ -195,7 +201,7 @@ type PatientRecord = {
 	/** Only for a patient under sepsis screening or tracking (PRD PD-080). */
 	sepsis?: SepsisCase;
 	camera?: PatientCamera;
-	/** Only once the deterioration score has crossed into its alert band. */
+	/** The deterioration score's breakdown, for the Overview's Early warning score. */
 	earlyWarning?: PatientEarlyWarning;
 	fluids?: PatientFluids;
 };

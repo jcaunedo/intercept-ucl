@@ -1,7 +1,7 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-import { PatientCardAlert, patientCardAcuityLevels, scoreTrendClassName } from "@/components/cards/patient-card";
+import { PatientCardAlert, patientCardAcuityLevels, scoreTrendClassName } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { Badge } from "@/components/data-display/badge";
 import { HospitalSectionHeader } from "@/components/data-display/hospital-section-header";

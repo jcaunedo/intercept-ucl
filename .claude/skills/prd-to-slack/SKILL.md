@@ -100,7 +100,7 @@ Avoid corporate announcements, formal introductions, and artificial enthusiasm.
 
 ### 2. Simple and straightforward
 
-Use short sentences and familiar terminology.
+Use short sentences and everyday words. Pick the simple word over the sophisticated one: "use" not "leverage", "help" not "facilitate", "show" not "surface", "clear" not "intuitive", "fits" not "aligns with". Use a technical or domain term only when nothing simpler says the same thing (a clinical term like "co-signature", or a name the team already uses), and don't dress it up around it.
 
 Translate technical or complex PRD language into plain English without losing important meaning.
 
@@ -183,6 +183,7 @@ Prioritize clarity over reaching a specific word count.
 Before producing the response, verify:
 
 - Does this sound like a designer explaining their work, casually and confidently?
+- Is every word one a teammate would use out loud? No fancy words where a plain one works.
 - Is every point a decision, a UX or UI change, a layout change, a behavior or an improvement, with its why? No padding, sizes or other minor technical details?
 - Does a "before" appear only where it makes the change clearer?
 - Can teammates understand it without opening the PRD?

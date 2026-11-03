@@ -14,6 +14,7 @@ import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/
 import { compareTriageAlerts, isOpenAlert, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
+import { alertChanges } from "../shared/alert-changes";
 import { useAddressedAlerts } from "../shared/live-feed";
 import { sampleHospitals, sampleTeam, sampleUser } from "./sample-workspace";
 
@@ -29,6 +30,9 @@ import { sampleHospitals, sampleTeam, sampleUser } from "./sample-workspace";
 /* The data, joined per patient                                               */
 /* -------------------------------------------------------------------------- */
 
+/** The Census cards and patient records the page shows now, when they differ from the sample. */
+type LiveData = { censusPatients?: CensusPatient[]; patientRecords?: PatientRecord[] };
+
 type Patient = {
 	census: CensusPatient;
 	vitals?: MonitorVitals;
@@ -37,15 +41,19 @@ type Patient = {
 };
 
 /**
- * Every patient with their monitor values, record and open alerts (worst first, then oldest). `alerts` and `vitals` are
- * what the page shows now (the live feed, the queue's actions, the monitors' live values); without them, the sample as
- * it starts.
+ * Every patient with their monitor values, record and open alerts (worst first, then oldest). `alerts`, `vitals` and
+ * `data` are what the page shows now (the live feed, the queue's actions, the monitors' live values, Scenario 1's
+ * changes to the cards and records); without them, the sample as it starts.
  */
-const joinPatients = (alerts: TriageAlert[], vitals: Partial<Record<string, MonitorVitals>> = {}): Patient[] =>
-	samplePatients.map((census) => ({
+const joinPatients = (
+	alerts: TriageAlert[],
+	vitals: Partial<Record<string, MonitorVitals>> = {},
+	{ censusPatients = samplePatients, patientRecords = samplePatientRecords }: LiveData = {},
+): Patient[] =>
+	censusPatients.map((census) => ({
 		census,
 		vitals: vitals[census.id] ?? sampleMonitoringPatients.find((item) => item.id === census.id)?.vitals,
-		record: samplePatientRecords.find((item) => item.id === census.id),
+		record: patientRecords.find((item) => item.id === census.id),
 		alerts: alerts.filter((alert) => alert.patientId === census.id && isOpenAlert(alert)).sort(compareTriageAlerts),
 	}));
 
@@ -212,6 +220,7 @@ function namedDrugs(question: string) {
 type Topic =
 	| "shift"
 	| "help"
+	| "overview"
 	| "summary"
 	| "changes"
 	| "attention"
@@ -242,6 +251,8 @@ type Topic =
 const topics: [Topic, RegExp][] = [
 	["shift", /shift|brief me|catch me up|up to speed|start of (my|the) day|morning report|sign.?out/i],
 	["help", /^(hi|hello|hey|help|what can you|how do (i|you)|who are you)/i],
+	// The short card-like answer, asked by Ask in an alert toast; "overview" alone is still the summary.
+	["overview", /quick overview|at a glance/i],
 	["attention", /attention|first|priorit|sickest|worst|most urgent|who should i|triage|deteriorat|unstable/i],
 	["gaps", /gap|not reporting|missing|stale|no data|offline|disconnect/i],
 	["outside-limits", /outside( the)? limits|out of range|abnormal vitals|hypotens|tachy|brady|desat|low map|map (under|below)|hypox/i],
@@ -384,6 +395,147 @@ function summaryOf(patient: Patient): AskInterceptAnswer {
 	};
 }
 
+/** The patient's early-warning score while its crossing into the alert band is recent (12 h), else undefined. */
+function recentCrossing(patient: Patient) {
+	const warning = patient.record?.earlyWarning;
+	const crossedAt = warning?.crossedAt;
+	return warning && crossedAt && Date.now() - Date.parse(crossedAt) <= 12 * 60 * MINUTE ? { ...warning, crossedAt } : undefined;
+}
+
+/** "4 months ago" for anything over two months old, else `ago`. */
+function agoLong(iso: string) {
+	const days = (Date.now() - Date.parse(iso)) / (24 * 60 * MINUTE);
+	return days > 60 ? `${Math.round(days / 30)} months ago` : ago(iso);
+}
+
+// The alert's reason line, phrase by phrase (Scenario 1, step 2: "rising work of breathing, positive fluid balance,
+// HFrEF"): each phrase in plain words with the patient's numbers. Words that explain a term, never a diagnosis or a
+// prediction (Spec §8.7).
+const reasonExplanations: {
+	matches: RegExp;
+	explain: (patient: Patient, pronouns: { they: string; their: string }) => string | undefined;
+}[] = [
+	{
+		matches: /work of breathing/i,
+		explain: (patient, { they, their }) => {
+			const series = patient.record?.vitals?.series ?? [];
+			const readings = (parameter: string) => series.find((item) => item.parameter === parameter)?.readings ?? [];
+			const [rr, spo2] = [readings("rr"), readings("spo2")];
+			const oxygen = patient.record?.ventilator?.settings.find((setting) => setting.unit === "L/min");
+			if (rr.length < 2) return undefined;
+			return `**Rising work of breathing:** ${they}'s breathing faster and harder (RR ${rr[0].value} → ${rr.at(-1)!.value}) and ${their} oxygen is dropping${spo2.length > 1 ? ` (SpO₂ ${spo2[0].value}% → ${spo2.at(-1)!.value}%${oxygen ? `, now on ${oxygen.value} L` : ""})` : ""}.`;
+		},
+	},
+	{
+		matches: /fluid balance/i,
+		explain: (patient, { they }) => {
+			const fluids = patient.record?.fluids;
+			if (!fluids) return undefined;
+			const xray = patient.record?.chart?.imaging.find((report) => /chest x-ray/i.test(report.study));
+			return `**Positive fluid balance:** more fluid has gone into ${patient.census.sex === "M" ? "his" : patient.census.sex === "F" ? "her" : "their"} body than has come out (${fluids.netBalance}), and ${they}'s gained ${fluids.weightChange.replace(/^\+/, "")} over ${fluids.window}. In heart failure, that fluid backs up into the lungs${xray ? `; the chest X-ray ${ago(xray.performedAt)} reads "${xray.impression.replace(/\.$/, "").toLowerCase()}"` : ""}.`;
+		},
+	},
+	{
+		matches: /HFrEF/,
+		explain: (patient) => {
+			const ef = patient.record?.diagnosis?.match(/EF (\d+)%/)?.[1];
+			return `**HFrEF:** "heart failure with reduced ejection fraction," a weak heart that pumps out only ${ef ? `${ef}%` : "a small share"} of its blood with each beat, so it can't handle the extra fluid.`;
+		},
+	},
+];
+
+/**
+ * Why the patient leads the work list (Scenario 1, step 2): their place among every patient and the alert's reason
+ * line, explained phrase by phrase.
+ */
+function rankingFor(patient: Patient): string | undefined {
+	const reason = patient.alerts[0]?.reason;
+	if (!reason) return undefined;
+	const rank = [...patients].sort(comparePriority).findIndex((item) => item.census.id === patient.census.id) + 1;
+	const hospitals = new Set(patients.map((item) => item.census.hospital)).size;
+	const pronouns =
+		patient.census.sex === "F" ? { they: "she", their: "her" } : patient.census.sex === "M" ? { they: "he", their: "his" } : { they: "they", their: "their" };
+	const lines = reasonExplanations
+		.filter((item) => item.matches.test(reason))
+		.map((item) => item.explain(patient, pronouns))
+		.filter((line): line is string => Boolean(line));
+	return [
+		`${patientName(patient)} is **#${rank}** of ${patients.length} patients across ${hospitals} hospitals: ${reason.charAt(0).toLowerCase()}${reason.slice(1)}.`,
+		lines.length ? list(lines) : undefined,
+	]
+		.filter(Boolean)
+		.join("\n");
+}
+
+/**
+ * The history and labs behind the patient's heart failure (Scenario 1, step 3: what the intensivist needs for the
+ * consult): home meds, the last echo, the creatinine trend and BNP, each with what it is in plain words.
+ */
+function consultFor(patient: Patient): string | undefined {
+	const { record } = patient;
+	const chart = record?.chart;
+	if (!record || !chart) return undefined;
+	const results = chart.panels.flatMap((panel) => panel.results);
+	const echo = chart.imaging.find((report) => /echo/i.test(report.study));
+	const creatinine = record.labs?.find((lab) => lab.name === "Creatinine");
+	const baseline = chart.medicalHistory.map((item) => item.detail?.match(/baseline creatinine ([\d.]+)/)?.[1]).find(Boolean);
+	const bnp = record.labs?.find((lab) => lab.name === "BNP");
+	const bnpRange = results.find((result) => result.name === "BNP")?.range;
+	// "on admission" for a result drawn within the first hour of the stay, else how long ago.
+	const when = (at: string) =>
+		record.admittedAt && Math.abs(Date.parse(at) - Date.parse(record.admittedAt)) <= 60 * MINUTE ? "on admission" : ago(at);
+	const lines = [
+		chart.homeMedications.length
+			? `**Home meds** (what ${patient.census.sex === "F" ? "she takes" : patient.census.sex === "M" ? "he takes" : "they take"} at home): ${chart.homeMedications.map((item) => `${item.name} ${item.dose}${item.inpatient ? ` (${item.inpatient})` : ""}`).join("; ")}.`
+			: undefined,
+		echo
+			? `**Last echo** (the latest heart ultrasound, where the EF comes from): ${agoLong(echo.performedAt)}${echo.readBy ? `, read by ${echo.readBy}` : ""}. ${echo.impression}`
+			: undefined,
+		creatinine?.value
+			? `**Creatinine trend** (kidney function over time, which matters because diuretics strain the kidneys): ${creatinine.previous ? `${creatinine.previous.value} ${when(creatinine.previous.at)} → ` : ""}${creatinine.value} ${creatinine.unit ?? ""} now${baseline ? `, baseline ${baseline}` : ""}.`.replace(/ {2,}/g, " ")
+			: undefined,
+		bnp?.value
+			? `**BNP ${bnp.value}** ${bnp.unit ?? ""} (a blood test that rises when the heart is under strain)${bnp.previous ? `, up from ${bnp.previous.value} ${when(bnp.previous.at)}` : ""}.${bnpRange ? ` Normal is ${bnpRange.charAt(0).toLowerCase()}${bnpRange.slice(1)}${bnp.unit ? ` ${bnp.unit}` : ""}.` : ""}`.replace(/ {2,}/g, " ")
+			: undefined,
+	].filter((line): line is string => Boolean(line));
+	return lines.length ? `**History and labs:**\n${list(lines)}` : undefined;
+}
+
+/**
+ * A quick overview, what the patient's card would show (Scenario 1, step 3): conditions, oxygen, latest vitals, and the
+ * score with its 24 h change. Shorter than the summary: no brief, alerts or labs. Right after the score crosses into its
+ * alert band, it leads with why the patient is at the top of the list (`rankingFor`) and what the consult needs
+ * (`consultFor`), as Ask in the alert toast and the card's Ask Intercept Live are asked then.
+ */
+function overviewOf(patient: Patient): AskInterceptAnswer {
+	const { census, record } = patient;
+	const trend = census.trajectory?.value && census.trajectory.value !== "0" ? ` (${census.trajectory.value} in 24 h)` : "";
+	const conditions = [record?.diagnosis, ...(record?.problems ?? [])].filter(Boolean);
+	const lines = [
+		conditions.length ? `**Conditions:** ${conditions.join("; ")}` : undefined,
+		record?.ventilator ? `**Breathing:** ${record.ventilator.settings.length ? record.ventilator.settings.map((setting) => `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}`).join(", ") : [record.ventilator.support, record.ventilator.mode].filter(Boolean).join(", ")}` : undefined,
+		`**Vitals:** ${vitalLines(patient).slice(0, 4).join(", ")}`,
+		`**Score:** ${scoreWords(census.acuity)}${trend}`,
+	].filter((line): line is string => Boolean(line));
+	const glance = `${who(patient)} at a glance:\n${list(lines)}`;
+	const sources = ["Census", "Monitor", ...(record?.ventilator ? [record.ventilator.source] : [])];
+	if (!recentCrossing(patient)) return { text: glance, sources };
+	const ranking = rankingFor(patient);
+	const consult = consultFor(patient);
+	return {
+		text: [ranking, consult, `**At a glance:**\n${list(lines)}`].filter(Boolean).join("\n\n"),
+		sources: unique([
+			...sources,
+			"Alerts",
+			record?.earlyWarning?.score,
+			record?.fluids ? "Charted" : undefined,
+			record?.chart?.source,
+			"Lab",
+			"Radiology",
+		]),
+	};
+}
+
 function changesFor(patient: Patient, since: number, label: string): AskInterceptAnswer {
 	const events = (patient.record?.timeline?.events ?? []).filter((event) => Date.parse(event.at) >= since).sort((a, b) => b.at.localeCompare(a.at));
 	const alerts = patient.alerts.filter((alert) => Date.parse(alert.firedAt) >= since);
@@ -422,8 +574,9 @@ function sepsisFor(patient: Patient): AskInterceptAnswer {
  * recent (12 h). Current state only: it never says what will happen.
  */
 function earlyWarningFor(patient: Patient): string | undefined {
-	const warning = patient.record?.earlyWarning;
-	if (!warning || Date.now() - Date.parse(warning.crossedAt) > 12 * 60 * MINUTE) return undefined;
+	const warning = recentCrossing(patient);
+	if (!warning) return undefined;
+	const crossedAt = warning.crossedAt;
 	const series = patient.record?.vitals?.series ?? [];
 	const readings = (parameter: string) => series.find((item) => item.parameter === parameter)?.readings ?? [];
 	const [rr, spo2, hr] = [readings("rr"), readings("spo2"), readings("hr")];
@@ -437,13 +590,16 @@ function earlyWarningFor(patient: Patient): string | undefined {
 		fluids ? `net fluid balance is ${fluids.netBalance}` : undefined,
 		fluids ? `weight ${fluids.weightChange} over ${fluids.window}` : undefined,
 	].filter((item): item is string => Boolean(item));
-	const trend = [...warning.trend.map((point) => `${point.value} (${ago(point.at)})`), `${warning.value} now`].join(" → ");
+	// The trend's last point is the current value.
+	const trend = warning.trend
+		.map((point, index) => `${point.value} (${index === warning.trend.length - 1 ? "now" : ago(point.at)})`)
+		.join(" → ");
 	const their = patient.census.sex === "F" ? "Her" : patient.census.sex === "M" ? "His" : "Their";
 	const scored = warning.inputs.filter((input) => input.points > 0);
 	const zero = warning.inputs.filter((input) => input.points === 0);
 	return [
 		`**Early warning.** ${overnight ? "Overnight" : "Since admission"}, ${joinWords(course)}.`,
-		`${their} deterioration score (${warning.score}) crossed the ${warning.band} threshold (${warning.threshold}) at ${clock(warning.crossedAt)}: ${trend}. What drove it:`,
+		`${their} deterioration score (${warning.score}) crossed the ${warning.alertBand} threshold (${warning.threshold}) at ${clock(crossedAt)}: ${trend}. What drove it:`,
 		list(scored.map((input) => `${input.label} ${input.value}: ${input.points} point${input.points === 1 ? "" : "s"}`)),
 		zero.length ? `Scoring 0: ${joinWords(zero.map((input) => `${runOn(input.label)} ${input.value}`))}.` : undefined,
 	]
@@ -469,6 +625,8 @@ function answerForPatientTopic(patient: Patient, topic: Topic, question: string)
 	const { census, record } = patient;
 	const name = firstName(patient);
 	switch (topic) {
+		case "overview":
+			return overviewOf(patient);
 		case "summary":
 			return summaryOf(patient);
 		case "changes": {
@@ -1020,7 +1178,7 @@ const ruleSections = {
 		// PRD Monitoring MON-014, DESIGN.md (PatientMonitoringCard).
 	},
 	recent: {
-		text: "**Sort by Recent alerts** (Monitoring) puts patients with an open alert first, the one whose newest alert fired most recently on top; everyone else follows by name. It answers \"what just happened\"; with Active alerts on, the chip's ranking by who to see first applies instead.",
+		text: "**Sort by Alerts** (Monitoring) puts patients with an open alert first, the one whose newest alert fired most recently on top; everyone else follows by name. It answers \"what just happened\"; with Active alerts on, the chip's ranking by who to see first applies instead.",
 		// PRD Monitoring (Sort by), DESIGN.md.
 	},
 	arrows: {
@@ -1254,36 +1412,32 @@ const sampleAskIntercept: AskInterceptResponder = (input, context) => answerWith
  * (acknowledged, escalated), a resolution. The clinician's own queue actions aren't in the feed, so they aren't repeated
  * back to them.
  */
-function alertChanges(before: TriageAlert[], after: TriageAlert[]) {
+function alertUpdateLines(before: TriageAlert[], after: TriageAlert[]) {
 	const name = (patientId: string) => {
 		const census = samplePatients.find((patient) => patient.id === patientId);
 		return census ? `${census.lastName}, ${census.firstName}` : "A patient";
 	};
-	const open = (alerts: TriageAlert[]) => new Map(alerts.filter(isOpenAlert).map((alert) => [alert.id, alert]));
-	const was = open(before);
-	const now = open(after);
-	const lines: string[] = [];
 	const statusWords = { active: "active again", acknowledged: "acknowledged", escalated: "escalated" } as const;
-	for (const [id, alert] of now) {
-		const previous = was.get(id);
-		if (!previous) lines.push(`**${severityWords[alert.severity]}** alert for **${name(alert.patientId)}**: ${alert.title}.`);
-		else if (previous.severity !== alert.severity)
-			lines.push(
-				`**${name(alert.patientId)}**: ${alert.title}, ${severityWords[previous.severity].toLowerCase()} to **${severityWords[alert.severity].toLowerCase()}**.`,
-			);
-		// A status the feed changed (someone else acknowledged or escalated it; Oct 31, 2026, user's call).
-		else if ((previous.status ?? "active") !== (alert.status ?? "active")) {
-			const status = (alert.status ?? "active") as keyof typeof statusWords;
-			lines.push(`**${name(alert.patientId)}**: ${alert.title}, **${statusWords[status] ?? status}**.`);
+	return alertChanges(before, after).map((change) => {
+		const { alert } = change;
+		switch (change.kind) {
+			case "new":
+				return `**${severityWords[alert.severity]}** alert for **${name(alert.patientId)}**: ${alert.title}.`;
+			case "raised":
+			case "lowered":
+				return `**${name(alert.patientId)}**: ${alert.title}, ${severityWords[change.from].toLowerCase()} to **${severityWords[alert.severity].toLowerCase()}**.`;
+			case "status":
+				return `**${name(alert.patientId)}**: ${alert.title}, **${statusWords[change.status]}**.`;
+			case "resolved":
+				return `**${name(alert.patientId)}**: ${alert.title}, resolved.`;
 		}
-	}
-	for (const [id, alert] of was) if (!now.has(id)) lines.push(`**${name(alert.patientId)}**: ${alert.title}, resolved.`);
-	return lines;
+	});
 }
 
 /**
  * Ask Intercept Live answering from what the page shows now (Oct 31, 2026, user's call: its answers and the cards must
- * match): `alerts` (the live feed's) with the clinician's queue actions applied, and the monitors' live `patients`.
+ * match): `alerts` (the live feed's) with the clinician's queue actions applied, the monitors' live `patients`, and
+ * `data`, the Census cards and records as they are now.
  * Returns the responder, the `onAlertAction` to give the page (which records those actions here too) and a `notice`
  * for the chat whenever the feed changes a patient's alert (user's call: the chat tells the user). Story-only.
  */
@@ -1291,10 +1445,12 @@ function useLiveAskIntercept(
 	alerts: TriageAlert[],
 	monitored: { id: string; vitals?: MonitorVitals }[],
 	onAlertAction?: (alertId: string, action: TriageAlertAction) => void,
+	data?: LiveData,
 ) {
 	const { alerts: current, handleAlertAction } = useAddressedAlerts(alerts, onAlertAction);
 	const vitals = Object.fromEntries(monitored.map((patient) => [patient.id, patient.vitals]));
-	const askIntercept: AskInterceptResponder = (input, context) => answerWith(joinPatients(current, vitals), input, context);
+	const askIntercept: AskInterceptResponder = (input, context) =>
+		answerWith(joinPatients(current, vitals, data), input, context);
 
 	// Each change in the feed's alerts becomes one notice; the first set (the page opening) doesn't.
 	const [notice, setNotice] = React.useState<AskInterceptNotice>();
@@ -1302,7 +1458,7 @@ function useLiveAskIntercept(
 	const count = React.useRef(0);
 	React.useEffect(() => {
 		if (previous.current === alerts) return;
-		const lines = alertChanges(previous.current, alerts);
+		const lines = alertUpdateLines(previous.current, alerts);
 		previous.current = alerts;
 		if (!lines.length) return;
 		count.current += 1;

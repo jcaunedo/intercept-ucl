@@ -185,11 +185,11 @@ const millerTimeline: PatientTimeline = {
 	],
 	events: [
 		{ id: "e1", at: minutesAgo(1300), kind: "lab", label: "Lactate 1.8 mmol/L resulted" },
-		{ id: "e2", at: minutesAgo(960), kind: "note", label: "Progress note signed · Priya Shah" },
-		{ id: "e3", at: minutesAgo(720), kind: "care", label: "Turned and repositioned · Kevin Ortiz" },
+		{ id: "e2", at: minutesAgo(960), kind: "note", label: "Progress note signed · Laura Mitchell" },
+		{ id: "e3", at: minutesAgo(720), kind: "care", label: "Turned and repositioned · Kelly Ortiz" },
 		{ id: "e4", at: minutesAgo(420), kind: "drip", label: "Norepinephrine 0.08 → 0.12 mcg/kg/min" },
 		{ id: "e5", at: minutesAgo(330), kind: "lab", label: "Lactate 2.2 mmol/L resulted" },
-		{ id: "e6", at: minutesAgo(260), kind: "care", label: "Suctioned, thick secretions · Kevin Ortiz" },
+		{ id: "e6", at: minutesAgo(260), kind: "care", label: "Suctioned, thick secretions · Kelly Ortiz" },
 		{ id: "e7", at: minutesAgo(180), kind: "ventilator", label: "FiO₂ 40 → 60%, PEEP 8 → 10 cmH₂O" },
 		{ id: "e8", at: minutesAgo(175), kind: "drip", label: "Norepinephrine 0.12 → 0.15 mcg/kg/min" },
 		{ id: "e9", at: minutesAgo(130), kind: "drip", label: "Propofol 40 → 30 mcg/kg/min" },
@@ -397,6 +397,41 @@ function timeline({ span = 1440, seed, hr, map, bp, mapLimits, spo2, rr, gaps = 
 /* -------------------------------------------------------------------------- */
 /* Patients                                                                   */
 /* -------------------------------------------------------------------------- */
+
+// Hayes: admitted 20 h ago with heart failure, on IV furosemide. Through the night HR creeps up and SpO₂ dips twice,
+// each time back to 92–93% as her oxygen goes 2 → 3 → 4 L. BNP 1,850 → 2,400 and creatinine 1.6 → 1.9 on the repeat
+// Dr. Weller ordered. At Scenario 1's early warning (`earlyWarning`), the last hour has RR 20 → 26, SpO₂ 89% and HR
+// 112, so her NEWS2 jumps from 5 to 10 (`sample-vitals.ts`); before it, that hour holds.
+function hayesTimeline(earlyWarning: boolean): PatientTimeline {
+	const now = (before: number, after: number): [number, number] => [0, earlyWarning ? after : before];
+	return timeline({
+		span: 1200,
+		seed: 141,
+		hr: [[1200, 92], [600, 98], [240, 104], [60, 106], now(106, 112)],
+		map: [[1200, 100], [0, earlyWarning ? 107 : 106]],
+		bp: earlyWarning ? [148, 86] : [147, 85],
+		spo2: [[1200, 94], [840, 94], [780, 93], [310, 93], [300, 90], [290, 93], [160, 92], [150, 89], [140, 92], [60, 92], now(92, 89)],
+		rr: [[1200, 18], [600, 19], [300, 20], [60, 20], now(20, 26)],
+		temp: [[1000, 36.7], [760, 36.8], [520, 36.6], [280, 36.7], [40, 36.8]],
+		lanes: [
+			oxygenFlow([[1200, 2], [300, 3], [150, 4]]),
+			labLane("BNP", "pg/mL", [[1180, 1850], [75, 2400]], { high: 100 }),
+			labLane("Creatinine", "mg/dL", [[1180, 1.6], [75, 1.9]], { high: 1.0 }, "lab-2"),
+		],
+		events: [
+			[1180, "lab", "BNP 1,850 pg/mL, creatinine 1.6 mg/dL resulted"],
+			[1120, "care", "Furosemide 80 mg IV"],
+			[1100, "note", "History and physical signed"],
+			[400, "care", "Furosemide 80 mg IV"],
+			[300, "care", "Oxygen 2 → 3 L/min for SpO₂ 90%"],
+			[150, "care", "Oxygen 3 → 4 L/min for SpO₂ 89%"],
+			[140, "note", "Dr. Weller called: repeat BMP and BNP"],
+			[120, "care", "BMP and BNP drawn"],
+			[75, "lab", "BNP 2,400 pg/mL, creatinine 1.9 mg/dL resulted"],
+			[25, "note", "Nursing note: net +1.8 L, weight up 2.1 kg in 48 h"],
+		],
+	});
+}
 
 const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 	p1: millerTimeline,
@@ -795,37 +830,8 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		],
 	}),
 
-	// Hayes: admitted 20 h ago with heart failure, on IV furosemide. Through the night HR creeps up and SpO₂ dips twice,
-	// each time back to 92–93% as her oxygen goes 2 → 3 → 4 L; in the last hour RR 20 → 26, SpO₂ 89% and HR 112, so her
-	// NEWS2 jumps from 5 to 10 (`sample-vitals.ts`). BNP 1,850 → 2,400 and creatinine 1.6 → 1.9 on the repeat Dr. Weller
-	// ordered.
-	p15: timeline({
-		span: 1200,
-		seed: 141,
-		hr: [[1200, 92], [600, 98], [240, 104], [60, 106], [0, 112]],
-		map: [[1200, 100], [0, 107]],
-		bp: [148, 86],
-		spo2: [[1200, 94], [840, 94], [780, 93], [310, 93], [300, 90], [290, 93], [160, 92], [150, 89], [140, 92], [60, 92], [0, 89]],
-		rr: [[1200, 18], [600, 19], [300, 20], [60, 20], [0, 26]],
-		temp: [[1000, 36.7], [760, 36.8], [520, 36.6], [280, 36.7], [40, 36.8]],
-		lanes: [
-			oxygenFlow([[1200, 2], [300, 3], [150, 4]]),
-			labLane("BNP", "pg/mL", [[1180, 1850], [75, 2400]], { high: 100 }),
-			labLane("Creatinine", "mg/dL", [[1180, 1.6], [75, 1.9]], { high: 1.0 }, "lab-2"),
-		],
-		events: [
-			[1180, "lab", "BNP 1,850 pg/mL, creatinine 1.6 mg/dL resulted"],
-			[1120, "care", "Furosemide 80 mg IV"],
-			[1100, "note", "History and physical signed"],
-			[400, "care", "Furosemide 80 mg IV"],
-			[300, "care", "Oxygen 2 → 3 L/min for SpO₂ 90%"],
-			[150, "care", "Oxygen 3 → 4 L/min for SpO₂ 89%"],
-			[140, "note", "Dr. Weller called: repeat BMP and BNP"],
-			[120, "care", "BMP and BNP drawn"],
-			[75, "lab", "BNP 2,400 pg/mL, creatinine 1.9 mg/dL resulted"],
-			[25, "note", "Nursing note: net +1.8 L, weight up 2.1 kg in 48 h"],
-		],
-	}),
+	// Hayes, just before Scenario 1 (`hayesTimeline`): the last hour holds at RR 20, SpO₂ 92% and HR 106.
+	p15: hayesTimeline(false),
 
 	// Erickson: pneumonia, day 3. Last fever (38.2 °C) yesterday morning; oxygen 3 → 2 L; WBC 15.2 → 10.4.
 	p16: timeline({
@@ -876,7 +882,7 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		],
 	}),
 
-	// Nakamura: DKA, admitted 21 h ago. Insulin 6 → 3 units/h as glucose fell, dextrose added; the anion gap 28 → 12.
+	// Norman: DKA, admitted 21 h ago. Insulin 6 → 3 units/h as glucose fell, dextrose added; the anion gap 28 → 12.
 	p18: timeline({
 		span: 1260,
 		seed: 171,
@@ -903,4 +909,7 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 	}),
 };
 
-export { sampleTimelineByPatient };
+/** Hayes's timeline at Scenario 1's early warning, built when the beat plays so it ends "now". */
+const sampleScenario1Timeline = () => hayesTimeline(true);
+
+export { sampleScenario1Timeline, sampleTimelineByPatient };

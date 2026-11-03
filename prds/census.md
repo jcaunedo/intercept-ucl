@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 1, 2026
 Created by: Julio Caunedo
-Last updated: Nov 1, 2026
+Last updated: Nov 2, 2026
 Scope: The Census page of Intercept Live (Provider Desktop, Spec §5.1): its purpose, how it differs from Monitoring, the patients it shows, its controls and states.
 Purpose: Gives the Census one written purpose, next to Monitoring's, and lists the decisions still open, so the two pages stop overlapping by accident.
 -->
@@ -18,7 +18,7 @@ Purpose: Gives the Census one written purpose, next to Monitoring's, and lists t
 **Surface:** Census page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 1, 2026
+**Last updated:** November 2, 2026
 
 ---
 
@@ -44,7 +44,7 @@ The two pages show the same patients and share the same shell, filters and sort 
 | **Clinical status** | A general picture, current but not live: the score, its band and 24 h change, support and flags (CEN-016) | Live: vitals and waveforms as they arrive, trends, alerts as they fire |
 | **Patients** | Everyone in the clinician's scope, across their hospitals (PD-01) | The panel the clinician watches ⚠️ (CEN-OD-02, MON-OD-01) |
 | **Card** | Compact PatientCard: identity, location, score and 24 h change, flags | PatientMonitoringCard: identity, the alert bar, a live bedside monitor, score, flags |
-| **Alerts** | Orientation only (CEN-020): no alert on the cards ⚠️ (CEN-OD-01) | Primary: the card's alert bar, ring, the triage queue |
+| **Alerts** | Orientation only (CEN-020): no alert on the cards (no badge, no ring); the hospital tabs' counts, Highest alert and the List's Alert column ⚠️ (CEN-OD-01) | Primary: the card's alert bar, ring, the triage queue |
 | **Movement** | Cards never re-sort on their own | Cards re-sort with alerts (MON-013) |
 | **Ends in** | Opening a patient | Acting: acknowledge, look in, escalate |
 
@@ -112,7 +112,7 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 | **Summary row** | "18 patients across 4 hospitals"; the live feed line ("Live feed: …"), which opens the live feed panel | CEN-001, CEN-021 ⚠️ |
 | **Filter bar** | Search, My patients, quick views (Rising score, Organ support, Sepsis watch); Density, Sort by, Filters | CEN-002, CEN-003 |
 | **Patients** | Cards (Comfortable, Compact) or a table (List); with Group by location, a column per hospital (board) | CEN-010–CEN-013 |
-| **Panels** | The live feed panel beside the canvas; the Filters panel floating over the page (a Sheet, Nov 1, 2026) | CEN-003, CEN-021 |
+| **Panels** | The live feed panel beside the canvas (while it's open, the alert toasts are hidden and paused, Nov 2, 2026, user's call); the Filters panel floating over the page (a Sheet, Nov 1, 2026) | CEN-003, CEN-021 |
 
 ℹ️ The Census has no Card monitor or Monitor view controls: those are Monitoring's (MON-015).
 
@@ -133,10 +133,10 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 
 | ID | Requirement | Status |
 |---|---|---|
-| **CEN-010 Card** | The compact PatientCard (PRD Patient card): avatar, name, MRN, sex, age, hospital · unit · bed, the score (NEWS2) with its band and 24 h change, and flags (tags). No vitals and no alert (CEN-020). | ✅ Built. ⚠️ **Gap:** PD-04 also lists diagnosis, tier, key vitals with freshness and open alerts; this PRD leaves vitals and alerts to Monitoring, diagnosis and tier are open (CEN-OD-04) |
+| **CEN-010 Card** | The compact PatientCard (PRD Patient card): avatar, name, MRN, sex, age, hospital · unit · bed, the score (NEWS2) with its band and 24 h change, and flags (tags). No vitals, no alert (CEN-020). | ✅ Built. ✅ **Decision (Nov 2, 2026, design):** the alert badge, back earlier the same day, is removed again (intercept.ds `patient-census-card`); the cards show no alert, as on Oct 31. ⚠️ **Gap:** PD-04 also lists diagnosis, tier, key vitals with freshness and open alerts; this PRD leaves vitals and alerts to Monitoring, diagnosis and tier are open (CEN-OD-04) |
 | **CEN-011 State at a glance** | "Teetering" reads from the score's band and its 24 h change (▲ in the medium or critical color, ▼ green); "on a vent, on pressors" from the flags (UX-01). | ✅ Built |
 | **CEN-012 Densities** | Comfortable (default), Compact (the small card, one more a row) and List (a table: Patient, Location, Alert, the score, Change in 24 h, Tags). | ✅ Built (PD-02). ⚠️ **Gap:** PD-02's third view, "rail by tier", isn't built |
-| **CEN-013 Order** | Sort by Score (default), Score change, Patient name, Recently viewed, Family messages (unread family messages first). The order is taken when the clinician changes the sort, filters or grouping, never when data changes: **cards never re-sort on their own.** No alert sorts: no Recent alerts (its cards show no alert) and no Recently resolved (alert history is Monitoring's). | ✅ Built (decisions, Oct 30–31 and Nov 1, 2026). ⚠️ **Gap:** the Census card doesn't show unread family messages, so the Family messages order doesn't explain itself on the cards |
+| **CEN-013 Order** | Sort by Score (default), Score change, Patient name, Recently viewed, Family messages (unread family messages first). The order is taken when the clinician changes the sort, filters or grouping, never when data changes: **cards never re-sort on their own.** No alert sorts: no Alerts (its cards show no alert) and no Recently resolved (alert history is Monitoring's). | ✅ Built (decisions, Oct 30–31 and Nov 1, 2026). ⚠️ **Gap:** the Census card doesn't show unread family messages, so the Family messages order doesn't explain itself on the cards |
 | **CEN-014 Data honesty** | A missing score reads "-- Unknown", and the NEWS2 filter's No score finds those patients; missing is never zero (SV-08). | ✅ Built. ⚠️ **Gap:** no stale marking with age yet (PRD Patient card). ⚠️ **Decision needed:** how a data gap shows on the Census (CEN-OD-08) |
 | **CEN-015 Open** | Clicking a card or row opens the patient's details; the census order becomes the patient list for stepping through (PD-05). | ✅ Built. ⚠️ **Gap:** PD-05's census side rail isn't built; the header's patient list stands in |
 | **CEN-016 General status, not monitoring** | The card's clinical content is a general picture of the patient's current state: the score with its band, its 24 h change, and flags (support, code status, isolation). It updates when the data does, but nothing on the Census streams or flashes: no vitals, waveforms, live numbers or device alarms, and no prompt to act. Those are Monitoring's. | ✅ Decision (Nov 1, 2026, product) |
@@ -147,7 +147,7 @@ The Census isn't where alerts are handled (§1.1), but a clinician scanning the 
 
 | ID | Requirement | Status |
 |---|---|---|
-| **CEN-020 Orientation, not action** | The Census shows **where** alerts are, never asks for action on them: the hospital tabs' alert counts (colored by the worst severity), the Filters panel's Highest alert, the List's Alert column. Cards show no alert pill or ring. | ✅ Built. ✅ **Decision (Nov 1, 2026, product):** the Highest alert filter stays, as orientation; the Active alerts chip is Monitoring's alone (removed from the Census later the same day, user's call), as are its who-to-see-first ranking and its sort on the click. ⚠️ **Decision needed:** the live feed (CEN-021, CEN-OD-01) |
+| **CEN-020 Orientation, not action** | The Census shows **where** alerts are, never asks for action on them: the hospital tabs' alert counts (colored by the worst severity), the Filters panel's Highest alert, the List's Alert column. Cards show no alert, badge or ring (✅ Nov 2, 2026: the badge was removed again). | ✅ Built. ✅ **Decision (Nov 1, 2026, product):** the Highest alert filter stays, as orientation; the Active alerts chip is Monitoring's alone (removed from the Census later the same day, user's call), as are its who-to-see-first ranking and its sort on the click. ⚠️ **Decision needed:** the live feed (CEN-021, CEN-OD-01) |
 | **CEN-021 Live feed** | The summary row's "Live feed: …" line names the latest change and opens the live feed panel (the triage queue) beside the census. | ✅ Built. ⚠️ **Decision needed:** whether the triage queue belongs on the Census at all (CEN-OD-01) |
 | **CEN-022 Opening resolves (prototype only)** | In the prototype, opening a patient with an active alert from the Census marks it resolved for the session. | ⚠️ **Risk:** conflicts with PRD PC-071 (resolving needs a documented resolution) and with CEN-020. Proposal: remove it (CEN-OD-03) |
 

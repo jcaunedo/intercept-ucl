@@ -30,7 +30,7 @@ const presenceOrder: CameraPerson["presence"][] = ["online", "away", "offline"];
 const defaultActivity = (member: CareTeamMember) =>
 	member.you
 		? "Viewing the chart"
-		: member.name === "James Tan"
+		: member.name === "James Turner"
 			? "On another patient"
 			: member.name === "Maria Ruiz"
 				? "Away · on break"
@@ -96,8 +96,8 @@ const visitor = (name: string, role: string, initials: string, tone: CameraPerso
 
 const sampleCameraByPatient: Record<string, PatientCamera> = {
 	// Miller: septic shock, ventilated, on pressors.
-	p1: camera("p1", "hpg", "Bed 11", { "Kevin Ortiz": "At the bedside", "Priya Shah": "Away · in the OR", "James Tan": "Viewing the chart" }, [
-		["look-in", "James Tan", 48, 4],
+	p1: camera("p1", "hpg", "Bed 11", { "Kelly Ortiz": "At the bedside", "Laura Mitchell": "Away · in the OR", "James Turner": "Viewing the chart" }, [
+		["look-in", "James Turner", 48, 4],
 		["huddle", "Joanna Smith", 205, 12, "drafted"],
 		["huddle", "Maria Ruiz", 1180, 9, "signed"],
 	]),
@@ -106,54 +106,54 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 		"p2",
 		"mwh",
 		"Bed 3",
-		{ "Aisha Bello": "At the bedside", "Marcus Lee": "Rounding in the unit" },
+		{ "Ashley Bell": "At the bedside", "Marcus Reed": "Rounding in the unit" },
 		[
 			["huddle", "Joanna Smith", 90, 14, "drafted"],
 			["look-in", "Maria Ruiz", 370, 3],
 		],
 		[visitor("Lena Fox", "Respiratory therapist", "LF", 5, "At the bedside · prone check")],
 	),
-	p3: camera("p3", "cvmc", "Bed 7", { "Tom Becker": "At the bedside", "Elena Petrova": "Away · family meeting", "James Tan": "Viewing the chart" }, [
-		["look-in", "James Tan", 25, 5],
+	p3: camera("p3", "cvmc", "Bed 7", { "Tara Becker": "At the bedside", "Ellen Parker": "Away · family meeting", "James Turner": "Viewing the chart" }, [
+		["look-in", "James Turner", 25, 5],
 		["huddle", "Joanna Smith", 300, 10, "signed"],
 	]),
-	p4: camera("p4", "cvmc", "Bed 5", { "Grace Okafor": "Charting at the station", "Daniel Reyes": "At the bedside" }, [
+	p4: camera("p4", "cvmc", "Bed 5", { "Grace Holloway": "Charting at the station", "Daniel Reyes": "At the bedside" }, [
 		["look-in", "Joanna Smith", 70, 3],
 		["look-in", "Maria Ruiz", 520, 2],
 	]),
-	// Carter: on NIV, Kevin also covers Miller in Bed 11.
-	p5: camera("p5", "hpg", "Bed 6", { "Kevin Ortiz": "In Bed 11", "Priya Shah": "Away · in the OR" }, [
-		["look-in", "James Tan", 15, 6],
+	// Carter: on NIV, Kelly also covers Miller in Bed 11.
+	p5: camera("p5", "hpg", "Bed 6", { "Kelly Ortiz": "In Bed 11", "Laura Mitchell": "Away · in the OR" }, [
+		["look-in", "James Turner", 15, 6],
 		["huddle", "Maria Ruiz", 400, 8, "drafted"],
 	]),
-	p6: camera("p6", "cvmc", "Bed 2", { "Lucy Nguyen": "At the bedside" }, [["look-in", "Maria Ruiz", 240, 2]]),
-	p7: camera("p7", "mwh", "Bed 12", { "Hannah Cole": "Gowning in · contact isolation", "Marcus Lee": "Away · in the ED" }, [
+	p6: camera("p6", "cvmc", "Bed 2", { "Lucy Hart": "At the bedside" }, [["look-in", "Maria Ruiz", 240, 2]]),
+	p7: camera("p7", "mwh", "Bed 12", { "Hannah Cole": "Gowning in · contact isolation", "Marcus Reed": "Away · in the ED" }, [
 		["look-in", "Joanna Smith", 130, 4],
 	]),
-	p8: camera("p8", "hpg", "Bed 14", { "Rosa Delgado": "Charting at the station", "Priya Shah": "Away · in the OR" }, [
-		["look-in", "James Tan", 600, 2],
+	p8: camera("p8", "hpg", "Bed 14", { "Rachel Dixon": "Charting at the station", "Laura Mitchell": "Away · in the OR" }, [
+		["look-in", "James Turner", 600, 2],
 	]),
 	// Harris: a vent-order mismatch.
 	p9: camera(
 		"p9",
 		"hpg",
 		"Bed 8",
-		{ "Kevin Ortiz": "In Bed 11", "Priya Shah": "Away · in the OR" },
+		{ "Kelly Ortiz": "In Bed 11", "Laura Mitchell": "Away · in the OR" },
 		[
 			["huddle", "Joanna Smith", 55, 9, "drafted"],
-			["look-in", "James Tan", 200, 3],
+			["look-in", "James Turner", 200, 3],
 		],
 		[visitor("Owen Price", "Respiratory therapist", "OP", 9, "At the bedside · checking vent settings")],
 	),
 	// Moore: on CRRT and norepinephrine.
-	p10: camera("p10", "hpg", "Bed 4", { "Rosa Delgado": "At the bedside", "Nathan Brooks": "Rounding in the unit" }, [
-		["huddle", "James Tan", 80, 11, "signed"],
+	p10: camera("p10", "hpg", "Bed 4", { "Rachel Dixon": "At the bedside", "Nathan Brooks": "Rounding in the unit" }, [
+		["huddle", "James Turner", 80, 11, "signed"],
 		["look-in", "Maria Ruiz", 380, 4],
 	]),
-	p11: camera("p11", "hpg", "Bed 1", { "Amara Diallo": "At the bedside", "Helen Park": "At the bedside" }, [
+	p11: camera("p11", "hpg", "Bed 1", { "Amy Dalton": "At the bedside", "Helen Foster": "At the bedside" }, [
 		["look-in", "Joanna Smith", 35, 5],
 	]),
-	p12: camera("p12", "hpg", "Bed 2", { "Amara Diallo": "On another patient", "Victor Hale": "Away · in clinic" }, [
+	p12: camera("p12", "hpg", "Bed 2", { "Amy Dalton": "On another patient", "Victor Hale": "Away · in clinic" }, [
 		["look-in", "Maria Ruiz", 150, 3],
 		["huddle", "Joanna Smith", 1300, 15, "signed"],
 	]),
@@ -162,24 +162,24 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 		"p13",
 		"cvmc",
 		"Bed 3",
-		{ "Grace Okafor": "At the bedside", "Daniel Reyes": "At the bedside", "James Tan": "Viewing the chart" },
+		{ "Grace Holloway": "At the bedside", "Daniel Reyes": "At the bedside", "James Turner": "Viewing the chart" },
 		[
 			["huddle", "Joanna Smith", 20, 16, "drafted"],
 			["huddle", "Maria Ruiz", 330, 10, "signed"],
 		],
-		[visitor("Omar Haddad", "Perfusionist", "OH", 2, "At the ECMO console")],
+		[visitor("Mark Hadley", "Perfusionist", "MH", 2, "At the ECMO console")],
 	),
-	p14: camera("p14", "cvmc", "Bed 9", { "Lucy Nguyen": "On another patient", "Elena Petrova": "At the bedside" }, [
-		["look-in", "James Tan", 95, 4],
+	p14: camera("p14", "cvmc", "Bed 9", { "Lucy Hart": "On another patient", "Ellen Parker": "At the bedside" }, [
+		["look-in", "James Turner", 95, 4],
 	]),
 	// Hayes: no one from Intercept has looked in yet; Dr. Weller is on call from home.
 	p15: camera("p15", "chadron", "Bed 4", { "Kayla Brandt": "At the bedside", "Tom Weller": "On call from home" }, []),
 	// Erickson: asleep; his nurse is with Hayes next door.
 	p16: camera("p16", "chadron", "Bed 6", { "Kayla Brandt": "With another patient", "Tom Weller": "On call from home" }, []),
-	p17: camera("p17", "mwh", "Bed 10", { "Hannah Cole": "At the bedside", "Marcus Lee": "Away · in the OR" }, [
-		["look-in", "James Tan", 180, 3],
+	p17: camera("p17", "mwh", "Bed 10", { "Hannah Cole": "At the bedside", "Marcus Reed": "Away · in the OR" }, [
+		["look-in", "James Turner", 180, 3],
 	]),
-	p18: camera("p18", "mwh", "Bed 5", { "Aisha Bello": "At the bedside", "Marcus Lee": "Viewing the chart" }, [
+	p18: camera("p18", "mwh", "Bed 5", { "Ashley Bell": "At the bedside", "Marcus Reed": "Viewing the chart" }, [
 		["look-in", "Joanna Smith", 240, 5],
 	]),
 };

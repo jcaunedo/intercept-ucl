@@ -4,6 +4,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
+// The brand fill, shared with its deprecated alias (`default`).
+const brandVariant = "bg-primary text-primary-foreground hover:bg-primary/90";
+
 // The md sizes, shared with their deprecated aliases (`default`, `icon`) so the two never drift apart. md follows
 // intercept.ds Button lg · 36: 12px radius, 14px semibold label, 6px between icon and label, 14px to the label's side
 // and 10px to an icon's (the outline variant's 1px border is inside those, see compoundVariants).
@@ -15,10 +18,13 @@ const buttonVariants = cva(
 	{
 		variants: {
 			variant: {
-				default: "bg-primary text-primary-foreground hover:bg-primary/90",
-				// Solid · Neutral: a dark fill for strong actions that aren't the page's brand action. The label is
-				// `neutral-foreground`, which turns dark with the fill in dark mode.
+				// Solid · Neutral, the default (Nov 2, 2026): a dark fill. The label is `neutral-foreground`, which turns dark
+				// with the fill in dark mode.
 				neutral: "bg-neutral text-neutral-foreground hover:bg-neutral/90",
+				// The brand fill, for the rare action that should carry the brand.
+				brand: brandVariant,
+				/** @deprecated Use `brand`; the default is now `neutral`. */
+				default: brandVariant,
 				destructive:
 					"bg-destructive text-destructive-foreground hover:bg-destructive/90",
 				outline:
@@ -35,14 +41,15 @@ const buttonVariants = cva(
 			// Classes are shadcn's, value for value; UCL names its 36px step `md` where shadcn says `default`. A button
 			// with an icon child gets less side padding.
 			size: {
-				xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-				sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
+				// Radii follow archielabs.ds `radius/button/*`: 8px at 24px, 12px from 32px up (`radius/3`).
+				xs: "h-6 gap-1 rounded-lg px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
+				sm: "h-8 gap-1.5 rounded-button-md px-3 has-[>svg]:px-2.5",
 				md: mdSize,
-				lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-				"icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
-				"icon-sm": "size-8",
+				lg: "h-10 rounded-button-md px-6 has-[>svg]:px-4",
+				"icon-xs": "size-6 rounded-lg [&_svg:not([class*='size-'])]:size-3",
+				"icon-sm": "size-8 rounded-button-md",
 				"icon-md": iconMdSize,
-				"icon-lg": "size-10",
+				"icon-lg": "size-10 rounded-button-md",
 				/** @deprecated Use `md`. */
 				default: mdSize,
 				/** @deprecated Use `icon-md`. */
@@ -56,7 +63,7 @@ const buttonVariants = cva(
 			{ variant: "circle", className: "rounded-full" },
 		],
 		defaultVariants: {
-			variant: "default",
+			variant: "neutral",
 			size: "md",
 		},
 	},
@@ -67,10 +74,10 @@ type ButtonProps = React.ComponentProps<"button"> &
 		asChild?: boolean;
 	};
 
-/** Triggers an action or event, such as submitting a form or moving to the next step. */
+/** Triggers an action or event, such as submitting a form or moving to the next step. Neutral (dark) by default. */
 function Button({
 	className,
-	variant = "default",
+	variant = "neutral",
 	size = "md",
 	asChild = false,
 	...props
@@ -80,8 +87,8 @@ function Button({
 	return (
 		<Component
 			data-slot='button'
-			data-variant={variant}
-			// Deprecated aliases report their current name, so styling hooks only need `md` / `icon-md`.
+			// Deprecated aliases report their current name, so styling hooks only need `brand`, `md` and `icon-md`.
+			data-variant={variant === "default" ? "brand" : variant}
 			data-size={size === "default" ? "md" : size === "icon" ? "icon-md" : size}
 			className={cn(buttonVariants({ variant, size, className }))}
 			{...props}

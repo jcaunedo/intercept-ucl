@@ -86,7 +86,7 @@ const millerVitals: PatientVitals = {
 		},
 		{
 			parameter: "temp",
-			source: "Manual · Kevin Ortiz, RN",
+			source: "Manual · Kelly Ortiz, RN",
 			limits: [36, 38],
 			staleAfterMinutes: 60,
 			chartedEveryMinutes: 240,
@@ -238,6 +238,34 @@ function buildVitals(spec: VitalsSpec): PatientVitals {
 /* Patients                                                                   */
 /* -------------------------------------------------------------------------- */
 
+// Hayes's hourly readings at 01:40 (Scenario 1, Demo Use Cases): in the last hour RR 20 → 26, SpO₂ 89% and HR 112, so
+// her NEWS2 crosses 7 (5 → 10). BP stays up, so a nitrate is an option.
+const hayesAt0140: VitalsSpec = {
+	seed: 15,
+	hours: 20,
+	hr: [92, 93, 92, 94, 93, 95, 96, 95, 97, 98, 99, 100, 101, 102, 103, 104, 104, 105, 106, 112],
+	systolic: [138, 137, 139, 138, 140, 139, 141, 140, 142, 141, 143, 142, 144, 143, 145, 144, 146, 145, 147, 148],
+	diastolic: [80, 80, 81, 80, 81, 81, 82, 81, 82, 82, 83, 82, 83, 83, 84, 84, 85, 84, 85, 86],
+	spo2: [94, 94, 95, 94, 94, 94, 93, 93, 93, 93, 93, 93, 93, 92, 92, 93, 92, 92, 92, 89],
+	rr: [18, 18, 17, 18, 18, 18, 18, 19, 18, 19, 19, 19, 19, 19, 20, 20, 19, 20, 20, 26],
+	arterialLine: false,
+	ventilated: false,
+	nurse: "Kayla Brandt",
+	temps: [36.7, 36.8, 36.6, 36.7, 36.8],
+	lastTemp: 40,
+};
+
+// The same, an hour earlier: the last reading holds at the one before it (HR 106, BP 147/85, SpO₂ 92%, RR 20; NEWS2 5).
+const holdLast = (values: number[]) => [...values.slice(0, -1), values[values.length - 2]];
+const hayesBefore: VitalsSpec = {
+	...hayesAt0140,
+	hr: holdLast(hayesAt0140.hr),
+	systolic: holdLast(hayesAt0140.systolic),
+	diastolic: holdLast(hayesAt0140.diastolic),
+	spo2: holdLast(hayesAt0140.spo2),
+	rr: holdLast(hayesAt0140.rr),
+};
+
 const sampleVitalsByPatient: Record<string, PatientVitals> = {
 	p1: millerVitals,
 	// Johnson: severe ARDS from influenza, desaturating on FiO₂ 80% with permissive hypercapnia.
@@ -251,7 +279,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		etco2: [44, 52],
 		arterialLine: true,
 		ventilated: true,
-		nurse: "Aisha Bello",
+		nurse: "Ashley Bell",
 		temps: [38.6, 38.9, 38.4, 38.7, 38.5, 38.8],
 		lastTemp: 50,
 	}),
@@ -266,7 +294,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		etco2: [40, 38],
 		arterialLine: true,
 		ventilated: true,
-		nurse: "Tom Becker",
+		nurse: "Tara Becker",
 		temps: [38.3, 38.1, 37.9, 37.7, 37.5, 37.4],
 		lastTemp: 70,
 	}),
@@ -280,7 +308,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [18, 18],
 		arterialLine: true,
 		ventilated: false,
-		nurse: "Grace Okafor",
+		nurse: "Grace Holloway",
 		temps: [36.8, 36.7, 36.9, 36.8, 36.6, 36.8],
 		lastTemp: 40,
 	}),
@@ -295,7 +323,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [30, 24],
 		arterialLine: false,
 		ventilated: true,
-		nurse: "Kevin Ortiz",
+		nurse: "Kelly Ortiz",
 		temps: [37.2, 37.1, 37.3, 37.0, 37.1, 37.0],
 		lastTemp: 120,
 		spo2Stopped: 14,
@@ -310,7 +338,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [16, 14],
 		arterialLine: false,
 		ventilated: false,
-		nurse: "Lucy Nguyen",
+		nurse: "Lucy Hart",
 		temps: [37.4, 37.6, 37.3, 37.5, 37.2, 37.3],
 		lastTemp: 30,
 	}),
@@ -338,7 +366,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [16, 15],
 		arterialLine: false,
 		ventilated: false,
-		nurse: "Rosa Delgado",
+		nurse: "Rachel Dixon",
 		temps: [36.9, 37.0, 36.8, 36.9, 37.0, 36.9],
 		lastTemp: 100,
 	}),
@@ -353,7 +381,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		etco2: [42, 47],
 		arterialLine: true,
 		ventilated: true,
-		nurse: "Kevin Ortiz",
+		nurse: "Kelly Ortiz",
 		temps: [38.0, 38.1, 38.3, 38.2, 38.5, 38.6],
 		lastTemp: 45,
 	}),
@@ -367,7 +395,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [20, 19],
 		arterialLine: true,
 		ventilated: false,
-		nurse: "Rosa Delgado",
+		nurse: "Rachel Dixon",
 		temps: [38.8, 38.6, 38.9, 38.5, 38.7, 38.4],
 		lastTemp: 65,
 	}),
@@ -381,7 +409,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [18, 20],
 		arterialLine: true,
 		ventilated: false,
-		nurse: "Amara Diallo",
+		nurse: "Amy Dalton",
 		temps: [37.9, 37.6, 37.8, 37.5, 37.7, 37.6],
 		lastTemp: 35,
 	}),
@@ -395,7 +423,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [16, 16],
 		arterialLine: false,
 		ventilated: false,
-		nurse: "Amara Diallo",
+		nurse: "Amy Dalton",
 		temps: [37.1, 37.0, 37.2, 37.1, 37.0, 37.1],
 		lastTemp: 85,
 		rrStopped: 27,
@@ -411,7 +439,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		etco2: [28, 30],
 		arterialLine: true,
 		ventilated: true,
-		nurse: "Grace Okafor",
+		nurse: "Grace Holloway",
 		temps: [36.6, 36.5, 36.7, 36.6, 36.5, 36.6],
 		lastTemp: 25,
 	}),
@@ -426,28 +454,14 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [22, 17],
 		arterialLine: false,
 		ventilated: false,
-		nurse: "Lucy Nguyen",
+		nurse: "Lucy Hart",
 		temps: [36.9, 37.0],
 		lastTemp: 60,
 	}),
-	// Hayes: heart failure getting worse overnight on the med-surg floor, admitted 20 h ago. Hour by hour, so her NEWS2
-	// crosses 7 only now (Scenario 1, 01:40): 4 on admission, 5 through the night as HR creeps up and SpO₂ holds at
-	// 92–93% while her oxygen goes 2 → 4 L, then 10 in the last hour, with RR 20 → 26, SpO₂ 89% and HR 112. BP stays
-	// up, so a nitrate is an option.
-	p15: buildVitals({
-		seed: 15,
-		hours: 20,
-		hr: [92, 93, 92, 94, 93, 95, 96, 95, 97, 98, 99, 100, 101, 102, 103, 104, 104, 105, 106, 112],
-		systolic: [138, 137, 139, 138, 140, 139, 141, 140, 142, 141, 143, 142, 144, 143, 145, 144, 146, 145, 147, 148],
-		diastolic: [80, 80, 81, 80, 81, 81, 82, 81, 82, 82, 83, 82, 83, 83, 84, 84, 85, 84, 85, 86],
-		spo2: [94, 94, 95, 94, 94, 94, 93, 93, 93, 93, 93, 93, 93, 92, 92, 93, 92, 92, 92, 89],
-		rr: [18, 18, 17, 18, 18, 18, 18, 19, 18, 19, 19, 19, 19, 19, 20, 20, 19, 20, 20, 26],
-		arterialLine: false,
-		ventilated: false,
-		nurse: "Kayla Brandt",
-		temps: [36.7, 36.8, 36.6, 36.7, 36.8],
-		lastTemp: 40,
-	}),
+	// Hayes, just before Scenario 1: heart failure on the med-surg floor, admitted 20 h ago. NEWS2 4 on admission, 5
+	// through the night as HR creeps up and SpO₂ holds at 92–93% while her oxygen goes 2 → 4 L. The last hour holds
+	// (`hayesBefore`); Scenario 1 plays the next one (`sampleScenario1Vitals`).
+	p15: buildVitals(hayesBefore),
 	// Erickson: pneumonia, day 3. Yesterday's fever (38.2 °C) and HR in the 90s made NEWS2 5; now 2, the oxygen alone.
 	p16: buildVitals({
 		seed: 16,
@@ -478,7 +492,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		temps: [37.2, 37.5, 37.7, 37.8, 37.9],
 		lastTemp: 45,
 	}),
-	// Nakamura: DKA, admitted 21 h ago breathing deep and fast (RR 24) with HR 112 and SBP 104, NEWS2 5; now 1.
+	// Norman: DKA, admitted 21 h ago breathing deep and fast (RR 24) with HR 112 and SBP 104, NEWS2 5; now 1.
 	p18: buildVitals({
 		seed: 18,
 		hours: 21,
@@ -489,10 +503,13 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [24, 16],
 		arterialLine: false,
 		ventilated: false,
-		nurse: "Aisha Bello",
+		nurse: "Ashley Bell",
 		temps: [36.4, 36.6, 36.8, 36.9, 36.9, 36.9],
 		lastTemp: 70,
 	}),
 };
 
-export { sampleVitalsByPatient };
+/** Hayes's vitals at Scenario 1's early warning, built when the beat plays so the last reading is "now". */
+const sampleScenario1Vitals = () => buildVitals(hayesAt0140);
+
+export { sampleScenario1Vitals, sampleVitalsByPatient };

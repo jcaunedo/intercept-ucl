@@ -203,6 +203,10 @@
 	/* A right-hand Sheet's shadow, cast left over the page (Intercept-Live Filter example `205:6104`; a raw effect there,
 	   no effect style yet). */
 	--shadow-sheet: -16px 0 122px 0 oklch(0 0 0 / 18%);
+	/* A toast floating over the page (Sonner, AlertToast): a tight contact shadow and a wide soft one, so a stack reads
+	   as layers. From the shadow colors, so it deepens in dark mode. No effect style in Figma yet. */
+	--shadow-toast: 0 1px 2px 0 var(--shadow-color-sm), 0 8px 20px -6px var(--shadow-color-md),
+		0 20px 48px -12px var(--shadow-color-lg);
 }
 
 /* ---------- Breakpoints ----------
@@ -566,8 +570,8 @@
 	--shadow-color-sm: oklch(0 0 0 / 5%);
 	--shadow-color-md: oklch(0 0 0 / 10%);
 	--shadow-color-lg: oklch(0 0 0 / 25%);
-	/* The scrim behind a modal surface, e.g. a Sheet (Intercept-Live `overlay`, #0b1222 at 20%). */
-	--overlay: oklch(0.185 0.035 265.25 / 20%);
+	/* The scrim behind a modal surface, e.g. a Sheet or Dialog (archielabs.ds `components/overlay`, #0b1222 at 40%). */
+	--overlay: oklch(0.185 0.035 265.25 / 40%);
 
 	/* Badge tones (badge/<tone>/background, /foreground): 50 fill, 700 label. */
 	--badge-blue: var(--blue-50);
@@ -606,7 +610,7 @@
 	--success-halo: oklch(0.77 0.215 149);
 
 	/* Alert severity (PatientCardAlert). Critical, High and Low are raw values in intercept.ds with no variable, so
-	   they hold the same value in both modes (DESIGN.md "Patient card"). Medium follows `warning`. */
+	   they hold the same value in both modes (DESIGN.md "Patient census card"). Medium follows `warning`. */
 	--severity-critical: oklch(0.598 0.245 29.23); /* #ef0000 */
 	--severity-high: oklch(0.674 0.218 37.74); /* #ff530b */
 	--severity-medium: var(--warning);

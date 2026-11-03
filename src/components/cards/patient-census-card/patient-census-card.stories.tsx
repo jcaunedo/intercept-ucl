@@ -2,13 +2,13 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn } from "storybook/test";
 
 import {
-	PatientCard,
+	PatientCensusCard,
 	PatientCardAlert,
 	PatientCardMetric,
 	type PatientCardAcuityLevel,
 	type PatientCardAlertVariant,
-	type PatientCardProps,
-} from "./patient-card";
+	type PatientCensusCardProps,
+} from "./patient-census-card";
 
 // Synthetic patient (PRD PC-180). The vitals row follows Figma: HR, MAP, SpO₂, RR.
 const patient = {
@@ -31,11 +31,11 @@ const patient = {
 		{ label: "Resp. Rate", shortLabel: "RR", value: 18 },
 	],
 	tags: [{ label: "Ventilated" }, { label: "On pressors" }],
-} satisfies PatientCardProps;
+} satisfies PatientCensusCardProps;
 
 const meta = {
-	title: "Cards/Patient Card",
-	component: PatientCard,
+	title: "Cards/Patient Census Card",
+	component: PatientCensusCard,
 	subcomponents: { PatientCardAlert, PatientCardMetric },
 	parameters: {
 		layout: "centered",
@@ -50,7 +50,7 @@ const meta = {
 			</div>
 		),
 	],
-} satisfies Meta<typeof PatientCard>;
+} satisfies Meta<typeof PatientCensusCard>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -77,8 +77,8 @@ export const WithAvatar: Story = {
 	],
 	render: (args) => (
 		<>
-			<PatientCard {...args} />
-			<PatientCard {...args} size='sm' />
+			<PatientCensusCard {...args} />
+			<PatientCensusCard {...args} size='sm' />
 		</>
 	),
 	play: async ({ canvasElement }) => {
@@ -97,11 +97,27 @@ export const AsLink: Story = {
 };
 
 /**
- * `alertRing={false}`: no ring or tint, the card's default look, and the pill alone shows the alert. For pages where
+ * `alertRing={false}`: no ring or tint, the card's default look, and the badge alone shows the alert. For pages where
  * patients are managed rather than watched (the Census).
  */
 export const WithoutAlertRing: Story = {
 	args: { alertRing: false },
+};
+
+/**
+ * The alert badge as the Census shows it (intercept.ds `patient-census-card`): the bell in the severity's color, with
+ * the count from 2 alerts, and no ring. With `onOpenAlert` the badge is a button that opens the alert (Intercept Live's
+ * alert modal), not the patient; it darkens on hover.
+ */
+export const OpensAlert: Story = {
+	args: { alert: { variant: "critical", count: 2 }, alertRing: false, onOpenAlert: fn() },
+	play: async ({ canvas, args }) => {
+		const badge = canvas.getByRole("button", { name: "Open alert: Critical 2 alerts" });
+		await expect(badge).toHaveTextContent("2");
+		badge.click();
+		await expect(args.onOpenAlert).toHaveBeenCalled();
+		await expect(args.onOpen).not.toHaveBeenCalled();
+	},
 };
 
 /** Without `onOpen` or `href`: a static card, no hover. */
@@ -180,9 +196,9 @@ export const ManyTags: Story = {
 	},
 };
 
-const alertVariants: PatientCardAlertVariant[] =["critical", "high", "medium", "low", "resolved"];
+const alertVariants: PatientCardAlertVariant[] = ["critical", "high", "medium", "low", "resolved"];
 
-/** Every alert pill, with and without a count. */
+/** Every alert pill, with and without a count, then `iconOnly` (the card's badge), with one alert and with 3. */
 export const Alerts: Story = {
 	render: () => (
 		<div className='flex flex-col items-start gap-3'>
@@ -190,6 +206,8 @@ export const Alerts: Story = {
 				<div key={variant} className='flex gap-3'>
 					<PatientCardAlert variant={variant} />
 					<PatientCardAlert variant={variant} count={3} />
+					<PatientCardAlert variant={variant} iconOnly />
+					<PatientCardAlert variant={variant} count={3} iconOnly />
 				</div>
 			))}
 			<PatientCardAlert variant='message'>1 message</PatientCardAlert>
@@ -214,7 +232,7 @@ export const AcuityAndAlerts: Story = {
 	render: (args) => (
 		<div className='grid grid-cols-[repeat(2,24.5rem)] gap-4'>
 			{acuityLevels.map(({ level, score }, index) => (
-				<PatientCard
+				<PatientCensusCard
 					key={level}
 					{...args}
 					alert={index < 4 ? { variant: (["low", "medium", "high", "critical"] as const)[index] } : undefined}
@@ -252,10 +270,10 @@ export const AllVariants: Story = {
 	],
 	render: (args) => (
 		<div className='grid grid-cols-2 gap-6'>
-			{alertVariants.map((variant) => (
-				<PatientCard key={variant} {...args} alert={{ variant }} />
+			{alertVariants.map((variant, index) => (
+				<PatientCensusCard key={variant} {...args} alert={{ variant, count: index % 2 ? 3 : undefined }} />
 			))}
-			<PatientCard {...args} alert={{ variant: "message", label: "1 message" }} />
+			<PatientCensusCard {...args} alert={{ variant: "message", label: "1 message" }} />
 		</div>
 	),
 };

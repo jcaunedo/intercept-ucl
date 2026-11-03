@@ -11,6 +11,7 @@ import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-
 import {
 	dismissVariants,
 	liftPattern,
+	pressPattern,
 	resolvedFadeTransition,
 	standardTransition,
 	useMotionPreference,
@@ -21,7 +22,7 @@ import {
 	patientCardInteractiveClassName,
 	patientCardOpenTargetClassName,
 	usePatientCardAlertRing,
-} from "./patient-card-parts";
+} from "./patient-census-card-parts";
 
 /* -------------------------------------------------------------------------- */
 /* PatientCardAlert                                                           */
@@ -61,36 +62,67 @@ type PatientCardAlertProps = React.ComponentProps<"span"> &
 	VariantProps<typeof patientCardAlertVariants> & {
 		/** Number of active alerts the pill stands for. Shown after the label ("Critical · 3") only when it's 2 or more. */
 		count?: number;
+		/**
+		 * The icon and the count alone (the bell and "3"; the bell alone for one alert), the severity told by the fill. Screen readers
+		 * still hear the label. 28px tall either way.
+		 */
+		iconOnly?: boolean;
 	};
 
 /**
  * The patient's highest-priority alert, or their unread messages. Severities show their name unless `children`
- * replaces it; `message` needs `children` (e.g. "1 message").
+ * replaces it; `message` needs `children` (e.g. "1 message"). `iconOnly` drops the label from view.
  *
  * Figma: [intercept.ds › patient-card-alerts-badge](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1060-3605)
  */
-function PatientCardAlert({ className, variant = "critical", count, children, ...props }: PatientCardAlertProps) {
+function PatientCardAlert({
+	className,
+	variant = "critical",
+	count,
+	iconOnly = false,
+	children,
+	...props
+}: PatientCardAlertProps) {
 	const resolvedVariant = variant ?? "critical";
 	const label = children ?? (resolvedVariant === "message" ? null : alertLabels[resolvedVariant]);
+	const showCount = count !== undefined && count > 1;
 
 	return (
 		<span
 			data-slot='patient-card-alert'
 			data-variant={resolvedVariant}
-			className={cn(patientCardAlertVariants({ variant: resolvedVariant, className }))}
+			className={cn(
+				patientCardAlertVariants({ variant: resolvedVariant }),
+				// Without a text line the pill would shrink to the icon. With the icon alone, 8px on both sides, so it's centered.
+				iconOnly && "h-7",
+				iconOnly && !showCount && "pr-2",
+				className,
+			)}
 			{...props}
 		>
 			{resolvedVariant === "message" ? <MessageCircleSolidIcon /> : <BellRingIcon aria-hidden='true' />}
-			<span className='flex items-center gap-1'>
-				<span>{label}</span>
-				{count !== undefined && count > 1 ? (
-					<span>
-						<span aria-hidden='true'>· </span>
-						{count}
-						<span className='sr-only'> alerts</span>
-					</span>
-				) : null}
-			</span>
+			{iconOnly ? (
+				<>
+					<span className='sr-only'>{label}</span>
+					{showCount ? (
+						<span>
+							{count}
+							<span className='sr-only'> alerts</span>
+						</span>
+					) : null}
+				</>
+			) : (
+				<span className='flex items-center gap-1'>
+					<span>{label}</span>
+					{showCount ? (
+						<span>
+							<span aria-hidden='true'>· </span>
+							{count}
+							<span className='sr-only'> alerts</span>
+						</span>
+					) : null}
+				</span>
+			)}
 		</span>
 	);
 }
@@ -207,14 +239,14 @@ function PatientCardMetric({
 }
 
 /* -------------------------------------------------------------------------- */
-/* PatientCard                                                                */
+/* PatientCensusCard                                                          */
 /* -------------------------------------------------------------------------- */
 
 /** A reading in the card's trajectory or vitals rows. */
 type PatientCardVital = Pick<PatientCardMetricProps, "label" | "value" | "variant" | "trend" | "range" | "trendVariant"> & {
 	/**
 	 * Abbreviation, e.g. "HR" for Heart Rate. It was for the compact card's vitals line, which the compact card no longer
-	 * has (Oct 27, 2026), so it has no effect on PatientCard now. Kept so apps that pass it still compile.
+	 * has (Oct 27, 2026), so it has no effect on PatientCensusCard now. Kept so apps that pass it still compile.
 	 */
 	shortLabel?: string;
 };
@@ -271,7 +303,7 @@ type PatientCardTag = {
 	variant?: BadgeProps["variant"];
 };
 
-type PatientCardProps = Omit<
+type PatientCensusCardProps = Omit<
 	React.ComponentProps<"article">,
 	"children" | "onDrag" | "onDragStart" | "onDragEnd" | "onAnimationStart" | "onAnimationEnd"
 > & {
@@ -306,12 +338,12 @@ type PatientCardProps = Omit<
 		status?: PatientCardAlertStatus;
 		/**
 		 * When the alert started, ISO 8601; for `resolved`, when it resolved. PatientMonitoringCard's alert bar shows how
-		 * long ago ("3:34 m ago"); PatientCard doesn't show it.
+		 * long ago ("3:34 m ago"); PatientCensusCard doesn't show it.
 		 */
 		since?: string;
 		/**
 		 * How many alerts the patient had in the last 24 h, resolved ones included. PatientMonitoringCard's alert bar shows
-		 * it ("Critical · 3 in the last 24 h") in place of `count`; PatientCard doesn't show it.
+		 * it ("Critical · 3 in the last 24 h") in place of `count`; PatientCensusCard doesn't show it.
 		 */
 		inLast24h?: number;
 	};
@@ -341,6 +373,11 @@ type PatientCardProps = Omit<
 	/** Opens the patient as a link. Use instead of `onOpen` when the app routes with URLs. */
 	href?: string;
 	/**
+	 * Opens the alert (Intercept Live's alert modal). Makes the alert badge a button, raised above the card's open target,
+	 * so a click on it opens the alert, not the patient. As on PatientMonitoringCard's alert bar.
+	 */
+	onOpenAlert?: () => void;
+	/**
 	 * Whether a severity alert rings the card in its color over a light tint, pulsing while it's active. `false` keeps the
 	 * card's default border and fill, so the alert pill alone shows the alert: for pages where patients are managed rather
 	 * than watched, e.g. the Census. Defaults to `true`.
@@ -352,13 +389,13 @@ type PatientCardProps = Omit<
 
 /**
  * The acuity score and its change, side by side between two rules: "NEWS2 7 High" and "Change in last 24 h ▲ +1".
- * Shared by PatientCard and PatientMonitoringCard. 6px above and below on both variants.
+ * Shared by PatientCensusCard and PatientMonitoringCard. 6px above and below on both variants.
  */
 function PatientCardScore({
 	acuity,
 	trajectory,
 	size = "md",
-}: Pick<PatientCardProps, "acuity" | "trajectory"> & { size?: "md" | "sm" }) {
+}: Pick<PatientCensusCardProps, "acuity" | "trajectory"> & { size?: "md" | "sm" }) {
 	const small = size === "sm";
 	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
 
@@ -478,7 +515,7 @@ function PatientCardTags({
  *
  * Figma: [intercept.ds › patient-card](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1058-2360)
  */
-function PatientCard({
+function PatientCensusCard({
 	variant = "compact",
 	size = "md",
 	lastName,
@@ -500,12 +537,13 @@ function PatientCard({
 	tone,
 	onOpen,
 	href,
+	onOpenAlert,
 	alertRing: showAlertRing = true,
 	onMoreActions: _onMoreActions,
 	className,
 	onClickCapture,
 	...props
-}: PatientCardProps) {
+}: PatientCensusCardProps) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const interactive = Boolean(onOpen || href);
 	const small = size === "sm";
@@ -534,7 +572,7 @@ function PatientCard({
 
 	return (
 		<motion.article
-			data-slot='patient-card'
+			data-slot='patient-census-card'
 			data-variant={variant}
 			data-size={size}
 			whileHover={interactive && !prefersReducedMotion ? liftPattern.whileHover : undefined}
@@ -592,9 +630,9 @@ function PatientCard({
 							<p className={cn("break-words text-muted-foreground", small ? "text-xs" : "text-sm")}>{identity}</p>
 						) : null}
 					</div>
-					{/* The pill fades in when an alert appears and out when it's removed (Dismiss); a "Resolved" pill fades slowly
-					    (`resolvedFadeTransition`), so it's seen leaving after its card has moved. A severity change recolors it in
-					    place. As on PatientMonitoringCard. */}
+					{/* The alert badge: the bell in the severity's color, with the count from 2 alerts. It fades in when an alert
+					    appears and out when it's removed (Dismiss); a "Resolved" badge fades slowly (`resolvedFadeTransition`), so
+					    it's seen leaving after its card has moved. A severity change recolors it in place. */}
 					<AnimatePresence initial={false}>
 						{alert ? (
 							<motion.div
@@ -614,9 +652,31 @@ function PatientCard({
 								exit='exit'
 								className='flex'
 							>
-								<PatientCardAlert variant={alert.variant} count={alert.count}>
-									{alert.label}
-								</PatientCardAlert>
+								{onOpenAlert ? (
+									// Raised above the open target. On hover a 32% gray-700 layer darkens the fill under the icon and count
+									// (the badge is isolated, so the layer's negative z-index stays inside it), as on the monitoring card's
+									// alert bar.
+									<motion.button
+										type='button'
+										onClick={onOpenAlert}
+										className='group/alert relative z-10 flex cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+										{...(prefersReducedMotion ? {} : pressPattern)}
+									>
+										<span className='sr-only'>Open alert: </span>
+										<PatientCardAlert
+											variant={alert.variant}
+											count={alert.count}
+											iconOnly
+											className='relative isolate before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-(--gray-700)/32 before:opacity-0 before:transition-opacity group-hover/alert:before:opacity-100'
+										>
+											{alert.label}
+										</PatientCardAlert>
+									</motion.button>
+								) : (
+									<PatientCardAlert variant={alert.variant} count={alert.count} iconOnly>
+										{alert.label}
+									</PatientCardAlert>
+								)}
 							</motion.div>
 						) : null}
 					</AnimatePresence>
@@ -661,8 +721,14 @@ function PatientCard({
 	);
 }
 
+/** @deprecated Renamed to `PatientCensusCard` (Nov 2, 2026). */
+const PatientCard = PatientCensusCard;
+/** @deprecated Renamed to `PatientCensusCardProps` (Nov 2, 2026). */
+type PatientCardProps = PatientCensusCardProps;
+
 export {
 	PatientCard,
+	PatientCensusCard,
 	PatientCardAlert,
 	PatientCardMetric,
 	PatientCardScore,
@@ -678,6 +744,7 @@ export {
 	type PatientCardAlertVariant,
 	type PatientCardMetricProps,
 	type PatientCardProps,
+	type PatientCensusCardProps,
 	type PatientCardTag,
 	type PatientCardVital,
 };

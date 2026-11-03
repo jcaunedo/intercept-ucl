@@ -157,7 +157,7 @@ export const Controlled: Story = {
 	},
 };
 
-/** SidebarMenuButton: default, hover (the hover fill, held on) and active, plus collapsed. */
+/** SidebarMenuButton: default, hover (the hover fill, held on) and active, plus collapsed, and each alert severity. */
 export const MenuButtonStates: Story = {
 	render: () => (
 		<div className='flex flex-col gap-4 bg-sidebar p-4'>
@@ -174,8 +174,45 @@ export const MenuButtonStates: Story = {
 				<SidebarMenuButton icon={HomeIcon} label='With suffix' suffix='Suffix' />
 			</div>
 			<SidebarMenuButton icon={HomeIcon} label='Collapsed' collapsed />
+			{(["critical", "high", "medium", "low", "resolved"] as const).map((alert) => (
+				<div key={alert} className='flex items-center gap-4'>
+					<div className='w-[232px]'>
+						<SidebarMenuButton icon={HomeIcon} label={`Alert · ${alert}`} alert={alert} />
+					</div>
+					<SidebarMenuButton icon={HomeIcon} label={`Alert · ${alert}`} alert={alert} collapsed />
+				</div>
+			))}
 		</div>
 	),
+};
+
+/**
+ * An item with an active alert shows a dot on its icon in the severity's color; a resolved alert, or none, shows no dot.
+ * Here Monitoring has a critical alert and Alert Queue a medium one. The page shell passes the most severe open alert.
+ */
+export const ItemAlerts: Story = {
+	args: {
+		className: "h-full",
+		groups: groups.map((group) =>
+			group.map((item) => {
+				if (item.label === "Monitoring") return { ...item, alert: "critical" as const };
+				if (item.label === "Alert Queue") return { ...item, alert: "medium" as const };
+				if (item.label === "Census") return { ...item, alert: "resolved" as const };
+				return item;
+			}),
+		),
+	},
+	play: async ({ canvas, canvasElement }) => {
+		await expect(canvas.getByRole("button", { name: "Monitoring, Critical alert" })).toBeInTheDocument();
+		await expect(canvas.getByRole("button", { name: "Alert Queue, Medium alert" })).toBeInTheDocument();
+		await expect(canvas.getByRole("button", { name: "Census" })).toBeInTheDocument();
+		const dots = canvasElement.querySelectorAll("[data-slot=sidebar-menu-button-alert][data-severity]");
+		await expect(dots).toHaveLength(2);
+		// Figma puts the 6px dot 24px from the row's left edge and 2px from its top (2px over the 18px icon's corner).
+		const dot = dots[0].getBoundingClientRect();
+		const row = canvas.getByRole("button", { name: "Monitoring, Critical alert" }).getBoundingClientRect();
+		await expect([dot.width, dot.left - row.left, dot.top - row.top]).toEqual([6, 24, 2]);
+	},
 };
 
 /**

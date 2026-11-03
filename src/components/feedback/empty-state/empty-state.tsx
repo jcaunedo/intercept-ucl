@@ -63,7 +63,7 @@ function EmptyState({
 				) : null}
 			</div>
 			{buttonLabel ? (
-				<Button variant='default' size='lg' {...buttonProps}>
+				<Button size='lg' {...buttonProps}>
 					{buttonIcon}
 					{buttonLabel}
 				</Button>

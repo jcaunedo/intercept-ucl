@@ -1,4 +1,5 @@
 export {
+	AlertBar,
 	defaultMonitorLimits,
 	DeviceAlarmValue,
 	MonitorAlarmIcon,

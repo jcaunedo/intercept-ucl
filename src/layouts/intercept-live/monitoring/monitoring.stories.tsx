@@ -5,11 +5,13 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
+import { sampleAlertDetails } from "../alert-detail/sample-alert-detail";
 import { samplePatients } from "../census/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
-import { prototypeShortcuts, resetPrototype } from "../sample-data/prototype-links";
+import { interceptLivePages } from "../intercept-live";
+import { prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Monitoring, type MonitoringProps } from "./monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "./sample-monitoring";
@@ -61,15 +63,15 @@ async function openLiveFeed(
 }
 
 /**
- * The screen with a simulated live feed (PRD SV-081): at 1.5 s, at 8 s, then every 15 to 30 s, a patient's vitals and
+ * The screen with a simulated live feed (PRD SV-081): at 8 s, then every 15 to 30 s, a patient's vitals and
  * alerts change; an alert's severity goes up or down (a Medium becomes High, a Critical eases to Medium), a new one
- * fires, another resolves. The cards' alert bars follow. Sorted by Name (the default), the cards keep their order;
- * sorted by Recent alerts, they move to their new place (Reorder motion) at the panel's next re-sort, 2 s after the page
- * opens, then every 15 to 30 s, the newest alert first. The triage queue reorders right away; the hospital bar says what changed ("Live
+ * fires, another resolves. The cards' alert bars follow. Sorted by Alerts (the default), they move to their new place (Reorder motion) at the panel's next re-sort, 2 s after the page
+ * opens, then every 15 to 30 s, the newest alert first; sorted by Patient name, they keep their order. The triage queue reorders right away; the hospital bar says what changed ("Live
  * feed: …", the page's `liveFeed`). Then it loops. The hospital tabs, the chips and Filters narrow the panel; the queue
  * always shows every alert on it.
- * The first change is Scenario 1's early warning: Margaret Hayes's NEWS2 reaches 10 and her Critical alert lands at #1
- * in the queue, above Miller's, because her score rose 5 in 4 h (DU-09).
+ * Margaret Hayes holds at NEWS2 5 until the Prototype menu's "Scenario 1: Heart failure" plays her early warning: her
+ * NEWS2 reaches 10 and her Critical alert lands at #1 in the queue, above Miller's, because her score rose 5 in 4 h
+ * (DU-09). Her card, monitor and record (score breakdown, vitals, timeline) change with it.
  * ⚠️ Cards moving on their own is what PRD SV-013 rules out ("Panel order changed · Update"); this shows the live
  * alternative for comparison (SV-OD-05).
  */
@@ -77,18 +79,74 @@ export const Default: Story = {
 	render: (args) => <LiveMonitoring {...args} />,
 };
 
-/** The same screen without the scripted feed: the sample as it starts, alerts unchanged, the monitors still live. */
-export const Static: Story = {};
+/**
+ * The Prototype menu's "Scenario 1: Heart failure": Margaret Hayes has no alert until it's picked; 1.5 s later her
+ * NEWS2 crosses into High (5 → 10) and her Critical alert leads the live feed's queue. Ask in her toast (or Ask
+ * Intercept Live in her card's menu) answers why she's #1, the reason line explained, then her history and labs.
+ */
+export const Scenario1HeartFailure: Story = {
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		const title = "NEWS2 10, High: up 5 in 4 h";
+		const feed = await openLiveFeed(canvas, userEvent);
+		await expect(feed.queryByText(title)).toBeNull();
+		await userEvent.click(canvas.getByRole("button", { name: "Prototype" }));
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Scenario 1: Heart failure" }));
+		await expect(await feed.findByText(title, {}, { timeout: 4000 })).toBeInTheDocument();
+		// Her toast waits while the feed is open (it lists the alert already) and shows once the feed closes.
+		await userEvent.click(canvas.getByRole("button", { name: /^Live feed/ }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Live feed" })).not.toBeInTheDocument());
+		const toast = (await screen.findAllByText("Hayes, Margaret", { selector: "[data-sonner-toast] *" }))[0].closest("[data-sonner-toast]");
+		await userEvent.click(within(toast as HTMLElement).getByRole("button", { name: /^Ask/ }));
+		const chat = within(await screen.findByRole("complementary", { name: /Ask Intercept Live/ }));
+		await expect(await chat.findByText(/#1/, { selector: "strong" }, { timeout: 20000 })).toBeInTheDocument();
+		// The answer types out, so the consult's last line comes later.
+		await expect(await chat.findByText(/Normal is under 100 pg\/mL/, {}, { timeout: 20000 })).toBeInTheDocument();
+		// Her card's alert bar opens the alert modal: the reason line as its title, her labs, and the one-click consult.
+		const card = canvas.getAllByRole("article").find((article) => within(article).queryByText("Hayes, Margaret"));
+		await userEvent.click(within(card as HTMLElement).getByRole("button", { name: /Open alert/ }));
+		const reason = "Rising work of breathing, positive fluid balance, HFrEF";
+		const modal = within(await screen.findByRole("dialog", { name: reason }));
+		await expect(modal.getByText("2,400 pg/mL")).toBeInTheDocument();
+		await expect(modal.getByRole("button", { name: "Video call Kayla, RN" })).toBeInTheDocument();
+		// The toasts hide while the modal is open and come back when it closes.
+		const toasts = () => document.querySelector("[data-slot='toaster-region']");
+		await expect(toasts()).toHaveAttribute("data-hidden");
+		// Video consult in her card's "…" menu is the one click: the same modal, the call already ringing, then live.
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		await expect(toasts()).not.toHaveAttribute("data-hidden");
+		await userEvent.click(within(card as HTMLElement).getByRole("button", { name: "More actions for Hayes, Margaret" }));
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Video consult" }));
+		const consult = within(await screen.findByRole("dialog", { name: reason }));
+		await expect(await consult.findByText("Calling Kayla Brandt…")).toBeInTheDocument();
+		await expect(await consult.findByText("Kayla Brandt, RN joined", {}, { timeout: 3000 })).toBeInTheDocument();
+		// Open patient leaves the modal for her page; the toasts stay hidden there too.
+		await userEvent.click(consult.getByRole("button", { name: "Open patient" }));
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		await expect(toasts()).toHaveAttribute("data-hidden");
+	},
+};
 
 /**
- * Sort by Recent alerts: patients with an open alert first, the newest alert on top, so Anderson's Low bed exit (1 min ago)
+ * The same screen without the scripted feed: the sample as it starts, alerts unchanged, the monitors still live. The
+ * Sidebar's Monitoring carries the worst open alert's dot, flashing: Miller's Critical sepsis alert.
+ */
+export const Static: Story = {
+	play: async ({ canvas }) => {
+		const monitoring = await canvas.findByRole("button", { name: "Monitoring, Critical alert" });
+		await expect(monitoring.querySelector("[data-slot='sidebar-menu-button-alert']")).toHaveAttribute("data-severity", "critical");
+	},
+};
+
+/**
+ * Sort by Alerts (the default): patients with an open alert first, the newest alert on top, so Anderson's Low bed exit (1 min ago)
  * leads, then Johnson's Low SpO₂ (9 min), then Miller's Critical sepsis alert (16 min); everyone else follows by name.
  * The Active alerts chip orders them by who to see first instead: Miller (Critical), then Johnson, then Anderson.
  */
-export const SortByRecentAlerts: Story = {
+export const SortByAlerts: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("combobox", { name: "Sort by" }));
-		await userEvent.click(await screen.findByRole("option", { name: "Recent alerts" }));
+		await expect(canvas.getByRole("combobox", { name: "Sort by" })).toHaveTextContent("Alerts");
 		const names = () =>
 			canvas.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent?.split(",")[0]);
 		await waitFor(() => expect(names().slice(0, 3)).toEqual(["Anderson", "Johnson", "Miller"]));
@@ -197,7 +255,7 @@ export const EscalateAlert: Story = {
 		await userEvent.click(row.getByRole("button", { name: "Escalate" }));
 		await userEvent.type(row.getByRole("textbox", { name: "Note (optional)" }), "Desaturating on FiO₂ 70%");
 		await userEvent.click(row.getByRole("button", { name: "Escalate" }));
-		await expect(row.getByText(/Escalated to James Tan by you/)).toBeVisible();
+		await expect(row.getByText(/Escalated to James Turner by you/)).toBeVisible();
 	},
 };
 
@@ -237,8 +295,12 @@ export const LiveFeedPanel: Story = {
 		await expect(link).toHaveAttribute("aria-expanded", "true");
 		await expect(panel.getByRole("tab", { name: /Active/ })).toHaveTextContent("3");
 		await expect(panel.getByRole("separator", { name: "Resize Live feed" })).toBeInTheDocument();
+		// The feed lists every alert, so the toasts hide (paused) while it's open and come back when it closes.
+		const toasts = () => document.querySelector("[data-slot='toaster-region']");
+		await waitFor(() => expect(toasts()).toHaveAttribute("data-hidden"));
 		await userEvent.click(panel.getByRole("button", { name: "Close Live feed" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Live feed" })).not.toBeInTheDocument());
+		await waitFor(() => expect(toasts()).not.toHaveAttribute("data-hidden"));
 		// The link toggles it too.
 		await openLiveFeed(canvas, userEvent);
 		await userEvent.click(link);
@@ -286,25 +348,33 @@ export const FullTrends: Story = {
 
 /**
  * The Outside limits filter keeps the patients outside their alarm limits when it's pressed: Miller, Johnson, Walker,
- * Moore, Clark and Hayes. Membership holds while readings move; pressing it again shows everyone.
+ * Moore and Clark (Hayes only once Scenario 1 plays). Membership holds while readings move; pressing it again shows everyone.
  */
 export const OutsideLimitsFilter: Story = {
 	play: async ({ canvas, userEvent }) => {
 		const chip = canvas.getByRole("button", { name: /Outside limits/ });
-		await expect(chip).toHaveTextContent(/Outside limits\s*·\s*6/);
+		await expect(chip).toHaveTextContent(/Outside limits\s*·\s*5/);
 		await userEvent.click(chip);
-		await waitFor(() => expect(canvas.getAllByRole("article")).toHaveLength(6));
+		await waitFor(() => expect(canvas.getAllByRole("article")).toHaveLength(5));
 		await userEvent.click(chip);
 		await waitFor(() => expect(canvas.getAllByRole("article")).toHaveLength(sampleMonitoringPatients.length));
 	},
 };
 
 function LiveMonitoring(props: MonitoringProps) {
-	const { patients: fed, alerts, caption, restart } = useSampleLiveFeed();
+	const { patients: fed, alerts, everyAlert, caption, startScenario1, withScenarioCensus, withScenarioRecords } = useSampleLiveFeed();
 	// The Prototype menu's Sections by location view (Group by location's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
+	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
+	const location = usePrototypeLocation(interceptLivePages, {
+		page: props.defaultPage ?? "Monitoring",
+		patient: props.defaultPatient,
+	});
 	const patients = useLivePatients(fed);
-	const live = useLiveAskIntercept(alerts, patients, props.onAlertAction);
+	// Scenario 1 changes Hayes's Census card and record too, so the Census page, her details and the chat follow.
+	const censusPatients = props.censusPatients && withScenarioCensus(props.censusPatients);
+	const patientRecords = props.patientRecords && withScenarioRecords(props.patientRecords);
+	const live = useLiveAskIntercept(alerts, patients, props.onAlertAction, { censusPatients, patientRecords });
 	// What the feed just changed shows at the right of the hospital bar. The Census page (Sidebar) follows the same feed.
 	return (
 		<Monitoring
@@ -315,14 +385,19 @@ function LiveMonitoring(props: MonitoringProps) {
 			askInterceptNotice={live.notice}
 			onAlertAction={live.onAlertAction}
 			liveFeed={caption}
-			censusPatients={props.censusPatients && withFeedAlerts(props.censusPatients, alerts)}
+			censusPatients={censusPatients && withFeedAlerts(censusPatients, alerts)}
+			patientRecords={patientRecords}
+			alertDetails={sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients: patients, records: patientRecords })}
 			prototype={prototypeShortcuts({
-				restartLiveFeed: restart,
+				startScenario1,
 				groupedGrid,
 				onToggleGroupedGrid: () => setGroupedGrid(!groupedGrid),
 			})}
 			groupedView={groupedGrid ? "sections" : "board"}
 			onResetPrototype={resetPrototype}
+			defaultPage={location.defaultPage}
+			defaultPatient={location.defaultPatient}
+			onLocationChange={location.onLocationChange}
 		/>
 	);
 }

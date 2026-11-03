@@ -194,7 +194,7 @@ Shown under the greeting until the first question, as pills; picking one sends i
 | Where | Suggestions |
 |---|---|
 | **Census and other pages** | "Brief me for the start of my shift", "What happened overnight?", "Who needs attention first?", "What changed in the last hour?", "Which patients are sepsis candidates?" |
-| **A patient's page** | "Summarize the last 24 hours", "What changed since I last looked?", "Show the sepsis criteria" |
+| **A patient's page** | By the patient's first name: "Summarize Sarah's last 24 hours", "What changed for Sarah since I last looked?", "Show Sarah's latest labs", "What meds is Sarah on?", "Show Sarah's sepsis criteria" (labs and meds added Nov 2, 2026, user's call) (✅ Nov 2, 2026, user's call: the chat opened about a patient talks about them) |
 
 ⚠️ **Decision needed:** whether suggestions adapt to time of shift, role or what's open on the census (CC-OD-01).
 
@@ -202,7 +202,7 @@ Shown under the greeting until the first question, as pills; picking one sends i
 
 | Moment | Behavior |
 |---|---|
-| **First open** | Once the panel has opened, Intercept greets the clinician, streaming: "Have a question about your patients? Just ask. Intercept Live helps you find the answers you need." |
+| **First open** | Once the panel has opened, Intercept greets the clinician, streaming: "Have a question about your patients? Just ask. Intercept Live helps you find the answers you need." About a patient (their app header's sparkle): "Have a question about Sarah Miller? Just ask. Intercept Live can sum up their day, what changed, their labs and meds." Before the first question, a change of who the chat is about greets again, so the greeting and suggestions always match the context (✅ Nov 2, 2026, user's call) |
 | **Sent** | The question shows at once, right-aligned. |
 | **Thinking** | "Thinking…" with a soft pulse, for about a second. Stop is already available. |
 | **Streaming** | The answer arrives in short bursts of a few words, pausing briefly after a sentence, with a blinking cursor at its end. |

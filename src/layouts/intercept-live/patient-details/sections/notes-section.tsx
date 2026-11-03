@@ -8,6 +8,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
 import { formatDateTime, formatTime, NoData, SectionCard } from "../section-parts";
+import { SourceLabel } from "../../shared/source-label";
 
 // The Notes section (PRD Patient details §10, PD-070–PD-072): notes imported from the hospital's record and Intercept's
 // own, newest first, with where each one went. A list with type and author filters, and the selected note beside it
@@ -167,7 +168,7 @@ function NoteDetail({
 	return (
 		<SectionCard
 			title={note.type}
-			meta={note.origin === "hospital" ? `From ${emr}` : "Intercept note"}
+			meta={<SourceLabel>{note.origin === "hospital" ? `From ${emr}` : "Intercept note"}</SourceLabel>}
 			className={cn(note.scribe && "border-dashed border-badge-purple-foreground/50")}
 		>
 			<div className='flex flex-wrap items-center gap-2'>
