@@ -54,10 +54,10 @@ To try unpublished library changes inside an app, link the library locally first
 
 The library follows semantic versioning.
 
-| Bump      | Example       | Use it for                                                                                                                         |
-| --------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Patch** | 1.4.2 → 1.4.3 | Bug fixes and visual tweaks that don't change how a component is used: padding, a color, an accessibility fix                      |
-| **Minor** | 1.4.2 → 1.5.0 | New things that don't break existing usage: a new component, optional prop, variant or design token                                |
+| Bump      | Example       | Use it for                                                                                                                        |
+| --------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Patch** | 1.4.2 → 1.4.3 | Bug fixes and visual tweaks that don't change how a component is used: padding, a color, an accessibility fix                     |
+| **Minor** | 1.4.2 → 1.5.0 | New things that don't break existing usage: a new component, optional prop, variant or design token                               |
 | **Major** | 1.4.2 → 2.0.0 | Anything that could break an app: removing or renaming a component, prop or token, changing a default, or requiring a newer React |
 
 Below 1.0.0, package managers treat a minor bump (0.7 → 0.8) as breaking, so apps don't pick it up automatically. That's fine early on, but worth knowing.
@@ -66,11 +66,11 @@ Below 1.0.0, package managers treat a minor bump (0.7 → 0.8) as breaking, so a
 
 `package.json` has these scripts, so a release is one command:
 
-| Script                                            | What it does                                                                         |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `preversion`                                      | Runs `npm run lint` (the type check) first, and stops the release if it fails        |
+| Script                                            | What it does                                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `preversion`                                      | Runs `npm run lint` (the type check) first, and stops the release if it fails            |
 | `release:patch`, `release:minor`, `release:major` | Run `npm version`: bump the version, create the commit and tag it (`v1.4.3`) in one step |
-| `postversion`                                     | Runs `npm run build` after the bump                                                  |
+| `postversion`                                     | Runs `npm run build` after the bump                                                      |
 
 The release flow:
 
@@ -132,7 +132,10 @@ UCL declares the font tokens in `theme.css` but doesn't load the webfonts. Inter
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=Roboto+Mono:wght@100..700&display=swap" />
+<link
+	rel="stylesheet"
+	href="https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&family=Roboto+Mono:wght@100..700&display=swap"
+/>
 ```
 
 Next.js apps can use `next/font/google` instead (`Figtree`, `Roboto_Mono`). Keep the family names as they are, because the tokens refer to them by name. Without the fonts, text falls back to the system font.
@@ -190,3 +193,17 @@ netlify.toml                # Hosts the Storybook site on Netlify
 ```
 
 The rules for building components, tokens and releases are in [CLAUDE.md](CLAUDE.md) and [DESIGN.md](DESIGN.md), and the motion rules are in [MOTION.md](MOTION.md). The skills read CLAUDE.md and DESIGN.md before they start, plus MOTION.md when the work involves animation.
+
+## Retrying a Failed Netlify Deploy
+
+The Storybook site deploys to Netlify on every push to `main` (see `netlify.toml`). If a deploy fails before the build
+starts, for example with "Failed during stage 'preparing repo'" or "Host key verification failed", Netlify couldn't
+fetch the repo and the code isn't at fault. Push an empty commit to trigger a fresh deploy:
+
+```bash
+git commit --allow-empty -m "chore: retry Netlify deploy"
+git push
+```
+
+If it fails the same way again, re-link the repository in Netlify (Project configuration → Build & deploy → Continuous
+deployment → Manage repository → Link to a different repository).
