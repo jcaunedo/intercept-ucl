@@ -61,6 +61,8 @@ const preview: Preview = {
 					["Census", "Patient card", "Monitoring", "Patient details", "Alert maximized modal", "Chat composer", "Glossary"],
 					"Documents",
 					["System Specifications", "Design Phase Team Brief", "Slack notes from client"],
+					"Storyboard",
+					["Scenario 1"],
 				],
 			},
 		},
