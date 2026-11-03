@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Intercept Live (exploration): in the alert modal, when Keep or transfer's checkpoints pass and the transfer is avoided, the Pathway column scrolls to its end so the result is in view. Layout-only, not exported.
 
+- Storybook: a **Storyboard** section after Documents, with **Scenario 1**: the Scenario 1 storyboard full size, framed in a story (`src/docs/storyboards/scenario-1.stories.tsx`). The Prototype menu still opens it in a new tab.
+
 ### Changed
 
 - Sonner: toasts stack by priority, the most severe alert in front, the newest first within a severity (they stacked newest in front). A toast option `priority` (higher in front, 0 by default); `toastAlert()` sets it from the severity, and an alert whose severity changes moves to its place. UCL now ships its own copy of Sonner 2.0.8 with this change (`src/components/feedback/sonner/vendor/`, MIT), since Sonner can't order toasts; `sonner` is no longer a dependency. Behavior change, additive option. Story AlertToast › Sorted By Severity.
