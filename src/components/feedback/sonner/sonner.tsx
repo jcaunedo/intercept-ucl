@@ -156,9 +156,9 @@ function useStackTop(active: boolean) {
 }
 
 /**
- * The row over the stack, right-aligned with it. With two or more toasts: Don't show (a menu of how long: closes the
- * toasts that can wait and holds new ones back, except an alert that interrupts) and Close all (closes every toast as
- * its × would, running its close handler; alerts stay in the queue). While muted, "Muted until 4:42 PM" with a × to show toasts again, there even without toasts
+ * The row over the stack, right-aligned with it. With any toast, Don't show (a menu of how long: closes the toasts that
+ * can wait and holds new ones back, except an alert that interrupts); with two or more, Close all too (closes every toast
+ * as its × would, running its close handler; alerts stay in the queue). While muted, "Muted until 4:42 PM" with a × to show toasts again, there even without toasts
  * so it can always be undone. Over it the stack stays as it was: expanded when the pointer comes from it, collapsed when
  * it comes from elsewhere, so the buttons never move away from the pointer.
  */
@@ -175,9 +175,10 @@ function ToasterActions({
 }) {
 	const { toasts } = useSonner();
 	const mutedUntilTime = useToastsMutedUntil();
+	const any = toasts.length > 0;
 	const several = toasts.length >= 2;
-	const show = several || mutedUntilTime !== null;
-	const stackBottom = useStackTop(show && toasts.length > 0);
+	const show = any || mutedUntilTime !== null;
+	const stackBottom = useStackTop(any);
 	// Without toasts (muted), the row sits where the stack would.
 	const bottom = stackBottom ?? right;
 	const hold = React.useRef(false);
@@ -211,11 +212,11 @@ function ToasterActions({
 
 	// Gone with the toasts: let the stack collapse again next time.
 	React.useEffect(() => {
-		if (!several && hold.current) {
+		if (!any && hold.current) {
 			hold.current = false;
 			onHoldOpenChange(false);
 		}
-	}, [several, onHoldOpenChange]);
+	}, [any, onHoldOpenChange]);
 
 	const mute = (until: Date) => {
 		muteToasts(until);
@@ -246,7 +247,7 @@ function ToasterActions({
 								<XIcon aria-hidden='true' />
 							</Button>
 						</span>
-					) : several ? (
+					) : any ? (
 						<DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
 							<DropdownMenuTrigger asChild>
 								<Button variant='outline' size='sm'>
@@ -285,8 +286,8 @@ function ToasterActions({
  * like everything else.
  * Toasts stack bottom right, 16px from the screen's edges, at most three, the newest at the bottom. Collapsed, each one
  * behind peeks `peek` (12px) above the one in front; hovering the stack spreads them `gap` (8px) apart and pauses their
- * timers. With two or more, "Don't show" (`muteLabel`: for 30 mins … until tomorrow) and "Close all" (`closeAllLabel`) sit
- * right-aligned 8px above the top toast; while muted, "Muted until …" with a × takes Don't show's place. `hidden` fades the
+ * timers. "Don't show" (`muteLabel`: for 30 mins … until tomorrow) sits right-aligned 8px above the top toast, with
+ * "Close all" (`closeAllLabel`) beside it from two toasts; while muted, "Muted until …" with a × takes Don't show's place. `hidden` fades the
  * stack and its buttons out while something covers the screen (e.g. a modal), keeping every toast: their timers pause,
  * new ones queue, and all of them fade back in when it's lifted.
  *
