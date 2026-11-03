@@ -109,7 +109,7 @@ type CensusPanelProps = {
 	/** The latest change from the live feed, e.g. "Moore worsens: Medium becomes Critical". Shown at the right of the
 	 * hospital bar as "Live feed: …"; just "Live feed" without it. */
 	liveFeed?: string;
-	/** How Group by location shows: `board`, a Kanban column per hospital (default), or `sections` in the grid. */
+	/** How Group by hospital shows: `board`, a Kanban column per hospital (default), or `sections` in the grid. */
 	groupedView?: GroupedView;
 	/** Called when the hospital bar's "Live feed" opens or closes the live feed panel (the triage queue). */
 	onOpenLiveFeed?: () => void;
@@ -196,7 +196,7 @@ function CensusPanel({
 	const [sortBy, setSortBy] = useSortBy("census", "acuity");
 	// Comfortable and Compact cards, or the List table, as on Monitoring.
 	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
-	// Group by location: a Kanban column per hospital, the sort inside each; or, with the sections view, a grid section each.
+	// Group by hospital: a Kanban column per hospital, the sort inside each; or, with the sections view, a grid section each.
 	// A view picked in the Prototype menu shows at once: cards, across all hospitals.
 	const [groupedChoice, setGrouped] = useGrouping(groupedView, () => {
 		setDensity((current) => (current === "list" ? "comfortable" : current));
@@ -282,13 +282,13 @@ function CensusPanel({
 
 	return (
 		<>
-			{/* The hospital bar, right under the header (Intercept-Live Census `83:2515`), with Group by location at its right
+			{/* The hospital bar, right under the header (Intercept-Live Census `83:2515`), with Group by hospital at its right
 			    (label first). */}
 			<div className='flex items-center justify-between gap-6 border-b border-border pr-6 pl-4'>
 				<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
 				<div className='shrink-0'>
 					<Switch
-						label='Group by location'
+						label='Group by hospital'
 						labelSide='left'
 						checked={grouped}
 						disabled={hospitalId !== "all"}

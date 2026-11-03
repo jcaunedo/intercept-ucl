@@ -128,39 +128,45 @@ export const LiveFeed: Story = {
 };
 
 /**
- * Group by location (the switch at the right of the filter chips): a Kanban board, a column per hospital, the sort
+ * Group by hospital (the switch at the right of the filter chips): a Kanban board, a column per hospital, the sort
  * inside each.
  */
-export const GroupByLocation: Story = {
+export const GroupByHospital: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("switch", { name: "Group by location" }));
+		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
 		for (const hospital of new Set(samplePatients.map((patient) => patient.hospital))) {
 			await waitFor(() => expect(canvas.getByRole("region", { name: hospital })).toBeInTheDocument());
 		}
 	},
 };
 
-/** Filters that empty a hospital keep its column, so the board's columns don't move or widen. */
+/** Filters that empty a hospital drop its column: only hospitals with patients show (Nov 3, 2026). */
 export const KanbanFiltered: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("switch", { name: "Group by location" }));
-		await userEvent.click(canvas.getByRole("button", { name: /^Sepsis watch/ }));
-		for (const hospital of new Set(samplePatients.map((patient) => patient.hospital))) {
+		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
+		const hospitals = [...new Set(samplePatients.map((patient) => patient.hospital))];
+		for (const hospital of hospitals) {
 			await waitFor(() => expect(canvas.getByRole("region", { name: hospital })).toBeInTheDocument());
 		}
-		await expect(canvas.getAllByText("No patients match these filters").length).toBeGreaterThan(0);
+		await userEvent.click(canvas.getByRole("button", { name: /^Sepsis watch/ }));
+		await waitFor(() => {
+			const shown = hospitals.filter((hospital) => canvas.queryByRole("region", { name: hospital }));
+			expect(shown.length).toBeGreaterThan(0);
+			expect(shown.length).toBeLessThan(hospitals.length);
+		});
+		await expect(canvas.queryByText("No patients match these filters")).not.toBeInTheDocument();
 	},
 };
 
-/** Group by location holds across pages: the shell keeps it, so Monitoring opens grouped and the Census stays so. */
+/** Group by hospital holds across pages: the shell keeps it, so Monitoring opens grouped and the Census stays so. */
 export const GroupingAcrossPages: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("switch", { name: "Group by location" }));
+		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
 		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
-		await waitFor(() => expect(canvas.getByRole("switch", { name: "Group by location" })).toBeChecked());
+		await waitFor(() => expect(canvas.getByRole("switch", { name: "Group by hospital" })).toBeChecked());
 		await userEvent.click(canvas.getByRole("button", { name: "Census" }));
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1, name: /across/ })).toBeInTheDocument());
-		await expect(canvas.getByRole("switch", { name: "Group by location" })).toBeChecked();
+		await expect(canvas.getByRole("switch", { name: "Group by hospital" })).toBeChecked();
 	},
 };
 
@@ -234,11 +240,11 @@ export const FiltersSearch: Story = {
 	},
 };
 
-/** Group by location's other view (`groupedView="sections"`, the Prototype menu's Sections by location): a grid section each. */
+/** Group by hospital's other view (`groupedView="sections"`, the Prototype menu's Sections by hospital): a grid section each. */
 export const GroupedGrid: Story = {
 	args: { groupedView: "sections" },
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("switch", { name: "Group by location" }));
+		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
 		const hospitals = new Set(samplePatients.map((patient) => patient.hospital)).size;
 		await waitFor(() => expect(canvas.getAllByRole("heading", { level: 2 })).toHaveLength(hospitals));
 		await expect(canvas.queryByRole("region", { name: "CVMC" })).not.toBeInTheDocument();
@@ -246,12 +252,12 @@ export const GroupedGrid: Story = {
 };
 
 /**
- * One hospital picked on its tab turns Group by location off (the switch disabled); All hospitals brings back the
+ * One hospital picked on its tab turns Group by hospital off (the switch disabled); All hospitals brings back the
  * user's choice, here the board.
  */
 export const GroupingOneHospital: Story = {
 	play: async ({ canvas, userEvent }) => {
-		const grouping = canvas.getByRole("switch", { name: "Group by location" });
+		const grouping = canvas.getByRole("switch", { name: "Group by hospital" });
 		await userEvent.click(grouping);
 		await waitFor(() => expect(canvas.getByRole("region", { name: "CVMC" })).toBeInTheDocument());
 		await userEvent.click(canvas.getByRole("tab", { name: /^CVMC/ }));
@@ -264,13 +270,13 @@ export const GroupingOneHospital: Story = {
 	},
 };
 
-/** The Prototype menu's Sections by location (Views) turns grouping on, as hospital sections in the grid. */
+/** The Prototype menu's Sections by hospital (Views) turns grouping on, as hospital sections in the grid. */
 export const GroupedGridFromPrototypeMenu: Story = {
 	render: (args) => <LiveCensus {...args} />,
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Prototype" }));
-		await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Sections by location" }));
-		await waitFor(() => expect(canvas.getByRole("switch", { name: "Group by location" })).toBeChecked());
+		await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Sections by hospital" }));
+		await waitFor(() => expect(canvas.getByRole("switch", { name: "Group by hospital" })).toBeChecked());
 		await expect(canvas.queryByRole("region", { name: "CVMC" })).not.toBeInTheDocument();
 	},
 };
@@ -328,7 +334,7 @@ export const EmptyPage: Story = {
 /** Plays the sample live feed into the Census: its alerts and the Monitoring page's values. */
 function LiveCensus(props: React.ComponentProps<typeof Census>) {
 	const { patients: monitoring, alerts, everyAlert, caption, startScenario1, withScenarioCensus, withScenarioRecords } = useSampleLiveFeed();
-	// The Prototype menu's Sections by location view (Group by location's Kanban board is the default).
+	// The Prototype menu's Sections by hospital view (Group by hospital's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
 	const location = usePrototypeLocation(interceptLivePages, {

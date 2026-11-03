@@ -8,9 +8,9 @@ import type { PatientScope, SortOrderId } from "./shared/patient-panel";
 // page keeps its own.
 
 type PagePreferences = {
-	/** Group by location's switch, on the Census and Monitoring. */
-	groupByLocation: boolean;
-	onGroupByLocationChange: (grouped: boolean) => void;
+	/** Group by hospital's switch, on the Census and Monitoring. */
+	groupByHospital: boolean;
+	onGroupByHospitalChange: (grouped: boolean) => void;
 	/** Each page's Sort by choice (Oct 31, 2026), by page: the Census and Monitoring offer different sorts. */
 	sortBy: Partial<Record<SortPage, SortOrderId>>;
 	onSortByChange: (page: SortPage, sortBy: SortOrderId) => void;

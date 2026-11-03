@@ -108,10 +108,10 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 
 | Region | Content | Requirements |
 |---|---|---|
-| **Hospital bar** | Hospital tabs (All hospitals, then each hospital), each with its patient count and active-alert count; **Group by location** at the right | CEN-001, CEN-020 |
+| **Hospital bar** | Hospital tabs (All hospitals, then each hospital), each with its patient count and active-alert count; **Group by hospital** at the right ("Group by location" until Nov 3, 2026, user's call: it groups by hospital, and "location" also reads as unit or bed) | CEN-001, CEN-020 |
 | **Summary row** | "18 patients across 4 hospitals"; the live feed line ("Live feed: …"), which opens the live feed panel | CEN-001, CEN-021 ⚠️ |
 | **Filter bar** | Search, My patients, quick views (Rising score, Organ support, Sepsis watch); Density, Sort by, Filters | CEN-002, CEN-003 |
-| **Patients** | Cards (Comfortable, Compact) or a table (List); with Group by location, a column per hospital (board) | CEN-010–CEN-013 |
+| **Patients** | Cards (Comfortable, Compact) or a table (List); with Group by hospital, a column per hospital with patients (board; a hospital the filters empty has none, Nov 3, 2026) | CEN-010–CEN-013 |
 | **Panels** | The live feed panel beside the canvas (while it's open, the alert toasts are hidden and paused, Nov 2, 2026, user's call); the Filters panel floating over the page (a Sheet, Nov 1, 2026; the toasts hide while it's open too, Nov 3, 2026, user's call). A closed toast stays closed until the app reloads, unless its alert goes above the severity it had (Nov 3, 2026; PRD Monitoring §5) | CEN-003, CEN-021 |
 
 ℹ️ The Census has no Card monitor or Monitor view controls: those are Monitoring's (MON-015).
@@ -124,7 +124,7 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 
 | ID | Requirement | Status |
 |---|---|---|
-| **CEN-001 Scope** | Every patient in the clinician's scope across the hospitals they cover, **always grouped by hospital** (tabs; Group by location for sections or columns). Counts are per hospital. | ✅ Built. ⚠️ **Gap:** DU-06 asks for per-hospital counts only, without the "across 3 hospitals" summary, and for each hospital's EHR, time zone and connection status (PD-01) |
+| **CEN-001 Scope** | Every patient in the clinician's scope across the hospitals they cover, **always grouped by hospital** (tabs; Group by hospital for sections or columns). Counts are per hospital. | ✅ Built. ⚠️ **Gap:** DU-06 asks for per-hospital counts only, without the "across 3 hospitals" summary, and for each hospital's EHR, time zone and connection status (PD-01) |
 | **CEN-002 My patients** | A chip narrows the census to the clinician's assigned patients; off by default, so the census starts complete. | ✅ Built |
 | **CEN-003 Filters** | Search (everything the card shows), quick views (one at a time) and the Filters panel (Unit, Highest alert, the score's bands with No score, Change in last 24 h, Organ support, Code status & safety, Sepsis). Only what the card shows: filters on live vitals and data gaps are Monitoring's (CEN-OD-07). Every option shows its count. Clear filters returns to the full census. | ✅ Built (PD-03). ⚠️ **Gap:** PD-03's "watchlist first" and "transferred in 24 h" aren't built |
 | **CEN-004 Tenant isolation** | Patient data never crosses tenants; the census combines hospitals only within the clinician's coverage and privileges (BR-09). | ✅ By design |
@@ -200,7 +200,7 @@ The Census isn't where alerts are handled (§1.1), but a clinician scanning the 
 | CEN-OD-02 | Who is on the Monitoring panel, against the Census | (a) The same patients on both; (b) Monitoring shows a watchlist the clinician builds from the Census; (c) Monitoring shows the shift assignment | **(b)** or **(c)**, with the Census always complete. Settles MON-OD-01 too |
 | CEN-OD-03 | Opening a patient from the Census resolves their alert (prototype) | Keep; remove | **Remove**: it breaks PC-071 and CEN-020 |
 | CEN-OD-04 | PD-04's fields not on the card: diagnosis, tier, key vitals, open alerts | Add to the card; show in the List only; leave to Patient details | Diagnosis on the card if it fits one line; vitals and alerts stay on Monitoring |
-| CEN-OD-05 | PD-02's "rail by tier" view | Build; drop; replace with Group by location's board | Ask what "tier" means here (acuity band or level of care) before deciding |
+| CEN-OD-05 | PD-02's "rail by tier" view | Build; drop; replace with Group by hospital's board | Ask what "tier" means here (acuity band or level of care) before deciding |
 | CEN-OD-06 | Default sort | Score; Score change; Name | **Score** (today): the sickest first fits the shift scan |
 | CEN-OD-07 | Filters on vitals the card doesn't show (Out of range, Data gap, Vitals out of range) | ✅ **Resolved (Nov 1, 2026, product):** they're live monitoring data, so they're Monitoring's. Removed from the Census: the Out of range and Data gap quick views and the Vitals out of range group. Monitoring already covers them: the Outside limits chip, Outside alarm limits with Not reporting in its Filters panel, and the "not reporting" System alert (MON-051). The Census keeps No score in its NEWS2 group | — |
 | CEN-OD-08 | How a data gap shows on the Census. A vital that stops reporting can make the patient's score, and so their general status, unreliable (CEN-016) | A note on the card ("Score incomplete: SpO₂ not reporting"); a mark on the score; nothing, leaving it to Monitoring | ⚠️ **Decision needed (Nov 1, 2026, product: work on it later):** likely a short message on the card, as information, not an alert to act on |

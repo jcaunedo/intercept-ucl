@@ -140,7 +140,7 @@ function CensusListRow({ patient, onOpenPatient }: { patient: CensusPatient; onO
 }
 
 /**
- * The census as a table. Location groups it by hospital, with a HospitalSectionHeader row per hospital (the patients
+ * The census as a table. Group by hospital groups it, with a HospitalSectionHeader row per hospital (the patients
  * must already be sorted by hospital). Scrolls sideways inside its frame when the page is narrow.
  */
 function CensusList({

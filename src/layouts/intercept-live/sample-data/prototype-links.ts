@@ -9,7 +9,7 @@ import type { InterceptLivePage, OpenPatient, PrototypeShortcut } from "../inter
 /**
  * The menu's entries. Scenario 1: Heart failure (Demo Use Cases, "Heart failure at 2 a.m. in a 25-bed hospital")
  * opens Monitoring and plays the scenario's beats from the start: Margaret Hayes, holding until then, has her early
- * warning (NEWS2 5 → 10) and her Critical alert ranks #1. Sections by location shows Group by location as the grid's
+ * warning (NEWS2 5 → 10) and her Critical alert ranks #1. Sections by hospital shows Group by hospital as the grid's
  * hospital sections instead of the Kanban board (the default), on the Census and Monitoring, until chosen again.
  */
 const prototypeShortcuts = ({
@@ -22,7 +22,7 @@ const prototypeShortcuts = ({
 	onToggleGroupedGrid: () => void;
 }): PrototypeShortcut[] => [
 	{ group: "Scenarios", label: "Scenario 1: Heart failure", page: "Monitoring", onSelect: startScenario1 },
-	{ group: "Views", label: "Sections by location", checked: groupedGrid, onSelect: onToggleGroupedGrid },
+	{ group: "Views", label: "Sections by hospital", checked: groupedGrid, onSelect: onToggleGroupedGrid },
 ];
 
 // The story "Reset prototype" starts over in: Monitoring's live prototype, the app's default page.

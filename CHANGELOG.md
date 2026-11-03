@@ -119,6 +119,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Census and Monitoring: **Group by location** is now **Group by hospital**, and the Prototype menu's Sections by location is Sections by hospital (copy). Layout-only: the shell's page preferences rename `groupByLocation` / `onGroupByLocationChange` to `groupByHospital` / `onGroupByHospitalChange`, and the Census story Group by location is Group by hospital.
+
+- Census and Monitoring: the Kanban board (Group by location) shows only hospitals with patients; a hospital the filters empty loses its column (it fades out) instead of showing "No patients match these filters". The columns left keep their width (a track per hospital) instead of stretching across the page.
+
 - Intercept Live: the Filters panel no longer says "Options in a group match any. Groups match all. Counts include the other filters." under its title.
 
 - EmptyState: the button is `outline` by default (was Button's default, Neutral), and the description sits right under the title (no gap; was 8px). **Default change:** an app that wants the filled button passes `buttonProps={{ variant: "neutral" }}`. Intercept Live's Clear filters buttons (Census and Monitoring) take lucide `x` instead of `filter-x`.

@@ -363,7 +363,7 @@ export const OutsideLimitsFilter: Story = {
 
 function LiveMonitoring(props: MonitoringProps) {
 	const { patients: fed, alerts, everyAlert, caption, startScenario1, withScenarioCensus, withScenarioRecords } = useSampleLiveFeed();
-	// The Prototype menu's Sections by location view (Group by location's Kanban board is the default).
+	// The Prototype menu's Sections by hospital view (Group by hospital's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
 	const location = usePrototypeLocation(interceptLivePages, {

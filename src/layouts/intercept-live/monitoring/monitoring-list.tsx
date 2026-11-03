@@ -161,7 +161,7 @@ function ListRow({ patient, onOpenPatient }: { patient: MonitoringListPatient; o
 }
 
 /**
- * The panel as a table. Location groups it by hospital, with a HospitalSectionHeader row per hospital (the patients
+ * The panel as a table. Group by hospital groups it, with a HospitalSectionHeader row per hospital (the patients
  * must already be sorted by hospital). Scrolls sideways inside its frame when the page is narrow.
  */
 function MonitoringList({

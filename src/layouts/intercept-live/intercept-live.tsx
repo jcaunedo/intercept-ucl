@@ -365,9 +365,9 @@ function InterceptLive({
 		[],
 	);
 	const [patientListWidth, setPatientListWidth] = React.useState<number>(sidePanelWidth.min);
-	// View choices that hold across pages (Group by location, each page's sort and My patients), so switching pages, or
+	// View choices that hold across pages (Group by hospital, each page's sort and My patients), so switching pages, or
 	// opening a patient and coming back, keeps them.
-	const [groupByLocation, setGroupByLocation] = React.useState(false);
+	const [groupByHospital, setGroupByHospital] = React.useState(false);
 	const [sortBy, setSortBy] = React.useState<PagePreferences["sortBy"]>({});
 	const [scope, setScope] = React.useState<PagePreferences["scope"]>({});
 	// Closed alert toasts stay closed across pages, until a reload.
@@ -375,8 +375,8 @@ function InterceptLive({
 	const currentPage = page === "Census" ? "census" : page === "Monitoring" ? "monitoring" : undefined;
 	const pagePreferences = React.useMemo<PagePreferences>(
 		() => ({
-			groupByLocation,
-			onGroupByLocationChange: setGroupByLocation,
+			groupByHospital,
+			onGroupByHospitalChange: setGroupByHospital,
 			sortBy,
 			onSortByChange: (page, next) => setSortBy((current) => ({ ...current, [page]: next })),
 			scope,
@@ -386,7 +386,7 @@ function InterceptLive({
 			onCloseAlertToast: (alertId, severity) =>
 				setClosedAlertToasts((current) => ({ ...current, [alertId]: severity })),
 		}),
-		[groupByLocation, sortBy, scope, currentPage, closedAlertToasts],
+		[groupByHospital, sortBy, scope, currentPage, closedAlertToasts],
 	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);

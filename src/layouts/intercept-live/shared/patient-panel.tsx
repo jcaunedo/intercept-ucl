@@ -245,7 +245,7 @@ type SortOrderId = (typeof sortOrders)[number]["id"];
 const sortOrderById = (id: SortOrderId) => sortOrders.find((order) => order.id === id) ?? sortOrders[0];
 
 /**
- * The panel's order: the sort, and with Group by location, hospital by hospital (in name order) first, the sort inside
+ * The panel's order: the sort, and with Group by hospital, hospital by hospital (in name order) first, the sort inside
  * each. PanelGrid and the List tables start a section wherever the hospital changes. Location is no longer a sort (Oct
  * 30, 2026, Intercept-Live Census `167:5543`): grouping is its own switch. `alertPriority` (the Active alerts chip, Oct
  * 31, 2026, user's call) orders by who to see first (`byAlertPriority`) instead of the sort.
@@ -635,7 +635,7 @@ function hospitalTabLabel(name: string, patients: PanelPatient[]) {
 }
 
 /**
- * Hospital tabs: All hospitals, then one per hospital in alphabetical order (as Sort by Location groups them), each
+ * Hospital tabs: All hospitals, then one per hospital in alphabetical order (as Group by hospital orders them), each
  * with its patient count and its active alert count (`HospitalTabCounters`). Fills the page's hospital bar: 40px tall,
  * the active tab's underline over the bar's bottom border.
  */
@@ -809,7 +809,7 @@ const cardReducedVariants: Variants = {
 	exit: { opacity: 0, transition: reducedMotionTransition },
 };
 
-// A card's shared-element id, the same in the grid and the board, so switching Group by location glides each card from
+// A card's shared-element id, the same in the grid and the board, so switching Group by hospital glides each card from
 // one to the other (Connect) instead of remounting it in place.
 const panelCardLayoutId = (patientId: string) => `panel-card-${patientId}`;
 
@@ -971,23 +971,23 @@ function PanelGrid<Patient extends PanelPatient>({
 }
 
 /**
- * How Group by location shows the panel: a Kanban board, a column per hospital (the default since Oct 30, 2026), or
+ * How Group by hospital shows the panel: a Kanban board, a column per hospital (the default since Oct 30, 2026), or
  * sections in the grid.
  */
 type GroupedView = "board" | "sections";
 
 /**
- * The user's Group by location choice, off to start. Inside the shell it's kept there, so it holds when the user
+ * The user's Group by hospital choice, off to start. Inside the shell it's kept there, so it holds when the user
  * switches pages (`usePagePreferences`); a page on its own keeps it itself. Choosing another grouped view (the Prototype
- * menu's Sections by location, or back) turns it on and calls `onViewChange`, where the panel shows the view at once
+ * menu's Sections by hospital, or back) turns it on and calls `onViewChange`, where the panel shows the view at once
  * (cards, All hospitals). The panel turns grouping off while one hospital is picked, keeping this choice for All
  * hospitals.
  */
 function useGrouping(groupedView: GroupedView, onViewChange: () => void) {
 	const preferences = usePagePreferences();
 	const [ownGrouped, setOwnGrouped] = React.useState(false);
-	const grouped = preferences ? preferences.groupByLocation : ownGrouped;
-	const setGrouped = preferences ? preferences.onGroupByLocationChange : setOwnGrouped;
+	const grouped = preferences ? preferences.groupByHospital : ownGrouped;
+	const setGrouped = preferences ? preferences.onGroupByHospitalChange : setOwnGrouped;
 	// After render, not during it: the shell's state can't be set while a page renders. A page mounted on a view (after a
 	// page switch) doesn't count it as a change.
 	const previousView = React.useRef(groupedView);
@@ -1030,12 +1030,15 @@ const stickyTop = 52;
 const columnBottomGap = 16;
 
 /**
- * Group by location as a Kanban board (its default view since Oct 30, 2026): a column per hospital, in the panel's order
+ * Group by hospital as a Kanban board (its default view since Oct 30, 2026): a column per hospital, in the panel's order
  * (hospital name, then the sort), each with its HospitalSectionHeader over its cards. The columns share the width, at
  * least the width `className` sets in `--board-column` (`[--board-column:minmax(…,1fr)]`); more than fit scroll
- * sideways. Every hospital keeps its column while filters empty it, so the columns don't move or widen as filters
- * change (Oct 30, 2026). `spareColumns` adds empty tracks after them: Compact passes one, so its columns are narrower,
- * as its grid has a card more a row. With no patients at all it renders nothing, and the page's empty state takes over.
+ * sideways. Only hospitals with patients get a column (Nov 3, 2026, user's call; until then every hospital kept its
+ * column while filters emptied it, saying "No patients match these filters"): a column that empties fades out, one that
+ * fills fades in, and the cards glide to their new places. The columns keep their width (a track per hospital), so the
+ * ones left don't stretch across the page. `spareColumns` adds empty tracks after them: Compact passes
+ * one, so its columns are narrower, as its grid has a card more a row. With no patients at all it renders nothing, and
+ * the page's empty state takes over.
  */
 function PanelBoard<Patient extends PanelPatient>({
 	patients,
@@ -1054,7 +1057,7 @@ function PanelBoard<Patient extends PanelPatient>({
 	spareColumns?: number;
 	/**
 	 * The columns' headers and backgrounds fade in as the board mounts: on when the user switched to it (Group by
-	 * location), off when it's there from the start. Its cards glide in from the grid either way, when they were in it.
+	 * hospital), off when it's there from the start. Its cards glide in from the grid either way, when they were in it.
 	 */
 	animateIn?: boolean;
 	/** This order lands at once, without the glide (`useSnapOrder`). */
@@ -1064,16 +1067,33 @@ function PanelBoard<Patient extends PanelPatient>({
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 	const reducedMotion = Boolean(prefersReducedMotion);
 	const layoutTransition = resolve(reorderSpring);
-	// The columns' chrome only: fading the columns themselves would fade the cards gliding into them.
+	// The columns' chrome only: fading the columns themselves would fade the cards gliding into them. A column that joins
+	// after the board is up (a filter brought its hospital back) fades its chrome in too.
+	const mounted = React.useRef(false);
+	React.useEffect(() => {
+		mounted.current = true;
+	}, []);
 	const chromeMotion = {
 		variants: reducedMotion ? cardReducedVariants : fadeVariants,
-		initial: animateIn ? "initial" : false,
+		initial: animateIn || mounted.current ? "initial" : false,
 		animate: "animate",
 	} as const;
+	// A column that empties fades out whole: it has no cards left to fade with it.
+	const columnExit = { opacity: 0, transition: reducedMotion ? { duration: 0 } : undefined };
 	// The header row follows the columns' sideways scroll (it can't share their scroll box: that box would hold it, and a
 	// sticky row must stick to the page's scroll).
 	const headRef = React.useRef<HTMLDivElement>(null);
 	const hasPatients = patients.length > 0;
+	// One column per hospital with patients, by name as `panelOrder` groups them; the patients come in the sort's order.
+	const columns = [...hospitals]
+		.sort((a, b) => a.name.localeCompare(b.name))
+		.map((hospital) => ({
+			id: hospital.id,
+			name: hospital.name,
+			patients: patients.filter((patient) => patient.hospitalId === hospital.id),
+		}))
+		.filter((column) => column.patients.length > 0);
+	const columnKey = columns.map((column) => column.id).join();
 	// Each column follows the page like a two-way sticky sidebar (Oct 30, 2026, user's call; two-way since Oct 31, 2026):
 	// one that fits on screen stays under the header row while longer ones scroll on. A taller one scrolls with the page
 	// until its last card reaches the screen's bottom (16px above it) and stays there while the page goes on down;
@@ -1182,20 +1202,18 @@ function PanelBoard<Patient extends PanelPatient>({
 			for (const animation of animations) animation.cancel();
 			placeRef.current = undefined;
 		};
-	}, [hasPatients, hospitals.length]);
+	}, [hasPatients, columnKey]);
 	// Content above or inside the board can move it without resizing anything observed.
 	React.useEffect(() => placeRef.current?.());
 	if (!hasPatients) return null;
-	// One column per hospital, by name as `panelOrder` groups them; the patients come in the sort's order.
-	const columns = [...hospitals]
-		.sort((a, b) => a.name.localeCompare(b.name))
-		.map((hospital) => ({
-			id: hospital.id,
-			name: hospital.name,
-			patients: patients.filter((patient) => patient.hospitalId === hospital.id),
-		}));
-	// One track per hospital, so a column's width doesn't depend on how many have patients, plus any spare ones.
-	const tracks = { gridTemplateColumns: `repeat(${hospitals.length + spareColumns}, var(--board-column))` };
+	// One track per hospital, shown or not, plus any spare ones, so a column keeps its width however many hospitals have
+	// patients (Nov 3, 2026, user's call): two columns of four stay a quarter wide each, from the left, and the rest of
+	// the row stays empty. A column fading out takes a free track meanwhile (the columns flow sideways).
+	const tracks = {
+		gridTemplateColumns: `repeat(${hospitals.length + spareColumns}, var(--board-column))`,
+		gridAutoFlow: "column",
+		gridAutoColumns: "var(--board-column)",
+	};
 
 	// The columns are 8px apart (Oct 31, 2026, user's call; 16px, 12px in Compact, before): the header row and the
 	// columns take this gap (`[gap:inherit]`).
@@ -1206,17 +1224,20 @@ function PanelBoard<Patient extends PanelPatient>({
 			    call). Opaque, the 16px band too, so cards pass under it; the band overlaps the space above the board, so the
 			    board doesn't move before it sticks. No shadow (removed Oct 30, 2026, user's call). */}
 			<div ref={headRef} className='sticky top-[52px] z-10 -mt-4 overflow-hidden bg-background pt-4 [gap:inherit]'>
-				<motion.div {...chromeMotion} className='grid [gap:inherit]' style={tracks}>
-					{columns.map((column) => (
-						<HospitalSectionHeader
-							key={column.id}
-							name={column.name}
-							patientCount={column.patients.length}
-							alertCount={activeAlertCount(column.patients)}
-							className='rounded-t-card bg-background-subtle px-4 pt-3'
-						/>
-					))}
-				</motion.div>
+				<div className='grid [gap:inherit]' style={tracks}>
+					<AnimatePresence initial={false}>
+						{columns.map((column) => (
+							<motion.div key={column.id} {...chromeMotion} exit={columnExit}>
+								<HospitalSectionHeader
+									name={column.name}
+									patientCount={column.patients.length}
+									alertCount={activeAlertCount(column.patients)}
+									className='rounded-t-card bg-background-subtle px-4 pt-3'
+								/>
+							</motion.div>
+						))}
+					</AnimatePresence>
+				</div>
 			</div>
 			<div
 				onScroll={(event) => {
@@ -1225,44 +1246,44 @@ function PanelBoard<Patient extends PanelPatient>({
 				className='overflow-x-auto pb-2 scrollbar-soft [gap:inherit]'
 			>
 				<div ref={bodyRef} className='grid items-start [gap:inherit]' style={tracks}>
-					{columns.map((column) => (
-						<section
-							key={column.id}
-							aria-label={column.name}
-							// The 12px between the header and the first card is the column's, not the header's: a card lifting on hover
-							// (Lift, 3px, with its shadow) stays inside the column, clear of the header row and of the sideways scroll
-							// box's top edge, which would cut it.
-							className='relative flex min-w-0 flex-col gap-3 px-3 pt-3 pb-3'
-						>
-							{/* The column's fill, a layer of its own so it can fade in under the cards (positioned, so the content
-							    after it is too). */}
-							<motion.div
-								{...chromeMotion}
-								aria-hidden='true'
-								className='absolute inset-0 rounded-b-card bg-background-subtle'
-							/>
-							{column.patients.length === 0 ? (
-								<p className='relative px-1 pb-1 text-sm text-muted-foreground'>No patients match these filters</p>
-							) : null}
-							{/* As in the grid: a leaving card pops out at once while the others glide. */}
-							<div className='relative flex flex-col gap-3 empty:hidden'>
-								<AnimatePresence initial={false} mode='popLayout' custom={snap}>
-									{column.patients.map((patient) => (
-										<PanelItem
-											key={patient.id}
-											reducedMotion={reducedMotion}
-											layoutTransition={layoutTransition}
-											snap={snap}
-											layoutId={panelCardLayoutId(patient.id)}
-											className='grid grid-cols-1'
-										>
-											{renderCard(patient)}
-										</PanelItem>
-									))}
-								</AnimatePresence>
-							</div>
-						</section>
-					))}
+					<AnimatePresence initial={false}>
+						{columns.map((column) => (
+							<motion.section
+								key={column.id}
+								exit={columnExit}
+								aria-label={column.name}
+								// The 12px between the header and the first card is the column's, not the header's: a card lifting on hover
+								// (Lift, 3px, with its shadow) stays inside the column, clear of the header row and of the sideways scroll
+								// box's top edge, which would cut it.
+								className='relative flex min-w-0 flex-col gap-3 px-3 pt-3 pb-3'
+							>
+								{/* The column's fill, a layer of its own so it can fade in under the cards (positioned, so the content
+								    after it is too). */}
+								<motion.div
+									{...chromeMotion}
+									aria-hidden='true'
+									className='absolute inset-0 rounded-b-card bg-background-subtle'
+								/>
+								{/* As in the grid: a leaving card pops out at once while the others glide. */}
+								<div className='relative flex flex-col gap-3 empty:hidden'>
+									<AnimatePresence initial={false} mode='popLayout' custom={snap}>
+										{column.patients.map((patient) => (
+											<PanelItem
+												key={patient.id}
+												reducedMotion={reducedMotion}
+												layoutTransition={layoutTransition}
+												snap={snap}
+												layoutId={panelCardLayoutId(patient.id)}
+												className='grid grid-cols-1'
+											>
+												{renderCard(patient)}
+											</PanelItem>
+										))}
+									</AnimatePresence>
+								</div>
+							</motion.section>
+						))}
+					</AnimatePresence>
 				</div>
 			</div>
 		</div>
