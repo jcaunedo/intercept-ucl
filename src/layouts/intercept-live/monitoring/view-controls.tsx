@@ -42,9 +42,77 @@ const monitorPlots: ToggleOption<MonitorPlot>[] = [
 /* -------------------------------------------------------------------------- */
 
 /**
+ * One view option's button. Its icon, then its label: always, never (`iconOnly`, the name in a tooltip), or only when the
+ * page is wide (`"narrow"`: from 1600px of page width, the page's container query; narrower, the icon alone and the
+ * name in a tooltip, which only opens while the label is hidden).
+ */
+function SegmentedButton({
+	label,
+	icon: Icon,
+	pressed,
+	disabled,
+	iconOnly,
+	indicatorId,
+	onPress,
+}: {
+	label: string;
+	icon: ToggleOption<string>["icon"];
+	pressed: boolean;
+	disabled: boolean;
+	iconOnly: boolean | "narrow";
+	indicatorId: string;
+	onPress: () => void;
+}) {
+	const { resolve } = useMotionPreference();
+	const labelRef = React.useRef<HTMLSpanElement>(null);
+	const [tooltipOpen, setTooltipOpen] = React.useState(false);
+	const button = (
+		<button
+			type='button'
+			aria-label={iconOnly ? label : undefined}
+			aria-pressed={pressed}
+			data-state={pressed ? "active" : "inactive"}
+			disabled={disabled}
+			onClick={onPress}
+			className={tabsTriggerVariants({ variant: "default", size: "md" })}
+		>
+			{pressed ? (
+				<motion.span
+					aria-hidden='true'
+					layoutId={`${indicatorId}-indicator`}
+					transition={resolve(layoutSpring)}
+					className={tabsIndicatorVariants({ variant: "default" })}
+				/>
+			) : null}
+			<span className='relative inline-flex items-center gap-1.5'>
+				<Icon aria-hidden='true' />
+				{iconOnly === true ? null : iconOnly === "narrow" ? (
+					// The button's name is its aria-label, so the label is only for the eye.
+					<span ref={labelRef} aria-hidden='true' className='hidden @min-[1600px]:inline'>
+						{label}
+					</span>
+				) : (
+					label
+				)}
+			</span>
+		</button>
+	);
+	if (!iconOnly) return button;
+	// A label on screen already names the button: no tooltip then.
+	const labelShown = () => iconOnly === "narrow" && (labelRef.current?.getClientRects().length ?? 0) > 0;
+	return (
+		<Tooltip open={tooltipOpen} onOpenChange={(open) => setTooltipOpen(open && !labelShown())}>
+			<TooltipTrigger asChild>{button}</TooltipTrigger>
+			<TooltipContent side='bottom'>{label}</TooltipContent>
+		</Tooltip>
+	);
+}
+
+/**
  * One choice among a few view options: toggle buttons on the Tabs track, with Tabs' sliding raised marker. It changes
  * the view, not a panel of content, so it isn't a tablist. `iconOnly` names each button by its `aria-label` and shows
- * the name in a tooltip on hover and keyboard focus.
+ * the name in a tooltip on hover and keyboard focus; `"narrow"` does so only below 1600px of page width, where the bar
+ * would otherwise wrap (Nov 3, 2026, user's call), and shows the labels from there.
  */
 function SegmentedToggle<Value extends string>({
 	label,
@@ -59,51 +127,27 @@ function SegmentedToggle<Value extends string>({
 	/** `null` presses none (a mixed state). */
 	value: Value | null;
 	onValueChange: (value: Value) => void;
-	iconOnly?: boolean;
+	iconOnly?: boolean | "narrow";
 	disabled?: boolean;
 }) {
-	const { resolve } = useMotionPreference();
 	const indicatorId = React.useId();
 
 	return (
 		<TooltipProvider>
 			{/* Tabs' 36px list height comes from a Tabs root (group-data), which this isn't inside, so it's set here. */}
 			<div role='group' aria-label={label} className={cn(tabsListVariants({ variant: "default", size: "md" }), "h-9")}>
-				{options.map(({ id, label: optionLabel, icon: Icon }) => {
-					const pressed = value === id;
-					const button = (
-						<button
-							type='button'
-							aria-label={iconOnly ? optionLabel : undefined}
-							aria-pressed={pressed}
-							data-state={pressed ? "active" : "inactive"}
-							disabled={disabled}
-							onClick={() => onValueChange(id)}
-							className={tabsTriggerVariants({ variant: "default", size: "md" })}
-						>
-							{pressed ? (
-								<motion.span
-									aria-hidden='true'
-									layoutId={`${indicatorId}-indicator`}
-									transition={resolve(layoutSpring)}
-									className={tabsIndicatorVariants({ variant: "default" })}
-								/>
-							) : null}
-							<span className='relative inline-flex items-center gap-1.5'>
-								<Icon aria-hidden='true' />
-								{iconOnly ? null : optionLabel}
-							</span>
-						</button>
-					);
-					return iconOnly ? (
-						<Tooltip key={id}>
-							<TooltipTrigger asChild>{button}</TooltipTrigger>
-							<TooltipContent side='bottom'>{optionLabel}</TooltipContent>
-						</Tooltip>
-					) : (
-						<React.Fragment key={id}>{button}</React.Fragment>
-					);
-				})}
+				{options.map(({ id, label: optionLabel, icon }) => (
+					<SegmentedButton
+						key={id}
+						label={optionLabel}
+						icon={icon}
+						pressed={value === id}
+						disabled={disabled}
+						iconOnly={iconOnly}
+						indicatorId={indicatorId}
+						onPress={() => onValueChange(id)}
+					/>
+				))}
 			</div>
 		</TooltipProvider>
 	);
@@ -115,8 +159,9 @@ function DensityToggle({ value, onValueChange }: { value: PanelDensity; onValueC
 }
 
 /**
- * What the cards' monitors plot, condensed or full: live waveforms or 1-hour trends (PRD MON-OD-12), with icon and label.
- * A card option, so it's disabled in List density.
+ * What the cards' monitors plot, condensed or full: live waveforms or 1-hour trends (PRD MON-OD-12), with icon and label
+ * from 1600px of page width, the icon alone below it (Nov 3, 2026, user's call: the filter bar fit on one row). A card
+ * option, so it's disabled in List density.
  */
 function MonitorPlotToggle({
 	value,
@@ -134,6 +179,7 @@ function MonitorPlotToggle({
 			value={value}
 			onValueChange={onValueChange}
 			disabled={density === "list"}
+			iconOnly='narrow'
 		/>
 	);
 }

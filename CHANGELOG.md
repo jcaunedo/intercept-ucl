@@ -123,7 +123,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Sonner: picking a Don't show option closes every toast on screen, an unaddressed Critical included (it stayed before); a new unaddressed Critical still shows while muted. Behavior change, no API change.
+- Monitoring: the Card monitor control (ECG strip, 1 h trends) shows its labels only from 1600px of page width; narrower, the icons alone, named in tooltips, so the filter bar doesn't wrap.
+
+- Sonner: picking a Don't show option closes every toast on screen, an unaddressed Critical included (it stayed before), and while muted every alert toast waits, an unaddressed Critical included (it still showed before). Behavior change, no API change.
 
 - Census and Monitoring: **Group by location** is now **Group by hospital**, and the Prototype menu's Sections by location is Sections by hospital (copy). Layout-only: the shell's page preferences rename `groupByLocation` / `onGroupByLocationChange` to `groupByHospital` / `onGroupByHospitalChange`, and the Census story Group by location is Group by hospital.
 

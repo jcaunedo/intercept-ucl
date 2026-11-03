@@ -69,7 +69,7 @@ let muteState: MuteState = unmuted;
 const muteListeners = new Set<() => void>();
 
 /**
- * Stops toasts that can be put off (every one but an alert that interrupts: an unaddressed Critical) until `until`, or
+ * Stops alert toasts, an unaddressed Critical included (Nov 3, 2026, user's call), until `until`, or
  * until the app reloads with `"reload"`, or shows them again with `null`. `toastAlert()` checks it (`toastsMuted()`)
  * before showing a toast; the Toaster's Don't show menu and its muted notice set it.
  */
@@ -209,7 +209,7 @@ function useStackTop(active: boolean) {
 
 /**
  * The row over the stack, right-aligned with it. With any toast, Don't show (a menu of how long: closes every toast on
- * screen and holds new ones back, except an alert that interrupts); with two or more, Close all too (closes every toast
+ * screen and holds every new one back, Critical too); with two or more, Close all too (closes every toast
  * as its × would, running its close handler; alerts stay in the queue). While muted, "Muted until 4:42 PM", there even
  * without toasts, with Play to show toasts again and × to close the notice and keep them muted until the app reloads
  * (Nov 3, 2026; the × showed them again before). Over it the stack stays as it was: expanded when the pointer comes from
@@ -253,6 +253,9 @@ function ToasterActions({
 			const target = event.target instanceof Element ? event.target : null;
 			const overStack = Boolean(target?.closest("[data-sonner-toaster]"));
 			const overActions = Boolean(target?.closest(actionsSelector));
+			// Tracked here, not with the row's pointerenter: an open menu blocks pointer events on the page, so closing it
+			// with the pointer still on Don't show would end the hold until the pointer moved.
+			if (event.pointerType !== "touch") setPointerOn(overActions);
 			if (overStack || (overActions && hold.current)) {
 				window.clearTimeout(release.current);
 				setHold(true);
@@ -261,9 +264,13 @@ function ToasterActions({
 				release.current = window.setTimeout(() => setHold(false), holdOpenDelay);
 			}
 		};
+		// Leaving the window ends it too.
+		const onLeaveWindow = () => setPointerOn(false);
 		document.addEventListener("pointerover", onPointerOver);
+		document.documentElement.addEventListener("pointerleave", onLeaveWindow);
 		return () => {
 			document.removeEventListener("pointerover", onPointerOver);
+			document.documentElement.removeEventListener("pointerleave", onLeaveWindow);
 			window.clearTimeout(release.current);
 		};
 	}, [onHoldOpenChange]);
@@ -278,9 +285,9 @@ function ToasterActions({
 
 	const mute = (until: Date) => {
 		muteToasts(until);
-		// Every toast on screen goes, an alert that interrupts included (Nov 3, 2026, user's call; it stayed before). Their
-		// close handlers don't run: muting isn't closing, so their alerts can toast again once the mute ends. A new alert
-		// that interrupts still shows while muted.
+		// Every toast on screen goes, an alert that interrupts included, and new ones wait for the mute to end, Critical too
+		// (Nov 3, 2026, user's calls). Their close handlers don't run: muting isn't closing, so their alerts can toast again
+		// once the mute ends.
 		toast.dismiss();
 	};
 	const now = new Date();
@@ -298,9 +305,8 @@ function ToasterActions({
 					// Above the toasts (Sonner's own z-index).
 					className='fixed z-[999999999] flex items-center gap-2'
 					style={{ right, bottom }}
-					onPointerEnter={() => setPointerOn(true)}
-					onPointerLeave={() => setPointerOn(false)}
-					onFocus={() => setFocusIn(true)}
+					// Keyboard focus only: focus left by a click would hold the toasts after the pointer has gone.
+					onFocus={(event) => setFocusIn(event.target.matches(":focus-visible"))}
 					onBlur={(event) => {
 						if (!event.currentTarget.contains(event.relatedTarget)) setFocusIn(false);
 					}}

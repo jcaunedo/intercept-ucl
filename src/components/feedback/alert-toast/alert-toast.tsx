@@ -300,11 +300,11 @@ type ToastAlertOptions = AlertToastOwnProps & {
  * Shows an AlertToast in the app's Toaster and returns its id. Open patient, Acknowledge, Ask and maximize run their
  * handler, then close the toast; the close button and the Toaster's Close all close it and call `onClose`. An unaddressed Critical toast can't be swiped away, so
  * it isn't lost by accident. While toasts are muted (the Toaster's Don't show, `muteToasts()`), it shows nothing and
- * returns undefined, except for an unaddressed Critical, which still interrupts (AL-02).
+ * returns undefined, an unaddressed Critical included (Nov 3, 2026, user's call; until then it still interrupted, AL-02).
  */
 function toastAlert({ id, duration, onOpen, onAcknowledge, onAsk, onOpenAlert, onClose, ...props }: ToastAlertOptions) {
 	const interrupts = (props.severity ?? "critical") === "critical" && !props.addressed;
-	if (!interrupts && toastsMuted()) return undefined;
+	if (toastsMuted()) return undefined;
 	// Its handler leaves with it, however it goes.
 	const forget = () => setToastCloseHandler(toastId, null);
 	const toastId = toast.custom(

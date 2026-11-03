@@ -115,11 +115,23 @@ export const HoldWhileChoosing: Story = {
 		const canvas = within(canvasElement);
 		await userEvent.click(canvas.getByRole("button", { name: "Show short toast" }));
 		await expect(await screen.findByText("Vitals synced")).toBeInTheDocument();
+		// From the toast up to the row, as the pointer goes.
+		await userEvent.hover(screen.getByText("Vitals synced"));
+		await userEvent.unhover(screen.getByText("Vitals synced"));
 		await userEvent.hover(await screen.findByRole("button", { name: "Don't show" }));
 		await new Promise((resolve) => setTimeout(resolve, 2500));
 		await expect(screen.getByText("Vitals synced")).toBeInTheDocument();
+		// Opening the menu and closing it without choosing, the pointer still on Don't show: still held.
+		await userEvent.click(screen.getByRole("button", { name: "Don't show" }));
+		await expect(await screen.findByRole("menu")).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+		await expect(screen.getByText("Vitals synced")).toBeInTheDocument();
+		// Leaving the row, and its keyboard focus (Escape gave it back to Don't show), lets the timer run.
 		await userEvent.unhover(screen.getByRole("button", { name: "Don't show" }));
 		await userEvent.hover(canvas.getByRole("button", { name: "Show short toast" }));
+		(document.activeElement as HTMLElement | null)?.blur();
 		await waitFor(() => expect(screen.queryByText("Vitals synced")).not.toBeInTheDocument(), { timeout: 4000 });
 	},
 };
