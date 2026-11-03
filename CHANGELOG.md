@@ -115,6 +115,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Sonner: while the pointer is on the row over the toasts (Don't show, Close all, the Muted notice), keyboard focus is in it or the Don't show menu is open, the toasts' timers hold, so nothing leaves or moves while the clinician chooses. `hidden` holds them the same way: it only expanded the stack, which doesn't pause Sonner's timers, so hidden toasts could expire unseen. Story HoldWhileChoosing.
+
 - PatientMonitoringCard, PatientCard: clicks on the monitor or the avatar open the patient. Both are positioned, so they sat over the card's open target and swallowed the click; they now let it through.
 - PatientMonitoringCard: the out-of-limits tag's ↑ / ↓ was invisible in light mode (drawn in `monitor`, which is transparent there), leaving a grey square. The tag is now a solid triangle (see Changed).
 - PatientCard, PatientMonitoringCard: the root has `min-w-0`, so in a flex or grid cell a card narrower than its location line truncates the hospital instead of growing past the cell. The Census and Monitoring grids' card wrappers use `grid-cols-1` for the same reason.

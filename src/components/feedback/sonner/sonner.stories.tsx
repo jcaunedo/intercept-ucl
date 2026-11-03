@@ -98,6 +98,32 @@ export const Muted: Story = {
 	},
 };
 
+/**
+ * While the pointer is on the row over the stack (Don't show, Close all) or its menu is open, the toasts' timers hold, so
+ * nothing leaves or moves until the clinician has chosen; they run again once the pointer leaves.
+ */
+export const HoldWhileChoosing: Story = {
+	render: (args) => (
+		<>
+			<Toaster {...args} />
+			<Button variant='outline' onClick={() => toast("Vitals synced", { duration: 1500 })}>
+				Show short toast
+			</Button>
+		</>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: "Show short toast" }));
+		await expect(await screen.findByText("Vitals synced")).toBeInTheDocument();
+		await userEvent.hover(await screen.findByRole("button", { name: "Don't show" }));
+		await new Promise((resolve) => setTimeout(resolve, 2500));
+		await expect(screen.getByText("Vitals synced")).toBeInTheDocument();
+		await userEvent.unhover(screen.getByRole("button", { name: "Don't show" }));
+		await userEvent.hover(canvas.getByRole("button", { name: "Show short toast" }));
+		await waitFor(() => expect(screen.queryByText("Vitals synced")).not.toBeInTheDocument(), { timeout: 4000 });
+	},
+};
+
 /** Each of Sonner's types, as on shadcn's page: Default (with a description), Success, Info, Warning, Error, Promise. */
 export const AllVariants: Story = {
 	render: (args) => (
