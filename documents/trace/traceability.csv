@@ -31,4 +31,4 @@ see file,documents/specs/simulator-specification.md,,,"Cowork snapshot set v1 (2
 see file,documents/specs/simulator-requirements.md,,,"Cowork snapshot set v1 (2026-10-29), read-only"
 AL-03,src/layouts/intercept-live/alert-detail/alert-detail.tsx,AMM-*,Met (UI),"Lifecycle in the alert modal: acknowledge (undo), escalate, resolve / decline with the triage queue's forms"
 SV-07,src/layouts/intercept-live/alert-detail/alert-detail.tsx,AMM-*,Partial (UI),"One-click video consult to the bedside; drawn room, no prerecorded video"
-BR-06,src/layouts/intercept-live/alert-detail/care-pathway.tsx,AMM-*,Met (UI),"Suggested pathway; accept sends for local co-signature, decline needs a reason"
+BR-06,src/layouts/intercept-live/alert-detail/care-pathway.tsx,AMM-*,Met (UI),"Suggested pathway; accept sends for local co-signature, decline needs a reason and can be undone; after a decline the intensivist can send their own pathway for the same co-signature"

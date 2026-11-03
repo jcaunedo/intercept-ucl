@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 2, 2026
 Created by: Julio Caunedo
-Last updated: Nov 2, 2026
+Last updated: Nov 3, 2026
 Scope: The alert maximized modal of Intercept Live: one alert opened in full from a Monitoring card, an alert toast or a card's "…" menu, with its evidence, a one-click video consult to the bedside and a suggested care pathway.
 Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-detail/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
 -->
@@ -79,6 +79,7 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 |---|---|---|
 | A Monitoring card's alert bar (`AlertBar`) | The patient's alert the bar shows: their highest-priority open alert, else their latest | Every alert, every severity, Resolved and message bars too |
 | An alert toast's header row | That toast's alert | The whole header (pill, change, time, maximize icon) is one button; a resolved alert's toast opens it too, shown resolved |
+| A Monitoring card's "…" menu › **Expand alert** | The alert the card's bar shows | While the card shows an alert, Resolved and messages too; after Ask Intercept Live (Nov 3, 2026, user's call) |
 | A Monitoring card's "…" menu › **Video consult** | The patient's open alert, with the call to the bedside already ringing | Only for a patient with an open alert; step 3's one click |
 | An alert with no detail | The patient's details instead | ℹ️ Fallback while not every alert has modal data |
 
@@ -121,6 +122,8 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | AMM-017 | **Accessibility** | A modal dialog named by the reason line; focus moves in and is trapped, and returns to the trigger on close. Toggle and expanding buttons say their state (`aria-pressed`, `aria-expanded`). Every color-coded value also has words. |
 | AMM-018 | **Motion** | The modal fades and rises in; forms and the pathway's parts open in place; the call and the state line fade and rise in; a confirmed Acknowledge bumps once. Fades only under reduced motion (MOTION.md). |
 | AMM-019 | **Toasts wait** | While the modal is open, the alert toasts are hidden and paused, and come back when it closes (as on a patient's page and with the live feed open). |
+| AMM-020 | **Own pathway** | After declining, **Create your own pathway** opens a form in place of the declined order set: the pathway's name, then each order's name, dose or settings, and an optional target or condition; **Add order** adds one, × removes one, a blank one is left out. **Send for co-signature** (enabled once the name and every order's name and dose are filled) sends it to the same co-signer as the suggestion; it then shows in the suggestion's place, titled with its name, "Source: Created by you · Declined suggestion: …", awaiting co-signature, then active. Cancel or Escape closes the form and keeps what was typed. ✅ **Decision (Nov 3, 2026, user's call).** |
+| AMM-021 | **Undo decline** | Once declined, **Undo decline** puts the suggestion back as it was (Suggested; Decline and Accept and send again; a second Decline asks why again, the first reason prefilled). It's there until the intensivist sends their own pathway. ✅ **Decision (Nov 3, 2026, user's call).** |
 
 ---
 
@@ -135,7 +138,8 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | **Marked AI wrong** (AI recommendation) | Severity colors | None | "Marked AI wrong by you · 1:45 AM" |
 | **Consult: calling** | — | Footer: "Calling…" (disabled) | The call shows the nurse ringing |
 | **Consult: live** | — | Footer: **End call** (flat destructive) | The room's camera, Live with its time |
-| **Pathway: suggested / awaiting co-signature / active / declined** | — | Decline · Accept and send while suggested | Status badge and line in the Pathway column |
+| **Pathway: suggested / awaiting co-signature / active / declined** | — | Decline · Accept and send while suggested; Undo decline · Create your own pathway once declined | Status badge and line in the Pathway column |
+| **Own pathway: writing / awaiting co-signature / active** | The suggestion was declined | Cancel · Send for co-signature while writing | The form in place of the order set; once sent, the clinician's pathway with its status |
 
 ---
 
@@ -177,6 +181,8 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | AMM-AC-11 | An alert with no findings or history | The modal opens | Both sections show, each with its empty line |
 | AMM-AC-12 | Toasts are on screen | The modal opens, then closes | The toasts fade out while it's open and come back after |
 | AMM-AC-13 | A short viewport | The modal's content is taller than the screen | The modal keeps 80px from the top and bottom, and each column scrolls |
+| AMM-AC-14 | The CHF pathway was declined | The intensivist creates their own pathway with a name and two orders and sends it | The pathway shows under its name, "Created by you", goes to Dr. Tom Weller for co-signature, then shows Active |
+| AMM-AC-15 | The CHF pathway was declined | The intensivist clicks Undo decline | The pathway is Suggested again, with Decline and Accept and send |
 
 ---
 
@@ -187,6 +193,7 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | ⚠️ **Section titles** | Keep "Key clinical findings" and "History and labs", or use SBAR (Assessment, Background), or "Why it fired" and "Relevant history". |
 | ⚠️ **Pathway clinical review** | Every reference protocol's orders and doses need clinical review; whether low-acuity alerts (probe off, vitals overdue) should suggest orders at all. |
 | ⚠️ **Per-order decline** | Decline the whole pathway only, or each order. |
+| ⚠️ **Own pathway: start point** | The form starts empty. Whether it should start from the declined suggestion's orders to edit, offer order sets from the hospital's protocols, or suggest orders as they're typed; and whether a note for the co-signer goes with it, as with an accepted pathway. |
 | ⚠️ **Resolved alerts' pathway** | A resolved alert still shows its pathway as Suggested; hide it, or show it read-only. |
 | ⚠️ **Who the consult calls** | Always the bedside nurse, or a choice (charge nurse, local physician). |
 | ⚠️ **Escalate and resolve close the modal** | Keep closing it, or keep it open as Acknowledge does. |

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { FilterXIcon, GermIcon, HandHeartIcon, TriangleIcon } from "lucide-react";
+import { GermIcon, HandHeartIcon, TriangleIcon, XIcon } from "lucide-react";
 
 import { PatientCensusCard, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -402,7 +402,7 @@ function CensusPanel({
 								title='No patients match these filters'
 								description='Try another hospital, unit or filter.'
 								buttonLabel='Clear filters'
-								buttonIcon={<FilterXIcon aria-hidden='true' />}
+								buttonIcon={<XIcon aria-hidden='true' />}
 								buttonProps={{ onClick: clearFilters }}
 							/>
 						)}

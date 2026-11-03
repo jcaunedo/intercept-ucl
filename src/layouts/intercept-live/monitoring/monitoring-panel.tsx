@@ -1,15 +1,21 @@
 import * as React from "react";
 import {
+	ArrowUpFromLineIcon,
 	ArrowUpIcon,
 	BellRingIcon,
-	FilterXIcon,
+	CheckCheckIcon,
 	FlagIcon,
 	GaugeIcon,
+	Maximize2Icon,
+	ScanEyeIcon,
 	SparklesIcon,
 	TriangleIcon,
+	Undo2Icon,
 	VideoIcon,
 	WebcamIcon,
 	WifiOffIcon,
+	XIcon,
+	type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -223,7 +229,8 @@ function useFeedResolutions(alerts: TriageAlert[]) {
 }
 
 // The card's "…" menu: the patient's actions, as in the patient's header (AppHeader `patient`), in alphabetical order.
-// The app wires them up. Ask Intercept Live comes first, set apart by a divider (Nov 2, 2026, user's call).
+// The app wires them up. Ask Intercept Live comes first, then Expand alert, set apart by a divider (Nov 2 and 3, 2026,
+// user's calls).
 const cardActions: NonNullable<PatientMonitoringCardProps["moreActions"]> = [
 	{ label: "Escalate", icon: ArrowUpIcon },
 	{ label: "Huddle team", icon: WebcamIcon },
@@ -263,18 +270,41 @@ const isOutsideLimits = (patient: PanelMonitoringPatient) => limitParameters.som
 /** Whether a primary numeric isn't reporting: the card shows "--". */
 const isNotReporting = ({ vitals = {} }: PanelMonitoringPatient) => limitParameters.some(({ id }) => vitals[id] === undefined);
 
+/** Where a patient's alerts stand after the clinician's actions, for the Filters panel's Alert status. */
+type AlertState = "acknowledged" | "escalated" | "resolved" | "declined";
+
+// The alert actions' words as states, with the actions' icons (the alert modal's buttons; Nov 3, 2026, user's call).
+// Feedback is an AI alert marked wrong (`declined`).
+const alertStateOptions: { id: AlertState; label: string; icon: LucideIcon }[] = [
+	{ id: "acknowledged", label: "Acknowledged", icon: ScanEyeIcon },
+	{ id: "escalated", label: "Escalated", icon: ArrowUpFromLineIcon },
+	{ id: "resolved", label: "Resolved", icon: CheckCheckIcon },
+	{ id: "declined", label: "Feedback", icon: Undo2Icon },
+];
+
 /**
- * The Filters panel's groups: Unit (the hospital tab's units, plus any picked), Highest alert, Outside alarm limits per
- * parameter with Not reporting, and the tags. The limits options read live numbers, so they hold the patients who
- * matched when picked, as the Outside limits chip does (PRD MON-013).
+ * The Filters panel's groups: Unit (the hospital tab's units, plus any picked), Highest alert, Alert status (from
+ * `alertStates`, by patient id), Outside alarm limits per parameter with Not reporting, and the tags. The limits options
+ * read live numbers, so they hold the patients who matched when picked, as the Outside limits chip does (PRD MON-013).
  */
 function monitoringFilterGroups(
 	patients: PanelMonitoringPatient[],
 	filters: PatientFilters,
+	alertStates: (patientId: string) => ReadonlySet<AlertState>,
 ): FilterGroup<PanelMonitoringPatient>[] {
 	return [
 		unitFilterGroup(patients, filters),
 		alertFilterGroup(),
+		{
+			id: "status",
+			title: "Alert status",
+			options: alertStateOptions.map(({ id, label, icon }) => ({
+				id,
+				label,
+				icon,
+				matches: (patient: PanelMonitoringPatient) => alertStates(patient.id).has(id),
+			})),
+		},
 		{
 			id: "limits",
 			title: "Outside alarm limits",
@@ -453,8 +483,19 @@ function MonitoringPanel({
 
 	const inTab = (scoped: PanelMonitoringPatient[]) =>
 		hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
+	// Alert status: an open alert acknowledged or escalated, an AI alert given feedback, or the card's Resolved (the last
+	// alert resolved in the last 24 h), with the clinician's own actions applied.
+	const alertStates = (patientId: string) => {
+		const states = new Set<AlertState>();
+		for (const alert of alerts) {
+			if (alert.patientId !== patientId) continue;
+			if (alert.status === "acknowledged" || alert.status === "escalated" || alert.status === "declined") states.add(alert.status);
+		}
+		if (cardAlert(patientId)?.variant === "resolved") states.add("resolved");
+		return states;
+	};
 	// The Filters panel's groups, from the hospital tab's patients (its units); picked limits options hold their patients.
-	const rawFilterGroups = monitoringFilterGroups(inTab(patients), filters);
+	const rawFilterGroups = monitoringFilterGroups(inTab(patients), filters, alertStates);
 	const filterGroups = holdFilters(rawFilterGroups);
 	// Scope only: My patients applies to everything below it, the tab counters included; then hospital and the search
 	// (`searched`, where the Filters panel's counts start), then the panel's filters. They run on both scopes, so the
@@ -544,15 +585,19 @@ function MonitoringPanel({
 			plot={plot}
 			expanded={monitorView === "full"}
 			moreActions={[
-				// Opens the chat about this patient with a quick overview, as Ask in an alert toast does; only inside the shell.
+				// Opens the chat about this patient with a quick overview, as Ask in an alert toast does; then Expand alert, the
+				// alert modal the alert bar opens, while the card shows an alert (Nov 3, 2026, user's call). Only inside the shell.
 				...(navigation
 					? [
 							{
 								label: "Ask Intercept Live",
 								icon: SparklesIcon,
 								onSelect: () => navigation.askAboutPatient(id, `${card.lastName}, ${card.firstName}`),
-								divider: true,
+								divider: !cardAlert(id),
 							},
+							...(cardAlert(id)
+								? [{ label: "Expand alert", icon: Maximize2Icon, onSelect: () => navigation.openAlert(id), divider: true }]
+								: []),
 						]
 					: []),
 				...cardActions,
@@ -710,7 +755,7 @@ function MonitoringPanel({
 									title='No patients match these filters'
 									description='Try another hospital, unit or filter, or show all patients.'
 									buttonLabel='Clear filters'
-									buttonIcon={<FilterXIcon aria-hidden='true' />}
+									buttonIcon={<XIcon aria-hidden='true' />}
 									buttonProps={{ onClick: clearFilters }}
 								/>
 							)}

@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 1, 2026
 Created by: Julio Caunedo
-Last updated: Nov 2, 2026
+Last updated: Nov 3, 2026
 Scope: The Census page of Intercept Live (Provider Desktop, Spec §5.1): its purpose, how it differs from Monitoring, the patients it shows, its controls and states.
 Purpose: Gives the Census one written purpose, next to Monitoring's, and lists the decisions still open, so the two pages stop overlapping by accident.
 -->
@@ -18,7 +18,7 @@ Purpose: Gives the Census one written purpose, next to Monitoring's, and lists t
 **Surface:** Census page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 2, 2026
+**Last updated:** November 3, 2026
 
 ---
 
@@ -112,7 +112,7 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 | **Summary row** | "18 patients across 4 hospitals"; the live feed line ("Live feed: …"), which opens the live feed panel | CEN-001, CEN-021 ⚠️ |
 | **Filter bar** | Search, My patients, quick views (Rising score, Organ support, Sepsis watch); Density, Sort by, Filters | CEN-002, CEN-003 |
 | **Patients** | Cards (Comfortable, Compact) or a table (List); with Group by location, a column per hospital (board) | CEN-010–CEN-013 |
-| **Panels** | The live feed panel beside the canvas (while it's open, the alert toasts are hidden and paused, Nov 2, 2026, user's call); the Filters panel floating over the page (a Sheet, Nov 1, 2026) | CEN-003, CEN-021 |
+| **Panels** | The live feed panel beside the canvas (while it's open, the alert toasts are hidden and paused, Nov 2, 2026, user's call); the Filters panel floating over the page (a Sheet, Nov 1, 2026; the toasts hide while it's open too, Nov 3, 2026, user's call). A closed toast stays closed until the app reloads, unless its alert goes above the severity it had (Nov 3, 2026; PRD Monitoring §5) | CEN-003, CEN-021 |
 
 ℹ️ The Census has no Card monitor or Monitor view controls: those are Monitoring's (MON-015).
 

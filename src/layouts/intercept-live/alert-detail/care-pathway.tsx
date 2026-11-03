@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CircleCheckIcon, LoaderCircleIcon, PencilIcon, PlusIcon } from "lucide-react";
+import { CircleCheckIcon, LoaderCircleIcon, PencilIcon, PlusIcon, RotateCcwIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
@@ -15,7 +15,8 @@ import { SourceLabel } from "../shared/source-label";
 // Exploration (DESIGN.md "Alert modal" › "Care pathway"): Scenario 1, step 4. The platform suggests a pathway's order
 // set; the intensivist reviews it, edits a dose if needed, and accepts it, which sends the orders to the local physician
 // for co-signature. Once co-signed the orders are active and the bedside team carries them out. Or the intensivist
-// declines it, with a reason. A suggestion never becomes an order on its own (PRD PD-061).
+// declines it, with a reason, and can then write their own pathway (Nov 3, 2026, user's call), which goes to the same
+// co-signer. A suggestion never becomes an order on its own (PRD PD-061).
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -50,12 +51,17 @@ type CarePathway = {
 type CarePathwayStatus = "suggested" | "declined" | "pending" | "active";
 
 /**
- * What the intensivist did: the orders as accepted (with any edited dose and a note for the co-signer), or a decline and
- * its reason.
+ * What the intensivist did: the orders as accepted (with any edited dose and a note for the co-signer), a decline and
+ * its reason, a decline undone (the suggestion is back), or, after a decline, their own pathway sent for co-signature.
  */
 type CarePathwayDecision =
 	| { type: "accept"; orders: CarePathwayOrder[]; edited: string[]; note?: string }
-	| { type: "decline"; rationale: string };
+	| { type: "decline"; rationale: string }
+	| { type: "undecline" }
+	| { type: "create"; title: string; orders: CarePathwayOrder[] };
+
+/** An order being written in the intensivist's own pathway. */
+type DraftOrder = { id: string; name: string; dose: string; detail: string };
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
@@ -197,6 +203,126 @@ function OrderRow({
 	);
 }
 
+/**
+ * The intensivist's own pathway, written after declining the suggestion: a name, then each order's name, dose and an
+ * optional target. Orders are added and removed in place; a blank one is left out when it's sent. Sent from the panel's
+ * bottom (`id` is the form's, for its submit button there).
+ */
+function PathwayBuilder({
+	id,
+	title,
+	orders,
+	onTitleChange,
+	onOrdersChange,
+	onAddOrder,
+	onSubmit,
+}: {
+	id: string;
+	title: string;
+	orders: DraftOrder[];
+	onTitleChange: (title: string) => void;
+	onOrdersChange: (orders: DraftOrder[]) => void;
+	onAddOrder: () => void;
+	onSubmit: () => void;
+}) {
+	const fieldId = React.useId();
+	const change = (orderId: string, field: keyof Omit<DraftOrder, "id">, value: string) =>
+		onOrdersChange(orders.map((order) => (order.id === orderId ? { ...order, [field]: value } : order)));
+
+	return (
+		<form
+			id={id}
+			aria-label='Your pathway'
+			className='flex flex-col gap-4'
+			onSubmit={(event) => {
+				event.preventDefault();
+				onSubmit();
+			}}
+		>
+			<div className='flex flex-col gap-2'>
+				<Label htmlFor={`${fieldId}-title`}>Pathway name</Label>
+				<Input
+					id={`${fieldId}-title`}
+					value={title}
+					onChange={(event) => onTitleChange(event.target.value)}
+					placeholder='E.g. Diuresis and transfer'
+					autoFocus
+				/>
+			</div>
+			{/* Each order is its own card; the space under it is inside its Expand, so removing one closes the gap with it. */}
+			<ol aria-label='Your orders' className='flex flex-col'>
+				<AnimatePresence initial={false}>
+					{orders.map((order, index) => {
+						const label = `Order ${index + 1}`;
+						const id = `${fieldId}-${order.id}`;
+						return (
+							// The li is AnimatePresence's child; its Expand plays the open and close.
+							<li key={order.id} aria-label={label}>
+								<Expand className='pb-3'>
+									<div className='flex flex-col gap-2 rounded-card border border-border bg-background p-4'>
+										<div className='flex items-center gap-2'>
+											<span className='text-sm font-semibold text-foreground'>{label}</span>
+											{orders.length > 1 ? (
+												<Button
+													type='button'
+													variant='ghost'
+													size='icon-xs'
+													aria-label={`Remove ${label.toLowerCase()}`}
+													onClick={() => onOrdersChange(orders.filter((other) => other.id !== order.id))}
+													className='ml-auto text-muted-foreground'
+												>
+													<XIcon />
+												</Button>
+											) : null}
+										</div>
+										<Label htmlFor={`${id}-name`} className='text-xs text-muted-foreground'>
+											Order
+										</Label>
+										<Input
+											id={`${id}-name`}
+											value={order.name}
+											onChange={(event) => change(order.id, "name", event.target.value)}
+											placeholder='E.g. Furosemide IV'
+										/>
+										<Label htmlFor={`${id}-dose`} className='text-xs text-muted-foreground'>
+											Dose or settings
+										</Label>
+										<Input
+											id={`${id}-dose`}
+											value={order.dose}
+											onChange={(event) => change(order.id, "dose", event.target.value)}
+											placeholder='E.g. 80 mg IV bolus'
+										/>
+										<Label htmlFor={`${id}-detail`} className='text-xs text-muted-foreground'>
+											Target or condition (optional)
+										</Label>
+										<Input
+											id={`${id}-detail`}
+											value={order.detail}
+											onChange={(event) => change(order.id, "detail", event.target.value)}
+											placeholder='E.g. Urine output ≥ 100 mL/h'
+										/>
+									</div>
+								</Expand>
+							</li>
+						);
+					})}
+				</AnimatePresence>
+			</ol>
+			<Button
+				type='button'
+				variant='link'
+				size='sm'
+				onClick={onAddOrder}
+				className='-mt-4 h-auto self-start px-0 has-[>svg]:px-0'
+			>
+				<PlusIcon />
+				Add order
+			</Button>
+		</form>
+	);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Care pathway                                                               */
 /* -------------------------------------------------------------------------- */
@@ -234,8 +360,17 @@ function CarePathwayPanel({
 	const [sentNote, setSentNote] = React.useState("");
 	const [sentAt, setSentAt] = React.useState<Date | null>(null);
 	const [cosignedAt, setCosignedAt] = React.useState<Date | null>(null);
+	// The intensivist's own pathway, after a decline: the draft keeps what was typed while the form is closed, and `custom`
+	// is the pathway once sent, which the panel then shows in the suggestion's place.
+	const [custom, setCustom] = React.useState<CarePathway | null>(null);
+	const [building, setBuilding] = React.useState(false);
+	const [draftTitle, setDraftTitle] = React.useState("");
+	const nextDraftOrder = React.useRef(0);
+	const newDraftOrder = (): DraftOrder => ({ id: `own-${++nextDraftOrder.current}`, name: "", dose: "", detail: "" });
+	const [draftOrders, setDraftOrders] = React.useState<DraftOrder[]>(() => [newDraftOrder()]);
 	const rationaleId = React.useId();
 	const noteId = React.useId();
+	const builderId = React.useId();
 	const setStatus = (next: CarePathwayStatus) => {
 		setStatusState(next);
 		onStatusChange?.(next);
@@ -251,10 +386,15 @@ function CarePathwayPanel({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [status]);
 
-	// Escape cancels an open dose edit or decline, or closes an empty note, before it closes the modal.
+	// Escape cancels an open dose edit or decline, closes the own-pathway form (its draft is kept) or an empty note, before
+	// it closes the modal.
 	React.useEffect(() => {
 		if (!escapeRef) return;
 		escapeRef.current = () => {
+			if (building) {
+				setBuilding(false);
+				return true;
+			}
 			if (editing) {
 				setEditing(null);
 				return true;
@@ -272,12 +412,38 @@ function CarePathwayPanel({
 		return () => {
 			escapeRef.current = null;
 		};
-	}, [escapeRef, editing, declining, noting, note]);
+	}, [escapeRef, building, editing, declining, noting, note]);
 
+	const shown = custom ?? pathway;
 	const doseOf = (order: CarePathwayOrder) => doses[order.id] ?? order.dose;
-	const edited = pathway.orders.filter((order) => doseOf(order) !== order.dose).map((order) => order.id);
+	const edited = custom ? [] : pathway.orders.filter((order) => doseOf(order) !== order.dose).map((order) => order.id);
 	const { cosigner } = pathway;
 	const badge = statusBadges[status];
+
+	// A blank order is left out; every other needs its name and dose, and the pathway its name.
+	const filledOrders = draftOrders.filter((order) => order.name.trim() || order.dose.trim() || order.detail.trim());
+	const draftReady =
+		Boolean(draftTitle.trim()) && filledOrders.length > 0 && filledOrders.every((order) => order.name.trim() && order.dose.trim());
+	const sendOwn = () => {
+		if (!draftReady) return;
+		const own: CarePathway = {
+			title: draftTitle.trim(),
+			source: `Created by you · Declined suggestion: ${pathway.title}`,
+			orders: filledOrders.map((order) => ({
+				id: order.id,
+				name: order.name.trim(),
+				dose: order.dose.trim(),
+				...(order.detail.trim() ? { detail: order.detail.trim() } : {}),
+			})),
+			cosigner,
+		};
+		setCustom(own);
+		setBuilding(false);
+		setSentNote("");
+		setSentAt(new Date());
+		setStatus("pending");
+		onDecision?.({ type: "create", title: own.title, orders: own.orders });
+	};
 
 	const accept = () => {
 		const sent = noting ? note.trim() : "";
@@ -308,12 +474,25 @@ function CarePathwayPanel({
 		setStatus("declined");
 		onDecision?.({ type: "decline", rationale: reason });
 	};
+	// Back to the suggestion, as if it had never been declined (Nov 3, 2026, user's call). The reason stays in the decline
+	// form for a second decline, and an own-pathway draft is kept.
+	const undoDecline = () => {
+		setBuilding(false);
+		setDeclinedWith("");
+		setStatus("suggested");
+		onDecision?.({ type: "undecline" });
+	};
 
 	return (
-		<section aria-label={pathway.title} data-status={status} className={cn("flex flex-col gap-4", className)}>
+		<section
+			aria-label={shown.title}
+			data-status={status}
+			data-own={custom ? "" : undefined}
+			className={cn("flex flex-col gap-4", className)}
+		>
 			<div className='flex flex-col gap-1'>
 				<div className='flex flex-wrap items-center gap-2'>
-					<h3 className='text-base font-bold text-foreground'>{pathway.title}</h3>
+					<h3 className='text-base font-bold text-foreground'>{shown.title}</h3>
 					<AnimatePresence mode='wait' initial={false}>
 						<motion.span key={status} variants={fadeVariants} initial='initial' animate='animate' exit='exit'>
 							<Badge variant={badge.variant} size='xs'>
@@ -322,38 +501,57 @@ function CarePathwayPanel({
 						</motion.span>
 					</AnimatePresence>
 				</div>
-				<SourceLabel className='text-xs text-muted-foreground'>Source: {pathway.source}</SourceLabel>
+				<SourceLabel className='text-xs text-muted-foreground'>Source: {shown.source}</SourceLabel>
 			</div>
 
-			{/* The order set: dashed while it's a suggestion, solid once accepted. */}
-			<div
-				className={cn(
-					"rounded-card border bg-background p-4 transition-colors",
-					status === "suggested" ? "border-dashed border-border" : "border-border",
-				)}
-			>
-				<ol
-					aria-label='Orders'
-					className={cn("flex flex-col divide-y divide-border-muted", status === "declined" && "opacity-60")}
-				>
-					{pathway.orders.map((order) => (
-						<OrderRow
-							key={order.id}
-							order={order}
-							dose={doseOf(order)}
-							editing={editing === order.id}
-							editable={status === "suggested" && !declining}
-							active={status === "active"}
-							onEdit={() => setEditing(order.id)}
-							onSave={(dose) => {
-								setDoses((current) => ({ ...current, [order.id]: dose }));
-								setEditing(null);
-							}}
-							onCancel={() => setEditing(null)}
+			{/* The order set: dashed while it's a suggestion, solid once accepted or the intensivist's own. After a decline,
+			    the own-pathway form takes its place while open. */}
+			<AnimatePresence initial={false} mode='wait'>
+				{building ? (
+					<Expand key='builder'>
+						<PathwayBuilder
+							id={builderId}
+							title={draftTitle}
+							orders={draftOrders}
+							onTitleChange={setDraftTitle}
+							onOrdersChange={setDraftOrders}
+							onAddOrder={() => setDraftOrders((current) => [...current, newDraftOrder()])}
+							onSubmit={sendOwn}
 						/>
-					))}
-				</ol>
-			</div>
+					</Expand>
+				) : (
+					<Expand key={custom ? "own" : "suggested"}>
+						<div
+							className={cn(
+								"rounded-card border bg-background p-4 transition-colors",
+								status === "suggested" ? "border-dashed border-border" : "border-border",
+							)}
+						>
+							<ol
+								aria-label='Orders'
+								className={cn("flex flex-col divide-y divide-border-muted", status === "declined" && "opacity-60")}
+							>
+								{shown.orders.map((order) => (
+									<OrderRow
+										key={order.id}
+										order={order}
+										dose={doseOf(order)}
+										editing={editing === order.id}
+										editable={status === "suggested" && !declining}
+										active={status === "active"}
+										onEdit={() => setEditing(order.id)}
+										onSave={(dose) => {
+											setDoses((current) => ({ ...current, [order.id]: dose }));
+											setEditing(null);
+										}}
+										onCancel={() => setEditing(null)}
+									/>
+								))}
+							</ol>
+						</div>
+					</Expand>
+				)}
+			</AnimatePresence>
 
 			{/* An optional note that goes with the orders to the co-signer, e.g. why a dose was changed. */}
 			<AnimatePresence initial={false} mode='popLayout'>
@@ -438,12 +636,46 @@ function CarePathwayPanel({
 							</form>
 						</Expand>
 					) : null}
-					{status === "declined" ? (
+					{/* Declined: the reason, a way back to the suggestion, and the way to the intensivist's own pathway. */}
+					{status === "declined" && !building ? (
 						<Expand key='declined'>
-							<p className='pt-3 text-sm text-foreground'>
-								<span className='font-medium'>Declined: </span>
-								{declinedWith}
-							</p>
+							<div className='flex flex-col gap-3 pt-3'>
+								<p className='text-sm text-foreground'>
+									<span className='font-medium'>Declined: </span>
+									{declinedWith}
+								</p>
+								<div className='flex gap-2'>
+									<Button variant='ghost' size='md' onClick={undoDecline}>
+										<RotateCcwIcon />
+										Undo decline
+									</Button>
+									<Button variant='outline' size='md' onClick={() => setBuilding(true)} className='flex-1'>
+										<PlusIcon />
+										Create your own pathway
+									</Button>
+								</div>
+							</div>
+						</Expand>
+					) : null}
+					{status === "declined" && building ? (
+						<Expand key='build'>
+							<div className='flex flex-col gap-3 pt-3'>
+								<p className='text-sm text-muted-foreground'>
+									Your orders go to{" "}
+									<span className='font-medium text-foreground'>
+										{cosigner.name}, {cosigner.role}
+									</span>
+									, for co-signature.
+								</p>
+								<div className='flex justify-end gap-2'>
+									<Button type='button' variant='ghost' size='md' onClick={() => setBuilding(false)}>
+										Cancel
+									</Button>
+									<Button type='submit' form={builderId} variant='neutral' size='md' disabled={!draftReady}>
+										Send for co-signature
+									</Button>
+								</div>
+							</div>
 						</Expand>
 					) : null}
 					{status === "pending" ? (

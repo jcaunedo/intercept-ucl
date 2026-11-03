@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 2, 2026
+Last updated: Nov 3, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** October 29, 2026
+**Last updated:** November 3, 2026
 
 ---
 
@@ -166,7 +166,7 @@ A filter on live status would also add and remove cards as readings change, whic
 
 ℹ️ Since Nov 1, 2026 the Filters panel floats over the page on a scrim, 400px, with **Apply** to close it (Intercept-Live Filter example `205:5447`), instead of sitting in the live feed's place.
 
-✅ **Resolved (Oct 30, 2026, user's call): a Filters panel, as on the Census.** This reopens "filters in context" above. The toolbar's **Filters** button opens the Census's panel (on the right, in the live feed's place, one at a time) with Monitoring's groups: **Unit** (the Unit menu moved into it), **Highest alert**, **Outside alarm limits** (HR, SpO₂, ABP, RR, and Not reporting), **Organ support** and **Code status & safety** (the patient's tags, though the monitoring card doesn't show them). The limits options read live numbers, so once picked they keep the patients who matched then, as the Outside limits chip does (MON-013). The quick-view chips stay as they are: My patients and Outside limits. Rising score and Sepsis watch aren't in the panel: the monitoring card doesn't show acuity, and Monitoring patients carry no sepsis status.
+✅ **Resolved (Oct 30, 2026, user's call): a Filters panel, as on the Census.** This reopens "filters in context" above. The toolbar's **Filters** button opens the Census's panel (on the right, in the live feed's place, one at a time) with Monitoring's groups: **Unit** (the Unit menu moved into it), **Highest alert**, **Alert status** (Acknowledged, Escalated, Resolved, Feedback: where the patient's alerts stand after the team's actions; Nov 3, 2026), **Outside alarm limits** (HR, SpO₂, ABP, RR, and Not reporting), **Organ support** and **Code status & safety** (the patient's tags, though the monitoring card doesn't show them). The limits options read live numbers, so once picked they keep the patients who matched then, as the Outside limits chip does (MON-013). The quick-view chips stay as they are: My patients and Outside limits. Rising score and Sepsis watch aren't in the panel: the monitoring card doesn't show acuity, and Monitoring patients carry no sepsis status.
 
 - ⚠️ **Decision needed:** how a panel is defined (shift assignment, a hand-picked watch list, or both) and whether a clinician can add a patient from the Census to their panel (MON-OD-01).
 - ⚠️ **Constraint:** the brief's ground rule "patient data never crosses tenants" applies. A cross-hospital panel may only combine hospitals the clinician's tenant covers, filtered by per-hospital privileges (Spec §5.2 "Cross-hospital surveillance with per-hospital privilege filtering").
@@ -196,7 +196,11 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 
 ✅ **Decision (Oct 31, 2026, product):** Sort by offers **Alerts** ("Recent alerts" Oct 31 to Nov 2, 2026; patients with an open alert first, the newest alert first; the Active alerts chip orders by severity; the default since Nov 2, 2026, product, was Patient name), **Patient name** ("Name" until Oct 31, 2026), **Recently viewed**, **Recently resolved** and **Family messages** (unread family messages first). The alert sort was left out for a few hours the same day, then brought back. ~~Default order is Alert, then Score (the Census's Sort by: Alert, ties broken by score band, 4 h rise and score, then name); the clinician could switch to Score, Score change or Name.~~ The Census has no Alert sort either (NEWS2 by default); **Group by location** (a switch beside the filter chips since Oct 30, 2026; it was the Location sort) sections the panel by hospital with the sort inside each; Location groups the panel into hospital sections (HospitalSectionHeader).
 
-- Cards **never reorder by themselves** while the clinician is looking at them. A new alert moves a card only when the clinician accepts a "Panel order changed · Update" prompt, or after they've been idle for a configured time. ⚠️ **Decision needed:** auto-reorder rules (MON-OD-05); a card jumping under the pointer is a safety risk.
+✅ **Decision (Nov 3, 2026, user's call): a new alert moves its card at once.** The panel re-sorts now and then (2 s after the page opens, then every 15 to 30 s) and holds its order in between, so cards don't shift on every data change. A new alert doesn't wait for that: as it fires, the panel re-sorts, so with the Alerts sort the patient lands on top right away (Scenario 1: Margaret Hayes's Critical alert puts her card first). A resolve doesn't wait either: the card says Resolved in place for 2 s, then moves. The nurse sees who needs them first without waiting or scanning the grid.
+
+✅ **Decision (Oct 28, 2026; exception Nov 3, 2026, user's call): never under the clinician's hand, except in Active alerts.** While the pointer is over the panel, or keyboard focus is in it, the order holds; a re-sort that comes due runs when they leave, and the cards glide to their places. **With the Active alerts chip on, the order always follows the alerts, under the pointer too**: a clinician who has narrowed the panel to active alerts is triaging, and a stale order is the bigger risk there.
+
+- ~~Cards **never reorder by themselves** while the clinician is looking at them. A new alert moves a card only when the clinician accepts a "Panel order changed · Update" prompt, or after they've been idle for a configured time.~~ Superseded by the two decisions above. ⚠️ **Decision needed:** auto-reorder rules (MON-OD-05); a card jumping under the pointer is a safety risk.
 - ℹ️ The UCL Monitoring Default story (live since Oct 27, 2026; `Static` is the still one) shows the opposite for comparison: a scripted feed raises and lowers alert severities and the cards reorder by themselves, highest first.
 - ℹ️ The exploration (§12.1) shows the prompt as a bar above the panel: "Panel order changed. Alerts changed priority; cards stay put until you update", with Update order. It has no idle auto-update. A filter, sort or density change reorders at once, because the clinician asked for it.
 
@@ -211,6 +215,8 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 | Freshness | Values older than their freshness interval are labeled Stale (MON-050). |
 
 ✅ **Decision (Oct 31, 2026, product; intercept.ds `patient-monitoring-card-2`):** the card's alert is a full-width bar under the name and location, not a pill beside the name: the top severity, how many alerts the patient had in the last 24 h, and how long ago it started ("Critical · 3 in the last 24 h · 3:34 m ago"); "No active alerts" without one. Where the pill was, a family message icon shows while there are unread messages, and a "…" menu appears on hover. ✅ **Decision (Oct 31, 2026, product):** a patient whose last alert resolved in the last 24 h keeps a green Resolved bar ("Resolved · 3 in the last 24 h · 15 h ago"); a resolved time reads in whole units (minutes, then hours), an open alert's runs like a clock. ✅ **Decision (Nov 2, 2026, user's call):** closing the patient's Resolved toast, with its × or the stack's Close all, clears the Resolved bar at once: the card shows "No active alerts" until the next alert or resolution.
+
+✅ **Decision (Nov 3, 2026, user's call):** the card's "…" menu reads **Ask Intercept Live**, then **Expand alert** while the card shows an alert (any severity, Resolved or a message; it opens the alert modal, as the alert bar does), a divider, then **Escalate**, **Huddle team**, **Raise concern**, and **Video consult** for a patient with an open alert (PRD Alert maximized modal §3).
 
 ### MON-015 — View controls
 
@@ -245,6 +251,10 @@ Every active alert for the panel, one row each: severity, patient (name, bed, ho
 | Age | Time since it fired; Overdue after its response target (⚠️ OD-15) |
 
 ✅ **Decision (Nov 2, 2026, user's call):** while the live feed panel is open, the alert toasts are hidden and paused: the feed already lists every alert. New ones wait, and they all come back when the panel closes. The same holds on the Census, whose live feed is the same panel.
+
+✅ **Decision (Nov 3, 2026, user's call):** the toasts also hide while the **Filters** panel is open, which floats over the page where they sit. With the live feed and Filters both open, closing one keeps them hidden until the other closes too.
+
+✅ **Decision (Nov 3, 2026, user's call): a closed toast stays closed.** Once the clinician closes an alert's toast (its × or Close all), that alert doesn't toast again until the app reloads, whatever its severity, Critical and High included, and across pages. Its later changes (acknowledged or escalated by someone else, eased, active again, resolved) stay quiet; going above the severity it had when closed toasts again. Other alerts, the same patient's new ones included, toast as usual. A toast that leaves on its own timer, or after Open, Acknowledge, Ask or Open alert, isn't closed. The clinician decides what keeps interrupting them, without muting everything.
 
 ### MON-021 — Ordering
 
@@ -362,7 +372,7 @@ Each value follows the Patient card freshness model (PRD PC-090–092): Current,
 | Alert resolved | Dismiss (fade), rows below glide up |
 | Card added to / removed from panel | Reveal / fade, others glide (as the Census filters do today) |
 | Value update | No motion; the number changes in place |
-| Panel reorder | Glide, only after the clinician accepts it (MON-013) |
+| Panel reorder | Glide, at each re-sort: every 15 to 30 s, at once for a new alert or a resolve; never under the pointer or focus, except with Active alerts on (MON-013) |
 | Connection live | The Online dot's Live pulse (AppHeader) |
 
 Under reduced motion, every one of these is instant or opacity-only. Nothing flashes or blinks (WCAG 2.3.1), except a value in device alarm, which flashes as the bedside monitor does (high about 1.5 Hz, medium about 0.5 Hz; under WCAG 2.3.1's three a second) and is steady under reduced motion (Oct 30, 2026, product decision).
@@ -446,7 +456,7 @@ What the exploration assumes beyond this PRD:
 | MON-AC-05 | The Focus view opens beside the live panel, steps between patients with ↑/↓, and closes with Escape. |
 | MON-AC-06 | A stale value keeps its last reading, is labeled with its age and is never shown as normal. |
 | MON-AC-07 | A hospital feed outage marks only that hospital's patients and says when data last arrived. |
-| MON-AC-08 | Cards never reorder while the clinician is interacting; a pending reorder is offered, not forced. |
+| MON-AC-08 | Cards never reorder while the pointer is over the panel or keyboard focus is in it; a re-sort that comes due runs when they leave. Except with Active alerts on, where the order follows the alerts under the pointer too (MON-013). |
 | MON-AC-09 | AI-sourced alerts show their agent and evidence; declining one records "declined with rationale". |
 | MON-AC-10 | Every interaction works by keyboard, and with reduced motion on. |
 | MON-AC-11 | The scope filters (hospital tabs, My Patients), Sort by and the Filters panel behave as on the Census, with the same labels. Monitoring's panel has its own groups, and its limits options hold their patients once picked (MON-010, MON-013). |
@@ -455,6 +465,10 @@ What the exploration assumes beyond this PRD:
 | MON-AC-14 | HR, SpO₂, BP and RR are readable at a glance from normal viewing distance, ahead of every secondary value. |
 | MON-AC-15 | Every ventilator and pump value is labeled with its source and visually separate from monitored vitals. |
 | MON-AC-16 | Waveform labels and numerics sit at the same positions for every patient. |
+| MON-AC-17 | Sorted by Alerts, a new alert moves its patient's card to the top as it fires, without waiting for the next re-sort. |
+| MON-AC-18 | Filters › Alert status narrows the panel to patients with an alert acknowledged, escalated, resolved in the last 24 h, or given AI feedback; the clinician's own actions count at once. |
+| MON-AC-19 | A toast closed with its × or Close all doesn't come back for that alert until the app reloads, unless the alert goes above the severity it had; the toasts hide while the live feed or Filters is open and come back when both are closed. |
+| MON-AC-20 | While a card shows an alert, its "…" menu offers Expand alert, which opens the alert modal as the alert bar does. |
 
 ---
 
@@ -482,7 +496,7 @@ The **Exploration proposal** column is what the Oct 27, 2026 exploration (§12.1
 | MON-OD-02 | How privilege-hidden patients are indicated, if at all. | Product / Compliance | A quiet count under the summary, with no names: "2 patients at Mercy West Hospital hidden by your privileges". |
 | MON-OD-03 | Whether the Alert Queue page and Monitoring's triage queue both exist in v1. | Product | A panel-scoped rail here; the Sidebar's Alert Queue stays the full surface. |
 | MON-OD-04 | Which panel densities ship in v1 (Comfortable, Compact, List). | Design / Clinical | All three, as a segmented control next to Sort by. |
-| MON-OD-05 | Auto-reorder rules for the panel when alerts change priority. | Clinical / Design | Never automatic: the "Panel order changed" bar with Update order. No idle auto-update. |
+| MON-OD-05 | Auto-reorder rules for the panel when alerts change priority. | Clinical / Design | ~~Never automatic: the "Panel order changed" bar with Update order. No idle auto-update.~~ Built (MON-013): re-sorts every 15 to 30 s and at once for a new alert or a resolve, never under the pointer or focus except with Active alerts on (Nov 3, 2026). Still for clinical review. |
 | MON-OD-06 | Focus view as a side sheet or a full page. | Design | Side sheet over the triage queue; the panel stays live to its left. |
 | MON-OD-07 | Placement of the telemetry overlay on the camera feed. | Design / Clinical | Both, behind a switch: a fixed band, or tags on the devices that follow the camera preset. |
 | MON-OD-08 | Escalation targets per role and hospital, and receiver acknowledgment expectations. | Clinical / Product | Intensivist on call, or the unit's charge nurse through Messages. Start intervention disabled for an RN. Receiver acknowledgment not shown. |

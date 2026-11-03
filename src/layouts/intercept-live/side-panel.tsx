@@ -237,10 +237,11 @@ function PagePanel({ children }: { children: React.ReactNode }) {
 }
 
 // A page panel that lists the alerts itself (the live feed) hides the shell's toasts while it's open: they'd repeat what
-// it shows. The Toaster keeps them, timers paused, until the panel closes.
+// it shows. So does Filters, which floats over the page where the toasts sit (Nov 3, 2026, user's call). The Toaster
+// keeps them, timers paused, until every such panel closes.
 const PageHidesToastsContext = React.createContext<((hidden: boolean) => void) | null>(null);
 
-/** Lets a page's panel hide the shell's toasts: provide it with the shell's setter. */
+/** Lets a page's panel hide the shell's toasts: provide it with the shell's setter, which counts each `true` until its `false`. */
 const PageHidesToastsProvider = PageHidesToastsContext.Provider;
 
 /** Hides the shell's toasts while `hidden` is true, and gives them back when it's false or the caller unmounts. */

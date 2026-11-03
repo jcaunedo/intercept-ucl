@@ -390,8 +390,13 @@ function InterceptLive({
 	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);
-	// Set while a page's panel hides the toasts (the live feed, useHideToasts).
-	const [panelHidesToasts, setPanelHidesToasts] = React.useState(false);
+	// How many of a page's panels hide the toasts (the live feed, Filters; useHideToasts): both can be open, so closing one
+	// keeps them hidden while the other stays.
+	const [panelsHidingToasts, setPanelsHidingToasts] = React.useState(0);
+	const setPanelHidesToasts = React.useCallback(
+		(hidden: boolean) => setPanelsHidingToasts((count) => Math.max(0, count + (hidden ? 1 : -1))),
+		[],
+	);
 	// Kept here, so the chat reopens at the width it was left at.
 	const [chatWidth, setChatWidth] = React.useState<number>(sidePanelWidth.default);
 	const groups = React.useMemo(
@@ -749,7 +754,7 @@ function InterceptLive({
 						{/* The app's one toast region: alert toasts and any other message. Hidden while the alert modal or a patient's
 						    page is open, so a toast never covers them, and while the live feed is open, which already lists every
 						    alert; they come back, with any that arrived meanwhile, when it closes. */}
-						<Toaster hidden={Boolean((openAlert?.open && alertView) || patientView || panelHidesToasts)} />
+						<Toaster hidden={Boolean((openAlert?.open && alertView) || patientView || panelsHidingToasts > 0)} />
 					</PageHidesToastsProvider>
 				</PagePanelSlotProvider>
 			</PagePreferencesProvider>

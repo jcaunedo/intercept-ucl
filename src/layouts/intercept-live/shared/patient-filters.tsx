@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ListFilterIcon } from "lucide-react";
+import { ListFilterIcon, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { Counter } from "@/components/data-display/counter";
@@ -10,13 +10,13 @@ import { SearchInput } from "@/components/forms/search-input";
 import {
 	Sheet,
 	SheetContent,
-	SheetDescription,
 	SheetFooter,
 	SheetHeader,
 	SheetTitle,
 } from "@/components/overlays/sheet";
 import { cn } from "@/lib/utils";
 
+import { useHideToasts } from "../side-panel";
 import { hasActiveAlert, type PanelPatient } from "./patient-panel";
 
 // The Filters panel shared by the Census and Monitoring (Oct 30, 2026, user's call; from the "Census Hospital Filters"
@@ -30,6 +30,8 @@ type FilterOption<Patient> = {
 	matches: (patient: Patient) => boolean;
 	/** A severity dot before the label (Highest alert). */
 	swatch?: string;
+	/** An icon before the label, e.g. the alert action's (Alert status). */
+	icon?: LucideIcon;
 	/** Matches on live readings: once picked, it keeps the patients who matched then, so cards don't come and go as the
 	 * readings move (PRD MON-013). */
 	live?: boolean;
@@ -179,6 +181,8 @@ type FiltersPanelProps<Patient> = {
  * muted, not disabled. The cards update behind the scrim as options change; Apply closes it.
  */
 function FiltersPanel<Patient>({ id, open, onOpenChange, groups, filters, onFiltersChange, patients }: FiltersPanelProps<Patient>) {
+	// The alert toasts hide while it's open (Nov 3, 2026, user's call) and come back when it closes.
+	useHideToasts(open);
 	const shown = patients.filter((patient) => passesFilters(patient, groups, filters)).length;
 	// The search narrows the options shown, not the patients: an option whose name matches, or every option of a group
 	// whose title matches. Picked options stay picked while hidden. It starts empty each time the sheet opens.
@@ -210,6 +214,8 @@ function FiltersPanel<Patient>({ id, open, onOpenChange, groups, filters, onFilt
 			<SheetContent
 				id={id}
 				closeLabel='Close Filters'
+				// No description under the title (Nov 3, 2026, user's call); Radix expects one unless this is unset.
+				aria-describedby={undefined}
 				// With text in the search, Escape clears it first and keeps the sheet open; the next one closes it. Radix hears
 				// Escape before the field does, so the clearing happens here.
 				onEscapeKeyDown={(event) => {
@@ -220,7 +226,6 @@ function FiltersPanel<Patient>({ id, open, onOpenChange, groups, filters, onFilt
 			>
 				<SheetHeader>
 					<SheetTitle>Filters</SheetTitle>
-					<SheetDescription>Options in a group match any. Groups match all. Counts include the other filters.</SheetDescription>
 					{/* First in the sheet, so it takes the focus when the sheet opens. */}
 					<SearchInput
 						collapsible={false}
@@ -265,6 +270,7 @@ function FiltersPanel<Patient>({ id, open, onOpenChange, groups, filters, onFilt
 												onCheckedChange={(value) => toggle(group.id, option.id, value === true)}
 											/>
 											{option.swatch ? <span aria-hidden='true' className={cn("size-2 shrink-0 rounded-full", option.swatch)} /> : null}
+											{option.icon ? <option.icon aria-hidden='true' className='size-4 shrink-0 text-icon' /> : null}
 											<Label htmlFor={optionId} className='min-w-0 flex-1 cursor-pointer font-normal text-inherit'>
 												{option.label}
 											</Label>

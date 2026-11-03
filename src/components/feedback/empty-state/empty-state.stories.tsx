@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { FilterXIcon, InboxIcon } from "lucide-react";
+import { InboxIcon, XIcon } from "lucide-react";
 import { fn } from "storybook/test";
 
 import { EmptyState } from "./empty-state";
@@ -36,7 +36,7 @@ export const WithAction: Story = {
 		title: "No patients match these filters",
 		description: "Try another hospital, unit or quick view.",
 		buttonLabel: "Clear filters",
-		buttonIcon: <FilterXIcon aria-hidden='true' />,
+		buttonIcon: <XIcon aria-hidden='true' />,
 		buttonProps: { onClick: fn() },
 	},
 };
@@ -68,7 +68,7 @@ export const AllVariants: Story = {
 				title='No patients match these filters'
 				description='Try another hospital, unit or quick view.'
 				buttonLabel='Clear filters'
-				buttonIcon={<FilterXIcon aria-hidden='true' />}
+				buttonIcon={<XIcon aria-hidden='true' />}
 			/>
 		</div>
 	),

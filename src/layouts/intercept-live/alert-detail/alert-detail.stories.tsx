@@ -240,7 +240,7 @@ export const Pathway: Story = {
 	},
 };
 
-/** Exploration: declining the pathway needs a reason. */
+/** Exploration: declining the pathway needs a reason; Undo decline brings the suggestion back. */
 export const PathwayDeclined: Story = {
 	play: async ({ args }) => {
 		const dialog = within(
@@ -254,5 +254,51 @@ export const PathwayDeclined: Story = {
 		await expect(args.onPathwayDecision).toHaveBeenCalledWith({ type: "decline", rationale: "Transferring to Scottsbluff instead" });
 		await expect(region).toHaveAttribute("data-status", "declined");
 		await waitFor(() => expect(pathway.queryByRole("textbox")).not.toBeInTheDocument());
+		await userEvent.click(pathway.getByRole("button", { name: "Undo decline" }));
+		await expect(args.onPathwayDecision).toHaveBeenLastCalledWith({ type: "undecline" });
+		await expect(region).toHaveAttribute("data-status", "suggested");
+		await expect(await pathway.findByRole("button", { name: "Accept and send" })).toBeInTheDocument();
+	},
+};
+
+/**
+ * Exploration: after declining, the intensivist writes their own pathway (a name, then each order's name, dose and an
+ * optional target) and sends it to the same co-signer; it then shows in the suggestion's place, awaiting co-signature,
+ * then active.
+ */
+export const OwnPathway: Story = {
+	play: async ({ args }) => {
+		const dialog = within(
+			await screen.findByRole("dialog", { name: "Rising work of breathing, positive fluid balance, HFrEF" }),
+		);
+		const region = dialog.getByRole("region", { name: "CHF exacerbation pathway" });
+		const pathway = within(region);
+		await userEvent.click(pathway.getByRole("button", { name: "Decline" }));
+		await userEvent.type(pathway.getByRole("textbox", { name: "Why decline?" }), "Transferring to Scottsbluff instead");
+		await userEvent.click(pathway.getByRole("button", { name: "Decline pathway" }));
+		await userEvent.click(await pathway.findByRole("button", { name: "Create your own pathway" }));
+		const send = await pathway.findByRole("button", { name: "Send for co-signature" });
+		await expect(send).toBeDisabled();
+		await userEvent.type(await pathway.findByRole("textbox", { name: "Pathway name" }), "Stabilize for transfer");
+		await userEvent.type(pathway.getByRole("textbox", { name: "Order" }), "BiPAP");
+		await userEvent.type(pathway.getByRole("textbox", { name: "Dose or settings" }), "IPAP 12, EPAP 6, FiO₂ 60%");
+		await userEvent.click(pathway.getByRole("button", { name: "Add order" }));
+		const second = within(await pathway.findByRole("listitem", { name: "Order 2" }));
+		await userEvent.type(second.getByRole("textbox", { name: "Order" }), "Furosemide IV");
+		await userEvent.type(second.getByRole("textbox", { name: "Dose or settings" }), "80 mg IV bolus");
+		await expect(send).toBeEnabled();
+		await userEvent.click(send);
+		await expect(args.onPathwayDecision).toHaveBeenLastCalledWith({
+			type: "create",
+			title: "Stabilize for transfer",
+			orders: [
+				expect.objectContaining({ name: "BiPAP", dose: "IPAP 12, EPAP 6, FiO₂ 60%" }),
+				expect.objectContaining({ name: "Furosemide IV", dose: "80 mg IV bolus" }),
+			],
+		});
+		await expect(region).toHaveAttribute("aria-label", "Stabilize for transfer");
+		await expect(region).toHaveAttribute("data-status", "pending");
+		await expect(await pathway.findByText(/Sent to Dr. Tom Weller for co-signature/)).toBeInTheDocument();
+		await waitFor(() => expect(region).toHaveAttribute("data-status", "active"), { timeout: 6000 });
 	},
 };

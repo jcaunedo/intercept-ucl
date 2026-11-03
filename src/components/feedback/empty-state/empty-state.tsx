@@ -15,7 +15,7 @@ type EmptyStateProps = Omit<React.ComponentProps<"div">, "title"> & {
 	buttonLabel?: string;
 	/** Optional icon before the button's label. */
 	buttonIcon?: React.ReactNode;
-	/** Forwarded to the button, e.g. `onClick`. */
+	/** Forwarded to the button, e.g. `onClick`. An `outline` `lg` Button unless `variant` or `size` is set here. */
 	buttonProps?: Omit<React.ComponentProps<typeof Button>, "children">;
 	/** Heading level for the title. Defaults to `h2`, under the page's `h1`. */
 	headingLevel?: "h2" | "h3";
@@ -45,25 +45,27 @@ function EmptyState({
 			className={cn("flex w-full flex-col items-center justify-center gap-4 text-center", className)}
 			{...props}
 		>
-			{/* Icon, title and description 8px apart; the button 16px below them. */}
+			{/* The icon 8px above the title, the description right under it; the button 16px below them. */}
 			<div className='flex flex-col items-center gap-2'>
 				{icon ? (
 					<div data-slot='empty-state-icon' className='flex items-center justify-center text-icon'>
 						{icon}
 					</div>
 				) : null}
-				<Typography as={headingLevel} size='lg' weight='semibold' className='text-foreground'>
-					{title}
-				</Typography>
-				{/* Capped at 640px so long copy wraps to a comfortable line length. */}
-				{description ? (
-					<Typography size='base' className='max-w-[640px] text-muted-foreground'>
-						{description}
+				<div className='flex flex-col items-center'>
+					<Typography as={headingLevel} size='lg' weight='semibold' className='text-foreground'>
+						{title}
 					</Typography>
-				) : null}
+					{/* Capped at 640px so long copy wraps to a comfortable line length. */}
+					{description ? (
+						<Typography size='base' className='max-w-[640px] text-muted-foreground'>
+							{description}
+						</Typography>
+					) : null}
+				</div>
 			</div>
 			{buttonLabel ? (
-				<Button size='lg' {...buttonProps}>
+				<Button size='lg' variant='outline' {...buttonProps}>
 					{buttonIcon}
 					{buttonLabel}
 				</Button>

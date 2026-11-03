@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Intercept Live (exploration): a declined care pathway can be undone (**Undo decline**, beside Create your own pathway): the suggestion is back to Suggested. `CarePathwayDecision` adds `{ type: "undecline" }`. Layout-only, not exported. [AMM-021]
+
+- Intercept Live: a Monitoring card's "…" menu has **Expand alert** after Ask Intercept Live, while the card shows an alert: it opens the alert modal, as the alert bar does.
+
+- Intercept Live (exploration): after declining the alert modal's care pathway, **Create your own pathway** opens a form in its place (name, then each order's name, dose and optional target; Add order, remove) and **Send for co-signature** sends it to the same co-signer; it then shows in the suggestion's place, awaiting co-signature, then active. `CarePathwayDecision` adds `{ type: "create"; title; orders }`. Story Own pathway. Layout-only, not exported. [AMM-020]
+- Intercept Live: the alert toasts hide while the Filters panel is open, as they do for the live feed; the shell counts the panels hiding them, so closing one while the other is open keeps them hidden.
+- Intercept Live: Monitoring's Filters panel has an **Alert status** group (Acknowledged, Escalated, Resolved, Feedback), each with its action's icon; a filter option takes an `icon`.
+
 - Sonner: Don't show shows with a single toast too, so one toast can still be muted; Close all still waits for two or more. Behavior change, no API change.
 - Sample data: every bedside nurse is a woman, so the alert modal's video consult clip matches the nurse it calls: Kevin Ortiz is now Kelly Ortiz and Tom Becker is now Tara Becker (same initials and avatar colors), in the records, notes, vitals, timeline, camera and live scenario.
 - Intercept Live (exploration): the alert modal's video consult can show a real-looking camera feed: `AlertDetailData.video` (a clip URL) loops without sound, graded like a bedside camera (more contrast, less color, sensor noise, darker corners), held on its first frame under reduced motion (`RoomVideo` in `camera-section.tsx`). Without a clip, or if it can't load, the room is drawn as before. The samples take the first `.mp4` in `sample-data/videos/` (`sample-camera-video.ts`): `sample-bedside-camera.mp4`, a 10 s AI-generated clip (Midjourney) of a nurse at the bedside talking to the camera, fictional people, never a real patient (Brief). Layout-only, not exported.
@@ -110,6 +118,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - PatientCard, PatientMonitoringCard: the root has `min-w-0`, so in a flex or grid cell a card narrower than its location line truncates the hospital instead of growing past the cell. The Census and Monitoring grids' card wrappers use `grid-cols-1` for the same reason.
 
 ### Changed
+
+- Intercept Live: the Filters panel no longer says "Options in a group match any. Groups match all. Counts include the other filters." under its title.
+
+- EmptyState: the button is `outline` by default (was Button's default, Neutral), and the description sits right under the title (no gap; was 8px). **Default change:** an app that wants the filled button passes `buttonProps={{ variant: "neutral" }}`. Intercept Live's Clear filters buttons (Census and Monitoring) take lucide `x` instead of `filter-x`.
 
 - AlertToast: with `onOpenAlert`, the whole header row (severity, change, time and the maximize icon) is one Open alert button, instead of the maximize icon alone; the icon darkens on hover. Its accessible name is now "Open alert: …" followed by the header's words.
 - `overlay` token: the scrim behind Sheet and Dialog is now #0b1222 at 40% (was 20%), from archielabs.ds `components/overlay`. Visual change, no API change.
