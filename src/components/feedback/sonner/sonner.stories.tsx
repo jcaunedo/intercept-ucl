@@ -4,7 +4,7 @@ import { expect, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
 
-import { Toaster, toast } from "./sonner";
+import { muteToasts, Toaster, toast, toastsMuted } from "./sonner";
 
 const meta = {
 	title: "Feedback/Sonner",
@@ -66,6 +66,35 @@ export const Hidden: Story = {
 		await waitFor(() => expect(screen.getByText("Camera session ended")).not.toBeVisible());
 		await userEvent.click(canvas.getByRole("button", { name: "Show toasts" }));
 		await waitFor(() => expect(screen.getByText("Camera session ended")).toBeVisible());
+	},
+};
+
+/**
+ * Muted (Don't show): "Muted until …" over the stack, there even without toasts. Play (tooltip Resume) shows toasts
+ * again; × (tooltip Hide) closes the notice and keeps them muted until the app reloads.
+ */
+export const Muted: Story = {
+	render: (args) => (
+		<>
+			<Toaster {...args} />
+			<Button variant='outline' onClick={() => muteToasts(new Date(Date.now() + 30 * 60_000))}>
+				Mute for 30 mins
+			</Button>
+		</>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole("button", { name: "Mute for 30 mins" }));
+		await expect(await screen.findByText(/^Muted until/)).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("button", { name: "Resume toasts" }));
+		await waitFor(() => expect(screen.queryByText(/^Muted until/)).not.toBeInTheDocument());
+		await expect(toastsMuted()).toBe(false);
+		await userEvent.click(canvas.getByRole("button", { name: "Mute for 30 mins" }));
+		await userEvent.click(await screen.findByRole("button", { name: "Hide, and keep toasts muted until reload" }));
+		await waitFor(() => expect(screen.queryByText(/^Muted until/)).not.toBeInTheDocument());
+		await expect(toastsMuted()).toBe(true);
+		// Other stories share the page's mute.
+		muteToasts(null);
 	},
 };
 

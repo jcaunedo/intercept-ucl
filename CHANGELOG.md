@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Sonner: the "Muted until …" notice has **Play** (tooltip Resume), which shows toasts again, before its × (tooltip Hide); the × now closes the notice and keeps toasts muted until the app reloads (it showed them again before; behavior change). `muteToasts("reload")` mutes until reload, and `toastsMuted()` says whether toasts are muted either way; `toastAlert()` uses it. Story Muted. Additive.
+
 - Intercept Live (exploration): a declined care pathway can be undone (**Undo decline**, beside Create your own pathway): the suggestion is back to Suggested. `CarePathwayDecision` adds `{ type: "undecline" }`. Layout-only, not exported. [AMM-021]
 
 - Intercept Live: a Monitoring card's "…" menu has **Expand alert** after Ask Intercept Live, while the card shows an alert: it opens the alert modal, as the alert bar does.
@@ -118,6 +120,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - PatientCard, PatientMonitoringCard: the root has `min-w-0`, so in a flex or grid cell a card narrower than its location line truncates the hospital instead of growing past the cell. The Census and Monitoring grids' card wrappers use `grid-cols-1` for the same reason.
 
 ### Changed
+
+- Sonner: picking a Don't show option closes every toast on screen, an unaddressed Critical included (it stayed before); a new unaddressed Critical still shows while muted. Behavior change, no API change.
 
 - Census and Monitoring: **Group by location** is now **Group by hospital**, and the Prototype menu's Sections by location is Sections by hospital (copy). Layout-only: the shell's page preferences rename `groupByLocation` / `onGroupByLocationChange` to `groupByHospital` / `onGroupByHospitalChange`, and the Census story Group by location is Group by hospital.
 

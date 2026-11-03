@@ -9,6 +9,7 @@ import {
 	InfoIcon,
 	Loader2Icon,
 	OctagonXIcon,
+	PlayIcon,
 	TriangleAlertIcon,
 	XIcon,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
 } from "@/components/overlays/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import { exitTransition, fadeVariants, standardTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -59,40 +61,55 @@ function closeAllToasts() {
 /* Muting                                                                     */
 /* -------------------------------------------------------------------------- */
 
-// When toasts may show again, as a timestamp, or null when they aren't muted. One for the whole app, like the Toaster.
-let mutedUntil: number | null = null;
+// Whether toasts are muted: `until` a timestamp (Don't show), or `untilReload` (the muted notice closed with its ×), or
+// neither. One for the whole app, like the Toaster; replaced on each change, so it can be a store snapshot.
+type MuteState = { until: number | null; untilReload: boolean };
+const unmuted: MuteState = { until: null, untilReload: false };
+let muteState: MuteState = unmuted;
 const muteListeners = new Set<() => void>();
 
 /**
  * Stops toasts that can be put off (every one but an alert that interrupts: an unaddressed Critical) until `until`, or
- * shows them again with `null`. `toastAlert()` checks it before showing a toast; the Toaster's Don't show menu sets it.
+ * until the app reloads with `"reload"`, or shows them again with `null`. `toastAlert()` checks it (`toastsMuted()`)
+ * before showing a toast; the Toaster's Don't show menu and its muted notice set it.
  */
-function muteToasts(until: Date | null) {
-	mutedUntil = until && until.getTime() > Date.now() ? until.getTime() : null;
+function muteToasts(until: Date | "reload" | null) {
+	muteState =
+		until === "reload"
+			? { until: null, untilReload: true }
+			: until && until.getTime() > Date.now()
+				? { until: until.getTime(), untilReload: false }
+				: unmuted;
 	muteListeners.forEach((listener) => listener());
 }
 
-/** When muted toasts may show again, or undefined when they aren't muted. */
+/** When muted toasts may show again, or undefined when they aren't muted or are muted until the app reloads. */
 function toastsMutedUntil(): Date | undefined {
-	return mutedUntil !== null && mutedUntil > Date.now() ? new Date(mutedUntil) : undefined;
+	const { until } = muteState;
+	return until !== null && until > Date.now() ? new Date(until) : undefined;
 }
 
-function useToastsMutedUntil() {
-	const until = React.useSyncExternalStore(
+/** Whether toasts are muted, for a time or until the app reloads. */
+function toastsMuted(): boolean {
+	return muteState.untilReload || toastsMutedUntil() !== undefined;
+}
+
+function useMuteState() {
+	const state = React.useSyncExternalStore(
 		(listener) => {
 			muteListeners.add(listener);
 			return () => muteListeners.delete(listener);
 		},
-		() => mutedUntil,
-		() => null,
+		() => muteState,
+		() => unmuted,
 	);
 	// Unmuted on its own once the time is up.
 	React.useEffect(() => {
-		if (until === null) return;
-		const timer = window.setTimeout(() => muteToasts(null), Math.max(0, until - Date.now()));
+		if (state.until === null) return;
+		const timer = window.setTimeout(() => muteToasts(null), Math.max(0, state.until - Date.now()));
 		return () => window.clearTimeout(timer);
-	}, [until]);
-	return until;
+	}, [state.until]);
+	return state;
 }
 
 // The clinician's shifts change at 7 (Nov 2, 2026): "this evening" is 7 PM today, "tomorrow" 7 AM tomorrow.
@@ -121,6 +138,41 @@ const muteOptions: { label: string; until: (now: Date) => Date | undefined }[] =
 ];
 
 const muteTimeFormat = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
+
+/* -------------------------------------------------------------------------- */
+/* Pausing                                                                    */
+/* -------------------------------------------------------------------------- */
+
+// Sonner pauses every toast's timer while its stack is hovered (which expands it) or pressed (`interacting`, set by a
+// pointerdown on its list and cleared by a pointerup), and has no other way in. Pressing changes nothing on screen, so
+// holding the timers sends the list a pointerdown, and letting them go a pointerup. Counted, so the actions row and
+// `hidden` can each hold them. The pressed state is the Toaster's and outlives its list, which only exists while there
+// are toasts: a change with no list waits for the next one (`syncPause`, which the Toaster runs as toasts come and go),
+// so the timers never stay held, nor miss a hold.
+let pauseCount = 0;
+let pressed = false;
+
+function syncPause() {
+	const want = pauseCount > 0;
+	if (want === pressed) return;
+	const list = document.querySelector<HTMLElement>("[data-sonner-toaster]");
+	if (!list) return;
+	list.dispatchEvent(new PointerEvent(want ? "pointerdown" : "pointerup", { bubbles: true }));
+	pressed = want;
+}
+
+/** Holds every toast's timer while `paused`, without moving the stack: toasts neither leave nor expire meanwhile. */
+function usePauseToasts(paused: boolean) {
+	React.useEffect(() => {
+		if (!paused) return;
+		pauseCount++;
+		syncPause();
+		return () => {
+			pauseCount--;
+			syncPause();
+		};
+	}, [paused]);
+}
 
 /* -------------------------------------------------------------------------- */
 /* Actions over the stack                                                     */
@@ -156,11 +208,14 @@ function useStackTop(active: boolean) {
 }
 
 /**
- * The row over the stack, right-aligned with it. With any toast, Don't show (a menu of how long: closes the toasts that
- * can wait and holds new ones back, except an alert that interrupts); with two or more, Close all too (closes every toast
- * as its × would, running its close handler; alerts stay in the queue). While muted, "Muted until 4:42 PM" with a × to show toasts again, there even without toasts
- * so it can always be undone. Over it the stack stays as it was: expanded when the pointer comes from it, collapsed when
- * it comes from elsewhere, so the buttons never move away from the pointer.
+ * The row over the stack, right-aligned with it. With any toast, Don't show (a menu of how long: closes every toast on
+ * screen and holds new ones back, except an alert that interrupts); with two or more, Close all too (closes every toast
+ * as its × would, running its close handler; alerts stay in the queue). While muted, "Muted until 4:42 PM", there even
+ * without toasts, with Play to show toasts again and × to close the notice and keep them muted until the app reloads
+ * (Nov 3, 2026; the × showed them again before). Over it the stack stays as it was: expanded when the pointer comes from
+ * it, collapsed when it comes from elsewhere, so the buttons never move away from the pointer. While the clinician is on
+ * the row (pointer over it, keyboard focus in it, or its menu open), the toasts' timers hold (Nov 3, 2026, user's call),
+ * so nothing leaves and the row stays put until they've chosen.
  */
 function ToasterActions({
 	right,
@@ -174,7 +229,7 @@ function ToasterActions({
 	onHoldOpenChange: (hold: boolean) => void;
 }) {
 	const { toasts } = useSonner();
-	const mutedUntilTime = useToastsMutedUntil();
+	const { until: mutedUntilTime, untilReload } = useMuteState();
 	const any = toasts.length > 0;
 	const several = toasts.length >= 2;
 	const show = any || mutedUntilTime !== null;
@@ -184,6 +239,9 @@ function ToasterActions({
 	const hold = React.useRef(false);
 	const release = React.useRef<number | undefined>(undefined);
 	const [menuOpen, setMenuOpen] = React.useState(false);
+	const [pointerOn, setPointerOn] = React.useState(false);
+	const [focusIn, setFocusIn] = React.useState(false);
+	usePauseToasts(show && (pointerOn || focusIn || menuOpen));
 
 	React.useEffect(() => {
 		const setHold = (next: boolean) => {
@@ -220,8 +278,10 @@ function ToasterActions({
 
 	const mute = (until: Date) => {
 		muteToasts(until);
-		// The toasts that can wait go; an alert that interrupts (Sonner's `dismissible: false`) stays.
-		for (const item of toasts) if (item.dismissible !== false) toast.dismiss(item.id);
+		// Every toast on screen goes, an alert that interrupts included (Nov 3, 2026, user's call; it stayed before). Their
+		// close handlers don't run: muting isn't closing, so their alerts can toast again once the mute ends. A new alert
+		// that interrupts still shows while muted.
+		toast.dismiss();
 	};
 	const now = new Date();
 
@@ -238,16 +298,47 @@ function ToasterActions({
 					// Above the toasts (Sonner's own z-index).
 					className='fixed z-[999999999] flex items-center gap-2'
 					style={{ right, bottom }}
+					onPointerEnter={() => setPointerOn(true)}
+					onPointerLeave={() => setPointerOn(false)}
+					onFocus={() => setFocusIn(true)}
+					onBlur={(event) => {
+						if (!event.currentTarget.contains(event.relatedTarget)) setFocusIn(false);
+					}}
 				>
 					{mutedUntilTime !== null ? (
 						<span className='inline-flex h-8 items-center gap-1 rounded-button-md border border-input bg-background pr-1 pl-3 text-sm text-foreground shadow-xs'>
 							<BellOffIcon aria-hidden='true' className='size-4 text-muted-foreground' />
 							<span className='px-1'>Muted until {muteTimeFormat.format(mutedUntilTime)}</span>
-							<Button variant='ghost' size='icon-xs' aria-label='Show toasts again' onClick={() => muteToasts(null)}>
-								<XIcon aria-hidden='true' />
-							</Button>
+							{/* Each named in a tooltip, over the toasts like the row (Nov 3, 2026, user's call). */}
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button variant='ghost' size='icon-xs' aria-label='Resume toasts' onClick={() => muteToasts(null)}>
+											<PlayIcon aria-hidden='true' />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side='top' className='z-[1000000000]'>
+										Resume
+									</TooltipContent>
+								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant='ghost'
+											size='icon-xs'
+											aria-label='Hide, and keep toasts muted until reload'
+											onClick={() => muteToasts("reload")}
+										>
+											<XIcon aria-hidden='true' />
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent side='top' className='z-[1000000000]'>
+										Hide
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
 						</span>
-					) : any ? (
+					) : any && !untilReload ? (
 						<DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
 							<DropdownMenuTrigger asChild>
 								<Button variant='outline' size='sm'>
@@ -287,7 +378,8 @@ function ToasterActions({
  * Toasts stack bottom right, 16px from the screen's edges, at most three, the newest at the bottom. Collapsed, each one
  * behind peeks `peek` (12px) above the one in front; hovering the stack spreads them `gap` (8px) apart and pauses their
  * timers. "Don't show" (`muteLabel`: for 30 mins … until tomorrow) sits right-aligned 8px above the top toast, with
- * "Close all" (`closeAllLabel`) beside it from two toasts; while muted, "Muted until …" with a × takes Don't show's place. `hidden` fades the
+ * "Close all" (`closeAllLabel`) beside it from two toasts; while muted, "Muted until …" with Play and × takes Don't show's
+ * place (× keeps them muted until the app reloads, and the notice goes). `hidden` fades the
  * stack and its buttons out while something covers the screen (e.g. a modal), keeping every toast: their timers pause,
  * new ones queue, and all of them fade back in when it's lifted.
  *
@@ -321,6 +413,14 @@ function Toaster({
 	// Kept expanded while the pointer crosses from the stack to the actions above it.
 	const [holdOpen, setHoldOpen] = React.useState(false);
 	const { resolve } = useMotionPreference();
+	// Hidden toasts wait instead of expiring unseen.
+	usePauseToasts(hidden);
+	// A hold that changed while there was no list (no toasts) reaches the next one once it's on screen.
+	const anyToast = useSonner().toasts.length > 0;
+	React.useEffect(() => {
+		const frame = requestAnimationFrame(syncPause);
+		return () => cancelAnimationFrame(frame);
+	}, [anyToast]);
 	return (
 		// The toasts and the buttons are fixed to the screen, so this wrapper takes no room; its opacity fades them both.
 		// Hidden, they're out of reach too (`inert`), and invisible once faded.
@@ -336,8 +436,7 @@ function Toaster({
 			}
 		>
 			<Sonner
-				// Sonner pauses a toast's timer while the stack is expanded, so hidden toasts wait instead of expiring unseen.
-				expand={expand || holdOpen || hidden}
+				expand={expand || holdOpen}
 				className={cn("toaster group", className)}
 				position={position}
 				visibleToasts={visibleToasts}
@@ -385,4 +484,4 @@ function Toaster({
 	);
 }
 
-export { Toaster, toast, muteToasts, toastsMutedUntil, setToastCloseHandler, type ExternalToast, type ToasterProps };
+export { Toaster, toast, muteToasts, toastsMuted, toastsMutedUntil, setToastCloseHandler, type ExternalToast, type ToasterProps };

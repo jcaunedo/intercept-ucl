@@ -7,7 +7,7 @@ import { Maximize2Icon, SparklesIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/buttons/button";
 import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
-import { setToastCloseHandler, toast, toastsMutedUntil } from "@/components/feedback/sonner";
+import { setToastCloseHandler, toast, toastsMuted } from "@/components/feedback/sonner";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { pressPattern, urgencyRingVariants, useMotionPreference, useUrgencyPhase } from "@/lib/motion";
 import { formatRelativeDate } from "@/lib/relative-date";
@@ -304,7 +304,7 @@ type ToastAlertOptions = AlertToastOwnProps & {
  */
 function toastAlert({ id, duration, onOpen, onAcknowledge, onAsk, onOpenAlert, onClose, ...props }: ToastAlertOptions) {
 	const interrupts = (props.severity ?? "critical") === "critical" && !props.addressed;
-	if (!interrupts && toastsMutedUntil()) return undefined;
+	if (!interrupts && toastsMuted()) return undefined;
 	// Its handler leaves with it, however it goes.
 	const forget = () => setToastCloseHandler(toastId, null);
 	const toastId = toast.custom(

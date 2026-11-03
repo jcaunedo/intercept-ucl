@@ -133,6 +133,7 @@ export {
 	Toaster,
 	toast,
 	muteToasts,
+	toastsMuted,
 	toastsMutedUntil,
 	setToastCloseHandler,
 	type ExternalToast,
