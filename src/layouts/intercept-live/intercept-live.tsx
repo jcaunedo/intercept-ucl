@@ -370,6 +370,8 @@ function InterceptLive({
 	const [groupByLocation, setGroupByLocation] = React.useState(false);
 	const [sortBy, setSortBy] = React.useState<PagePreferences["sortBy"]>({});
 	const [scope, setScope] = React.useState<PagePreferences["scope"]>({});
+	// Closed alert toasts stay closed across pages, until a reload.
+	const [closedAlertToasts, setClosedAlertToasts] = React.useState<PagePreferences["closedAlertToasts"]>({});
 	const currentPage = page === "Census" ? "census" : page === "Monitoring" ? "monitoring" : undefined;
 	const pagePreferences = React.useMemo<PagePreferences>(
 		() => ({
@@ -380,8 +382,11 @@ function InterceptLive({
 			scope,
 			onScopeChange: (page, next) => setScope((current) => ({ ...current, [page]: next })),
 			currentPage,
+			closedAlertToasts,
+			onCloseAlertToast: (alertId, severity) =>
+				setClosedAlertToasts((current) => ({ ...current, [alertId]: severity })),
 		}),
-		[groupByLocation, sortBy, scope, currentPage],
+		[groupByLocation, sortBy, scope, currentPage, closedAlertToasts],
 	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);

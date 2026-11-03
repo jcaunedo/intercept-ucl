@@ -4,6 +4,7 @@ import { toastAlert } from "@/components/feedback/alert-toast";
 import { toast } from "@/components/feedback/sonner";
 
 import {
+	severityOrder,
 	type TriageAlert,
 	type TriageAlertAction,
 	type TriageAlertSeverity,
@@ -17,7 +18,9 @@ import { avatarTone, avatarTones, patientInitials } from "./patient-avatar";
 // A toast for every change in any patient's alert (Nov 2, 2026, user's call): a new alert, a severity going up or down,
 // someone else acknowledging or escalating it, or its resolution. Render it inside InterceptLive, which shows the toasts
 // and opens the patients. With My patients on in the page on screen, only the clinician's own patients toast (Nov 2,
-// 2026, user's call).
+// 2026, user's call). A toast the clinician closes (× or Close all) stays closed until the app reloads, whatever its
+// severity, Critical and High included; the alert toasts again only if it goes above the severity it had when closed (Nov 3,
+// 2026, user's call). Other alerts, the same patient's new ones included, still toast.
 
 const severityWords: Record<TriageAlertSeverity, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 
@@ -80,6 +83,12 @@ function AlertToasts({ alerts, patients, onAlertAction, onCloseResolved }: Alert
 	const previous = React.useRef(alerts);
 	// The patient behind each toast shown, by alert id (the toast's id), so My patients can close the others' toasts.
 	const shown = React.useRef(new Map<string, string>());
+	// The closed toasts, kept by the shell across pages; a page on its own keeps them itself.
+	const [ownClosed, setOwnClosed] = React.useState<Record<string, TriageAlertSeverity>>({});
+	const closed = preferences?.closedAlertToasts ?? ownClosed;
+	const closeToast =
+		preferences?.onCloseAlertToast ??
+		((alertId: string, severity: TriageAlertSeverity) => setOwnClosed((current) => ({ ...current, [alertId]: severity })));
 
 	React.useEffect(() => {
 		if (!mineOnly) return;
@@ -103,6 +112,8 @@ function AlertToasts({ alerts, patients, onAlertAction, onCloseResolved }: Alert
 			const { alert } = change;
 			const patient = byId.get(alert.patientId);
 			if (!patient) continue;
+			const closedAs = closed[alert.id];
+			if (closedAs && severityOrder.indexOf(alert.severity) >= severityOrder.indexOf(closedAs)) continue;
 			shown.current.set(alert.id, patient.id);
 			const attention = needsAttention(change);
 			const name = `${patient.lastName}, ${patient.firstName}`;
@@ -125,10 +136,13 @@ function AlertToasts({ alerts, patients, onAlertAction, onCloseResolved }: Alert
 				// Ask Intercept Live about the patient, starting with a quick overview (Nov 2, 2026, user's call).
 				onAsk: askAboutPatient ? () => askAboutPatient(patient.id, name) : undefined,
 				onOpenAlert: openAlert ? () => openAlert(patient.id, alert.id) : undefined,
-				onClose: change.kind === "resolved" && onCloseResolved ? () => onCloseResolved(patient.id) : undefined,
+				onClose: () => {
+					closeToast(alert.id, alert.severity);
+					if (change.kind === "resolved") onCloseResolved?.(patient.id);
+				},
 			});
 		}
-	}, [alerts, patients, mineOnly, tones, openPatient, openAlert, askAboutPatient, onAlertAction, onCloseResolved]);
+	}, [alerts, patients, mineOnly, tones, openPatient, openAlert, askAboutPatient, onAlertAction, onCloseResolved, closed, closeToast]);
 
 	return null;
 }
