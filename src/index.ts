@@ -287,6 +287,13 @@ export {
 /* -------------------------------------------------------------------------- */
 
 export {
+	AlertExpanded,
+	AlertExpandedClose,
+	type AlertExpandedPanel,
+	type AlertExpandedProps,
+	type AlertExpandedSeverity,
+} from "@/components/overlays/alert-expanded";
+export {
 	Popover,
 	PopoverAnchor,
 	PopoverContent,

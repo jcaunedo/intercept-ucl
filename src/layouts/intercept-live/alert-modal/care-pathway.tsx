@@ -7,7 +7,7 @@ import { Badge } from "@/components/data-display/badge";
 import { Input } from "@/components/forms/input";
 import { Label } from "@/components/forms/label";
 import { Textarea } from "@/components/forms/textarea";
-import { expandVariants, fadeVariants, useExpandClip, useMotionPreference } from "@/lib/motion";
+import { expandVariants, fadeVariants, scrollContainerOf, useExpandClip, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { SourceLabel } from "../shared/source-label";
@@ -338,6 +338,34 @@ function PathwayBuilder({
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Whether a sticky block at the bottom of its scrolling column has content behind it: the column isn't scrolled to its
+ * end. Updates as the column scrolls, resizes or its content grows.
+ */
+function useStuckToBottom(ref: React.RefObject<HTMLElement | null>) {
+	const [stuck, setStuck] = React.useState(false);
+	React.useEffect(() => {
+		const element = ref.current;
+		if (!element) return;
+		const column = scrollContainerOf(element);
+		const update = () => setStuck(column.scrollTop + column.clientHeight < column.scrollHeight - 1);
+		update();
+		column.addEventListener("scroll", update, { passive: true });
+		const observer = new ResizeObserver(update);
+		observer.observe(column);
+		for (const child of column.children) observer.observe(child);
+		// Content that comes in later (keep or transfer under the pathway) changes the column's height too.
+		const mutations = new MutationObserver(update);
+		mutations.observe(column, { childList: true, subtree: true });
+		return () => {
+			column.removeEventListener("scroll", update);
+			observer.disconnect();
+			mutations.disconnect();
+		};
+	}, [ref]);
+	return stuck;
+}
+
+/**
  * A suggested care pathway and its order set, for the intensivist to review: edit a dose, then accept (the orders go to
  * the local physician for co-signature, then become active) or decline with a reason. The title, status and source sit
  * above the order set, which is a card, dashed while it's a suggestion and solid once accepted; the decision follows it. `escapeRef` lets the modal hand Escape to an open dose edit, which it cancels, instead of closing.
@@ -364,6 +392,8 @@ function CarePathwayPanel({
 	const [editing, setEditing] = React.useState<string | null>(null);
 	const [declining, setDeclining] = React.useState(false);
 	const [rationale, setRationale] = React.useState("");
+	const decisionRef = React.useRef<HTMLDivElement>(null);
+	const decisionStuck = useStuckToBottom(decisionRef);
 	const [declinedWith, setDeclinedWith] = React.useState("");
 	const [noting, setNoting] = React.useState(false);
 	const [note, setNote] = React.useState("");
@@ -594,8 +624,16 @@ function CarePathwayPanel({
 				) : null}
 			</AnimatePresence>
 
-			{/* The decision and what follows it sit at the bottom of the panel, which fills its column. */}
-			<div className='mt-auto'>
+			{/* The decision and what follows it sit at the bottom of the panel, which fills its column, and stick to the
+			    column's bottom while the orders scroll under them (Nov 3, 2026, user's call), on the column's background.
+			    Sticky offsets count from inside the column's 24px padding, which this takes over. */}
+			{/* While the orders run on under it, a rule on its top edge (Nov 3, 2026, user's call); gone once the column is
+			    scrolled to its end. Transparent otherwise, so it never moves the layout. */}
+			<div
+				ref={decisionRef}
+				data-stuck={decisionStuck || undefined}
+				className='sticky -bottom-6 z-10 -mx-6 mt-auto -mb-6 border-t border-transparent bg-background px-6 pb-6 data-stuck:border-border'
+			>
 				<AnimatePresence initial={false}>
 					{status === "suggested" && !declining ? (
 						<Expand key='review'>
@@ -739,6 +777,7 @@ function CarePathwayPanel({
 
 export {
 	CarePathwayPanel,
+	COSIGN_DELAY_MS,
 	Expand,
 	type CarePathway,
 	type CarePathwayCosigner,

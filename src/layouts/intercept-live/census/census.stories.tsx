@@ -5,7 +5,7 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
-import { sampleAlertDetails } from "../alert-detail/sample-alert-detail";
+import { sampleAlertDetails } from "../alert-modal/sample-alert-modal";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
@@ -356,8 +356,12 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 		withScenarioCensus,
 		withScenarioRecords,
 		withScenarioAlertDetails,
+		withScenarioActivity,
 		onPathwayDecision,
 		onTransferDecision,
+		onConsultChange,
+		onConsultNote,
+		logAlertAction,
 	} = useSampleLiveFeed();
 	// The Prototype menu's Sections by hospital view (Group by hospital's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
@@ -369,19 +373,33 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 	const monitoringPatients = useLivePatients(monitoring);
 	// Scenario 1 changes Hayes's Census card and record too, so her card, her details and the chat follow.
 	const censusPatients = withScenarioCensus(props.patients);
-	const patientRecords = props.patientRecords && withScenarioRecords(props.patientRecords);
-	const live = useLiveAskIntercept(alerts, monitoringPatients, props.onAlertAction, { censusPatients, patientRecords });
+	const scenarioRecords = props.patientRecords && withScenarioRecords(props.patientRecords);
+	const alertDetails = withScenarioAlertDetails(
+		sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients, records: scenarioRecords }),
+	);
+	// Her page tracks what was done and decided: the activity log, the care plan, the orders and the consult note.
+	const patientRecords = scenarioRecords && withScenarioActivity(scenarioRecords, alertDetails);
+	// Every alert action goes in the log, wherever it was taken.
+	const live = useLiveAskIntercept(
+		alerts,
+		monitoringPatients,
+		(alertId, action) => {
+			logAlertAction(alertId, action, props.escalationTargets);
+			props.onAlertAction?.(alertId, action);
+		},
+		{ censusPatients, patientRecords },
+	);
 	return (
 		<Census
 			{...props}
 			patients={withFeedAlerts(censusPatients, alerts)}
 			patientRecords={patientRecords}
 			monitoringPatients={monitoringPatients}
-			alertDetails={withScenarioAlertDetails(
-				sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients, records: patientRecords }),
-			)}
+			alertDetails={alertDetails}
 			onPathwayDecision={onPathwayDecision}
 			onTransferDecision={onTransferDecision}
+			onConsultChange={onConsultChange}
+			onConsultNote={onConsultNote}
 			alerts={alerts}
 			askIntercept={live.askIntercept}
 			askInterceptNotice={live.notice}

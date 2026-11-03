@@ -320,6 +320,24 @@ The latest value of the labs that matter for this patient (by default lactate, c
 | **Encounter** | Admitted, ICU day, encounter status (PC-015), transfer pending (PRD OD-16) |
 | **Family contact** | ⚠️ Not in v1 scope; see §1.4 (PD-OD-14) |
 
+### Care plan and activity
+
+✅ **Built (Nov 3, 2026, user's call):** the page displays and tracks what was done and decided about the patient, so whoever opens it later, or the next shift, sees the plan in force and how it came about. It answers the scenario's "tracked on her record" (Demo Use Cases, Scenario 1, steps 3 to 6), and is the synthetic audit trail the requirements allow "as a design element, not a compliance system" (CC-09). ⚠️ **Decision needed:** requirement IDs; Cowork owns the PD- range, so these parts are unnumbered until it adds them. Related: DU-22 (keep or transfer), DU-23 (order sets and the co-sign route), DU-24 (AI-drafted notes), PD-133 (audit).
+
+| Part | Where | What it shows |
+|---|---|---|
+| **Care plan** | Overview rail, under the alerts | The pathway sent from an alert: its orders as sent (an edited dose marked Edited, the suggestion struck through), Awaiting co-signature or Active with who co-signed and when, or Declined with the reason. Then keep or transfer: the decision, who made it and when, the reason, each checkpoint's due time, criteria and result, and Transfer avoided (the trip the family didn't make, the estimated transfer cost avoided, the ICU-level care delivered here) |
+| **Activity** | Overview rail, under the care plan; all of it on the Timeline | Every action and decision with who and when, newest first: the alert fired, acknowledged, escalated or resolved; the video consult started and ended, with how long it lasted; the consult note approved; the pathway sent, co-signed or declined; keep or transfer decided or taken back; the checkpoints; Transfer avoided. The Overview shows the latest five and **View on Timeline** |
+| **Timeline** | Events lane | The activity as events beside the vitals: alerts as alerts, notes as notes, the rest as care events. The axis ends at the newest data when it's newer than the clock's last minute |
+| **Orders** | Recommendations › Addressed, and Active orders | The pathway as a **Care pathway** recommendation: accepted by the intensivist (with the edited dose), sent for signature, then signed by the local physician (OE-03, OE-04); once co-signed, its orders are Active, ordered by the intensivist and co-signed by the local physician |
+| **Notes** | First in the list | The consult note the clinician approved from the AI Notetaker: a draft for signature (CD-05) |
+| **At the resolution** | Brief, early warning score, oxygen, vitals, Timeline | Scenario 1 at 06:00: stable on 2 L, RR 20, SpO₂ 95%, HR 88, NEWS2 3 (Low) |
+
+- ⚠️ **Naming conflict:** the alert panel calls the AI that drafts the consult note the **AI Notetaker**; Notes marks AI drafts **AI Scribe** (PD-073, PRD Bedside camera). Pick one name.
+- ⚠️ **Gap:** the prototype's night passes in seconds, so the night's activity bunches at the right edge of a 6 h Timeline; "Show as table" lists it.
+- ⚠️ **Gap:** an order the pathway replaces isn't discontinued: Furosemide IV 120 mg is Active beside the earlier furosemide order.
+- ℹ️ In the prototype the activity, the plan, the orders and the note come from the decisions taken in the alert (the live feed); the app gets them from Clinical Alerting, Order Entry and Clinical Documentation, with the audit trail (PD-133).
+
 ---
 
 ## 6. Timeline

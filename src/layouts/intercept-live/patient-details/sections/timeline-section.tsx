@@ -590,10 +590,10 @@ function TimelineSection({ timeline, lastViewedAt }: TimelineSectionProps) {
 	const summaryId = React.useId();
 
 	const timeWindow = windows.find((item) => item.id === windowId) ?? windows[0];
-	// Before the first client render there's no clock; the latest reading stands in for it.
-	const end =
-		now ??
-		Math.max(...timeline.lanes.flatMap((lane) => lane.points.map(time)), ...timeline.events.map(time), 0);
+	// Before the first client render there's no clock; the latest reading stands in for it. The clock ticks each minute,
+	// so a reading or event newer than its last tick moves the end up to it, rather than falling off the right edge.
+	const latest = Math.max(...timeline.lanes.flatMap((lane) => lane.points.map(time)), ...timeline.events.map(time), 0);
+	const end = now === null ? latest : Math.max(now, latest);
 	const start = end - timeWindow.hours * HOUR;
 
 	React.useEffect(() => {

@@ -192,7 +192,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames one">
-		<figure><img src="frames/00-start.jpg" alt="Monitoring: 18 patients across 4 hospitals, 3 active alerts, cards with live monitors." loading="lazy"><figcaption>Monitoring before the scenario starts.</figcaption></figure>
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: 20 patients across 4 hospitals, 3 active alerts, cards with live monitors." loading="lazy"><figcaption>Monitoring before the scenario starts.</figcaption></figure>
 	</div>
 	<div class="callout note"><strong>The clock shows today's time, not 01:40.</strong> The prototype runs on the real clock. Ask the audience to picture 1:40 in the morning.</div>
 </section>
@@ -227,9 +227,9 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		<div>
 			<p class="label steps">Steps</p>
 			<ol>
-				<li>On her toast, click <span class="ui">Ask</span>. Ask Intercept Live opens about her and explains why she's #1, then her history and labs.</li>
+				<li>On her toast, click <span class="ui">Ask Intercept Live</span>. The chat opens about her and explains why she's #1, then her history and labs.</li>
 				<li>Close the chat with its ×.</li>
-				<li>Click <span class="ui">Live feed</span> at the top right. Her alert is first, above Sarah Miller's older Critical sepsis alert.</li>
+				<li>Click <span class="ui">Live feed</span>, on the right of the page title. Her alert is first, above Sarah Miller's older Critical sepsis alert.</li>
 				<li>Close the live feed.</li>
 			</ol>
 		</div>
@@ -244,21 +244,24 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 	<div class="beat-head"><h2>3. One-click consult</h2><span class="time">01:43</span></div>
 	<div class="script">
 		<div>
-			<p class="say">One click and the intensivist is looking at the patient with her nurse. Everything they'd normally phone around for is already here: home meds, the last echo, the creatinine trend, a BNP of 2,400, pulled from the hospital's record into one panel.</p>
+			<p class="say">One click and the intensivist is looking at the patient with her nurse. Everything they'd normally phone around for was already pulled from the hospital's record into one answer when they asked about her: home meds, the last echo, the creatinine trend, a BNP of 2,400.</p>
 		</div>
 		<div>
 			<p class="label steps">Steps</p>
 			<ol>
-				<li>On Margaret's card (first in the grid), click the red <span class="ui">Critical</span> bar. The alert opens in full.</li>
-				<li>Point out <strong>Clinical info</strong>: key findings, home meds, last echo (EF 25%), creatinine 1.6 → 1.9, BNP 2,400.</li>
-				<li>Click <span class="ui">Video consult</span> in the footer. It rings, then the bedside camera opens.</li>
+				<li>On Margaret's card (first in the grid), click the red <span class="ui">Critical</span> bar. Her alert opens: the reason line, her score, her live monitor and her flags.</li>
+				<li>Click her <span class="ui">CHF exacerbation</span> flag, first under her monitor (her card has it too, since the alert fired): the findings behind the alert, RR 18 → 26, SpO₂ 89% on 4 L, +1.8 L and +2.1 kg in 48 h, EF 25%. <kbd>Esc</kbd> closes it.</li>
+				<li>Click <span class="ui">Video consult</span> under her alert. It rings for about 4 seconds, then the bedside camera opens in a panel beside the alert.</li>
+				<li>Optional: <span class="ui">Start notetaker</span>. It asks Kayla to approve, records once she does (about 2 seconds), and <span class="ui">Stop and prepare notes</span> drafts a consult note to review and approve.</li>
 			</ol>
-			<p style="margin-top:10px;color:var(--muted);font-size:15px">Shortcut: her card's <span class="ui">…</span> › <span class="ui">Video consult</span> opens the same modal with the call already ringing.</p>
+			<p style="margin-top:10px;color:var(--muted);font-size:15px">Shortcut: her card's <span class="ui">…</span> › <span class="ui">Video consult</span> opens her alert with the call already ringing.</p>
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/05-modal.jpg" alt="The alert modal: Hayes, Margaret, the alert, her score and monitor; Clinical info; the CHF exacerbation pathway." loading="lazy"><figcaption>The alert modal: patient, clinical info, pathway.</figcaption></figure>
-		<figure><img src="frames/06-consult.jpg" alt="The video consult live: Kayla Brandt, RN joined, at Bed 4." loading="lazy"><figcaption>Kayla Brandt, RN, live from Bed 4.</figcaption></figure>
+		<figure><img src="frames/05-modal.jpg" alt="Her alert: Hayes, Margaret, Critical, the reason line, Acknowledge, Escalate and Resolve, Video consult and View pathway, her score and monitor." loading="lazy"><figcaption>Her alert, opened from her card.</figcaption></figure>
+		<figure><img src="frames/05b-findings-flag.jpg" alt="The CHF exacerbation flag open: rising work of breathing, positive fluid balance and HFrEF with their numbers; Rule · Deterioration score." loading="lazy"><figcaption>Her CHF exacerbation flag: the findings that drove the alert.</figcaption></figure>
+		<figure><img src="frames/06-consult.jpg" alt="The video consult live beside the alert: Kayla Brandt, RN joined, at Bed 4, and the AI Notetaker under the call." loading="lazy"><figcaption>Kayla Brandt, RN, live from Bed 4.</figcaption></figure>
+		<figure><img src="frames/06c-notetaker.jpg" alt="The AI Notetaker capturing the consultation, with Stop and prepare notes." loading="lazy"><figcaption>Optional: the AI Notetaker capturing the consult.</figcaption></figure>
 	</div>
 </section>
 
@@ -271,7 +274,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		<div>
 			<p class="label steps">Steps</p>
 			<ol>
-				<li>In the <strong>Pathway</strong> column, click the pencil on <span class="ui">Furosemide IV</span>.</li>
+				<li>Click <span class="ui">View pathway</span> under her alert. The <strong>Pathway</strong> panel opens to the right of the call.</li>
+				<li>Click the pencil on <span class="ui">Furosemide IV</span>.</li>
 				<li>Change the dose to <em>120 mg IV bolus, then 10 mg/h infusion</em> and click <span class="ui">Save</span>. It's marked Edited.</li>
 				<li>Optional: <span class="ui">Add note</span> for Dr. Tom Weller.</li>
 				<li>Click <span class="ui">Accept and send</span>. About 4 seconds later: <strong>Co-signed by Dr. Tom Weller</strong>, orders active.</li>
@@ -293,11 +297,11 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		<div>
 			<p class="label steps">Steps</p>
 			<ol>
-				<li>Scroll the Pathway column down to <strong>Keep or transfer</strong>.</li>
+				<li>Scroll the Pathway panel down to <strong>Keep or transfer</strong>.</li>
 				<li>Walk through what the plan needs against Chadron tonight, then the transfer option: Regional West in Scottsbluff, about 2 hours by ground.</li>
 				<li>Click <span class="ui">Keep at Chadron</span>, type a reason (e.g. <em>BiPAP and RT are here; a 2 h ride is the bigger risk tonight</em>) and confirm.</li>
 				<li>The 1 h and 4 h checkpoints appear with their due times.</li>
-				<li>Keep the modal open to watch step 6 arrive on its own, about 6 seconds later.</li>
+				<li>Keep her alert open to watch step 6 arrive on its own, about 6 seconds later.</li>
 			</ol>
 		</div>
 	</div>
@@ -305,9 +309,9 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		<figure><img src="frames/08a-transfer.jpg" alt="Keep or transfer: what the plan needs against Chadron tonight, and if transferred." loading="lazy"><figcaption>Needs against what Chadron has tonight.</figcaption></figure>
 		<figure><img src="frames/08b-kept.jpg" alt="Keeping at Chadron, with the reason and the 1 h and 4 h checkpoints." loading="lazy"><figcaption>Kept at Chadron, with checkpoints.</figcaption></figure>
 	</div>
-	<div class="callout note"><strong>Optional, before you keep her:</strong> click <span class="ui">Open patient</span> to show her full page: the brief written by Intercept, the live monitor, her alert and care team. Then reopen her alert from her card; the modal keeps the pathway you accepted. Her page doesn't show the orders or the keep decision yet.</div>
+	<div class="callout note"><strong>Optional, before you keep her:</strong> click her name, <span class="ui">Hayes, Margaret ↗</span>, to show her page: the brief written by Intercept and the live monitor, and under her alert the <strong>Care plan</strong> with the pathway you just sent (your dose marked Edited, co-signed) and the <strong>Activity</strong> so far, with who did what. Then go back and reopen her alert from her card: the pathway opens with it, with your dose. Leaving ends the call.</div>
 	<div class="frames one" style="margin-top:16px">
-		<figure><img src="frames/09-patient.jpg" alt="Patient details for Hayes, Margaret: the brief, the monitor, alerts and care team." loading="lazy"><figcaption>Her Patient details page.</figcaption></figure>
+		<figure><img src="frames/09-patient.jpg" alt="Patient details for Hayes, Margaret mid-plan: the brief, the monitor, her Critical alert and, under it, the Care plan with the CHF exacerbation pathway active." loading="lazy"><figcaption>Her page mid-plan: the pathway in her Care plan, under her alert.</figcaption></figure>
 	</div>
 </section>
 
@@ -320,15 +324,19 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		<div>
 			<p class="label steps">Steps</p>
 			<ol>
-				<li>Nothing to click. About 6 seconds after Keep at Chadron it's 06:00: both checkpoints read <strong>Passed</strong> and <strong>Transfer avoided</strong> appears at the bottom of the Pathway column.</li>
-				<li>Point out her alert: <strong>Resolved</strong>, by Kayla Brandt, RN, and her score now NEWS2 3, Low, with RR 20 and SpO₂ 95%.</li>
-				<li>Close the modal. Her Resolved toast is waiting, the live feed says "06:00: Hayes is stable on 2 L, transfer avoided", and her card has settled.</li>
+				<li>Nothing to click. About 6 seconds after Keep at Chadron it's 06:00: both checkpoints read <strong>Passed</strong> and <strong>Transfer avoided</strong> appears at the bottom of the Pathway panel.</li>
+				<li>Point out her alert: <strong>Resolved</strong>, by Kayla Brandt, RN, and her score now NEWS2 3, Low, with RR 20 and SpO₂ 95%. Her CHF exacerbation flag has gone with the alert, here and on her card.</li>
+				<li>Close her alert. Her Resolved toast is waiting, the live feed says "06:00: Hayes is stable on 2 L, transfer avoided", and her card has settled.</li>
+				<li>Click her card to open her page. Her brief and score are at 06:00 (NEWS2 3). The <strong>Care plan</strong> reads Keeping at Chadron, both checkpoints Passed and Transfer avoided. <strong>Activity</strong> lists the night newest first, with who did what; <span class="ui">View on Timeline</span> puts it beside her vitals.</li>
+				<li>Optional: <span class="ui">Orders</span> has the pathway, accepted with your dose and signed by Dr. Tom Weller, its orders active; <span class="ui">Notes</span> has the consult note if you approved the notetaker's draft.</li>
 			</ol>
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/10-resolved-modal.jpg" alt="The alert modal at 06:00: the alert resolved by Kayla Brandt, RN, NEWS2 3 Low, both checkpoints passed and Transfer avoided." loading="lazy"><figcaption>06:00 in her alert: resolved, NEWS2 3, both checkpoints passed, transfer avoided. The cost is a placeholder until it's sourced.</figcaption></figure>
-		<figure><img src="frames/11-resolved-monitoring.jpg" alt="Monitoring after the modal closes: Hayes's Resolved toast and the live feed caption about 06:00." loading="lazy"><figcaption>Back on Monitoring: her Resolved toast and the live feed's 06:00 line.</figcaption></figure>
+		<figure><img src="frames/10-resolved-modal.jpg" alt="Her alert at 06:00: resolved by Kayla Brandt, RN, NEWS2 3 Low, both checkpoints passed and Transfer avoided." loading="lazy"><figcaption>06:00 in her alert: resolved, NEWS2 3, both checkpoints passed, transfer avoided. The cost is a placeholder until it's sourced.</figcaption></figure>
+		<figure><img src="frames/11-resolved-monitoring.jpg" alt="Monitoring after her alert closes: Hayes's Resolved toast and the live feed caption about 06:00." loading="lazy"><figcaption>Back on Monitoring: her Resolved toast and the live feed's 06:00 line.</figcaption></figure>
+		<figure><img src="frames/12-patient-plan.jpg" alt="Her page at 06:00: the brief, NEWS2 3, and the Care plan: the CHF exacerbation pathway active with furosemide edited, Keeping at Chadron, both checkpoints passed, Transfer avoided." loading="lazy"><figcaption>Her page at 06:00: the Care plan, from the pathway to Transfer avoided.</figcaption></figure>
+		<figure><img src="frames/13-patient-activity.jpg" alt="Her Activity, newest first: Transfer avoided, Alert resolved by Kayla Brandt, RN, the 4 h and 1 h checkpoints passed, Keeping at Chadron by You." loading="lazy"><figcaption>Her Activity: what was done and decided, with who and when.</figcaption></figure>
 	</div>
 </section>
 
@@ -339,9 +347,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		<table>
 			<thead><tr><th>What the audience sees</th><th>The scenario</th><th>Why</th></tr></thead>
 			<tbody>
-				<tr><td>Four hospitals</td><td>Five sites</td><td>Kept at four for the prototype</td></tr>
-				<tr><td>Today's clock time; the night passes in about 6 seconds</td><td>01:40 to 06:00</td><td>The prototype runs on the real clock, so checkpoints pass before their due times</td></tr>
-				<tr><td>Her page shows no orders or keep decision, and its brief and charts stop at 01:40</td><td>The plan and her recovery are tracked on her record</td><td>Not built yet; the decisions show in her alert modal</td></tr>
+				<tr><td>Today's clock time; the night passes in about 6 seconds</td><td>01:40 to 06:00</td><td>The prototype runs on the real clock, so checkpoints pass before their due times, and the night's activity sits at the right edge of her Timeline</td></tr>
 				<tr><td>Doses, capacities, transport times</td><td>—</td><td>Illustrative; need clinical review</td></tr>
 			</tbody>
 		</table>

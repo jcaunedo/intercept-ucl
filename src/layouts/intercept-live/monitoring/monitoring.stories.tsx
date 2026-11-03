@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
-import { sampleAlertDetails } from "../alert-detail/sample-alert-detail";
+import { sampleAlertDetails } from "../alert-modal/sample-alert-modal";
 import { samplePatients } from "../census/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
@@ -110,12 +110,11 @@ export const Scenario1HeartFailure: Story = {
 			"What changed since I last looked?",
 			"Show latest labs",
 		]);
-		// Her card's alert bar opens the alert modal: the reason line as its title, her labs, and the one-click consult.
+		// Her card's alert bar opens the alert panel: the reason line as its title, and the one-click consult.
 		const card = canvas.getAllByRole("article").find((article) => within(article).queryByText("Hayes, Margaret"));
 		await userEvent.click(within(card as HTMLElement).getByRole("button", { name: /Open alert/ }));
 		const reason = "Rising work of breathing, positive fluid balance, HFrEF";
 		const modal = within(await screen.findByRole("dialog", { name: reason }));
-		await expect(modal.getByText("2,400 pg/mL")).toBeInTheDocument();
 		await expect(modal.getByRole("button", { name: "Video consult" })).toBeInTheDocument();
 		// The toasts hide while the modal is open and come back when it closes.
 		const toasts = () => document.querySelector("[data-slot='toaster-region']");
@@ -128,9 +127,11 @@ export const Scenario1HeartFailure: Story = {
 		await userEvent.click(await screen.findByRole("menuitem", { name: "Video consult" }));
 		const consult = within(await screen.findByRole("dialog", { name: reason }));
 		await expect(await consult.findByText("Calling Kayla Brandt…")).toBeInTheDocument();
-		await expect(await consult.findByText("Kayla Brandt, RN joined", {}, { timeout: 3000 })).toBeInTheDocument();
-		// Open patient leaves the modal for her page; the toasts stay hidden there too.
-		await userEvent.click(consult.getByRole("button", { name: "Open patient" }));
+		await expect(await consult.findByText("Kayla Brandt, RN joined", {}, { timeout: 7000 })).toBeInTheDocument();
+		// Under the call, the AI Notetaker, ready to capture the consultation.
+		await expect(consult.getByText("AI Notetaker")).toBeInTheDocument();
+		// Her name leaves the modal for her page; the toasts stay hidden there too.
+		await userEvent.click(consult.getByRole("button", { name: "Hayes, Margaret, open patient" }));
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(toasts()).toHaveAttribute("data-hidden");
 		// Opened from the alert, her page still has the patient list: Monitoring's, as it shows now.
@@ -156,7 +157,8 @@ export const Scenario1Resolution: Story = {
 		});
 		await userEvent.click(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ }));
 		const modal = within(await screen.findByRole("dialog"));
-		await userEvent.click(modal.getByRole("button", { name: "Accept and send" }));
+		await userEvent.click(modal.getByRole("button", { name: "View pathway" }));
+		await userEvent.click(await modal.findByRole("button", { name: "Accept and send" }));
 		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
 		await userEvent.click(panel.getByRole("button", { name: "Keep at Chadron" }));
 		// The form's own button: the one that opened it may still be fading out.
@@ -181,6 +183,13 @@ export const Scenario1Resolution: Story = {
 		const reopened = within(await screen.findByRole("dialog"));
 		await expect(await reopened.findByText(/Keeping at Chadron/)).toBeInTheDocument();
 		await expect(reopened.getByText("Transfer avoided")).toBeInTheDocument();
+		// Her page tracks it all: the care plan, and the activity with who did what.
+		await userEvent.click(reopened.getByRole("button", { name: "Hayes, Margaret, open patient" }));
+		const plan = within(await screen.findByRole("region", { name: "Care plan" }));
+		await expect(plan.getByText("Keeping at Chadron")).toBeInTheDocument();
+		await expect(plan.getByText("Transfer avoided")).toBeInTheDocument();
+		const activity = within(screen.getByRole("region", { name: "Activity" }));
+		await expect(activity.getByText("Alert resolved")).toBeInTheDocument();
 	},
 };
 
@@ -323,9 +332,9 @@ export const ResolveAlert: Story = {
 		const queue = await openLiveFeed(canvas, userEvent);
 		const row = within(queue.getByText("Bed exit alarm").closest("li") as HTMLElement);
 		await userEvent.click(row.getByRole("button", { name: "Resolve" }));
-		await expect(row.getByRole("button", { name: "Resolve alert" })).toBeDisabled();
+		await expect(row.getByRole("button", { name: "Mark as resolved" })).toBeDisabled();
 		await userEvent.click(row.getByRole("radio", { name: "Artifact or false alarm" }));
-		await userEvent.click(row.getByRole("button", { name: "Resolve alert" }));
+		await userEvent.click(row.getByRole("button", { name: "Mark as resolved" }));
 		await waitFor(() => expect(queue.queryByText("Bed exit alarm")).not.toBeInTheDocument());
 		await userEvent.click(queue.getByRole("tab", { name: /Resolved/ }));
 		await expect(await queue.findByText(/Resolved by you · .* · Artifact or false alarm/)).toBeVisible();
@@ -429,8 +438,12 @@ function LiveMonitoring(props: MonitoringProps) {
 		withScenarioCensus,
 		withScenarioRecords,
 		withScenarioAlertDetails,
+		withScenarioActivity,
 		onPathwayDecision,
 		onTransferDecision,
+		onConsultChange,
+		onConsultNote,
+		logAlertAction,
 	} = useSampleLiveFeed();
 	// The Prototype menu's Sections by hospital view (Group by hospital's Kanban board is the default).
 	const [groupedGrid, setGroupedGrid] = React.useState(false);
@@ -442,8 +455,22 @@ function LiveMonitoring(props: MonitoringProps) {
 	const patients = useLivePatients(fed);
 	// Scenario 1 changes Hayes's Census card and record too, so the Census page, her details and the chat follow.
 	const censusPatients = props.censusPatients && withScenarioCensus(props.censusPatients);
-	const patientRecords = props.patientRecords && withScenarioRecords(props.patientRecords);
-	const live = useLiveAskIntercept(alerts, patients, props.onAlertAction, { censusPatients, patientRecords });
+	const scenarioRecords = props.patientRecords && withScenarioRecords(props.patientRecords);
+	const alertDetails = withScenarioAlertDetails(
+		sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients: patients, records: scenarioRecords }),
+	);
+	// Her page tracks what was done and decided: the activity log, the care plan, the orders and the consult note.
+	const patientRecords = scenarioRecords && withScenarioActivity(scenarioRecords, alertDetails);
+	// Every alert action goes in the log, wherever it was taken.
+	const live = useLiveAskIntercept(
+		alerts,
+		patients,
+		(alertId, action) => {
+			logAlertAction(alertId, action, props.escalationTargets);
+			props.onAlertAction?.(alertId, action);
+		},
+		{ censusPatients, patientRecords },
+	);
 	// What the feed just changed shows at the right of the hospital bar. The Census page (Sidebar) follows the same feed.
 	return (
 		<Monitoring
@@ -456,11 +483,11 @@ function LiveMonitoring(props: MonitoringProps) {
 			liveFeed={caption}
 			censusPatients={censusPatients && withFeedAlerts(censusPatients, alerts)}
 			patientRecords={patientRecords}
-			alertDetails={withScenarioAlertDetails(
-				sampleAlertDetails({ alerts: everyAlert, censusPatients, monitoringPatients: patients, records: patientRecords }),
-			)}
+			alertDetails={alertDetails}
 			onPathwayDecision={onPathwayDecision}
 			onTransferDecision={onTransferDecision}
+			onConsultChange={onConsultChange}
+			onConsultNote={onConsultNote}
 			prototype={prototypeShortcuts({
 				startScenario1,
 				groupedGrid,

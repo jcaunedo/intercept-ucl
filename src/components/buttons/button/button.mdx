@@ -32,6 +32,7 @@ Buttons are `neutral` (dark) by default: use one per view for the main action. U
 | `neutral`     | The default: the main action in a view              |
 | `brand`       | An action that should carry the brand (rare). `default` is its deprecated alias |
 | `secondary`   | A supporting action next to a primary button        |
+| `destructive-secondary` | Stopping something without the weight of a solid red, e.g. End call |
 | `outline`     | A neutral action that needs a visible boundary      |
 | `ghost`       | Low-emphasis actions in toolbars and dense layouts  |
 | `link`        | An action that should read like inline text         |
@@ -47,13 +48,21 @@ Sizes follow the control size scale: `xs` 24px, `sm` 32px, `md` 36px (the defaul
 
 ## With an icon
 
-Place icons from `lucide-react` as children. The button sizes them to 16px (12px at `xs`) unless the icon sets its own `size-*` class, and trims the side padding. Mark decorative icons with `aria-hidden="true"`.
+Place icons from `lucide-react` as children. The button sizes them to 16px (12px at `xs`; 18px in `icon-md` and 20px in `icon-lg`) unless the icon sets its own `size-*` class, and trims the padding on the icon's side, which it assumes is the left. Mark decorative icons with `aria-hidden="true"`.
 
 <Canvas of={ButtonStories.WithIcon} />
 
 ## Disabled
 
-<Canvas of={ButtonStories.Disabled} />
+A disabled button takes the `disabled` fill and a `foreground-subtle` label rather than fading; the outline keeps its fill with a lighter border.
+
+<Canvas of={ButtonStories.DisabledVariants} />
+
+## Loading
+
+`loading` replaces the label with a spinner (screen readers still read the label) and ignores clicks until it's false. The button keeps its look, so it doesn't read as unavailable.
+
+<Canvas of={ButtonStories.LoadingVariants} />
 
 ## As a link
 

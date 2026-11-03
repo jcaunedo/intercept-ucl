@@ -7,7 +7,7 @@ status: proposed — confirm with Carlos
 Created: Nov 3, 2026
 Created by: Julio Caunedo
 Last updated: Nov 3, 2026
-Scope: The bedside camera of Intercept Live: one camera session in the patient's room, opened to look in (Live Camera), to call the bedside nurse into it (Video consult) or to huddle with the AI Scribe; where each opens, its states, data and acceptance criteria. Governs `patient-details/sections/camera-section.tsx` and the alert modal's consult (`alert-detail/alert-detail.tsx`).
+Scope: The bedside camera of Intercept Live: one camera session in the patient's room, opened to look in (Live Camera), to call the bedside nurse into it (Video consult) or to huddle with the AI Scribe; where each opens, its states, data and acceptance criteria. Governs `patient-details/sections/camera-section.tsx` and the alert modal's consult (`alert-modal/alert-modal.tsx`).
 Purpose: The specs describe one camera; the prototype built it twice, under three names. This PRD sets the one model the screens follow and lists what's still open.
 -->
 
@@ -103,6 +103,7 @@ The specs have conference-style video too, for other people. They're separate ex
 | CAM-006 | **Presence** | While live, the clinician shows as "In camera" (in a huddle, "In a huddle") to the bedside team and in the room's **Who's here** list (CC-05, Spec §6.12). |
 | CAM-007 | **Call the bedside nurse** (Video consult) | Calls the patient's bedside nurse through the hospital's messaging (SV-10, CC-07): "Calling Kayla Brandt…", then "Kayla Brandt, RN joined" when she reaches the room, and the session goes live. The nurse's name, role, avatar and presence come from Presence and Status. |
 | CAM-008 | **Huddle and the AI Scribe** | **Start huddle** starts the session if needed and turns on the AI Scribe. Under a one-party consent profile it listens at once; under all-party, it waits until consent is recorded for everyone ("AI Scribe waiting"). While on, its state and Pause / Stop stay on screen (CD-01, PD-073). Ending the huddle leaves a drafted note for the clinician to review and sign (WF-05). |
+| CAM-008a | **AI Notetaker in a video consult** | Under the call in the alert panel: Start notetaker sends an approval request to every party on the call without a standing approval, and recording starts once they've approved (all-party consent, PD-073); then Capturing consultation, Preparing notes and Notes ready for review, an AI draft the clinician reviews, edits and approves. ✅ **Decision (Nov 3, 2026, user's call).** |
 | CAM-009 | **Recording is visible to both sides** | While the Scribe captures, the clinician's screen says so at all times, and the room's camera screen shows a recording indicator the bedside team can see (Spec §5.4; DU-28 capture states). |
 | CAM-010 | **End** | **End session** (or **End huddle**, or the consult's **End** / **End call**) stops the feed, mutes, stops the Scribe and clears "In camera". The screen says "The camera is off." |
 | CAM-011 | **Session record** | Each ended session is listed under **Recent sessions**: Look in or Huddle, who, when, how long, and the Scribe's note (drafted or signed). The session also joins the patient's timeline events and the communication audit trail (PD-030, CC-09). |
@@ -188,7 +189,7 @@ The specs have conference-style video too, for other people. They're separate ex
 | What | Where |
 |---|---|
 | Camera view | `src/layouts/intercept-live/patient-details/sections/camera-section.tsx` (`CameraSection`, `RoomScene`, `RoomVideo`) |
-| Video consult | `src/layouts/intercept-live/alert-detail/alert-detail.tsx` (the consult tile and the footer) |
+| Video consult | `src/layouts/intercept-live/alert-modal/alert-modal.tsx` (the consult tile and the footer) |
 | Card menu | `src/layouts/intercept-live/shared/patient-panel.tsx` (`patientCardActions`) |
 | Opening with the call ringing | `src/layouts/intercept-live/patient-navigation.tsx` (`openAlert(id, alertId, { consult: true })`) |
 | Sample data | `src/layouts/intercept-live/patient-details/sections/sample-camera.ts` (each hospital's presets, two-way audio and consent profile); `src/layouts/intercept-live/sample-data/sample-camera-video.ts` (the clip) |

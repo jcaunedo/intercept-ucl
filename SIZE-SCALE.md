@@ -31,7 +31,7 @@ Use `md` unless a density requirement forces otherwise. Don't mix sizes within o
 
 | Component  | `size` values                                                             | Default | Notes |
 | ---------- | ------------------------------------------------------------------------- | ------- | ----- |
-| `Button`   | `xs` · `sm` · `md` · `lg` · `icon-xs` · `icon-sm` · `icon-md` · `icon-lg` | `md`    | shadcn's classes. `xs` uses 12px text and a 12px icon; the others 14px and 16px |
+| `Button`   | `xs` · `sm` · `md` · `lg` · `icon-xs` · `icon-sm` · `icon-md` · `icon-lg` | `md`    | intercept.ds Button (Nov 3, 2026 resync). `xs` uses 12px medium text and a 12px icon; the others 14px semibold text and 16px icons. Icon-only: 12 / 16 / 18 / 20px icons |
 | `Input`    | `md` · `lg`                                                               | `md`    | shadcn's Input has no `size` prop (always 36px); `lg` comes from Figma |
 | `Textarea` | `md` · `lg`                                                               | `md`    | Heights are minimums (`min-h-9`, `min-h-10`); it grows with its text |
 | `Select`   | `sm` · `md` · `lg`                                                        | `md`    | The trigger. shadcn's has `sm` · `default` (32 / 36px); `lg` matches Input |

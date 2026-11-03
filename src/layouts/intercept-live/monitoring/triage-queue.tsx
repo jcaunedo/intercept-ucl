@@ -294,7 +294,7 @@ function ResolveForm({
 
 	return (
 		<RowForm
-			submitLabel='Resolve alert'
+			submitLabel='Mark as resolved'
 			submitDisabled={!reason}
 			onCancel={onCancel}
 			onSubmit={() => reason && onAction({ type: "resolve", reason, note })}

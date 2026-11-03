@@ -5,13 +5,17 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
 import { Census } from "../census/census";
-import { samplePatients } from "../census/sample-census";
+import { samplePatients, sampleScenario1ResolvedCensus } from "../census/sample-census";
 import { Monitoring } from "../monitoring/monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
 import { sortOrderById } from "../shared/patient-panel";
+import { sampleScenario1Activity, sampleScenario1CarePlan } from "./sample-patient-activity";
 import { samplePatientRecords } from "./sample-patient-details";
+import { sampleScenario1ResolvedRecord } from "./sample-patient-records";
+import { sampleScenario1ResolvedTimeline } from "./sections/sample-timeline";
+import { sampleScenario1ResolvedVitals } from "./sections/sample-vitals";
 
 // The Census's grid as it starts (every patient, sorted by Alert), so the details step through it as from a card.
 const censusOrder = [...samplePatients].sort(sortOrderById("alert").compare).map((patient) => patient.id);
@@ -134,5 +138,45 @@ export const FromMonitoring: Story = {
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		const breadcrumb = within(canvas.getByRole("navigation", { name: "Breadcrumb" }));
 		await expect(breadcrumb.getByRole("button", { name: "Monitoring" })).toBeVisible();
+	},
+};
+
+/**
+ * Margaret Hayes after Scenario 1 (06:00): her page tracks what was done and decided. In the rail, under her alerts, the
+ * Care plan (the CHF exacerbation pathway, co-signed, with the edited furosemide dose; Keeping at Chadron, both
+ * checkpoints passed, Transfer avoided) and the latest Activity, with who and when; View on Timeline opens all of it on
+ * the Timeline's events lane, beside her vitals. Her brief, score and vitals are at 06:00.
+ */
+export const CarePlanAndActivity: Story = {
+	args: {
+		patients: samplePatients.map((patient) => (patient.id === "p15" ? { ...patient, ...sampleScenario1ResolvedCensus } : patient)),
+		patientRecords: samplePatientRecords.map((record) =>
+			record.id === "p15"
+				? {
+						...record,
+						...sampleScenario1ResolvedRecord(),
+						vitals: sampleScenario1ResolvedVitals(),
+						timeline: sampleScenario1ResolvedTimeline(),
+						activity: sampleScenario1Activity,
+						carePlan: sampleScenario1CarePlan,
+					}
+				: record,
+		),
+		defaultPatient: { id: "p15", list: censusOrder },
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Hayes, Margaret" });
+		const plan = within(canvas.getByRole("region", { name: "Care plan" }));
+		await expect(plan.getByText("Edited")).toBeVisible();
+		await expect(plan.getByText("Keeping at Chadron")).toBeVisible();
+		await expect(plan.getAllByText(/Passed/)).toHaveLength(2);
+		await expect(plan.getByText("Transfer avoided")).toBeVisible();
+		// The newest first: the resolution, then back through the night.
+		const activity = within(canvas.getByRole("region", { name: "Activity" }));
+		await expect(activity.getByText("Latest 5 of 12")).toBeVisible();
+		await expect(activity.getAllByRole("listitem")[0]).toHaveTextContent("Transfer avoided");
+		await userEvent.click(activity.getByRole("button", { name: "View on Timeline" }));
+		await expect(canvas.getByRole("tab", { name: "Timeline" })).toHaveAttribute("aria-selected", "true");
 	},
 };

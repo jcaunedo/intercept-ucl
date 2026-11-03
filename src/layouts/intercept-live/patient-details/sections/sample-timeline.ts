@@ -402,19 +402,22 @@ function timeline({ span = 1440, seed, hr, map, bp, mapLimits, spo2, rr, gaps = 
 // each time back to 92–93% as her oxygen goes 2 → 3 → 4 L. BNP 1,850 → 2,400 and creatinine 1.6 → 1.9 on the repeat
 // Dr. Weller ordered. At Scenario 1's early warning (`earlyWarning`), the last hour has RR 20 → 26, SpO₂ 89% and HR
 // 112, so her NEWS2 jumps from 5 to 10 (`sample-vitals.ts`); before it, that hour holds.
-function hayesTimeline(earlyWarning: boolean): PatientTimeline {
-	const now = (before: number, after: number): [number, number] => [0, earlyWarning ? after : before];
+function hayesTimeline(stage: "before" | "alert" | "resolved"): PatientTimeline {
+	// The latest readings: holding before the scenario, the alert's at 01:40, and by 06:00 the alert's a few minutes back
+	// (the prototype's night passes in seconds) and the recovery now.
+	const latest = (before: number, alert: number, resolved: number): [number, number][] =>
+		stage === "before" ? [[0, before]] : stage === "alert" ? [[0, alert]] : [[3, alert], [0, resolved]];
 	return timeline({
 		span: 1200,
 		seed: 141,
-		hr: [[1200, 92], [600, 98], [240, 104], [60, 106], now(106, 112)],
-		map: [[1200, 100], [0, earlyWarning ? 107 : 106]],
-		bp: earlyWarning ? [148, 86] : [147, 85],
-		spo2: [[1200, 94], [840, 94], [780, 93], [310, 93], [300, 90], [290, 93], [160, 92], [150, 89], [140, 92], [60, 92], now(92, 89)],
-		rr: [[1200, 18], [600, 19], [300, 20], [60, 20], now(20, 26)],
+		hr: [[1200, 92], [600, 98], [240, 104], [60, 106], ...latest(106, 112, 88)],
+		map: [[1200, 100], ...latest(106, 107, 92)],
+		bp: stage === "resolved" ? [128, 74] : stage === "alert" ? [148, 86] : [147, 85],
+		spo2: [[1200, 94], [840, 94], [780, 93], [310, 93], [300, 90], [290, 93], [160, 92], [150, 89], [140, 92], [60, 92], ...latest(92, 89, 95)],
+		rr: [[1200, 18], [600, 19], [300, 20], [60, 20], ...latest(20, 26, 20)],
 		temp: [[1000, 36.7], [760, 36.8], [520, 36.6], [280, 36.7], [40, 36.8]],
 		lanes: [
-			oxygenFlow([[1200, 2], [300, 3], [150, 4]]),
+			oxygenFlow([[1200, 2], [300, 3], [150, 4], ...(stage === "resolved" ? ([[1, 2]] as [number, number][]) : [])]),
 			labLane("BNP", "pg/mL", [[1180, 1850], [75, 2400]], { high: 100 }),
 			labLane("Creatinine", "mg/dL", [[1180, 1.6], [75, 1.9]], { high: 1.0 }, "lab-2"),
 		],
@@ -838,7 +841,7 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 	}),
 
 	// Hayes, just before Scenario 1 (`hayesTimeline`): the last hour holds at RR 20, SpO₂ 92% and HR 106.
-	p15: hayesTimeline(false),
+	p15: hayesTimeline("before"),
 
 	// Erickson: pneumonia, day 3. Last fever (38.2 °C) yesterday morning; oxygen 3 → 2 L; WBC 15.2 → 10.4.
 	p16: timeline({
@@ -956,6 +959,7 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 };
 
 /** Hayes's timeline at Scenario 1's early warning, built when the beat plays so it ends "now". */
-const sampleScenario1Timeline = () => hayesTimeline(true);
+const sampleScenario1Timeline = () => hayesTimeline("alert");
+const sampleScenario1ResolvedTimeline = () => hayesTimeline("resolved");
 
-export { sampleScenario1Timeline, sampleTimelineByPatient };
+export { sampleScenario1ResolvedTimeline, sampleScenario1Timeline, sampleTimelineByPatient };

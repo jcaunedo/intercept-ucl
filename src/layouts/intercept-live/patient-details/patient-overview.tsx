@@ -16,6 +16,7 @@ import {
 	TriageAlertList,
 	type TriageAlert,
 } from "../monitoring/triage-queue";
+import { ActivityCard, CarePlanCard } from "./activity";
 import aiBriefIcon from "./images/ai-brief.svg";
 import type { PatientBrief, PatientDetailsProps, PatientEarlyWarning, PatientFluids, PatientLab } from "./patient-details";
 import { Detail, formatElapsed, formatTime, freshness, NoData, SectionCard } from "./section-parts";
@@ -321,8 +322,8 @@ const latest = (times: (string | undefined)[]) =>
  * intake and output (DU-18), organ support (PD-022), the AI brief (PD-024), key labs (PD-025) and context (PD-026).
  *
  * On a wide canvas, the physiology is the main column (brief, monitor, score and fluids, ventilator and infusions,
- * labs) and a 22rem rail
- * on the right holds the alerts, then the care team and encounter. On a narrow one it's a single column, with the
+ * labs) and a 22rem rail on the right holds the alerts, then what's being done about them (the care plan and the latest
+ * activity, when the record has them), then the care team and encounter. On a narrow one it's a single column, with the
  * alerts straight after the brief: they're mandatory (PRD §3.4), so they never sink below the physiology.
  */
 function PatientOverview({
@@ -332,7 +333,11 @@ function PatientOverview({
 	alerts = [],
 	escalationTargets = [],
 	onAlertAction,
-}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "alerts" | "escalationTargets" | "onAlertAction">) {
+	onShowTimeline,
+}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "alerts" | "escalationTargets" | "onAlertAction"> & {
+	/** Opens the Timeline, where the whole activity log is. */
+	onShowTimeline?: () => void;
+}) {
 	const now = useCurrentMinute();
 	const name = `${patient.lastName}, ${patient.firstName}`;
 	const ventilator = record?.ventilator;
@@ -359,8 +364,10 @@ function PatientOverview({
 					</div>
 				) : null}
 
-				<div className='min-w-0 self-start @min-[60rem]:[grid-area:alerts]'>
+				<div className='flex min-w-0 flex-col gap-6 self-start @min-[60rem]:[grid-area:alerts]'>
 					<AlertsSection alerts={alerts} escalationTargets={escalationTargets} onAlertAction={onAlertAction} />
+					{record?.carePlan ? <CarePlanCard plan={record.carePlan} /> : null}
+					{record?.activity ? <ActivityCard activity={record.activity} onShowAll={onShowTimeline} /> : null}
 				</div>
 
 				{/* Its own size container, so ventilator and infusions sit side by side once the column has room. */}

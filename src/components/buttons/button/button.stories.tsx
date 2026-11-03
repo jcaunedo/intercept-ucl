@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowRight, Maximize2 } from "lucide-react";
+import { ArrowRight, Maximize2, VideoOffIcon } from "lucide-react";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Button } from "./button";
 
@@ -16,6 +17,7 @@ const meta = {
 				"neutral",
 				"brand",
 				"destructive",
+				"destructive-secondary",
 				"outline",
 				"secondary",
 				"ghost",
@@ -63,6 +65,58 @@ export const AllVariants: Story = {
 			<Button variant='ghost'>Ghost</Button>
 			<Button variant='link'>Link</Button>
 			<Button variant='destructive'>Delete</Button>
+			<Button variant='destructive-secondary'>
+				<VideoOffIcon aria-hidden='true' />
+				End call
+			</Button>
+		</div>
+	),
+};
+
+/** Disabled, every variant: the `disabled` fill and a `foreground-subtle` label, no opacity; the outline keeps its fill. */
+export const DisabledVariants: Story = {
+	render: () => (
+		<div className='flex flex-wrap items-center gap-3'>
+			{(["neutral", "secondary", "destructive", "destructive-secondary", "outline", "ghost", "link"] as const).map((variant) => (
+				<Button key={variant} variant={variant} disabled>
+					{variant}
+				</Button>
+			))}
+		</div>
+	),
+};
+
+/**
+ * Loading: a spinner in place of the label, which screen readers still read. The button keeps its look and ignores
+ * clicks until it's done.
+ */
+export const Loading: Story = {
+	args: {
+		children: "Save",
+		loading: true,
+		onClick: fn(),
+	},
+	play: async ({ canvasElement, args }) => {
+		const button = within(canvasElement).getByRole("button", { name: "Save" });
+		await expect(button).toHaveAttribute("aria-busy", "true");
+		await userEvent.click(button, { pointerEventsCheck: 0 });
+		await expect(args.onClick).not.toHaveBeenCalled();
+	},
+};
+
+/** Loading at each size and in the three styles Figma draws it in. */
+export const LoadingVariants: Story = {
+	render: () => (
+		<div className='flex flex-col gap-3'>
+			{(["neutral", "outline", "secondary"] as const).map((variant) => (
+				<div key={variant} className='flex flex-wrap items-center gap-3'>
+					{(["xs", "sm", "md", "lg"] as const).map((size) => (
+						<Button key={size} variant={variant} size={size} loading>
+							Save
+						</Button>
+					))}
+				</div>
+			))}
 		</div>
 	),
 };

@@ -1,8 +1,8 @@
 import * as React from "react";
 
-import { alertModalRenderer, type AlertDetailData } from "../alert-detail/alert-detail";
-import type { CarePathwayDecision } from "../alert-detail/care-pathway";
-import type { KeepOrTransferDecision } from "../alert-detail/keep-or-transfer";
+import { alertModalRenderer, withAlertFlags, type AlertConsultState, type AlertDetailData } from "../alert-modal/alert-modal";
+import type { CarePathwayDecision } from "../alert-modal/care-pathway";
+import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { MonitoringPanel, type MonitoringPatient } from "../monitoring/monitoring-panel";
 import { worstOpenSeverity } from "../monitoring/triage-queue";
@@ -41,10 +41,14 @@ type CensusProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		 * toast's maximize button open the alert modal; an alert without one opens the patient.
 		 */
 		alertDetails?: AlertDetailData[];
-		/** A pathway accepted, declined or written in the alert modal, by alert. */
-		onPathwayDecision?: (alertId: string, decision: CarePathwayDecision) => void;
+		/** A pathway accepted, declined or written in the alert modal, by alert, with the alert's detail as opened. */
+		onPathwayDecision?: (alertId: string, decision: CarePathwayDecision, detail: AlertDetailData) => void;
 		/** Keep or transfer decided in the alert modal, by alert (Scenario 1, step 5). */
-		onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision) => void;
+		onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
+		/** The alert modal's video consult rang, went live or ended, by alert. */
+		onConsultChange?: (alertId: string, state: AlertConsultState, detail: AlertDetailData) => void;
+		/** The AI Notetaker's draft of a consult, approved in the alert modal, by alert. */
+		onConsultNote?: (alertId: string, note: string, detail: AlertDetailData) => void;
 	};
 
 /**
@@ -70,6 +74,8 @@ function Census({
 	alertDetails,
 	onPathwayDecision,
 	onTransferDecision,
+	onConsultChange,
+	onConsultNote,
 	...shell
 }: CensusProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on the Census and Monitoring.
@@ -81,6 +87,11 @@ function Census({
 	const flaggedMonitoringPatients = React.useMemo(
 		() => monitoringPatients && withFlagDetails(monitoringPatients, patientRecords),
 		[monitoringPatients, patientRecords],
+	);
+	// Monitoring's cards show each open alert's flag first, as its alert panel does. The Census shows no alerts.
+	const monitoringCards = React.useMemo(
+		() => flaggedMonitoringPatients && withAlertFlags(flaggedMonitoringPatients, alerts, alertDetails),
+		[flaggedMonitoringPatients, alerts, alertDetails],
 	);
 
 	return (
@@ -94,11 +105,14 @@ function Census({
 				alertDetails
 					? alertModalRenderer({
 							details: alertDetails,
+							records: patientRecords,
 							alerts,
 							escalationTargets,
 							onAlertAction: handleAlertAction,
 							onPathwayDecision,
 							onTransferDecision,
+							onConsultChange,
+							onConsultNote,
 						})
 					: shell.renderAlert
 			}
@@ -127,10 +141,10 @@ function Census({
 						groupedView={groupedView}
 					/>
 				),
-				Monitoring: flaggedMonitoringPatients ? (
+				Monitoring: monitoringCards ? (
 					<MonitoringPanel
 						hospitals={hospitals}
-						patients={flaggedMonitoringPatients}
+						patients={monitoringCards}
 						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onOpenPatient={onOpenPatient}

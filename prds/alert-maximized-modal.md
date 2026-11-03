@@ -8,7 +8,7 @@ Created: Nov 2, 2026
 Created by: Julio Caunedo
 Last updated: Nov 3, 2026
 Scope: The alert maximized modal of Intercept Live: one alert opened in full from a Monitoring card, an alert toast or a card's "…" menu, with its evidence, a one-click video consult to the bedside and a suggested care pathway.
-Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-detail/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
+Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-modal/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
 -->
 
 # PRD — Alert maximized modal
@@ -27,6 +27,8 @@ Purpose: Defines the modal's structure, behavior, states, data and acceptance cr
 
 An alert is first seen small: a card's alert bar, a toast, a row in the triage queue. The alert maximized modal opens one alert in full, over the page the clinician is on, so they can understand it and act on it without leaving that page.
 
+✅ **Replaced (Nov 3, 2026, user's call):** the modal now opens as the **alert panel** (intercept.ds `alert-expanded`, UCL AlertExpanded): the Patient column alone, 600px, with **Video consult** and **View pathway** under the alert. Each opens a 432px panel that slides out on the right, the pathway's to the right of the call's: the call with the **AI Notetaker** under it (step 3: once the others on the call approve its request, it captures the consultation, prepares the notes and offers an AI draft for the clinician to review, edit and approve), and the care pathway with keep or transfer (steps 4 and 5). The pathway's decision sticks to the bottom of its panel. ✅ **Resolved (Nov 3, 2026, user's calls):** the history and labs aren't in the panel, so step 3's home meds, echo, creatinine and BNP come from Ask Intercept Live's answer about the patient (AMM-012), and the key clinical findings are the alert's flag, first in the panel's tag row (AMM-011). On a screen too narrow for both panels, the panels and then the alert column narrow, so the patient's name never runs off the screen. The three columns below describe the modal it replaced; AMM-011, AMM-012, AMM-013 and AMM-AC-08 say what changed.
+
 It answers three questions, one column each:
 
 | Column | Question | What it holds |
@@ -37,7 +39,7 @@ It answers three questions, one column each:
 
 It is Scenario 1's steps 2 to 5 in one place (Demo Use Cases, Margaret Hayes at 01:40): what fired and why (step 2), a one-click consult to the bedside with the history and labs (step 3), the pathway sent for local co-signature (step 4), and the decision to keep her at Chadron with checkpoints (step 5).
 
-The modal is not the patient's chart. It shows what this alert needs; **Open patient** goes to the full record (PRD Patient details).
+The modal is not the patient's chart. It shows what this alert needs; the patient's **name** goes to the full record (PRD Patient details).
 
 ### 1.1 Product objectives
 
@@ -94,7 +96,7 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | **Frame** | UCL's Dialog: 1400px wide, three columns (Patient flexible at 600px; Clinical info 400px; Pathway 400px), each scrolling on its own. Below about 1432px of screen the Patient column narrows. When it grows tall it keeps 80px from the viewport's top and bottom edges. |
 | **Close** | A ghost × at the Patient column's top right; Escape; a click on the scrim. Escape first closes an open form or dose edit, then the modal. |
 | **Column labels** | "Clinical info" and "Pathway", small uppercase labels that name each column's region for screen readers. |
-| **Footer** | Under the Patient column: **Open patient** and **Video consult**, equal widths. ✅ **Copy (Nov 3, 2026, user's call):** **Video consult** everywhere in the app, the footer and every card's menu (it was Video call Kayla, RN from Nov 2, 2026; Start video consult before that); the call itself says who picks up ("Calling Kayla Brandt…"). While the call is on, **End call**. |
+| **Footer** | ✅ **Gone (Nov 3, 2026, user's call; intercept.ds `alert-expanded`):** the patient's **name** opens their page (underlined, with ↗; it replaced Open patient), and **Video consult** and **View pathway** sit under the alert, equal widths. View pathway takes the clinician, and focus, to the Pathway column. While the call is on, Video consult reads **End call**. The lifecycle buttons are filled (Button `neutral`). ⚠️ **Decision needed:** Figma reads **End video consult**. |
 | **Toasts** | Hidden while the modal is open, back when it closes; new ones wait. |
 
 ---
@@ -106,16 +108,16 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 | AMM-001 | **Open from the alert surfaces** | The entry points in §3 open the modal over the current page, for the alert they show. |
 | AMM-002 | **Patient identity** | Avatar (photo or initials in the patient's color), name, sex and age, MRN, and hospital · unit · bed. |
 | AMM-003 | **The alert** | The alert bar (severity, how many alerts in the last 24 h, how long ago), the reason line as the title, the alert's own title under it, and its source ("Source: Rule · Deterioration score", with the source icon) (AL-04, AL-09). |
-| AMM-004 | **Lifecycle actions** | As the triage queue: **Acknowledge** while the alert is active; **Escalate** unless it's escalated, with somewhere to escalate to; **Mark as resolved** while it's open, and **Feedback** for an AI recommendation (AL-03, DU-13). With all four in the row, Mark as resolved reads **Resolve**. ✅ **Copy (Nov 2, 2026, user's call):** **Feedback** replaces AI is wrong, which had replaced Decline (picked over "It's wrong" and "AI was wrong"); Improve AI was tried in between. It shows only on AI recommendations, so it reads as feedback on the AI, not as turning the alert down or a verdict on it. |
+| AMM-004 | **Lifecycle actions** | As the triage queue: **Acknowledge** while the alert is active; **Escalate** unless it's escalated, with somewhere to escalate to; **Resolve** while it's open, its form sent with **Mark as resolved** (✅ Nov 3, 2026, user's call; the button read Mark as resolved and the form Resolve alert), and **Feedback** for an AI recommendation, a link on the source line (✅ Nov 3, 2026, user's call) (AL-03, DU-13). ✅ **Copy (Nov 2, 2026, user's call):** **Feedback** replaces AI is wrong, which had replaced Decline (picked over "It's wrong" and "AI was wrong"); Improve AI was tried in between. It shows only on AI recommendations, so it reads as feedback on the AI, not as turning the alert down or a verdict on it. |
 | AMM-005 | **Acknowledge in place** | One click. The modal stays open; the button confirms in place (a check, "Acknowledged") and stays where it was. Clicking it again undoes the clinician's own acknowledgment. |
 | AMM-006 | **Escalate** | Opens a form under the buttons: who to send it to (the escalation list) and an optional note. Sending closes the modal; the alert travels with the escalation (SV-10). |
 | AMM-007 | **Resolve, or Feedback** | Opens a form: the resolution (Treated, Artifact or false alarm, Expected for this patient, Duplicate) and an optional note; for Feedback, "What did it get wrong? (optional)" and **Send feedback** (AL-03, BR-07). Sending closes the modal. |
 | AMM-008 | **Who did what** | Under the source, once addressed: "Acknowledged by you · time", "Escalated to … by you · time", "Resolved by … · time · reason". Someone other than the clinician is named. A note left with the action shows under it ("Note: BiPAP started, SpO₂ back to 94%."). Announced to screen readers. |
 | AMM-009 | **Resolved alerts** | A resolved alert opens too: the green Resolved bar with when it resolved, no lifecycle actions, the alert panel in the Resolved bar's green with neutral text (no severity colors), and who resolved it. |
 | AMM-010 | **Score, monitor, tags** | The patient's NEWS2-style score with its 24 h change (DU-14), between two rules as on their card, their live bedside monitor, and their tags as on their card. |
-| AMM-011 | **Key clinical findings** | Each phrase of the reason line with the numbers behind it. Without a reason line, the alert's evidence and recommendation. With nothing, "No key findings for this alert." |
-| AMM-012 | **History and labs** | What the consult needs: home meds, last echo, trending labs, each value colored by how much it matters now (critical, or abnormal but known). With nothing, "No history or labs on file for this patient." |
-| AMM-013 | **One-click video consult** | **Video consult** rings the patient's bedside nurse ("Calling Kayla Brandt…"), then opens the room's camera ("Kayla Brandt, RN joined", Live with a running time, Mute, End). The call floats over the bottom of Clinical info; the findings scroll under it. **End call** (in the footer) or End (on the call) ends it (SV-07, CC-05). The camera session itself is PRD Bedside camera (CAM-007). |
+| AMM-011 | **Key clinical findings** | Each phrase of the reason line with the numbers behind it. Without a reason line, the alert's evidence and recommendation. With nothing, "No key findings for this alert." ✅ **In the alert panel (Nov 3, 2026, user's calls):** a flag, first in the tag row, named for what the alert says ("CHF exacerbation", "Sepsis candidate"; not the condition, since a flag reads as a fact about the patient and the AI may be wrong). Clicking it opens the findings, one per line, under the alert's recommendation, with the alert's source and when it fired. Only while the alert is open; without findings, no flag. The patient's Monitoring card shows it too, first in its flags (✅ Nov 3, 2026, user's call); not the Census card, which shows no alerts, the patient's page or Filters. |
+| AMM-012 | **History and labs** | What the consult needs: home meds, last echo, trending labs, each value colored by how much it matters now (critical, or abnormal but known). With nothing, "No history or labs on file for this patient." ✅ **Not in the alert panel (Nov 3, 2026, user's call):** the AI Notetaker fills the Video consult panel under the call; Ask Intercept Live's answer about the patient has the history and labs. |
+| AMM-013 | **One-click video consult** | **Video consult** rings the patient's bedside nurse ("Calling Kayla Brandt…"), then opens the room's camera ("Kayla Brandt, RN joined", Live with a running time, Mute, End). The call floats over the bottom of Clinical info; the findings scroll under it (in the alert panel: a Video consult panel slides out beside the alert, the call over the AI Notetaker). **End call** (the button under the alert) or End (on the call) ends it (SV-07, CC-05). The camera session itself is PRD Bedside camera (CAM-007). |
 | AMM-014 | **Suggested pathway** | Every alert suggests a pathway for its kind (e.g. the CHF exacerbation pathway, the hour-1 sepsis bundle), with its source protocol and each order's evidence. Without one, "No care pathway suggested for this alert." |
 | AMM-015 | **Edit, accept, decline** | Each dose can be edited inline (an edited dose is marked, the suggestion struck through beside it). **Accept and send** sends the orders to the local physician for co-signature; once co-signed they're active and the bedside team carries them out. **Decline** asks why (required). **Add note**, under the orders, opens an optional note for the co-signer ("Note for Dr. Tom Weller"), sent with the orders and shown as "Note: …" under Awaiting co-signature and Active. Nothing becomes an order on its own (BR-06, OE-02). |
 | AMM-016 | **Tiers** | A Critical alert's toast interrupts (AL-02); the modal itself doesn't change by tier beyond its colors. One alert per condition (AL-11): a repeat updates the alert the modal shows. |
@@ -135,9 +137,9 @@ The modal is not the patient's chart. It shows what this alert needs; **Open pat
 
 | State | Alert panel | Actions | State line |
 |---|---|---|---|
-| **New** (active) | Severity colors | Acknowledge · Escalate · Mark as resolved | — |
-| **Acknowledged** | Severity colors | Acknowledged (pressed; click to undo) · Escalate · Mark as resolved | "✓ Acknowledged by you · 1:42 AM" |
-| **Escalated** | Severity colors | Mark as resolved | "Escalated to James Turner by you · 1:44 AM" |
+| **New** (active) | Severity colors | Acknowledge · Escalate · Resolve | — |
+| **Acknowledged** | Severity colors | Acknowledged (pressed; click to undo) · Escalate · Resolve | "✓ Acknowledged by you · 1:42 AM" |
+| **Escalated** | Severity colors | Resolve | "Escalated to James Turner by you · 1:44 AM" |
 | **Resolved** | Green, as its Resolved bar; neutral text | None | "Resolved by Ashley Bell, RN · 8:14 PM · Treated" |
 | **Marked AI wrong** (AI recommendation) | Severity colors | None | "Marked AI wrong by you · 1:45 AM" |
 | **Consult: calling** | — | Footer: "Calling…" (disabled) | The call shows the nurse ringing |
@@ -180,10 +182,10 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | AMM-AC-02 | An alert toast is on screen | The clinician clicks anywhere in its header (pill, time or icon) | The modal opens for that alert |
 | AMM-AC-03 | The modal is open | The clinician clicks Acknowledge | The modal stays open, the button reads Acknowledged, and "Acknowledged by you · time" appears under the source |
 | AMM-AC-04 | The alert is acknowledged by the clinician | They click Acknowledged | The alert is active again, the button reads Acknowledge, and the state line goes away |
-| AMM-AC-05 | The modal is open | The clinician opens Mark as resolved, picks Treated and sends | The alert is resolved with that reason, and the modal closes |
+| AMM-AC-05 | The modal is open | The clinician opens Resolve, picks Treated and sends (Mark as resolved) | The alert is resolved with that reason, and the modal closes |
 | AMM-AC-06 | A form is open | The clinician presses Escape | The form closes and the modal stays open |
 | AMM-AC-07 | A resolved alert's toast | The clinician clicks it | The modal opens with the green Resolved bar, a neutral panel, no actions and "Resolved by … · time · reason" |
-| AMM-AC-08 | The modal is open | The clinician clicks Video consult | "Calling Kayla Brandt…", then "Kayla Brandt, RN joined" with the room's camera over the bottom of Clinical info; the footer reads End call |
+| AMM-AC-08 | The modal is open | The clinician clicks Video consult | "Calling Kayla Brandt…", then "Kayla Brandt, RN joined" with the room's camera over the bottom of Clinical info (in the alert panel: in the Video consult panel, beside the alert); the button reads End call |
 | AMM-AC-09 | Hayes's card "…" menu | The clinician picks Video consult | The modal opens with the call already ringing |
 | AMM-AC-10 | The CHF pathway is suggested | The intensivist edits the furosemide dose and accepts | The dose is marked Edited, the orders go to Dr. Tom Weller for co-signature, then show Active |
 | AMM-AC-11 | An alert with no findings or history | The modal opens | Both sections show, each with its empty line |
@@ -226,10 +228,10 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | What | Where |
 |---|---|
 | Figma | intercept.ds › Alert Modal page: `alert-modal` (`1321:10102`), the video reference (`1337:12288`), `alert-modal-video`, `care-pathway` |
-| Modal | `src/layouts/intercept-live/alert-detail/alert-detail.tsx` (`AlertDetailModal`, `alertModalRenderer`) |
-| Pathway | `src/layouts/intercept-live/alert-detail/care-pathway.tsx` |
-| Keep or transfer | `src/layouts/intercept-live/alert-detail/keep-or-transfer.tsx` (`KeepOrTransferPanel`) |
-| Sample data | `src/layouts/intercept-live/alert-detail/sample-alert-detail.ts` (Hayes's Scenario 1 detail; a detail and a pathway for every feed alert) |
+| Modal | `src/layouts/intercept-live/alert-modal/alert-modal.tsx` (`AlertDetailModal`, `alertModalRenderer`) |
+| Pathway | `src/layouts/intercept-live/alert-modal/care-pathway.tsx` |
+| Keep or transfer | `src/layouts/intercept-live/alert-modal/keep-or-transfer.tsx` (`KeepOrTransferPanel`) |
+| Sample data | `src/layouts/intercept-live/alert-modal/sample-alert-modal.ts` (Hayes's Scenario 1 detail; a detail and a pathway for every feed alert) |
 | Forms | `src/layouts/intercept-live/monitoring/triage-queue.tsx` (`EscalateForm`, `ResolveForm`, `stateLine`) |
 | Decisions | DESIGN.md › "Alert modal" |
 | Stories | Storybook › Layouts/Intercept Live/Alert modal; Monitoring › Scenario 1: Heart failure |

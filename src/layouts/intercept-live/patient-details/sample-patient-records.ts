@@ -906,4 +906,38 @@ const sampleScenario1Record = (): Partial<PatientRecord> => ({
 	},
 });
 
-export { samplePatientBaseRecords, sampleScenario1Record };
+// Scenario 1's resolution (06:00): RR 20 and SpO₂ 95% on 2 L, so NEWS2 3, Low; both checkpoints passed and she stays at
+// Chadron. Her plan, the decisions and who made them come from the app's record of them (the feed's activity).
+const sampleScenario1ResolvedRecord = (): Partial<PatientRecord> => ({
+	brief: {
+		text: "Stable on 2 L by morning: RR 20 and SpO₂ 95%, with HR 88, so NEWS2 is 3 (Low), down from 10 at the alert. The CHF exacerbation pathway is running, with urine output above its target on the furosemide infusion. Both checkpoints passed, so she stays at Chadron: the transfer was avoided.",
+		sourceCount: 14,
+		updatedAt: minutesAgo(0),
+	},
+	earlyWarning: {
+		score: "NEWS2",
+		value: 3,
+		band: "Low",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		trend: [
+			{ at: hoursAgo(20), value: 4 },
+			{ at: hoursAgo(4), value: 5 },
+			{ at: minutesAgo(5), value: 10 },
+			{ at: minutesAgo(0), value: 3 },
+		],
+		inputs: [
+			{ label: "Respiratory rate", value: "20/min", points: 0 },
+			{ label: "SpO₂", value: "95%", points: 1 },
+			{ label: "Oxygen", value: "2 L/min", points: 2 },
+			{ label: "Heart rate", value: "88 bpm", points: 0 },
+			{ label: "Systolic BP", value: "128 mmHg", points: 0 },
+			{ label: "Consciousness", value: "Alert", points: 0 },
+			{ label: "Temperature", value: "36.8 °C", points: 0 },
+		],
+	},
+	ventilator: charted("Oxygen", 0, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
+});
+
+export { samplePatientBaseRecords, sampleScenario1Record, sampleScenario1ResolvedRecord };

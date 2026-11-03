@@ -1,13 +1,13 @@
-import type { AlertDetailData } from "../alert-detail/alert-detail";
-import { sampleScenario1ResolvedDetail } from "../alert-detail/sample-alert-detail";
+import type { AlertDetailData } from "../alert-modal/alert-modal";
+import { sampleScenario1ResolvedDetail } from "../alert-modal/sample-alert-modal";
 import type { CensusPatient } from "../census/census-panel";
 import { sampleScenario1Census, sampleScenario1ResolvedCensus } from "../census/sample-census";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleScenario1Monitoring, sampleScenario1ResolvedMonitoring } from "../monitoring/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";
-import { sampleScenario1Record } from "../patient-details/sample-patient-records";
-import { sampleScenario1Timeline } from "../patient-details/sections/sample-timeline";
-import { sampleScenario1Vitals } from "../patient-details/sections/sample-vitals";
+import { sampleScenario1Record, sampleScenario1ResolvedRecord } from "../patient-details/sample-patient-records";
+import { sampleScenario1ResolvedTimeline, sampleScenario1Timeline } from "../patient-details/sections/sample-timeline";
+import { sampleScenario1ResolvedVitals, sampleScenario1Vitals } from "../patient-details/sections/sample-vitals";
 
 // Story-only: Scenario 1 of the Demo Use Cases, "Heart failure at 2 a.m. in a 25-bed hospital", as beats the Prototype
 // menu plays. Margaret Hayes (`p15`, Chadron Community Hospital, Med-Surg) starts just before it, holding at NEWS2 5;
@@ -79,6 +79,14 @@ const sampleScenario1: ScenarioBeat[] = [
 		changes: () => ({
 			census: { p15: sampleScenario1ResolvedCensus },
 			monitoring: { p15: sampleScenario1ResolvedMonitoring },
+			// Her page follows: the brief, the score, the oxygen, the vitals and the timeline at 06:00.
+			records: {
+				p15: {
+					...sampleScenario1ResolvedRecord(),
+					vitals: sampleScenario1ResolvedVitals(),
+					timeline: sampleScenario1ResolvedTimeline(),
+				},
+			},
 			resolve: {
 				"live-hayes": {
 					by: "Kayla Brandt, RN",

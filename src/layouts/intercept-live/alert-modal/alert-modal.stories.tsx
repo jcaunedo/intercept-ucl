@@ -5,11 +5,16 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
 
-import { AlertDetailModal, type AlertDetailModalProps } from "./alert-detail";
-import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { AlertDetailModal, AlertPanel, type AlertDetailModalProps } from "./alert-modal";
+import {
+	sampleEscalationTargets,
+	sampleMonitoringAlerts,
+	sampleMonitoringPatients,
+} from "../monitoring/sample-monitoring";
 import { sampleLiveScenario } from "../monitoring/sample-live-scenario";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
-import { sampleAlertDetails, sampleScenario1AlertDetail } from "./sample-alert-detail";
+import { withFlagDetails } from "../shared/flag-details";
+import { sampleAlertDetails, sampleScenario1AlertDetail } from "./sample-alert-modal";
 
 /**
  * The alert modal, opened from a Monitoring card's alert bar or an alert toast's maximize button. Margaret Hayes's
@@ -45,6 +50,8 @@ function Demo(props: AlertDetailModalProps) {
 	const [open, setOpen] = React.useState(true);
 	// Acknowledge marks the alert acknowledged, as the app does, so the modal confirms it in place.
 	const [alert, setAlert] = React.useState(props.data.alert);
+	// The flags open their details from the patient's record, as the app's renderer does.
+	const [flagged] = withFlagDetails([{ id: props.data.alert.patientId, tags: props.data.tags }], samplePatientRecords);
 	return (
 		<div className='flex min-h-screen items-center justify-center bg-background-subtle p-4'>
 			<Button variant='outline' onClick={() => setOpen(true)}>
@@ -53,14 +60,19 @@ function Demo(props: AlertDetailModalProps) {
 			</Button>
 			<AlertDetailModal
 				{...props}
-				data={{ ...props.data, alert }}
+				data={{ ...props.data, alert, tags: props.data.tags && flagged.tags }}
 				open={open}
 				onOpenChange={setOpen}
 				onAction={(action) => {
 					props.onAction?.(action);
 					if (action.type === "acknowledge")
-						setAlert((current) => ({ ...current, status: "acknowledged", addressed: { at: new Date().toISOString() } }));
-					if (action.type === "unacknowledge") setAlert((current) => ({ ...current, status: "active", addressed: undefined }));
+						setAlert((current) => ({
+							...current,
+							status: "acknowledged",
+							addressed: { at: new Date().toISOString() },
+						}));
+					if (action.type === "unacknowledge")
+						setAlert((current) => ({ ...current, status: "active", addressed: undefined }));
 				}}
 			/>
 		</div>
@@ -69,7 +81,7 @@ function Demo(props: AlertDetailModalProps) {
 
 /**
  * Video consult (footer) rings Kayla Brandt, RN at the bedside, then opens the room's camera at the top of the
- * right column. Acknowledge, Escalate and Mark as resolved, in the alert, run its lifecycle; Open patient opens their
+ * right column. Acknowledge, Escalate and Resolve, in the alert, run its lifecycle; the patient's name opens their
  * details.
  */
 export const Default: Story = {
@@ -78,7 +90,7 @@ export const Default: Story = {
 			await screen.findByRole("dialog", { name: "Rising work of breathing, positive fluid balance, HFrEF" }),
 		);
 		await expect(dialog.getByText("2,400 pg/mL")).toBeInTheDocument();
-		await dialog.getByRole("button", { name: "Open patient" }).click();
+		await dialog.getByRole("button", { name: /, open patient$/ }).click();
 		await expect(args.onOpenPatient).toHaveBeenCalled();
 		await dialog.getByRole("button", { name: "Acknowledge" }).click();
 		await expect(args.onAction).toHaveBeenLastCalledWith({ type: "acknowledge" });
@@ -94,7 +106,7 @@ export const Default: Story = {
 		await userEvent.click(dialog.getByRole("button", { name: "Acknowledge" }));
 		await dialog.getByRole("button", { name: "Video consult" }).click();
 		await expect(await dialog.findByText("Calling Kayla Brandt…")).toBeInTheDocument();
-		await waitFor(() => expect(dialog.getByText("Kayla Brandt, RN joined")).toBeInTheDocument(), { timeout: 3000 });
+		await waitFor(() => expect(dialog.getByText("Kayla Brandt, RN joined")).toBeInTheDocument(), { timeout: 7000 });
 		await expect(args.onConsultChange).toHaveBeenLastCalledWith("live");
 		await dialog.getByRole("button", { name: "End" }).click();
 		await expect(await dialog.findByRole("button", { name: "Video consult" })).toBeInTheDocument();
@@ -102,7 +114,7 @@ export const Default: Story = {
 };
 
 /**
- * Escalate and Mark as resolved open the triage queue's forms under the buttons: who to send it to and a note, or the
+ * Escalate and Resolve open the triage queue's forms under the buttons: who to send it to and a note, or the
  * resolution and a note. Escape closes an open form and leaves the modal open.
  */
 export const EscalateAndResolve: Story = {
@@ -116,9 +128,9 @@ export const EscalateAndResolve: Story = {
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(escalate).toHaveAttribute("aria-expanded", "false"));
 		await expect(screen.getByRole("dialog")).toBeInTheDocument();
-		await userEvent.click(dialog.getByRole("button", { name: "Mark as resolved" }));
+		await userEvent.click(dialog.getByRole("button", { name: "Resolve" }));
 		await userEvent.click(await dialog.findByRole("radio", { name: "Treated" }));
-		await userEvent.click(dialog.getByRole("button", { name: "Resolve alert" }));
+		await userEvent.click(dialog.getByRole("button", { name: "Mark as resolved" }));
 		await expect(args.onAction).toHaveBeenLastCalledWith({ type: "resolve", reason: "Treated", note: "" });
 	},
 };
@@ -127,6 +139,77 @@ export const EscalateAndResolve: Story = {
 export const InConsult: Story = {
 	args: { defaultConsult: "live" },
 };
+
+/**
+ * The alert panel (AlertPanel: UCL AlertExpanded with the modal's interactions), which replaced the three-column modal
+ * in the app (Nov 3, 2026, user's call). Acknowledge confirms in place; Escalate and Resolve open their forms
+ * under the buttons. Video consult rings Kayla Brandt, RN and slides a panel out with the call and the AI Notetaker under
+ * it (Scenario 1, step 3): once the others on the call approve, it captures the consultation, prepares the notes and offers the draft
+ * for review and approval; View pathway slides a second one out to its right with the CHF pathway, then keep or
+ * transfer once its orders are sent (steps 4 and 5). End call and Hide pathway each slide theirs back.
+ */
+export const Panel: Story = {
+	render: (args) => <PanelDemo {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Acknowledge" }));
+		await expect(await canvas.findByRole("button", { name: "Acknowledged" })).toHaveAttribute("aria-pressed", "true");
+		await userEvent.click(canvas.getByRole("button", { name: "Video consult" }));
+		const call = within(await canvas.findByRole("complementary", { name: "Video consult" }));
+		await expect(call.getByText("Calling Kayla Brandt…")).toBeInTheDocument();
+		await expect(await call.findByText("Kayla Brandt, RN joined", {}, { timeout: 7000 })).toBeInTheDocument();
+		// Under the call, the AI Notetaker. Starting it asks Kayla for approval; it records once she has.
+		await expect(call.getByText("AI Notetaker")).toBeInTheDocument();
+		await userEvent.click(call.getByRole("button", { name: "Start notetaker" }));
+		await expect(await call.findByText("Recording starts once Kayla Brandt, RN approves.")).toBeInTheDocument();
+		await expect(await call.findByText("Capturing consultation", {}, { timeout: 6000 })).toBeInTheDocument();
+		await userEvent.click(call.getByRole("button", { name: "Stop and prepare notes" }));
+		await expect(await call.findByText("Preparing notes")).toBeInTheDocument();
+		await expect(await call.findByText("Notes ready for review", {}, { timeout: 6000 })).toBeInTheDocument();
+		await userEvent.click(call.getByRole("button", { name: "Review notes" }));
+		const note = call.getByRole("textbox", { name: "Draft consult note" }) as HTMLTextAreaElement;
+		await expect(note.value.startsWith("Video consult with Kayla Brandt, RN")).toBe(true);
+		await userEvent.click(call.getByRole("button", { name: "Approve notes" }));
+		await expect(await call.findByText(/Approved by you/)).toBeInTheDocument();
+		// The pathway opens in a second panel, to the right of the call's.
+		await userEvent.click(canvas.getByRole("button", { name: "View pathway" }));
+		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
+		await expect(await pathway.findByRole("button", { name: "Accept and send" })).toBeInTheDocument();
+		const panels = canvas.getAllByRole("complementary").map((panel) => panel.getAttribute("aria-label"));
+		await expect(panels).toEqual(["Video consult", "Pathway"]);
+		await userEvent.click(canvas.getByRole("button", { name: "End call" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Video consult" })).not.toBeInTheDocument());
+		await userEvent.click(canvas.getByRole("button", { name: "Hide pathway" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).not.toBeInTheDocument());
+	},
+};
+
+function PanelDemo(props: AlertDetailModalProps) {
+	// Acknowledge marks the alert acknowledged, as the app does, so the panel confirms it in place.
+	const [alert, setAlert] = React.useState(props.data.alert);
+	// The flags open their details from the patient's record, as the app's renderer does.
+	const [flagged] = withFlagDetails([{ id: props.data.alert.patientId, tags: props.data.tags }], samplePatientRecords);
+	return (
+		<div className='flex min-h-screen items-center justify-center bg-background-subtle p-4'>
+			<AlertPanel
+				{...props}
+				data={{ ...props.data, alert, tags: props.data.tags && flagged.tags }}
+				onClose={fn()}
+				onAction={(action) => {
+					props.onAction?.(action);
+					if (action.type === "acknowledge")
+						setAlert((current) => ({
+							...current,
+							status: "acknowledged",
+							addressed: { at: new Date().toISOString() },
+						}));
+					if (action.type === "unacknowledge")
+						setAlert((current) => ({ ...current, status: "active", addressed: undefined }));
+				}}
+				className='max-h-[calc(100dvh-32px)]'
+			/>
+		</div>
+	);
+}
 
 /** Acknowledged in the prototype: no lifecycle buttons, so no footer. */
 export const NoActions: Story = {
@@ -149,10 +232,11 @@ export const SepsisAlert: Story = {
 		await expect(feedDetails.filter((detail) => !detail.pathway)).toEqual([]);
 		const dialog = within(await screen.findByRole("dialog"));
 		await expect(dialog.getByRole("region", { name: "Sepsis bundle, hour 1" })).toBeInTheDocument();
-		// An AI recommendation can be resolved (it was right, and it's handled) or declined (it was wrong).
+		// An AI recommendation can be resolved (it was right, and it's handled) or get feedback (it was wrong), a link on its
+		// source line.
 		const panel = within(dialog.getByRole("region", { name: "Alert" }));
 		await userEvent.click(panel.getByRole("button", { name: "Resolve" }));
-		await expect(await panel.findByRole("button", { name: "Resolve alert" })).toBeInTheDocument();
+		await expect(await panel.findByRole("button", { name: "Mark as resolved" })).toBeInTheDocument();
 		await userEvent.click(panel.getByRole("button", { name: "Feedback" }));
 		await expect(await panel.findByRole("button", { name: "Send feedback" })).toBeInTheDocument();
 	},
@@ -236,7 +320,9 @@ export const Pathway: Story = {
 		await expect(await pathway.findByText(/Sent to Dr. Tom Weller for co-signature/)).toBeInTheDocument();
 		// The note shows under the status once its field has closed.
 		await waitFor(() => expect(pathway.getByText("On 80 mg PO at home").tagName).toBe("SPAN"));
-		await waitFor(() => expect(pathway.getByText(/Co-signed by Dr. Tom Weller/)).toBeInTheDocument(), { timeout: 6000 });
+		await waitFor(() => expect(pathway.getByText(/Co-signed by Dr. Tom Weller/)).toBeInTheDocument(), {
+			timeout: 6000,
+		});
 		await expect(pathway.getAllByText("Active")).not.toHaveLength(0);
 	},
 };
@@ -264,7 +350,10 @@ export const PathwayDeclined: Story = {
 		await userEvent.click(pathway.getByRole("button", { name: "Decline" }));
 		await userEvent.type(pathway.getByRole("textbox", { name: "Why decline?" }), "Transferring to Scottsbluff instead");
 		await userEvent.click(pathway.getByRole("button", { name: "Decline pathway" }));
-		await expect(args.onPathwayDecision).toHaveBeenCalledWith({ type: "decline", rationale: "Transferring to Scottsbluff instead" });
+		await expect(args.onPathwayDecision).toHaveBeenCalledWith({
+			type: "decline",
+			rationale: "Transferring to Scottsbluff instead",
+		});
 		await expect(region).toHaveAttribute("data-status", "declined");
 		await waitFor(() => expect(pathway.queryByRole("textbox")).not.toBeInTheDocument());
 		await userEvent.click(pathway.getByRole("button", { name: "Undo decline" }));

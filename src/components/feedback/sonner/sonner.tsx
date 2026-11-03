@@ -207,6 +207,14 @@ function useStackTop(active: boolean) {
 	return bottom;
 }
 
+// The row floats over the page, so its buttons keep their opaque background on hover (Nov 3, 2026, user's call): the
+// outline's hover fill (`accent`) is translucent in light mode, so it goes over the background as a layer instead of
+// replacing it, and the page never shows through.
+const floatingHover = "hover:bg-background hover:bg-linear-to-b hover:from-accent hover:to-accent";
+// Button trims the padding on an icon's side assuming the icon leads; Don't show's chevron trails, so the trim goes to
+// the right: the label 12px from the edge, the chevron 8px (less the outline's 1px border).
+const trailingIcon = "has-[>svg]:pl-[11px] has-[>svg]:pr-[7px]";
+
 /**
  * The row over the stack, right-aligned with it. With any toast, Don't show (a menu of how long: closes every toast on
  * screen and holds every new one back, Critical too); with two or more, Close all too (closes every toast
@@ -354,7 +362,7 @@ function ToasterActions({
 					) : any && !untilReload ? (
 						<DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
 							<DropdownMenuTrigger asChild>
-								<Button variant='outline' size='sm'>
+								<Button variant='outline' size='sm' className={cn(floatingHover, trailingIcon)}>
 									{muteLabel}
 									<ChevronDownIcon aria-hidden='true' />
 								</Button>
@@ -374,7 +382,7 @@ function ToasterActions({
 						</DropdownMenu>
 					) : null}
 					{several ? (
-						<Button variant='outline' size='sm' onClick={closeAllToasts}>
+						<Button variant='outline' size='sm' onClick={closeAllToasts} className={floatingHover}>
 							{closeAllLabel}
 						</Button>
 					) : null}
@@ -389,7 +397,7 @@ function ToasterActions({
  * shadcn's Radix Sonner, colored by UCL's tokens instead of Sonner's own theme (no `next-themes`), so `.dark` drives it
  * like everything else.
  * Toasts stack bottom right, 16px from the screen's edges, at most three, the newest at the bottom. Collapsed, each one
- * behind peeks `peek` (12px) above the one in front; hovering the stack spreads them `gap` (8px) apart and pauses their
+ * behind peeks `peek` (16px) above the one in front; hovering the stack spreads them `gap` (8px) apart and pauses their
  * timers. "Don't show" (`muteLabel`: for 30 mins … until tomorrow) sits right-aligned 8px above the top toast, with
  * "Close all" (`closeAllLabel`) beside it from two toasts; while muted, "Muted until …" with Play and × takes Don't show's
  * place (× keeps them muted until the app reloads, and the notice goes). `hidden` fades the
@@ -404,7 +412,7 @@ function Toaster({
 	position = "bottom-right",
 	visibleToasts = 3,
 	gap = 8,
-	peek = 12,
+	peek = 16,
 	offset = 16,
 	mobileOffset = 16,
 	toastOptions,

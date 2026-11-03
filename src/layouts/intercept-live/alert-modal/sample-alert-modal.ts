@@ -4,7 +4,7 @@ import { sampleMonitoringPatients, sampleScenario1Monitoring } from "../monitori
 import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleCameraVideo } from "../sample-data/sample-camera-video";
 import { avatarTones, patientInitials } from "../shared/patient-avatar";
-import type { AlertDetailData } from "./alert-detail";
+import type { AlertDetailData } from "./alert-modal";
 import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
 
 // Margaret Hayes's alert at 01:40 in Scenario 1 (Demo Use Cases), opened: the same numbers as her record, monitor and
@@ -53,6 +53,8 @@ const sampleScenario1AlertDetail = (): AlertDetailData => ({
 		},
 		{ label: "HFrEF", lead: "EF 25%", detail: "two admissions this year" },
 	],
+	// The flag her findings open from in the alert panel: her alert's title is the score.
+	flag: "CHF exacerbation",
 	// As on her card.
 	tags: [{ label: "Fall risk" }],
 	history: [

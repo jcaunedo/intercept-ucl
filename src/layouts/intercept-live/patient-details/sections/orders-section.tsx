@@ -30,8 +30,8 @@ import { SourceLabel } from "../../shared/source-label";
 /* Data shapes (the app's API fills these)                                    */
 /* -------------------------------------------------------------------------- */
 
-/** The v1 recommendation classes (PRD PD-061). */
-type OrderRecommendationKind = "sepsis-bundle" | "electrolyte" | "vent-order" | "glucose";
+/** The v1 recommendation classes (PRD PD-061), and a care pathway's order set accepted in an alert (DU-23). */
+type OrderRecommendationKind = "sepsis-bundle" | "electrolyte" | "vent-order" | "glucose" | "care-pathway";
 
 type OrderRecommendationOutcome =
 	| {
@@ -116,6 +116,7 @@ const kindLabels: Record<OrderRecommendationKind, string> = {
 	electrolyte: "Electrolyte replacement",
 	"vent-order": "Vent-order alignment",
 	glucose: "Glycemic management",
+	"care-pathway": "Care pathway",
 };
 
 const protocolLabels: Record<OrderRecommendation["protocol"]["kind"], string> = {

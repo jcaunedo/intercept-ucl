@@ -28,6 +28,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
+import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
 import { PatientOverview } from "./patient-overview";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { ChartSection, type PatientChart } from "./sections/chart-section";
@@ -204,6 +205,10 @@ type PatientRecord = {
 	/** The deterioration score's breakdown, for the Overview's Early warning score. */
 	earlyWarning?: PatientEarlyWarning;
 	fluids?: PatientFluids;
+	/** What was done and decided about the patient, with who and when: the Overview's Activity and the Timeline's events. */
+	activity?: PatientActivity[];
+	/** The care plan in force: the pathway sent from an alert and the decision to keep or transfer, for the Overview. */
+	carePlan?: PatientCarePlan;
 };
 
 /** The patient's live bedside values, from Monitoring. */
@@ -374,7 +379,13 @@ function sectionContent(
 		case "chart":
 			return record?.chart ? <ChartSection chart={record.chart} /> : null;
 		case "timeline":
-			return record?.timeline ? <TimelineSection timeline={record.timeline} lastViewedAt={record.brief?.lastViewedAt} /> : null;
+			// The activity log on the events lane, so each decision lines up with the vitals.
+			return record?.timeline ? (
+				<TimelineSection
+					timeline={withActivityEvents(record.timeline, record.activity)}
+					lastViewedAt={record.brief?.lastViewedAt}
+				/>
+			) : null;
 		case "medications":
 			// An infusion's pump values are on the Timeline.
 			return record?.medications ? (
@@ -516,6 +527,7 @@ function PatientDetails({
 						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onAlertAction={onAlertAction}
+						onShowTimeline={() => setSection("timeline")}
 					/>
 				</TabsContent>
 				{sections.map((item) => {

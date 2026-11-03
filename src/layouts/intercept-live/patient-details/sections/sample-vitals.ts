@@ -540,4 +540,18 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 /** Hayes's vitals at Scenario 1's early warning, built when the beat plays so the last reading is "now". */
 const sampleScenario1Vitals = () => buildVitals(hayesAt0140);
 
-export { sampleScenario1Vitals, sampleVitalsByPatient };
+// Scenario 1's resolution (06:00): the alert's readings an hour back, and now RR 20, SpO₂ 95% on 2 L, HR 88, BP 128/74,
+// as on her monitor (`sampleScenario1ResolvedMonitoring`). The prototype's night passes in seconds, so it's an hour here.
+const hayesAt0600: VitalsSpec = {
+	...hayesAt0140,
+	hours: 21,
+	hr: [...hayesAt0140.hr, 88],
+	systolic: [...hayesAt0140.systolic, 128],
+	diastolic: [...hayesAt0140.diastolic, 74],
+	spo2: [...hayesAt0140.spo2, 95],
+	rr: [...hayesAt0140.rr, 20],
+};
+
+const sampleScenario1ResolvedVitals = () => buildVitals(hayesAt0600);
+
+export { sampleScenario1ResolvedVitals, sampleScenario1Vitals, sampleVitalsByPatient };
