@@ -1,5 +1,5 @@
 ---
-name: ucl-ux-copywriter
+name: intercept-copywriter
 description: Improve, create, audit, or standardize UX copy for the project's products, in the brand voice defined in DESIGN.md. Use for screen titles, descriptions, CTAs, forms, helper text, onboarding, empty states, errors, warnings, success messages, confirmations, and AI-assisted drafts, including copy in UCL stories, docs, and layouts.
 ---
 

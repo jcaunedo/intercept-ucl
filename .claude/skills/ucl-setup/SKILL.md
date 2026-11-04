@@ -86,6 +86,7 @@ Then set every "Default" in CLAUDE.md → "Stack" to "Set", with the chosen valu
 - **DESIGN.md:** fill "Brand names" and "Brand voice" with what the user gave. Leave the ⚠️ placeholder for anything not given yet. Replace "every product" in the quality bar with the project name if the user wants.
 - **Docs:** `src/docs/introduction.mdx` (title, package name in every snippet) and `src/components/buttons/button/button.mdx` (import line).
 - **README:** title "`<Project>` UCL". Replace the "Start a new project" section with a short "Getting started" (`npm install`, `npm run storybook`). In "Using UCL in an App", replace `@your-org/ucl` and `@your-org` with the real package and scope, and delete the ℹ️ placeholder note. If the registry isn't GitHub Packages, rewrite step 1 for it (in the README and `introduction.mdx`). Keep the rest.
+- **Copywriter skill:** each project names it `<project>-copywriter`, using the project name in lowercase kebab-case (e.g. `acme-copywriter`). Rename `.claude/skills/project-copywriter/` to that name, set `name:` in its `SKILL.md` to match, and replace every `project-copywriter` mention in CLAUDE.md, DESIGN.md, the README and `src/docs/`.
 - **`.claude/commands/`:** if it contains account- or person-specific commands, ask whether this project's team should get them; remove them if not.
 - **Delete the "⚠️ Setup required" section from CLAUDE.md last**, so an interrupted setup is still visible as unfinished.
 
@@ -97,7 +98,7 @@ From the repo root:
 - `npm run lint`: must pass.
 - `npm run build`: must succeed, and `dist/index.js` must start with `"use client"`.
 - `npm run build-storybook`: must succeed. Then delete `storybook-static/`.
-- Search the repo (excluding `node_modules`, `.git`, `dist`) for leftover `@your-org`, "UCL template" and the old package name `ucl` in import snippets. Fix any you find.
+- Search the repo (excluding `node_modules`, `.git`, `dist`) for leftover `@your-org`, `project-copywriter`, "UCL template" and the old package name `ucl` in import snippets. Fix any you find.
 
 ## 6. Report
 

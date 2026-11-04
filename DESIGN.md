@@ -31,7 +31,7 @@ Each entry says what the rule is, why it exists, and how to apply it. Don't rest
 
 ## Brand voice
 
-⚠️ **Decision needed:** not defined yet. The `ucl-ux-copywriter` skill reads this section. Until it's filled in, the skill falls back to general rules and says which assumptions it made. Define:
+⚠️ **Decision needed:** not defined yet. The `intercept-copywriter` skill reads this section. Until it's filled in, the skill falls back to general rules and says which assumptions it made. Define:
 
 - **Audiences:** who reads the UI (e.g. builders creating apps, team admins, internal operators), and the tone for each.
 - **Voice:** three to five words for how the product sounds, plus what it never sounds like.
@@ -577,7 +577,7 @@ The rule matches real interactive elements and roles: `button`, `a[href]`, `labe
 
 - Title says what's missing ("No alerts in the queue"); the description says what will appear here, or how to get there. When the user caused the emptiness (filters), add the action that undoes it ("Clear filters").
 - It centers itself in its parent: give it `flex-1` to fill a page, or vertical padding inside a section.
-- ⚠️ **Decision needed:** the copy is a draft. DESIGN.md "Brand voice" isn't defined yet, so it's plain and calm by default; review it with the `ucl-ux-copywriter` skill once the voice exists.
+- ⚠️ **Decision needed:** the copy is a draft. DESIGN.md "Brand voice" isn't defined yet, so it's plain and calm by default; review it with the `intercept-copywriter` skill once the voice exists.
 
 ## AlertToast and Sonner: alert changes as toasts (`src/components/feedback/alert-toast/alert-toast.tsx`, `feedback/sonner/sonner.tsx`)
 
