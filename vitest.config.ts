@@ -15,8 +15,9 @@ export default defineConfig({
 				test: {
 					name: "storybook",
 					// The Intercept Live prototype stories play scripted scenarios in real time (Ask Intercept Live types its answers
-					// out, Scenario 1's beats wait seconds apart), so a story can take longer than Vitest's 15 s default.
-					testTimeout: 30_000,
+					// out, Scenario 1's beats wait seconds apart), so a story can take longer than Vitest's 15 s default. 60 s since
+					// Nov 4, 2026: Monitoring's Scenario 2 COPD plays about 29.4 s on its own and timed out at 30 s under load.
+					testTimeout: 60_000,
 					browser: {
 						enabled: true,
 						headless: true,

@@ -1,8 +1,8 @@
 import * as React from "react";
 
 import { toastAlert } from "@/components/feedback/alert-toast";
-import { toast } from "@/components/feedback/sonner";
-import { playAlertPing } from "@/lib/alert-ping";
+import { toast, toastsMuted, toastsOnScreen, useToastsMuted, useToastsOnScreen } from "@/components/feedback/sonner";
+import { playAlertPing, stopAlertPing } from "@/lib/alert-ping";
 
 import {
 	severityOrder,
@@ -23,7 +23,7 @@ import { avatarTone, avatarTones, patientInitials } from "./patient-avatar";
 // 2026, user's call). Other alerts, the same patient's new ones included, still toast. A new alert a hospital is calling
 // about (`consultRequest`, Scenario 2) rings as a consult request instead, whatever the scope or what was closed: it rings
 // until answered or declined (Nov 4, 2026, user's call), `ringAfter` seconds after the alert reaches the card. Answer opens
-// the alert with the call on. A new, raised or active-again alert's toast pings as it appears (`playAlertPing`, Nov 4, 2026, user's calls).
+// the alert with the call on. A toast that appears or moves to the front pings once (`playAlertPing`, Nov 4, 2026, user's calls).
 
 const severityWords: Record<TriageAlertSeverity, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 
@@ -61,6 +61,12 @@ type AlertToastsProps = {
 	onCloseResolved?: (patientId: string) => void;
 };
 
+// The ping, on the timeout right after Sonner places the toast; skipped if toasts were muted in between.
+const pingUnlessMuted = () =>
+	window.setTimeout(() => {
+		if (!toastsMuted()) playAlertPing();
+	});
+
 /**
  * When each patient's Resolved toast was last closed, by patient id, for Monitoring's `closedResolutions`: closing it
  * resets the card to no alert (Nov 2, 2026, user's call). Kept above the pages, like the toasts.
@@ -90,6 +96,23 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 	const previous = React.useRef(alerts);
 	// The patient behind each toast shown, by alert id (the toast's id), so My patients can close the others' toasts.
 	const shown = React.useRef(new Map<string, string>());
+	// Toasts that arrived or moved while the toasts were off screen (hidden, or no Toaster), by id: their ping waits.
+	const unheard = React.useRef(new Set<string>());
+	const onScreen = useToastsOnScreen();
+	// The toasts are back on screen: the ones that arrived or moved meanwhile fade in, with one ping, if any is still up.
+	React.useEffect(() => {
+		if (!onScreen || !unheard.current.size) return;
+		const waiting = unheard.current;
+		unheard.current = new Set();
+		if (toast.getToasts().some((item) => waiting.has(String(item.id)))) pingUnlessMuted();
+	}, [onScreen]);
+	// Don't show stops alert sounds (Nov 4, 2026, user's call): a ping still sounding, and the ones held for hidden toasts.
+	const muted = useToastsMuted();
+	React.useEffect(() => {
+		if (!muted) return;
+		stopAlertPing();
+		unheard.current.clear();
+	}, [muted]);
 	// Consult requests waiting to ring (`ringAfter`), cleared if the toasts go.
 	const ringTimers = React.useRef<number[]>([]);
 	React.useEffect(
@@ -123,8 +146,8 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 
 		const inScope = mineOnly ? patients.filter((patient) => patient.mine) : patients;
 		const byId = new Map(inScope.map((patient) => [patient.id, patient]));
-		// One ping per batch of changes, however many alerts it brings: for the most severe of them.
-		let ping: TriageAlertSeverity | undefined;
+		// One ping per batch of changes, however many alerts it brings, for the toasts that arrived or moved.
+		const pinged: string[] = [];
 		for (const change of changes) {
 			const { alert } = change;
 			const request = change.kind === "new" ? alert.consultRequest : undefined;
@@ -148,6 +171,10 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 						]
 							.filter(Boolean)
 							.join(" · "),
+						// The patient's avatar, as on their card.
+						photo: caller.photo,
+						initials: patientInitials(caller),
+						tone: tones.get(caller.id) ?? avatarTone(caller.id),
 						reason: request.question ?? alert.reason,
 						latest: request.latest,
 						urgency: request.urgency,
@@ -192,13 +219,18 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 					if (change.kind === "resolved") onCloseResolved?.(patient.id);
 				},
 			});
-			// Every change that needs the clinician pings as its toast appears: a new alert, a raised one and one active again,
-			// each treated as new (Nov 4, 2026, user's calls). None while toasts are muted.
-			if (attention && shownId !== undefined && (!ping || severityOrder.indexOf(alert.severity) < severityOrder.indexOf(ping)))
-				ping = alert.severity;
+			// A toast that appears (a new alert) or moves to the front (its status changed: raised, lowered, acknowledged,
+			// escalated, active again, resolved) pings, once (Nov 4, 2026, user's call). None while toasts are muted (no toast).
+			if (shownId !== undefined) pinged.push(alert.id);
 		}
-		// Low pings once, Medium twice, High three times, Critical five (Nov 4, 2026, user's call).
-		if (ping) playAlertPing(ping);
+		// It plays as the toast arrives or moves to the front (Nov 4, 2026, user's call: "at the same time sonner move"):
+		// Sonner places toasts on a timeout after `toastAlert()`, so the ping waits for the same one, which runs right after
+		// Sonner's.
+		// Only while the toasts are on screen (Nov 4, 2026, user's call: "I hear a ping and nothing happened"): with the
+		// Toaster hidden (the alert modal, a patient's page, the live feed panel) or not mounted, the ping waits for them.
+		if (!pinged.length) return;
+		if (toastsOnScreen()) pingUnlessMuted();
+		else for (const id of pinged) unheard.current.add(id);
 	}, [alerts, patients, mineOnly, tones, openPatient, openAlert, askAboutPatient, onCloseResolved, closed, closeToast]);
 
 	return null;

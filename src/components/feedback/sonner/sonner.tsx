@@ -34,6 +34,19 @@ const holdOpenDelay = 250;
 const actionsGap = 8;
 // Pointer targets that keep the stack expanded once it is: the stack, the actions and the Don't show menu.
 const actionsSelector = "[data-slot=toaster-actions], [data-toaster-menu]";
+// The actions row's height (Button `sm`).
+const actionsHeight = 32;
+// Sonner's own timing for moving the stack (its CSS), so scrolling back as the stack collapses moves with it.
+const stackTransition = "transform 0.4s ease, translate 0.4s ease";
+
+/** How high the stack may reach, in px from the viewport's top: the screen's edge (`offset`), then the actions row. */
+const stackTopLimit = (offset: number) => offset + actionsHeight + actionsGap;
+
+/** The toasts on screen in the stack: not leaving, not past `visibleToasts`. */
+const stackToasts = () =>
+	[...document.querySelectorAll<HTMLElement>("[data-sonner-toaster] [data-sonner-toast]")].filter(
+		(element) => element.dataset.removed !== "true" && element.dataset.visible !== "false",
+	);
 
 /* -------------------------------------------------------------------------- */
 /* Closing                                                                    */
@@ -86,6 +99,40 @@ function useKeptToastsVersion() {
 		() => keptVersion,
 		() => 0,
 	);
+}
+
+// How many Toasters are showing their toasts: mounted and not `hidden` (or hidden but showing a kept toast). With none,
+// a toast waits out of sight or has nowhere to show, so a sound that comes with it (Intercept Live's alert ping) waits
+// too (Nov 4, 2026, user's call: "I hear a ping and nothing happened").
+let toastersOnScreen = 0;
+const onScreenListeners = new Set<() => void>();
+
+/** Whether toasts show on screen right now: a Toaster is mounted and isn't hiding them. */
+function toastsOnScreen(): boolean {
+	return toastersOnScreen > 0;
+}
+
+function subscribeOnScreen(listener: () => void) {
+	onScreenListeners.add(listener);
+	return () => onScreenListeners.delete(listener);
+}
+
+/** `toastsOnScreen()`, following its changes. */
+function useToastsOnScreen() {
+	return React.useSyncExternalStore(subscribeOnScreen, toastsOnScreen, () => false);
+}
+
+/** Counts a Toaster as showing its toasts while `shown`. */
+function useCountOnScreen(shown: boolean) {
+	React.useEffect(() => {
+		if (!shown) return;
+		toastersOnScreen++;
+		onScreenListeners.forEach((listener) => listener());
+		return () => {
+			toastersOnScreen--;
+			onScreenListeners.forEach((listener) => listener());
+		};
+	}, [shown]);
 }
 
 /** Dismisses every toast but the kept ones. */
@@ -157,6 +204,15 @@ function useMuteState() {
 	return state;
 }
 
+/**
+ * `toastsMuted()`, following its changes: true from Don't show until the time is up, Play, or the reload. Alert sounds
+ * stop meanwhile (Nov 4, 2026, user's call: "When any Don't show is selected alert's sound should stop").
+ */
+function useToastsMuted() {
+	const { until, untilReload } = useMuteState();
+	return untilReload || until !== null;
+}
+
 // The clinician's shifts change at 7 (Nov 2, 2026): "this evening" is 7 PM today, "tomorrow" 7 AM tomorrow.
 const muteOptions: { label: string; until: (now: Date) => Date | undefined }[] = [
 	{ label: "For 30 mins", until: (now) => new Date(now.getTime() + 30 * 60_000) },
@@ -220,15 +276,100 @@ function usePauseToasts(paused: boolean) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Scrolling a tall stack                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Spread (hovered), a stack taller than the screen scrolls (Nov 4, 2026, user's call: "I should be able to scroll and see
+ * all sonner alerts"). Sonner places each toast from the bottom with transforms, so the list can't be a scroll container;
+ * instead, the wheel (or trackpad) moves the whole list down (`translate`, apart from Sonner's `transform`) to bring the
+ * toasts above the screen into view, and the list is clipped under the actions row (`limit`), which stays pinned at
+ * the top. Focus moving to a toast out of view brings it in. Collapsed, the list moves back with Sonner's collapse.
+ */
+function useScrollableStack(active: boolean, limit: number) {
+	React.useEffect(() => {
+		if (!active) return;
+		let scroll = 0;
+		let frame = 0;
+		const list = () => document.querySelector<HTMLElement>("[data-sonner-toaster]");
+		// How far the spread stack runs above `limit` when not scrolled; 0 when it fits or is collapsed.
+		const overflow = () => {
+			const toasts = stackToasts();
+			if (!toasts.some((toast) => toast.dataset.expanded === "true")) return 0;
+			const highest = Math.min(...toasts.map((toast) => toast.getBoundingClientRect().top)) - scroll;
+			return Math.max(0, Math.round(limit - highest));
+		};
+		const scrollTo = (element: HTMLElement, next: number, max: number) => {
+			const clamped = Math.min(max, Math.max(0, next));
+			if (clamped === scroll) return false;
+			scroll = clamped;
+			// Sonner's own transition (`transform` only), so the scroll follows the wheel at once.
+			element.style.transition = "";
+			element.style.translate = `0 ${scroll}px`;
+			return true;
+		};
+		// Each frame: keep the scroll within the stack as toasts come, go, spread and collapse, and clip it under the row.
+		const update = () => {
+			const element = list();
+			if (element) {
+				const max = overflow();
+				if (max === 0 && scroll > 0) {
+					// Collapsing (or fits again): back down with the stack.
+					scroll = 0;
+					element.style.transition = stackTransition;
+					element.style.translate = "";
+				} else if (scroll > max) scrollTo(element, max, max);
+				// The clip is in the list's own box, which the scroll moves: its top edge stays at `limit` on screen.
+				element.style.clipPath =
+					max > 0 ? `inset(${limit - element.getBoundingClientRect().top}px -100vw -100vh -100vw)` : "";
+			}
+			frame = requestAnimationFrame(update);
+		};
+		const onWheel = (event: WheelEvent) => {
+			const element = list();
+			if (!element || !(event.target instanceof Node) || !element.contains(event.target)) return;
+			const max = overflow();
+			// Wheeling up shows what's above, as in any list; at either end the page scrolls as usual.
+			if (max > 0 && scrollTo(element, scroll - event.deltaY, max)) event.preventDefault();
+		};
+		const onFocusIn = (event: FocusEvent) => {
+			const element = list();
+			const toast = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-sonner-toast]") : null;
+			if (!element || !toast || !element.contains(toast)) return;
+			const max = overflow();
+			if (max === 0) return;
+			const box = toast.getBoundingClientRect();
+			const bottom = window.innerHeight;
+			if (box.top < limit) scrollTo(element, scroll + (limit - box.top), max);
+			else if (box.bottom > bottom) scrollTo(element, scroll - (box.bottom - bottom), max);
+		};
+		update();
+		document.addEventListener("wheel", onWheel, { passive: false });
+		document.addEventListener("focusin", onFocusIn);
+		return () => {
+			cancelAnimationFrame(frame);
+			document.removeEventListener("wheel", onWheel);
+			document.removeEventListener("focusin", onFocusIn);
+			const element = list();
+			if (element) {
+				element.style.translate = "";
+				element.style.clipPath = "";
+			}
+		};
+	}, [active, limit]);
+}
+
+/* -------------------------------------------------------------------------- */
 /* Actions over the stack                                                     */
 /* -------------------------------------------------------------------------- */
 
 /**
  * Where the actions go: `bottom` (px from the viewport's bottom) puts them `actionsGap` above the top toast showing, or
  * null without toasts. Read from the toasts' boxes each frame, so they follow the stack as toasts arrive, leave, collapse
- * and expand (Sonner animates them with CSS transforms, which only the boxes report).
+ * and expand (Sonner animates them with CSS transforms, which only the boxes report). Never higher than `limit`: over a
+ * stack taller than the screen, they stay pinned at its top (`useScrollableStack`).
  */
-function useStackTop(active: boolean) {
+function useStackTop(active: boolean, limit: number) {
 	const [bottom, setBottom] = React.useState<number | null>(null);
 	React.useEffect(() => {
 		if (!active) {
@@ -238,17 +379,15 @@ function useStackTop(active: boolean) {
 		let frame = 0;
 		const measure = () => {
 			let top = Infinity;
-			for (const element of document.querySelectorAll<HTMLElement>("[data-sonner-toaster] [data-sonner-toast]")) {
-				if (element.dataset.removed === "true" || element.dataset.visible === "false") continue;
-				top = Math.min(top, element.getBoundingClientRect().top);
-			}
+			for (const element of stackToasts()) top = Math.min(top, element.getBoundingClientRect().top);
+			if (Number.isFinite(top)) top = Math.max(top, limit);
 			const next = Number.isFinite(top) ? Math.round(window.innerHeight - top + actionsGap) : null;
 			setBottom((current) => (current === next ? current : next));
 			frame = requestAnimationFrame(measure);
 		};
 		measure();
 		return () => cancelAnimationFrame(frame);
-	}, [active]);
+	}, [active, limit]);
 	return bottom;
 }
 
@@ -290,7 +429,7 @@ function ToasterActions({
 	const any = closable > 0;
 	const several = any && toasts.length >= 2;
 	const show = any || mutedUntilTime !== null;
-	const stackBottom = useStackTop(any);
+	const stackBottom = useStackTop(any, stackTopLimit(right));
 	// Without toasts (muted), the row sits where the stack would.
 	const bottom = stackBottom ?? right;
 	const hold = React.useRef(false);
@@ -445,7 +584,7 @@ function ToasterActions({
  * The app's toast region: render one, once, near the root, then call `toast()` (or `toastAlert()`) from anywhere.
  * shadcn's Radix Sonner, colored by UCL's tokens instead of Sonner's own theme (no `next-themes`), so `.dark` drives it
  * like everything else.
- * Toasts stack bottom right, 16px from the screen's edges, at most three, the newest at the bottom. Collapsed, each one
+ * Toasts stack bottom right, 16px from the screen's edges, at most eight shown, the newest at the bottom. Collapsed, each one
  * behind peeks `peek` (16px) above the one in front; hovering the stack spreads them `gap` (8px) apart and pauses their
  * timers. "Don't show" (`muteLabel`: for 30 mins … until tomorrow) sits right-aligned 8px above the top toast, with
  * "Close all" (`closeAllLabel`) beside it from two toasts; while muted, "Muted until …" with Play and × takes Don't show's
@@ -460,7 +599,9 @@ function Toaster({
 	className,
 	style,
 	position = "bottom-right",
-	visibleToasts = 3,
+	// Eight, since alert toasts no longer leave on their own (Nov 4, 2026, user's calls; was 3, then 5): the rest wait
+	// behind.
+	visibleToasts = 8,
 	gap = 8,
 	peek = 16,
 	offset = 16,
@@ -489,8 +630,10 @@ function Toaster({
 	const hiddenNow = hidden && !kept;
 	// Hidden toasts wait instead of expiring unseen.
 	usePauseToasts(hiddenNow);
+	useCountOnScreen(!hiddenNow);
 	// A hold that changed while there was no list (no toasts) reaches the next one once it's on screen.
 	const anyToast = useSonner().toasts.length > 0;
+	useScrollableStack(anyToast, stackTopLimit(typeof offset === "number" ? offset : 16));
 	React.useEffect(() => {
 		const frame = requestAnimationFrame(syncPause);
 		return () => cancelAnimationFrame(frame);
@@ -564,6 +707,9 @@ export {
 	muteToasts,
 	toastsMuted,
 	toastsMutedUntil,
+	toastsOnScreen,
+	useToastsOnScreen,
+	useToastsMuted,
 	setToastCloseHandler,
 	setToastKept,
 	type ExternalToast,

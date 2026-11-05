@@ -1,7 +1,8 @@
 // Sonner 2.0.8 (https://github.com/emilkowalski/sonner, MIT, see LICENSE.md), copied from its dist/index.mjs with
 // one change, marked "UCL:": toasts take a `priority` and stack by it, the highest in front, the newest first within
 // one (Nov 3, 2026, user's call: the most severe alert is always the one showing). Sonner always puts the newest in
-// front and has no way to change it. With it, toasts are measured unscaled (`measureToast`, Nov 4, 2026), since one can
+// front and has no way to change it. A toast with `moveToFrontOnUpdate` also moves to the front of its priority when it's
+// updated (Nov 4, 2026, user's call: an alert that changes is the latest). With it, toasts are measured unscaled (`measureToast`, Nov 4, 2026), since one can
 // now join the stack behind the front one, already scaled down. To update Sonner, copy the new dist/index.mjs and dist/index.d.mts over these and
 // reapply the "UCL:" changes. The bundle marks itself "use client" after the build (scripts/add-use-client.mjs).
 function __insertCSS(code) {
@@ -1001,8 +1002,9 @@ function useSonner() {
                                 ...toasts[indexOfExistingToast],
                                 ...toast
                             };
-                            // UCL: a new priority moves it to its place, as the newest within it.
-                            if (priorityOf(updated) !== priorityOf(toasts[indexOfExistingToast])) {
+                            // UCL: a new priority moves it to its place, as the newest within it; so does any update
+                            // with `moveToFrontOnUpdate`.
+                            if (toast.moveToFrontOnUpdate || priorityOf(updated) !== priorityOf(toasts[indexOfExistingToast])) {
                                 return insertByPriority(toasts.filter((t)=>t.id !== toast.id), updated);
                             }
                             return [
@@ -1085,8 +1087,9 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
                                 ...toasts[indexOfExistingToast],
                                 ...toast
                             };
-                            // UCL: a new priority moves it to its place, as the newest within it.
-                            if (priorityOf(updated) !== priorityOf(toasts[indexOfExistingToast])) {
+                            // UCL: a new priority moves it to its place, as the newest within it; so does any update
+                            // with `moveToFrontOnUpdate`.
+                            if (toast.moveToFrontOnUpdate || priorityOf(updated) !== priorityOf(toasts[indexOfExistingToast])) {
                                 return insertByPriority(toasts.filter((t)=>t.id !== toast.id), updated);
                             }
                             return [

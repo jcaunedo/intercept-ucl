@@ -76,6 +76,8 @@ interface ToastT {
     testId?: string;
     /** UCL: where the toast stacks: the highest in front, the newest first within one. 0 by default. */
     priority?: number;
+    /** UCL: an update (a toast with the same id) moves it to the front of its priority, as the newest. */
+    moveToFrontOnUpdate?: boolean;
 }
 type Position = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'top-center' | 'bottom-center';
 interface ToastOptions {

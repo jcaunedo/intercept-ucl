@@ -53,6 +53,8 @@ const reynoldsConsult = {
 	requester: { name: "Dr. Brian Keller", role: "ED physician", site: "Alliance ED", initials: "BK", tone: 4 },
 	patientName: "Reynolds, Dale",
 	location: "64 M · ED Bay 3",
+	initials: "DR",
+	tone: 7,
 	reason: "Hypercapnic failure on BiPAP. Can we keep him here?",
 	latest: "pH 7.24 · PaCO₂ 78 · RR 30 · SpO₂ 88% on BiPAP",
 	urgency: "high",
@@ -91,7 +93,7 @@ export const Critical: Story = {
 	},
 };
 
-/** Medium (T2): leaves after 10 s unless the pointer is over the stack. */
+/** Medium (T2): stays until acted on or closed, as every open alert does. */
 export const Medium: Story = {
 	args: { ...moore },
 };
@@ -123,8 +125,8 @@ export const AllVariants: Story = {
 };
 
 /**
- * What changed, after the pill. Up a severity needs the clinician (pulsing ring); acknowledged by someone else and
- * resolved are addressed: a still ring, and they leave after 10 s.
+ * What changed, after the pill. Up a severity needs the clinician; acknowledged by someone else and resolved are
+ * addressed. Every ring is still. A Resolved toast leaves after 5 s; the others stay until closed.
  */
 export const Changes: Story = {
 	render: (args) => (
@@ -194,37 +196,79 @@ const stackOrder = () =>
 	);
 
 /**
- * The most severe alert is always in front, whatever arrives after it, and the newest within a severity. Hayes's
- * Critical comes first, then Moore's Medium and Anderson's Low: Hayes stays in front. Anderson's alert going up to High
- * moves it ahead of Moore's.
+ * The newest alert is always in front, whatever its severity. Hayes's Critical comes first, then Moore's Medium and
+ * Anderson's Low: Anderson's is in front, Hayes's at the back. An alert that changes is the newest: Moore's going up to
+ * High moves it to the front.
  */
-export const SortedBySeverity: Story = {
+export const NewestFirst: Story = {
 	parameters: { layout: "padded" },
 	render: () => (
 		<div className='flex flex-wrap gap-2'>
 			<Toaster />
 			<Button
 				onClick={() => {
-					toastAlert({ ...hayes, id: "sorted-hayes", onOpen: fn() });
-					toastAlert({ ...moore, id: "sorted-moore", onOpen: fn() });
-					toastAlert({ ...anderson, id: "sorted-anderson", onOpen: fn() });
+					toastAlert({ ...hayes, id: "newest-hayes", onOpen: fn() });
+					toastAlert({ ...moore, id: "newest-moore", onOpen: fn() });
+					toastAlert({ ...anderson, id: "newest-anderson", onOpen: fn() });
 				}}
 			>
 				Three alerts
 			</Button>
 			<Button
 				variant='outline'
-				onClick={() => toastAlert({ ...anderson, id: "sorted-anderson", severity: "high", change: "Up from Low", onOpen: fn() })}
+				onClick={() => toastAlert({ ...moore, id: "newest-moore", severity: "high", change: "Up from Medium", onOpen: fn() })}
 			>
-				Anderson up to High
+				Moore up to High
 			</Button>
 		</div>
 	),
 	play: async ({ canvas }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Three alerts" }));
-		await waitFor(() => expect(stackOrder()).toEqual([hayes.title, moore.title, anderson.title]));
-		await userEvent.click(canvas.getByRole("button", { name: "Anderson up to High" }));
-		await waitFor(() => expect(stackOrder()).toEqual([hayes.title, anderson.title, moore.title]));
+		await waitFor(() => expect(stackOrder()).toEqual([anderson.title, moore.title, hayes.title]));
+		await userEvent.click(canvas.getByRole("button", { name: "Moore up to High" }));
+		await waitFor(() => expect(stackOrder()).toEqual([moore.title, anderson.title, hayes.title]));
+		// Open alerts don't leave on their own: clear them, so the next story starts with an empty stack.
+		await userEvent.click(screen.getByRole("button", { name: "Close all" }));
+		await waitFor(() => expect(stackOrder()).toEqual([]));
+	},
+};
+
+// Eight alerts, oldest first: more than a screen holds once the stack spreads.
+const tallStack = Array.from({ length: 8 }, (_, index) => ({
+	...[hayes, moore, anderson][index % 3],
+	id: `tall-${index}`,
+	title: `Alert ${index + 1}`,
+}));
+
+/**
+ * Spread, a stack taller than the screen scrolls: the wheel brings the toasts above the screen into view, under Don't
+ * show and Close all, which stay at the top. Hover the stack, then scroll up.
+ */
+export const TallStackScrolls: Story = {
+	parameters: { layout: "padded" },
+	render: () => (
+		<div className='flex flex-wrap gap-2'>
+			<Toaster />
+			<Button onClick={() => tallStack.forEach((alert) => toastAlert({ ...alert, onOpen: fn() }))}>Eight alerts</Button>
+		</div>
+	),
+	play: async ({ canvas }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Eight alerts" }));
+		const oldest = () => screen.getByText("Alert 1").closest<HTMLElement>("[data-sonner-toast]")!;
+		await waitFor(() => expect(oldest()).toBeInTheDocument());
+		// Spread it, and wait for the oldest to rise past the top of the screen.
+		await userEvent.hover(screen.getByText("Alert 8"));
+		await waitFor(() => expect(oldest().getBoundingClientRect().top).toBeLessThan(0));
+		// Scrolled up as far as it goes, the oldest sits under the actions row (16px from the top, 32px tall, 8px gap).
+		screen.getByText("Alert 8").dispatchEvent(new WheelEvent("wheel", { deltaY: -5000, bubbles: true, cancelable: true }));
+		await waitFor(() => expect(Math.round(oldest().getBoundingClientRect().top)).toBe(56));
+		await expect(screen.getByRole("button", { name: "Close all" }).getBoundingClientRect().top).toBe(16);
+		// Collapsed, it goes back.
+		await userEvent.unhover(screen.getByText("Alert 8"));
+		await userEvent.hover(canvas.getByRole("button", { name: "Eight alerts" }));
+		await waitFor(() => expect(document.querySelector<HTMLElement>("[data-sonner-toaster]")!.style.translate).toBe(""));
+		await userEvent.click(screen.getByRole("button", { name: "Close all" }));
+		await waitFor(() => expect(stackOrder()).toEqual([]));
 	},
 };
 
@@ -237,8 +281,10 @@ export const ConsultRequest: Story = {
 	// Silent on the docs page, which shows every story at once; turn it on in Controls to hear it.
 	args: { ...reynoldsConsult, onAnswer: fn(), onDecline: fn(), ringtone: false },
 	play: async ({ canvas, args }) => {
+		await expect(canvas.getByText("Incoming call from")).toBeInTheDocument();
 		await expect(canvas.getByRole("alert")).toHaveTextContent("Dr. Brian Keller, ED physician");
-		await expect(canvas.getByText("Reynolds, Dale · 64 M · ED Bay 3")).toBeInTheDocument();
+		await expect(canvas.getByText("Reynolds, Dale")).toBeInTheDocument();
+		await expect(canvas.getByText("64 M · ED Bay 3")).toBeInTheDocument();
 		await expect(canvas.queryByRole("button", { name: "Dismiss alert" })).not.toBeInTheDocument();
 		await expect(canvas.queryByRole("button", { name: "Open patient" })).not.toBeInTheDocument();
 		await userEvent.click(canvas.getByRole("button", { name: "Answer" }));

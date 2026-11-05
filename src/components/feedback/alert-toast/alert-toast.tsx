@@ -7,11 +7,11 @@ import { SparklesIcon, VideoIcon, VideoOffIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/buttons/button";
 import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
-import { setToastCloseHandler, setToastKept, toast, toastsMuted } from "@/components/feedback/sonner";
+import { setToastCloseHandler, setToastKept, toast, toastsMuted, useToastsMuted } from "@/components/feedback/sonner";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
 import { useRingtone, type RingUrgency } from "@/lib/hooks/use-ringtone";
-import { arriveVariants, fadeVariants, urgencyRingVariants, useMotionPreference, useUrgencyPhase } from "@/lib/motion";
+import { arriveVariants, fadeVariants, useMotionPreference } from "@/lib/motion";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
@@ -51,18 +51,18 @@ type AlertToastRequester = {
 
 type AlertToastOwnProps = {
 	severity?: AlertToastSeverity;
-	/** What changed, after the pill, e.g. "Up from Medium", "Acknowledged". Nothing for a new alert. */
+	/** What changed, after the time, e.g. "Up from Medium", "Acknowledged". Nothing for a new alert. */
 	change?: string;
 	/**
-	 * Nothing left to do: someone addressed it, it eased or it's resolved. The ring stays still, a Critical toast leaves on
-	 * its own like the others and isn't announced as urgent. A `resolved` toast is always addressed.
+	 * Nothing left to do: someone addressed it, it eased or it's resolved. A Critical toast isn't announced as urgent and
+	 * can be swiped away. A `resolved` toast is always addressed.
 	 */
 	addressed?: boolean;
 	/** What happened, e.g. "Deterioration score crossed threshold". */
 	title: string;
 	/**
-	 * When it fired, ISO 8601 or a Date. Shown in the first row as a relative time ("Just now", "14 min ago"), updated each
-	 * minute; the exact time is in its tooltip.
+	 * When it fired, ISO 8601 or a Date. Shown in the first row, right after the pill and before `change`, as a relative
+	 * time ("Just now", "14 min ago"), updated each minute; the exact time is in its tooltip.
 	 */
 	firedAt?: string | Date;
 	/** Why it matters for this patient, e.g. "Rising RR, SpO₂ decline, positive fluid balance, HFrEF". */
@@ -118,7 +118,8 @@ type AlertToastOwnProps = {
 	 * double tempo), `medium` every 1.7 s, `low` (default) every 2.5 s.
 	 */
 	urgency?: RingUrgency;
-	/** A consult request's labels over the patient, the reason and the latest values. */
+	/** A consult request's labels over the requester ("Incoming call from"), the patient, the reason and the latest values. */
+	requesterLabel?: string;
 	patientLabel?: string;
 	reasonLabel?: string;
 	latestLabel?: string;
@@ -139,10 +140,41 @@ function RingingTime({ since }: { since: Date }) {
 	);
 }
 
+/** A person on a consult request's card, the caller or the patient: 32px avatar, name, and a line under it. */
+function CallPerson({
+	name,
+	detail,
+	photo,
+	initials,
+	tone,
+}: {
+	name: string;
+	detail?: string;
+	photo?: string;
+	initials?: string;
+	tone?: AvatarFallbackProps["tone"];
+}) {
+	return (
+		<div className='flex min-w-0 items-center gap-2'>
+			{photo || initials ? (
+				<Avatar size='sm'>
+					{photo ? <AvatarImage src={photo} alt='' /> : null}
+					{initials ? <AvatarFallback tone={tone}>{initials}</AvatarFallback> : null}
+				</Avatar>
+			) : null}
+			<div className='flex min-w-0 flex-col'>
+				<p className='truncate text-base font-semibold'>{name}</p>
+				{/* 2px into the name's line, as Figma draws it. */}
+				{detail ? <p className='-mt-0.5 truncate text-sm'>{detail}</p> : null}
+			</div>
+		</div>
+	);
+}
+
 /**
  * A change in a patient's alert: severity and what changed, when, what happened, why, and the patient, with Open
- * patient and Ask Intercept Live. Until it's addressed, its ring pulses (Urgency, in step with the patient cards) until the
- * pointer or keyboard focus reaches it. An unaddressed Critical toast is announced at once (`role='alert'`); the others
+ * patient and Ask Intercept Live. A still ring in the severity's color frames it; no toast pulses (Nov 4, 2026, user's
+ * call). An unaddressed Critical toast is announced at once (`role='alert'`); the others
  * politely, by the Toaster's live region. `severity="consult-request"` is a hospital calling the hub instead: who's calling,
  * the patient, the reason and the latest values, how long it has rung, and Decline and Answer, on the `neutral` surface.
  * Show it with `toastAlert()`; render it directly only for a static preview.
@@ -182,21 +214,18 @@ function AlertToast({
 	declineLabel = "Decline",
 	ringtone = true,
 	urgency = "low",
+	requesterLabel = "Incoming call from",
 	patientLabel = "Patient",
 	reasonLabel = "Reason",
 	latestLabel = "Latest values",
-	onPointerEnter,
-	onFocus,
 	...props
 }: AlertToastProps) {
-	const { prefersReducedMotion } = useMotionPreference();
-	// Seen once the clinician points at it or tabs into it, as a card stops pulsing once clicked.
-	const [seen, setSeen] = React.useState(false);
 	const consult = severity === "consult-request";
 	const addressed = addressedProp || severity === "resolved";
-	// A consult request rings until it's answered or declined, seen or not: its ring pulses and, unless turned off, sounds.
-	const pulse = useUrgencyPhase((consult || !seen) && !addressed && !prefersReducedMotion);
-	useRingtone(consult && ringtone && !addressed, urgency);
+	// A consult request rings until it's answered or declined, unless its ringtone is turned off or toasts are muted (Don't
+	// show; Nov 4, 2026, user's call): the call stays on screen, silent.
+	const muted = useToastsMuted();
+	useRingtone(consult && ringtone && !addressed && !muted, urgency);
 	const firedTime = firedAt === undefined ? undefined : new Date(firedAt);
 	const hasTime = firedTime !== undefined && !Number.isNaN(firedTime.getTime());
 	// Re-renders on each minute boundary, so "Just now" becomes "1 min ago" while the toast is open. Null on the server.
@@ -210,25 +239,19 @@ function AlertToast({
 	) : null;
 
 	const ring = (
-		// A static wrapper, so a collapsed stack can hide the ring without fighting its animated opacity.
+		// Still, on every toast: none pulses (Nov 4, 2026, user's call: "remove flashing to all sonners"). A wrapper, so a
+		// collapsed stack and the hover can hide the ring with the opacity of their own.
 		<span
 			data-slot='alert-toast-ring'
 			aria-hidden='true'
 			className={cn("pointer-events-none absolute -inset-px -z-10", onOpenAlert && !consult && "group-hover/toast:opacity-0")}
 		>
-			<motion.span
-				initial={false}
-				animate={pulse}
-				variants={urgencyRingVariants}
-				className={cn("absolute inset-0 rounded-card border-2", ringClassNames[severity])}
-			/>
+			<span className={cn("absolute inset-0 rounded-card border-2", ringClassNames[severity])} />
 		</span>
 	);
 
 	if (consult) {
-		const patient = [patientName, location].filter(Boolean).join(" · ");
 		const details = [
-			{ label: patientLabel, value: patient },
 			{ label: reasonLabel, value: reason },
 			{ label: latestLabel, value: latest },
 		].filter((item): item is { label: string; value: string } => Boolean(item.value));
@@ -257,32 +280,33 @@ function AlertToast({
 				</div>
 
 				{requester ? (
-					<div className='flex min-w-0 items-center gap-2'>
-						{requester.photo || requester.initials ? (
-							<Avatar size='sm'>
-								{requester.photo ? <AvatarImage src={requester.photo} alt='' /> : null}
-								{requester.initials ? <AvatarFallback tone={requester.tone}>{requester.initials}</AvatarFallback> : null}
-							</Avatar>
-						) : null}
-						<div className='flex min-w-0 flex-col'>
-							<p className='truncate text-base font-semibold'>
-								{requester.role ? `${requester.name}, ${requester.role}` : requester.name}
-							</p>
-							{requester.site ? <p className='truncate text-sm'>{requester.site}</p> : null}
-						</div>
+					<div className='flex min-w-0 flex-col gap-0.5'>
+						<p className='text-sm text-foreground-subtle'>{requesterLabel}</p>
+						<CallPerson
+							name={requester.role ? `${requester.name}, ${requester.role}` : requester.name}
+							detail={requester.site}
+							photo={requester.photo}
+							initials={requester.initials}
+							tone={requester.tone}
+						/>
 					</div>
 				) : null}
 
-				{details.length ? (
-					<dl className='flex flex-col gap-2 text-sm'>
-						{details.map((item) => (
+				{/* The patient, then the caller's question and the latest values: label over value, 8px apart. */}
+				<dl className='flex flex-col gap-2 text-sm'>
+					<div className='flex min-w-0 flex-col gap-0.5'>
+						<dt className='text-foreground-subtle'>{patientLabel}</dt>
+						<dd className='min-w-0'>
+							<CallPerson name={patientName} detail={location} photo={photo} initials={initials} tone={tone} />
+						</dd>
+					</div>
+					{details.map((item) => (
 							<div key={item.label} className='flex flex-col'>
 								<dt className='text-foreground-subtle'>{item.label}</dt>
 								<dd>{item.value}</dd>
 							</div>
 						))}
-					</dl>
-				) : null}
+				</dl>
 
 				{onDecline || onAnswer ? (
 					<div className='flex gap-2'>
@@ -317,14 +341,6 @@ function AlertToast({
 				onOpenAlert && "hover:border-2 hover:border-foreground hover:p-[15px]",
 				className,
 			)}
-			onPointerEnter={(event) => {
-				setSeen(true);
-				onPointerEnter?.(event);
-			}}
-			onFocus={(event) => {
-				setSeen(true);
-				onFocus?.(event);
-			}}
 			{...props}
 		>
 			{ring}
@@ -345,12 +361,14 @@ function AlertToast({
 
 			<div className='flex items-center gap-2'>
 				<PatientCardAlert variant={severity} count={count} />
-				{change ? <span className='text-sm font-medium text-muted-foreground'>{change}</span> : null}
+				{/* The time always comes first after the pill, so it sits in the same place on every toast, with or without
+				    a change. See DESIGN.md → AlertToast layout. */}
 				{firedLabel ? (
 					<time dateTime={firedTime?.toISOString()} title={firedLabel.title} className='text-sm text-foreground'>
 						{firedLabel.label}
 					</time>
 				) : null}
+				{change ? <span className='text-sm font-medium text-muted-foreground'>{change}</span> : null}
 				{closeButton ? (
 					// 4px into the padding.
 					<div className='relative z-2 -my-1 -mr-1 ml-auto flex'>{closeButton}</div>
@@ -372,7 +390,7 @@ function AlertToast({
 				<div className='flex min-w-0 flex-col'>
 					<p className='truncate text-base font-semibold text-foreground'>{patientName}</p>
 					{location ? (
-						<p className='truncate text-sm text-muted-foreground' title={location}>
+						<p className='-mt-0.5 truncate text-sm text-muted-foreground' title={location}>
 							{location}
 						</p>
 					) : null}
@@ -422,8 +440,10 @@ function ToastArrival({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * How long a toast stays, in ms: 10 s. An unaddressed Critical alert stays until the clinician acts on it or closes it.
- * Hovering the stack pauses the timer.
+ * How long a toast stays, in ms: 10 s.
+ *
+ * @deprecated Since Nov 4, 2026, `toastAlert()` no longer uses it: a Critical, High, Medium or Low alert's toast stays
+ * until the clinician acts on it or closes it. Kept for apps that pass it as a `duration`.
  */
 const alertToastDuration = 10_000;
 
@@ -443,30 +463,37 @@ const stackedToastClassName = cn(
 	"data-[expanded=false]:data-[front=false]:[&_[data-slot=alert-toast]>*:not([data-slot=alert-toast-ring])]:opacity-0",
 );
 
-// Where each severity stacks in the Toaster: the higher in front. Sonner's own toasts (`toast()`) have 0, behind every alert.
+// Where each kind of toast stacks in the Toaster: the higher in front, the newest first within one. Every alert has the
+// same priority, so the newest alert is in front whatever its severity (Nov 4, 2026, user's call: "the latest always
+// first without taking the severity in consideration"). A consult request, a call ringing, stays in front of them.
+// Sonner's own toasts (`toast()`) have 0, behind every alert.
 const alertToastPriority: Record<AlertToastSeverity, number> = {
-	"consult-request": 6,
-	critical: 5,
-	high: 4,
-	medium: 3,
-	low: 2,
+	"consult-request": 2,
+	critical: 1,
+	high: 1,
+	medium: 1,
+	low: 1,
 	resolved: 1,
 };
 
 type ToastAlertOptions = AlertToastOwnProps & {
-	/** The alert's id. A second toast with the same id updates the first instead of stacking a new one (AL-11). */
+	/**
+	 * The alert's id. A second toast with the same id updates the first instead of stacking a new one (AL-11), and moves it
+	 * to the front.
+	 */
 	id?: string | number;
 	/**
-	 * Overrides the duration (`alertToastDuration`; `resolvedToastDuration` for a Resolved alert; until closed for an
-	 * unaddressed Critical alert), in ms.
+	 * Overrides the duration, in ms: until closed for a Critical, High, Medium or Low alert and a consult request;
+	 * `resolvedToastDuration` for a Resolved alert.
 	 */
 	duration?: number;
 };
 
 /**
  * Shows an AlertToast in the app's Toaster and returns its id. Open patient, Ask Intercept Live and opening the alert run their
- * handler, then close the toast; the close button and the Toaster's Close all close it and call `onClose`. An unaddressed Critical toast can't be swiped away, so
- * it isn't lost by accident. While toasts are muted (the Toaster's Don't show, `muteToasts()`), it shows nothing and
+ * handler, then close the toast; the close button and the Toaster's Close all close it and call `onClose`. Only a Resolved
+ * toast leaves on its own; every other alert stays until the clinician acts on it or closes it. The newest alert is in
+ * front, whatever its severity, and an alert that changes (the same `id` again) moves to the front. An unaddressed Critical toast can't be swiped away, so it isn't lost by accident. While toasts are muted (the Toaster's Don't show, `muteToasts()`), it shows nothing and
  * returns undefined, an unaddressed Critical included (Nov 3, 2026, user's call; until then it still interrupted, AL-02).
  */
 function toastAlert({
@@ -542,16 +569,13 @@ function toastAlert({
 		),
 		{
 			id,
-			duration:
-				duration ??
-				(interrupts
-					? Number.POSITIVE_INFINITY
-					: props.severity === "resolved"
-						? resolvedToastDuration
-						: alertToastDuration),
+			// An open alert never leaves on its own, addressed or not (Nov 4, 2026, user's call): only a Resolved one does.
+			duration: duration ?? (props.severity === "resolved" ? resolvedToastDuration : Number.POSITIVE_INFINITY),
 			dismissible: !interrupts,
-			// The most severe alert is in front, the newest first within a severity (Nov 3, 2026, user's call).
+			// The newest alert in front, whatever its severity (Nov 4, 2026, user's call; was the most severe first). An alert
+			// that changes (the same id again) is the newest: it moves to the front too (Nov 4, 2026, user's call).
 			priority: alertToastPriority[props.severity ?? "critical"],
+			moveToFrontOnUpdate: true,
 			className: stackedToastClassName,
 			onDismiss: forget,
 			onAutoClose: forget,

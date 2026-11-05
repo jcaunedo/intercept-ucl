@@ -61,7 +61,8 @@ export const Default: Story = {
 		const trigger = canvas.getByRole("button", { name: "Open dialog" });
 		await userEvent.click(trigger);
 		const dialog = await screen.findByRole("dialog", { name: "Resolve alert" });
-		await expect(dialog).toBeVisible();
+		// It fades in: wait for it, rather than checking on the first frame.
+		await waitFor(() => expect(dialog).toBeVisible());
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(trigger).toHaveFocus();
