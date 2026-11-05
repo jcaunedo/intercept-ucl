@@ -583,14 +583,20 @@ type QuickView<Patient> = {
 /**
  * A patient card's "…" menu, the same on every card, Census and Monitoring (Nov 3, 2026, user's call). Ask Intercept Live
  * first (the chat about the patient with a quick overview, as Ask in an alert toast does), then Video consult (the alert
- * modal with the call to the bedside already ringing; Scenario 1, step 3), then Expand alert while the card shows an
- * alert (the alert modal its alert bar opens), set apart by a divider; then the patient's actions, as in the patient's
- * header, in alphabetical order (the app wires them up). Ask, Video consult and Expand only inside the shell
- * (`navigation`).
+ * modal with the call to the bedside already ringing; Scenario 1, step 3; with no active alert, the modal without one),
+ * then View alert while the card shows an alert (the alert modal its alert bar opens; "View alerts" when the card counts
+ * several, Nov 4, 2026, user's call), set apart by a divider; then the patient's actions, as in the patient's header, in
+ * alphabetical order (the app wires them up). Ask, Video consult and View only inside the shell (`navigation`).
  */
 function patientCardActions(
 	navigation: PatientNavigation | null,
-	{ id, name, tags, showsAlert = false }: { id: string; name: string; tags?: { label: string }[]; showsAlert?: boolean },
+	{
+		id,
+		name,
+		tags,
+		showsAlert = false,
+		alertCount = 1,
+	}: { id: string; name: string; tags?: { label: string }[]; showsAlert?: boolean; alertCount?: number },
 ): PatientCardAction[] {
 	return [
 		...(navigation
@@ -607,7 +613,14 @@ function patientCardActions(
 						divider: !showsAlert,
 					},
 					...(showsAlert
-						? [{ label: "Expand alert", icon: Maximize2Icon, onSelect: () => navigation.openAlert(id), divider: true }]
+						? [
+								{
+									label: alertCount > 1 ? "View alerts" : "View alert",
+									icon: Maximize2Icon,
+									onSelect: () => navigation.openAlert(id),
+									divider: true,
+								},
+							]
 						: []),
 				]
 			: []),

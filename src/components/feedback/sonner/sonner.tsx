@@ -49,11 +49,56 @@ function setToastCloseHandler(id: string | number, handler: (() => void) | null)
 	else closeHandlers.delete(id);
 }
 
-/** Closes every toast, running each one's close handler first. */
+// Toasts every rule leaves on screen until they're acted on, by id: Close all, `hidden` and muting don't reach them (an
+// incoming consult call, AlertToast's `consult-request`; Nov 4, 2026, user's call). While one is up, the Toaster shows.
+const keptToasts = new Set<string | number>();
+const keptListeners = new Set<() => void>();
+// Bumped on every change, so a component can follow the set.
+let keptVersion = 0;
+
+/** Keeps the toast `id` on screen whatever the Toaster's rules (Close all, `hidden`), or stops keeping it. */
+function setToastKept(id: string | number, kept: boolean) {
+	if (kept === keptToasts.has(id)) return;
+	if (kept) keptToasts.add(id);
+	else keptToasts.delete(id);
+	keptVersion++;
+	keptListeners.forEach((listener) => listener());
+}
+
+function subscribeKept(listener: () => void) {
+	keptListeners.add(listener);
+	return () => keptListeners.delete(listener);
+}
+
+/** Whether a kept toast is up, which overrides the Toaster's `hidden`. */
+function useKeptToastShown() {
+	return React.useSyncExternalStore(
+		subscribeKept,
+		() => keptToasts.size > 0,
+		() => false,
+	);
+}
+
+/** Re-renders when a toast is kept or let go. */
+function useKeptToastsVersion() {
+	return React.useSyncExternalStore(
+		subscribeKept,
+		() => keptVersion,
+		() => 0,
+	);
+}
+
+/** Dismisses every toast but the kept ones. */
+function dismissAllButKept() {
+	if (keptToasts.size === 0) toast.dismiss();
+	else for (const item of toast.getToasts()) if (!keptToasts.has(item.id)) toast.dismiss(item.id);
+}
+
+/** Closes every toast but the kept ones, running each one's close handler first. */
 function closeAllToasts() {
 	const handlers = [...closeHandlers.values()];
 	closeHandlers.clear();
-	toast.dismiss();
+	dismissAllButKept();
 	for (const handler of handlers) handler();
 }
 
@@ -238,8 +283,12 @@ function ToasterActions({
 }) {
 	const { toasts } = useSonner();
 	const { until: mutedUntilTime, untilReload } = useMuteState();
-	const any = toasts.length > 0;
-	const several = toasts.length >= 2;
+	// A kept toast (an incoming call) can't be muted or closed, so it doesn't count: with only kept toasts left, as after
+	// Close all, the row goes (Nov 4, 2026, user's call). Close all shows with two toasts or more, one of them closable.
+	useKeptToastsVersion();
+	const closable = toasts.filter((item) => !keptToasts.has(item.id)).length;
+	const any = closable > 0;
+	const several = any && toasts.length >= 2;
 	const show = any || mutedUntilTime !== null;
 	const stackBottom = useStackTop(any);
 	// Without toasts (muted), the row sits where the stack would.
@@ -295,8 +344,8 @@ function ToasterActions({
 		muteToasts(until);
 		// Every toast on screen goes, an alert that interrupts included, and new ones wait for the mute to end, Critical too
 		// (Nov 3, 2026, user's calls). Their close handlers don't run: muting isn't closing, so their alerts can toast again
-		// once the mute ends.
-		toast.dismiss();
+		// once the mute ends. A kept toast (an incoming call) stays.
+		dismissAllButKept();
 	};
 	const now = new Date();
 
@@ -402,7 +451,8 @@ function ToasterActions({
  * "Close all" (`closeAllLabel`) beside it from two toasts; while muted, "Muted until …" with Play and × takes Don't show's
  * place (× keeps them muted until the app reloads, and the notice goes). `hidden` fades the
  * stack and its buttons out while something covers the screen (e.g. a modal), keeping every toast: their timers pause,
- * new ones queue, and all of them fade back in when it's lifted.
+ * new ones queue, and all of them fade back in when it's lifted. A kept toast (`setToastKept`, e.g. an incoming consult
+ * call) overrides all of it: Close all leaves it, and while it's up the stack shows even when `hidden`.
  *
  * Figma: [intercept.ds › sonner](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1282-49)
  */
@@ -434,8 +484,11 @@ function Toaster({
 	// Kept expanded while the pointer crosses from the stack to the actions above it.
 	const [holdOpen, setHoldOpen] = React.useState(false);
 	const { resolve } = useMotionPreference();
+	// A kept toast (an incoming call) is never hidden: while one is up, the whole stack shows, the call in front.
+	const kept = useKeptToastShown();
+	const hiddenNow = hidden && !kept;
 	// Hidden toasts wait instead of expiring unseen.
-	usePauseToasts(hidden);
+	usePauseToasts(hiddenNow);
 	// A hold that changed while there was no list (no toasts) reaches the next one once it's on screen.
 	const anyToast = useSonner().toasts.length > 0;
 	React.useEffect(() => {
@@ -447,11 +500,11 @@ function Toaster({
 		// Hidden, they're out of reach too (`inert`), and invisible once faded.
 		<motion.div
 			data-slot='toaster-region'
-			data-hidden={hidden || undefined}
-			inert={hidden}
+			data-hidden={hiddenNow || undefined}
+			inert={hiddenNow}
 			initial={false}
 			animate={
-				hidden
+				hiddenNow
 					? { opacity: 0, transitionEnd: { visibility: "hidden" }, transition: resolve(exitTransition) }
 					: { opacity: 1, visibility: "visible", transition: resolve(standardTransition) }
 			}
@@ -505,4 +558,14 @@ function Toaster({
 	);
 }
 
-export { Toaster, toast, muteToasts, toastsMuted, toastsMutedUntil, setToastCloseHandler, type ExternalToast, type ToasterProps };
+export {
+	Toaster,
+	toast,
+	muteToasts,
+	toastsMuted,
+	toastsMutedUntil,
+	setToastCloseHandler,
+	setToastKept,
+	type ExternalToast,
+	type ToasterProps,
+};

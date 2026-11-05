@@ -1,8 +1,9 @@
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { CensusPatient } from "./census";
 
-// Synthetic data (PRD PC-180). The first eight patients are Figma's; twelve more fill the hospital counts (Harbor Point 7,
-// CVMC 5, Mercy West 4, Chadron 4).
+// Synthetic data (PRD PC-180). The first eight patients are Figma's; thirteen more fill the hospital counts (Harbor Point 8,
+// CVMC 6, Alliance 3, Chadron 4). Scenario 2's Dale Reynolds joins Alliance when it plays. My patients (`mine`) are
+// Chadron's three and Alliance's, Dale included, plus Johnson and Harris: 8, then 9 with Dale (DESIGN.md "My patients").
 // Acuity is the NEWS2-style score, the same as on Monitoring (`sample-monitoring.ts` says how it's worked out).
 
 const news2 = "NEWS2";
@@ -43,7 +44,7 @@ const samplePatients: CensusPatient[] = [
 	},
 	{
 		id: "p2",
-		hospitalId: "mwh",
+		hospitalId: "hpg",
 		mine: true,
 		photo: samplePatientPhotos.p2,
 		lastName: "Johnson",
@@ -51,7 +52,7 @@ const samplePatients: CensusPatient[] = [
 		mrn: "00482917",
 		sex: "M",
 		age: 58,
-		hospital: "Mercy West Hospital",
+		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 3",
 		arrivedAt: hoursAgo(38),
@@ -95,7 +96,6 @@ const samplePatients: CensusPatient[] = [
 	{
 		id: "p4",
 		hospitalId: "cvmc",
-		mine: true,
 		lastName: "Thompson",
 		firstName: "Robert",
 		mrn: "00290451",
@@ -166,14 +166,13 @@ const samplePatients: CensusPatient[] = [
 	},
 	{
 		id: "p7",
-		hospitalId: "mwh",
-		mine: true,
+		hospitalId: "cvmc",
 		lastName: "Taylor",
 		firstName: "Susan",
 		mrn: "00377208",
 		sex: "F",
 		age: 45,
-		hospital: "Mercy West Hospital",
+		hospital: "CVMC",
 		unit: "SICU",
 		bed: "Bed 12",
 		arrivedAt: hoursAgo(80),
@@ -312,7 +311,6 @@ const samplePatients: CensusPatient[] = [
 	{
 		id: "p13",
 		hospitalId: "cvmc",
-		mine: true,
 		lastName: "Walker",
 		firstName: "Thomas",
 		mrn: "00733062",
@@ -366,7 +364,7 @@ const samplePatients: CensusPatient[] = [
 		mrn: "00826154",
 		sex: "F",
 		age: 72,
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 4",
 		arrivedAt: hoursAgo(20),
@@ -390,7 +388,7 @@ const samplePatients: CensusPatient[] = [
 		mrn: "00731942",
 		sex: "M",
 		age: 79,
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 6",
 		arrivedAt: hoursAgo(66),
@@ -414,7 +412,7 @@ const samplePatients: CensusPatient[] = [
 		mrn: "00749318",
 		sex: "F",
 		age: 68,
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 2",
 		arrivedAt: hoursAgo(40),
@@ -437,7 +435,7 @@ const samplePatients: CensusPatient[] = [
 		mrn: "00862047",
 		sex: "M",
 		age: 61,
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 8",
 		arrivedAt: hoursAgo(30),
@@ -453,15 +451,16 @@ const samplePatients: CensusPatient[] = [
 	},
 	{
 		id: "p17",
-		hospitalId: "mwh",
+		hospitalId: "alliance",
+		mine: true,
 		photo: samplePatientPhotos.p17,
 		lastName: "Ortega",
 		firstName: "Lucía",
 		mrn: "00658213",
 		sex: "F",
 		age: 67,
-		hospital: "Mercy West Hospital",
-		unit: "SICU",
+		hospital: "Alliance",
+		unit: "Med-Surg",
 		bed: "Bed 10",
 		arrivedAt: hoursAgo(20),
 		acuity: { label: news2, score: 6, level: "medium" },
@@ -476,15 +475,16 @@ const samplePatients: CensusPatient[] = [
 	},
 	{
 		id: "p18",
-		hospitalId: "mwh",
+		hospitalId: "alliance",
+		mine: true,
 		photo: samplePatientPhotos.p18,
 		lastName: "Norman",
 		firstName: "Keith",
 		mrn: "00914370",
 		sex: "M",
 		age: 54,
-		hospital: "Mercy West Hospital",
-		unit: "MICU",
+		hospital: "Alliance",
+		unit: "Med-Surg",
 		bed: "Bed 5",
 		arrivedAt: hoursAgo(21),
 		acuity: { label: news2, score: 1, level: "low" },
@@ -497,6 +497,30 @@ const samplePatients: CensusPatient[] = [
 			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
 		],
 		tags: [{ label: "Insulin infusion" }],
+	},
+	{
+		id: "p22",
+		hospitalId: "alliance",
+		mine: true,
+		lastName: "Jensen",
+		firstName: "Carol",
+		mrn: "00684529",
+		sex: "F",
+		age: 79,
+		hospital: "Alliance",
+		unit: "Med-Surg",
+		bed: "Bed 3",
+		arrivedAt: hoursAgo(34),
+		acuity: { label: news2, score: 3, level: "low" },
+		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 86 },
+			{ label: "MAP", value: 89 },
+			{ label: "SpO₂", value: "95%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+		tags: [{ label: "Fall risk" }],
 	},
 ];
 
@@ -526,4 +550,54 @@ const sampleScenario1ResolvedCensus: Partial<CensusPatient> = {
 	],
 };
 
-export { samplePatients, sampleScenario1Census, sampleScenario1ResolvedCensus };
+/**
+ * Dale Reynolds (Scenario 2, Demo Use Cases, "COPD respiratory failure during a blizzard"): severe COPD, in Alliance's
+ * ED on BiPAP. Not on the Census until the ED requests the hub's consult, the scenario's first beat, so his card is
+ * built then (he arrived 40 min before it). NEWS2 on SpO₂ scale 2 (`sample-patient-records.ts` says why): 6 on arrival,
+ * 7 now. His SpO₂ of 88% is on target, so it isn't flagged; RR 30 is.
+ */
+const sampleScenario2Census = (): CensusPatient => ({
+	id: "p21",
+	hospitalId: "alliance",
+	mine: true,
+	lastName: "Reynolds",
+	firstName: "Dale",
+	mrn: "00973518",
+	sex: "M",
+	age: 64,
+	hospital: "Alliance",
+	unit: "ED",
+	bed: "Bay 3",
+	arrivedAt: hoursAgo(40 / 60),
+	acuity: { label: news2, score: 7, level: "high" },
+	trajectory: { label: change, value: "+1", trend: "up", trendVariant: "medium" },
+	scoreChange4h: 1,
+	vitals: [
+		{ label: "Heart Rate", shortLabel: "HR", value: 112 },
+		{ label: "MAP", value: 111 },
+		{ label: "SpO₂", value: "88%" },
+		{ label: "Resp. Rate", shortLabel: "RR", value: 30, variant: "destructive", range: "above" },
+	],
+	tags: [{ label: "NIV" }],
+});
+
+/** Dale Reynolds's card at Scenario 2's resolution (2 h on NIV): NEWS2 5, Medium, 1 below arrival; RR 21, SpO₂ 91%. */
+const sampleScenario2ResolvedCensus: Partial<CensusPatient> = {
+	acuity: { label: news2, score: 5, level: "medium" },
+	trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
+	scoreChange4h: -2,
+	vitals: [
+		{ label: "Heart Rate", shortLabel: "HR", value: 96 },
+		{ label: "MAP", value: 101 },
+		{ label: "SpO₂", value: "91%" },
+		{ label: "Resp. Rate", shortLabel: "RR", value: 21 },
+	],
+};
+
+export {
+	samplePatients,
+	sampleScenario1Census,
+	sampleScenario1ResolvedCensus,
+	sampleScenario2Census,
+	sampleScenario2ResolvedCensus,
+};

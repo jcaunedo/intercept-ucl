@@ -20,7 +20,7 @@ export const Default: Story = {};
 
 /** One patient, one alert: singular words. */
 export const Singular: Story = {
-	args: { name: "Mercy West Hospital", patientCount: 1, alertCount: 1 },
+	args: { name: "Alliance", patientCount: 1, alertCount: 1 },
 };
 
 /** No active alerts. */
@@ -45,7 +45,7 @@ export const AllVariants: Story = {
 	render: () => (
 		<div className='flex flex-col gap-6'>
 			<HospitalSectionHeader name='CVMC' patientCount={4} alertCount={3} />
-			<HospitalSectionHeader name='Mercy West Hospital' patientCount={1} alertCount={1} />
+			<HospitalSectionHeader name='Alliance' patientCount={1} alertCount={1} />
 			<HospitalSectionHeader name='Harbor Point General' patientCount={7} alertCount={0} />
 		</div>
 	),

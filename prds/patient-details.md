@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 3, 2026
+Last updated: Nov 4, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -166,6 +166,7 @@ Proposed section list (each section's content is in §5–§11):
 | **Labs** | Results by panel, cultures, pending | |
 | **Medications** | Active medications and infusions | |
 | **Orders** | Active orders (read-only) and recommendations | Intensivist, APP |
+| **Discharge** | Social needs the discharge workflow flagged from the chart, the payer, and a referral for each, sent with who agreed or skipped with a reason (PRD Alert maximized modal AMM-026, AMM-027) | Only once the workflow has flagged social needs. ✅ **Built in the prototype (Nov 4, 2026, Scenario 2 step 6):** after Orders, the same panel as the alert's Pathway panel |
 | **Notes** | Imported and Intercept notes; new note | |
 | **Sepsis** | Screening and bundle tracking | Only when the patient has a screening or tracking event (PC-080) |
 
@@ -228,7 +229,7 @@ As on the card: "NEWS2 10 High" with "▲ +6 in last 24 h" (PC-030, PC-031); the
 
 ### PD-013 — Organ support tags
 
-The interventions that answer "who's on a vent, who's on pressors" at a glance: Ventilated (invasive only) or NIV, the pressor count ("2 pressors"), CRRT, high-risk drips (Insulin infusion, 3% NaCl), and others as configured (PRD Patient card §15.1 P1). ✅ **Flag details (Nov 3, 2026, user's call):** each flag opens a popover with what it means and what's behind it now, as on the patient's card (PRD Patient card §15.1); it replaced linking each tag to its section (Ventilated → Respiratory, pressors → Infusions), which wasn't built.
+The interventions that answer "who's on a vent, who's on pressors" at a glance: Ventilated (invasive only) or NIV, the pressor count ("2 pressors"), CRRT, high-risk drips (Insulin infusion, 3% NaCl), and others as configured (PRD Patient card §15.1 P1). ✅ **Flag details (Nov 3, 2026, user's call; Nov 4, 2026, client feedback):** each flag opens a popover with what the bedside team changed lately and what's behind it now, as on the patient's card (PRD Patient card PC-064); it replaced linking each tag to its section (Ventilated → Respiratory, pressors → Infusions), which wasn't built.
 
 ### PD-014 — Header actions
 
@@ -507,7 +508,7 @@ The Conversational Clinical Data Agent answers questions about this patient (Spe
 | Rule | Behavior |
 |---|---|
 | **Scope** | This patient, in this tenant. A question about another patient is answered only in the global chat |
-| **Overview** | Asked about the open patient (the app header's Ask Intercept Live, a card's menu, a toast's Ask), the quick overview and the summary include the patient's flags with what's behind each, when the record has it: the pressor count with each pressor's rate, the ventilator's mode and settings, a high-risk drip's rate with its lab (3% NaCl with sodium, insulin with glucose), then the other flags by name (DNR, Fall risk) (Nov 3, 2026, user's call) |
+| **Overview** | Asked about the open patient (the app header's Ask Intercept Live, a card's menu, a toast's Ask), the quick overview and the summary include the patient's flags with what's behind each, when the record has it: the pressor count with each pressor's rate, the ventilator's mode and settings, a high-risk drip's rate with its lab (3% NaCl with sodium, insulin with glucose), then the other flags by name (DNR, Fall risk) (Nov 3, 2026, user's call). ✅ **Changed at the bedside (Nov 4, 2026, client feedback and user's call):** asked about any patient, the summary and the quick overview say what the bedside team changed in the last 12 hours, the drips' titrations and the ventilator's settings, newest first ("Epinephrine drip increased by 75% in the last 3 hours; FiO₂ increased from 40% to 60% in the last 2 hours"), or "nothing in the last 12 hours". Nurses and respiratory therapists make these changes on their own and the intensivist has to seek them out (PRD Patient card PC-064). Asked about the vent, each setting says its change |
 | **Citations** | Every fact cites its source; a citation opens it on the Timeline or in its section |
 | **Data in answers** | Answers can include tables, a timeline slice or criteria, not only prose |
 | **Limits** | No diagnosis, no therapy recommendation, no actions. Outside its limits it says so; with too little data it says "I don't have enough information" (Spec §9.1, Principle 12) |
@@ -518,7 +519,7 @@ The Conversational Clinical Data Agent answers questions about this patient (Spe
 | **Same data as the screen** | Answers use the alerts and values the cards show at that moment, including the clinician's own queue actions, and rank patients in the cards' priority order, so the chat never contradicts the page (Oct 31, 2026, product) |
 | **Alert updates** | While the conversation is about alerts (from a question about them, e.g. "open alerts" or "how do active alerts work?", until a question about something else), the chat posts an "Alert update" whenever a patient's alert fires, changes severity or status (acknowledged, escalated by someone else) or resolves, whether it's open or not. Changes outside that aren't saved for later. The clinician's own queue actions aren't repeated back. Shown in a neutral grey box, apart from answers; consecutive updates sit 8px apart, as one group (Oct 31, 2026, product). ⚠️ **Decision needed:** whether a closed chat also signals unread updates (e.g. a dot on the Sidebar's Ask Intercept Live), and whether every severity posts or only rising ones |
 
-- ✅ **Resolved (Oct 28, 2026, for the prototype):** Ask lives in the global Ask Intercept Live panel (PD-OD-04; one assistant, Spec §9.1 Principle 11). On this page the app header's sparkle opens it (the Patient Header's own Ask Intercept button was removed from Figma the same day). ✅ **Scoped to the open patient (Oct 31, 2026, product):** the app header's Ask Intercept button opens the chat about the patient on screen, shown as an "About {patient} ×" chip over the message box, and the button is filled (Solid · Neutral) meanwhile. Removing the chip, closing the chat or opening another patient makes the chat general again and the button plain. Opened from the Sidebar, the chat is general. ⚠️ **Gap:** the prototype's answers use the patient on screen by name; the real agent scopes its data to them.
+- ✅ **Resolved (Oct 28, 2026, for the prototype):** Ask lives in the global Ask Intercept Live panel (PD-OD-04; one assistant, Spec §9.1 Principle 11). On this page the app header's sparkle opens it (the Patient Header's own Ask Intercept button was removed from Figma the same day). ✅ **Scoped to the open patient (Oct 31, 2026, product):** the app header's Ask Intercept button opens the chat about the patient on screen, shown as an "About {patient} ×" chip over the message box, and the button is filled (Solid · Neutral) meanwhile. Removing the chip, closing the chat or opening another patient makes the chat general again and the button plain. Opened from the Sidebar, the chat is general. ✅ **Starts with the patient's overview (Nov 4, 2026, user's call):** the button also asks "Quick overview" for the user, as Ask in a toast does. A conversation about anyone else (another patient, the census, the greeting) is cleared first, so the patient on screen is what the chat shows; a conversation already about them goes on, with the overview after it. ✅ **No "Open patient details" here (Nov 4, 2026, user's call):** an answer's follow-ups leave it out for the patient whose page is open. ⚠️ **Gap:** the prototype's answers use the patient on screen by name; the real agent scopes its data to them.
 - ⚠️ **Decision needed:** voice input (Spec §9.1, Principle 5). Which hospitals allow microphones, and push-to-talk or wake word, are downstream (Spec §9.5).
 
 ---

@@ -5,7 +5,7 @@ import { sampleEhrFor } from "../../sample-data/sample-ehr";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's notes, newest first, written by their own care
 // team (`sample-patient-records.ts`). Where a hospital takes Intercept notes back, signed Intercept notes are written to
-// Epic (Harbor Point General, Mercy West Hospital); CVMC doesn't yet, so they stay signed in Intercept.
+// their record (Harbor Point General and Alliance); CVMC doesn't yet, so they stay signed in Intercept.
 // `sample-epic.ts` lists the same write-backs.
 //
 // Sarah Miller (`p1`) is the reference: one note of each status and an AI Scribe draft, in step with her record. She
@@ -15,7 +15,7 @@ import { sampleEhrFor } from "../../sample-data/sample-ehr";
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 const hoursAgo = (hours: number) => minutesAgo(hours * 60);
 
-const writesBack: Record<string, boolean> = { "Harbor Point General": true, "Mercy West Hospital": true, CVMC: false };
+const writesBack: Record<string, boolean> = { "Harbor Point General": true, "Alliance": true, CVMC: false };
 
 const sarahNotes: PatientNote[] = [
 	{
@@ -184,7 +184,7 @@ type NotesSpec = {
 
 const therapists: Record<string, [name: string, role: string]> = {
 	"Harbor Point General": ["Dana Brooks", "RRT"],
-	"Mercy West Hospital": ["Luke Rogers", "RRT"],
+	"Alliance": ["Rachel Lindgren", "RRT"],
 	CVMC: ["Ben Carter", "RRT"],
 };
 
@@ -313,7 +313,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		yesterday: "Severe ARDS from influenza A. P/F 96. Continue paralysis and prone positioning. Vancomycin stopped, MRSA swab negative. Oseltamivir day 2.",
 		events: "Proned overnight, P/F 110 prone, 78 supine. Fentanyl increased to 100 for ventilator dyssynchrony.",
 		apPlan: "Prone again this afternoon. Hold sedation wean while paralyzed. Daily ABG.",
-		plan: "Prone now rather than at 16:00. If P/F stays under 80 prone, call Mercy West's ECMO team for a consult. Conservative fluids.",
+		plan: "Prone now rather than at 16:00. If P/F stays under 80 prone, call Harbor Point's ECMO team for a consult. Conservative fluids.",
 	},
 	p3: {
 		history: "67-year-old woman with CKD stage 3 and atrial fibrillation on apixaban, 2 days of confusion and fever. BP 78/40, lactate 4.6, pyuria. Intubated for airway protection after fluids.",
@@ -359,7 +359,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		yesterday: "Post-op day 2, improving. WBC 14.0. Wound swab grew MRSA: contact isolation, add vancomycin. Advance diet as tolerated.",
 		events: "Off oxygen this morning. WBC 12.1 from 16.8, lactate normal.",
 		apPlan: "Fluids down to 100 mL/h. Clear diet. Plan transfer to the surgical floor tomorrow.",
-		plan: "Ready for the floor tomorrow if WBC keeps falling. Ask Mercy West's surgical team about vancomycin's end date.",
+		plan: "Ready for the floor tomorrow if WBC keeps falling. Ask Dr. Grant's surgical team about vancomycin's end date.",
 	},
 	p8: {
 		history: "54-year-old man with alcohol use disorder, vomited blood twice at home. Hemoglobin 7.2 and BP 92/58 in the ED. 2 units of blood, pantoprazole, endoscopy.",
@@ -424,25 +424,33 @@ const notesSpecs: Record<string, NotesSpec> = {
 	},
 	p17: {
 		history: "67-year-old woman with hypertension and a hysterectomy 12 years ago, 2 days of cramping, vomiting and no stool. CT showed an adhesive small bowel obstruction. Laparotomy, adhesions released, 20 cm of ischemic small bowel resected.",
-		admitPlan: "Admit to SICU after surgery. Nasogastric tube to suction, fluids, hydromorphone PCA, enoxaparin from tomorrow. Incentive spirometry every hour awake.",
+		admitPlan: "Admit to med-surg after surgery, with tele-ICU coverage. Nasogastric tube to suction, fluids, hydromorphone PCA, enoxaparin from tomorrow. Incentive spirometry every hour awake.",
 		nursing: ["Splinting with pain at 6/10, RR 21, HR 104. PCA increased to 0.3 mg per Dr. Reed. Incentive spirometry 750 mL. NG draining 150 mL bilious since 06:00. Urine 40 mL/h.", 35],
 		events: "RR up to 21 and HR to 104 overnight, SpO₂ 95% on 2 L, so NEWS2 is 6. Lactate 1.4 from 2.1, hemoglobin 10.8 after the OR.",
 		apPlan: "Pain control first; recheck RR and HR in an hour. Chest X-ray shows atelectasis only. Out of bed to the chair this morning.",
-		plan: "Recheck her in an hour after the PCA change. If RR stays over 20, ask Mercy West's surgical team about a chest exam and a CBC.",
+		plan: "Recheck her in an hour after the PCA change. If RR stays over 20, ask Dr. Reed about a chest exam and a CBC.",
 	},
 	p18: {
 		history: "54-year-old man with type 1 diabetes, out of insulin for 3 days. Vomiting and abdominal pain. Glucose 512, bicarbonate 9, anion gap 28, beta-hydroxybutyrate 6.4.",
-		admitPlan: "Admit to MICU. DKA protocol: fluids, insulin infusion at 0.1 units/kg/h, potassium replacement, hourly glucose, BMP every 4 h. Social work for insulin access.",
+		admitPlan: "Admit to med-surg with tele-ICU coverage. DKA protocol: fluids, insulin infusion at 0.1 units/kg/h, potassium replacement, hourly glucose, BMP every 4 h. Social work for insulin access.",
 		nursing: ["Gap closed at 12. Glucose 168 on insulin 3 units/h with dextrose. Ate half his breakfast without nausea. Asked about getting his insulin pump back.", 25],
 		events: "Anion gap 12 from 28, bicarbonate 20. Insulin down to 3 units/h, dextrose running.",
 		apPlan: "Glargine 18 units subcutaneous now, then stop the drip in 2 h. Diabetes educator and social work today.",
 		plan: "Glargine at 09:00, drip off at 11:00 if glucose stays under 250. Social work about insulin coverage before he goes to the floor.",
 	},
+	p22: {
+		history: "79-year-old woman with hypertension and osteoporosis who slipped on ice outside her home. Unable to bear weight on the right leg. X-ray showed a displaced right femoral neck fracture. Right hip hemiarthroplasty by the visiting orthopedic surgeon.",
+		admitPlan: "Admit to med-surg with tele-ICU coverage. Pain control without codeine, cefazolin for 24 hours, enoxaparin from tomorrow, physical therapy on post-op day 1, fall precautions.",
+		nursing: ["Pain 3/10 on scheduled acetaminophen, one dose of oxycodone overnight. Stood at the bedside with PT, weight bearing as tolerated. Dressing dry. SpO₂ 95% on 2 L; weaning as she moves more. Son visiting this afternoon.", 30],
+		events: "HR 98 to 86 and BP up to 126/70 after fluids. Hemoglobin 9.4 from 11.8, expected after surgery, no bleeding at the wound. NEWS2 5 to 3.",
+		apPlan: "Wean oxygen to room air today. Repeat hemoglobin tomorrow. PT twice a day. Case management about rehab at a skilled nursing facility.",
+		plan: "Wean oxygen to keep SpO₂ 92% or more. If hemoglobin drops under 8, ask Dr. Reed about a transfusion. Rehab placement with case management before discharge.",
+	},
 };
 
 // Margaret Hayes (`p15`), Scenario 1 at 01:40: only the hospital's notes. She's on a med-surg floor and no one from
 // Intercept has looked in yet, so there's no Intercept note to draft or sign.
-const chadron = "Chadron Community Hospital";
+const chadron = "Chadron";
 const hayesNotes: PatientNote[] = [
 	{
 		id: "p15-n1",
@@ -595,4 +603,60 @@ const sampleNotesByPatient: Record<string, PatientNotes> = {
 	),
 };
 
-export { sampleNotesByPatient };
+// Dale Reynolds (`p21`, Scenario 2): the ED's notes when the hub consult is requested. Built when the scenario's first
+// beat plays, so their times read from then.
+const sampleScenario2Notes = (): PatientNote[] => {
+	const alliance = "Alliance";
+	return [
+		{
+			id: "p21-n1",
+			type: "ED provider note",
+			author: { name: "Brian Keller", role: "MD, Emergency medicine", organization: alliance },
+			at: minutesAgo(5),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					heading: "History",
+					text: "64-year-old rancher with severe COPD (GOLD 3) on 2 L home oxygen. Three days of worse breathlessness, cough and green sputum; out of oxygen for 4 days because he couldn't afford the refill. Uninsured. Brought in by ambulance through the storm.",
+				},
+				{
+					heading: "Assessment",
+					text: "Acute on chronic hypercapnic respiratory failure from a COPD exacerbation. ABG pH 7.24, PaCO₂ 78. Chest X-ray: hyperinflation, no pneumothorax. Alert, speaking in short phrases, using his neck muscles.",
+				},
+				{
+					heading: "Plan",
+					text: "BiPAP started, IPAP 12 / EPAP 5, FiO₂ 35% for SpO₂ 88–92%. Nebulizers, steroids, azithromycin. Requested the hub intensivist's consult. Transfer isn't possible tonight: air is grounded and the highway is closed.",
+				},
+			],
+		},
+		{
+			id: "p21-n2",
+			type: "Respiratory therapy note",
+			author: { name: "Rachel Lindgren", role: "RRT", organization: alliance },
+			at: minutesAgo(18),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "BiPAP on with a full-face mask, IPAP 12, EPAP 5, FiO₂ 35%. Tolerating it. Leak under 20 L/min. Nebulizer in line. Will stay at the bedside for the first hour.",
+				},
+			],
+		},
+		{
+			id: "p21-n3",
+			type: "ED triage note",
+			author: { name: "Megan Foster", role: "RN", organization: alliance },
+			at: minutesAgo(40),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "Arrived by ambulance on 2 L. SpO₂ 86%, RR 26, HR 104, BP 150/86, temp 37.4 °C. Tripod position, pursed lips, speaking in short phrases. Ran out of home oxygen 4 days ago. No insurance. ESI 2.",
+				},
+			],
+		},
+	];
+};
+
+export { sampleNotesByPatient, sampleScenario2Notes };

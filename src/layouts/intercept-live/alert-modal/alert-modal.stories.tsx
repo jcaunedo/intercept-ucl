@@ -14,7 +14,13 @@ import {
 import { sampleLiveScenario } from "../monitoring/sample-live-scenario";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { withFlagDetails } from "../shared/flag-details";
-import { sampleAlertDetails, sampleScenario1AlertDetail } from "./sample-alert-modal";
+import { sampleScenario2Discharge } from "../sample-data/sample-scenario-2";
+import {
+	sampleAlertDetails,
+	sampleScenario1AlertDetail,
+	sampleScenario2AlertDetail,
+	sampleScenario2ResolvedDetail,
+} from "./sample-alert-modal";
 
 /**
  * The alert modal, opened from a Monitoring card's alert bar or an alert toast's maximize button. Margaret Hayes's
@@ -38,6 +44,7 @@ const meta = {
 		onConsultChange: fn(),
 		onPathwayDecision: fn(),
 		onTransferDecision: fn(),
+		onDischargeDecision: fn(),
 	},
 	render: (args) => <Demo {...args} />,
 } satisfies Meta<typeof AlertDetailModal>;
@@ -550,5 +557,64 @@ export const CheckpointMissed: Story = {
 		const panel = within(await screen.findByRole("region", { name: "Keep or transfer" }));
 		await expect(panel.getByText(/A checkpoint was missed/)).toBeInTheDocument();
 		await expect(panel.getByRole("button", { name: "Change decision" })).toBeInTheDocument();
+	},
+};
+
+const scenario2Resolved = sampleScenario2ResolvedDetail(sampleScenario2AlertDetail());
+
+/**
+ * Exploration, Scenario 2 step 6: Dale Reynolds kept at Alliance and both checkpoints passed. The discharge workflow has
+ * flagged **Uninsured** and **Can't afford home oxygen** from his chart and drafted two referrals, under keep or
+ * transfer. Each is sent once someone has said who agreed to it (the patient, family or consent on file), or skipped
+ * with a reason. His page's Discharge section shows the same panel.
+ */
+export const SocialNeedsAtDischarge: Story = {
+	args: {
+		data: {
+			...scenario2Resolved,
+			transfer: {
+				...scenario2Resolved.transfer!,
+				decided: {
+					type: "keep",
+					rationale: "Air grounded and the road closed; BiPAP, RT and an airway plan are here",
+					at: minutesAgo(125),
+				},
+			},
+			discharge: sampleScenario2Discharge(),
+		},
+	},
+	play: async ({ args }) => {
+		const region = await screen.findByRole("region", { name: "Social needs at discharge" });
+		const panel = within(region);
+		await expect(panel.getByText("2 to send")).toBeInTheDocument();
+		await expect(panel.getByText("Can't afford home oxygen")).toBeInTheDocument();
+		const medicaid = within(panel.getByRole("listitem", { name: "Medicaid eligibility screening" }));
+		// Who agreed comes first.
+		const send = medicaid.getByRole("button", { name: "Send referral" });
+		await expect(send).toBeDisabled();
+		await userEvent.click(medicaid.getByRole("radio", { name: "Family" }));
+		await userEvent.type(await medicaid.findByRole("textbox", { name: /Who in the family/ }), "his daughter, Amy Reynolds");
+		await userEvent.click(send);
+		await expect(args.onDischargeDecision).toHaveBeenCalledWith({
+			type: "send",
+			referralId: "medicaid",
+			consent: { by: "family", who: "his daughter, Amy Reynolds" },
+		});
+		await expect(await medicaid.findByText(/Sent to Alliance financial counseling/)).toBeInTheDocument();
+		await expect(medicaid.getByText(/Consent: family \(his daughter, Amy Reynolds\)/)).toBeInTheDocument();
+		// Skipping asks why, and can be taken back.
+		const rehab = within(panel.getByRole("listitem", { name: "Pulmonary rehab, closer to home" }));
+		await userEvent.click(rehab.getByRole("button", { name: "Skip" }));
+		await userEvent.type(await rehab.findByRole("textbox", { name: "Why skip?" }), "Already enrolled");
+		await userEvent.click(rehab.getByRole("button", { name: "Skip referral" }));
+		await expect(args.onDischargeDecision).toHaveBeenLastCalledWith({
+			type: "skip",
+			referralId: "pulmonary-rehab",
+			rationale: "Already enrolled",
+		});
+		await expect(await panel.findByText("Done")).toBeInTheDocument();
+		await userEvent.click(await rehab.findByRole("button", { name: "Undo skip" }));
+		await expect(args.onDischargeDecision).toHaveBeenLastCalledWith({ type: "undo", referralId: "pulmonary-rehab" });
+		await expect(await panel.findByText("1 to send")).toBeInTheDocument();
 	},
 };

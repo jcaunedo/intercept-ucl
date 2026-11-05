@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenario 2 Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* A presenter's script: one column of beats, each with what to click, what to say, and the screen it lands on.
+   Colors follow Intercept Live's tokens (theme.css): neutral surfaces, the severity red as the only accent. */
+:root {
+	--bg: oklch(0.985 0.002 250);
+	--surface: oklch(1 0 0);
+	--fg: oklch(0.21 0.01 260);
+	--muted: oklch(0.5 0.012 260);
+	--border: oklch(0.91 0.005 260);
+	--critical: oklch(0.58 0.22 27);
+	--critical-subtle: oklch(0.96 0.025 20);
+	--success: oklch(0.55 0.14 150);
+	--success-subtle: oklch(0.96 0.035 150);
+	--note: oklch(0.96 0.03 85);
+	--note-fg: oklch(0.42 0.09 70);
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Roboto Mono", ui-monospace, monospace;
+	color-scheme: light;
+	/* archielabs.ds icons (lucide paths): `mouse-pointer` before Steps, `text` before each screenshot's note. */
+	--icon-pointer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 12.586 19 19'/%3E%3Cpath d='M3.688 3.037a.497.497 0 0 0-.651.651l6.5 15.999a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z'/%3E%3C/svg%3E");
+	--icon-text: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 6.1H3'/%3E%3Cpath d='M21 12.1H3'/%3E%3Cpath d='M15.1 18H3'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: oklch(0.17 0.006 260);
+		--surface: oklch(0.21 0.008 260);
+		--fg: oklch(0.96 0.003 260);
+		--muted: oklch(0.7 0.01 260);
+		--border: oklch(0.32 0.01 260);
+		--critical: oklch(0.68 0.19 25);
+		--critical-subtle: oklch(0.27 0.06 25);
+		--success: oklch(0.72 0.14 150);
+		--success-subtle: oklch(0.26 0.05 150);
+		--note: oklch(0.28 0.04 85);
+		--note-fg: oklch(0.85 0.08 85);
+		color-scheme: dark;
+	}
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font: 400 16px/1.55 var(--font-sans);
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 4px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: max(16px, 4vw); }
+
+header.top { padding-block: 48px 32px; }
+.eyebrow { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 10px 0 12px; text-wrap: balance; }
+/* The line under the title: the title's type, muted. */
+h1:has(+ .h1-sub) { margin-bottom: 0; }
+.h1-sub { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 400; margin: 0 0 12px; color: var(--muted); }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; }
+.setting { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+
+nav.beats {
+	position: sticky; top: 0; z-index: 5;
+	background: color-mix(in oklch, var(--bg) 92%, transparent);
+	backdrop-filter: blur(8px);
+	border-block: 1px solid var(--border);
+}
+nav.beats ol { list-style: none; display: flex; gap: 4px; margin: 0 auto; padding-block: 10px; overflow-x: auto; }
+nav.beats li:first-child a { margin-left: -12px; }
+nav.beats a { display: block; white-space: nowrap; text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 10px; color: var(--muted); }
+nav.beats a:hover { background: var(--surface); color: var(--fg); }
+nav.beats .num { font-family: var(--font-mono); margin-right: 6px; }
+
+section.prep, section.beat, section.gaps { padding-block: 72px; border-bottom: 1px solid var(--border); }
+h2 { font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.beat-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.time { font: 500 14px/1 var(--font-mono); color: var(--muted); }
+
+/* One column: what to say under the title, then what to do. */
+.script { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px; max-width: 72ch; }
+.script > div { min-width: 0; }
+.label { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.label.steps { display: flex; align-items: center; gap: 6px; }
+.label.steps::before {
+	content: "";
+	flex: none;
+	width: 14px;
+	height: 14px;
+	background: currentColor;
+	-webkit-mask: var(--icon-pointer) center / contain no-repeat;
+	mask: var(--icon-pointer) center / contain no-repeat;
+}
+.script ol, .script ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.say { margin: 0; font-size: 16px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+kbd, .ui { font: 600 0.92em var(--font-sans); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+
+/* One screenshot per row, full width, so the screen can be read. */
+.frames { display: grid; grid-template-columns: 1fr; gap: 40px; }
+figure { margin: 0; min-width: 0; }
+figure img { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+figure.narrow img { max-width: 420px; }
+figcaption { font-size: 16px; color: var(--fg); margin-top: 16px; display: flex; align-items: flex-start; gap: 8px; }
+/* archielabs.ds `text`, as a mask so it takes the caption's color; centered on the first line. */
+figcaption::before {
+	content: "";
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin-top: 4px;
+	background: currentColor;
+	-webkit-mask: var(--icon-text) center / contain no-repeat;
+	mask: var(--icon-text) center / contain no-repeat;
+}
+
+.callout { border-radius: 12px; padding: 14px 16px; font-size: 15px; margin-top: 16px; }
+.callout.note { background: var(--note); color: var(--note-fg); }
+.callout.done { background: var(--success-subtle); }
+.callout strong { font-weight: 600; }
+.pending { display: inline-block; font: 600 12px/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--note-fg); background: var(--note); border-radius: 999px; padding: 6px 10px; }
+
+.prep ol { display: grid; gap: 8px; padding-left: 20px; max-width: 72ch; }
+.prep ol ol { list-style: upper-alpha; margin-top: 8px; }
+.gaps table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+	<p class="eyebrow">Intercept Live · Demo storyboard</p>
+	<h1>Scenario 2: COPD respiratory failure during a blizzard</h1>
+	<p class="h1-sub">Patient: Dale Reynolds</p>
+	<p class="lede">The network degrades and transport is grounded, and the platform keeps the intensivist's guidance flowing anyway. Dale Reynolds, 64, is in Alliance's ED in hypercapnic respiratory failure, and nobody can move him. This is the scenario that shows the product was built for rural infrastructure, not adapted to it. Follow the beats in order: each one says what to click, what to say, and what the screen should look like.</p>
+	<div class="setting">
+		<span class="chip">Alliance, NE · ED</span>
+		<span class="chip">22:15</span>
+		<span class="chip">Winter storm</span>
+		<span class="chip">Critical access hospital, no ICU</span>
+		<span class="chip">Air transport grounded</span>
+		<span class="chip">Highway to Scottsbluff closed</span>
+		<span class="chip">The connection drops mid-consult</span>
+	</div>
+</header>
+
+<nav class="beats" aria-label="Beats">
+	<ol class="wrap">
+		<li><a href="#prep">Before you start</a></li>
+		<li><a href="#beat-1"><span class="num">1</span>Consult on video</a></li>
+		<li><a href="#beat-2"><span class="num">2</span>Network drops</a></li>
+		<li><a href="#beat-3"><span class="num">3</span>Transport</a></li>
+		<li><a href="#beat-4"><span class="num">4</span>NIV tracking</a></li>
+		<li><a href="#beat-5"><span class="num">5</span>Resolution</a></li>
+		<li><a href="#beat-6"><span class="num">6</span>Social needs</a></li>
+		<li><a href="#gaps">Known gaps</a></li>
+	</ol>
+</nav>
+
+<main>
+<section class="prep wrap" id="prep">
+	<div class="beat-head"><h2>Before you start, a few things to know</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">This is the hub at night: 21 patients across four rural hospitals, one intensivist watching all of them. Alliance is the smallest, a critical access hospital with no ICU. Tonight there's a winter storm.</p>
+		</div>
+		<div>
+			<ol>
+				<li>Open the prototype on <strong>Monitoring</strong>. If you've already played it, use <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span> first.</li>
+				<li>Dale isn't on the page yet. He arrives with the scenario, when Alliance's ED asks the hub for help.</li>
+				<li>New to the page? The <a href="../scenario-1/index.html#prep">Scenario 1 storyboard</a> walks through the hospital tabs, the quick filters, the monitoring cards and the alert notifications.</li>
+				<li>Some beats arrive on their own, so keep his alert open for them: the connection drops about 6 seconds into the call (beat 2), and beats 5 and 6 arrive about 6 and 14 seconds after you click <span class="ui">Keep at Alliance</span> (beat 4).</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames one">
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Dale Reynolds arrives." loading="lazy"><figcaption>Monitoring before the scenario starts. Alliance has 3 patients.</figcaption></figure>
+	</div>
+	<div class="callout note"><strong>The clock shows today's time, not 22:15.</strong> The prototype runs on the real clock, and the two hours on BiPAP pass in a few seconds. Ask the audience to picture a winter night.</div>
+</section>
+
+<section class="beat wrap" id="beat-1">
+	<div class="beat-head"><h2>1. Consult starts on video</h2><span class="time">22:15</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Dale Reynolds, 64, a rancher with severe COPD. He's uninsured since a seasonal job ended, and he ran out of the home oxygen he can't afford four days ago. His blood gas on arrival: pH 7.24, CO₂ 78. The ED physician has started BiPAP and calls the hub. Before answering, the intensivist already sees who's calling, about whom, what they're asking and the latest numbers. One click on Answer, and they're looking at him with his nurse.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Open <span class="ui">Prototype</span> at the bottom of the Sidebar and pick <span class="ui">Scenario 2: COPD</span>.</li>
+				<li>About 2 seconds later Dale's card joins the page, first, with its red <strong>Critical</strong> bar, and Alliance's tab counts him.</li>
+				<li>About 4 seconds after that, <strong>Dr. Brian Keller's call</strong> rings at the bottom right: "Urgent video consult request", how long it has rung, the patient, his <strong>Reason</strong> ("Hypercapnic failure on BiPAP. Can we keep him here?") and the <strong>Latest values</strong>.</li>
+				<li>Point out that the call can't be missed: it rings until it's answered or declined, over any page, even with notifications paused.</li>
+				<li>Click <span class="ui">Answer</span>. Dale's alert opens with the video consult already on: <strong>Megan Foster, RN</strong>, at ED Bay 3, his NEWS2 7 and his live monitor (RR 30, SpO₂ 88% on BiPAP).</li>
+				<li>Click his <span class="ui">COPD exacerbation</span> flag, under his monitor: the arrival gas, GOLD 3 with 40 pack-years and no oxygen for 4 days, and his BiPAP settings. <kbd>Esc</kbd> closes it. Be quick: the connection drops about 6 seconds into the call.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 2: COPD." loading="lazy"><figcaption>Prototype › Scenario 2: COPD.</figcaption></figure>
+		<figure><img src="frames/02-call.jpg" alt="Dr. Brian Keller's call ringing at the bottom right: Urgent video consult request, the patient Reynolds, Dale, the reason, the latest values, Decline and Answer; Dale's card first on Monitoring." loading="lazy"><figcaption>Dr. Keller's consult request rings, with who, why and the latest values. Dale's card leads the page.</figcaption></figure>
+		<figure><img src="frames/03-answered.jpg" alt="Answered: his alert open with the video consult live beside it, Megan Foster, RN joined at Bay 3." loading="lazy"><figcaption>Answered: his alert, with the call already on.</figcaption></figure>
+		<figure><img src="frames/03b-flag.jpg" alt="The COPD exacerbation flag open during the call: hypercapnic respiratory failure, severe COPD, on BiPAP, with their numbers." loading="lazy"><figcaption>His COPD exacerbation flag: the findings behind the consult.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-2">
+	<div class="beat-head"><h2>2. Network drops</h2><span class="time">Mid-consult</span></div>
+	<div class="script">
+		<div>
+			<p class="say">The storm takes Alliance's connection down to a fraction of normal. The video freezes, and the platform switches to low-bandwidth mode on its own: the call goes on as audio, his vitals come every 30 seconds instead of streaming, and the bedside sends still photos as they're taken. A banner shows the mode, and the monitor says how old its numbers are, so nobody mistakes held data for live.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click. About 6 seconds into the call the picture freezes, greyed: "Connection weak · switching to audio only…".</li>
+				<li>About 2 seconds later the call is audio only ("Video paused for low bandwidth"), and <strong>Low-bandwidth mode</strong> tops the Video consult panel, with how long it has lasted.</li>
+				<li>Point at his monitor: it shows the last hour's trends, with "Low bandwidth: vitals every 30 s · updated 12 s ago" over the numbers.</li>
+				<li>About 8 seconds later, a photo of the <strong>BiPAP screen</strong> arrives under the call, sent by Rachel Lindgren, RRT, with its readings: IPAP 12, EPAP 5, FiO₂ 35%, RR 28.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/05a-freeze.jpg" alt="The call frozen and greyed, Connection weak · switching to audio only; the Low-bandwidth mode banner; his monitor showing 1 h trends with Low bandwidth: vitals every 30 s." loading="lazy"><figcaption>The connection drops: the picture freezes, the banner shows the mode, the monitor says its numbers are held.</figcaption></figure>
+		<figure><img src="frames/05c-photo.jpg" alt="The call audio only with Megan Foster, RN, and under it Photos from the bedside: the BiPAP screen with its readings." loading="lazy"><figcaption>Audio only, and the BiPAP screen's photo, sent as it was taken.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-3">
+	<div class="beat-head"><h2>3. Transport-aware decision</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">The usual answer is to transfer him to the ICU in Scottsbluff. Tonight that isn't possible: air transport is grounded by the storm and the highway is closed, ETA unknown. The platform puts what the plan needs next to what Alliance has tonight, and the transport status beside it. The plan becomes: stabilize him here, with an explicit failure plan.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Click <span class="ui">View pathway</span> under his alert. The <strong>COPD exacerbation pathway</strong> opens to the right of the call: BiPAP settings with a CO₂ target, nebulizers, steroids, an antibiotic, and intubation readiness.</li>
+				<li>Click <span class="ui">Accept and send</span>. About 4 seconds later it's <strong>Co-signed by Dr. Brian Keller</strong>, the ED physician, and <strong>Keep or transfer</strong> opens under it.</li>
+				<li>Scroll the Pathway panel down. Walk through what the plan needs against Alliance tonight (BiPAP, a respiratory therapist, an airway plan, monitoring, the nurse stretched), then <strong>If transferred</strong>: Regional West has a bed, but Air reads <strong>Grounded</strong> and Ground <strong>Highway closed · ETA unknown</strong>.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/06-pathway.jpg" alt="The COPD exacerbation pathway suggested: BiPAP, ipratropium-albuterol, methylprednisolone, with Decline and Accept and send." loading="lazy"><figcaption>The COPD exacerbation pathway, suggested.</figcaption></figure>
+		<figure><img src="frames/07-transport.jpg" alt="Keep or transfer: Alliance's nurse capacity limited; if transferred, Regional West Medical Center, Air grounded by the storm, Ground highway to Scottsbluff closed, ETA unknown." loading="lazy"><figcaption>Keep or transfer: Regional West has a bed, but neither air nor ground can get him there.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-4">
+	<div class="beat-head"><h2>4. NIV failure tracking</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">Keeping him sets the COPD pathway's checkpoints: a repeat blood gas at one hour and at two, with pH, CO₂, mental status and work of breathing. If he misses one, the plan is already made: the intubation checklist and his starting ventilator settings were prepared with the ED physician in advance, just in case.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Click <span class="ui">Keep at Alliance</span>. The <strong>1 h</strong> and <strong>2 h</strong> checkpoints it sets appear, each with what has to hold.</li>
+				<li>Scroll up to the pathway's <strong>Intubation readiness</strong>: checklist done, ventilator set to AC, VT 450 mL, rate 14, PEEP 5, FiO₂ 40%, prepared with Dr. Keller and used only if NIV fails at a checkpoint.</li>
+				<li>Back at <strong>Why keep at Alliance?</strong>, type a reason (e.g. <em>Air grounded and the highway closed. BiPAP, RT and an airway plan are here.</em>) and click <span class="ui">Keep at Alliance</span>.</li>
+				<li>Keep his alert open: beat 5 arrives on its own, about 6 seconds later.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/08a-checkpoints.jpg" alt="Keep at Alliance: the 1 h and 2 h checkpoints, repeat ABG with what has to hold, and Why keep at Alliance? filled in." loading="lazy"><figcaption>The checkpoints keeping him sets: repeat gases at 1 h and 2 h.</figcaption></figure>
+		<figure><img src="frames/08b-intubation.jpg" alt="The pathway's Intubation readiness order, active: checklist done, ventilator settings, prepared with Dr. Keller, used only if NIV fails at a checkpoint." loading="lazy"><figcaption>The failure plan, prepared in advance: intubation readiness and his starting ventilator settings.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-5">
+	<div class="beat-head"><h2>5. Resolution</h2><span class="time">2 h on NIV</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Two hours on BiPAP. At one hour his pH is 7.28 and his CO₂ 70; at two hours, pH 7.31 and CO₂ 64, and he's speaking in full sentences. NIV is working. He was never intubated and never transferred: he stays in a monitored bed at Alliance, with the hub following him.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click. About 6 seconds after Keep at Alliance, both checkpoints read <strong>Passed</strong> with his repeat gases, and <strong>Transfer avoided</strong> appears at the bottom of the Pathway panel: 60 mi each way on a closed road, 2 h of NIV, no intubation.</li>
+				<li>Point out his alert: <strong>Resolved</strong> by Megan Foster, RN, and his score now NEWS2 5, Medium. Both blood gases arrived as photos under the call.</li>
+				<li>His monitor still says it's in low-bandwidth mode: its numbers change only every 30 seconds.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/09a-resolved.jpg" alt="His alert resolved by Megan Foster, RN, NEWS2 5 Medium; the 1 h and 2 h blood gas photos; both checkpoints passed and Transfer avoided." loading="lazy"><figcaption>At 2 h: resolved, both checkpoints passed with his gases, transfer avoided. The cost is a placeholder until it's sourced.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-6">
+	<div class="beat-head"><h2>6. Social needs flagged</h2><span class="time">At discharge</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Getting him through the night isn't the end. He'll go home uninsured, to oxygen he can't afford. The discharge workflow reads his chart, flags both, and drafts the referrals: a Medicaid eligibility screening, which would cover his oxygen, and pulmonary rehab in Alliance instead of 60 miles away. Nothing is sent until someone says who agreed to it.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click at first. About 14 seconds after Keep at Alliance, <strong>Social needs at discharge</strong> appears under Transfer avoided, "2 to send", and his flags gain <strong>Uninsured</strong> and <strong>Can't afford home oxygen</strong>. Scroll the Pathway panel down to it.</li>
+				<li>Walk through <strong>Flagged</strong>: each need with where it comes from in his chart, and "Payer on record: Uninsured".</li>
+				<li>On <strong>Medicaid eligibility screening</strong>, pick <span class="ui">The patient</span> under <strong>Who agreed?</strong> and click <span class="ui">Send referral</span>.</li>
+				<li>On <strong>Pulmonary rehab, closer to home</strong>, pick <span class="ui">Family</span>, type <em>his daughter, Amy Reynolds</em> and click <span class="ui">Send referral</span>. The badge reads <strong>Done</strong>.</li>
+				<li>Close his alert. On Monitoring his card reads Resolved, NEWS2 5.</li>
+				<li>Click his card to open his page. The <strong>Discharge</strong> tab has the same referrals, already sent. On <strong>Overview</strong>, <strong>Activity</strong> lists the night with who did what, the referrals and who agreed to them included. His chest X-ray is under <span class="ui">Chart</span>.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/10a-social.jpg" alt="Social needs at discharge, 2 to send: Uninsured and Can't afford home oxygen flagged, Payer on record: Uninsured; his flags now include both." loading="lazy"><figcaption>The discharge workflow's flags, from his chart, and the payer.</figcaption></figure>
+		<figure><img src="frames/10b-consent.jpg" alt="Medicaid eligibility screening sent with the patient's consent; Pulmonary rehab with Who agreed? set to Family, his daughter, Amy Reynolds, and Send referral." loading="lazy"><figcaption>Each referral says who agreed: the patient, family, or consent on file.</figcaption></figure>
+		<figure><img src="frames/10c-sent.jpg" alt="Both referrals sent: to Alliance financial counseling, consent: the patient; to Alliance outpatient pulmonary rehab, consent: family (his daughter, Amy Reynolds)." loading="lazy"><figcaption>Both referrals sent, with who agreed.</figcaption></figure>
+		<figure><img src="frames/11-monitoring.jpg" alt="Monitoring: Dale Reynolds's card, Resolved, NEWS2 5 Medium, among Alliance's patients." loading="lazy"><figcaption>Back on Monitoring: his card has settled.</figcaption></figure>
+		<figure><img src="frames/12a-patient.jpg" alt="Dale Reynolds's page: the brief, NEWS2 5 Medium, his flags Uninsured and Can't afford home oxygen, and the Discharge tab." loading="lazy"><figcaption>His page, with the new flags and the Discharge tab.</figcaption></figure>
+		<figure><img src="frames/12b-discharge.jpg" alt="His Discharge section: Social needs at discharge, Done, both referrals sent with who agreed." loading="lazy"><figcaption>His Discharge section: the same referrals, sent from his alert.</figcaption></figure>
+		<figure><img src="frames/13-activity.jpg" alt="His Activity, newest first: video consult ended, the two referrals sent with their consent, social needs flagged for discharge." loading="lazy"><figcaption>His Activity: the night, and the referrals with who agreed.</figcaption></figure>
+	</div>
+</section>
+
+<section class="gaps wrap" id="gaps">
+	<div class="beat-head"><h2>Known gaps</h2></div>
+	<p style="margin:0 0 16px;color:var(--muted);max-width:68ch">Where the prototype differs from the scenario, in case someone asks.</p>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>What the audience sees</th><th>The scenario</th><th>Why</th></tr></thead>
+			<tbody>
+				<tr><td>Today's clock time; two hours on BiPAP pass in about 6 seconds</td><td>22:15, then 2 h on NIV</td><td>The prototype runs on the real clock, so checkpoints pass before their due times</td></tr>
+				<tr><td>Low-bandwidth mode only in his alert. His Monitoring card and his page keep streaming waveforms while the connection is down</td><td>"A banner shows the mode so nobody thinks data is live when it isn't"</td><td>Not built yet for the card and the page</td></tr>
+				<tr><td>The connection never comes back; vitals every 30 s</td><td>—</td><td>What restores video, and how often vitals come, are still open (PRD Bedside camera)</td></tr>
+				<tr><td>Intubation readiness is one line of the pathway</td><td>"The intubation checklist and starting ventilator settings are prepared"</td><td>A checklist to work through isn't built yet</td></tr>
+				<tr><td>The answered call shows Megan Foster, RN, at the bedside</td><td>Dr. Keller, the ED physician, calls</td><td>The call reaches the bedside; the caller isn't on it yet</td></tr>
+				<tr><td>Decline only ends the call; his alert stays</td><td>—</td><td>Handing the request to another intensivist isn't built yet</td></tr>
+				<tr><td>The chest X-ray is on his page (Chart), not in his alert</td><td>The intensivist reviews the ABG and the chest X-ray</td><td>The alert shows the findings behind it; imaging lives in the chart</td></tr>
+				<tr><td>The hub clinician sends the referrals</td><td>"The discharge workflow … generates referrals"</td><td>Whether Alliance's case manager sends them instead is open</td></tr>
+				<tr><td>Minutes in fallback mode show only in the banner</td><td>A metric: consult continuity during network degradation</td><td>Not written to the record yet</td></tr>
+				<tr><td>Doses, settings, programs, capacities</td><td>—</td><td>Illustrative; need clinical and case-management review</td></tr>
+			</tbody>
+		</table>
+	</div>
+</section>
+</main>
+
+<footer class="wrap">
+	Source: InterceptLIVE Demo Use Cases, Scenario 2 (NETECH Rural Health Catalyst Fund). Dale Reynolds and everyone in the prototype are synthetic. To run it again: <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span>.
+</footer>
+</body>
+</html>

@@ -62,7 +62,7 @@ const preview: Preview = {
 					"Documents",
 					["System Specifications", "Design Phase Team Brief", "Slack notes from client"],
 					"Storyboard",
-					["Scenario 1"],
+					["Scenario 1", "Scenario 2"],
 				],
 			},
 		},

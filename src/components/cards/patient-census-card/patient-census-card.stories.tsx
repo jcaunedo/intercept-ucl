@@ -190,20 +190,33 @@ export const Small: Story = {
 };
 
 /**
- * A tag with `details` is a button: a click opens what it means and what's behind it now in a popover, and doesn't
- * open the patient. Escape closes it and focus returns to the tag; so does moving the mouse off the tag.
+ * A tag with `details` is a button: a click opens what the bedside team changed lately and what's behind it now in a
+ * popover, and doesn't open the patient. Escape closes it and focus returns to the tag; so does moving the mouse off
+ * the tag.
  */
 export const TagDetails: Story = {
 	args: {
 		tags: [
-			{ label: "Ventilated" },
+			{
+				label: "Ventilated",
+				details: {
+					changes: ["FiO₂ increased from 40% to 60% in the last 2 hours"],
+					items: [
+						{ label: "Mode", value: "Volume control (AC/VC)" },
+						{ label: "FiO₂", value: "60%" },
+						{ label: "PEEP", value: "10 cmH₂O" },
+					],
+					source: "Ventilator",
+					updatedAt: new Date(Date.now() - 2 * 60_000).toISOString(),
+				},
+			},
 			{
 				label: "2 pressors",
 				details: {
-					description: "Drips that raise blood pressure, running now.",
+					changes: ["Epinephrine drip increased by 75% in the last 3 hours"],
 					items: [
-						{ label: "Norepinephrine", value: "0.22 mcg/kg/min" },
-						{ label: "Vasopressin", value: "0.03 units/min" },
+						{ label: "Epinephrine", value: "0.07 mcg/kg/min" },
+						{ label: "Norepinephrine", value: "0.18 mcg/kg/min" },
 					],
 					source: "Pump",
 					updatedAt: new Date(Date.now() - 60_000).toISOString(),
@@ -215,7 +228,8 @@ export const TagDetails: Story = {
 		const tag = canvas.getByRole("button", { name: "2 pressors" });
 		await userEvent.click(tag);
 		const popover = within(await screen.findByRole("dialog", { name: "2 pressors" }));
-		await expect(popover.getByText("0.22 mcg/kg/min")).toBeInTheDocument();
+		await expect(popover.getByText("Epinephrine drip increased by 75% in the last 3 hours")).toBeInTheDocument();
+		await expect(popover.getByText("0.07 mcg/kg/min")).toBeInTheDocument();
 		await expect(popover.getByText("Pump · 1 min ago")).toBeInTheDocument();
 		await userEvent.click(popover.getByText("Norepinephrine"));
 		await expect(args.onOpen).not.toHaveBeenCalled();

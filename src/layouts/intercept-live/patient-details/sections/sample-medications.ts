@@ -1,5 +1,5 @@
 import type { PatientInfusion } from "../patient-details";
-import { samplePatientBaseRecords } from "../sample-patient-records";
+import { samplePatientBaseRecords, sampleScenarioCareTeams } from "../sample-patient-records";
 import type { ContinuousMedication, PatientMedications, PrnMedication, ScheduledMedication } from "./medications-section";
 
 // Synthetic data (PRD Patient details PD-150): the active medications of every patient on the Census, from their
@@ -283,7 +283,8 @@ const nightly: [string, number] = ["Nightly", 24];
 /** A patient's medications: the hospital and infusions from their record, plus their scheduled and as-needed orders. */
 function medicationsFor(id: string, scheduledMeds: ScheduledMedication[], prnMeds: PrnMedication[]): PatientMedications {
 	const record = samplePatientBaseRecords.find((item) => item.id === id);
-	const hospital = record?.careTeam?.find((member) => member.organization)?.organization ?? "";
+	const careTeam = record?.careTeam ?? sampleScenarioCareTeams[id];
+	const hospital = careTeam?.find((member) => member.organization)?.organization ?? "";
 	return { hospital, updatedAt: minutesAgo(4), continuous: continuousFrom(record?.infusions), scheduled: scheduledMeds, prn: prnMeds };
 }
 
@@ -577,6 +578,37 @@ const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 			prn("Dextrose 50%", "25 mL", "IV push", "As needed", "Glucose under 70"),
 		],
 	),
+	// Jensen: post-op day 1 after a hip hemiarthroplasty; codeine allergy, so oxycodone for pain.
+	p22: medicationsFor(
+		"p22",
+		[
+			scheduled("Cefazolin", "2 g", "IV", every(8), 360, "Surgical prophylaxis, 24 h"),
+			scheduled("Acetaminophen", "1,000 mg", "PO", every(6), 200, "Pain"),
+			scheduled("Enoxaparin", "40 mg", "SC", daily, { firstDueIn: 180, ordered: 1400 }, "DVT prophylaxis after hip surgery"),
+			scheduled("Amlodipine", "5 mg", "PO", daily, 600, "Hypertension"),
+		],
+		[
+			prn("Oxycodone", "2.5 mg", "PO", "Every 4 h as needed", "Moderate pain", 300, 2),
+			prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea"),
+		],
+	),
 };
 
-export { sampleMedicationsByPatient };
+
+/**
+ * Dale Reynolds (Scenario 2): the ED's COPD orders, built when the scenario's first beat plays. Bronchodilators every
+ * 4 h through the BiPAP circuit, steroids and azithromycin given in the ED; enoxaparin not yet due.
+ */
+const sampleScenario2Medications = () =>
+	medicationsFor(
+		"p21",
+		[
+			scheduled("Ipratropium-albuterol", "3 mL", "Nebulized, in line", every(4), 35, "COPD exacerbation"),
+			scheduled("Methylprednisolone", "40 mg", "IV", daily, 25, "COPD exacerbation, day 1 of 5"),
+			scheduled("Azithromycin", "500 mg", "IV", daily, 15, "COPD exacerbation, purulent sputum"),
+			scheduled("Enoxaparin", "40 mg", "SC", daily, { firstDueIn: 120, ordered: 15 }, "VTE prophylaxis"),
+		],
+		[prn("Albuterol", "2.5 mg", "Nebulized, in line", "Every 1 h as needed", "Wheeze or shortness of breath")],
+	);
+
+export { sampleMedicationsByPatient, sampleScenario2Medications };

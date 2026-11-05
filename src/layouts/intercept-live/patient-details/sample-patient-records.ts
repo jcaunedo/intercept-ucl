@@ -82,8 +82,9 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			source: "Ventilator",
 			updatedAt: minutesAgo(2),
 			settings: [
-				{ label: "FiO₂", value: "60%" },
-				{ label: "PEEP", value: "10", unit: "cmH₂O" },
+				// The respiratory therapist's change, made without a call to Intercept (client feedback, Nov 4, 2026).
+				{ label: "FiO₂", value: "60%", change: { from: "40%", at: minutesAgo(118) } },
+				{ label: "PEEP", value: "10", unit: "cmH₂O", change: { from: "8", at: minutesAgo(118) } },
 				{ label: "Tidal volume", value: "410", unit: "mL", set: "420" },
 				{ label: "Rate", value: "32", unit: "/min", set: "22" },
 				{ label: "Plateau pressure", value: "28", unit: "cmH₂O" },
@@ -182,8 +183,8 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			source: "Ventilator",
 			updatedAt: minutesAgo(1),
 			settings: [
-				{ label: "FiO₂", value: "80%" },
-				{ label: "PEEP", value: "14", unit: "cmH₂O" },
+				{ label: "FiO₂", value: "80%", change: { from: "70%", at: minutesAgo(90) } },
+				{ label: "PEEP", value: "14", unit: "cmH₂O", change: { from: "12", at: minutesAgo(240) } },
 				{ label: "Tidal volume", value: "450", unit: "mL", set: "450" },
 				{ label: "Rate", value: "28", unit: "/min", set: "26" },
 				{ label: "Plateau pressure", value: "31", unit: "cmH₂O" },
@@ -204,7 +205,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Procalcitonin", "0.4", "ng/mL", 180, "high"),
 		],
 		careTeam: [
-			...hospitalStaff("Mercy West Hospital", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "online"]),
+			...hospitalStaff("Harbor Point General", ["Brooke Sullivan", "BS", 9, "online"], ["Laura Mitchell", "LM", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -316,8 +317,8 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			source: "Ventilator",
 			updatedAt: minutesAgo(2),
 			settings: [
-				{ label: "FiO₂", value: "45%" },
-				{ label: "IPAP", value: "14", unit: "cmH₂O" },
+				{ label: "FiO₂", value: "45%", change: { from: "50%", at: minutesAgo(240) } },
+				{ label: "IPAP", value: "14", unit: "cmH₂O", change: { from: "12", at: minutesAgo(600) } },
 				{ label: "EPAP", value: "6", unit: "cmH₂O" },
 				{ label: "Rate", value: "24", unit: "/min" },
 			],
@@ -396,7 +397,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("CRP", "88", "mg/L", 240, "high", ["164", 1680]),
 		],
 		careTeam: [
-			...hospitalStaff("Mercy West Hospital", ["Hannah Cole", "HC", 10, "online"], ["Marcus Reed", "MR", 2, "away"]),
+			...hospitalStaff("CVMC", ["Hannah Cole", "HC", 10, "online"], ["Samuel Grant", "SG", 6, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -454,7 +455,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			source: "Ventilator",
 			updatedAt: minutesAgo(1),
 			settings: [
-				{ label: "FiO₂", value: "50%" },
+				{ label: "FiO₂", value: "50%", change: { from: "40%", at: minutesAgo(300) } },
 				{ label: "PEEP", value: "8", unit: "cmH₂O", set: "10" },
 				{ label: "Tidal volume", value: "430", unit: "mL", set: "440" },
 				{ label: "Rate", value: "26", unit: "/min", set: "20" },
@@ -498,7 +499,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		ventilator: charted("Oxygen", 50, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
 		infusions: [
 			{ drug: "Norepinephrine", rate: "0.06 mcg/kg/min", change: { direction: "up", from: "0.03", at: minutesAgo(140) }, updatedAt: minutesAgo(1) },
-			{ drug: "CRRT citrate", rate: "180 mL/h", updatedAt: minutesAgo(2) },
+			{ drug: "CRRT citrate", rate: "180 mL/h", change: { direction: "up", from: "0", at: minutesAgo(240) }, updatedAt: minutesAgo(2) },
 		],
 		labs: [
 			lab("Lactate", "3.0", "mmol/L", 60, "high", ["2.2", 420]),
@@ -612,7 +613,8 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			abg: { values: "pH 7.34 · PaCO₂ 38 · PaO₂ 142 · HCO₃ 20", collectedAt: minutesAgo(130) },
 		},
 		infusions: [
-			{ drug: "Epinephrine", rate: "0.05 mcg/kg/min", updatedAt: minutesAgo(1) },
+			// The bedside nurse's titration, made without a call to Intercept (client feedback, Nov 4, 2026).
+			{ drug: "Epinephrine", rate: "0.07 mcg/kg/min", change: { direction: "up", from: "0.04", at: minutesAgo(170) }, updatedAt: minutesAgo(1) },
 			{ drug: "Norepinephrine", rate: "0.18 mcg/kg/min", change: { direction: "up", from: "0.12", at: minutesAgo(90) }, updatedAt: minutesAgo(1) },
 			{ drug: "Heparin", rate: "900 units/h", updatedAt: minutesAgo(1) },
 			{ drug: "Fentanyl", rate: "50 mcg/h", updatedAt: minutesAgo(1) },
@@ -712,7 +714,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Glucose", "186", "mg/dL", 75, "high", ["214", 1180]),
 		],
 		careTeam: [
-			...hospitalStaff("Chadron Community Hospital", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...hospitalStaff("Chadron", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -739,7 +741,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Sodium", "136", "mmol/L", 300, undefined, ["133", 1740]),
 		],
 		careTeam: [
-			...hospitalStaff("Chadron Community Hospital", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...hospitalStaff("Chadron", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -766,7 +768,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("CRP", "4.2", "mg/dL", 320, "high", ["9.1", 1760]),
 		],
 		careTeam: [
-			...hospitalStaff("Chadron Community Hospital", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...hospitalStaff("Chadron", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -794,7 +796,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Sodium", "139", "mmol/L", 300, undefined, ["146", 1740]),
 		],
 		careTeam: [
-			...hospitalStaff("Chadron Community Hospital", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...hospitalStaff("Chadron", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -829,7 +831,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Creatinine", "0.8", "mg/dL", 210, undefined),
 		],
 		careTeam: [
-			...hospitalStaff("Mercy West Hospital", ["Hannah Cole", "HC", 10, "online"], ["Marcus Reed", "MR", 2, "away"]),
+			...hospitalStaff("Alliance", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -863,7 +865,38 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Beta-hydroxybutyrate", "0.8", "mmol/L", 90, "high", ["6.4", 1260]),
 		],
 		careTeam: [
-			...hospitalStaff("Mercy West Hospital", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "online"]),
+			...hospitalStaff("Alliance", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "online"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// Right hip hemiarthroplasty after a fall on the ice, post-op day 1: stable on 2 L while she gets moving.
+		id: "p22",
+		weight: "61 kg",
+		brief: {
+			text: "Post-op day 1 after a right hip hemiarthroplasty for a femoral neck fracture; she slipped on ice outside her home. NEWS2 is 3 (Low), down from 5 after surgery: HR 86, BP 126/70, SpO₂ 95% on 2 L. Hemoglobin 9.4, down from 11.8, with no bleeding at the wound. Stood at the bedside with physical therapy this morning.",
+			sourceCount: 10,
+			updatedAt: minutesAgo(40),
+		},
+		codeStatus: "Full code",
+		allergies: ["Codeine"],
+		diagnosis: "Right femoral neck fracture, after hemiarthroplasty",
+		problems: ["Hypertension", "Osteoporosis"],
+		admittedAt: hoursAgo(34),
+		admittedFrom: "Emergency department",
+		ventilator: charted("Oxygen", 50, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
+		infusions: [
+			{ drug: "Lactated Ringer's", rate: "75 mL/h", change: { direction: "down", from: "100", at: minutesAgo(480) }, updatedAt: minutesAgo(6) },
+		],
+		labs: [
+			lab("Hemoglobin", "9.4", "g/dL", 240, "low", ["11.8", 2000]),
+			lab("WBC", "10.6", "K/µL", 240, undefined, ["9.1", 2000]),
+			lab("Sodium", "134", "mmol/L", 240, "low", ["138", 2000]),
+			lab("Potassium", "4.0", "mmol/L", 240, undefined),
+			lab("Creatinine", "1.0", "mg/dL", 240, undefined, ["1.1", 2000]),
+		],
+		careTeam: [
+			...hospitalStaff("Alliance", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -940,4 +973,144 @@ const sampleScenario1ResolvedRecord = (): Partial<PatientRecord> => ({
 	ventilator: charted("Oxygen", 0, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
 });
 
-export { samplePatientBaseRecords, sampleScenario1Record, sampleScenario1ResolvedRecord };
+/* -------------------------------------------------------------------------- */
+/* Scenario 2: Dale Reynolds                                                  */
+/* -------------------------------------------------------------------------- */
+
+// Scenario 2 (Demo Use Cases, "COPD respiratory failure during a blizzard"): Dale Reynolds, 64, a rancher with severe
+// COPD, in Alliance's ED, as in the scenario. He isn't on the Census until the ED requests a
+// consult, which is the scenario's first beat, so his record is built when it plays (its times read "just now") and
+// isn't in `samplePatientBaseRecords`.
+//
+// NEWS2 on SpO₂ scale 2 (target 88–92%), the scale for hypercapnic respiratory failure: on scale 1 his SpO₂ at target
+// would score 3 points and keep him High after NIV works. Which patients go on scale 2, and who decides, is still open
+// (PRD Patient card, open question on scale 2); this is the one patient on it.
+
+// The ED's nurse and physician tonight; the physician co-signs the hub's orders at the bedside.
+const reynoldsCareTeam: CareTeamMember[] = [
+	...hospitalStaff("Alliance", ["Megan Foster", "MF", 6, "online"], ["Brian Keller", "BK", 3, "online"]),
+	...interceptTeam,
+];
+
+/** Care teams of the patients a scenario adds to the Census, by id, for the sections that look a record up by id. */
+const sampleScenarioCareTeams: Record<string, CareTeamMember[]> = { p21: reynoldsCareTeam };
+
+/**
+ * Dale Reynolds's record at Scenario 2's first beat (22:15): in the ED 40 min, blood gas 30 min ago (pH 7.24, PaCO₂
+ * 78), on BiPAP for 20 min with the hub consult just requested. NEWS2 6 on arrival, 7 now (High).
+ */
+const sampleScenario2BaseRecord = (): PatientRecord => ({
+	id: "p21",
+	weight: "82 kg",
+	brief: {
+		text: "Severe COPD on home oxygen, brought in by ambulance through the storm after three days of worsening breathlessness. He ran out of oxygen 4 days ago. Blood gas on arrival: pH 7.24, PaCO₂ 78, so acute on chronic hypercapnic respiratory failure. On BiPAP for 20 min: SpO₂ 88%, inside his 88–92% target, but RR 30 and HR 112. Alert, talking in short phrases. NEWS2 7 (High, SpO₂ scale 2), up from 6 on arrival.",
+		sourceCount: 9,
+		updatedAt: minutesAgo(0),
+	},
+	codeStatus: "Full code",
+	allergies: [],
+	diagnosis: "Acute on chronic hypercapnic respiratory failure, COPD exacerbation",
+	problems: ["COPD, severe (GOLD 3) · home oxygen 2 L", "Tobacco use, 40 pack-years", "Secondary polycythemia"],
+	admittedAt: minutesAgo(40),
+	admittedFrom: "Ambulance from home",
+	ventilator: {
+		support: "NIV",
+		mode: "BiPAP",
+		source: "Ventilator",
+		updatedAt: minutesAgo(1),
+		settings: [
+			{ label: "FiO₂", value: "35%" },
+			{ label: "IPAP", value: "12", unit: "cmH₂O" },
+			{ label: "EPAP", value: "5", unit: "cmH₂O" },
+			{ label: "Rate", value: "12", unit: "/min" },
+		],
+		abg: { values: "pH 7.24 · PaCO₂ 78 · PaO₂ 58 · HCO₃ 33", collectedAt: minutesAgo(30) },
+	},
+	earlyWarning: {
+		score: "NEWS2",
+		value: 7,
+		band: "High",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		crossedAt: minutesAgo(0),
+		trend: [
+			{ at: minutesAgo(40), value: 6 },
+			{ at: minutesAgo(0), value: 7 },
+		],
+		inputs: [
+			{ label: "Respiratory rate", value: "30/min", points: 3 },
+			{ label: "SpO₂ (scale 2)", value: "88%", points: 0 },
+			{ label: "Oxygen", value: "BiPAP, FiO₂ 35%", points: 2 },
+			{ label: "Heart rate", value: "112 bpm", points: 2 },
+			{ label: "Systolic BP", value: "156 mmHg", points: 0 },
+			{ label: "Consciousness", value: "Alert", points: 0 },
+			{ label: "Temperature", value: "37.4 °C", points: 0 },
+		],
+	},
+	labs: [
+		lab("Bicarbonate", "33", "mmol/L", 30, "high"),
+		lab("WBC", "12.8", "K/µL", 30, "high"),
+		lab("Hemoglobin", "17.6", "g/dL", 30, "high"),
+		lab("Potassium", "4.3", "mmol/L", 30, undefined),
+		lab("Creatinine", "0.9", "mg/dL", 30, undefined),
+		lab("Lactate", "1.4", "mmol/L", 30, undefined),
+	],
+	careTeam: reynoldsCareTeam,
+});
+
+/**
+ * Scenario 2's resolution (2 h on NIV): the repeat gas is pH 7.31 and PaCO₂ 64, RR 21, HR 96, SpO₂ 91%, alert, so
+ * NEWS2 5 (Medium). Both checkpoints passed; he stays at Alliance, without intubation or a transfer.
+ */
+const sampleScenario2ResolvedRecord = (): Partial<PatientRecord> => ({
+	brief: {
+		text: "NIV is working: at 2 h the repeat gas is pH 7.31 and PaCO₂ 64, from 7.24 and 78 on arrival. RR 21, HR 96 and SpO₂ 91% on BiPAP, more alert and speaking in full sentences. NEWS2 5 (Medium), down from 7. Both checkpoints passed, so he stays at Alliance in a monitored bed, with no intubation and no transfer.",
+		sourceCount: 12,
+		updatedAt: minutesAgo(0),
+	},
+	earlyWarning: {
+		score: "NEWS2",
+		value: 5,
+		band: "Medium",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		trend: [
+			{ at: minutesAgo(45), value: 6 },
+			{ at: minutesAgo(5), value: 7 },
+			{ at: minutesAgo(0), value: 5 },
+		],
+		inputs: [
+			{ label: "Respiratory rate", value: "21/min", points: 2 },
+			{ label: "SpO₂ (scale 2)", value: "91%", points: 0 },
+			{ label: "Oxygen", value: "BiPAP, FiO₂ 30%", points: 2 },
+			{ label: "Heart rate", value: "96 bpm", points: 1 },
+			{ label: "Systolic BP", value: "138 mmHg", points: 0 },
+			{ label: "Consciousness", value: "Alert", points: 0 },
+			{ label: "Temperature", value: "37.2 °C", points: 0 },
+		],
+	},
+	ventilator: {
+		support: "NIV",
+		mode: "BiPAP",
+		source: "Ventilator",
+		updatedAt: minutesAgo(0),
+		settings: [
+			{ label: "FiO₂", value: "30%", change: { from: "35%", at: minutesAgo(1) } },
+			{ label: "IPAP", value: "14", unit: "cmH₂O", change: { from: "12", at: minutesAgo(1) } },
+			{ label: "EPAP", value: "5", unit: "cmH₂O" },
+			{ label: "Rate", value: "12", unit: "/min" },
+		],
+		abg: { values: "pH 7.31 · PaCO₂ 64 · PaO₂ 66 · HCO₃ 32", collectedAt: minutesAgo(2) },
+	},
+});
+
+export {
+	samplePatientBaseRecords,
+	sampleScenario1Record,
+	sampleScenario1ResolvedRecord,
+	sampleScenario2BaseRecord,
+	sampleScenario2ResolvedRecord,
+	sampleScenarioCareTeams,
+};

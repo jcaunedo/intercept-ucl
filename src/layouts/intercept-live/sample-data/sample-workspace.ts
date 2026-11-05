@@ -9,11 +9,13 @@ import type { PanelHospital } from "../shared/patient-panel";
 
 const sampleHospitals: PanelHospital[] = [
 	{ id: "hpg", name: "Harbor Point General" },
-	{ id: "mwh", name: "Mercy West Hospital" },
+	// A critical access hospital: an ED with an ED physician and two nurses at night, a small med-surg floor under
+	// tele-ICU coverage (Demo Use Cases, Scenario 2). Was Mercy West Hospital until Nov 4, 2026 (user's call).
+	{ id: "alliance", name: "Alliance" },
 	{ id: "cvmc", name: "CVMC" },
 	// A 25-bed critical access hospital: one RN on the floor at night, the family physician on call from home (Demo Use
 	// Cases, Scenario 1).
-	{ id: "chadron", name: "Chadron Community Hospital" },
+	{ id: "chadron", name: "Chadron" },
 ];
 
 const sampleUser: AppHeaderUser = {

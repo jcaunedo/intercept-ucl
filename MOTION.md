@@ -14,7 +14,7 @@ Calm, refined, natural, responsive. Never bouncy, cartoonish, mechanical or dist
 
 - **Prefer:** fade, soft scale, gentle elevation, short directional slide, crossfade, shared-element transition, smooth layout transition, subtle stagger.
 - **Use sparingly:** rotation under 2°, parallax, scroll-linked movement, expressive springs.
-- **Avoid unless asked:** bounce, shake, spin, elastic overshoot, full-screen wipes, dramatic zoom, long travel.
+- **Avoid unless asked:** bounce, shake, spin, elastic overshoot, full-screen wipes, dramatic zoom, long travel. (Asked for once: an incoming alert toast overshoots, the Arrive pattern; Nov 4, 2026.)
 
 ## Tokens (`src/lib/motion/tokens.ts`)
 
@@ -41,6 +41,7 @@ Don't go past `deliberate` (600 ms). A new value goes in `tokens.ts` with a comm
 - `enterTransition`: elements arriving. Quick start, gentle finish.
 - `exitTransition`: elements leaving. Shorter than enter, decisive.
 - `subtleSpring` / `responsiveSpring` / `layoutSpring`: press, direct manipulation, layout and shared-element movement. High damping, no visible bounce.
+- `overshootSpring`: arrivals that must be noticed (the Arrive pattern). Under-damped on purpose (damping ratio about 0.5): it passes its place by about 15% of the travel and settles in about 500ms. The only spring that visibly overshoots; never for direct manipulation, layout or a change in place.
 - `reorderSpring`: items changing place when their data changes (the Reorder pattern). Calmer than `layoutSpring` (about 600ms) and critically damped, so it lands without overshoot and redirects smoothly when a new change interrupts it.
 
 ## Vocabulary
@@ -60,6 +61,7 @@ Use these named patterns before inventing new motion. Gesture patterns live in `
 | Dismiss  | Content removed or closed              | `dismissVariants`; table/list rows: `rowRemoveVariants` |
 | Confirm  | Lightweight success feedback           | `confirmPattern`                                |
 | Pending  | Work in progress on an element's behalf | `pendingIconVariants`, `pendingSurfaceVariants` |
+| Arrive   | Something arriving that has to be noticed: an incoming alert toast (Nov 4, 2026, user's call: "an incoming alert, let's make it an overshoot Motion effect") | `arriveVariants`: rises `motionDistance.medium` (24px) from `motionScale.popIn`, overshoots on `overshootSpring` (about 3.7px past) and settles in about 500ms; opacity fades in on `fast`. Once per arrival: a toast updated in place (same id) doesn't arrive again. On top of the Toaster's own slide-in (`toastAlert()` wraps each toast in `ToastArrival`). `fadeVariants` under reduced motion |
 | Urgency  | Draws the eye to something that needs attention until it's addressed (e.g. an active alert's card border) | `urgencyRingVariants` driven by `useUrgencyPhase` (one shared clock: every instance pulses together); opacity only; pulses until addressed, then rests; still under reduced motion. The Sidebar's alert dot flashes on the same clock while shown. Not on the Census (PatientCard `alertRing={false}`: a page for managing patients, not watching them), whose cards have no ring at all. A just-resolved alert's green ring blinks once (one pulse), and its pill moves with the card, then fades out on `resolvedFadeTransition` (1 s) `motionDuration.resolvedHold` (2 s) after it has landed |
 | Live     | An ongoing status (e.g. connected), as a looping pulse on a small dot that eases in and out like a breath, its halo easing out like a ripple | `liveDotVariants` + `liveHaloVariants` + `liveGlowVariants`, one beat every `motionDuration.liveLoop` (1s): 300ms growing, a 400ms hold at full size, 300ms shrinking (`liveBeatTimes`; Oct 31, 2026, user's call, two passes: a 200ms hold in a 0.8s beat, then the hold doubled; 500ms growing and 500ms shrinking with no hold before). The dot has no outline (Oct 31, 2026, user's call); instead a copy of it in its other color fades in as it reaches full size, when the halo glows, and out as it shrinks: in dark mode it rests in `success` and lights up in the glow's bright green; in light mode the other way round (rests bright, turns `success`). The halo is `success-halo`: a lighter, more saturated green in light mode, the glow's green in dark. Still under reduced motion, in its resting color |
 | Device alarm | A vital in a bedside monitor's alarm, shown as the device shows it (GE CARESCAPE, IEC 60601-1-8) | `useDeviceAlarmFlash` (`deviceAlarmFlashHz`): the value's box in its priority's color, on and off at 50%: high (red) about 1.5 Hz, medium (yellow) about 0.5 Hz, low (cyan) steady; one clock per rate, so alarms of a priority flash together. A hard on/off, not a fade, as on the device; under WCAG 2.3.1's three flashes a second. Steady under reduced motion. Used by `DeviceAlarmValue` (PatientMonitoringCard, Monitoring's List) |
@@ -78,6 +80,7 @@ Plus `fadeVariants`, `overlayVariants` (scrims), `panelVariants` (drawers) and `
 - **Tabs:** active indicator via shared `layoutId`.
 - **Lists:** `AnimatePresence` with stable unique keys (never the index). Don't replay entrances on routine data updates.
 - **Loading:** subtle opacity pulse. No aggressive or high-contrast loaders.
+- **Live waveforms (Nov 4, 2026):** a monitor's waveform lanes stream only while on screen. Coming into view, each lane shows a skeleton block in its color with Pending's surface pulse (`pendingSurfaceVariants`) for `motionDuration.streamConnect`, then the trace fades in (`standardTransition`). The skeleton is still under reduced motion. Never a flat line as the placeholder: on a monitor it means no signal.
 - **AI answers:** "Thinking" is Pending (opacity only) for about `motionDuration.thinking`; then the text streams in uneven bursts of a few words around `motionDuration.streamStep`, with `streamPause` after a sentence, and a soft blinking caret (Pending) at its end. New messages Reveal. Under reduced motion the answer appears whole and the caret is still.
 
 ## Layout and presence

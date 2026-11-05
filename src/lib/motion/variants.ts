@@ -1,7 +1,14 @@
 import type { Easing, Variants } from "motion/react";
 
 import { motionBlur, motionDistance, motionDuration, motionScale, motionStagger } from "./tokens";
-import { enterTransition, exitTransition, settleSpring, standardTransition, swapEnterTransition } from "./transitions";
+import {
+  enterTransition,
+  exitTransition,
+  overshootSpring,
+  settleSpring,
+  standardTransition,
+  swapEnterTransition,
+} from "./transitions";
 import { reducedMotionTransition } from "./reduced-motion";
 
 /**
@@ -254,6 +261,21 @@ const urgencyRingVariants: Variants = {
   urgent: { opacity: 1, transition: settleSpring },
 };
 
+/**
+ * Arrive: something that has to be noticed coming in, e.g. an incoming alert toast. It rises from `medium` below and a
+ * touch small, overshoots its place on `overshootSpring` and settles; the opacity simply fades in. Arrivals only, never a
+ * change in place. Under reduced motion use `fadeVariants`.
+ */
+const arriveVariants: Variants = {
+  initial: { opacity: 0, y: motionDistance.medium, scale: motionScale.popIn },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { ...overshootSpring, opacity: { duration: motionDuration.fast } },
+  },
+};
+
 export {
   fadeVariants,
   rowRemoveVariants,
@@ -273,4 +295,5 @@ export {
   liveHaloVariants,
   liveGlowVariants,
   urgencyRingVariants,
+  arriveVariants,
 };

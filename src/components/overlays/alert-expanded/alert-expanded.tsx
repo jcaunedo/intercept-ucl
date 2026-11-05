@@ -63,14 +63,17 @@ type AlertExpandedProps = Omit<React.ComponentProps<"div">, "title"> &
 		onOpenPatient?: () => void;
 		/** Read after the name by screen readers, when it opens the patient. */
 		openPatientLabel?: string;
-		/** The alert's bar: its severity (or `resolved`), how many alerts in the last 24 h, and since when. */
-		alert: {
+		/**
+		 * The alert's bar: its severity (or `resolved`), how many alerts in the last 24 h, and since when. Without it, the
+		 * patient alone, e.g. a video consult with no alert open: no alert panel, and the name is the heading (`titleAs`).
+		 */
+		alert?: {
 			variant: AlertExpandedSeverity | "resolved";
 			inLast24h?: number;
 			since?: string;
 		};
-		/** The alert's heading: its reason line, or its title without one. */
-		title: React.ReactNode;
+		/** The alert's heading: its reason line, or its title without one. Ignored without `alert`. */
+		title?: React.ReactNode;
 		/** Under the heading: the alert's own title when the heading is its reason line. */
 		description?: React.ReactNode;
 		/** Where the alert comes from, after the source icon ("Source: Rule · Deterioration score"). */
@@ -91,6 +94,11 @@ type AlertExpandedProps = Omit<React.ComponentProps<"div">, "title"> &
 		actions?: React.ReactNode;
 		/** The patient's live bedside monitor, the full four lanes. */
 		monitor?: PatientMonitorProps;
+		/**
+		 * A line right over the monitor about its data, e.g. that its numbers are held in low-bandwidth mode and how old
+		 * they are, so nobody takes them for live.
+		 */
+		monitorStatus?: React.ReactNode;
 		/** The patient's tags, as on their card. Without them there's no row; `[]` says "No tags". */
 		tags?: PatientCardTag[];
 		/** Shows a × that calls it. */
@@ -216,6 +224,7 @@ function AlertExpanded({
 	acuity,
 	trajectory,
 	monitor,
+	monitorStatus,
 	tags,
 	onClose,
 	closeLabel = "Close",
@@ -228,7 +237,7 @@ function AlertExpanded({
 	const name = [lastName, firstName].filter(Boolean).join(", ");
 	const roomAndBed = [room, bed].filter(Boolean).join(" - ");
 	// Under the name, who: "F, 72 · MRN 00826154"; then where, on its own line after the pin, as on the patient's card:
-	// "Chadron Community Hospital · Med-Surg · Bed 4".
+	// "Chadron · Med-Surg · Bed 4".
 	const details = [
 		[sex, age].filter((part) => part !== undefined && part !== "").join(", "),
 		mrn ? `MRN ${mrn}` : undefined,
@@ -236,8 +245,10 @@ function AlertExpanded({
 		.filter(Boolean)
 		.join(" · ");
 	const location = [hospital, unit, roomAndBed].filter(Boolean).join(" · ");
-	const tones = alertTones[alert.variant];
+	const tones = alert ? alertTones[alert.variant] : undefined;
 	const corner = close ?? (onClose ? <AlertExpandedClose aria-label={closeLabel} onClick={onClose} /> : null);
+	// Whether the column has scrolled, for the rule under the sticky patient.
+	const [scrolled, setScrolled] = React.useState(false);
 
 	// The name, underlined, then the arrow: the link (or button) to the patient's page.
 	const nameContent = (
@@ -251,10 +262,27 @@ function AlertExpanded({
 	const nameClassName =
 		"group/name inline-flex max-w-full min-w-0 items-center gap-[5px] rounded-md font-display text-2xl font-bold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
+	const nameNode = href ? (
+		<a href={href} aria-label={`${name}, ${openPatientLabel}`} className={nameClassName}>
+			{nameContent}
+		</a>
+	) : onOpenPatient ? (
+		<button
+			type='button'
+			onClick={onOpenPatient}
+			aria-label={`${name}, ${openPatientLabel}`}
+			className={cn(nameClassName, "text-left")}
+		>
+			{nameContent}
+		</button>
+	) : (
+		<p className='truncate font-display text-2xl font-bold text-foreground'>{name}</p>
+	);
+
 	return (
 		<div
 			data-slot='alert-expanded'
-			data-variant={alert.variant}
+			data-variant={alert?.variant}
 			data-panels={panels.length || undefined}
 			// No wider than its container, so on a narrow screen the alert column gives way (`usePanelWidth`).
 			className={cn(
@@ -270,6 +298,7 @@ function AlertExpanded({
 					"relative z-30 flex min-h-0 w-150 min-w-120 shrink flex-col gap-4 overflow-y-auto bg-background px-6 pt-6 pb-5",
 					panels.length > 0 && "border-r border-border",
 				)}
+				onScroll={(event) => setScrolled(event.currentTarget.scrollTop > 0)}
 			>
 				{/* The ×, 20px from the top and right. Sticky, so when the panel scrolls (a height in `className` and
 			    `overflow-y-auto`) it stays in the corner and the content passes under it; it takes no room in the column. Sticky offsets count from
@@ -280,73 +309,79 @@ function AlertExpanded({
 					</div>
 				) : null}
 
-				<div className='flex flex-col gap-2'>
-					<div className={cn("flex items-center gap-1.5", corner && "pr-10")}>
-						<Avatar aria-hidden='true' className='size-12'>
-							{photo ? <AvatarImage src={photo} alt='' /> : null}
-							<AvatarFallback tone={tone} className='text-base font-bold'>
-								{initials}
-							</AvatarFallback>
-						</Avatar>
-						<div className='flex min-w-0 flex-col'>
-							{href ? (
-								<a href={href} aria-label={`${name}, ${openPatientLabel}`} className={nameClassName}>
-									{nameContent}
-								</a>
-							) : onOpenPatient ? (
-								<button
-									type='button'
-									onClick={onOpenPatient}
-									aria-label={`${name}, ${openPatientLabel}`}
-									className={cn(nameClassName, "text-left")}
-								>
-									{nameContent}
-								</button>
-							) : (
-								<p className='truncate font-display text-2xl font-bold text-foreground'>{name}</p>
-							)}
-							{details ? <p className='truncate text-sm text-muted-foreground'>{details}</p> : null}
-						</div>
-					</div>
-					{location ? (
-						<p className='flex items-center gap-1 text-sm font-medium text-foreground'>
-							<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
-							<span className='truncate'>{location}</span>
-						</p>
-					) : null}
-				</div>
-
-				<section
-					aria-label='Alert'
-					className={cn("flex shrink-0 flex-col gap-2 overflow-hidden rounded-xl pb-1.5", tones.panel)}
+				{/* The patient, sticky: while the column scrolls, the name stays at its top with the content passing under it, and
+				    a rule fades in under it. A direct child of the column, since sticky can't leave its parent. It spans the
+				    column's padding (`-mx-6 px-6`) and starts at its top edge (`-mt-[19px] pt-[19px]`: the × above it takes no
+				    room, so the name sat 19px down), so nothing shows above it; `-top-6` sticks it there, the padding counted.
+				    Under the ×, which stays in the corner. */}
+				<div
+					data-slot='alert-expanded-patient'
+					data-stuck={scrolled || undefined}
+					className={cn(
+						"sticky -top-6 z-[5] -mx-6 -mt-[19px] flex items-center gap-1.5 border-b border-transparent bg-background px-6 pt-[19px] pb-3 transition-[border-color] duration-300 ease-out motion-reduce:transition-none data-stuck:border-border",
+						corner && "pr-16",
+					)}
 				>
-					<AlertBar alert={alert} size='md' className='rounded-none' />
-					<div className='flex flex-col gap-2 px-4 pb-2.5'>
-						<div>
-							<Title className={cn("text-xl font-bold", tones.title)}>{title}</Title>
-							{description ? <Description className={cn("text-base", tones.title)}>{description}</Description> : null}
-						</div>
-						{source || status ? (
-							<div className='flex flex-col gap-0.5'>
-								{source ? (
-									<div className={cn("flex items-start justify-between gap-3 text-sm", tones.source)}>
-										<p className='flex items-start gap-1.5'>
-											{/* A box one line tall, so the icon stays on the first line when the words wrap. */}
-											<span className='flex h-[1lh] shrink-0 items-center'>
-												<GitBranchIcon aria-hidden='true' className='size-3' />
-											</span>
-											<span>{source}</span>
-										</p>
-										{sourceAction ? <div className='flex h-[1lh] shrink-0 items-center'>{sourceAction}</div> : null}
-									</div>
-								) : null}
-								{status}
-							</div>
-						) : null}
-						{alertActions ? <div className='flex gap-2'>{alertActions}</div> : null}
-						{children}
+					<Avatar aria-hidden='true' className='size-12'>
+						{photo ? <AvatarImage src={photo} alt='' /> : null}
+						<AvatarFallback tone={tone} className='text-base font-bold'>
+							{initials}
+						</AvatarFallback>
+					</Avatar>
+					<div className='flex min-w-0 flex-col'>
+						{alert ? (
+							nameNode
+						) : href || onOpenPatient ? (
+							// No alert to head the card: the name is its heading, so a dialog is named by it.
+							// The row keeps the corner's room, so a DialogTitle's own `pr-10` is dropped.
+							<Title className='flex min-w-0 pr-0'>{nameNode}</Title>
+						) : (
+							<Title className='truncate pr-0 font-display text-2xl font-bold text-foreground'>{name}</Title>
+						)}
+						{details ? <p className='truncate text-sm text-muted-foreground'>{details}</p> : null}
 					</div>
-				</section>
+				</div>
+				{/* 8px under the name: its 12px padding, the column's 16px gap, less 20px. */}
+				{location ? (
+					<p className='-mt-5 flex items-center gap-1 text-sm font-medium text-foreground'>
+						<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
+						<span className='truncate'>{location}</span>
+					</p>
+				) : null}
+
+				{alert && tones ? (
+					<section
+						aria-label='Alert'
+						className={cn("flex shrink-0 flex-col gap-2 overflow-hidden rounded-xl pb-1.5", tones.panel)}
+					>
+						<AlertBar alert={alert} size='md' className='rounded-none' />
+						<div className='flex flex-col gap-2 px-4 pb-2.5'>
+							<div>
+								<Title className={cn("text-xl font-bold", tones.title)}>{title}</Title>
+								{description ? <Description className={cn("text-base", tones.title)}>{description}</Description> : null}
+							</div>
+							{source || status ? (
+								<div className='flex flex-col gap-0.5'>
+									{source ? (
+										<div className={cn("flex items-start justify-between gap-3 text-sm", tones.source)}>
+											<p className='flex items-start gap-1.5'>
+												{/* A box one line tall, so the icon stays on the first line when the words wrap. */}
+												<span className='flex h-[1lh] shrink-0 items-center'>
+													<GitBranchIcon aria-hidden='true' className='size-3' />
+												</span>
+												<span>{source}</span>
+											</p>
+											{sourceAction ? <div className='flex h-[1lh] shrink-0 items-center'>{sourceAction}</div> : null}
+										</div>
+									) : null}
+									{status}
+								</div>
+							) : null}
+							{alertActions ? <div className='flex gap-2'>{alertActions}</div> : null}
+							{children}
+						</div>
+					</section>
+				) : null}
 
 				{actions ? <div className='flex gap-2 *:flex-1'>{actions}</div> : null}
 
@@ -356,7 +391,17 @@ function AlertExpanded({
 						<PatientCardScore acuity={acuity} trajectory={trajectory} />
 					</div>
 				) : null}
-				{monitor ? <PatientMonitor aria-label={`${name}'s monitor`} className='shrink-0' {...monitor} /> : null}
+				{monitor ? (
+					monitorStatus ? (
+						// The status sits with the monitor it's about, closer than the card's gap.
+						<div className='flex shrink-0 flex-col gap-2'>
+							{monitorStatus}
+							<PatientMonitor aria-label={`${name}'s monitor`} {...monitor} />
+						</div>
+					) : (
+						<PatientMonitor aria-label={`${name}'s monitor`} className='shrink-0' {...monitor} />
+					)
+				) : null}
 				{tags ? (
 					<div className='py-2'>
 						<PatientCardTags tags={tags} name={name} />

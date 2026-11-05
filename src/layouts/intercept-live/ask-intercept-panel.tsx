@@ -32,9 +32,9 @@ import { SidePanel } from "./side-panel";
 
 /**
  * Where the user is when they ask, so an answer can be about the patient on screen. `patientTags` are that patient's
- * tags ("Ventilated"…), for the questions to start with.
+ * tags ("Ventilated"…), for the questions to start with. `openPatientId` is the patient whose page is open, if any.
  */
-type AskInterceptContext = { page: string; patientName?: string; patientTags?: string[] };
+type AskInterceptContext = { page: string; patientName?: string; patientTags?: string[]; openPatientId?: string };
 
 /**
  * An answer. `text` is plain text with two marks: a line starting "- " is a list item, and `**words**` are bold.
@@ -476,13 +476,17 @@ function AskInterceptPanel({
 		return `${id}-question`;
 	};
 
-	// The latest answer's follow-ups, once it's written, without those the panel can't do.
+	// The latest answer's follow-ups, once it's written, without those the panel can't do. "Open patient details" isn't
+	// offered for the patient whose page is already open (Nov 4, 2026, user's call); it's back once the page is left.
 	const lastMessage = messages.at(-1);
 	const followUps =
 		lastMessage?.role === "assistant" && lastMessage.status === "done" && !lastMessage.notice
 			? (lastMessage.actions ?? []).filter(
 					(action) =>
-						action.type === "ask" || (action.type === "open-patient" ? Boolean(onOpenPatient) : Boolean(onOpenAlert)),
+						action.type === "ask" ||
+						(action.type === "open-patient"
+							? Boolean(onOpenPatient) && action.patientId !== context.openPatientId
+							: Boolean(onOpenAlert)),
 				)
 			: [];
 	const runAction = (action: AskInterceptAction) => {
@@ -559,7 +563,7 @@ function AskInterceptPanel({
 				// White for the top half, then a fade to `background-subtle` (Figma's raw #fbfbfb is a touch lighter).
 				"bg-linear-to-b from-background from-50% to-background-subtle",
 				"transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-				carded && "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]",
+				carded && "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/16%)]",
 			)}
 		>
 			<div

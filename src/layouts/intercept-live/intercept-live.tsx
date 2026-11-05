@@ -301,7 +301,7 @@ type InterceptLiveProps = {
  * The alert a page opened: the patient's, and which one when the page knows (a toast does, a card's bar doesn't).
  * `consult`: opened to start the video consult, so the call is already ringing.
  */
-type OpenAlert = { patientId: string; alertId?: string; consult?: boolean };
+type OpenAlert = { patientId: string; alertId?: string; consult?: boolean | "answered" };
 
 /** What the alert modal needs from the shell. */
 type AlertControls = {
@@ -493,7 +493,7 @@ function InterceptLive({
 		patientWasOpen.current = openPatientId !== null;
 	}, [openPatientId]);
 	// Who the chat is about. From the app header's Ask Intercept button (Oct 31, 2026, user's call) it's the patient on
-	// screen, with no name of its own: it holds while their details are open. From Ask in an alert toast (Nov 2, 2026,
+	// screen, with no name of its own: it holds while their details are open, and it asks for their Quick overview. From Ask in an alert toast (Nov 2, 2026,
 	// user's call) it carries the name, so it holds on any page. Removing the patient (the chip over the message box),
 	// closing the chat or opening another patient's details ends it. From the Sidebar, the chat is general.
 	const [chatPatient, setChatPatient] = React.useState<{ id: string; name?: string; tags?: string[] } | null>(null);
@@ -651,7 +651,12 @@ function InterceptLive({
 								carded={sidebarCollapsed}
 								width={chatWidth}
 								onWidthChange={setChatWidth}
-								context={{ page, patientName: chatPatientName, patientTags: chatPatientTags }}
+								context={{
+									page,
+									patientName: chatPatientName,
+									patientTags: chatPatientTags,
+									openPatientId: openPatientId ?? undefined,
+								}}
 								respond={askIntercept}
 								notice={askInterceptNotice}
 								onRemovePatientContext={chatInPatientContext ? () => setChatPatient(null) : undefined}
@@ -676,7 +681,7 @@ function InterceptLive({
 							) : null}
 
 							{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
-							    (0 0 26px, 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
+							    (0 0 26px; 16% since Nov 4, 2026, user's call, Figma 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
 							    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
 							    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
 							    stay right when it's scrolled. */}
@@ -688,9 +693,9 @@ function InterceptLive({
 									// With a left panel open the panel takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
 									// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
 									chatOpen || patientListOpen
-										? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+										? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/16%)]"
 										: sidebarCollapsed
-											? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]"
+											? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/16%)]"
 											: "rounded-none shadow-none",
 								)}
 							>
@@ -702,11 +707,16 @@ function InterceptLive({
 										sourcePage={page}
 										patientName={patientView.name}
 										onBack={() => setOpenPatient(null)}
-										// Opens the chat about this patient (or makes an open chat about them); pressed again, closes it.
+										// Opens the chat about this patient (or makes an open chat about them) with their Quick overview, as Ask in a
+										// toast does: a conversation about anyone else is cleared first (Nov 4, 2026, user's call: it kept the last
+										// patient's overview under this one's chip). Pressed again, closes it.
 										onToggleAskIntercept={() => {
 											if (chatInPatientContext) setChatOpen(false);
 											else {
-												if (openPatientId !== null) setChatPatient({ id: openPatientId });
+												if (openPatientId !== null) {
+													setChatPatient({ id: openPatientId });
+													setChatOpener({ id: String(openerCount.current++), question: patientOverviewQuestion });
+												}
 												setChatOpen(true);
 											}
 										}}

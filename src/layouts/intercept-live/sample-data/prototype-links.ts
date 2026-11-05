@@ -1,29 +1,34 @@
 import * as React from "react";
 
 import type { InterceptLivePage, OpenPatient, PrototypeShortcut } from "../intercept-live";
+import type { ScenarioId } from "./use-sample-live-feed";
 
 // Story-only: the Sidebar's Prototype menu for the Intercept Live stories (as bethere-ucl's prototype links). Not part
 // of the product, and not exported from the package. Add new scenarios, views and shortcuts here; "Reset prototype"
 // always comes last, after a divider.
 
 /**
- * The menu's entries. Scenario 1: Heart failure (Demo Use Cases, "Heart failure at 2 a.m. in a 25-bed hospital")
- * opens Monitoring and plays the scenario's beats from the start: Margaret Hayes, holding until then, has her early
- * warning (NEWS2 5 → 10) and her Critical alert ranks #1. Sections by hospital shows Group by hospital as the grid's
- * hospital sections instead of the Kanban board (the default), on the Census and Monitoring, until chosen again.
+ * The menu's entries. Each scenario opens Monitoring and plays its beats from the start (Demo Use Cases). Scenario 1:
+ * Heart failure ("Heart failure at 2 a.m. in a 25-bed hospital"): Margaret Hayes, holding until then, has her early
+ * warning (NEWS2 5 → 10) and her Critical alert ranks #1. Scenario 2: COPD ("COPD respiratory failure during a
+ * blizzard"): Alliance's ED requests a consult for Dale Reynolds, who joins the Census with his Critical alert.
+ * Sections by hospital shows Group by hospital as the grid's hospital sections instead of the Kanban board (the
+ * default), on the Census and Monitoring, until chosen again.
  */
 const prototypeShortcuts = ({
-	startScenario1,
+	startScenario,
 	groupedGrid,
 	onToggleGroupedGrid,
 }: {
-	startScenario1: () => void;
+	startScenario: (scenario: ScenarioId) => void;
 	groupedGrid: boolean;
 	onToggleGroupedGrid: () => void;
 }): PrototypeShortcut[] => [
-	{ group: "Scenarios", label: "Scenario 1: Heart failure", page: "Monitoring", onSelect: startScenario1 },
+	{ group: "Scenarios", label: "Scenario 1: Heart failure", page: "Monitoring", onSelect: () => startScenario("scenario-1") },
+	{ group: "Scenarios", label: "Scenario 2: COPD", page: "Monitoring", onSelect: () => startScenario("scenario-2") },
 	// Served by Storybook from `storyboards/` (`.storybook/main.ts`), relative to the story frame.
 	{ group: "Storyboard", label: "Scenario 1", href: "storyboards/scenario-1/index.html" },
+	{ group: "Storyboard", label: "Scenario 2", href: "storyboards/scenario-2/index.html" },
 	{ group: "Views", label: "Sections by hospital", checked: groupedGrid, onSelect: onToggleGroupedGrid },
 ];
 

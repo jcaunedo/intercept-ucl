@@ -8,14 +8,7 @@ import { BellRingIcon, MapPinIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
-import {
-	Popover,
-	PopoverContent,
-	PopoverDescription,
-	PopoverHeader,
-	PopoverTitle,
-	PopoverTrigger,
-} from "@/components/overlays/popover";
+import { TagsPopover, type TagsPopoverDetails } from "@/components/overlays/tags-popover";
 import {
 	dismissVariants,
 	liftPattern,
@@ -24,7 +17,6 @@ import {
 	standardTransition,
 	useMotionPreference,
 } from "@/lib/motion";
-import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import {
@@ -309,17 +301,8 @@ const acuityLevels: Record<PatientCardAcuityLevel, { label: string; className: s
 
 type PatientCardAlertStatus = "active" | "acknowledged" | "escalated";
 
-/** What a tag's popover says: what it means, what's behind it now, and where that comes from. */
-type PatientCardTagDetails = {
-	/** What the tag means, e.g. "Drips that raise blood pressure, running now." */
-	description?: string;
-	/** What's behind it now, one line each, e.g. `{ label: "Norepinephrine", value: "0.22 mcg/kg/min" }`. */
-	items?: { label: string; value?: string }[];
-	/** Where the lines come from, e.g. "Pump". */
-	source?: string;
-	/** When the newest line was updated, ISO 8601; shown after the source as it opens ("Pump · 1 min ago"). */
-	updatedAt?: string;
-};
+/** What a tag's popover says. Same as TagsPopover's details. */
+type PatientCardTagDetails = TagsPopoverDetails;
 
 type PatientCardTag = {
 	label: string;
@@ -466,74 +449,6 @@ function PatientCardScore({
 }
 
 /**
- * A tag with details: a button that opens them in a popover above the card, and a mouse leaving the tag closes it, so
- * it's there only while the clinician points at it. Touch and keyboard close it with Escape or a click outside (a tap
- * also sends a leave). Its clicks, and the popover's, stop at the tag, so they never reach the card's open target
- * through the row.
- */
-function PatientCardTagPopover({
-	tag,
-	details,
-	size = "sm",
-}: {
-	tag: PatientCardTag;
-	details: PatientCardTagDetails;
-	/** The Badge's size. */
-	size?: BadgeProps["size"];
-}) {
-	const [open, setOpen] = React.useState(false);
-	const stop = (event: React.SyntheticEvent) => event.stopPropagation();
-
-	return (
-		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger
-				asChild
-				onClick={stop}
-				onPointerLeave={(event) => {
-					if (event.pointerType === "mouse") setOpen(false);
-				}}
-			>
-				{/* On hover, and while its popover is open: the hover fill and a `foreground` border. */}
-				<Badge
-					asChild
-					variant={tag.variant ?? "outline"}
-					size={size}
-					className='shrink-0 transition-[color,background-color,border-color,box-shadow] hover:border-foreground hover:bg-accent data-[state=open]:border-foreground data-[state=open]:bg-accent'
-				>
-					<button type='button'>{tag.label}</button>
-				</Badge>
-			</PopoverTrigger>
-			{/* React sends a portal's events up its component tree, so the popover's clicks stop here too. */}
-			<PopoverContent align='start' aria-label={tag.label} onClick={stop}>
-				{/* The meaning in `foreground`, set apart by a rule from what's behind it now. */}
-				<PopoverHeader className={cn((details.items?.length || details.source) && "border-b border-border pb-3")}>
-					<PopoverTitle>{tag.label}</PopoverTitle>
-					{details.description ? (
-						<PopoverDescription className='text-foreground'>{details.description}</PopoverDescription>
-					) : null}
-				</PopoverHeader>
-				{details.items?.length ? (
-					<dl className='flex flex-col gap-1.5'>
-						{details.items.map((item) => (
-							<div key={item.label} className='flex items-baseline justify-between gap-3'>
-								<dt className='font-medium text-foreground'>{item.label}</dt>
-								{item.value ? <dd className='text-right tabular-nums text-foreground'>{item.value}</dd> : null}
-							</div>
-						))}
-					</dl>
-				) : null}
-				{details.source ? (
-					<p className='text-xs text-muted-foreground'>
-						{details.source}
-						{details.updatedAt ? ` · ${formatRelativeDate(details.updatedAt).label}` : null}
-					</p>
-				) : null}
-			</PopoverContent>
-		</Popover>
-	);
-}
-
-/**
  * The tags on one line. When they're wider than the card, the row scrolls sideways (wheel, trackpad, touch, or the
  * arrow keys once focused) and its thin scrollbar shows there's more. It sits above the card's open target so it can
  * scroll; `onClick` passes a click through to that target, so the row still opens the patient.
@@ -601,7 +516,13 @@ function PatientCardTags({
 		>
 			{tags.map((tag) =>
 				tag.details ? (
-					<PatientCardTagPopover key={tag.label} tag={tag} details={tag.details} size={small ? "xs" : "sm"} />
+					<TagsPopover
+						key={tag.label}
+						label={tag.label}
+						variant={tag.variant}
+						details={tag.details}
+						size={small ? "xs" : "sm"}
+					/>
 				) : (
 					<Badge key={tag.label} variant={tag.variant ?? "outline"} size={small ? "xs" : "sm"} className='shrink-0'>
 						{tag.label}
@@ -852,7 +773,6 @@ export {
 	PatientCardAlert,
 	PatientCardMetric,
 	PatientCardScore,
-	PatientCardTagPopover,
 	PatientCardTags,
 	acuityLevels as patientCardAcuityLevels,
 	patientCardAlertVariants,

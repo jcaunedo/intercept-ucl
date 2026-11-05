@@ -5,7 +5,7 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
-import { sampleAlertDetails } from "../alert-modal/sample-alert-modal";
+import { sampleAlertDetails, samplePatientConsults } from "../alert-modal/sample-alert-modal";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
@@ -77,7 +77,7 @@ export const Static: Story = {};
 
 /**
  * My patients: a chip like the quick views, off by default, so the grid starts with everyone. Pressed, it narrows the
- * grid to the user's own and the title reads "8 of 20 patients"; pressed again, everyone is back.
+ * grid to the user's own and the title reads "8 of 21 patients"; pressed again, everyone is back.
  */
 export const MyPatients: Story = {
 	play: async ({ canvas, userEvent }) => {
@@ -194,7 +194,7 @@ export const Search: Story = {
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^1 patient at /));
 		await expect(canvas.getByRole("button", { name: /^My patients/ })).toHaveTextContent(/1$/);
 		await userEvent.click(canvas.getByRole("button", { name: "Clear search" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^20 patients/));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^21 patients/));
 		// Anything the card shows: Miller's score, "NEWS2 17".
 		await userEvent.type(search, "17");
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^2 patients/));
@@ -211,7 +211,7 @@ export const Filters: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
 		const ventilated = await screen.findByRole("checkbox", { name: "Ventilated" });
 		await userEvent.click(ventilated);
-		await expect(screen.getByText("5 of 20 patients in this view")).toBeInTheDocument();
+		await expect(screen.getByText("5 of 21 patients in this view")).toBeInTheDocument();
 		// A modal: the page behind is hidden from assistive tech until Done closes the sheet.
 		await userEvent.click(screen.getByRole("button", { name: "Done" }));
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
@@ -223,7 +223,7 @@ export const Filters: Story = {
 		// With nothing picked, the footer (Clear all, Done) leaves; the close button closes the sheet.
 		await waitFor(() => expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument());
 		await userEvent.click(screen.getByRole("button", { name: "Close Filters" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^20 patients/));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^21 patients/));
 	},
 };
 
@@ -352,13 +352,14 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 		alerts,
 		everyAlert,
 		caption,
-		startScenario1,
+		startScenario,
 		withScenarioCensus,
 		withScenarioRecords,
 		withScenarioAlertDetails,
 		withScenarioActivity,
 		onPathwayDecision,
 		onTransferDecision,
+		onDischargeDecision,
 		onConsultChange,
 		onConsultNote,
 		logAlertAction,
@@ -371,7 +372,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 		patient: props.defaultPatient,
 	});
 	const monitoringPatients = useLivePatients(monitoring);
-	// Scenario 1 changes Hayes's Census card and record too, so her card, her details and the chat follow.
+	// The scenarios change their patients' Census cards and records too (and add Scenario 2's arrival), so their cards, their details and the chat follow.
 	const censusPatients = withScenarioCensus(props.patients);
 	const scenarioRecords = props.patientRecords && withScenarioRecords(props.patientRecords);
 	const alertDetails = withScenarioAlertDetails(
@@ -396,8 +397,10 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 			patientRecords={patientRecords}
 			monitoringPatients={monitoringPatients}
 			alertDetails={alertDetails}
+			patientConsults={samplePatientConsults({ censusPatients, monitoringPatients: monitoringPatients, records: patientRecords })}
 			onPathwayDecision={onPathwayDecision}
 			onTransferDecision={onTransferDecision}
+			onDischargeDecision={onDischargeDecision}
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}
 			alerts={alerts}
@@ -406,7 +409,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 			onAlertAction={live.onAlertAction}
 			liveFeed={caption}
 			prototype={prototypeShortcuts({
-				startScenario1,
+				startScenario,
 				groupedGrid,
 				onToggleGroupedGrid: () => setGroupedGrid(!groupedGrid),
 			})}

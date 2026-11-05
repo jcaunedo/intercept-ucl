@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 2, 2026
 Created by: Julio Caunedo
-Last updated: Nov 3, 2026
+Last updated: Nov 4, 2026
 Scope: The alert maximized modal of Intercept Live: one alert opened in full from a Monitoring card, an alert toast or a card's "…" menu, with its evidence, a one-click video consult to the bedside and a suggested care pathway.
 Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-modal/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines the modal's structure, behavior, states, data and acceptance cr
 **Surface:** a modal over the Monitoring and Census pages, and over a patient's details  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 3, 2026
+**Last updated:** November 4, 2026
 
 ---
 
@@ -49,7 +49,7 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 | **Act without switching** | Acknowledge, escalate, resolve, call the bedside and accept a pathway, all from the modal. |
 | **One click to the bedside** | The video consult starts from one button, or straight from a card's "…" menu, already ringing. |
 | **Recommendations, never orders** | The pathway is a suggestion with its evidence; nothing is ordered until the intensivist accepts and the local physician co-signs (BR-06, BR-07). |
-| **Honest state** | Who did what, and when, is always on screen ("Acknowledged by you · 1:42 AM", "Resolved by Ashley Bell, RN · 8:14 PM · Treated"). |
+| **Honest state** | Who did what, and when, is always on screen ("Acknowledged by you · 1:42 AM · 12 min ago", "Resolved by Ashley Bell, RN · 8:14 PM · 3 min ago · Treated"). |
 
 ### 1.2 Source documents
 
@@ -81,8 +81,8 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 |---|---|---|
 | A Monitoring card's alert bar (`AlertBar`) | The patient's alert the bar shows: their highest-priority open alert, else their latest | Every alert, every severity, Resolved and message bars too |
 | An alert toast's header row | That toast's alert | The whole header (pill, change, time) is one button; a resolved alert's toast opens it too, shown resolved |
-| Any patient card's "…" menu (Census and Monitoring) › **Video consult** | The patient's latest alert, with the call to the bedside already ringing | On every card, right after Ask Intercept Live (Nov 3, 2026, user's call); step 3's one click. ⚠️ **Gap:** the call lives only in the alert modal, so for a patient with no alert to open, Video consult opens their page with no call; the patient's page has no consult yet. |
-| A Monitoring card's "…" menu › **Expand alert** | The alert the card's bar shows | While the card shows an alert, Resolved and messages too; after Video consult (Nov 3, 2026, user's call) |
+| Any patient card's "…" menu (Census and Monitoring) › **Video consult** | The patient's latest alert, with the call to the bedside already ringing. With no active alert, the modal without an alert (Nov 4, 2026, user's call; PRD Bedside camera CAM-012) | On every card, right after Ask Intercept Live (Nov 3, 2026, user's call); step 3's one click. ⚠️ **Gap:** the call lives only in the alert modal, so for a patient with no alert to open, Video consult opens their page with no call; the patient's page has no consult yet. |
+| A Monitoring card's "…" menu › **View alert** (**View alerts** with several) | The alert the card's bar shows | While the card shows an alert, Resolved and messages too; after Video consult (Nov 3, 2026, user's call) |
 | An alert with no detail | The patient's details instead | ℹ️ Fallback while not every alert has modal data |
 
 ✅ **Resolved (Nov 2, 2026):** the Census card no longer shows an alert badge, so it isn't an entry point; the Census List and the triage queue aren't either yet. ⚠️ **Decision needed:** should a triage queue row open the modal?
@@ -112,7 +112,7 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 | AMM-005 | **Acknowledge in place** | One click. The modal stays open; the button confirms in place (a check, "Acknowledged") and stays where it was. Clicking it again undoes the clinician's own acknowledgment. |
 | AMM-006 | **Escalate** | Opens a form under the buttons: who to send it to (the escalation list) and an optional note. Sending closes the modal; the alert travels with the escalation (SV-10). |
 | AMM-007 | **Resolve, or Feedback** | Opens a form: the resolution (Treated, Artifact or false alarm, Expected for this patient, Duplicate) and an optional note; for Feedback, "What did it get wrong? (optional)" and **Send feedback** (AL-03, BR-07). Sending closes the modal. |
-| AMM-008 | **Who did what** | Under the source, once addressed: "Acknowledged by you · time", "Escalated to … by you · time", "Resolved by … · time · reason". Someone other than the clinician is named. A note left with the action shows under it ("Note: BiPAP started, SpO₂ back to 94%."). Announced to screen readers. |
+| AMM-008 | **Who did what** | Under the source, once addressed: "Acknowledged by you · time", "Escalated to … by you · time", "Resolved by … · time · reason". Someone other than the clinician is named. Each time also says how long ago, updated each minute ("Raised by ED consult request · 1:09 PM · 12 min ago"; Nov 4, 2026). A note left with the action shows under it ("Note: BiPAP started, SpO₂ back to 94%."). Announced to screen readers. |
 | AMM-009 | **Resolved alerts** | A resolved alert opens too: the green Resolved bar with when it resolved, no lifecycle actions, the alert panel in the Resolved bar's green with neutral text (no severity colors), and who resolved it. |
 | AMM-010 | **Score, monitor, tags** | The patient's NEWS2-style score with its 24 h change (DU-14), between two rules as on their card, their live bedside monitor, and their tags as on their card. |
 | AMM-011 | **Key clinical findings** | Each phrase of the reason line with the numbers behind it. Without a reason line, the alert's evidence and recommendation. With nothing, "No key findings for this alert." ✅ **In the alert panel (Nov 3, 2026, user's calls):** a flag, first in the tag row, named for what the alert says ("CHF exacerbation", "Sepsis candidate"; not the condition, since a flag reads as a fact about the patient and the AI may be wrong). Clicking it opens the findings, one per line, under the alert's recommendation, with the alert's source and when it fired. Only while the alert is open; without findings, no flag. The patient's Monitoring card shows it too, first in its flags (✅ Nov 3, 2026, user's call); not the Census card, which shows no alerts, the patient's page or Filters. |
@@ -130,6 +130,8 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 | AMM-023 | **Decide, with a reason** | **Keep at {hospital}** shows the checkpoints it sets and asks why (required). **Transfer** asks for the receiving hospital and the transport (radio choices; the first available picked) and why (required), then **Request transfer**: "Transfer requested to … , by air · time", and the transfer center confirms the bed and the crew. **Change decision** takes either back. Escape closes an open form before the modal. |
 | AMM-024 | **Checkpoints** | Keeping sets checkpoints at 1 h and 4 h, each with what has to hold by then (from the pathway's targets) and its due time; once due, Passed or Missed with the readings behind it. A missed checkpoint raises a High alert (requirements spec, keep-or-transfer checkpoints) and the panel says so. |
 | AMM-025 | **Transfer avoided** | Kept, with every checkpoint passed, the panel logs **Transfer avoided**: the trip the family didn't make, the estimated transfer cost avoided (a placeholder until sourced) and the ICU-level care delivered at the hospital (Scenario 1, step 6; its metrics). |
+| AMM-026 | **Social needs at discharge** | For a patient the discharge workflow has flagged (Scenario 2, step 6), **Social needs at discharge** opens under keep or transfer: the needs it found in the chart ("Uninsured", "Can't afford home oxygen"), each with what's behind it and where from, the payer on record, and a drafted referral for each need (Medicaid eligibility screening; pulmonary rehab closer to home). The same panel is the patient's page's **Discharge** section; a decision in one shows in the other. The flags join the patient's card. |
+| AMM-027 | **Send with consent, or skip with a reason** | Nothing goes out on its own (PD-061). Each referral is sent once someone says **who agreed**: the patient, a family member (optionally named) or consent already on file (Nov 4, 2026, user's call: an ICU patient may not be able to agree). **Skip** asks why (required) and can be undone. Each is logged in the patient's activity with who agreed. |
 
 ---
 
@@ -148,6 +150,7 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 | **Own pathway: writing / awaiting co-signature / active** | The suggestion was declined | Cancel · Send for co-signature while writing | The form in place of the order set; once sent, the clinician's pathway with its status |
 | **Keep or transfer: to decide / keep / transfer requested** | — | Transfer · Keep at {hospital}; then each form's Cancel · Keep / Request transfer; Change decision once decided | Badge "To decide", "Keep at Chadron" or "Transfer requested"; the decision with its reason and time, then the checkpoints (keep) |
 | **Checkpoint missed / transfer avoided** | — | Change decision (missed); none (avoided) | "A checkpoint was missed, so a High alert was raised"; or the Transfer avoided panel |
+| **Social needs: to send / sent / skipped** | — | Who agreed? (The patient · Family · On file), Skip · Send referral (disabled until picked); Skip's Cancel · Skip referral; Undo skip | "Sent to {to} · time" with "Consent: …"; "Skipped: reason"; the badge counts what's left ("2 to send", then Done) |
 
 ---
 
@@ -171,6 +174,7 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | `pathway` | The suggested pathway: title, source protocol, orders (name, dose, target, evidence), co-signer |
 | `pathwayStatus` | Where the pathway is when the modal opens (suggested by default) |
 | `transfer` | Keep or transfer: the hospital's short name, source, needs (label, what's available, covered / limited / not available), receiving hospitals (name, place and distance, bed, accepting), transport (label, status and time, available), checkpoints (minutes after, criteria, result and readings), the decision already made (keep or transfer, reason, time, receiving hospital and transport) and the outcome (distance, cost, ICU-level care hours) |
+| `discharge` | Social needs at discharge: the source, the needs (label, detail, evidence), the payer, the referrals (title, to whom, detail, the needs it answers, another reason), and what was decided on each (sent with who agreed, or skipped with why, and when) |
 
 ---
 
@@ -198,6 +202,9 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | AMM-AC-18 | Keep or transfer is open | The intensivist picks Transfer, Regional West, Air, writes why and requests it | "Transfer requested to Regional West Medical Center, by air · time" |
 | AMM-AC-19 | Hayes was kept and both checkpoints passed | The modal opens | Both checkpoints read Passed with their readings, and Transfer avoided shows the distance, the cost and the care hours |
 | AMM-AC-20 | Hayes was kept and the 1 h checkpoint was missed | The modal opens | The checkpoint reads Missed with its readings, the panel says a High alert was raised, and Change decision is there |
+| AMM-AC-21 | Reynolds was kept and step 6 played | The modal's Pathway panel opens | Social needs at discharge sits under keep or transfer, "2 to send", with Uninsured, Can't afford home oxygen, "Payer on record: Uninsured" and the two referrals, each with Send referral disabled until who agreed is picked |
+| AMM-AC-22 | A referral is open | The clinician picks Family, names "his daughter, Amy Reynolds" and sends it | "Sent to Alliance financial counseling · time", "Consent: family (his daughter, Amy Reynolds)"; his activity log and his page's Discharge section show it sent |
+| AMM-AC-23 | A referral is open | The clinician skips it with a reason, then undoes the skip | "Skipped: reason" with Undo skip; undone, it's back to send and the badge counts it again |
 
 ---
 
@@ -217,6 +224,8 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | ⚠️ **Keep or transfer: suggest one?** | The platform lays out the facts and doesn't pick keep or transfer (Spec §8.7: the AI doesn't recommend). Whether a rule (every need covered, transport over 90 min) should mark one as suggested, as the pathway is. |
 | ⚠️ **Keep or transfer: data** | Needs, capacities, transport times and the second receiving hospital (Rapid City) are illustrative; the checkpoint criteria need clinical review. Where the transport and bed status come from (a transfer center feed, or entered by hand). |
 | ⚠️ **Missed checkpoint** | The panel says a High alert was raised; the prototype doesn't raise it yet. Whether a missed checkpoint reopens the decision on its own or waits for Change decision. |
+| ⚠️ **Social needs: who sends** | The prototype has the hub clinician send the referrals, as the scenario's discharge workflow "generates" them. Whether Alliance's case manager or social worker sends them instead, with the hub only seeing them. |
+| ⚠️ **Social needs: data** | The needs, programs and wording are illustrative ("Alliance financial counseling", "Alliance outpatient pulmonary rehab"); a case manager should review them. Whether a sent referral shows the receiver accepting it. |
 | ⚠️ **Component or layout** | The modal is a layout (exploration); promote it to `overlays/alert-modal` once these decisions settle. |
 | ⚠️ **Scenario data** | Hayes's creatinine trend has two points. ✅ **Resolved (Nov 3, 2026):** Chadron's records say Meditech, as the scenario does. |
 | ⚠️ **ID prefix** | `AMM-` and `AMM-AC-` are new repo-local IDs, to confirm with the team. |
@@ -231,7 +240,8 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | Modal | `src/layouts/intercept-live/alert-modal/alert-modal.tsx` (`AlertDetailModal`, `alertModalRenderer`) |
 | Pathway | `src/layouts/intercept-live/alert-modal/care-pathway.tsx` |
 | Keep or transfer | `src/layouts/intercept-live/alert-modal/keep-or-transfer.tsx` (`KeepOrTransferPanel`) |
+| Social needs at discharge | `src/layouts/intercept-live/alert-modal/discharge-plan.tsx` (`DischargePlanPanel`); Reynolds's in `sample-data/sample-scenario-2.ts` |
 | Sample data | `src/layouts/intercept-live/alert-modal/sample-alert-modal.ts` (Hayes's Scenario 1 detail; a detail and a pathway for every feed alert) |
 | Forms | `src/layouts/intercept-live/monitoring/triage-queue.tsx` (`EscalateForm`, `ResolveForm`, `stateLine`) |
 | Decisions | DESIGN.md › "Alert modal" |
-| Stories | Storybook › Layouts/Intercept Live/Alert modal; Monitoring › Scenario 1: Heart failure |
+| Stories | Storybook › Layouts/Intercept Live/Alert modal (Social Needs At Discharge too); Monitoring › Scenario 1: Heart failure |

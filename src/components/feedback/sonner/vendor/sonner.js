@@ -1,7 +1,8 @@
 // Sonner 2.0.8 (https://github.com/emilkowalski/sonner, MIT, see LICENSE.md), copied from its dist/index.mjs with
 // one change, marked "UCL:": toasts take a `priority` and stack by it, the highest in front, the newest first within
 // one (Nov 3, 2026, user's call: the most severe alert is always the one showing). Sonner always puts the newest in
-// front and has no way to change it. To update Sonner, copy the new dist/index.mjs and dist/index.d.mts over these and
+// front and has no way to change it. With it, toasts are measured unscaled (`measureToast`, Nov 4, 2026), since one can
+// now join the stack behind the front one, already scaled down. To update Sonner, copy the new dist/index.mjs and dist/index.d.mts over these and
 // reapply the "UCL:" changes. The bundle marks itself "use client" after the build (scripts/add-use-client.mjs).
 function __insertCSS(code) {
   if (!code || typeof document == 'undefined') return
@@ -31,6 +32,18 @@ function insertByPriority(toasts, toast) {
 }
 // UCL: the toasts' heights in the stack's order. Sonner keeps them newest first and works out each toast's offset from
 // the ones before it in this list, so it has to follow the toasts' order.
+// UCL: a toast's own height, unscaled and unclipped. Sonner measured `getBoundingClientRect()`, which includes the scale
+// a collapsed stack gives the toasts behind the front one: harmless while a new toast always went in front, but a toast
+// that joins the stack behind (a lower priority) was measured shrunk (e.g. 218px as 196px at 0.9), so the expanded stack
+// overlapped above it. `offsetHeight` ignores transforms; the height is freed (`auto`) for the reading, as a collapsed
+// toast behind takes the front one's.
+function measureToast(node) {
+    const height = node.style.height;
+    node.style.height = 'auto';
+    const measured = node.offsetHeight;
+    node.style.height = height;
+    return measured;
+}
 function orderHeights(heights, toasts) {
     const order = new Map(toasts.map((t, i)=>[
             t.id,
@@ -603,7 +616,8 @@ const Toast = (props)=>{
     React.useEffect(()=>{
         const toastNode = toastRef.current;
         if (toastNode) {
-            const height = toastNode.getBoundingClientRect().height;
+            // UCL: unscaled (`measureToast`).
+            const height = measureToast(toastNode);
             // Add toast height to heights array after the toast is mounted
             setInitialHeight(height);
             setHeights((h)=>[
@@ -624,10 +638,8 @@ const Toast = (props)=>{
         // Keep height up to date with the content in case it updates
         if (!mounted) return;
         const toastNode = toastRef.current;
-        const originalHeight = toastNode.style.height;
-        toastNode.style.height = 'auto';
-        const newHeight = toastNode.getBoundingClientRect().height;
-        toastNode.style.height = originalHeight;
+        // UCL: unscaled (`measureToast`).
+        const newHeight = measureToast(toastNode);
         setInitialHeight(newHeight);
         setHeights((heights)=>{
             const alreadyExists = heights.find((height)=>height.toastId === toast.id);

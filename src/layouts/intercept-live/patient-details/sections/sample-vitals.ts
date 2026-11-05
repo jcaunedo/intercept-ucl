@@ -279,7 +279,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		etco2: [44, 52],
 		arterialLine: true,
 		ventilated: true,
-		nurse: "Ashley Bell",
+		nurse: "Brooke Sullivan",
 		temps: [38.6, 38.9, 38.4, 38.7, 38.5, 38.8],
 		lastTemp: 50,
 	}),
@@ -516,7 +516,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		rr: [18, 21],
 		arterialLine: false,
 		ventilated: false,
-		nurse: "Hannah Cole",
+		nurse: "Ashley Bell",
 		temps: [37.2, 37.5, 37.7, 37.8, 37.9],
 		lastTemp: 45,
 	}),
@@ -534,6 +534,20 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		nurse: "Ashley Bell",
 		temps: [36.4, 36.6, 36.8, 36.9, 36.9, 36.9],
 		lastTemp: 70,
+	}),
+	// Jensen: back from the OR 24 h ago with HR 98 and SBP 108 on 2 L, NEWS2 5; now 3, the oxygen and SpO₂ 95%.
+	p22: buildVitals({
+		seed: 22,
+		hr: [98, 86],
+		systolic: [108, 126],
+		diastolic: [62, 70],
+		spo2: [94, 95],
+		rr: [18, 16],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Ashley Bell",
+		temps: [37.4, 37.6, 37.5, 37.3, 37.2, 37.1],
+		lastTemp: 50,
 	}),
 };
 
@@ -554,4 +568,44 @@ const hayesAt0600: VitalsSpec = {
 
 const sampleScenario1ResolvedVitals = () => buildVitals(hayesAt0600);
 
-export { sampleScenario1ResolvedVitals, sampleScenario1Vitals, sampleVitalsByPatient };
+// Dale Reynolds (Scenario 2): in the ED 40 min, on 2 L at first (SpO₂ 86%, RR 26), then BiPAP; at the consult RR 30,
+// HR 112, BP 156/88, SpO₂ 88% (his target is 88–92%). Two hourly readings: the ED's first set and now.
+const reynoldsAt2215: VitalsSpec = {
+	seed: 21,
+	hours: 2,
+	hr: [104, 112],
+	systolic: [150, 156],
+	diastolic: [86, 88],
+	spo2: [86, 88],
+	rr: [26, 30],
+	arterialLine: false,
+	ventilated: true,
+	nurse: "Megan Foster",
+	temps: [37.4],
+	lastTemp: 35,
+};
+
+/** Dale Reynolds's vitals at Scenario 2's first beat, built when it plays so the last reading is "now". */
+const sampleScenario2Vitals = () => buildVitals(reynoldsAt2215);
+
+// Scenario 2's resolution (2 h on NIV): RR 21, HR 96, BP 138/82, SpO₂ 91%, as on his monitor. The night passes in
+// seconds, so it's an hour here.
+const sampleScenario2ResolvedVitals = () =>
+	buildVitals({
+		...reynoldsAt2215,
+		hours: 3,
+		hr: [...reynoldsAt2215.hr, 96],
+		systolic: [...reynoldsAt2215.systolic, 138],
+		diastolic: [...reynoldsAt2215.diastolic, 82],
+		spo2: [...reynoldsAt2215.spo2, 91],
+		rr: [...reynoldsAt2215.rr, 21],
+		temps: [37.4, 37.2],
+	});
+
+export {
+	sampleScenario1ResolvedVitals,
+	sampleScenario1Vitals,
+	sampleScenario2ResolvedVitals,
+	sampleScenario2Vitals,
+	sampleVitalsByPatient,
+};

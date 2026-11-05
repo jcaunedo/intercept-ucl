@@ -78,17 +78,17 @@ type CensusPatient = Omit<PatientCensusCardProps, "onOpen" | "href" | "alertRing
 // call). Family messages, a patient-management task, joins Monitoring's (Nov 1, 2026, user's call).
 const sortOrderIds: readonly SortOrderId[] = ["acuity", "change", "name", "viewed", "messages"];
 
-// Comfortable, beside the collapsed rail: 2 a row above md (768), 3 above lg (1024), 4 above xl (1280), 5 above 2xl
-// (1536), still 5 at 3xl (Oct 30, 2026, user's call) and 6 above 3xl (1920); then one more every 296px (a ~280px card
+// Comfortable, beside the collapsed rail: 2 a row above md (768), 3 above lg (1024), 4 above xl (1280), still 4 at
+// 2.5xl (Nov 4, 2026, user's call), 5 above 2.5xl (1728), at 3xl (Oct 30, 2026, user's call), and 6 above 3xl (1920); then one more every 296px (a ~280px card
 // and its gap), 7 from a 2168px window to 13 from 3944px. The page is 112px narrower than the window (64px rail, 24px padding each side). An open side
 // panel takes its width off, so it drops columns. Compact (`sm` cards, 12px gaps) shows one more card a row at every
 // width, from 2 at 520px, as on Monitoring. All in px: Tailwind can't order container queries in mixed units, and a px
 // one placed before a rem one loses to it.
 const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 	comfortable:
-		"@min-[657px]:grid-cols-2 @min-[913px]:grid-cols-3 @min-[1169px]:grid-cols-4 @min-[1425px]:grid-cols-5 @min-[1809px]:grid-cols-6 @min-[2056px]:grid-cols-7 @min-[2352px]:grid-cols-8 @min-[2648px]:grid-cols-9 @min-[2944px]:grid-cols-10 @min-[3240px]:grid-cols-11 @min-[3536px]:grid-cols-12 @min-[3832px]:grid-cols-13",
+		"@min-[657px]:grid-cols-2 @min-[913px]:grid-cols-3 @min-[1169px]:grid-cols-4 @min-[1617px]:grid-cols-5 @min-[1809px]:grid-cols-6 @min-[2056px]:grid-cols-7 @min-[2352px]:grid-cols-8 @min-[2648px]:grid-cols-9 @min-[2944px]:grid-cols-10 @min-[3240px]:grid-cols-11 @min-[3536px]:grid-cols-12 @min-[3832px]:grid-cols-13",
 	compact:
-		"gap-3 @min-[520px]:grid-cols-2 @min-[657px]:grid-cols-3 @min-[913px]:grid-cols-4 @min-[1169px]:grid-cols-5 @min-[1425px]:grid-cols-6 @min-[1809px]:grid-cols-7 @min-[2056px]:grid-cols-8 @min-[2352px]:grid-cols-9 @min-[2648px]:grid-cols-10 @min-[2944px]:grid-cols-11 @min-[3240px]:grid-cols-12 @min-[3536px]:grid-cols-13 @min-[3832px]:grid-cols-14",
+		"gap-3 @min-[520px]:grid-cols-2 @min-[657px]:grid-cols-3 @min-[913px]:grid-cols-4 @min-[1169px]:grid-cols-5 @min-[1617px]:grid-cols-6 @min-[1809px]:grid-cols-7 @min-[2056px]:grid-cols-8 @min-[2352px]:grid-cols-9 @min-[2648px]:grid-cols-10 @min-[2944px]:grid-cols-11 @min-[3240px]:grid-cols-12 @min-[3536px]:grid-cols-13 @min-[3832px]:grid-cols-14",
 };
 
 // The Kanban board's columns share the width, at least one card wide each (Compact's small card is narrower).
@@ -286,7 +286,7 @@ function CensusPanel({
 			tone={tones.get(id) ?? avatarTone(id)}
 			size={density === "compact" ? "sm" : "md"}
 			// The "…" menu on hover, as on Monitoring's cards (Nov 3, 2026, user's call). The card shows no alert, so no
-			// Expand alert.
+			// View alert.
 			moreActions={patientCardActions(navigation, {
 				id,
 				name: `${card.lastName}, ${card.firstName}`,

@@ -5,6 +5,7 @@ export {
 	toastsMuted,
 	toastsMutedUntil,
 	setToastCloseHandler,
+	setToastKept,
 	type ExternalToast,
 	type ToasterProps,
 } from "./sonner";

@@ -9,6 +9,7 @@ import {
 	type CarePathwayOrder,
 	type CarePathwayStatus,
 } from "../alert-modal/care-pathway";
+import { consentText, type DischargeDecision, type DischargePlan, type ReferralOutcome } from "../alert-modal/discharge-plan";
 import type { KeepOrTransferDecision, TransferChoice } from "../alert-modal/keep-or-transfer";
 import type { CensusPatient } from "../census/census-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
@@ -19,7 +20,8 @@ import type { PatientActivity, PatientCarePlan } from "../patient-details/activi
 import type { PatientRecord } from "../patient-details/patient-details";
 import type { PatientNote } from "../patient-details/sections/notes-section";
 import type { ActiveOrder, OrderRecommendation, PatientOrders } from "../patient-details/sections/orders-section";
-import { sampleScenario1, type ScenarioChanges } from "./sample-scenario-1";
+import { sampleScenario1, type ScenarioBeat, type ScenarioChanges, type ScenarioDefinition } from "./sample-scenario-1";
+import { sampleScenario2 } from "./sample-scenario-2";
 import { sampleUser } from "./sample-workspace";
 
 // Story-only helpers: they play the scripted live feed into the Census and Monitoring stories. Apps get the same data
@@ -32,12 +34,24 @@ const changeGap = [15, 30] as const;
 const nextChangeIn = (tick: number) =>
 	tick < firstChanges.length ? firstChanges[tick] : changeGap[0] + Math.random() * (changeGap[1] - changeGap[0]);
 
-// Scenario 1's first beat plays this long after it's picked from the Prototype menu: just before the panel's first
-// re-sort when the menu opens Monitoring, so the change shows in the order at once.
-const scenarioDelay = 1.5;
-// Its resolution (06:00) plays this long after the clinician keeps her at Chadron: time to read "Keeping at Chadron"
-// and its checkpoints before they pass. The night goes by in these seconds.
-const resolutionDelay = 6;
+// The Prototype menu's scenarios (Demo Use Cases), by the id the menu starts them with.
+const sampleScenarios = {
+	"scenario-1": sampleScenario1,
+	"scenario-2": sampleScenario2,
+} satisfies Record<string, ScenarioDefinition>;
+
+type ScenarioId = keyof typeof sampleScenarios;
+
+const scenarioIds = Object.keys(sampleScenarios) as ScenarioId[];
+
+/** The scenario an alert belongs to. */
+const scenarioOfAlert = (alertId: string) => scenarioIds.find((id) => sampleScenarios[id].alertIds.includes(alertId));
+
+// How long after its trigger a beat plays, unless it says (`delay`). The first beat: just before the panel's first
+// re-sort when the menu opens Monitoring, so the change shows in the order at once. After the consult is on: time to see
+// the call before something happens to it. The resolution: time to read "Keeping at …" and its checkpoints before they
+// pass; the night goes by in these seconds.
+const beatDelays: Record<ScenarioBeat["after"], number> = { start: 1.5, consult: 6, keep: 6 };
 
 /**
  * What the clinician decided in an alert's modal: where its pathway is, the orders as sent (an edited dose, or their own
@@ -239,6 +253,12 @@ const pathwayStatusAfter: Record<CarePathwayDecision["type"], CarePathwayStatus>
 	undecline: "suggested",
 };
 
+/** The items, then the arrivals that aren't among them yet. */
+function withAdmitted<T extends { id: string }>(items: T[], arrivals: T[]): T[] {
+	const fresh = arrivals.filter((arrival) => !items.some((item) => item.id === arrival.id));
+	return fresh.length ? [...items, ...fresh] : items;
+}
+
 /** Patches each item whose id has changes. */
 function patch<T extends { id: string }>(items: T[], changes: Record<string, Partial<T>>): T[] {
 	return items.map((item) => (changes[item.id] ? { ...item, ...changes[item.id] } : item));
@@ -249,13 +269,16 @@ function patch<T extends { id: string }>(items: T[], changes: Record<string, Par
  * step: vitals change, alerts change severity, fire and resolve. A resolved alert leaves the feed (the feed resolved
  * it, not the clinician). `caption` is what the last change was, for the hospital bar's Live feed.
  *
- * `startScenario1` (the Prototype menu's Scenario 1) puts Margaret Hayes back to just before the scenario and plays
- * its beats (`sampleScenario1`): her alerts in `alerts`, her monitor in `patients`, and her Census card and record
- * through `withScenarioCensus` and `withScenarioRecords`, so every page and the chat follow. Until then she holds.
- * `onPathwayDecision` and `onTransferDecision` take what the clinician decides in her alert modal, and
- * `withScenarioAlertDetails` gives it back to the modal, so it doesn't start over when it reopens. Keeping her at
- * Chadron plays the resolution (06:00) a few seconds later: her vitals recover, her alert resolves and the transfer is
- * avoided. Taking the decision back before then cancels it.
+ * `startScenario(id)` (the Prototype menu's Scenarios) puts the scenario's patients back to just before it and plays
+ * its beats (`sampleScenario1`: Margaret Hayes; `sampleScenario2`: Dale Reynolds, who arrives with it): their alerts in
+ * `alerts`, their monitors in `patients`, and their Census cards and records through `withScenarioCensus` and
+ * `withScenarioRecords`, so every page and the chat follow. Until then they hold (or, arriving, aren't there). Each
+ * scenario starts over on its own, so the other one's run stays. `onPathwayDecision` and `onTransferDecision` take what
+ * the clinician decides in the alert modal, and `withScenarioAlertDetails` gives it back to the modal, so it doesn't
+ * start over when it reopens. Keeping the patient plays the scenario's resolution a few seconds later: vitals recover,
+ * the alert resolves and the transfer is avoided. Taking the decision back before then cancels it. `onDischargeDecision`
+ * takes a discharge referral sent or skipped (Scenario 2, step 6), from the alert or the patient's page, by patient;
+ * both give it back, so each shows what was done in the other.
  */
 function useSampleLiveFeed() {
 	const [step, setStep] = React.useState(0);
@@ -274,54 +297,100 @@ function useSampleLiveFeed() {
 		return () => window.clearTimeout(timer);
 	}, [tick, step]);
 
-	// Scenario 1: the beats played so far, each built when it played, and the clinician's decisions in the alert modal.
-	// A new run starts from none.
-	const [run, setRun] = React.useState(0);
-	const [beats, setBeats] = React.useState<{ changes: ScenarioChanges; at: string }[]>([]);
+	// The scenarios' beats played so far, each built when it played, and the clinician's decisions in the alert modal. A
+	// scenario's new run starts its own from none.
+	const [beats, setBeats] = React.useState<
+		{ scenario: ScenarioId; after: ScenarioBeat["after"]; changes: ScenarioChanges; at: string }[]
+	>([]);
 	const [decisions, setDecisions] = React.useState<Record<string, ScenarioDecision>>({});
-	// When the clinician kept the patient, which plays the resolution.
-	const [keptAt, setKeptAt] = React.useState<string | null>(null);
+	// Each call's connection, by alert, over what the beats set (Nov 4, 2026, user's call): a dropped connection belongs to
+	// that call. Ending the call puts it back on video; a later call starts on video and drops again, as the first did.
+	const [callConnections, setCallConnections] = React.useState<
+		Record<string, { mode: "video" } | { mode: "low-bandwidth"; since: string }>
+	>({});
+	const redrops = React.useRef<Record<string, number>>({});
+	// The discharge referrals sent or skipped, by patient, then by referral.
+	const [dischargeDecisions, setDischargeDecisions] = React.useState<Record<string, Record<string, ReferralOutcome>>>({});
+	// The beats, for callbacks that mustn't change with them.
+	const beatsPlayed = React.useRef(beats);
+	beatsPlayed.current = beats;
 	// The activity log and the consult notes, for the patients' pages: what the clinician did, as it happened.
 	const [log, setLog] = React.useState<ScenarioActivity[]>([]);
 	const [notes, setNotes] = React.useState<ScenarioNote[]>([]);
 	const logCount = React.useRef(0);
 	// When each alert's video consult started, while it's on.
 	const consultStarted = React.useRef<Record<string, string>>({});
-	// Co-signatures still to come, so a new run cancels them.
-	const timers = React.useRef<number[]>([]);
+	// Co-signatures still to come, by alert, so a new run cancels its own.
+	const timers = React.useRef<{ alertId: string; timer: number }[]>([]);
+	// Each scenario's beats still to come, by their trigger.
+	const beatTimers = React.useRef<{ scenario: ScenarioId; after: ScenarioBeat["after"]; timer: number }[]>([]);
+	React.useEffect(
+		() => () => {
+			for (const { timer } of [...timers.current, ...beatTimers.current]) window.clearTimeout(timer);
+		},
+		[],
+	);
 	const addActivity = React.useCallback((patientId: string, entry: Omit<PatientActivity, "id" | "at">) => {
 		logCount.current += 1;
 		const id = `log-${logCount.current}`;
 		setLog((current) => [...current, { ...entry, id, at: new Date().toISOString(), patientId }]);
 	}, []);
-	const startScenario1 = React.useCallback(() => {
-		setBeats([]);
-		setDecisions({});
-		setKeptAt(null);
-		setLog([]);
-		setNotes([]);
-		consultStarted.current = {};
-		for (const timer of timers.current) window.clearTimeout(timer);
-		timers.current = [];
-		setRun((current) => current + 1);
+	const playBeat = React.useCallback(
+		(scenario: ScenarioId, beat: ScenarioBeat) => {
+			const at = new Date().toISOString();
+			const changes = beat.changes();
+			setBeats((current) => [...current, { scenario, after: beat.after, changes, at }]);
+			setCaption(beat.label);
+			for (const { patientId, ...entry } of changes.log ?? []) addActivity(patientId, entry);
+		},
+		[addActivity],
+	);
+	/** Plays the scenario's beats for a trigger, each after its delay. */
+	const schedule = React.useCallback(
+		(scenario: ScenarioId, after: ScenarioBeat["after"]) => {
+			for (const beat of sampleScenarios[scenario].beats.filter((item) => item.after === after)) {
+				const timer = window.setTimeout(() => playBeat(scenario, beat), (beat.delay ?? beatDelays[after]) * 1000);
+				beatTimers.current.push({ scenario, after, timer });
+			}
+		},
+		[playBeat],
+	);
+	/** Cancels the scenario's beats still to come, for a trigger or all of them. */
+	const cancel = React.useCallback((scenario: ScenarioId, after?: ScenarioBeat["after"]) => {
+		beatTimers.current = beatTimers.current.filter((item) => {
+			if (item.scenario !== scenario || (after && item.after !== after)) return true;
+			window.clearTimeout(item.timer);
+			return false;
+		});
 	}, []);
-	const play = React.useCallback((after: "start" | "keep") => {
-		const played = sampleScenario1.filter((beat) => beat.after === after);
-		if (!played.length) return;
-		const at = new Date().toISOString();
-		setBeats((current) => [...current, ...played.map((beat) => ({ changes: beat.changes(), at }))]);
-		setCaption(played[played.length - 1].label);
-	}, []);
-	React.useEffect(() => {
-		if (!run) return;
-		const timer = window.setTimeout(() => play("start"), scenarioDelay * 1000);
-		return () => window.clearTimeout(timer);
-	}, [run, play]);
-	React.useEffect(() => {
-		if (!keptAt) return;
-		const timer = window.setTimeout(() => play("keep"), resolutionDelay * 1000);
-		return () => window.clearTimeout(timer);
-	}, [keptAt, play]);
+	const startScenario = React.useCallback(
+		(scenario: ScenarioId) => {
+			const { patientIds, alertIds } = sampleScenarios[scenario];
+			setBeats((current) => current.filter((beat) => beat.scenario !== scenario));
+			setDecisions((current) => Object.fromEntries(Object.entries(current).filter(([alertId]) => !alertIds.includes(alertId))));
+			setDischargeDecisions((current) =>
+				Object.fromEntries(Object.entries(current).filter(([patientId]) => !patientIds.includes(patientId))),
+			);
+			setCallConnections((current) =>
+				Object.fromEntries(Object.entries(current).filter(([alertId]) => !alertIds.includes(alertId))),
+			);
+			for (const alertId of alertIds) {
+				window.clearTimeout(redrops.current[alertId]);
+				delete redrops.current[alertId];
+			}
+			setLog((current) => current.filter((entry) => !patientIds.includes(entry.patientId)));
+			setNotes((current) => current.filter((note) => !patientIds.includes(note.patientId)));
+			for (const alertId of alertIds) delete consultStarted.current[alertId];
+			timers.current = timers.current.filter(({ alertId, timer }) => {
+				if (!alertIds.includes(alertId)) return true;
+				window.clearTimeout(timer);
+				return false;
+			});
+			cancel(scenario);
+			schedule(scenario, "start");
+		},
+		[cancel, schedule],
+	);
 
 	const onPathwayDecision = React.useCallback(
 		(alertId: string, decision: CarePathwayDecision, detail?: AlertDetailData) => {
@@ -370,8 +439,9 @@ function useSampleLiveFeed() {
 			});
 			// The local physician co-signs from home, as the alert stands it in (`COSIGN_DELAY_MS`).
 			const cosigner = detail.pathway?.cosigner;
-			timers.current.push(
-				window.setTimeout(() => {
+			timers.current.push({
+				alertId,
+				timer: window.setTimeout(() => {
 					const cosignedAt = new Date().toISOString();
 					setDecisions((current) =>
 						current[alertId]?.sentAt === at ? { ...current, [alertId]: { ...current[alertId], cosignedAt } } : current,
@@ -383,7 +453,7 @@ function useSampleLiveFeed() {
 						by: cosigner ? `${cosigner.name}, ${cosigner.role}` : undefined,
 					});
 				}, COSIGN_DELAY_MS),
-			);
+			});
 		},
 		[addActivity],
 	);
@@ -410,16 +480,92 @@ function useSampleLiveFeed() {
 					addActivity(patientId, { kind: "decision", title: "Keep or transfer decision taken back", by: YOU });
 				}
 			}
-			// Only a run's first keep plays the resolution; once it has played, it stays.
-			const resolved = beats.some(({ changes }) => changes.details?.[alertId]);
-			if (resolved) return;
-			setKeptAt(decision.type === "keep" ? at : null);
+			// Keeping the patient plays the scenario's resolution; taking it back, or transferring, cancels it. Only a run's
+			// first keep plays it; once it has played, it stays.
+			const scenario = scenarioOfAlert(alertId);
+			if (!scenario) return;
+			if (beats.some((beat) => beat.scenario === scenario && beat.after === "keep")) return;
+			cancel(scenario, "keep");
+			if (decision.type === "keep") schedule(scenario, "keep");
 		},
-		[beats, addActivity],
+		[beats, addActivity, cancel, schedule],
+	);
+	// A discharge referral sent, skipped or its skip taken back, wherever it was decided; in the log with the referral's name.
+	const onDischargeDecision = React.useCallback(
+		(patientId: string, decision: DischargeDecision) => {
+			const at = new Date().toISOString();
+			setDischargeDecisions((current) => {
+				const { [decision.referralId]: _, ...rest } = current[patientId] ?? {};
+				const outcome: ReferralOutcome | undefined =
+					decision.type === "send"
+						? { type: "sent", consent: decision.consent, at }
+						: decision.type === "skip"
+							? { type: "skipped", rationale: decision.rationale, at }
+							: undefined;
+				return { ...current, [patientId]: outcome ? { ...rest, [decision.referralId]: outcome } : rest };
+			});
+			const plan = beatsPlayed.current
+				.map((beat) => beat.changes.records?.[patientId]?.discharge)
+				.filter((item): item is DischargePlan => Boolean(item))
+				.at(-1);
+			const referral = plan?.referrals.find((item) => item.id === decision.referralId);
+			const title = referral?.title ?? "Referral";
+			if (decision.type === "send") {
+				addActivity(patientId, {
+					kind: "order",
+					title: `Referral sent: ${title}`,
+					detail: [referral ? `To ${referral.to}` : undefined, `Consent: ${consentText(decision.consent)}`]
+						.filter(Boolean)
+						.join(" · "),
+					by: YOU,
+				});
+			} else if (decision.type === "skip") {
+				addActivity(patientId, { kind: "decision", title: `Referral skipped: ${title}`, detail: decision.rationale, by: YOU });
+			} else {
+				addActivity(patientId, { kind: "decision", title: `Referral skip taken back: ${title}`, by: YOU });
+			}
+		},
+		[addActivity],
 	);
 	// The video consult: its start (ringing the bedside) and its end, with how long it lasted.
 	const onConsultChange = React.useCallback(
 		(alertId: string, state: AlertConsultState, detail?: AlertDetailData) => {
+			// The scenario's consult beats, the first time its call is on in a run (Scenario 2: the network drops).
+			const scenario = scenarioOfAlert(alertId);
+			const consultBeats = scenario ? sampleScenarios[scenario].beats.some((beat) => beat.after === "consult") : false;
+			const dropPlayed = beatsPlayed.current.some((beat) => beat.scenario === scenario && beat.after === "consult");
+			const dropPending = beatTimers.current.some((item) => item.scenario === scenario && item.after === "consult");
+			if (state === "live" && scenario && consultBeats) {
+				if (!dropPlayed) {
+					// The first call: the beat drops it (still to come if an earlier call ended before it did).
+					setCallConnections(({ [alertId]: _, ...rest }) => rest);
+					if (!dropPending) schedule(scenario, "consult");
+				} else {
+					// A later call starts on video, and the connection, still bad, drops again as the first call's did.
+					setCallConnections((current) => ({ ...current, [alertId]: { mode: "video" } }));
+					window.clearTimeout(redrops.current[alertId]);
+					redrops.current[alertId] = window.setTimeout(() => {
+						delete redrops.current[alertId];
+						setCallConnections((current) => ({
+							...current,
+							[alertId]: { mode: "low-bandwidth", since: new Date().toISOString() },
+						}));
+						if (detail) {
+							addActivity(detail.alert.patientId, {
+								kind: "consult",
+								title: "Low-bandwidth mode: audio only",
+								detail: "The connection dropped again mid-consult. Vitals every 30 s; photos sent as they're taken",
+							});
+						}
+					}, beatDelays.consult * 1000);
+				}
+			}
+			// Ending the call ends its connection: back on video for the next one.
+			if (state === "idle" && scenario && consultBeats) {
+				window.clearTimeout(redrops.current[alertId]);
+				delete redrops.current[alertId];
+				setCallConnections((current) => ({ ...current, [alertId]: { mode: "video" } }));
+			}
 			if (!detail) return;
 			const started = consultStarted.current[alertId];
 			if (state === "connecting" && !started) {
@@ -441,7 +587,7 @@ function useSampleLiveFeed() {
 				});
 			}
 		},
-		[addActivity],
+		[addActivity, schedule],
 	);
 	// The AI Notetaker's draft, approved: a consult note for her Notes, a draft for signature.
 	const onConsultNote = React.useCallback(
@@ -462,6 +608,7 @@ function useSampleLiveFeed() {
 	);
 
 	const scenario = React.useMemo(() => {
+		const admitted: NonNullable<ScenarioChanges["admit"]> = [];
 		const census: Record<string, Partial<CensusPatient>> = {};
 		const monitoring: Record<string, Partial<MonitoringPatient>> = {};
 		const records: Record<string, Partial<PatientRecord>> = {};
@@ -469,6 +616,9 @@ function useSampleLiveFeed() {
 		const resolved: Record<string, NonNullable<TriageAlert["addressed"]>> = {};
 		const details: Record<string, ((detail: AlertDetailData) => AlertDetailData)[]> = {};
 		for (const { changes, at } of beats) {
+			for (const patient of changes.admit ?? []) {
+				if (!admitted.some((item) => item.census.id === patient.census.id)) admitted.push(patient);
+			}
 			for (const [id, change] of Object.entries(changes.census ?? {})) census[id] = { ...census[id], ...change };
 			for (const [id, change] of Object.entries(changes.monitoring ?? {})) monitoring[id] = { ...monitoring[id], ...change };
 			for (const [id, change] of Object.entries(changes.records ?? {})) records[id] = { ...records[id], ...change };
@@ -476,7 +626,7 @@ function useSampleLiveFeed() {
 			for (const [id, addressed] of Object.entries(changes.resolve ?? {})) resolved[id] = { ...addressed, at };
 			for (const [id, change] of Object.entries(changes.details ?? {})) details[id] = [...(details[id] ?? []), change];
 		}
-		return { census, monitoring, records, fired, resolved, details };
+		return { admitted, census, monitoring, records, fired, resolved, details };
 	}, [beats]);
 
 	const feed = React.useMemo(() => {
@@ -504,7 +654,13 @@ function useSampleLiveFeed() {
 			}
 		}
 		return {
-			patients: patch(sampleMonitoringPatients, scenario.monitoring).map((patient) =>
+			patients: patch(
+				withAdmitted(
+					sampleMonitoringPatients,
+					scenario.admitted.map((patient) => patient.monitoring),
+				),
+				scenario.monitoring,
+			).map((patient) =>
 				vitals[patient.id] ? { ...patient, vitals: { ...patient.vitals, ...vitals[patient.id] } } : patient,
 			),
 			alerts: [...sampleMonitoringAlerts, ...fired, ...scenario.fired]
@@ -530,13 +686,36 @@ function useSampleLiveFeed() {
 		[addActivity],
 	);
 
+	// The scenarios' arrivals join the lists last, so everyone else keeps their place.
 	const withScenarioCensus = React.useCallback(
-		(patients: CensusPatient[]) => patch(patients, scenario.census),
+		(patients: CensusPatient[]) =>
+			patch(
+				withAdmitted(
+					patients,
+					scenario.admitted.map((patient) => patient.census),
+				),
+				scenario.census,
+			),
 		[scenario],
 	);
+	// A discharge plan with what was sent or skipped. The same object while nothing changes, so the panel keeps its state.
+	const withDischargeDecisions = React.useCallback(
+		<T extends { discharge?: DischargePlan }>(item: T, patientId: string): T => {
+			const decided = dischargeDecisions[patientId];
+			return item.discharge && decided ? { ...item, discharge: { ...item.discharge, decided } } : item;
+		},
+		[dischargeDecisions],
+	);
 	const withScenarioRecords = React.useCallback(
-		(records: PatientRecord[]) => patch(records, scenario.records),
-		[scenario],
+		(records: PatientRecord[]) =>
+			patch(
+				withAdmitted(
+					records,
+					scenario.admitted.map((patient) => patient.record),
+				),
+				scenario.records,
+			).map((record) => withDischargeDecisions(record, record.id)),
+		[scenario, withDischargeDecisions],
 	);
 	// The modal's data with what the clinician decided (so it reopens as they left it), then the beats' changes.
 	const withScenarioAlertDetails = React.useCallback(
@@ -558,12 +737,22 @@ function useSampleLiveFeed() {
 							transfer: detail.transfer && { ...detail.transfer, decided: decided.transfer },
 						}
 					: detail;
-				return (scenario.details[detail.alert.id] ?? []).reduce((current, change) => change(current), withDecisions);
+				const changed = (scenario.details[detail.alert.id] ?? []).reduce((current, change) => change(current), withDecisions);
+				// The call's own connection, over the beats': back on video once it ended, dropped again on a later call.
+				const call = callConnections[detail.alert.id];
+				const connected =
+					call && changed.connection
+						? {
+								...changed,
+								connection: { ...changed.connection, mode: call.mode, since: call.mode === "video" ? undefined : call.since },
+							}
+						: changed;
+				return withDischargeDecisions(connected, detail.alert.patientId);
 			}),
-		[decisions, scenario],
+		[decisions, scenario, withDischargeDecisions, callConnections],
 	);
 	/**
-	 * The records with what was done and decided (Patient details): the activity log (Scenario 1's alert as it fired and
+	 * The records with what was done and decided (Patient details): the activity log (the scenarios' alerts as they fired and
 	 * resolved, its checkpoints and outcome, and everything the clinician did), the care plan from the alerts' decisions,
 	 * the pathway in Orders and the approved consult notes in Notes. `alertDetails` are the alerts' details as the modal
 	 * shows them, with the decisions applied (`withScenarioAlertDetails`).
@@ -674,13 +863,14 @@ function useSampleLiveFeed() {
 	return {
 		...feed,
 		caption,
-		startScenario1,
+		startScenario,
 		withScenarioCensus,
 		withScenarioRecords,
 		withScenarioAlertDetails,
 		withScenarioActivity,
 		onPathwayDecision,
 		onTransferDecision,
+		onDischargeDecision,
 		onConsultChange,
 		onConsultNote,
 		logAlertAction,
@@ -705,4 +895,4 @@ function withFeedAlerts(patients: CensusPatient[], alerts: TriageAlert[]): Censu
 	});
 }
 
-export { useSampleLiveFeed, withFeedAlerts };
+export { useSampleLiveFeed, withFeedAlerts, type ScenarioId };

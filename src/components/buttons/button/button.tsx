@@ -33,6 +33,10 @@ const buttonVariants = cva(
 				default: brandVariant,
 				destructive:
 					"bg-destructive text-destructive-foreground hover:bg-[color-mix(in_srgb,var(--destructive)_80%,black)] disabled:bg-disabled",
+				// Solid · Success (Nov 4, 2026): accepting something that's waiting, e.g. Answer on an incoming consult call. The
+				// label is bound to `neutral-foreground` in intercept.ds (alert-toast Consult request).
+				success:
+					"bg-success text-neutral-foreground hover:bg-[color-mix(in_srgb,var(--success)_80%,black)] disabled:bg-disabled",
 				// Hover darkens the border on text buttons only (icon buttons keep theirs, see compoundVariants).
 				outline:
 					"border border-input bg-background shadow-xs hover:border-input-ring hover:bg-accent hover:text-accent-foreground disabled:border-input-disabled disabled:shadow-none",

@@ -11,6 +11,7 @@ export {
   layoutSpring,
   reorderSpring,
   settleSpring,
+  overshootSpring,
   resolvedFadeTransition,
 } from "./transitions";
 
@@ -33,6 +34,7 @@ export {
   liveHaloVariants,
   liveGlowVariants,
   urgencyRingVariants,
+  arriveVariants,
 } from "./variants";
 
 export {

@@ -7,7 +7,7 @@ import type { PatientTimeline, TimelineEventKind, TimelineLane, TimelineLaneColo
 // deterministic, so every session reads the same.
 //
 // Sarah Miller (`p1`), the reference patient: MAP drifts down from 74 to 58 as norepinephrine goes 0.08 → 0.12 → 0.15
-// → 0.22; FiO₂ and PEEP go up 3 h ago, SpO₂ recovers to 94 and falls back to 89; lactate 2.2 → 4.1; temperature
+// → 0.22; FiO₂ and PEEP go up 2 h ago (FiO₂ 40 → 60%), SpO₂ recovers to 94 and falls back to 89; lactate 2.2 → 4.1; temperature
 // 38.9 °C is 92 min old (stale). The SpO₂ probe was off for 20 min.
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -35,7 +35,7 @@ const oxygenSaturation: TimelinePoint[] = monitorMinutes.map((minute) => {
 	// The probe was off from 95 to 75 min ago.
 	if (minute < 95 && minute > 75) return { at: minutesAgo(minute), value: null };
 	const trend =
-		minute > 180 ? 96 - (4 * (1440 - minute)) / 1260 : minute > 150 ? 92 + (2 * (180 - minute)) / 30 : 94 - (5 * (150 - minute)) / 150;
+		minute > 118 ? 96 - (4 * (1440 - minute)) / 1322 : minute > 100 ? 92 + (2 * (118 - minute)) / 18 : 94 - (5 * (100 - minute)) / 100;
 	return { at: minutesAgo(minute), value: Math.round(trend + (minute ? wobble(minute, 5) * 0.8 : 0)) };
 });
 
@@ -133,7 +133,7 @@ const millerTimeline: PatientTimeline = {
 			source: "Ventilator",
 			points: [
 				{ at: minutesAgo(1440), value: 40 },
-				{ at: minutesAgo(180), value: 60 },
+				{ at: minutesAgo(118), value: 60 },
 				{ at: minutesAgo(2), value: 60 },
 			],
 		},
@@ -147,7 +147,7 @@ const millerTimeline: PatientTimeline = {
 			source: "Ventilator",
 			points: [
 				{ at: minutesAgo(1440), value: 8 },
-				{ at: minutesAgo(180), value: 10 },
+				{ at: minutesAgo(118), value: 10 },
 				{ at: minutesAgo(2), value: 10 },
 			],
 		},
@@ -190,10 +190,10 @@ const millerTimeline: PatientTimeline = {
 		{ id: "e4", at: minutesAgo(420), kind: "drip", label: "Norepinephrine 0.08 → 0.12 mcg/kg/min" },
 		{ id: "e5", at: minutesAgo(330), kind: "lab", label: "Lactate 2.2 mmol/L resulted" },
 		{ id: "e6", at: minutesAgo(260), kind: "care", label: "Suctioned, thick secretions · Kelly Ortiz" },
-		{ id: "e7", at: minutesAgo(180), kind: "ventilator", label: "FiO₂ 40 → 60%, PEEP 8 → 10 cmH₂O" },
 		{ id: "e8", at: minutesAgo(175), kind: "drip", label: "Norepinephrine 0.12 → 0.15 mcg/kg/min" },
 		{ id: "e9", at: minutesAgo(130), kind: "drip", label: "Propofol 40 → 30 mcg/kg/min" },
 		{ id: "e10", at: minutesAgo(120), kind: "care", label: "Blood cultures ×2 drawn" },
+		{ id: "e7", at: minutesAgo(118), kind: "ventilator", label: "FiO₂ 40 → 60%, PEEP 8 → 10 cmH₂O" },
 		{ id: "e11", at: minutesAgo(95), kind: "lab", label: "WBC 17.2 K/µL, creatinine 1.9 mg/dL resulted" },
 		{ id: "e12", at: minutesAgo(85), kind: "care", label: "SpO₂ probe repositioned" },
 		{ id: "e13", at: minutesAgo(40), kind: "drip", label: "Norepinephrine 0.15 → 0.22 mcg/kg/min" },
@@ -432,6 +432,50 @@ function hayesTimeline(stage: "before" | "alert" | "resolved"): PatientTimeline 
 			[120, "care", "BMP and BNP drawn"],
 			[75, "lab", "BNP 2,400 pg/mL, creatinine 1.9 mg/dL resulted"],
 			[25, "note", "Nursing note: net +1.8 L, weight up 2.1 kg in 48 h"],
+		],
+	});
+}
+
+/**
+ * Dale Reynolds (Scenario 2), in the ED since 40 min before the consult: 2 L by nasal cannula, then BiPAP 20 min ago
+ * after a blood gas of pH 7.24 and PaCO₂ 78. By the resolution (2 h on NIV, a few minutes back here, as the night passes
+ * in seconds) the repeat gas is pH 7.31 and PaCO₂ 64.
+ */
+function reynoldsTimeline(stage: "alert" | "resolved"): PatientTimeline {
+	const resolved = stage === "resolved";
+	const latest = (alert: number, recovered: number): [number, number][] =>
+		resolved ? [[3, alert], [0, recovered]] : [[0, alert]];
+	const after = (...keys: [number, number][]): [number, number][] => (resolved ? keys : []);
+	return timeline({
+		span: 45,
+		seed: 211,
+		hr: [[45, 104], [20, 110], ...latest(112, 96)],
+		map: [[45, 107], ...latest(111, 101)],
+		bp: resolved ? [138, 82] : [156, 88],
+		spo2: [[45, 86], [25, 85], [20, 87], ...latest(88, 91)],
+		rr: [[45, 26], [20, 28], ...latest(30, 21)],
+		temp: [[35, 37.4], ...after([1, 37.2])],
+		lanes: [
+			ventilator("FiO₂", "%", [[20, 35], ...after([1, 30])], "fio2"),
+			ventilator("IPAP", "cmH₂O", [[20, 12], ...after([1, 14])], "peep"),
+			oxygenFlow([[45, 2], [20, 0]]),
+			labLane("PaCO₂", "mmHg", [[30, 78], ...after([2, 64])], { high: 45 }),
+			labLane("pH", "", [[30, 7.24], ...after([2, 7.31])], { low: 7.35 }, "lab-2"),
+		],
+		events: [
+			[45, "care", "Arrived by ambulance on 2 L, SpO₂ 86%"],
+			[40, "note", "ED triage: severe COPD, out of home oxygen for 4 days"],
+			[35, "care", "Ipratropium-albuterol nebulizer"],
+			[30, "lab", "ABG: pH 7.24 · PaCO₂ 78 · PaO₂ 58 · HCO₃ 33"],
+			[28, "note", "Chest X-ray: hyperinflation, no pneumothorax or consolidation"],
+			[25, "care", "Methylprednisolone 40 mg IV"],
+			[20, "ventilator", "BiPAP started: IPAP 12, EPAP 5, FiO₂ 35%"],
+			...(resolved
+				? ([
+						[2, "lab", "ABG: pH 7.31 · PaCO₂ 64 · PaO₂ 66"],
+						[1, "ventilator", "IPAP 12 → 14 cmH₂O, FiO₂ 35 → 30%"],
+					] as PatientSpec["events"])
+				: []),
 		],
 	});
 }
@@ -781,7 +825,7 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		rr: [[1440, 18], [0, 22]],
 		temp: [[1320, 36.8], [1080, 36.9], [840, 36.8], [600, 36.9], [360, 36.7], [55, 36.8]],
 		lanes: [
-			pump("Epinephrine", "mcg/kg/min", [[1440, 0.05]]),
+			pump("Epinephrine", "mcg/kg/min", [[1440, 0.04], [170, 0.07]]),
 			pump("Norepinephrine", "mcg/kg/min", [[1440, 0.08], [600, 0.12], [90, 0.18]]),
 			pump("Heparin", "units/h", [[1440, 900]], "other"),
 			pump("Fentanyl", "mcg/h", [[1440, 50]], "sedation"),
@@ -807,6 +851,7 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[250, "lab", "Lactate 2.6 mmol/L resulted"],
 			[245, "care", "ECMO flow 4.4 → 3.8 L/min"],
 			[240, "lab", "Creatinine 2.1 mg/dL, anti-Xa 0.42 resulted"],
+			[170, "drip", "Epinephrine 0.04 → 0.07 mcg/kg/min"],
 			[130, "lab", "Lactate 3.1 mmol/L resulted"],
 			[90, "drip", "Norepinephrine 0.12 → 0.18 mcg/kg/min"],
 			[15, "care", "Repeat lactate drawn"],
@@ -956,10 +1001,43 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[30, "care", "Breakfast tray: ate half"],
 		],
 	}),
+
+	// Jensen: back from the OR 24 h ago after a right hip hemiarthroplasty. HR 98 → 86 and MAP 77 → 89 as fluids
+	// and pain control caught up; hemoglobin 11.8 → 9.4 after surgery. NEWS2 5 → 3 (`sample-vitals.ts`).
+	p22: timeline({
+		seed: 191,
+		hr: [[1440, 98], [720, 92], [0, 86]],
+		map: [[1440, 77], [0, 89]],
+		bp: [126, 70],
+		spo2: [[1440, 94], [600, 95], [0, 95]],
+		rr: [[1440, 18], [0, 16]],
+		temp: [[1290, 37.4], [1050, 37.6], [810, 37.5], [570, 37.3], [330, 37.2], [50, 37.1]],
+		lanes: [
+			pump("Lactated Ringer's", "mL/h", [[1440, 100], [480, 75]], "fluid"),
+			oxygenFlow([[1440, 2]]),
+			labLane("Hemoglobin", "g/dL", [[2000, 11.8], [240, 9.4]], { low: 12 }),
+		],
+		events: [
+			[1430, "care", "Arrived from the OR after a right hip hemiarthroplasty"],
+			[1380, "note", "Operative note signed"],
+			[480, "drip", "Lactated Ringer's 100 → 75 mL/h"],
+			[240, "lab", "Hemoglobin 9.4 g/dL resulted"],
+			[90, "care", "Stood at the bedside with physical therapy"],
+		],
+	}),
 };
 
 /** Hayes's timeline at Scenario 1's early warning, built when the beat plays so it ends "now". */
 const sampleScenario1Timeline = () => hayesTimeline("alert");
 const sampleScenario1ResolvedTimeline = () => hayesTimeline("resolved");
 
-export { sampleScenario1ResolvedTimeline, sampleScenario1Timeline, sampleTimelineByPatient };
+const sampleScenario2Timeline = () => reynoldsTimeline("alert");
+const sampleScenario2ResolvedTimeline = () => reynoldsTimeline("resolved");
+
+export {
+	sampleScenario1ResolvedTimeline,
+	sampleScenario1Timeline,
+	sampleScenario2ResolvedTimeline,
+	sampleScenario2Timeline,
+	sampleTimelineByPatient,
+};

@@ -5,6 +5,7 @@ import {
 	BookOpenIcon,
 	ChartSplineIcon,
 	ClipboardListIcon,
+	DoorOpenIcon,
 	FileTextIcon,
 	FilePenLineIcon,
 	HeartCrackIcon,
@@ -28,6 +29,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
+import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "../alert-modal/discharge-plan";
 import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
 import { PatientOverview } from "./patient-overview";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
@@ -72,7 +74,14 @@ type PatientDetailsPatient = Pick<
 };
 
 /** A ventilator setting: the measured value, and the set value when the two differ (e.g. tidal volume, rate). */
-type VentilatorSetting = { label: string; value: string; unit?: string; set?: string };
+type VentilatorSetting = {
+	label: string;
+	value: string;
+	unit?: string;
+	set?: string;
+	/** The last change to the setting (the set value when there is one): the value before it, same units, and when. */
+	change?: { from: string; at: string };
+};
 
 type PatientVentilator = {
 	/** Invasive, NIV, high-flow, oxygen, room air. */
@@ -209,6 +218,11 @@ type PatientRecord = {
 	activity?: PatientActivity[];
 	/** The care plan in force: the pathway sent from an alert and the decision to keep or transfer, for the Overview. */
 	carePlan?: PatientCarePlan;
+	/**
+	 * Social needs at discharge, once the discharge workflow has flagged them (Scenario 2, step 6): adds the Discharge
+	 * section, the same panel as in the alert's Pathway panel.
+	 */
+	discharge?: DischargePlan;
 };
 
 /** The patient's live bedside values, from Monitoring. */
@@ -229,6 +243,8 @@ type PatientDetailsProps = {
 	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
 	/** A patient action (Messages here; the app header's Raise concern, Escalate…). The prototype only reports it. */
 	onAction?: (action: PatientAction) => void;
+	/** A referral in the Discharge section sent (with who agreed to it) or skipped, or a skip taken back. */
+	onDischargeDecision?: (decision: DischargeDecision) => void;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -253,6 +269,7 @@ type SectionId =
 	| "timeline"
 	| "medications"
 	| "orders"
+	| "discharge"
 	| "epic"
 	| "notes"
 	| "sepsis"
@@ -295,6 +312,13 @@ const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon
 		icon: ClipboardListIcon,
 		title: "No orders yet",
 		description: "Active orders and order recommendations will appear here.",
+	},
+	{
+		id: "discharge",
+		label: "Discharge",
+		icon: DoorOpenIcon,
+		title: "No discharge plan yet",
+		description: "Social needs and referrals for discharge will appear here.",
 	},
 	{
 		id: "epic",
@@ -370,8 +394,11 @@ function sectionContent(
 		record,
 		monitor,
 		onAction,
+		onDischargeDecision,
 		onShowSection,
-	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction"> & { onShowSection: (id: SectionId) => void },
+	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction" | "onDischargeDecision"> & {
+		onShowSection: (id: SectionId) => void;
+	},
 ): React.ReactNode {
 	switch (id) {
 		case "vitals":
@@ -393,6 +420,10 @@ function sectionContent(
 			) : null;
 		case "orders":
 			return record?.orders ? <OrdersSection orders={record.orders} /> : null;
+		case "discharge":
+			return record?.discharge ? (
+				<DischargePlanPanel plan={record.discharge} onDecision={onDischargeDecision} headingLevel='h2' className='max-w-2xl' />
+			) : null;
 		case "epic":
 			return record?.emr ? <EpicSection emr={record.emr} /> : null;
 		case "notes":
@@ -432,12 +463,15 @@ function PatientDetails({
 	escalationTargets = [],
 	onAlertAction,
 	onAction,
+	onDischargeDecision,
 }: PatientDetailsProps) {
 	const [section, setSection] = React.useState<SectionId>("overview");
-	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080).
+	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080), Discharge only once the
+	// discharge workflow has flagged social needs (Scenario 2, step 6).
 	// The hospital's record section is named after its system (Epic, Meditech…).
 	const sections = pendingSections
 		.filter((item) => item.id !== "sepsis" || patient.sepsisWatch)
+		.filter((item) => item.id !== "discharge" || record?.discharge)
 		.map((item) =>
 			item.id === "epic" && record?.emr
 				? { ...item, label: record.emr.name, title: `Nothing from ${record.emr.name} yet` }
@@ -531,7 +565,14 @@ function PatientDetails({
 					/>
 				</TabsContent>
 				{sections.map((item) => {
-					const content = sectionContent(item.id, { patient, record, monitor, onAction, onShowSection: setSection });
+					const content = sectionContent(item.id, {
+						patient,
+						record,
+						monitor,
+						onAction,
+						onDischargeDecision,
+						onShowSection: setSection,
+					});
 					// Keyed by patient, so a section's local state (an open form, an accepted recommendation) never
 					// carries over to the next patient. Block, not flex: the sections are size containers, which a flex
 					// row would shrink to nothing.
@@ -570,6 +611,8 @@ type PatientDetailsSources = {
 	escalationTargets?: EscalationTarget[];
 	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
 	onAction?: (patientId: string, action: PatientAction) => void;
+	/** A referral in a patient's Discharge section, by patient. */
+	onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
 };
 
 /**
@@ -581,7 +624,16 @@ function patientDetailsView(
 	// The shell's previous / next isn't shown (Intercept-Live's Patient Header has none); its list feeds the app header's
 	// patient list instead.
 	stepper: PatientStepper,
-	{ patients = [], monitoringPatients = [], records = [], alerts = [], escalationTargets, onAlertAction, onAction }: PatientDetailsSources,
+	{
+		patients = [],
+		monitoringPatients = [],
+		records = [],
+		alerts = [],
+		escalationTargets,
+		onAlertAction,
+		onAction,
+		onDischargeDecision,
+	}: PatientDetailsSources,
 ): PatientDetailsView | null {
 	const find = (id?: string) => patients.find((item) => item.id === id) ?? monitoringPatients.find((item) => item.id === id);
 	const patient = find(patientId);
@@ -641,6 +693,7 @@ function patientDetailsView(
 				escalationTargets={escalationTargets}
 				onAlertAction={onAlertAction}
 				onAction={onAction ? (action) => onAction(patientId, action) : undefined}
+				onDischargeDecision={onDischargeDecision ? (decision) => onDischargeDecision(patientId, decision) : undefined}
 			/>
 		),
 	};

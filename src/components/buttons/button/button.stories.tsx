@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowRight, Maximize2, VideoOffIcon } from "lucide-react";
+import { ArrowRight, Maximize2, VideoIcon, VideoOffIcon } from "lucide-react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import { Button } from "./button";
@@ -18,6 +18,7 @@ const meta = {
 				"brand",
 				"destructive",
 				"destructive-secondary",
+				"success",
 				"outline",
 				"secondary",
 				"ghost",
@@ -69,6 +70,10 @@ export const AllVariants: Story = {
 				<VideoOffIcon aria-hidden='true' />
 				End call
 			</Button>
+			<Button variant='success'>
+				<VideoIcon aria-hidden='true' />
+				Answer
+			</Button>
 		</div>
 	),
 };
@@ -77,7 +82,7 @@ export const AllVariants: Story = {
 export const DisabledVariants: Story = {
 	render: () => (
 		<div className='flex flex-wrap items-center gap-3'>
-			{(["neutral", "secondary", "destructive", "destructive-secondary", "outline", "ghost", "link"] as const).map((variant) => (
+			{(["neutral", "secondary", "destructive", "destructive-secondary", "success", "outline", "ghost", "link"] as const).map((variant) => (
 				<Button key={variant} variant={variant} disabled>
 					{variant}
 				</Button>

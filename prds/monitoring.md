@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 3, 2026
+Last updated: Nov 4, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 3, 2026
+**Last updated:** November 4, 2026
 
 ---
 
@@ -216,7 +216,7 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 
 ✅ **Decision (Oct 31, 2026, product; intercept.ds `patient-monitoring-card-2`):** the card's alert is a full-width bar under the name and location, not a pill beside the name: the top severity, how many alerts the patient had in the last 24 h, and how long ago it started ("Critical · 3 in the last 24 h · 3:34 m ago"); "No active alerts" without one. Where the pill was, a family message icon shows while there are unread messages, and a "…" menu appears on hover. ✅ **Decision (Oct 31, 2026, product):** a patient whose last alert resolved in the last 24 h keeps a green Resolved bar ("Resolved · 3 in the last 24 h · 15 h ago"); a resolved time reads in whole units (minutes, then hours), an open alert's runs like a clock. ✅ **Decision (Nov 2, 2026, user's call):** closing the patient's Resolved toast, with its × or the stack's Close all, clears the Resolved bar at once: the card shows "No active alerts" until the next alert or resolution.
 
-✅ **Decision (Nov 3, 2026, user's call):** the card's "…" menu reads **Ask Intercept Live**, **Video consult** (on every card, Census too; Nov 3, 2026, user's call), then **Expand alert** while the card shows an alert (any severity, Resolved or a message; it opens the alert modal, as the alert bar does), a divider, then **Escalate**, **Huddle team** and **Raise concern** (PRD Alert maximized modal §3).
+✅ **Decision (Nov 3, 2026, user's call):** the card's "…" menu reads **Ask Intercept Live**, **Video consult** (on every card, Census too; Nov 3, 2026, user's call), then **View alert** while the card shows an alert (any severity, Resolved or a message; it opens the alert modal, as the alert bar does; **View alerts** when the card counts several; renamed from Expand alert Nov 4, 2026, user's call), a divider, then **Escalate**, **Huddle team** and **Raise concern** (PRD Alert maximized modal §3).
 
 ### MON-015 — View controls
 
@@ -353,6 +353,7 @@ Each value follows the Patient card freshness model (PRD PC-090–092): Current,
 | State | What the clinician sees |
 |---|---|
 | **Loading** | Card skeletons in the panel's last layout; the queue shows "Loading alerts" |
+| **Waveform connecting** | A card's waveforms stream only while it's on screen. Scrolled into view, each lane shows a pulsing skeleton block in its color for half a second, then the trace starts. Its numbers, alarms and alert stay live throughout, on screen or not (Nov 4, 2026, user's call: performance) |
 | **Empty panel** | EmptyState: "No patients being monitored" / "Patients you're monitoring will appear here, with their live vitals and trends." (as in the prototype today) |
 | **No matches** | EmptyState with Clear filters (as on the Census) |
 | **Empty queue** | "No active alerts" in the rail, with the time of the last alert |
@@ -420,7 +421,7 @@ An interactive page covering this whole PRD: [Intercept Live Monitoring](https:/
 | Area | What the exploration shows | Requirements |
 |---|---|---|
 | **Shell** | Sidebar rail with Monitoring active, sticky header (clock, Online pill, messages, theme, team, user). Below 1280px the triage queue becomes a drawer opened from the header, with its active count. | §3.1 |
-| **Page header** | Hospital tabs with counts (a warning icon on a hospital whose feed is down), Alerts only and My Patients, the summary ("14 patients · 8 active alerts") and a privilege note ("2 patients at Mercy West Hospital hidden by your privileges"). | §3.1, MON-010, MON-051, MON-OD-02 |
+| **Page header** | Hospital tabs with counts (a warning icon on a hospital whose feed is down), Alerts only and My Patients, the summary ("14 patients · 8 active alerts") and a privilege note ("2 patients at Alliance hidden by your privileges"). | §3.1, MON-010, MON-051, MON-OD-02 |
 | **Filters** | The Census's quick views tuned for monitoring (All Patients, Needs attention, Outside limits, Rising score, Organ support, Data gap), Unit, Sort by (Alert, Score, Score change, Name) and Group by hospital (a switch since Oct 30, 2026; it was the Location sort). | MON-010, MON-013, MON-AC-11 |
 | **Density** | Comfortable, Compact and List side by side. List shows the vitals as columns, in the parameter colors. | MON-012 |
 | **View options** | Card monitor: ECG strip or 1 h trends (a sparkline under each numeric; in full monitors, a trend line per lane). Full monitors (Comfortable only). Mark values outside limits: off by default, as in UCL; on, a small ↑/↓ tag beside the number that keeps the parameter color. | MON-014, MON-073, MON-OD-12 |
@@ -470,7 +471,7 @@ What the exploration assumes beyond this PRD:
 | MON-AC-17 | Sorted by Alerts, a new alert moves its patient's card to the top as it fires, without waiting for the next re-sort. |
 | MON-AC-18 | Filters › Alert status narrows the panel to patients with an alert acknowledged, escalated, resolved in the last 24 h, or given AI feedback; the clinician's own actions count at once. |
 | MON-AC-19 | A toast closed with its × or Close all doesn't come back for that alert until the app reloads, unless the alert goes above the severity it had; the toasts hide while the live feed or Filters is open and come back when both are closed. |
-| MON-AC-20 | While a card shows an alert, its "…" menu offers Expand alert, which opens the alert modal as the alert bar does. |
+| MON-AC-20 | While a card shows an alert, its "…" menu offers View alert (View alerts when it counts several), which opens the alert modal as the alert bar does. |
 
 ---
 
@@ -495,7 +496,7 @@ The **Exploration proposal** column is what the Oct 27, 2026 exploration (§12.1
 | ID | Decision | Owner | Exploration proposal |
 |---|---|---|---|
 | MON-OD-01 | How a panel is defined (shift assignment, watch list or both) and whether clinicians can add patients to it. | Product / Clinical | Not explored: the panel is every patient across the three hospitals, narrowed by My Patients. |
-| MON-OD-02 | How privilege-hidden patients are indicated, if at all. | Product / Compliance | A quiet count under the summary, with no names: "2 patients at Mercy West Hospital hidden by your privileges". |
+| MON-OD-02 | How privilege-hidden patients are indicated, if at all. | Product / Compliance | A quiet count under the summary, with no names: "2 patients at Alliance hidden by your privileges". |
 | MON-OD-03 | Whether the Alert Queue page and Monitoring's triage queue both exist in v1. | Product | A panel-scoped rail here; the Sidebar's Alert Queue stays the full surface. |
 | MON-OD-04 | Which panel densities ship in v1 (Comfortable, Compact, List). | Design / Clinical | All three, as a segmented control next to Sort by. |
 | MON-OD-05 | Auto-reorder rules for the panel when alerts change priority. | Clinical / Design | ~~Never automatic: the "Panel order changed" bar with Update order. No idle auto-update.~~ Built (MON-013): re-sorts every 15 to 30 s and at once for a new alert or a resolve, never under the pointer or focus except with Active alerts on (Nov 3, 2026). Still for clinical review. |

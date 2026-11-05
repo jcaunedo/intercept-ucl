@@ -17,7 +17,7 @@ import type { PatientRecord } from "../patient-details/patient-details";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { alertChanges } from "../shared/alert-changes";
 import { useAddressedAlerts } from "../shared/live-feed";
-import { flagSummary } from "../shared/flag-details";
+import { bedsideChanges, flagSummary } from "../shared/flag-details";
 import { isPressorFlag, pressorPattern } from "../shared/pressors";
 import { sampleHospitals, sampleTeam, sampleUser } from "./sample-workspace";
 
@@ -117,6 +117,18 @@ const flagWords = { high: "high", low: "low", critical: "critical" } as const;
 const list = (items: string[]) => items.map((item) => `- ${item}`).join("\n");
 const unique = (items: (string | undefined)[]) => [...new Set(items.filter((item): item is string => Boolean(item)))];
 const sentence = (text: string) => text.split(/(?<=\.)\s/)[0];
+
+/**
+ * What the bedside team changed in the last 12 hours, the drips' titrations and the ventilator's settings, in the flag
+ * popovers' words (client feedback, Nov 4, 2026; PRD Patient card PC-064): nurses and respiratory therapists change them
+ * on their own and the intensivist has to seek them out, so a patient's summary says them. None without drips or
+ * settings.
+ */
+function bedsideChangesLine(record: PatientRecord | undefined) {
+	const changes = bedsideChanges(record);
+	if (!changes) return undefined;
+	return `**Changed at the bedside:** ${changes.length ? changes.join("; ") : "nothing in the last 12 hours"}`;
+}
 /** Lowercases a label's first letter to run on in a sentence, unless it starts an abbreviation ("ABG", "SpO₂"). */
 const runOn = (label: string) => (/^[A-Z][a-z]/.test(label) && !/^[A-Z][a-z]?[A-Z₀-₉]/.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label);
 
@@ -388,6 +400,7 @@ function summaryOf(patient: Patient): AskInterceptAnswer {
 		patient.alerts.length
 			? `**Alerts:** ${patient.alerts.map((alert) => `${alert.title} (${severityWords[alert.severity]})`).join("; ")}`
 			: "**Alerts:** none open",
+		bedsideChangesLine(record),
 		`**Vitals:** ${vitalLines(patient).slice(0, 4).join(", ")}`,
 		...flags.lines,
 		record?.ventilator && !flags.coversVentilator ? `**Breathing:** ${[record.ventilator.support, record.ventilator.mode].filter(Boolean).join(", ")}${record.ventilator.settings.length ? `, ${record.ventilator.settings.slice(0, 2).map((setting) => `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}`).join(", ")}` : ""}` : undefined,
@@ -562,6 +575,7 @@ function overviewOf(patient: Patient): AskInterceptAnswer {
 	const flags = flagSummary(census.tags, record);
 	const lines = [
 		conditions.length ? `**Conditions:** ${conditions.join("; ")}` : undefined,
+		bedsideChangesLine(record),
 		...flags.lines,
 		record?.ventilator && !flags.coversVentilator ? `**Breathing:** ${record.ventilator.settings.length ? record.ventilator.settings.map((setting) => `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}`).join(", ") : [record.ventilator.support, record.ventilator.mode].filter(Boolean).join(", ")}` : undefined,
 		`**Vitals:** ${vitalLines(patient).slice(0, 4).join(", ")}`,
@@ -572,7 +586,7 @@ function overviewOf(patient: Patient): AskInterceptAnswer {
 		"Census",
 		"Monitor",
 		...(record?.ventilator ? [record.ventilator.source] : []),
-		...(record?.infusions?.length && flags.lines.length ? ["Pump"] : []),
+		...(record?.infusions?.length && (flags.lines.length || bedsideChanges(record)?.length) ? ["Pump"] : []),
 	]);
 	const actions = overviewActions(patient);
 	if (!recentCrossing(patient)) return { text: glance, sources, actions };
@@ -767,7 +781,12 @@ function answerForPatientTopic(patient: Patient, topic: Topic, question: string)
 			if (!vent) return { text: `There's no ventilator or oxygen data for ${name}.`, sources: ["Ventilator"] };
 			return {
 				text: `${name} is on ${[vent.support, vent.mode].filter(Boolean).join(", ").toLowerCase()}, ${ago(vent.updatedAt)}:\n${list([
-					...vent.settings.map((setting) => `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}${setting.set ? ` (set ${setting.set})` : ""}`),
+					// A setting's last change, as the drips' (`medLines`): "FiO₂ 60%, up from 40% 2 hours ago".
+					...vent.settings.map((setting) => {
+						const change = setting.change && Date.now() - Date.parse(setting.change.at) <= 12 * 60 * MINUTE ? setting.change : undefined;
+						const up = change && Number.parseFloat(setting.set ?? setting.value) > Number.parseFloat(change.from);
+						return `${setting.label} ${setting.value}${setting.unit ? ` ${setting.unit}` : ""}${setting.set ? ` (set ${setting.set})` : ""}${change ? `, ${up ? "up" : "down"} from ${change.from} ${ago(change.at)}` : ""}`;
+					}),
 					...(vent.abg ? [`Last ABG ${ago(vent.abg.collectedAt)}: ${vent.abg.values}`] : []),
 				])}${patient.alerts.some((alert) => alert.source.name === "Vent-Order Mismatch") ? "\nVent-Order Mismatch flagged a difference from the active order." : ""}`,
 				sources: [vent.source],

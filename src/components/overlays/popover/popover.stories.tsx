@@ -28,11 +28,11 @@ const meta = {
 			<PopoverContent {...args}>
 				<PopoverHeader>
 					<PopoverTitle>2 pressors</PopoverTitle>
-					<PopoverDescription>Drips that raise blood pressure, running now.</PopoverDescription>
+					<PopoverDescription>Epinephrine drip increased by 75% in the last 3 hours</PopoverDescription>
 				</PopoverHeader>
 				<ul className='flex flex-col gap-1'>
-					<li>Norepinephrine 0.22 mcg/kg/min</li>
-					<li>Vasopressin 0.03 units/min</li>
+					<li>Epinephrine 0.07 mcg/kg/min</li>
+					<li>Norepinephrine 0.18 mcg/kg/min</li>
 				</ul>
 			</PopoverContent>
 		</Popover>
@@ -48,7 +48,7 @@ export const Default: Story = {
 		const trigger = canvas.getByRole("button", { name: "2 pressors" });
 		await userEvent.click(trigger);
 		const dialog = await screen.findByRole("dialog");
-		await expect(within(dialog).getByText("Norepinephrine 0.22 mcg/kg/min")).toBeInTheDocument();
+		await expect(within(dialog).getByText("Epinephrine 0.07 mcg/kg/min")).toBeInTheDocument();
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(trigger).toHaveFocus();

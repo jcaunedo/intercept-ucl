@@ -15,7 +15,7 @@ const hayes = {
 	sex: "F",
 	age: 72,
 	mrn: "00826154",
-	hospital: "Chadron Community Hospital",
+	hospital: "Chadron",
 	unit: "Med-Surg",
 	bed: "Bed 4",
 	alert: { variant: "critical", inLast24h: 3, since: new Date(Date.now() - 214_000).toISOString() },
@@ -28,23 +28,24 @@ const hayes = {
 		vitals: { hr: 134, spo2: 86, systolic: 84, diastolic: 48, map: 60, rr: 31 },
 		alarmPriorities: { hr: "medium", spo2: "high", rr: "low" },
 	},
-	// With details, as Intercept Live passes them: each flag opens what it means and what's behind it now.
+	// With details, as Intercept Live passes them: each flag opens what changed lately and what's behind it now. A flag
+	// with nothing behind it in the record stays a plain badge.
 	tags: [
 		{
 			label: "NIV",
 			details: {
-				description: "Non-invasive ventilation: a mask, no breathing tube.",
+				changes: ["FiO₂ increased from 40% to 60% in the last 2 hours"],
 				items: [
 					{ label: "Mode", value: "BiPAP" },
 					{ label: "IPAP", value: "12 cmH₂O" },
 					{ label: "EPAP", value: "6 cmH₂O" },
-					{ label: "FiO₂", value: "40%" },
+					{ label: "FiO₂", value: "60%" },
 				],
 				source: "Ventilator",
 				updatedAt: new Date(Date.now() - 4 * 60_000).toISOString(),
 			},
 		},
-		{ label: "Fall risk", details: { description: "At higher risk of falling; the bedside team takes fall precautions." } },
+		{ label: "Fall risk" },
 	],
 } satisfies AlertExpandedProps;
 
@@ -121,12 +122,53 @@ export const WithStatus: Story = {
 	},
 };
 
+/**
+ * `monitorStatus`: a line right over the monitor about its data. Here, the low-bandwidth notice an app shows while the
+ * hospital's connection is down and the monitor's numbers are held (Intercept Live, Scenario 2).
+ */
+export const WithMonitorStatus: Story = {
+	args: {
+		monitorStatus: (
+			<p className='text-sm text-foreground'>
+				<span className='font-semibold'>Low bandwidth:</span> vitals every 30 s · updated 12 s ago
+			</p>
+		),
+	},
+	play: async ({ canvas }) => {
+		await expect(canvas.getByText("Low bandwidth:")).toBeInTheDocument();
+	},
+};
+
 /** A resolved alert: the Resolved bar's green, neutral words, no lifecycle actions. */
 export const Resolved: Story = {
 	args: {
 		alert: { variant: "resolved", inLast24h: 3, since: new Date(Date.now() - 15 * 3_600_000).toISOString() },
 		status: <p className='text-sm text-foreground'>Resolved by Kayla Brandt, RN · 6:00 AM · Treated</p>,
 		alertActions: undefined,
+	},
+};
+
+/**
+ * Without `alert`: the patient alone, e.g. a video consult with no alert open (Intercept Live, a card's Video consult).
+ * No alert panel; the name is the heading (`titleAs`), so a dialog is named by it.
+ */
+export const NoAlert: Story = {
+	args: {
+		alert: undefined,
+		title: undefined,
+		description: undefined,
+		source: undefined,
+		alertActions: undefined,
+		actions: (
+			<Button variant='outline'>
+				<VideoIcon />
+				Video consult
+			</Button>
+		),
+	},
+	play: async ({ canvas }) => {
+		await expect(canvas.queryByRole("region", { name: "Alert" })).toBeNull();
+		await expect(canvas.getByRole("heading", { level: 2 })).toHaveTextContent("Hayes, Margaret");
 	},
 };
 

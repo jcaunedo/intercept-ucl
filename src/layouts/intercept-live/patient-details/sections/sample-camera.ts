@@ -1,12 +1,12 @@
 import type { CareTeamMember } from "../patient-details";
-import { samplePatientBaseRecords } from "../sample-patient-records";
+import { samplePatientBaseRecords, sampleScenarioCareTeams } from "../sample-patient-records";
 import type { CameraPerson, CameraPreset, CameraSession, PatientCamera } from "./camera-section";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's bedside camera. Who's here comes from each
 // record's care team (`sample-patient-records.ts`), with what each person is doing now; anyone else in the room (a
 // respiratory therapist, a perfusionist) is added per patient. Cameras and consent follow the hospital: Harbor Point
 // General is all-party, so a huddle waits for consent before the AI Scribe listens (PD-073); CVMC's cameras have no
-// two-way audio and no door preset; Mercy West's have no pump preset; Chadron's med-surg room has only bed and monitor.
+// two-way audio and no door preset; Alliance's have no pump preset; Chadron's med-surg room has only bed and monitor.
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
@@ -19,7 +19,7 @@ const preset = {
 
 const hospitals = {
 	hpg: { presets: [preset.bed, preset.monitor, preset.pumps, preset.door], talk: true, consent: "all-party" },
-	mwh: { presets: [preset.bed, preset.monitor, preset.door], talk: true, consent: "one-party" },
+	alliance: { presets: [preset.bed, preset.monitor, preset.door], talk: true, consent: "one-party" },
 	cvmc: { presets: [preset.bed, preset.monitor, preset.pumps], talk: false, consent: "one-party" },
 	chadron: { presets: [preset.bed, preset.monitor], talk: true, consent: "one-party" },
 } satisfies Record<string, Pick<PatientCamera, "presets" | "talk" | "consent">>;
@@ -38,7 +38,8 @@ const defaultActivity = (member: CareTeamMember) =>
 
 /** Who's here: the patient's care team with what each is doing, plus anyone else in the room; present first, you last. */
 function people(patientId: string, activities: Record<string, string>, others: CameraPerson[]): CameraPerson[] {
-	const careTeam = samplePatientBaseRecords.find((record) => record.id === patientId)?.careTeam ?? [];
+	const careTeam =
+		samplePatientBaseRecords.find((record) => record.id === patientId)?.careTeam ?? sampleScenarioCareTeams[patientId] ?? [];
 	const team = careTeam.map(
 		(member): CameraPerson => ({
 			name: member.name,
@@ -104,9 +105,9 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 	// Johnson: ARDS, proned.
 	p2: camera(
 		"p2",
-		"mwh",
+		"hpg",
 		"Bed 3",
-		{ "Ashley Bell": "At the bedside", "Marcus Reed": "Rounding in the unit" },
+		{ "Brooke Sullivan": "At the bedside", "Laura Mitchell": "Rounding in the unit" },
 		[
 			["huddle", "Joanna Smith", 90, 14, "drafted"],
 			["look-in", "Maria Ruiz", 370, 3],
@@ -127,7 +128,7 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 		["huddle", "Maria Ruiz", 400, 8, "drafted"],
 	]),
 	p6: camera("p6", "cvmc", "Bed 2", { "Lucy Hart": "At the bedside" }, [["look-in", "Maria Ruiz", 240, 2]]),
-	p7: camera("p7", "mwh", "Bed 12", { "Hannah Cole": "Gowning in · contact isolation", "Marcus Reed": "Away · in the ED" }, [
+	p7: camera("p7", "cvmc", "Bed 12", { "Hannah Cole": "Gowning in · contact isolation", "Samuel Grant": "Away · in the OR" }, [
 		["look-in", "Joanna Smith", 130, 4],
 	]),
 	p8: camera("p8", "hpg", "Bed 14", { "Rachel Dixon": "Charting at the station", "Laura Mitchell": "Away · in the OR" }, [
@@ -179,12 +180,22 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 	// Carlson and Hansen: asleep on the same floor.
 	p19: camera("p19", "chadron", "Bed 2", { "Kayla Brandt": "With another patient", "Tom Weller": "On call from home" }, []),
 	p20: camera("p20", "chadron", "Bed 8", { "Kayla Brandt": "With another patient", "Tom Weller": "On call from home" }, []),
-	p17: camera("p17", "mwh", "Bed 10", { "Hannah Cole": "At the bedside", "Marcus Reed": "Away · in the OR" }, [
+	p17: camera("p17", "alliance", "Bed 10", { "Ashley Bell": "At the bedside", "Marcus Reed": "Away · in the OR" }, [
 		["look-in", "James Turner", 180, 3],
 	]),
-	p18: camera("p18", "mwh", "Bed 5", { "Ashley Bell": "At the bedside", "Marcus Reed": "Viewing the chart" }, [
+	p18: camera("p18", "alliance", "Bed 5", { "Ashley Bell": "With another patient", "Marcus Reed": "Viewing the chart" }, [
 		["look-in", "Joanna Smith", 240, 5],
+	]),
+	// Jensen: up in the chair after physical therapy.
+	p22: camera("p22", "alliance", "Bed 3", { "Ashley Bell": "With another patient", "Marcus Reed": "Viewing the chart" }, [
+		["look-in", "James Turner", 300, 3],
 	]),
 };
 
-export { sampleCameraByPatient };
+/** Dale Reynolds (Scenario 2): ED Bay 3, his nurse, the ED physician and the respiratory therapist at the BiPAP. */
+const sampleScenario2Camera = () =>
+	camera("p21", "alliance", "Bay 3", { "Megan Foster": "At the bedside", "Brian Keller": "At the bedside" }, [], [
+		visitor("Rachel Lindgren", "Respiratory therapist", "RL", 4, "At the BiPAP"),
+	]);
+
+export { sampleCameraByPatient, sampleScenario2Camera };

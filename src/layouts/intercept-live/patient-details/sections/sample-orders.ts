@@ -139,9 +139,9 @@ const clock = (hours: number, minutes: number) => {
 
 const hospitals = {
 	hpg: { hospital: "Harbor Point General", source: "Epic" },
-	mwh: { hospital: "Mercy West Hospital", source: "Epic" },
+	alliance: { hospital: "Alliance", source: "Cerner" },
 	cvmc: { hospital: "CVMC", source: "Epic" },
-	chadron: { hospital: "Chadron Community Hospital", source: "Meditech" },
+	chadron: { hospital: "Chadron", source: "Meditech" },
 };
 
 /** An evidence value with its source, `minutes` ago or at a clock time. */
@@ -217,7 +217,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Severe ARDS from influenza, paralyzed and proned. Electrolytes are in range, so nothing to recommend.
 	p2: patientOrders("p2", {
-		hospital: "mwh",
+		hospital: "hpg",
 		checks: [
 			ventMatches("AC/VC, rate 26, tidal volume 450 mL, FiO₂ 80%, PEEP 14"),
 			nothingToRecommend("Potassium 4.2 and creatinine 1.1 need no replacement, and there's no sepsis screen."),
@@ -351,7 +351,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Improving after Hartmann's. Yesterday's potassium replacement was taken; nothing new.
 	p7: patientOrders("p7", {
-		hospital: "mwh",
+		hospital: "cvmc",
 		recommendations: [
 			{
 				kind: "electrolyte",
@@ -359,7 +359,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 				order: "Potassium chloride 20 mEq in 100 mL · IV over 2 h · once",
 				reason: "Potassium was 3.5 on IV fluids with nothing by mouth.",
 				evidence: [evidence("K 3.5", "Lab", 1680)],
-				protocol: { kind: "hospital", name: "Mercy West electrolyte replacement" },
+				protocol: { kind: "hospital", name: "CVMC electrolyte replacement" },
 				suggested: 1670,
 				outcome: { kind: "taken", at: minutesAgo(1650), by: "James Turner", writeBack: { status: "signed", by: "Marcus Reed", at: minutesAgo(1630) } },
 			},
@@ -682,7 +682,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Post-op day 1, potassium 3.8 is in range. Nothing in the v1 classes applies.
 	p17: patientOrders("p17", {
-		hospital: "mwh",
+		hospital: "alliance",
 		checks: [noVentilator("Nasal cannula at 2 L/min"), nothingToRecommend("Potassium 3.8 and creatinine 0.8 are in range.")],
 		active: [
 			["medication", "Lactated Ringer's", "100 mL/h IV", "Marcus Reed", 600],
@@ -699,7 +699,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// DKA, nearly closed: the move to subcutaneous insulin is the team's plan, not a v1 class.
 	p18: patientOrders("p18", {
-		hospital: "mwh",
+		hospital: "alliance",
 		checks: [noVentilator("Room air"), nothingToRecommend("Potassium 4.1 and phosphate 2.4 are covered by the DKA protocol.")],
 		active: [
 			["medication", "Insulin regular infusion", "DKA protocol · 3 units/h", "Marcus Reed", 1250],
@@ -712,6 +712,46 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 			["diet", "Consistent carbohydrate diet", "", "Marcus Reed", 120],
 		],
 	}),
+
+	// Hip hemiarthroplasty, post-op day 1, on 2 L. Nothing in the v1 classes applies.
+	p22: patientOrders("p22", {
+		hospital: "alliance",
+		checks: [noVentilator("Nasal cannula at 2 L/min"), nothingToRecommend("Potassium 4.0 and creatinine 1.0 are in range; hemoglobin 9.4 is expected after surgery.")],
+		active: [
+			["medication", "Lactated Ringer's", "75 mL/h IV", "Marcus Reed", 480],
+			["medication", "Cefazolin", "2 g IV every 8 h · 24 h after surgery", "Marcus Reed", 1400],
+			["medication", "Enoxaparin", "40 mg SC daily · from today", "Marcus Reed", 1400],
+			["lab", "Complete blood count", "Daily at 04:00", "Marcus Reed", 1400, "Scheduled"],
+			["nursing", "Fall precautions", "Bed alarm on, call light in reach", "Marcus Reed", 1400],
+			["nursing", "Wean oxygen", "To keep SpO₂ 92% or more", "Marcus Reed", 120],
+			["nursing", "Physical therapy", "Twice a day · weight bearing as tolerated", "Marcus Reed", 1400],
+			["diet", "Regular diet", "", "Marcus Reed", 1400],
+		],
+	}),
 };
 
-export { sampleOrdersByPatient };
+/**
+ * Dale Reynolds (Scenario 2): the ED's orders before the hub's COPD pathway, built when the scenario's first beat plays.
+ * BiPAP is the ED physician's, without a repeat gas yet; the pathway (in his alert) adds the checkpoints.
+ */
+const sampleScenario2Orders = () =>
+	patientOrders("p21", {
+		hospital: "alliance",
+		checks: [
+			noVentilator("BiPAP, IPAP 12 / EPAP 5 cmH₂O, FiO₂ 35%"),
+			nothingToRecommend("Potassium 4.3 and creatinine 0.9 are in range. Bicarbonate 33 is his chronic compensation."),
+		],
+		active: [
+			["respiratory", "BiPAP", "IPAP 12 / EPAP 5 cmH₂O, FiO₂ 35% · target SpO₂ 88–92%", "Brian Keller", 20],
+			["medication", "Ipratropium-albuterol", "3 mL nebulized every 4 h, in line", "Brian Keller", 36],
+			["medication", "Methylprednisolone", "40 mg IV every 24 h", "Brian Keller", 30],
+			["medication", "Azithromycin", "500 mg IV every 24 h", "Brian Keller", 20],
+			["lab", "Arterial blood gas", "Once", "Brian Keller", 38, "Resulted"],
+			["lab", "Sputum culture", "Once", "Brian Keller", 32, "Collected"],
+			["imaging", "Chest X-ray, portable", "Once", "Brian Keller", 38, "Resulted"],
+			["nursing", "Continuous pulse oximetry and cardiac monitor", "Alarm for SpO₂ under 85%", "Brian Keller", 40],
+			["nursing", "Nothing by mouth", "While on BiPAP", "Brian Keller", 20],
+		],
+	});
+
+export { sampleOrdersByPatient, sampleScenario2Orders };

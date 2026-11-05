@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 3, 2026
+Last updated: Nov 4, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines proposed presentation behavior, states and acceptance criteria 
 **Component:** Patient card  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 3, 2026
+**Last updated:** November 4, 2026
 
 ---
 
@@ -509,7 +509,7 @@ The change in the score matters more than the number. Sepsis-3 treats a rise of 
 | # | Question for the client | What the prototype does now | Why it needs an answer |
 |---|---|---|---|
 | 1 | Which score: NEWS2 for every patient, NEWS2 on wards and another score (e.g. SOFA) in the ICU, or something else? | NEWS2-style (scale 1) for all 18 sample patients, worked out from their vitals | NEWS2 is built for wards and fits Scenario 1 (a med-surg floor at 2 a.m.). It isn't validated in the ICU: sedation and oxygen alone add 5 points, so every ventilated patient reads High (Miller 17, Harris 16, Johnson 15) and the score barely tells them apart. SOFA needs labs and updates about daily, so it can't "cross a threshold at 01:40". ⚠️ **Constraint:** if both are kept, one view can't rank them together: the scales differ (NEWS2 0–20 with official bands, SOFA 0–24 with none), so a mixed census can only sort by an agreed band, or keep wards and ICUs apart. Today the Score sorts and the List column take one score's name for the whole view |
-| 2 | Scale 2 for hypercapnic patients (target SpO₂ 88–92%): who decides a patient is on it, and is it shown? | Not used | The specs name it, and Scenario 2's Dale (COPD) would score wrongly on scale 1 |
+| 2 | Scale 2 for hypercapnic patients (target SpO₂ 88–92%): who decides a patient is on it, and is it shown? | Only Dale Reynolds (Scenario 2, Nov 4, 2026): his score uses scale 2 and his record's SpO₂ input reads "SpO₂ (scale 2)"; the card still says "NEWS2". Everyone else is on scale 1 | The specs name it, and Dale (COPD) would score wrongly on scale 1: SpO₂ at his target would add 3 points and keep him High after NIV works |
 | 3 | What does the screen call it: the score's name ("NEWS2"), "deterioration score" or "acuity score"? | The score's name: "NEWS2" on the card, "NEWS2 10 High" in the patient header, "NEWS2 10 · High" in the patient list, "NEWS2 10, High" in Ask Intercept Live. The Census sorts read "NEWS2" / "NEWS2 change" (the score's name from the data) and the quick view "Rising score". "Acuity" stays in the code and as this PRD's general term | "Acuity" usually means care intensity or nurse staffing, and NEWS2 measures how far vitals are from normal. PC-030 asks for the score's name with the number. The specs say "deterioration score". Figma's Patient Header still reads "acuity score" |
 | 4 | Bands and their words: NEWS2's Low / Medium / High, with no Critical? Is "Medium" acceptable when alerts also have a Medium? How is NEWS2's "3 in one parameter" (low–medium, urgent ward response) shown? | Low (0–4), Medium (5–6), High (7+). A single 3 shows as Low (Anderson's new confusion) | No sample patient reads Critical acuity now. The band and an alert's severity can share a word |
 | 5 | Where do the contributing factors show (each input's value and points)? | Only in a deterioration alert's evidence ("RR 26/min, 3 points") | SV-09 and DU-14 ask for them with the score: on the card, in the patient header's breakdown (PD-012) or in the Overview Brief |
@@ -735,6 +735,36 @@ The complete set of displayed parameters must follow the approved respiratory su
 **PC-062:** Smart-pump telemetry must not be assumed to be universally available. Smart infusion-pump integration is optional in v1.
 
 **PC-063:** A missing pump feed must not be interpreted as proof that an infusion has stopped.
+
+### PC-064 — Flag details: what the bedside team changed
+
+**Definition:** The popover a flag opens when clicked (Flag details, §15.1 P1) leads with what changed behind the flag, not with what the flag means. Bedside nurses titrate drips and respiratory therapists change ventilator settings on their own, from the patient's status or labs, and often don't tell the intensivist, who has to seek these changes out. The popover is where Intercept sees them at a glance. The clinicians reading it know what a flag means, so the popover doesn't explain it (client feedback, Nov 4, 2026).
+
+**Rule:**
+
+| Part | What it shows | Example |
+|---|---|---|
+| Title | The flag | 2 pressors |
+| Changes | One sentence per drip titration or setting change in the last 12 hours, newest first. Drips by percent of the rate; ventilator settings from and to, in the setting's units (the set value when the ventilator has one) | Epinephrine drip increased by 75% in the last 3 hours |
+| | | FiO₂ increased from 40% to 60% in the last 2 hours |
+| | A drip that was off and runs again says when it started | CRRT citrate drip started 4 hours ago |
+| No changes | When nothing behind the flag changed in the last 12 hours, it says so, muted, so a missing line never has to mean "no change" | No changes in the last 12 hours |
+| Values now | Each drip's rate; the ventilator's mode and settings; a high-risk drip's watched lab (sodium for 3% NaCl, glucose for insulin) | Epinephrine 0.07 mcg/kg/min |
+| Source and age | Where the values come from and how old the newest is | Pump · 1 min ago |
+
+**Which flags:**
+
+| Flag | Changes from |
+|---|---|
+| 1 pressor, 2 pressors | The pressor drips' rates (PC-060) |
+| Ventilated, NIV | The ventilator's settings (PC-050) |
+| Dialysis, 3% NaCl, Insulin infusion | The drip's rate |
+| DNR, isolation, Fall risk, ECMO | Nothing in the record yet: a plain pill, no popover |
+
+- ℹ️ Time reads "in the last 40 minutes", "in the last hour", "in the last 3 hours" (to the nearest hour from an hour up). A drip's percent is the net change since the titrating began within the window, not only the last step: norepinephrine 0.06 → 0.09 → 0.12 reads "increased by 100%".
+- ✅ **Ask Intercept Live (Nov 4, 2026, user's call):** asked about any patient, the summary and the quick overview have a **Changed at the bedside** line in the same words: every drip titration and ventilator setting change in the last 12 hours, newest first, the patient's other drips included (sedation too), not only the flagged ones; "nothing in the last 12 hours" for a patient with drips or settings and no change; no line without either. Asked about the vent, each setting says its change as the drips do ("FiO₂ 60%, up from 40% 2 h ago"). PRD Patient details, Ask Intercept Live "Overview".
+- ⚠️ **Gap:** pumps and ventilators don't say who made a change, or whether an order was behind it. Whether the popover should say "not in an order" is open (PC-050's order mismatch covers ventilator settings only).
+- ⚠️ **Decision needed:** the 12-hour window (a shift) and percent for drips are proposals; confirm with the client.
 
 ---
 
@@ -1184,7 +1214,7 @@ The full set of Patient card scenarios for design and prototype work. They are l
 - ℹ️ Each tag shows as a pill (UCL Badge). In P1, the **Ventilated** pill means invasive mechanical ventilation only (PC-050). A patient on noninvasive ventilation (a BiPAP or CPAP mask, no tube) gets its own **NIV** pill, never "Ventilated". Neither pill shows for room air or supplemental oxygen.
 - ✅ **Pressors counted (Nov 3, 2026, client feedback):** the pressor flag says how many are running, "1 pressor", "2 pressors" (it was "On pressors"): the pressors among the patient's continuous infusions (PC-060), from epinephrine, phenylephrine, norepinephrine, vasopressin, dopamine, dobutamine and angiotensin II (Giapreza). The Organ support quick view and Filters still group them as On pressors, any count.
 - ✅ **High-risk drips (Nov 3, 2026, client feedback):** a continuous infusion that's high-risk gets its own flag, as **Insulin infusion** has: **3% NaCl** (hypertonic saline). In the sample, Grace Whitfield (right MCA stroke, early swelling) is on it.
-- ✅ **Flag details (Nov 3, 2026, user's call):** a click on a flag opens a popover and doesn't open the patient: what the flag means, what's behind it now (the pressors and their rates; the ventilator's mode and settings; a high-risk drip's rate and the lab watched with it: sodium for 3% NaCl, glucose for insulin) and its source and age ("Pump · 1 min ago"). It closes as soon as the pointer leaves the flag; on touch or with the keyboard, with Escape or a tap outside. Every known flag has its meaning; one the app doesn't know stays a plain pill. The same on the Patient details header. ⚠️ **Decision needed:** clinical review of the meanings' wording.
+- ✅ **Flag details (Nov 3, 2026, user's call; changed Nov 4, 2026, client feedback):** a click on a flag opens a popover and doesn't open the patient: what the bedside team changed in the last 12 hours ("Epinephrine drip increased by 75% in the last 3 hours", "FiO₂ increased from 40% to 60% in the last 2 hours"), what's behind it now (the pressors and their rates; the ventilator's mode and settings; a high-risk drip's rate and the lab watched with it: sodium for 3% NaCl, glucose for insulin) and its source and age ("Pump · 1 min ago"). The rule is PC-064. It closes as soon as the pointer leaves the flag; on touch or with the keyboard, with Escape or a tap outside. The same on the Monitoring card and the Patient details header. ~~What the flag means ("Drips that raise blood pressure, running now")~~: removed on Nov 4, 2026, the audience knows it; a flag with nothing behind it in the record (DNR, isolation, Fall risk, ECMO) is a plain pill.
 - ⚠️ **Gap:** safety tags (P2) and code status (P3) aren't in the PRD's data model yet. P1 partly maps to respiratory support (PC-050) and infusions (PC-060). Include them in OD-01 (mandatory fields).
 - ⚠️ **Gap:** "Transfer pending" (P5) isn't a census state in §5, and "Deceased" (P6) isn't one either. PC-130 says a discharged card leaves the active census; decide whether it shows greyed out first, and for how long.
 - ✅ **Resolved:** P4 matches PC-110 (no empty containers), and P7 matches PC-013 (facility context in multi-hospital views).
@@ -1447,6 +1477,13 @@ The prototype must not be represented as production-ready clinical software.
 - **PC-AC-22:** Frequent observation updates do not cause unnecessary disruptive movement.
 - **PC-AC-23:** Important states remain understandable without relying exclusively on color.
 - **PC-AC-24:** Every available card action is keyboard accessible.
+
+### Flag details
+
+- **PC-AC-29:** Given a pressor drip titrated in the last 12 hours, its flag's popover leads with the change by percent and when, e.g. "Epinephrine drip increased by 75% in the last 3 hours" (PC-064).
+- **PC-AC-30:** Given a ventilator setting changed in the last 12 hours, the Ventilated or NIV flag's popover leads with it from and to, e.g. "FiO₂ increased from 40% to 60% in the last 2 hours" (PC-064).
+- **PC-AC-31:** Given nothing behind a flag changed in the last 12 hours, its popover says "No changes in the last 12 hours"; no popover explains what a flag means (PC-064).
+- **PC-AC-32:** Given any patient with a drip or setting changed in the last 12 hours, Ask Intercept Live's summary and quick overview of them include it under **Changed at the bedside** (PC-064).
 
 ### Prototype consistency
 

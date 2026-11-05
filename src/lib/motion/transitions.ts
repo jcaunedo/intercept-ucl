@@ -93,6 +93,17 @@ const settleSpring: Transition = {
 };
 
 /**
+ * Something arriving that has to be noticed, landing a little past its place and settling back (the Arrive pattern; Nov 4,
+ * 2026, user's call: an incoming alert toast "overshoot"). Under-damped on purpose (damping ratio about 0.5), the one
+ * spring here that visibly overshoots: about 15% of its travel, then settled within about 600ms. Only for arrivals.
+ */
+const overshootSpring: Transition = {
+	type: "spring",
+	stiffness: 380,
+	damping: 20,
+};
+
+/**
  * A resolved alert's pill fading out (`motionDuration.resolvedFade`) on the standard curve, once its card has moved to
  * its new place: slow enough to be seen.
  */
@@ -112,5 +123,6 @@ export {
 	layoutSpring,
 	reorderSpring,
 	settleSpring,
+	overshootSpring,
 	resolvedFadeTransition,
 };

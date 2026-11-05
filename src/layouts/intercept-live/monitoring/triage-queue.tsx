@@ -83,6 +83,26 @@ type TriageAlert = {
 	 * (e.g. "Ashley Bell, RN" resolving it at the bedside).
 	 */
 	addressed?: { at: string; by?: string; to?: string; reason?: string; note?: string };
+	/**
+	 * A hospital calling the hub about it (Scenario 2): when the alert is new, it rings as a consult request (AlertToast's
+	 * `consult-request`) instead of toasting as an alert. Answer opens the alert with the call already on.
+	 */
+	consultRequest?: TriageConsultRequest;
+};
+
+/** Who's calling for a consult, and what they ask, in their words. */
+type TriageConsultRequest = {
+	/** "Urgent video consult request". */
+	title: string;
+	requester: { name: string; role?: string; site?: string; photo?: string; initials?: string };
+	/** Their question, e.g. "Hypercapnic failure on BiPAP. Can we keep him here?". Without it, the alert's reason. */
+	question?: string;
+	/** The latest values the platform has, e.g. "pH 7.24 · PaCO₂ 78 · RR 30 · SpO₂ 88% on BiPAP". */
+	latest?: string;
+	/** How urgent the caller says it is: the ringtone rings faster the more urgent (high, medium, low). Low by default. */
+	urgency?: "high" | "medium" | "low";
+	/** Seconds between the alert reaching the patient's card and the call ringing. At once by default. */
+	ringAfter?: number;
 };
 
 /** Someone an alert can be escalated to (PRD MON-040). */
@@ -182,9 +202,17 @@ function formatAge(from: string, now: number) {
 	return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
 }
 
-/** The line that says who did what, and when. */
-function stateLine(alert: TriageAlert, targets: EscalationTarget[]) {
-	const at = alert.addressed ? formatTime(alert.addressed.at) : "";
+/**
+ * The line that says who did what, and when. With `now`, the time also says how long ago ("1:09 PM · 12 min ago"): the
+ * alert modal passes it (Nov 4, 2026, user's call); the queue's rows show the alert's age beside it already.
+ */
+function stateLine(alert: TriageAlert, targets: EscalationTarget[], now?: number | null) {
+	const when = (iso: string) => {
+		if (now == null) return formatTime(iso);
+		const age = formatAge(iso, now);
+		return `${formatTime(iso)} · ${age === "just now" ? age : `${age} ago`}`;
+	};
+	const at = alert.addressed ? when(alert.addressed.at) : "";
 	switch (alert.status) {
 		case "acknowledged":
 			return { icon: CheckIcon, text: `Acknowledged by you · ${at}` };
@@ -202,7 +230,7 @@ function stateLine(alert: TriageAlert, targets: EscalationTarget[]) {
 			return { icon: Undo2Icon, text: `Marked AI wrong by you · ${at}` };
 		default:
 			return alert.source.kind === "manual"
-				? { icon: UserRoundIcon, text: `Raised by ${alert.source.name} · ${formatTime(alert.firedAt)}` }
+				? { icon: UserRoundIcon, text: `Raised by ${alert.source.name} · ${when(alert.firedAt)}` }
 				: undefined;
 	}
 }
@@ -698,6 +726,7 @@ export {
 	type TriageAlertSeverity,
 	type TriageAlertSource,
 	type TriageAlertStatus,
+	type TriageConsultRequest,
 	type TriageQueuePatient,
 	type TriageQueueProps,
 };

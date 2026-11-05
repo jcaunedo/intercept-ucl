@@ -2,13 +2,13 @@ import * as React from "react";
 
 import {
 	PatientCardAlert,
-	PatientCardTagPopover,
 	patientCardAcuityLevels,
 	scoreTrendClassName,
 	type PatientCensusCardProps,
 } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { Badge } from "@/components/data-display/badge";
+import { TagsPopover } from "@/components/overlays/tags-popover";
 import { Typography } from "@/components/typography/typography";
 import { cn } from "@/lib/utils";
 
@@ -140,7 +140,7 @@ function PatientHeader({
 								<li key={tag.label}>
 									{/* A tag with details opens them in a popover, as on the patient's card. */}
 									{tag.details ? (
-										<PatientCardTagPopover tag={{ ...tag, variant: tag.variant ?? "secondary" }} details={tag.details} size='xs' />
+										<TagsPopover label={tag.label} variant={tag.variant ?? "secondary"} details={tag.details} size='xs' />
 									) : (
 										<Badge variant={tag.variant ?? "secondary"} size='xs'>
 											{tag.label}

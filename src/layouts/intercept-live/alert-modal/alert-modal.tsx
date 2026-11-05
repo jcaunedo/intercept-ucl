@@ -31,6 +31,7 @@ import {
 import { Textarea } from "@/components/forms/textarea";
 import { AlertExpanded, AlertExpandedClose } from "@/components/overlays/alert-expanded";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/overlays/dialog";
+import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
 import {
 	confirmPattern,
@@ -64,7 +65,17 @@ import {
 	type CarePathwayDecision,
 	type CarePathwayStatus,
 } from "./care-pathway";
+import { useCallAudio } from "./call-audio";
+import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "./discharge-plan";
 import { KeepOrTransferPanel, type KeepOrTransfer, type KeepOrTransferDecision } from "./keep-or-transfer";
+import {
+	BedsidePhotos,
+	defaultVitalsEvery,
+	LowBandwidthBanner,
+	MonitorHeldLine,
+	useHeldValue,
+	type ConsultConnection,
+} from "./low-bandwidth";
 
 // The alert modal that a Monitoring card's alert bar and an alert toast's maximize button open (DESIGN.md "Alert
 // modal"). Scenario 1, steps 2 to 4. Left, what's happening: the alert, the patient's score, monitor and score inputs,
@@ -131,7 +142,7 @@ type AlertDetailData = {
 	acuity?: PatientCensusCardProps["acuity"];
 	trajectory?: PatientCensusCardProps["trajectory"];
 	/** The patient's bedside monitor. */
-	monitor?: Pick<PatientMonitorProps, "vitals" | "limits" | "alarmPriorities" | "acknowledgedAlarms">;
+	monitor?: Pick<PatientMonitorProps, "vitals" | "limits" | "alarmPriorities" | "acknowledgedAlarms" | "trends">;
 	/** The reason line, phrase by phrase. */
 	reasons: AlertDetailReason[];
 	/** The patient's tags, as on their card. Without them there's no tag row; `[]` says "No tags". */
@@ -154,6 +165,11 @@ type AlertDetailData = {
 	room?: RoomEquipment;
 	/** The room's camera, a video URL for the consult. Without it, or if it can't load, the consult draws the room. */
 	video?: string;
+	/**
+	 * The consult's connection to the hospital. In low-bandwidth mode the call is audio only, the monitor's numbers are
+	 * held and refreshed every few seconds, and the bedside's photos show under the call (Scenario 2, step 2).
+	 */
+	connection?: ConsultConnection;
 	/** A suggested care pathway and its order set, e.g. Scenario 1's CHF exacerbation pathway (exploration). */
 	pathway?: CarePathway;
 	/** Where the pathway is when the modal opens, e.g. `active` once its orders were co-signed. Suggested by default. */
@@ -163,7 +179,30 @@ type AlertDetailData = {
 	 * shows under the pathway once its orders are sent, or at once when a decision was already made.
 	 */
 	transfer?: KeepOrTransfer;
+	/**
+	 * Social needs at discharge (Scenario 2, step 6; exploration): the needs the discharge workflow flagged and its
+	 * referrals. Shows under keep or transfer once the patient is kept; the patient's page shows the same.
+	 */
+	discharge?: DischargePlan;
 };
+
+/**
+ * A patient's video consult without an alert (Nov 4, 2026, user's call): a card's Video consult when the patient has no
+ * open alert. Who they are, their score, monitor and tags, and who the call reaches, as an alert's detail has them.
+ */
+type PatientConsultData = Pick<
+	AlertDetailData,
+	"patient" | "acuity" | "trajectory" | "monitor" | "tags" | "bedside" | "notetakerParties" | "room" | "video" | "connection"
+> & {
+	patientId: string;
+};
+
+/** What the call and its notetaker read: the patient and who the call reaches, and the alert when there is one. */
+type ConsultData = Pick<
+	AlertDetailData,
+	"patient" | "bedside" | "notetakerParties" | "room" | "video" | "connection" | "monitor"
+> &
+	Partial<Pick<AlertDetailData, "alert" | "reasons" | "pathway">>;
 
 /** The consult call: not started, ringing the bedside, or on video. */
 type AlertConsultState = "idle" | "connecting" | "live";
@@ -199,6 +238,8 @@ type AlertDetailModalProps = {
 	onPathwayDecision?: (decision: CarePathwayDecision) => void;
 	/** The intensivist decided to keep or transfer the patient, or took the decision back. */
 	onTransferDecision?: (decision: KeepOrTransferDecision) => void;
+	/** A discharge referral sent (with who agreed to it) or skipped, or a skip taken back. */
+	onDischargeDecision?: (decision: DischargeDecision) => void;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -287,7 +328,8 @@ function findingsFlag(data: AlertDetailData): PatientCardTag | undefined {
 			// One line each: the popover sets a value apart on the right, which suits a reading, not a sentence.
 			items: reasons.length
 				? reasons.map((reason) => ({
-						label: `${reason.label}: ${reason.lead ? `${reason.lead}, ` : ""}${reason.detail}`,
+						term: `${reason.label}:`,
+						label: `${reason.lead ? `${reason.lead}, ` : ""}${reason.detail}`,
 					}))
 				: evidence.map((line) => ({ label: line })),
 			source: `${sourceLabels[alert.source.kind]} · ${alert.source.name}`,
@@ -413,30 +455,130 @@ function LiveDot() {
 	);
 }
 
+// When the connection drops, the video freezes this long, saying it's switching, before the call goes audio only.
+const FREEZE_MS = 2500;
+
 /**
  * The video consult, once the footer's Video consult button calls the bedside nurse: ringing, then the room's camera.
  * Dark in both themes, as the camera feed is; the live view fades in over the ringing one (`fadeVariants`), so the tile
- * never changes size.
+ * never changes size. In low-bandwidth mode (`data.connection`) the picture freezes, greyed, with "Switching to audio
+ * only…", then the call goes on as audio: the nurse, the timer and the same controls.
  */
 function ConsultTile({
 	data,
 	state,
 	onEnd,
+	onStart,
 }: {
-	data: AlertDetailData;
-	state: Exclude<AlertConsultState, "idle">;
+	data: ConsultData;
+	state: AlertConsultState;
 	onEnd: () => void;
+	/**
+	 * The tile runs the call itself (a consult with no alert, Nov 4, 2026, user's call): Cancel while it rings, and once
+	 * it's ended the nurse with Video consult to call again. Without it, the button under the alert runs the call and the
+	 * tile shows only while it's on.
+	 */
+	onStart?: () => void;
 }) {
-	const { bedside, patient, room, video } = data;
+	const { bedside, patient, room, video, connection } = data;
 	const now = useCurrentSecond();
+	const lowBandwidth = connection?.mode === "low-bandwidth";
+	// The freeze: from when the mode started, for `FREEZE_MS`. A call that starts in low-bandwidth mode is audio at once.
+	// Worked out as the tile renders, so the render where the connection drops is already frozen: set from an effect, it
+	// came a render late and the audio-only view flashed for a frame before the freeze. The timer only re-renders the
+	// tile when the freeze is over.
+	const since = connection?.since ? Date.parse(connection.since) : null;
+	const freezeLeft = lowBandwidth && since !== null ? FREEZE_MS - (Date.now() - since) : 0;
+	const freezing = freezeLeft > 0;
+	const [, setFreezeOver] = React.useState(0);
+	React.useEffect(() => {
+		if (!lowBandwidth || since === null) return;
+		const left = FREEZE_MS - (Date.now() - since);
+		if (left <= 0) return;
+		const timer = window.setTimeout(() => setFreezeOver((count) => count + 1), left);
+		return () => window.clearTimeout(timer);
+	}, [lowBandwidth, since]);
+	const audioOnly = state === "live" && lowBandwidth && !freezing;
 	const [startedAt, setStartedAt] = React.useState<number | null>(null);
 	const [muted, setMuted] = React.useState(false);
+	// The clinician's own camera, which the bedside sees (Nov 4, 2026, user's call). Audio only, it's off for everyone.
+	const [cameraOff, setCameraOff] = React.useState(false);
+	// The call's sound: ringback, the join and end chimes, the room (the monitor at the patient's heart rate, the BiPAP), the
+	// drop and the phone-line band while audio only (Nov 4, 2026, user's call). Mute silences it.
+	const vitals = data.monitor?.vitals;
+	useCallAudio({
+		state,
+		freezing: state === "live" && freezing,
+		audioOnly,
+		heartRate: vitals?.hr,
+		spo2: vitals?.spo2,
+		respiratoryRate: vitals?.rr,
+		muted,
+	});
 	React.useEffect(() => {
 		if (state === "live") setStartedAt((current) => current ?? Date.now());
 		else setStartedAt(null);
+		// Each call starts with the camera and the sound on.
+		if (state === "idle") {
+			setCameraOff(false);
+			setMuted(false);
+		}
 	}, [state]);
 	const elapsed = startedAt !== null && now !== null ? Math.max(0, Math.floor((now - startedAt) / 1000)) : 0;
 	const who = bedside ? `${bedside.name}, ${bedside.role}` : "the bedside";
+	// The nurse, as the call shows them before they've joined: avatar, name, presence and where they are.
+	const nurse = bedside ? (
+		<>
+			<Avatar size='lg' className='overflow-visible'>
+				{bedside.src ? <AvatarImage src={bedside.src} alt='' /> : null}
+				<AvatarFallback tone={bedside.tone}>{bedside.initials}</AvatarFallback>
+				{bedside.presence === "online" ? <AvatarBadge className='ring-(--gray-900)' /> : null}
+			</Avatar>
+			<p className='text-sm'>
+				<span className='font-semibold'>{who}</span>
+				<span className='block text-(--gray-300)'>
+					{presenceLabels[bedside.presence]} · {bedside.activity}
+				</span>
+			</p>
+		</>
+	) : null;
+	// The call's top row, on video or audio: the Live dot with how long it's been on, and the bed.
+	const callTop = (label: string) => (
+		<div className='absolute inset-x-3 top-3 flex items-center justify-between gap-2 text-xs font-medium'>
+			<span className='flex items-center gap-1.5 rounded-full bg-(--gray-950)/70 px-2.5 py-1'>
+				<LiveDot />
+				{label} · <time className='tabular-nums'>{formatElapsed(elapsed)}</time>
+			</span>
+			{patient.bed ? <span className='rounded-full bg-(--gray-950)/70 px-2.5 py-1'>{patient.bed}</span> : null}
+		</div>
+	);
+	const callControls = (
+		<div className='flex gap-2'>
+			<Button
+				variant='circle'
+				size='icon-md'
+				aria-label={audioOnly ? "Camera off for low bandwidth" : cameraOff ? "Turn on camera" : "Turn off camera"}
+				aria-pressed={audioOnly ? undefined : cameraOff}
+				disabled={audioOnly}
+				onClick={() => setCameraOff((current) => !current)}
+			>
+				{audioOnly || cameraOff ? <VideoOffIcon /> : <VideoIcon />}
+			</Button>
+			<Button
+				variant='circle'
+				size='icon-md'
+				aria-label={muted ? "Unmute" : "Mute"}
+				aria-pressed={muted}
+				onClick={() => setMuted((current) => !current)}
+			>
+				{muted ? <MicOffIcon /> : <MicIcon />}
+			</Button>
+			<Button variant='destructive' size='md' onClick={onEnd} className='rounded-full'>
+				<PhoneOffIcon />
+				End
+			</Button>
+		</div>
+	);
 
 	return (
 		<section
@@ -445,7 +587,27 @@ function ConsultTile({
 			className='relative aspect-[352/248] w-full shrink-0 overflow-hidden rounded-card bg-(--gray-900)'
 		>
 			<AnimatePresence initial={false}>
-				{state === "connecting" ? (
+				{state === "idle" ? (
+					<motion.div
+						key='idle'
+						variants={fadeVariants}
+						initial='initial'
+						animate='animate'
+						exit='exit'
+						className='absolute inset-0 flex flex-col items-center justify-center gap-3 bg-(--gray-900) p-4 text-center text-(--gray-50)'
+					>
+						{nurse}
+						<p role='status' className='text-sm text-(--gray-200)'>
+							Call ended
+						</p>
+						{onStart ? (
+							<Button variant='circle' size='md' onClick={onStart}>
+								<VideoIcon />
+								Video consult
+							</Button>
+						) : null}
+					</motion.div>
+				) : state === "connecting" ? (
 					<motion.div
 						key='connecting'
 						variants={fadeVariants}
@@ -454,25 +616,34 @@ function ConsultTile({
 						exit='exit'
 						className='absolute inset-0 flex flex-col items-center justify-center gap-3 bg-(--gray-900) p-4 text-center text-(--gray-50)'
 					>
-						{bedside ? (
-							<>
-								<Avatar size='lg' className='overflow-visible'>
-									{bedside.src ? <AvatarImage src={bedside.src} alt='' /> : null}
-									<AvatarFallback tone={bedside.tone}>{bedside.initials}</AvatarFallback>
-									{bedside.presence === "online" ? <AvatarBadge className='ring-(--gray-900)' /> : null}
-								</Avatar>
-								<p className='text-sm'>
-									<span className='font-semibold'>{who}</span>
-									<span className='block text-(--gray-300)'>
-										{presenceLabels[bedside.presence]} · {bedside.activity}
-									</span>
-								</p>
-							</>
-						) : null}
+						{nurse}
 						<p role='status' className='flex items-center gap-2 text-sm text-(--gray-200)'>
 							<LoaderCircleIcon aria-hidden='true' className='size-4 animate-spin motion-reduce:animate-none' />
 							Calling {bedside?.name ?? "the bedside"}…
 						</p>
+						{onStart ? (
+							<Button variant='destructive' size='md' onClick={onEnd} className='rounded-full'>
+								<PhoneOffIcon />
+								Cancel
+							</Button>
+						) : null}
+					</motion.div>
+				) : audioOnly ? (
+					<motion.div
+						key='audio'
+						variants={fadeVariants}
+						initial='initial'
+						animate='animate'
+						exit='exit'
+						className='absolute inset-0 flex flex-col items-center justify-center gap-3 bg-(--gray-900) p-4 pb-14 text-center text-(--gray-50)'
+					>
+						{callTop("Audio only")}
+						{nurse}
+						<p className='flex items-center gap-1.5 text-sm text-(--gray-200)'>
+							<VideoOffIcon aria-hidden='true' className='size-4' />
+							Video paused for low bandwidth
+						</p>
+						<div className='absolute inset-x-3 bottom-3 flex justify-end'>{callControls}</div>
 					</motion.div>
 				) : (
 					<motion.div
@@ -501,13 +672,24 @@ function ConsultTile({
 								<RoomScene preset='bed' equipment={room ?? { airway: "oxygen", pumps: 1 }} />
 							)}
 						</div>
-						<div className='absolute inset-x-3 top-3 flex items-center justify-between gap-2 text-xs font-medium'>
-							<span className='flex items-center gap-1.5 rounded-full bg-(--gray-950)/70 px-2.5 py-1'>
-								<LiveDot />
-								Live · <time className='tabular-nums'>{formatElapsed(elapsed)}</time>
-							</span>
-							{patient.bed ? <span className='rounded-full bg-(--gray-950)/70 px-2.5 py-1'>{patient.bed}</span> : null}
-						</div>
+						{/* The connection dropping: the picture holds, greyed, while the call switches to audio. */}
+						<AnimatePresence>
+							{freezing ? (
+								<motion.div
+									key='freezing'
+									variants={fadeVariants}
+									initial='initial'
+									animate='animate'
+									exit='exit'
+									role='status'
+									className='absolute inset-0 flex flex-col items-center justify-center gap-2 bg-(--gray-950)/60 text-sm font-medium backdrop-grayscale'
+								>
+									<LoaderCircleIcon aria-hidden='true' className='size-5 animate-spin motion-reduce:animate-none' />
+									Connection weak · switching to audio only…
+								</motion.div>
+							) : null}
+						</AnimatePresence>
+						{callTop("Live")}
 						<div className='absolute inset-x-3 bottom-3 flex items-end justify-between gap-2'>
 							{bedside ? (
 								<span className='flex items-center gap-2 rounded-full bg-(--gray-950)/70 py-1 pr-3 pl-1 text-xs font-medium'>
@@ -520,21 +702,7 @@ function ConsultTile({
 							) : (
 								<span />
 							)}
-							<div className='flex gap-2'>
-								<Button
-									variant='circle'
-									size='icon-md'
-									aria-label={muted ? "Unmute" : "Mute"}
-									aria-pressed={muted}
-									onClick={() => setMuted((current) => !current)}
-								>
-									{muted ? <MicOffIcon /> : <MicIcon />}
-								</Button>
-								<Button variant='destructive' size='md' onClick={onEnd} className='rounded-full'>
-									<PhoneOffIcon />
-									End
-								</Button>
-							</div>
+							{callControls}
 						</div>
 					</motion.div>
 				)}
@@ -565,6 +733,15 @@ function ConsultReveal({ children }: { children: React.ReactNode }) {
 /* -------------------------------------------------------------------------- */
 /* Shared by the alert panel and the alert modal                               */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * On open, focus goes to the dialog itself, not its first button (the ×): opened from a menu or a toast, the browser
+ * would draw the ×'s focus ring (Nov 4, 2026, user's call). Keyboard users are in the dialog; Tab reaches the × first.
+ */
+function focusDialog(event: Event) {
+	event.preventDefault();
+	(event.target as HTMLElement | null)?.focus({ preventScroll: true });
+}
 
 /**
  * The video consult's state, and the Calling stand-in: ringing turns live after `CONNECT_DELAY_MS`. A consult that opens
@@ -671,8 +848,10 @@ function useAlertLifecycle({
 		setForm(null);
 		onAction?.(action);
 	};
-	// Who did what, and when, as in the triage queue ("Acknowledged by you · 1:42 AM").
-	const state = stateLine(alert, escalationTargets);
+	// Who did what, and when, as in the triage queue, plus how long ago ("Acknowledged by you · 1:42 AM · 12 min ago"),
+	// updated each minute.
+	const now = useCurrentMinute();
+	const state = stateLine(alert, escalationTargets, now);
 
 	return {
 		status,
@@ -808,19 +987,68 @@ function expandedContent(data: AlertDetailData, status: string) {
 }
 
 /**
+ * The monitor as the alert shows it: live, or in low-bandwidth mode (Scenario 2, step 2) its numbers held and refreshed
+ * every `vitalsEvery` seconds, its lanes the last hour's trends instead of a streaming waveform, and a line over it
+ * saying so (`monitorStatus`).
+ */
+function useConnectionMonitor(monitor: AlertDetailData["monitor"], connection: ConsultConnection | undefined) {
+	const lowBandwidth = connection?.mode === "low-bandwidth";
+	const every = connection?.vitalsEvery ?? defaultVitalsEvery;
+	const held = useHeldValue(monitor?.vitals, every, lowBandwidth);
+	if (!monitor || !lowBandwidth) return { monitor, monitorStatus: undefined };
+	return {
+		monitor: { ...monitor, vitals: held.value, plot: monitor.trends ? ("trends" as const) : undefined },
+		monitorStatus: <MonitorHeldLine every={every} updatedAt={held.updatedAt} />,
+	};
+}
+
+/**
+ * The Video consult panel's content: the low-bandwidth banner while the connection is down, the call, the bedside's
+ * photos and the AI Notetaker.
+ */
+function ConsultPanelContent({
+	data,
+	tile,
+	notetaker,
+}: {
+	data: ConsultData;
+	tile: React.ReactNode;
+	notetaker: React.ReactNode;
+}) {
+	const { connection } = data;
+	return (
+		<>
+			<AnimatePresence initial={false}>
+				{connection?.mode === "low-bandwidth" ? (
+					<Expand key='low-bandwidth'>
+						<LowBandwidthBanner connection={connection} />
+					</Expand>
+				) : null}
+			</AnimatePresence>
+			{tile}
+			<BedsidePhotos photos={connection?.photos ?? []} />
+			{notetaker}
+		</>
+	);
+}
+
+/**
  * The care pathway (Scenario 1, step 4), then keep or transfer once its orders are sent (step 5), or at once when a
- * decision was already made. `escapeRef` closes an open dose edit, decline or form first.
+ * decision was already made, then social needs at discharge once the discharge workflow has flagged them (Scenario 2,
+ * step 6). `escapeRef` closes an open dose edit, decline or form first.
  */
 function PathwayContent({
 	data,
 	onPathwayDecision,
 	onTransferDecision,
+	onDischargeDecision,
 	escapeRef,
 	fill = false,
 }: {
 	data: AlertDetailData;
 	onPathwayDecision?: (decision: CarePathwayDecision) => void;
 	onTransferDecision?: (decision: KeepOrTransferDecision) => void;
+	onDischargeDecision?: (decision: DischargeDecision) => void;
 	escapeRef: React.RefObject<(() => boolean) | null>;
 	/** Alone, the pathway fills its column, so its decision sits at the bottom. */
 	fill?: boolean;
@@ -855,6 +1083,14 @@ function PathwayContent({
 						</div>
 					</Expand>
 				) : null}
+				{data.discharge ? (
+					<Expand key='discharge'>
+						<div className='flex flex-col gap-4 pt-4'>
+							<hr className='border-border' />
+							<DischargePlanPanel plan={data.discharge} onDecision={onDischargeDecision} />
+						</div>
+					</Expand>
+				) : null}
 			</AnimatePresence>
 		</>
 	);
@@ -876,12 +1112,15 @@ const notetakerCopy: Record<NotetakerState, { title: string; text: string }> = {
 	ready: { title: "Notes ready for review", text: "Review, edit, and approve your draft notes." },
 };
 
-/** The draft the notetaker writes from the consult: who was on it, the alert, what was found and the plan. */
-function draftConsultNote(data: AlertDetailData) {
-	const { alert, bedside, pathway, reasons } = data;
+/**
+ * The draft the notetaker writes from the consult: who was on it, the alert, what was found and the plan. Without an
+ * alert, it says there was none open.
+ */
+function draftConsultNote(data: ConsultData) {
+	const { alert, bedside, pathway, reasons = [] } = data;
 	return [
 		`Video consult${bedside ? ` with ${bedside.name}, ${bedside.role}, at the bedside` : " with the bedside team"}.`,
-		`Alert: ${alert.reason ?? alert.title}.`,
+		alert ? `Alert: ${alert.reason ?? alert.title}.` : "No active alert.",
 		reasons.length
 			? `Findings: ${reasons.map((reason) => `${reason.label} (${reason.detail})`).join("; ")}.`
 			: undefined,
@@ -903,7 +1142,7 @@ function ConsultNotetaker({
 	live,
 	onApprove,
 }: {
-	data: AlertDetailData;
+	data: ConsultData;
 	live: boolean;
 	/** The clinician approved the draft: it goes to the chart as a draft for signature. */
 	onApprove?: (note: string) => void;
@@ -1084,6 +1323,7 @@ function AlertPanel({
 	onOpenPatient,
 	onPathwayDecision,
 	onTransferDecision,
+	onDischargeDecision,
 	defaultPathwayOpen = (data.pathwayStatus !== undefined && data.pathwayStatus !== "suggested") ||
 		Boolean(data.transfer?.decided),
 	titleAs,
@@ -1105,10 +1345,13 @@ function AlertPanel({
 	}, [pathwayOpen]);
 	const consultOn = consult !== "idle";
 	const alertFlag = findingsFlag(data);
+	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
 
 	return (
 		<AlertExpanded
 			{...expandedContent(data, lifecycle.status)}
+			monitor={connectionMonitor.monitor}
+			monitorStatus={connectionMonitor.monitorStatus}
 			tags={alertFlag ? [alertFlag, ...(data.tags ?? [])] : data.tags}
 			onOpenPatient={onOpenPatient}
 			titleAs={titleAs}
@@ -1141,10 +1384,11 @@ function AlertPanel({
 								// The call and the notetaker under it (Nov 3, 2026, user's call: the history and labs aren't in the
 								// panel). The key findings are the alert's flag, in the tag row (`findingsFlag`).
 								content: (
-									<>
-										<ConsultTile data={data} state={consult} onEnd={() => setConsult("idle")} />
-										<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />
-									</>
+									<ConsultPanelContent
+										data={data}
+										tile={<ConsultTile data={data} state={consult} onEnd={() => setConsult("idle")} />}
+										notetaker={<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />}
+									/>
 								),
 							},
 						]
@@ -1162,6 +1406,7 @@ function AlertPanel({
 										data={data}
 										onPathwayDecision={onPathwayDecision}
 										onTransferDecision={onTransferDecision}
+										onDischargeDecision={onDischargeDecision}
 										escapeRef={pathwayEscape}
 										fill
 									/>
@@ -1195,6 +1440,7 @@ function AlertPanelDialog({
 		<Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
 			<DialogContent
 				showCloseButton={false}
+				onOpenAutoFocus={focusDialog}
 				onEscapeKeyDown={(event) => {
 					if (escapeRef.current?.()) event.preventDefault();
 				}}
@@ -1213,6 +1459,93 @@ function AlertPanelDialog({
 					}
 					escapeRef={escapeRef}
 					// The dialog is the surface: its corners, shadow and background.
+					className='max-h-full min-h-0 rounded-none border-0 shadow-none'
+				/>
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+/**
+ * A video consult with no alert open (Nov 4, 2026, user's calls): what a card's Video consult opens when the patient has
+ * no active alert. The alert panel without its alert: the patient (the name, the heading, opens their details), their
+ * score, monitor and tags, and the Video consult panel, always open, with the AI Notetaker under the call. The call runs
+ * in its tile (already ringing; Cancel, End, then Video consult to call again), so there's no button under the patient.
+ * No lifecycle buttons and no pathway: there's no alert to act on.
+ */
+function PatientConsultDialog({
+	data,
+	open,
+	onOpenChange,
+	defaultConsult = "connecting",
+	onConsultChange,
+	onConsultNote,
+	onOpenPatient,
+}: {
+	data: PatientConsultData;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+	defaultConsult?: AlertConsultState;
+	onConsultChange?: (state: AlertConsultState) => void;
+	onConsultNote?: (note: string) => void;
+	onOpenPatient?: () => void;
+}) {
+	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
+	const { patient } = data;
+	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent
+				showCloseButton={false}
+				onOpenAutoFocus={focusDialog}
+				// No alert to describe: the patient's name names the dialog.
+				aria-describedby={undefined}
+				className='max-h-[calc(100dvh-160px)] w-fit'
+			>
+				<AlertExpanded
+					lastName={patient.lastName}
+					firstName={patient.firstName}
+					photo={patient.photo}
+					initials={patient.initials}
+					tone={patient.tone}
+					sex={patient.sex}
+					age={patient.age}
+					mrn={patient.mrn}
+					hospital={patient.hospital}
+					unit={patient.unit}
+					bed={patient.bed}
+					acuity={data.acuity}
+					trajectory={data.trajectory}
+					monitor={connectionMonitor.monitor}
+					monitorStatus={connectionMonitor.monitorStatus}
+					tags={data.tags}
+					onOpenPatient={onOpenPatient}
+					titleAs={DialogTitle}
+					panels={[
+						{
+							id: "consult",
+							label: "Video consult",
+							content: (
+								<ConsultPanelContent
+									data={data}
+									tile={
+										<ConsultTile
+											data={data}
+											state={consult}
+											onEnd={() => setConsult("idle")}
+											onStart={() => setConsult("connecting")}
+										/>
+									}
+									notetaker={<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />}
+								/>
+							),
+						},
+					]}
+					close={
+						<DialogClose asChild>
+							<AlertExpandedClose />
+						</DialogClose>
+					}
 					className='max-h-full min-h-0 rounded-none border-0 shadow-none'
 				/>
 			</DialogContent>
@@ -1246,6 +1579,7 @@ function AlertDetailModal({
 	onOpenPatient,
 	onPathwayDecision,
 	onTransferDecision,
+	onDischargeDecision,
 }: AlertDetailModalProps) {
 	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
 	const lifecycle = useAlertLifecycle({ alert: data.alert, actions: actionsProp, escalationTargets, onAction });
@@ -1341,6 +1675,7 @@ function AlertDetailModal({
 						data={data}
 						onPathwayDecision={onPathwayDecision}
 						onTransferDecision={onTransferDecision}
+						onDischargeDecision={onDischargeDecision}
 						escapeRef={pathwayEscape}
 						fill
 					/>
@@ -1383,18 +1718,25 @@ function pickAlertDetail(details: AlertDetailData[], alerts: TriageAlert[], { pa
  */
 function alertModalRenderer({
 	details,
+	consults = [],
 	alerts,
 	escalationTargets,
 	onAlertAction,
 	onPathwayDecision,
 	onTransferDecision,
+	onDischargeDecision,
 	onConsultChange,
 	onConsultNote,
 	records,
 }: {
 	details: AlertDetailData[];
+	/**
+	 * Each patient's video consult without an alert, by patient: a card's Video consult opens it when the patient has no
+	 * active alert (Nov 4, 2026, user's call). Without one, that patient opens their details, as before.
+	 */
+	consults?: PatientConsultData[];
 	alerts: TriageAlert[];
-	/** The patients' records, so each flag opens what it means and what's behind it now, as on the cards. */
+	/** The patients' records, so each flag opens what changed and what's behind it now, as on the cards. */
 	records?: PatientRecord[];
 	escalationTargets?: EscalationTarget[];
 	onAlertAction: (alertId: string, action: TriageAlertAction) => void;
@@ -1405,12 +1747,33 @@ function alertModalRenderer({
 	onPathwayDecision?: (alertId: string, decision: CarePathwayDecision, detail: AlertDetailData) => void;
 	/** Keep or transfer decided in the modal, by alert. */
 	onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
+	/** A discharge referral decided in the modal, by patient: the patient's page shows the same referrals. */
+	onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
 	/** The video consult rang, went live or ended (closing the modal ends it), by alert. */
 	onConsultChange?: (alertId: string, state: AlertConsultState, detail: AlertDetailData) => void;
 	/** The AI Notetaker's draft of the consult, approved, by alert. */
 	onConsultNote?: (alertId: string, note: string, detail: AlertDetailData) => void;
 }) {
 	return (target: OpenAlert, { open, onOpenChange, openPatient }: AlertControls) => {
+		// Video consult with no active alert: the call, without an alert on it.
+		if (
+			target.consult &&
+			!target.alertId &&
+			!alerts.some((alert) => alert.patientId === target.patientId && isOpenAlert(alert))
+		) {
+			const consult = consults.find((item) => item.patientId === target.patientId);
+			if (consult) {
+				const [flagged] = withFlagDetails([{ id: consult.patientId, tags: consult.tags }], records);
+				return (
+					<PatientConsultDialog
+						data={{ ...consult, tags: consult.tags && flagged.tags }}
+						open={open}
+						onOpenChange={onOpenChange}
+						onOpenPatient={openPatient}
+					/>
+				);
+			}
+		}
 		const detail = pickAlertDetail(details, alerts, target);
 		if (!detail) return null;
 		// An alert that left the page's alerts (the feed resolved it) opens as resolved.
@@ -1429,13 +1792,15 @@ function alertModalRenderer({
 		return (
 			<AlertPanelDialog
 				data={data}
-				defaultConsult={target.consult ? "connecting" : "idle"}
+				// A consult request answered from its toast is on at once; Video consult from a card rings the bedside first.
+				defaultConsult={target.consult === "answered" ? "live" : target.consult ? "connecting" : "idle"}
 				open={open}
 				onOpenChange={onOpenChange}
 				onOpenPatient={openPatient}
 				escalationTargets={escalationTargets}
 				onPathwayDecision={onPathwayDecision && ((decision) => onPathwayDecision(alert.id, decision, data))}
 				onTransferDecision={onTransferDecision && ((decision) => onTransferDecision(alert.id, decision, data))}
+				onDischargeDecision={onDischargeDecision && ((decision) => onDischargeDecision(alert.patientId, decision))}
 				onConsultChange={onConsultChange && ((state) => onConsultChange(alert.id, state, data))}
 				onConsultNote={onConsultNote && ((note) => onConsultNote(alert.id, note, data))}
 				onAction={(action) => {
@@ -1453,11 +1818,13 @@ export {
 	AlertDetailModal,
 	AlertPanel,
 	AlertPanelDialog,
+	PatientConsultDialog,
 	alertModalRenderer,
 	withAlertFlags,
 	ConsultTile,
 	CONNECT_DELAY_MS,
 	type AlertConsultState,
+	type PatientConsultData,
 	type AlertDetailAction,
 	type AlertDetailBedside,
 	type AlertDetailData,

@@ -18,7 +18,7 @@ const hayes = {
 	firedAt: justNow,
 	reason: "Rising RR, SpO₂ decline, positive fluid balance, HFrEF",
 	patientName: "Hayes, Margaret",
-	location: "Chadron Community Hospital · Med-Surg · Bed 4",
+	location: "Chadron · Med-Surg · Bed 4",
 	initials: "HM",
 	tone: 3,
 } satisfies ToastAlertOptions;
@@ -43,6 +43,19 @@ const anderson = {
 	location: "CVMC · SICU · Bed 2",
 	initials: "AJ",
 	tone: 2,
+} satisfies ToastAlertOptions;
+
+// Scenario 2: Alliance's ED physician calls the hub about Dale Reynolds. Ringing for 42 s.
+const reynoldsConsult = {
+	severity: "consult-request",
+	title: "Urgent video consult request",
+	firedAt: new Date(Date.now() - 42_000).toISOString(),
+	requester: { name: "Dr. Brian Keller", role: "ED physician", site: "Alliance ED", initials: "BK", tone: 4 },
+	patientName: "Reynolds, Dale",
+	location: "64 M · ED Bay 3",
+	reason: "Hypercapnic failure on BiPAP. Can we keep him here?",
+	latest: "pH 7.24 · PaCO₂ 78 · RR 30 · SpO₂ 88% on BiPAP",
+	urgency: "high",
 } satisfies ToastAlertOptions;
 
 const meta = {
@@ -212,5 +225,82 @@ export const SortedBySeverity: Story = {
 		await waitFor(() => expect(stackOrder()).toEqual([hayes.title, moore.title, anderson.title]));
 		await userEvent.click(canvas.getByRole("button", { name: "Anderson up to High" }));
 		await waitFor(() => expect(stackOrder()).toEqual([hayes.title, anderson.title, moore.title]));
+	},
+};
+
+/**
+ * A consult request: a hospital calling the hub for a video consult, on the `neutral` surface with Critical's ring, which
+ * rings until it's answered or declined. Who's calling, the patient, the reason in their words and the latest values,
+ * how long it has rung, then Decline and Answer. No ×: a call is answered or declined.
+ */
+export const ConsultRequest: Story = {
+	// Silent on the docs page, which shows every story at once; turn it on in Controls to hear it.
+	args: { ...reynoldsConsult, onAnswer: fn(), onDecline: fn(), ringtone: false },
+	play: async ({ canvas, args }) => {
+		await expect(canvas.getByRole("alert")).toHaveTextContent("Dr. Brian Keller, ED physician");
+		await expect(canvas.getByText("Reynolds, Dale · 64 M · ED Bay 3")).toBeInTheDocument();
+		await expect(canvas.queryByRole("button", { name: "Dismiss alert" })).not.toBeInTheDocument();
+		await expect(canvas.queryByRole("button", { name: "Open patient" })).not.toBeInTheDocument();
+		await userEvent.click(canvas.getByRole("button", { name: "Answer" }));
+		await expect(args.onAnswer).toHaveBeenCalled();
+	},
+};
+
+// The consult request's Answer, so the story can check it after the Toaster's rules.
+const answerConsult = fn();
+
+function ConsultInToasterExample() {
+	const [hidden, setHidden] = React.useState(false);
+	return (
+		<div className='flex flex-wrap gap-2'>
+			<Toaster hidden={hidden} />
+			<Button
+				onClick={() => {
+					toastAlert({ ...moore, id: "kept-moore", onOpen: fn() });
+					toastAlert({ ...anderson, id: "kept-anderson", onOpen: fn() });
+					toastAlert({ ...reynoldsConsult, id: "kept-reynolds", onAnswer: answerConsult, onDecline: fn() });
+				}}
+			>
+				Two alerts and a call
+			</Button>
+			<Button variant='outline' onClick={() => setHidden(!hidden)}>
+				{hidden ? "Show toasts" : "Hide toasts"}
+			</Button>
+		</div>
+	);
+}
+
+/**
+ * A consult request overrides the Toaster's rules (Nov 4, 2026, user's call): it rings (its ringtone plays from the click),
+ * stacks in front of every alert, Close all
+ * leaves it ringing, and it shows even while the Toaster is `hidden` (the alert modal or a patient's page is open) or
+ * muted. Only Answer or Decline takes it away.
+ */
+export const ConsultRequestInToaster: Story = {
+	parameters: { layout: "padded" },
+	render: () => <ConsultInToasterExample />,
+	play: async ({ canvas }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Two alerts and a call" }));
+		// Other stories' toasts can still be up: the call is the alert with its title.
+		await waitFor(() =>
+			expect(screen.getAllByRole("alert").some((item) => item.textContent?.includes(reynoldsConsult.title))).toBe(true),
+		);
+		// Close all closes the alerts and leaves the call.
+		await userEvent.click(await screen.findByRole("button", { name: "Close all" }));
+		await waitFor(() => expect(screen.queryByText(moore.title)).not.toBeInTheDocument());
+		await expect(screen.getByRole("alert")).toHaveTextContent(reynoldsConsult.title);
+		// With only the call left, Don't show and Close all go: neither applies to a call.
+		await waitFor(() => expect(screen.queryByRole("button", { name: "Close all" })).not.toBeInTheDocument());
+		await waitFor(() => expect(screen.queryByRole("button", { name: /Don't show/ })).not.toBeInTheDocument());
+		// Hidden, the Toaster still shows while the call rings.
+		await userEvent.click(canvas.getByRole("button", { name: "Hide toasts" }));
+		await waitFor(() =>
+			expect(document.querySelector("[data-slot='toaster-region']")).not.toHaveAttribute("data-hidden"),
+		);
+		await userEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Answer" }));
+		await waitFor(() => expect(answerConsult).toHaveBeenCalled());
+		await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+		// With the call gone, hidden hides again.
+		await waitFor(() => expect(document.querySelector("[data-slot='toaster-region']")).toHaveAttribute("data-hidden"));
 	},
 };

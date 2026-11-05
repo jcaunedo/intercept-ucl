@@ -127,6 +127,7 @@ export {
 	alertToastDuration,
 	resolvedToastDuration,
 	type AlertToastProps,
+	type AlertToastRequester,
 	type AlertToastSeverity,
 	type ToastAlertOptions,
 } from "@/components/feedback/alert-toast";
@@ -138,6 +139,7 @@ export {
 	toastsMuted,
 	toastsMutedUntil,
 	setToastCloseHandler,
+	setToastKept,
 	type ExternalToast,
 	type ToasterProps,
 } from "@/components/feedback/sonner";
@@ -302,6 +304,7 @@ export {
 	PopoverTitle,
 	PopoverTrigger,
 } from "@/components/overlays/popover";
+export { TagsPopover, type TagsPopoverDetails, type TagsPopoverProps } from "@/components/overlays/tags-popover";
 export {
 	Dialog,
 	DialogClose,

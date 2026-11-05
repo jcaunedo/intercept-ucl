@@ -98,6 +98,8 @@ type ChartSpec = {
 	abgBefore?: [values: string, hours: number];
 	/** Ranges this patient reads against instead, e.g. a therapeutic magnesium level. */
 	ranges?: Record<string, string>;
+	/** For a patient not on the Census yet (a scenario's arrival); everyone else's comes from their card. */
+	sex?: "M" | "F";
 	cultures: ChartCulture[];
 	imaging: ChartImagingReport[];
 };
@@ -122,9 +124,9 @@ const culture = (
 
 const radiologists = {
 	"Harbor Point General": "Alan Reyes, MD, Radiology",
-	"Mercy West Hospital": "Owen Mitchell, MD, Radiology",
+	"Alliance": "Owen Mitchell, MD, Teleradiology",
 	CVMC: "Farah Hadley, MD, Radiology",
-	"Chadron Community Hospital": "Neil Carver, MD, Teleradiology",
+	"Chadron": "Neil Carver, MD, Teleradiology",
 } as Record<string, string>;
 
 const report = (
@@ -145,7 +147,7 @@ const abgValues = (values: string) =>
 
 function buildChart(record: PatientRecord, spec: ChartSpec): PatientChart {
 	const patient = samplePatients.find((item) => item.id === record.id);
-	const sex = patient?.sex === "M" ? "M" : "F";
+	const sex = spec.sex ?? (patient?.sex === "M" ? "M" : "F");
 	const rangeOf = (name: string) => {
 		const reference = references[name];
 		if (spec.ranges?.[name]) return spec.ranges[name];
@@ -268,9 +270,9 @@ const allergyDetails: Record<string, { reaction: string; severity: "mild" | "mod
 /* -------------------------------------------------------------------------- */
 
 const hpg = radiologists["Harbor Point General"];
-const mwh = radiologists["Mercy West Hospital"];
+const alliance = radiologists["Alliance"];
 const cvmc = radiologists.CVMC;
-const chadron = radiologists["Chadron Community Hospital"];
+const chadron = radiologists["Chadron"];
 const day = 1520;
 
 const chartSpecs: Record<string, ChartSpec> = {
@@ -350,7 +352,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 			culture("Blood cultures ×2 (admission)", 40, "no-growth", "No growth at 24 hours.", { updatedHours: 15 }),
 		],
 		imaging: [
-			report("Chest X-ray, portable", 8, "Diffuse bilateral opacities, unchanged from yesterday.", "Endotracheal tube 4 cm above the carina. Left internal jugular line tip in the superior vena cava. Diffuse bilateral airspace opacities, no larger than yesterday. No pneumothorax.", mwh),
+			report("Chest X-ray, portable", 8, "Diffuse bilateral opacities, unchanged from yesterday.", "Endotracheal tube 4 cm above the carina. Left internal jugular line tip in the superior vena cava. Diffuse bilateral airspace opacities, no larger than yesterday. No pneumothorax.", hpg),
 		],
 	},
 	p3: {
@@ -452,7 +454,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 			culture("Peritoneal fluid culture", 82, "final", "Mixed enteric flora.", { organism: "Escherichia coli and Bacteroides fragilis", updatedHours: 40 }),
 			culture("Blood cultures ×2 (admission)", 84, "final", "No growth at 5 days.", { updatedHours: 2 }),
 		],
-		imaging: [report("CT abdomen and pelvis, with contrast", 85, "Perforated sigmoid diverticulitis with free air and a pelvic fluid collection.", "Sigmoid wall thickening with surrounding inflammation and extraluminal gas. 4 cm pelvic fluid collection. Free air under the diaphragm.", mwh)],
+		imaging: [report("CT abdomen and pelvis, with contrast", 85, "Perforated sigmoid diverticulitis with free air and a pelvic fluid collection.", "Sigmoid wall thickening with surrounding inflammation and extraluminal gas. 4 cm pelvic fluid collection. Free air under the diaphragm.", cvmc)],
 	},
 	p8: {
 		onsets: ["2015", "2017"],
@@ -666,8 +668,8 @@ const chartSpecs: Record<string, ChartSpec> = {
 		extras: [["Sodium", "137"], ["Bicarbonate", "23"], ["Glucose", "132"], ["Platelets", "231"], ["Albumin", "3.1"]],
 		cultures: [],
 		imaging: [
-			report("CT abdomen and pelvis, with contrast", 28, "Small bowel obstruction with a transition point in the right lower quadrant, likely adhesive.", "Dilated small bowel loops up to 4 cm with a transition point in the right lower quadrant. Collapsed distal bowel. No free air. Small amount of free fluid.", mwh),
-			report("Chest X-ray, portable", 14, "Low lung volumes with basilar atelectasis.", "Low lung volumes. Linear atelectasis at both bases. No consolidation or effusion.", mwh),
+			report("CT abdomen and pelvis, with contrast", 28, "Small bowel obstruction with a transition point in the right lower quadrant, likely adhesive.", "Dilated small bowel loops up to 4 cm with a transition point in the right lower quadrant. Collapsed distal bowel. No free air. Small amount of free fluid.", alliance),
+			report("Chest X-ray, portable", 14, "Low lung volumes with basilar atelectasis.", "Low lung volumes. Linear atelectasis at both bases. No consolidation or effusion.", alliance),
 		],
 	},
 	// Norman: type 1 diabetes since childhood; ran out of insulin for three days.
@@ -683,7 +685,25 @@ const chartSpecs: Record<string, ChartSpec> = {
 		],
 		extras: [["Sodium", "138", { previous: ["131", 1260] }], ["Phosphate", "2.4", { previous: ["4.8", 1260] }], ["Hemoglobin A1c", "9.8", { minutes: 1250 }], ["WBC", "11.2", { previous: ["16.4", 1260] }]],
 		cultures: [],
-		imaging: [report("Chest X-ray, portable", 21, "No acute findings.", "Clear lungs. Normal heart size. No effusion.", mwh)],
+		imaging: [report("Chest X-ray, portable", 21, "No acute findings.", "Clear lungs. Normal heart size. No effusion.", alliance)],
+	},
+	// Jensen: slipped on ice outside her home; osteoporosis on alendronate.
+	p22: {
+		onsets: ["2008", "2019"],
+		medical: ["Hypertension", "Osteoporosis · on alendronate since 2019"],
+		surgical: ["Right hip hemiarthroplasty · post-op day 1", "Cataract surgery, both eyes · 2020"],
+		social: ["Never smoker", "A glass of wine on Sundays", "Widowed, lives alone in town; her son lives nearby", "Retired postal clerk"],
+		home: [
+			["Amlodipine", "5 mg by mouth daily", "continued"],
+			["Alendronate", "70 mg by mouth weekly", "held"],
+			["Vitamin D3", "1,000 units by mouth daily", "continued"],
+		],
+		extras: [["Platelets", "198"], ["Glucose", "124"], ["Albumin", "3.4"], ["INR", "1.1"]],
+		cultures: [],
+		imaging: [
+			report("X-ray, right hip and pelvis", 34, "Displaced right femoral neck fracture.", "Displaced subcapital fracture of the right femoral neck. Osteopenia. No other fracture.", alliance),
+			report("X-ray, right hip, after surgery", 23, "Hemiarthroplasty in good position.", "Right hip hemiarthroplasty in expected position. No fracture around the implant. Skin staples in place.", alliance),
+		],
 	},
 };
 
@@ -693,4 +713,50 @@ const sampleChartByPatient: Record<string, PatientChart> = Object.fromEntries(
 		.map((record) => [record.id, buildChart(record, chartSpecs[record.id])]),
 );
 
-export { sampleChartByPatient };
+// Dale Reynolds (Scenario 2, `p21`): severe COPD on home oxygen he often can't afford to refill; uninsured since his
+// seasonal job ended. Built when the scenario's first beat plays, from his record then.
+const reynoldsChart: ChartSpec = {
+	sex: "M",
+	onsets: ["2017", "1980", "2021"],
+	medical: [
+		"COPD, severe (GOLD 3) · FEV₁ 42% predicted, home oxygen 2 L since 2021",
+		"Two exacerbations in the last year, one admitted (2025, PaCO₂ 55 at discharge)",
+		"Secondary polycythemia",
+	],
+	surgical: ["Right inguinal hernia repair · 2009"],
+	social: [
+		"Current smoker, 40 pack-years, cutting down",
+		"A beer on weekends",
+		"Lives alone on his ranch, 25 miles out of town",
+		"Rancher; uninsured since a seasonal job ended",
+		"Often can't afford to refill his home oxygen; ran out 4 days ago",
+	],
+	home: [
+		["Tiotropium", "18 mcg inhaled daily", "continued"],
+		["Fluticasone-salmeterol", "250/50 mcg inhaled twice a day", "continued"],
+		["Albuterol", "2 puffs every 4 h as needed", "changed"],
+		["Home oxygen", "2 L/min by nasal cannula, at night and walking", "changed"],
+	],
+	extras: [
+		["Sodium", "138", { minutes: 30 }],
+		["Glucose", "142", { minutes: 30 }],
+		["Platelets", "232", { minutes: 30 }],
+		["Troponin I", "0.01", { minutes: 30 }],
+	],
+	abgBefore: ["pH 7.38 · PaCO₂ 55 · PaO₂ 62 · HCO₃ 32", 24 * 300],
+	cultures: [culture("Sputum culture", 0.5, "pending", "Collected in the ED. Gram stain to follow.")],
+	imaging: [
+		report(
+			"Chest X-ray, portable",
+			0.6,
+			"Hyperinflated lungs. No pneumothorax or consolidation.",
+			"Hyperinflated, flattened diaphragms. Bullous change at both apexes. No focal consolidation, no pneumothorax, no effusion. Heart size normal.",
+			alliance,
+		),
+	],
+};
+
+/** Dale Reynolds's chart, from his record at Scenario 2's first beat. */
+const sampleScenario2Chart = (record: PatientRecord) => buildChart(record, reynoldsChart);
+
+export { sampleChartByPatient, sampleScenario2Chart };

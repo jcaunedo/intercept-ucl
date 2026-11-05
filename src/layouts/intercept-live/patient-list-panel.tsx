@@ -68,7 +68,7 @@ function PatientListPanel({
 			onWidthChange={onWidthChange}
 			className={cn(
 				"transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-				carded && "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/8%)]",
+				carded && "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/16%)]",
 			)}
 		>
 			<ul className='scrollbar-soft flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3 pb-4'>

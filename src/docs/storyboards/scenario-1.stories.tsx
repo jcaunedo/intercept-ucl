@@ -22,7 +22,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Heart failure at 2 a.m. in a 25-bed hospital: Margaret Hayes, Chadron Community Hospital. */
+/** Heart failure at 2 a.m. in a 25-bed hospital: Margaret Hayes, Chadron. */
 export const Scenario1: Story = {
 	name: "Scenario 1",
 	args: { path: "storyboards/scenario-1/index.html", title: "Scenario 1 storyboard" },

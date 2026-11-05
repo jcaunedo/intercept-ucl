@@ -2,14 +2,16 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { SparklesIcon, XIcon } from "lucide-react";
+import { SparklesIcon, VideoIcon, VideoOffIcon, XIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
-import { setToastCloseHandler, toast, toastsMuted } from "@/components/feedback/sonner";
+import { setToastCloseHandler, setToastKept, toast, toastsMuted } from "@/components/feedback/sonner";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
-import { urgencyRingVariants, useMotionPreference, useUrgencyPhase } from "@/lib/motion";
+import { useCurrentSecond } from "@/lib/hooks/use-current-second";
+import { useRingtone, type RingUrgency } from "@/lib/hooks/use-ringtone";
+import { arriveVariants, fadeVariants, urgencyRingVariants, useMotionPreference, useUrgencyPhase } from "@/lib/motion";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +19,11 @@ import { cn } from "@/lib/utils";
 /* AlertToast                                                                 */
 /* -------------------------------------------------------------------------- */
 
-/** The alert's severity, PatientCardAlert's names, or `resolved` once it's resolved. */
-type AlertToastSeverity = "critical" | "high" | "medium" | "low" | "resolved";
+/**
+ * The alert's severity, PatientCardAlert's names, or `resolved` once it's resolved. `consult-request`: a hospital calling
+ * the hub for a video consult, which rings until it's answered or declined (Figma Severity=Consult request).
+ */
+type AlertToastSeverity = "critical" | "high" | "medium" | "low" | "resolved" | "consult-request";
 
 // PatientCard's alert ring, so a toast and its patient's card look alike.
 const ringClassNames: Record<AlertToastSeverity, string> = {
@@ -27,6 +32,21 @@ const ringClassNames: Record<AlertToastSeverity, string> = {
 	medium: "border-severity-medium bg-severity-medium/5",
 	low: "border-severity-low bg-severity-low/5",
 	resolved: "border-success bg-success/5",
+	// Critical's ring: the call is as urgent (Nov 4, 2026, user's call; Figma's tint is bound to Resolved's green).
+	"consult-request": "border-severity-critical bg-severity-critical/5",
+};
+
+/** Who's calling for a consult, e.g. Dr. Brian Keller, ED physician, at Alliance ED. */
+type AlertToastRequester = {
+	/** "Dr. Brian Keller". */
+	name: string;
+	/** "ED physician", after the name. */
+	role?: string;
+	/** Where they're calling from, e.g. "Alliance ED". */
+	site?: string;
+	photo?: string;
+	initials?: string;
+	tone?: AvatarFallbackProps["tone"];
 };
 
 type AlertToastOwnProps = {
@@ -51,7 +71,7 @@ type AlertToastOwnProps = {
 	count?: number;
 	/** "Hayes, Margaret". */
 	patientName: string;
-	/** "Chadron Community Hospital · Med-Surg · Bed 4". The hospital truncates first. */
+	/** "Chadron · Med-Surg · Bed 4". The hospital truncates first. */
 	location?: string;
 	/** @deprecated Ignored since Nov 2, 2026: the toast no longer shows the patient's risk rank. */
 	rank?: number;
@@ -75,18 +95,56 @@ type AlertToastOwnProps = {
 	onOpenAlert?: () => void;
 	/** The click target's name, before the title: "Open alert: Deterioration score crossed threshold". */
 	openAlertLabel?: string;
-	/** Closes the toast; the alert stays in the queue. Without it, there's no close button. */
+	/** Closes the toast; the alert stays in the queue. Without it, there's no close button. A consult request has none. */
 	onClose?: () => void;
 	closeLabel?: string;
+	/** A consult request: who's calling. Shown in the patient's place, with the patient under it. */
+	requester?: AlertToastRequester;
+	/** A consult request: the latest values the platform has, e.g. "pH 7.24 · PaCO₂ 78 · RR 30 · SpO₂ 88% on BiPAP". */
+	latest?: string;
+	/** A consult request: answers the call. */
+	onAnswer?: () => void;
+	answerLabel?: string;
+	/** A consult request: declines the call. */
+	onDecline?: () => void;
+	declineLabel?: string;
+	/**
+	 * A consult request: plays a ringtone while it rings (two soft notes every 2.5 s), until it's answered, declined or
+	 * addressed. On by default; browsers hold it until the user has clicked or typed on the page.
+	 */
+	ringtone?: boolean;
+	/**
+	 * A consult request: how urgent the call is, which sets how fast its ringtone rings: `high` every 0.55 s (its notes at
+	 * double tempo), `medium` every 1.7 s, `low` (default) every 2.5 s.
+	 */
+	urgency?: RingUrgency;
+	/** A consult request's labels over the patient, the reason and the latest values. */
+	patientLabel?: string;
+	reasonLabel?: string;
+	latestLabel?: string;
 };
 
 type AlertToastProps = Omit<React.ComponentProps<"div">, keyof AlertToastOwnProps> & AlertToastOwnProps;
+
+/** How long a consult request has been ringing, "0:42", "12:05", each second. Its own component, so only it re-renders. */
+function RingingTime({ since }: { since: Date }) {
+	const now = useCurrentSecond();
+	if (now === null) return null;
+	const seconds = Math.max(0, Math.floor((now - since.getTime()) / 1000));
+	const label = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+	return (
+		<time dateTime={since.toISOString()} className='shrink-0 text-sm font-semibold tabular-nums'>
+			{label}
+		</time>
+	);
+}
 
 /**
  * A change in a patient's alert: severity and what changed, when, what happened, why, and the patient, with Open
  * patient and Ask Intercept Live. Until it's addressed, its ring pulses (Urgency, in step with the patient cards) until the
  * pointer or keyboard focus reaches it. An unaddressed Critical toast is announced at once (`role='alert'`); the others
- * politely, by the Toaster's live region.
+ * politely, by the Toaster's live region. `severity="consult-request"` is a hospital calling the hub instead: who's calling,
+ * the patient, the reason and the latest values, how long it has rung, and Decline and Answer, on the `neutral` surface.
  * Show it with `toastAlert()`; render it directly only for a static preview.
  *
  * Figma: [intercept.ds › alert-toast](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1287-345)
@@ -116,6 +174,17 @@ function AlertToast({
 	openAlertLabel = "Open alert",
 	onClose,
 	closeLabel = "Dismiss alert",
+	requester,
+	latest,
+	onAnswer,
+	answerLabel = "Answer",
+	onDecline,
+	declineLabel = "Decline",
+	ringtone = true,
+	urgency = "low",
+	patientLabel = "Patient",
+	reasonLabel = "Reason",
+	latestLabel = "Latest values",
 	onPointerEnter,
 	onFocus,
 	...props
@@ -123,8 +192,11 @@ function AlertToast({
 	const { prefersReducedMotion } = useMotionPreference();
 	// Seen once the clinician points at it or tabs into it, as a card stops pulsing once clicked.
 	const [seen, setSeen] = React.useState(false);
+	const consult = severity === "consult-request";
 	const addressed = addressedProp || severity === "resolved";
-	const pulse = useUrgencyPhase(!seen && !addressed && !prefersReducedMotion);
+	// A consult request rings until it's answered or declined, seen or not: its ring pulses and, unless turned off, sounds.
+	const pulse = useUrgencyPhase((consult || !seen) && !addressed && !prefersReducedMotion);
+	useRingtone(consult && ringtone && !addressed, urgency);
 	const firedTime = firedAt === undefined ? undefined : new Date(firedAt);
 	const hasTime = firedTime !== undefined && !Number.isNaN(firedTime.getTime());
 	// Re-renders on each minute boundary, so "Just now" becomes "1 min ago" while the toast is open. Null on the server.
@@ -136,6 +208,101 @@ function AlertToast({
 			<XIcon aria-hidden='true' />
 		</Button>
 	) : null;
+
+	const ring = (
+		// A static wrapper, so a collapsed stack can hide the ring without fighting its animated opacity.
+		<span
+			data-slot='alert-toast-ring'
+			aria-hidden='true'
+			className={cn("pointer-events-none absolute -inset-px -z-10", onOpenAlert && !consult && "group-hover/toast:opacity-0")}
+		>
+			<motion.span
+				initial={false}
+				animate={pulse}
+				variants={urgencyRingVariants}
+				className={cn("absolute inset-0 rounded-card border-2", ringClassNames[severity])}
+			/>
+		</span>
+	);
+
+	if (consult) {
+		const patient = [patientName, location].filter(Boolean).join(" · ");
+		const details = [
+			{ label: patientLabel, value: patient },
+			{ label: reasonLabel, value: reason },
+			{ label: latestLabel, value: latest },
+		].filter((item): item is { label: string; value: string } => Boolean(item.value));
+		return (
+			// The call card: the `neutral` surface (dark in light mode, light in dark mode), so it reads as a call, not an alert.
+			// Announced at once, until answered or declined.
+			<div
+				data-slot='alert-toast'
+				data-severity={severity}
+				data-addressed={addressed || undefined}
+				role={addressed ? undefined : "alert"}
+				className={cn(
+					"relative isolate flex w-[var(--width,400px)] max-w-full flex-col gap-3 rounded-card bg-neutral p-4 font-sans text-on-foreground shadow-toast",
+					className,
+				)}
+				{...props}
+			>
+				{ring}
+
+				<div className='flex items-center justify-between gap-2'>
+					<p className='flex min-w-0 items-center gap-2 text-sm'>
+						<VideoIcon aria-hidden='true' className='size-4 shrink-0' />
+						<span className='truncate'>{title}</span>
+					</p>
+					{hasTime ? <RingingTime since={firedTime} /> : null}
+				</div>
+
+				{requester ? (
+					<div className='flex min-w-0 items-center gap-2'>
+						{requester.photo || requester.initials ? (
+							<Avatar size='sm'>
+								{requester.photo ? <AvatarImage src={requester.photo} alt='' /> : null}
+								{requester.initials ? <AvatarFallback tone={requester.tone}>{requester.initials}</AvatarFallback> : null}
+							</Avatar>
+						) : null}
+						<div className='flex min-w-0 flex-col'>
+							<p className='truncate text-base font-semibold'>
+								{requester.role ? `${requester.name}, ${requester.role}` : requester.name}
+							</p>
+							{requester.site ? <p className='truncate text-sm'>{requester.site}</p> : null}
+						</div>
+					</div>
+				) : null}
+
+				{details.length ? (
+					<dl className='flex flex-col gap-2 text-sm'>
+						{details.map((item) => (
+							<div key={item.label} className='flex flex-col'>
+								<dt className='text-foreground-subtle'>{item.label}</dt>
+								<dd>{item.value}</dd>
+							</div>
+						))}
+					</dl>
+				) : null}
+
+				{onDecline || onAnswer ? (
+					<div className='flex gap-2'>
+						{onDecline ? (
+							<Button variant='destructive' size='sm' onClick={onDecline} className='flex-1'>
+								<VideoOffIcon aria-hidden='true' />
+								{declineLabel}
+							</Button>
+						) : null}
+						{onAnswer ? (
+							<Button variant='success' size='sm' onClick={onAnswer} className='flex-1'>
+								<VideoIcon aria-hidden='true' />
+								{answerLabel}
+							</Button>
+						) : null}
+					</div>
+				) : null}
+			</div>
+		);
+	}
 
 	return (
 		<div
@@ -160,19 +327,7 @@ function AlertToast({
 			}}
 			{...props}
 		>
-			{/* A static wrapper, so a collapsed stack can hide the ring without fighting its animated opacity. */}
-			<span
-				data-slot='alert-toast-ring'
-				aria-hidden='true'
-				className={cn("pointer-events-none absolute -inset-px -z-10", onOpenAlert && "group-hover/toast:opacity-0")}
-			>
-				<motion.span
-					initial={false}
-					animate={pulse}
-					variants={urgencyRingVariants}
-					className={cn("absolute inset-0 rounded-card border-2", ringClassNames[severity])}
-				/>
-			</span>
+			{ring}
 
 			{onOpenAlert ? (
 				// The whole toast opens the alert: one button over it, under its own buttons (z-2), which keep their clicks. It's
@@ -248,26 +403,55 @@ function AlertToast({
 /* -------------------------------------------------------------------------- */
 
 /**
+ * An incoming toast's arrival (MOTION.md Arrive, Nov 4, 2026, user's call): it rises, overshoots its place and settles,
+ * on top of the Toaster's slide-in. Once per toast: an update in place (same id) re-renders it without arriving again. A
+ * fade under reduced motion. `h-full`, so a collapsed stack can still cut the toast to the front one's height.
+ */
+function ToastArrival({ children }: { children: React.ReactNode }) {
+	const { prefersReducedMotion } = useMotionPreference();
+	return (
+		<motion.div
+			className='h-full'
+			variants={prefersReducedMotion ? fadeVariants : arriveVariants}
+			initial='initial'
+			animate='animate'
+		>
+			{children}
+		</motion.div>
+	);
+}
+
+/**
  * How long a toast stays, in ms: 10 s. An unaddressed Critical alert stays until the clinician acts on it or closes it.
  * Hovering the stack pauses the timer.
  */
 const alertToastDuration = 10_000;
 
-/** How long a Resolved toast stays, in ms: 3 s. Nothing is left to do, so it only lets the clinician know, then goes. */
-const resolvedToastDuration = 3_000;
+/**
+ * How long a Resolved toast stays, in ms: 5 s (3 s until Nov 4, 2026, user's call: "2 more secs"). Nothing is left to do,
+ * so it only lets the clinician know, then goes.
+ */
+const resolvedToastDuration = 5_000;
 
 // A collapsed stack sizes the toasts behind the front one to its height. As Sonner does for its own toasts, those keep
-// their surface, shadow and ring and hide their content, cut to that height, so a taller toast doesn't show through and
-// the edges of the stack stay visible.
+// their surface, shadow and ring and hide their content (invisible, so a taller toast doesn't show through), and the
+// edges of the stack stay visible. Not clipped: the ring sits 1px outside the toast's edge (`-inset-px`), and clipping
+// cut its 2px stroke to 1px on the edge that peeks out (Nov 4, 2026, user's call: "keep this stroke in 2px").
 const stackedToastClassName = cn(
 	"[&_[data-slot=alert-toast]>*]:transition-opacity",
 	"data-[expanded=false]:data-[front=false]:[&_[data-slot=alert-toast]]:h-full",
-	"data-[expanded=false]:data-[front=false]:[&_[data-slot=alert-toast]]:overflow-hidden",
 	"data-[expanded=false]:data-[front=false]:[&_[data-slot=alert-toast]>*:not([data-slot=alert-toast-ring])]:opacity-0",
 );
 
 // Where each severity stacks in the Toaster: the higher in front. Sonner's own toasts (`toast()`) have 0, behind every alert.
-const alertToastPriority: Record<AlertToastSeverity, number> = { critical: 5, high: 4, medium: 3, low: 2, resolved: 1 };
+const alertToastPriority: Record<AlertToastSeverity, number> = {
+	"consult-request": 6,
+	critical: 5,
+	high: 4,
+	medium: 3,
+	low: 2,
+	resolved: 1,
+};
 
 type ToastAlertOptions = AlertToastOwnProps & {
 	/** The alert's id. A second toast with the same id updates the first instead of stacking a new one (AL-11). */
@@ -285,41 +469,76 @@ type ToastAlertOptions = AlertToastOwnProps & {
  * it isn't lost by accident. While toasts are muted (the Toaster's Don't show, `muteToasts()`), it shows nothing and
  * returns undefined, an unaddressed Critical included (Nov 3, 2026, user's call; until then it still interrupted, AL-02).
  */
-function toastAlert({ id, duration, onOpen, onAcknowledge: _onAcknowledge, onAsk, onOpenAlert, onClose, ...props }: ToastAlertOptions) {
-	const interrupts = (props.severity ?? "critical") === "critical" && !props.addressed;
-	if (toastsMuted()) return undefined;
-	// Its handler leaves with it, however it goes.
-	const forget = () => setToastCloseHandler(toastId, null);
+function toastAlert({
+	id,
+	duration,
+	onOpen,
+	onAcknowledge: _onAcknowledge,
+	onAsk,
+	onOpenAlert,
+	onClose,
+	onAnswer,
+	onDecline,
+	...props
+}: ToastAlertOptions) {
+	const consult = props.severity === "consult-request";
+	const interrupts = (consult || (props.severity ?? "critical") === "critical") && !props.addressed;
+	if (toastsMuted() && !consult) return undefined;
+	// Its handlers leave with it, however it goes.
+	const forget = () => {
+		setToastCloseHandler(toastId, null);
+		setToastKept(toastId, false);
+	};
 	const toastId = toast.custom(
 		(toastId) => (
-			<AlertToast
-				{...props}
-				onOpen={
-					onOpen &&
-					(() => {
-						onOpen();
-						toast.dismiss(toastId);
-					})
-				}
-				onAsk={
-					onAsk &&
-					(() => {
-						onAsk();
-						toast.dismiss(toastId);
-					})
-				}
-				onOpenAlert={
-					onOpenAlert &&
-					(() => {
-						onOpenAlert();
-						toast.dismiss(toastId);
-					})
-				}
-				onClose={() => {
-					toast.dismiss(toastId);
-					onClose?.();
-				}}
-			/>
+			<ToastArrival>
+				<AlertToast
+					{...props}
+					onOpen={
+						onOpen &&
+						(() => {
+							onOpen();
+							toast.dismiss(toastId);
+						})
+					}
+					onAsk={
+						onAsk &&
+						(() => {
+							onAsk();
+							toast.dismiss(toastId);
+						})
+					}
+					onOpenAlert={
+						onOpenAlert &&
+						(() => {
+							onOpenAlert();
+							toast.dismiss(toastId);
+						})
+					}
+					onClose={
+						consult
+							? undefined
+							: () => {
+									toast.dismiss(toastId);
+									onClose?.();
+								}
+					}
+					onAnswer={
+						onAnswer &&
+						(() => {
+							onAnswer();
+							toast.dismiss(toastId);
+						})
+					}
+					onDecline={
+						onDecline &&
+						(() => {
+							onDecline();
+							toast.dismiss(toastId);
+						})
+					}
+				/>
+			</ToastArrival>
 		),
 		{
 			id,
@@ -338,13 +557,16 @@ function toastAlert({ id, duration, onOpen, onAcknowledge: _onAcknowledge, onAsk
 			onAutoClose: forget,
 		},
 	);
-	// Close all closes it as its × does. A later toast with the same id replaces the handler.
-	setToastCloseHandler(toastId, onClose ?? null);
+	// Close all closes it as its × does. A later toast with the same id replaces the handler. A consult request has no ×:
+	// Close all leaves it ringing.
+	setToastCloseHandler(toastId, consult ? null : (onClose ?? null));
+	setToastKept(toastId, consult);
 	return toastId;
 }
 
 export {
 	AlertToast,
+	type AlertToastRequester,
 	toastAlert,
 	alertToastDuration,
 	resolvedToastDuration,

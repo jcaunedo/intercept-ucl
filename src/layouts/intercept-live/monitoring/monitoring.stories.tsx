@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
-import { sampleAlertDetails } from "../alert-modal/sample-alert-modal";
+import { sampleAlertDetails, samplePatientConsults } from "../alert-modal/sample-alert-modal";
 import { samplePatients } from "../census/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
@@ -77,6 +77,36 @@ async function openLiveFeed(
  */
 export const Default: Story = {
 	render: (args) => <LiveMonitoring {...args} />,
+};
+
+/**
+ * Video consult in the "…" menu of a patient with no active alert (Thomas Walker) still opens the modal, without an
+ * alert on it: his name heads it, his score, monitor and flags under it, and the Video consult panel open with the call
+ * to his bedside nurse already ringing. The call runs in its tile: End, then Video consult to call again.
+ */
+export const VideoConsultWithoutAlert: Story = {
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(await canvas.findByRole("button", { name: "More actions for Walker, Thomas" }, { timeout: 10000 }));
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Video consult" }));
+		const consult = within(await screen.findByRole("dialog", { name: /Walker, Thomas/ }, { timeout: 5000 }));
+		await expect(consult.getByRole("heading", { level: 2 })).toHaveTextContent("Walker, Thomas");
+		// Focus lands on the dialog, not its ×, so no focus ring shows as it opens.
+		await expect(screen.getByRole("dialog")).toHaveFocus();
+		await expect(await consult.findByText("Calling Grace Holloway…")).toBeInTheDocument();
+		await expect(consult.queryByRole("region", { name: "Alert" })).toBeNull();
+		await expect(consult.getByRole("button", { name: "2 pressors" })).toBeInTheDocument();
+		// No button under the patient: the call runs in its tile, and the panel stays open when it ends.
+		await expect(consult.queryByRole("button", { name: /End call|Calling…/ })).toBeNull();
+		await expect(await consult.findByText("Grace Holloway, RN joined", {}, { timeout: 7000 })).toBeInTheDocument();
+		await expect(consult.getByText("AI Notetaker")).toBeInTheDocument();
+		await userEvent.click(consult.getByRole("button", { name: "End" }));
+		await expect(await consult.findByText("Call ended")).toBeInTheDocument();
+		await userEvent.click(consult.getByRole("button", { name: "Video consult" }));
+		await expect(await consult.findByText("Calling Grace Holloway…")).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+	},
 };
 
 /**
@@ -190,6 +220,55 @@ export const Scenario1Resolution: Story = {
 		await expect(plan.getByText("Transfer avoided")).toBeInTheDocument();
 		const activity = within(screen.getByRole("region", { name: "Activity" }));
 		await expect(activity.getByText("Alert resolved")).toBeInTheDocument();
+	},
+};
+
+/**
+ * The Prototype menu's "Scenario 2: COPD": Dale Reynolds isn't on Monitoring until it's picked; 1.5 s later Alliance's
+ * ED requests the hub's consult and he joins with his Critical alert. On the video consult, Alliance's connection drops:
+ * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist accepts the COPD
+ * pathway and keeps him at Alliance: air is grounded and the road closed, so there's no transfer to pick. A few seconds
+ * later it's 2 h on NIV: both checkpoints pass, his alert resolves (by his nurse) and his card settles at NEWS2 5.
+ */
+export const Scenario2Copd: Story = {
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		const reynolds = () => canvas.queryAllByRole("article").find((article) => within(article).queryByText("Reynolds, Dale"));
+		await expect(reynolds()).toBeUndefined();
+		await userEvent.click(canvas.getByRole("button", { name: "Prototype" }));
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Scenario 2: COPD" }));
+		await waitFor(() => expect(within(reynolds() as HTMLElement).getByRole("button", { name: /Open alert/ })).toBeInTheDocument(), {
+			timeout: 4000,
+		});
+		await userEvent.click(within(reynolds() as HTMLElement).getByRole("button", { name: /Open alert/ }));
+		const modal = within(await screen.findByRole("dialog", { name: "pH 7.24 and PaCO₂ 78 on arrival, severe COPD, on BiPAP" }));
+		// Step 2: 6 s after the call is on, Alliance's connection drops. The call goes on as audio, the banner says so, the
+		// monitor's numbers are held, and the BiPAP's photo arrives 8 s later.
+		await userEvent.click(modal.getByRole("button", { name: "Video consult" }));
+		await expect(await modal.findByText("Megan Foster, RN joined", {}, { timeout: 7000 })).toBeInTheDocument();
+		await expect(await modal.findByText("Low-bandwidth mode", {}, { timeout: 10000 })).toBeInTheDocument();
+		await expect(modal.getByText("Low bandwidth:")).toBeInTheDocument();
+		await expect(await modal.findByText("Video paused for low bandwidth", {}, { timeout: 5000 })).toBeInTheDocument();
+		await expect(await modal.findByText("BiPAP screen", {}, { timeout: 12000 })).toBeInTheDocument();
+		await userEvent.click(modal.getByRole("button", { name: "View pathway" }));
+		await expect(await modal.findByText("COPD exacerbation pathway")).toBeInTheDocument();
+		await userEvent.click(await modal.findByRole("button", { name: "Accept and send" }));
+		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
+		await expect(panel.getByText(/Grounded by the storm/)).toBeInTheDocument();
+		await expect(panel.getByText(/Highway to Scottsbluff closed/)).toBeInTheDocument();
+		await userEvent.click(panel.getByRole("button", { name: "Keep at Alliance" }));
+		const form = within(await panel.findByRole("form", { name: "Keep at Alliance" }));
+		await userEvent.type(form.getByRole("textbox", { name: "Why keep at Alliance?" }), "No way out tonight; NIV with checkpoints");
+		await userEvent.click(form.getByRole("button", { name: "Keep at Alliance" }));
+		// 2 h on NIV, while the modal is open: both checkpoints pass and no transfer was needed.
+		await expect(await panel.findByText("Transfer avoided", {}, { timeout: 10000 })).toBeInTheDocument();
+		await expect(panel.getAllByText(/Passed/)).toHaveLength(2);
+		await expect(await modal.findByText(/Resolved by Megan Foster, RN/)).toBeInTheDocument();
+		// The blood gases' photos arrive with it.
+		await waitFor(() => expect(modal.getByText("Blood gas, 2 h on BiPAP")).toBeInTheDocument());
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		await waitFor(() => expect(within(reynolds() as HTMLElement).getByText("5")).toBeInTheDocument());
 	},
 };
 
@@ -434,13 +513,14 @@ function LiveMonitoring(props: MonitoringProps) {
 		alerts,
 		everyAlert,
 		caption,
-		startScenario1,
+		startScenario,
 		withScenarioCensus,
 		withScenarioRecords,
 		withScenarioAlertDetails,
 		withScenarioActivity,
 		onPathwayDecision,
 		onTransferDecision,
+		onDischargeDecision,
 		onConsultChange,
 		onConsultNote,
 		logAlertAction,
@@ -453,7 +533,7 @@ function LiveMonitoring(props: MonitoringProps) {
 		patient: props.defaultPatient,
 	});
 	const patients = useLivePatients(fed);
-	// Scenario 1 changes Hayes's Census card and record too, so the Census page, her details and the chat follow.
+	// The scenarios change their patients' Census cards and records too (and add Scenario 2's arrival), so the Census page, their details and the chat follow.
 	const censusPatients = props.censusPatients && withScenarioCensus(props.censusPatients);
 	const scenarioRecords = props.patientRecords && withScenarioRecords(props.patientRecords);
 	const alertDetails = withScenarioAlertDetails(
@@ -484,12 +564,14 @@ function LiveMonitoring(props: MonitoringProps) {
 			censusPatients={censusPatients && withFeedAlerts(censusPatients, alerts)}
 			patientRecords={patientRecords}
 			alertDetails={alertDetails}
+			patientConsults={samplePatientConsults({ censusPatients, monitoringPatients: patients, records: patientRecords })}
 			onPathwayDecision={onPathwayDecision}
 			onTransferDecision={onTransferDecision}
+			onDischargeDecision={onDischargeDecision}
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}
 			prototype={prototypeShortcuts({
-				startScenario1,
+				startScenario,
 				groupedGrid,
 				onToggleGroupedGrid: () => setGroupedGrid(!groupedGrid),
 			})}

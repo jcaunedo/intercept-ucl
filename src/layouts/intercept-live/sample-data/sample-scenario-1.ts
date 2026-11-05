@@ -4,19 +4,22 @@ import type { CensusPatient } from "../census/census-panel";
 import { sampleScenario1Census, sampleScenario1ResolvedCensus } from "../census/sample-census";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleScenario1Monitoring, sampleScenario1ResolvedMonitoring } from "../monitoring/sample-monitoring";
+import type { PatientActivity } from "../patient-details/activity";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleScenario1Record, sampleScenario1ResolvedRecord } from "../patient-details/sample-patient-records";
 import { sampleScenario1ResolvedTimeline, sampleScenario1Timeline } from "../patient-details/sections/sample-timeline";
 import { sampleScenario1ResolvedVitals, sampleScenario1Vitals } from "../patient-details/sections/sample-vitals";
 
 // Story-only: Scenario 1 of the Demo Use Cases, "Heart failure at 2 a.m. in a 25-bed hospital", as beats the Prototype
-// menu plays. Margaret Hayes (`p15`, Chadron Community Hospital, Med-Surg) starts just before it, holding at NEWS2 5;
+// menu plays. Margaret Hayes (`p15`, Chadron, Med-Surg) starts just before it, holding at NEWS2 5;
 // each beat changes her Census card, her monitor, her record, her alert modal and the alerts together, so every page
 // tells the same story. Step 1 (early warning) plays when the scenario is picked; steps 2 to 5 are the clinician's, in
 // the alert modal; step 6 (resolution) plays once she's kept at Chadron.
 
 /** What a beat changes, by patient id, and the alerts it fires. */
 type ScenarioChanges = {
+	/** Patients who arrive now, on every page (Scenario 2's Dale Reynolds, whom the ED's consult request puts on the Census). */
+	admit?: { census: CensusPatient; monitoring: MonitoringPatient; record: PatientRecord }[];
 	census?: Record<string, Partial<CensusPatient>>;
 	monitoring?: Record<string, Partial<MonitoringPatient>>;
 	records?: Record<string, Partial<PatientRecord>>;
@@ -26,18 +29,32 @@ type ScenarioChanges = {
 	resolve?: Record<string, Omit<NonNullable<TriageAlert["addressed"]>, "at">>;
 	/** Changes to an alert's modal, by alert id. */
 	details?: Record<string, (detail: AlertDetailData) => AlertDetailData>;
+	/** Lines for the patients' activity logs, e.g. the consult falling back to audio (`at` is when the beat plays). */
+	log?: (Omit<PatientActivity, "id" | "at"> & { patientId: string })[];
 };
 
 type ScenarioBeat = {
-	/** When it plays: when the scenario starts, or once the clinician keeps the patient (keep or transfer). */
-	after: "start" | "keep";
+	/**
+	 * When it plays: when the scenario starts, once the scenario's video consult is on (its first time in a run), or once
+	 * the clinician keeps the patient (keep or transfer).
+	 */
+	after: "start" | "consult" | "keep";
+	/** Seconds after that. By default 1.5 s after the start, 6 s after the consult is on and 6 s after the keep. */
+	delay?: number;
 	/** What happens, for the hospital bar's Live feed. */
 	label: string;
 	/** Built when the beat plays, so its times read "just now". */
 	changes: () => ScenarioChanges;
 };
 
-const sampleScenario1: ScenarioBeat[] = [
+/** A scenario: its patients and alerts (a new run starts them over) and its beats. */
+type ScenarioDefinition = {
+	patientIds: string[];
+	alertIds: string[];
+	beats: ScenarioBeat[];
+};
+
+const scenario1Beats: ScenarioBeat[] = [
 	{
 		after: "start",
 		// 1. Early warning (01:40): RR 20 → 26, SpO₂ 89% on 4 L, HR 112, net +1.8 L and +2.1 kg in 48 h. NEWS2 crosses into
@@ -99,4 +116,10 @@ const sampleScenario1: ScenarioBeat[] = [
 	},
 ];
 
-export { sampleScenario1, type ScenarioBeat, type ScenarioChanges };
+const sampleScenario1: ScenarioDefinition = {
+	patientIds: ["p15"],
+	alertIds: ["live-hayes"],
+	beats: scenario1Beats,
+};
+
+export { sampleScenario1, type ScenarioBeat, type ScenarioChanges, type ScenarioDefinition };

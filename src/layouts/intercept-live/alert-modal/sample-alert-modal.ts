@@ -1,10 +1,10 @@
 import type { CensusPatient } from "../census/census-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
-import { sampleMonitoringPatients, sampleScenario1Monitoring } from "../monitoring/sample-monitoring";
+import { sampleMonitoringPatients, sampleScenario1Monitoring, sampleScenario2Monitoring } from "../monitoring/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleCameraVideo } from "../sample-data/sample-camera-video";
 import { avatarTones, patientInitials } from "../shared/patient-avatar";
-import type { AlertDetailData } from "./alert-modal";
+import type { AlertDetailData, PatientConsultData } from "./alert-modal";
 import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
 
 // Margaret Hayes's alert at 01:40 in Scenario 1 (Demo Use Cases), opened: the same numbers as her record, monitor and
@@ -33,7 +33,7 @@ const sampleScenario1AlertDetail = (): AlertDetailData => ({
 		sex: "F",
 		age: 72,
 		mrn: "00826154",
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 4",
 	},
@@ -115,7 +115,7 @@ const sampleScenario1AlertDetail = (): AlertDetailData => ({
 	// clinical review.
 	transfer: {
 		hospital: "Chadron",
-		source: "Chadron Community Hospital tonight, and the regional transfer center",
+		source: "Chadron tonight, and the regional transfer center",
 		needs: [
 			{
 				id: "bipap",
@@ -182,6 +182,173 @@ const sampleScenario1AlertDetail = (): AlertDetailData => ({
 		],
 	},
 });
+
+/**
+ * Dale Reynolds's alert in Scenario 2 (Demo Use Cases, "COPD respiratory failure during a blizzard"), opened: the
+ * Alliance ED's consult request at 22:15, with the same numbers as his record, monitor and card (`sample-scenario-2.ts`).
+ * Step 1 is the consult; step 3, keep or transfer with air grounded and the road closed; step 4, the COPD pathway's NIV
+ * checkpoints and the intubation plan prepared in advance. Doses, settings and checkpoints are illustrative until
+ * Intercept's COPD protocol is reviewed (the scenario's "Clinical review needed").
+ */
+const sampleScenario2AlertDetail = (): AlertDetailData => {
+	const monitor = sampleScenario2Monitoring();
+	return {
+		alert: {
+			id: "live-reynolds",
+			patientId: "p21",
+			severity: "critical",
+			title: "ED consult: hypercapnic respiratory failure",
+			reason: "pH 7.24 and PaCO₂ 78 on arrival, severe COPD, on BiPAP",
+			source: { kind: "manual", name: "ED consult request" },
+			firedAt: new Date().toISOString(),
+		},
+		patient: {
+			lastName: "Reynolds",
+			firstName: "Dale",
+			initials: "RD",
+			tone: 2,
+			sex: "M",
+			age: 64,
+			mrn: "00973518",
+			hospital: "Alliance",
+			unit: "ED",
+			bed: "Bay 3",
+		},
+		inLast24h: 1,
+		acuity: monitor.acuity,
+		trajectory: monitor.trajectory,
+		monitor: { vitals: monitor.vitals, limits: monitor.limits, alarmPriorities: monitor.alarmPriorities },
+		reasons: [
+			{
+				label: "Hypercapnic respiratory failure",
+				lead: "pH 7.24",
+				detail: "PaCO₂ 78, PaO₂ 58, HCO₃ 33 on arrival, 30 min ago. His last PaCO₂ at discharge was 55",
+			},
+			{ label: "Severe COPD", lead: "GOLD 3", detail: "40 pack-years, home oxygen 2 L, out of it for 4 days" },
+			{ label: "On BiPAP", detail: "20 min, IPAP 12 / EPAP 5, FiO₂ 35%. RR 30, HR 112, SpO₂ 88% (target 88–92%)" },
+		],
+		// The flag his findings open from in the alert panel.
+		flag: "COPD exacerbation",
+		// As on his card.
+		tags: [{ label: "NIV" }],
+		history: [
+			{
+				label: "Home meds",
+				items: [
+					{ name: "Tiotropium", detail: "18 mcg inhaled daily" },
+					{ name: "Fluticasone-salmeterol", detail: "250/50 mcg twice a day" },
+					{ name: "Albuterol", detail: "as needed, every 1–2 h this week" },
+					{ name: "Home oxygen", detail: "2 L/min, ran out 4 days ago" },
+				],
+			},
+			{
+				label: "Chest X-ray",
+				value: "Hyperinflation, no pneumothorax or consolidation",
+				detail: "35 min ago, Alliance ED",
+				severity: "low",
+			},
+			{ label: "ABG", value: "pH 7.24 · PaCO₂ 78", detail: "On arrival · baseline PaCO₂ about 55 (2025)", severity: "critical" },
+			{ label: "Bicarbonate", value: "33 mmol/L", detail: "Chronic CO₂ retention, compensated · normal 22–26", severity: "low" },
+		],
+		bedside: { name: "Megan Foster", role: "RN", initials: "MF", tone: 6, presence: "online", activity: "At the bedside" },
+		room: { airway: "niv", pumps: 0 },
+		video: sampleCameraVideo,
+		pathway: {
+			title: "COPD exacerbation pathway",
+			source: "Reference protocol, COPD exacerbation with hypercapnia (configurable per hospital)",
+			orders: [
+				{
+					id: "bipap",
+					name: "BiPAP",
+					dose: "IPAP 14 / EPAP 5 cmH₂O, FiO₂ 35%",
+					detail: "Target SpO₂ 88–92%. Raise IPAP by 2 if PaCO₂ isn't falling at 1 h",
+					evidence: "pH 7.24, PaCO₂ 78, RR 30/min on IPAP 12",
+				},
+				{
+					id: "bronchodilators",
+					name: "Ipratropium-albuterol",
+					dose: "3 mL nebulized in line every 20 min × 3, then every 4 h",
+					detail: "Through the BiPAP circuit",
+					evidence: "wheeze, RR 30/min",
+				},
+				{
+					id: "steroids",
+					name: "Methylprednisolone IV",
+					dose: "40 mg every 24 h for 5 days",
+					detail: "Switch to prednisone by mouth once off BiPAP",
+				},
+				{
+					id: "antibiotic",
+					name: "Azithromycin IV",
+					dose: "500 mg every 24 h",
+					detail: "Purulent sputum; sputum culture sent",
+					evidence: "green sputum for 3 days, WBC 12.8",
+				},
+				{
+					id: "intubation",
+					name: "Intubation readiness",
+					dose: "Checklist done; ventilator set to AC, VT 450 mL, rate 14, PEEP 5, FiO₂ 40%",
+					detail: "Prepared with Dr. Keller now, used only if NIV fails at a checkpoint",
+				},
+			],
+			cosigner: { name: "Dr. Brian Keller", role: "ED physician" },
+		},
+		// Step 3: the plan's needs against what Alliance has tonight, and a transfer nobody can make: air is grounded and
+		// the highway is closed. So the plan is to stabilize here, with the checkpoints as the failure plan: miss one and he's
+		// intubated here, with the settings prepared in the pathway.
+		transfer: {
+			hospital: "Alliance",
+			source: "Alliance tonight, the regional transfer center and road and weather reports",
+			needs: [
+				{ id: "bipap", label: "BiPAP", available: "On him now; a second machine in respiratory", status: "met" },
+				{ id: "rt", label: "Respiratory therapist", available: "Rachel Lindgren, RRT, at the bedside", status: "met" },
+				{ id: "airway", label: "Intubation if NIV fails", available: "Dr. Keller in the ED, airway cart and a ventilator ready", status: "met" },
+				{ id: "monitoring", label: "Continuous monitoring", available: "ED Bay 3, then a monitored step-down bed", status: "met" },
+				{ id: "rn", label: "Nurse capacity", available: "2 ED nurses; Megan Foster stays with him for the first 2 h", status: "limited" },
+			],
+			receiving: [
+				{
+					id: "regional-west",
+					name: "Regional West Medical Center",
+					place: "Scottsbluff, NE · 60 mi",
+					bed: "ICU, 1 bed open",
+					accepting: true,
+				},
+			],
+			transport: [
+				{ id: "air", label: "Air", status: "Grounded by the storm · no flights until it clears", available: false },
+				{ id: "ground", label: "Ground", status: "Highway to Scottsbluff closed · ETA unknown", available: false },
+			],
+			checkpoints: [
+				{ id: "1h", after: 60, criteria: "Repeat ABG: pH rising and PaCO₂ falling; mental status and work of breathing no worse" },
+				{ id: "2h", after: 120, criteria: "Repeat ABG: pH 7.30 or more, or still rising; alert; RR under 25" },
+			],
+		},
+	};
+};
+
+/**
+ * Dale Reynolds's alert at Scenario 2's resolution (2 h on NIV): both checkpoints passed with his repeat gases, and no
+ * transfer was needed (the scenario's metrics: NIV success without intubation, transfer not required). The cost is a
+ * placeholder until it's sourced.
+ */
+function sampleScenario2ResolvedDetail(detail: AlertDetailData): AlertDetailData {
+	if (!detail.transfer) return detail;
+	const [oneHour, twoHours, ...rest] = detail.transfer.checkpoints;
+	return {
+		...detail,
+		pathwayStatus: "active",
+		transfer: {
+			...detail.transfer,
+			checkpoints: [
+				{ ...oneHour, result: { status: "passed", detail: "pH 7.28, PaCO₂ 70, RR 24, more alert" } },
+				{ ...twoHours, result: { status: "passed", detail: "pH 7.31, PaCO₂ 64, RR 21, alert, speaking in full sentences" } },
+				...rest,
+			],
+			outcome: { distance: "60 mi each way, on a closed road", cost: "$ to be sourced", careHours: "2 h of NIV, no intubation" },
+		},
+	};
+}
 
 const airways = { Invasive: "ventilator", NIV: "niv", Oxygen: "oxygen" } as const;
 
@@ -329,11 +496,87 @@ function samplePathway(alert: TriageAlert, vitals: SampleVitals | undefined, cos
 	]);
 }
 
+type SamplePatients = {
+	censusPatients?: CensusPatient[];
+	monitoringPatients?: MonitoringPatient[];
+	records?: PatientRecord[];
+};
+
 /**
- * A detail for each alert: Hayes's Scenario 1 alert from `sampleScenario1AlertDetail`; the rest from the patient's card
- * (identity, location, avatar), their record (bedside nurse, the room's equipment) and the alert's own
- * evidence. Only Hayes's has the reason line explained and the history and labs; every alert has a suggested pathway
- * (`samplePathway`).
+ * What the alert panel shows about a patient, alert or not: who they are (from their card), their score, monitor and
+ * tags as their cards show them now, and who a video consult reaches (their bedside nurse) in which room (from their
+ * record).
+ */
+function samplePatientParts(
+	patientId: string,
+	{ censusPatients = [], monitoringPatients = [], records = [] }: SamplePatients,
+	tones: Map<string, PatientConsultData["patient"]["tone"]>,
+): PatientConsultData | undefined {
+	const monitored = monitoringPatients.find((item) => item.id === patientId);
+	const patient = censusPatients.find((item) => item.id === patientId) ?? monitored;
+	if (!patient) return undefined;
+	const record = records.find((item) => item.id === patientId);
+	const nurse = record?.careTeam?.find((member) => member.role === "Bedside nurse");
+	const support = record?.ventilator?.support;
+	return {
+		patientId,
+		patient: {
+			lastName: patient.lastName,
+			firstName: patient.firstName,
+			photo: patient.photo,
+			initials: patientInitials(patient),
+			tone: tones.get(patient.id),
+			sex: patient.sex,
+			age: patient.age,
+			mrn: patient.mrn,
+			hospital: patient.hospital,
+			unit: patient.unit,
+			bed: patient.bed,
+		},
+		tags: monitored?.tags ?? patient.tags,
+		acuity: monitored?.acuity ?? patient.acuity,
+		trajectory: monitored?.trajectory ?? patient.trajectory,
+		monitor: monitored
+			? {
+					vitals: monitored.vitals,
+					limits: monitored.limits,
+					alarmPriorities: monitored.alarmPriorities,
+					acknowledgedAlarms: monitored.acknowledgedAlarms,
+				}
+			: undefined,
+		bedside: nurse
+			? { name: nurse.name, role: "RN", initials: nurse.initials, src: nurse.src, tone: nurse.tone, presence: nurse.presence ?? "online", activity: "At the bedside" }
+			: undefined,
+		room: {
+			airway: support && support in airways ? airways[support as keyof typeof airways] : "none",
+			pumps: Math.min(4, record?.infusions?.length ?? 0),
+		},
+		video: sampleCameraVideo,
+	};
+}
+
+/**
+ * Each patient's video consult without an alert (Nov 4, 2026, user's call), what a card's Video consult opens when the
+ * patient has no active alert: the patient and who the call reaches, as their alerts' details have them.
+ */
+function samplePatientConsults(patients: SamplePatients): PatientConsultData[] {
+	const { censusPatients = [], monitoringPatients = [] } = patients;
+	const tones = avatarTones([...censusPatients, ...monitoringPatients]);
+	const ids = [...new Set([...censusPatients, ...monitoringPatients].map((patient) => patient.id))];
+	return ids.flatMap((id) => samplePatientParts(id, patients, tones) ?? []);
+}
+
+// The scenarios' alerts, written out in full: Hayes's (Scenario 1) and Reynolds's (Scenario 2).
+const scenarioAlertDetails: Record<string, () => AlertDetailData> = {
+	"live-hayes": sampleScenario1AlertDetail,
+	"live-reynolds": sampleScenario2AlertDetail,
+};
+
+/**
+ * A detail for each alert: the scenarios' alerts (Hayes's Scenario 1, Reynolds's Scenario 2) from their own samples;
+ * the rest from the patient's card (identity, location, avatar), their record (bedside nurse, the room's equipment) and
+ * the alert's own evidence. Only the scenarios' have the reason line explained and the history and labs; every alert
+ * has a suggested pathway (`samplePathway`).
  */
 function sampleAlertDetails({
 	alerts,
@@ -361,11 +604,14 @@ function sampleAlertDetails({
 						limits: monitored.limits,
 						alarmPriorities: monitored.alarmPriorities,
 						acknowledgedAlarms: monitored.acknowledgedAlarms,
+						// For the last hour's trends, which the monitor shows in low-bandwidth mode.
+						trends: monitored.trends,
 					}
 				: undefined,
 		};
-		if (alert.id === "live-hayes") {
-			const scenario = sampleScenario1AlertDetail();
+		const scenarioDetail = scenarioAlertDetails[alert.id];
+		if (scenarioDetail) {
+			const scenario = scenarioDetail();
 			return [
 				{
 					...scenario,
@@ -380,41 +626,20 @@ function sampleAlertDetails({
 				},
 			];
 		}
-		if (!patient) return [];
+		const parts = samplePatientParts(alert.patientId, { censusPatients, monitoringPatients, records }, tones);
+		if (!patient || !parts) return [];
+		const { patientId: _patientId, ...shared } = parts;
 		const record = records.find((item) => item.id === alert.patientId);
-		const nurse = record?.careTeam?.find((member) => member.role === "Bedside nurse");
 		const attending = record?.careTeam?.find((member) => member.role === "Attending of record");
 		const cosigner: CarePathwayCosigner = attending
 			? { name: `Dr. ${attending.name}`, role: "attending of record" }
 			: { name: "the attending of record", role: patient.hospital ?? "at the hospital" };
-		const support = record?.ventilator?.support;
 		return [
 			{
 				alert,
-				patient: {
-					lastName: patient.lastName,
-					firstName: patient.firstName,
-					photo: patient.photo,
-					initials: patientInitials(patient),
-					tone: tones.get(patient.id),
-					sex: patient.sex,
-					age: patient.age,
-					mrn: patient.mrn,
-					hospital: patient.hospital,
-					unit: patient.unit,
-					bed: patient.bed,
-				},
-				...live,
+				...shared,
 				reasons: [],
 				history: [],
-				bedside: nurse
-					? { name: nurse.name, role: "RN", initials: nurse.initials, src: nurse.src, tone: nurse.tone, presence: nurse.presence ?? "online", activity: "At the bedside" }
-					: undefined,
-				room: {
-					airway: support && support in airways ? airways[support as keyof typeof airways] : "none",
-					pumps: Math.min(4, record?.infusions?.length ?? 0),
-				},
-				video: sampleCameraVideo,
 				pathway: samplePathway(alert, monitored?.vitals, cosigner),
 			},
 		];
@@ -444,4 +669,11 @@ function sampleScenario1ResolvedDetail(detail: AlertDetailData): AlertDetailData
 	};
 }
 
-export { sampleAlertDetails, sampleScenario1AlertDetail, sampleScenario1ResolvedDetail };
+export {
+	sampleAlertDetails,
+	samplePatientConsults,
+	sampleScenario1AlertDetail,
+	sampleScenario1ResolvedDetail,
+	sampleScenario2AlertDetail,
+	sampleScenario2ResolvedDetail,
+};

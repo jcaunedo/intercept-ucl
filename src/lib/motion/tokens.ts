@@ -38,6 +38,11 @@ const motionDuration = {
 	streamPause: 0.12,
 	/** An AI answer's thinking time before it starts streaming, on average (Pending pattern while it waits). */
 	thinking: 0.9,
+	/**
+	 * How long a live waveform's skeleton shows when its monitor scrolls into view, before the sweep starts: the stream
+	 * connecting (Pending pattern while it waits). Off screen, waveforms don't stream.
+	 */
+	streamConnect: 0.5,
 } as const;
 
 /** Pixels. */

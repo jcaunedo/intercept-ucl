@@ -1,13 +1,13 @@
 import { samplePatients } from "../census/sample-census";
 
 // Story-only: each hospital's record system (EHR). Scenario 1's Chadron runs Meditech (Demo Use Cases: "pulled from
-// the Meditech feed"); the other hospitals run Epic. Apps get it from each hospital's integration instead.
+// the Meditech feed") and Scenario 2's Alliance Cerner (the Demo Use Cases' site table); the other hospitals run Epic. Apps get it from each hospital's integration instead.
 
 const sampleEhrByHospital: Record<string, string> = {
 	"Harbor Point General": "Epic",
-	"Mercy West Hospital": "Epic",
+	"Alliance": "Cerner",
 	CVMC: "Epic",
-	"Chadron Community Hospital": "Meditech",
+	"Chadron": "Meditech",
 };
 
 /** The record system at the patient's hospital ("Epic" when the hospital isn't known). */

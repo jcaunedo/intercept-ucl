@@ -1,15 +1,15 @@
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 
-// Synthetic data (PRD MON-080): the Census's 20 patients on the monitoring panel, with live bedside values, and the
+// Synthetic data (PRD MON-080): the Census's 21 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
 // match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller and Johnson
 // (with alerts), Walker, Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and
 // Whitfield no RR (Data gap). Hayes (Chadron, Med-Surg) is Scenario 1 (Demo Use Cases) just before it starts: heart
 // failure, holding at SpO₂ 92% on 4 L and NEWS2 5. The Prototype menu's Scenario 1 plays her early warning at 01:40
 // (`sampleScenario1Monitoring`, `sample-data/sample-scenario-1.ts`).
-// Erickson, Carlson and Hansen (Chadron) are the floor's other patients, Ortega and Norman (Mercy West) fill its count;
-// all five inside the limits, with no alert. Carlson and Hansen are the clinician's own, as Hayes is.
+// Erickson, Carlson and Hansen (Chadron) are the floor's other patients, Ortega, Norman and Jensen (Alliance's med-surg floor) fill its
+// count; all six inside the limits, with no alert. My patients are the same as on the Census (`sample-census.ts`).
 //
 // Acuity is the NEWS2-style current-state score (DU-14, scale 1), worked out from each patient's charted vitals in
 // `sample-vitals.ts`: ventilated patients are sedated (not Alert), Anderson is newly confused, and oxygen follows each
@@ -45,7 +45,7 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p2",
-		hospitalId: "mwh",
+		hospitalId: "hpg",
 		mine: true,
 		lastName: "Johnson",
 		firstName: "Daniel",
@@ -53,7 +53,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00482917",
 		sex: "M",
 		age: 58,
-		hospital: "Mercy West Hospital",
+		hospital: "Harbor Point General",
 		unit: "MICU",
 		bed: "Bed 3",
 		acuity: { label: news2, score: 15, level: "high" },
@@ -84,7 +84,6 @@ const monitoringPatients: MonitoringPatient[] = [
 	{
 		id: "p4",
 		hospitalId: "cvmc",
-		mine: true,
 		lastName: "Thompson",
 		firstName: "Robert",
 		mrn: "00290451",
@@ -136,14 +135,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p7",
-		hospitalId: "mwh",
-		mine: true,
+		hospitalId: "cvmc",
 		lastName: "Taylor",
 		firstName: "Susan",
 		mrn: "00377208",
 		sex: "F",
 		age: 45,
-		hospital: "Mercy West Hospital",
+		hospital: "CVMC",
 		unit: "SICU",
 		bed: "Bed 12",
 		acuity: { label: news2, score: 0, level: "low" },
@@ -241,7 +239,6 @@ const monitoringPatients: MonitoringPatient[] = [
 	{
 		id: "p13",
 		hospitalId: "cvmc",
-		mine: true,
 		lastName: "Walker",
 		firstName: "Thomas",
 		mrn: "00733062",
@@ -282,7 +279,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00826154",
 		sex: "F",
 		age: 72,
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 4",
 		// Just before Scenario 1 (`sampleScenario1Monitoring`, 01:40): inside her alarm limits. Her med-surg bed alarms on
@@ -303,7 +300,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00731942",
 		sex: "M",
 		age: 79,
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 6",
 		acuity: { label: news2, score: 2, level: "low" },
@@ -321,7 +318,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00749318",
 		sex: "F",
 		age: 68,
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 2",
 		acuity: { label: news2, score: 1, level: "low" },
@@ -338,7 +335,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00862047",
 		sex: "M",
 		age: 61,
-		hospital: "Chadron Community Hospital",
+		hospital: "Chadron",
 		unit: "Med-Surg",
 		bed: "Bed 8",
 		acuity: { label: news2, score: 0, level: "low" },
@@ -348,15 +345,16 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p17",
-		hospitalId: "mwh",
+		hospitalId: "alliance",
+		mine: true,
 		lastName: "Ortega",
 		firstName: "Lucía",
 		photo: samplePatientPhotos.p17,
 		mrn: "00658213",
 		sex: "F",
 		age: 67,
-		hospital: "Mercy West Hospital",
-		unit: "SICU",
+		hospital: "Alliance",
+		unit: "Med-Surg",
 		bed: "Bed 10",
 		acuity: { label: news2, score: 6, level: "medium" },
 		trajectory: { label: change, value: "+2", trend: "up" },
@@ -365,21 +363,40 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p18",
-		hospitalId: "mwh",
+		hospitalId: "alliance",
+		mine: true,
 		lastName: "Norman",
 		firstName: "Keith",
 		photo: samplePatientPhotos.p18,
 		mrn: "00914370",
 		sex: "M",
 		age: 54,
-		hospital: "Mercy West Hospital",
-		unit: "MICU",
+		hospital: "Alliance",
+		unit: "Med-Surg",
 		bed: "Bed 5",
 		acuity: { label: news2, score: 1, level: "low" },
 		trajectory: { label: change, value: "−4", trend: "down" },
 		scoreChange4h: 0,
 		tags: [{ label: "Insulin infusion" }],
 		vitals: { hr: 92, spo2: 98, systolic: 128, diastolic: 74, map: 92, rr: 16 },
+	},
+	{
+		id: "p22",
+		hospitalId: "alliance",
+		mine: true,
+		lastName: "Jensen",
+		firstName: "Carol",
+		mrn: "00684529",
+		sex: "F",
+		age: 79,
+		hospital: "Alliance",
+		unit: "Med-Surg",
+		bed: "Bed 3",
+		acuity: { label: news2, score: 3, level: "low" },
+		trajectory: { label: change, value: "−2", trend: "down" },
+		scoreChange4h: 0,
+		tags: [{ label: "Fall risk" }],
+		vitals: { hr: 86, spo2: 95, systolic: 126, diastolic: 70, map: 89, rr: 16 },
 	},
 ];
 
@@ -558,10 +575,65 @@ const sampleScenario1ResolvedMonitoring: Partial<MonitoringPatient> = {
 	},
 };
 
+// Dale Reynolds (Scenario 2): his monitor's seed, after everyone on the Census.
+const reynoldsSeed = monitoringPatients.length;
+
+/**
+ * Dale Reynolds's monitor at Scenario 2's first beat (Alliance ED, 22:15): on BiPAP 20 min, RR 30, HR 112, BP 156/88,
+ * SpO₂ 88%, NEWS2 7 (SpO₂ scale 2). Not on the Census until then. The ED set his SpO₂ alarm for his 88–92% target, so
+ * 88% sits inside it and RR 30 shows ▲. His last hour: the ambulance and the ED on 2 L (SpO₂ 86%, RR 26), then BiPAP.
+ */
+const sampleScenario2Monitoring = (): MonitoringPatient => ({
+	id: "p21",
+	hospitalId: "alliance",
+	mine: true,
+	lastName: "Reynolds",
+	firstName: "Dale",
+	mrn: "00973518",
+	sex: "M",
+	age: 64,
+	hospital: "Alliance",
+	unit: "ED",
+	bed: "Bay 3",
+	limits: { spo2: [85, 100], rr: [8, 28] },
+	alarmPriorities: sampleAlarmPriorities,
+	acknowledgedAlarms: [],
+	acuity: { label: news2, score: 7, level: "high" },
+	trajectory: { label: change, value: "+1", trend: "up" },
+	scoreChange4h: 1,
+	tags: [{ label: "NIV" }],
+	vitals: { hr: 112, spo2: 88, systolic: 156, diastolic: 88, map: 111, rr: 30 },
+	trends: {
+		hr: lastHour(112, 8, 2, reynoldsSeed),
+		spo2: lastHour(88, 2, 0.6, reynoldsSeed + 1)?.map((value) => Math.min(100, value)),
+		systolic: lastHour(156, 6, 2.5, reynoldsSeed + 2),
+		rr: lastHour(30, 4, 1, reynoldsSeed + 3),
+	},
+});
+
+/**
+ * Dale Reynolds's monitor at Scenario 2's resolution (2 h on NIV): RR 21, HR 96, BP 138/82, SpO₂ 91%, so NEWS2 5,
+ * Medium. His last hour settles to these from the alert's values.
+ */
+const sampleScenario2ResolvedMonitoring: Partial<MonitoringPatient> = {
+	acuity: { label: news2, score: 5, level: "medium" },
+	trajectory: { label: change, value: "−1", trend: "down" },
+	scoreChange4h: -2,
+	vitals: { hr: 96, spo2: 91, systolic: 138, diastolic: 82, map: 101, rr: 21 },
+	trends: {
+		hr: lastHour(96, -16, 2, reynoldsSeed),
+		spo2: lastHour(91, 3, 0.6, reynoldsSeed + 1)?.map((value) => Math.min(100, value)),
+		systolic: lastHour(138, -18, 2.5, reynoldsSeed + 2),
+		rr: lastHour(21, -9, 1, reynoldsSeed + 3),
+	},
+};
+
 export {
 	sampleEscalationTargets,
 	sampleMonitoringAlerts,
 	sampleMonitoringPatients,
 	sampleScenario1Monitoring,
 	sampleScenario1ResolvedMonitoring,
+	sampleScenario2Monitoring,
+	sampleScenario2ResolvedMonitoring,
 };

@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { toastAlert } from "@/components/feedback/alert-toast";
 import { toast } from "@/components/feedback/sonner";
+import { playAlertPing } from "@/lib/alert-ping";
 
 import {
 	severityOrder,
@@ -19,7 +20,10 @@ import { avatarTone, avatarTones, patientInitials } from "./patient-avatar";
 // and opens the patients. With My patients on in the page on screen, only the clinician's own patients toast (Nov 2,
 // 2026, user's call). A toast the clinician closes (× or Close all) stays closed until the app reloads, whatever its
 // severity, Critical and High included; the alert toasts again only if it goes above the severity it had when closed (Nov 3,
-// 2026, user's call). Other alerts, the same patient's new ones included, still toast.
+// 2026, user's call). Other alerts, the same patient's new ones included, still toast. A new alert a hospital is calling
+// about (`consultRequest`, Scenario 2) rings as a consult request instead, whatever the scope or what was closed: it rings
+// until answered or declined (Nov 4, 2026, user's call), `ringAfter` seconds after the alert reaches the card. Answer opens
+// the alert with the call on. A new, raised or active-again alert's toast pings as it appears (`playAlertPing`, Nov 4, 2026, user's calls).
 
 const severityWords: Record<TriageAlertSeverity, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 
@@ -40,7 +44,13 @@ const changeWords = (change: AlertChange) => {
 const needsAttention = (change: AlertChange) =>
 	change.kind === "new" || change.kind === "raised" || (change.kind === "status" && change.status === "active");
 
-type AlertToastPatient = TriageQueuePatient & { photo?: string; mine?: boolean; tags?: { label: string }[] };
+type AlertToastPatient = TriageQueuePatient & {
+	photo?: string;
+	mine?: boolean;
+	tags?: { label: string }[];
+	age?: number | string;
+	sex?: string;
+};
 
 type AlertToastsProps = {
 	/** The feed's alerts, without the clinician's queue actions, so their own actions don't toast back at them. */
@@ -80,6 +90,14 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 	const previous = React.useRef(alerts);
 	// The patient behind each toast shown, by alert id (the toast's id), so My patients can close the others' toasts.
 	const shown = React.useRef(new Map<string, string>());
+	// Consult requests waiting to ring (`ringAfter`), cleared if the toasts go.
+	const ringTimers = React.useRef<number[]>([]);
+	React.useEffect(
+		() => () => {
+			for (const timer of ringTimers.current) window.clearTimeout(timer);
+		},
+		[],
+	);
 	// The closed toasts, kept by the shell across pages; a page on its own keeps them itself.
 	const [ownClosed, setOwnClosed] = React.useState<Record<string, TriageAlertSeverity>>({});
 	const closed = preferences?.closedAlertToasts ?? ownClosed;
@@ -105,8 +123,43 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 
 		const inScope = mineOnly ? patients.filter((patient) => patient.mine) : patients;
 		const byId = new Map(inScope.map((patient) => [patient.id, patient]));
+		// One ping per batch of changes, however many alerts it brings: for the most severe of them.
+		let ping: TriageAlertSeverity | undefined;
 		for (const change of changes) {
 			const { alert } = change;
+			const request = change.kind === "new" ? alert.consultRequest : undefined;
+			if (request) {
+				const caller = patients.find((item) => item.id === alert.patientId);
+				if (!caller) continue;
+				shown.current.set(alert.id, caller.id);
+				const ring = () =>
+					toastAlert({
+						id: alert.id,
+						severity: "consult-request",
+						title: request.title,
+						// The counter starts when it rings.
+						firedAt: new Date().toISOString(),
+						requester: request.requester,
+						patientName: `${caller.lastName}, ${caller.firstName}`,
+						// "64 M · ED Bay 3": who, and where in the hospital the caller is.
+						location: [
+							[caller.age, caller.sex].filter((part) => part !== undefined).join(" "),
+							[caller.unit, caller.bed].filter(Boolean).join(" "),
+						]
+							.filter(Boolean)
+							.join(" · "),
+						reason: request.question ?? alert.reason,
+						latest: request.latest,
+						urgency: request.urgency,
+						onAnswer: openAlert ? () => openAlert(caller.id, alert.id, { consult: "answered" }) : undefined,
+						// Declined, the alert stays in the queue and on the card; handing it to another intensivist isn't built yet.
+						onDecline: () => {},
+					});
+				// The alert reaches the card first; the call rings `ringAfter` seconds later (Nov 4, 2026, user's call: 4 s).
+				if (request.ringAfter) ringTimers.current.push(window.setTimeout(ring, request.ringAfter * 1000));
+				else ring();
+				continue;
+			}
 			const patient = byId.get(alert.patientId);
 			if (!patient) continue;
 			const closedAs = closed[alert.id];
@@ -114,7 +167,7 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 			shown.current.set(alert.id, patient.id);
 			const attention = needsAttention(change);
 			const name = `${patient.lastName}, ${patient.firstName}`;
-			toastAlert({
+			const shownId = toastAlert({
 				id: alert.id,
 				severity: change.kind === "resolved" ? "resolved" : alert.severity,
 				change: changeWords(change),
@@ -139,7 +192,13 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 					if (change.kind === "resolved") onCloseResolved?.(patient.id);
 				},
 			});
+			// Every change that needs the clinician pings as its toast appears: a new alert, a raised one and one active again,
+			// each treated as new (Nov 4, 2026, user's calls). None while toasts are muted.
+			if (attention && shownId !== undefined && (!ping || severityOrder.indexOf(alert.severity) < severityOrder.indexOf(ping)))
+				ping = alert.severity;
 		}
+		// Low pings once, Medium twice, High three times, Critical five (Nov 4, 2026, user's call).
+		if (ping) playAlertPing(ping);
 	}, [alerts, patients, mineOnly, tones, openPatient, openAlert, askAboutPatient, onCloseResolved, closed, closeToast]);
 
 	return null;

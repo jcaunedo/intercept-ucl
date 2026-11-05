@@ -3,15 +3,16 @@ import { sampleEhrByHospital } from "../../sample-data/sample-ehr";
 import type { PatientRecord } from "../patient-details";
 import { samplePatientBaseRecords } from "../sample-patient-records";
 import type { EmrFeed, EmrWriteBack, PatientEmr } from "./epic-section";
+import type { PatientNote } from "./notes-section";
 import { sampleNotesByPatient } from "./sample-notes";
 
-// Synthetic data (PRD Patient details PD-150): each Census patient's hospital record (Epic, or Meditech at Chadron). Each hospital tells a
+// Synthetic data (PRD Patient details PD-150): each Census patient's hospital record (Epic, Cerner at Alliance, Meditech at Chadron). Each hospital tells a
 // different data-depth story, in plain words (PD-121, PD-134):
 // - Harbor Point General: charted vitals are behind, so a charted temperature can read stale (Sarah Miller's 38.9 °C);
 //   signed Intercept notes are written back.
-// - Mercy West Hospital: everything is up to date, and signed Intercept notes are written back.
+// - Alliance (Cerner): everything is up to date, and signed Intercept notes are written back.
 // - CVMC: lab results arrive late, and the hospital doesn't take Intercept notes back yet.
-// - Chadron Community Hospital: up to date, but charted vitals come every 4 h on its med-surg floor, and it doesn't
+// - Chadron: up to date, but charted vitals come every 4 h on its med-surg floor, and it doesn't
 //   take Intercept notes back yet.
 // Orders are read-only everywhere. Write-backs come from each patient's notes in `sample-notes.ts`, so the two agree.
 
@@ -38,8 +39,8 @@ const profiles: Record<string, HospitalProfile> = {
 		},
 		notes: { access: "write" },
 	},
-	"Mercy West Hospital": {
-		prefix: "MWH",
+	"Alliance": {
+		prefix: "ACH",
 		state: "connected",
 		results: (latest) => ({ state: "current", updatedAt: latest }),
 		vitals: { state: "current", updatedAt: minutesAgo(6) },
@@ -59,7 +60,7 @@ const profiles: Record<string, HospitalProfile> = {
 			note: "CVMC doesn't take Intercept notes back yet. Signed Intercept notes stay in Intercept.",
 		},
 	},
-	"Chadron Community Hospital": {
+	"Chadron": {
 		prefix: "CCH",
 		state: "connected",
 		results: (latest) => ({ state: "current", updatedAt: latest }),
@@ -70,7 +71,7 @@ const profiles: Record<string, HospitalProfile> = {
 		},
 		notes: {
 			access: "read",
-			note: "Chadron Community Hospital doesn't take Intercept notes back yet. Signed Intercept notes stay in Intercept.",
+			note: "Chadron doesn't take Intercept notes back yet. Signed Intercept notes stay in Intercept.",
 		},
 	},
 };
@@ -78,12 +79,15 @@ const profiles: Record<string, HospitalProfile> = {
 const latest = (times: (string | undefined)[]) =>
 	times.reduce<string | undefined>((last, time) => (time && (!last || time > last) ? time : last), undefined);
 
-function buildEmr(record: PatientRecord, index: number): PatientEmr | undefined {
-	const patient = samplePatients.find((item) => item.id === record.id);
+function buildEmr(
+	record: PatientRecord,
+	index: number,
+	patient: { hospital?: string; unit?: string } | undefined = samplePatients.find((item) => item.id === record.id),
+	notes: PatientNote[] = sampleNotesByPatient[record.id]?.notes ?? [],
+): PatientEmr | undefined {
 	const hospital = patient?.hospital;
 	const profile = hospital ? profiles[hospital] : undefined;
 	if (!patient || !hospital || !profile) return undefined;
-	const notes = sampleNotesByPatient[record.id]?.notes ?? [];
 	const hospitalNotes = notes.filter((note) => note.origin === "hospital");
 
 	const writeBacks: EmrWriteBack[] = notes
@@ -167,4 +171,8 @@ const sampleEmrByPatient: Record<string, PatientEmr> = Object.fromEntries(
 	}),
 );
 
-export { sampleEmrByPatient };
+/** A scenario patient's record system, from their card and notes (Scenario 2's Dale Reynolds isn't on the Census yet). */
+const sampleScenarioEmr = (record: PatientRecord, patient: { hospital?: string; unit?: string }, notes: PatientNote[]) =>
+	buildEmr(record, samplePatientBaseRecords.length, patient, notes);
+
+export { sampleEmrByPatient, sampleScenarioEmr };

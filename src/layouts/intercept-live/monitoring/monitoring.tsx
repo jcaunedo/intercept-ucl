@@ -1,7 +1,14 @@
 import * as React from "react";
 
-import { alertModalRenderer, withAlertFlags, type AlertConsultState, type AlertDetailData } from "../alert-modal/alert-modal";
+import {
+	alertModalRenderer,
+	withAlertFlags,
+	type AlertConsultState,
+	type AlertDetailData,
+	type PatientConsultData,
+} from "../alert-modal/alert-modal";
 import type { CarePathwayDecision } from "../alert-modal/care-pathway";
+import type { DischargeDecision } from "../alert-modal/discharge-plan";
 import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
 import { CensusPanel, type CensusPatient } from "../census/census-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
@@ -40,10 +47,20 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		 * toast's maximize button open the alert modal; an alert without one opens the patient.
 		 */
 		alertDetails?: AlertDetailData[];
+		/**
+		 * Each patient's video consult without an alert: a card's Video consult opens it when the patient has no active
+		 * alert (Nov 4, 2026, user's call). A patient without one opens their details.
+		 */
+		patientConsults?: PatientConsultData[];
 		/** A pathway accepted, declined or written in the alert modal, by alert, with the alert's detail as opened. */
 		onPathwayDecision?: (alertId: string, decision: CarePathwayDecision, detail: AlertDetailData) => void;
 		/** Keep or transfer decided in the alert modal, by alert (Scenario 1, step 5). */
 		onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
+		/**
+		 * A discharge referral sent or skipped (Scenario 2, step 6), by patient, from the alert modal or the patient's
+		 * Discharge section.
+		 */
+		onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
 		/** The alert modal's video consult rang, went live or ended, by alert. */
 		onConsultChange?: (alertId: string, state: AlertConsultState, detail: AlertDetailData) => void;
 		/** The AI Notetaker's draft of a consult, approved in the alert modal, by alert. */
@@ -71,8 +88,10 @@ function Monitoring({
 	defaultPatient,
 	onPatientDetailsAction,
 	alertDetails,
+	patientConsults,
 	onPathwayDecision,
 	onTransferDecision,
+	onDischargeDecision,
 	onConsultChange,
 	onConsultNote,
 	...shell
@@ -104,12 +123,14 @@ function Monitoring({
 				alertDetails
 					? alertModalRenderer({
 							details: alertDetails,
+							consults: patientConsults,
 							records: patientRecords,
 							alerts,
 							escalationTargets,
 							onAlertAction: handleAlertAction,
 							onPathwayDecision,
 							onTransferDecision,
+							onDischargeDecision,
 							onConsultChange,
 							onConsultNote,
 						})
@@ -124,6 +145,7 @@ function Monitoring({
 					escalationTargets,
 					onAlertAction: handleAlertAction,
 					onAction: onPatientDetailsAction,
+					onDischargeDecision,
 				})
 			}
 			pages={{

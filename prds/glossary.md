@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 3, 2026
+Last updated: Nov 4, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -303,7 +303,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Neuro ICU** | Neurocritical care unit for patients with stroke, brain injury, seizures or after neurosurgery. A unit code in the Census unit menu. | General |
 | **NEWS2 (National Early Warning Score 2)** | Early-warning score from routine vitals, 0–20 (higher is sicker), with official bands: 0–4 low, 5–6 medium, 7+ high. Built for hospital wards. Since Oct 30, 2026 the prototype's acuity score is NEWS2-style (scale 1), a current-state score shown with its band and 24 h change; it replaces the SOFA placeholder, pending clinical approval (OD-02, D-04). **Scale 2** is NEWS2's oxygen-saturation scale for patients with hypercapnic respiratory failure (target SpO₂ 88–92%, e.g. COPD); the specs name it, and the prototype doesn't use it yet (OD-18). | General, PRD PC-030, SV-09, DU-14 |
 | **NICU** | Neonatal Intensive Care Unit. The ICU for premature or critically ill newborns. A unit code shown in the Patient card location. | General, PRD PC-014 |
-| **Flag details** | *Proposed* the popover a patient's flag opens when clicked: what it means, what's behind it now (the drips and their rates, the ventilator's settings, the lab watched with a drip) and where that comes from. | PRD Patient card §15.1 |
+| **Flag details** | *Proposed* the popover a patient's flag opens when clicked: what the bedside team changed behind it in the last 12 hours ("Epinephrine drip increased by 75% in the last 3 hours", "FiO₂ increased from 40% to 60% in the last 2 hours"), what's behind it now (the drips and their rates, the ventilator's settings, the lab watched with a drip) and where that comes from. It doesn't say what the flag means. | PRD Patient card PC-064, §15.1 |
 | **NIV (Noninvasive ventilation)** | Breathing support through a mask (BiPAP or CPAP), with no tube in the windpipe. Shown as an "NIV" pill on the Patient card, never as "Ventilated". | General, PRD PC-050, §15.1 P1 |
 | **Numerics** | The large numeric readings on a patient monitor (HR, SpO₂, BP, RR…), as opposed to waveforms and trends. On the Surveillance page, HR, SpO₂, BP and RR are the primary numerics. | General, PRD Monitoring MON-071 |
 | **OB exclusion** | Pregnant patients are screened for sepsis under different criteria. | Spec Appendix A |
@@ -429,10 +429,14 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Patient timeline** | *Proposed* Patient details section with vitals, infusions, ventilator settings, labs and events on one time axis, read with one crosshair. | PRD PD-030 |
 | **Shift brief** | *Proposed* answer to "Brief me for the start of my shift": the census at a glance, who needs attention first, what's overdue, concerns carried over, pending results and data gaps. | PRD CC-040 |
 | **Live Camera (look in)** | *Proposed* a camera session to see the patient's room, with nobody called. ⚠️ **Decision needed:** one name (the PRDs say Look in). | PRD Patient details PD-090, PRD Bedside camera |
+| **Social needs (discharge)** | *Proposed* needs outside the patient's medical care that put the discharge at risk, which the discharge workflow flags from the chart, e.g. Scenario 2's "Uninsured" and "Can't afford home oxygen". Each becomes a flag on the patient's card and a drafted referral. | Demo Use Cases Scenario 2, step 6 |
+| **Referral (discharge)** | *Proposed* a request to another service the patient needs after discharge, e.g. Medicaid eligibility screening or pulmonary rehab closer to home. The discharge workflow drafts it; a clinician sends it once someone says who agreed to it (the patient, family or consent on file), or skips it with a reason. | Demo Use Cases Scenario 2, step 6 |
+| **Payer** | Who pays for the patient's care: an insurer, Medicaid or Medicare, or none ("Uninsured"). Scenario 2 writes "payer = uninsured" as a metric. | Demo Use Cases Scenario 2 |
 | **Single Pane of Glass** | The Provider Desktop's promise: one workspace replacing 10–12 applications per shift. | Spec §5.1 |
 | **Telemetry-and-camera fusion** | Live drips, vent settings and pump rates overlaid on the bedside camera feed (the spec's "fighter-jet HUD" for the camera). | Spec §5.2, PRD Monitoring MON-031 |
 | **Three-cell-phone problem** | Clinicians carry up to three phones because desktop notifications (especially Epic Haiku) are unreliable. The reason the mobile companion exists. | Spec §6.10, §9.3 |
 | **Triage queue** | The Monitoring page's rail of active alerts for the panel, highest priority first, with Open, Acknowledge, Escalate and Resolve. The Alert Queue page is the full alert surface. ⚠️ **Decision needed:** whether both exist in v1 (MON-OD-03). | Spec §5.2, PRD Monitoring MON-020 |
+| **Consult request** | *Proposed* a hospital calling the hub for a video consult about a patient, e.g. Alliance's ED physician about Dale Reynolds. It rings until the intensivist answers or declines, with who's calling, the patient, the **Reason for consult** in the caller's words and the **Latest values** the platform has. | Demo Use Cases Scenario 2, step 1; PRD Bedside camera CAM-017 |
 | **Video consult** | *Proposed* a camera session with the bedside nurse called in: the clinician reaches her through the hospital's messaging, and they talk through the room's camera, with the patient in view. Not a video conference: the bedside nurse has no Intercept screen (roadmap). Distinct from the specialist consult (SC-*). | Scenario 1 step 3, PRD Bedside camera CAM-007, PRD Alert maximized modal AMM-013 |
 | **What changed** | *Proposed* Patient details list of everything that changed since this clinician last viewed the patient. ⚠️ **Decision needed:** how "last viewed" is recorded (PD-OD-06). | PRD PD-023 |
 
