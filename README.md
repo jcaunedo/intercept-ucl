@@ -89,6 +89,26 @@ git push && git push --tags
 - **Mark the bundle as client code.** A post-build step adds `"use client"` to the bundle, so Next.js Server Components can import it.
 - **Keep React a peer dependency**, not a bundled one, so apps don't end up with two copies.
 
+## The project docs
+
+Six Markdown files in the repo root hold what the code can't say for itself: how the work is done, why it's built this way, and the rules that keep design and code in step. They're committed with the code, so everyone works from the same version: designers, developers and Claude Code. Each file has one job, and none repeats another.
+
+| File | What it's for | How it's used |
+| --- | --- | --- |
+| [CLAUDE.md](CLAUDE.md) | The operating manual: the stack, folder structure, how to add or change a component, story and code conventions, the theme tokens, release steps, and the current API of every component. | Claude Code loads it at the start of every session, and the project skills (`ucl-generate-component`, `ucl-ds-sync`…) read it before they start. Developers use its "Current Component APIs" list to check what already exists before building something new. Updated in the same change that adds a component, prop or rule. |
+| [DESIGN.md](DESIGN.md) | The design contracts: why a component looks or behaves the way it does, and every Figma ↔ code decision, resolved (✅) or still open (⚠️). Also the brand names and voice. | Read before changing a component or syncing it from Figma, so a decision that took real iteration doesn't get "fixed" back. Each entry gives the rule, why it exists, and the code to check against. |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | How each app's reference layouts in `src/layouts/` are wired: which file does what, how the pieces connect, and which files are sample data to swap for the API. One section per app. | Read before working on an app's layouts, and kept current when the wiring changes. It's the developer handoff map: everything listed as sample data gets replaced, everything else is code to keep. |
+| [MOTION.md](MOTION.md) | The motion system: principles, personality, the named patterns (Lift, Press, Reveal…), guidance per component, reduced-motion rules and a validation checklist. The values themselves live in `src/lib/motion/`. | Read before any animation work. Components pick a named pattern and take their durations, easings and distances from `src/lib/motion/`, never raw values. |
+| [SIZE-SCALE.md](SIZE-SCALE.md) | One set of control heights (`xs` 24, `sm` 32, `md` 36, `lg` 40px) for buttons, inputs, selects and every control that sits in a row. Heights match shadcn/ui; names match Figma. | Checked when a control gets a `size` prop, or when a design calls for a height. Controls in one row share a size, so they line up without adjustments. |
+| [CONVENTIONS.md](CONVENTIONS.md) | How work is branched, committed, versioned and traced: branch prefixes, the commit format `type(scope): summary [REQ-ID…] [DEC-ID]`, and how requirement IDs link commits, PRDs and the changelog. | Followed on every branch, commit and pull request. The IDs connect a line of code back to the requirement and the decision behind it. |
+
+What this brings to the workflow:
+
+- **For design:** Figma stays the starting point, and DESIGN.md records every place where the code differs from it on purpose, plus the open questions Figma still has to answer. A resync from Figma updates what changed and leaves settled decisions alone. Shared size names, motion patterns and tokens mean a design reads the same in Figma, Storybook and the app.
+- **For development:** the answers are in the repo, not in someone's memory or a chat thread. A new developer finds the stack and conventions in CLAUDE.md, an app's wiring in ARCHITECTURE.md, and the reason behind an odd-looking rule in DESIGN.md. Changes stay small and safe because the rules that must change together are written down.
+- **For Claude Code:** the skills read these files before building or syncing anything, and take every project value (package, Figma file, tokens, component APIs, voice) from them instead of guessing. When a skill and these files disagree, the files win. That keeps generated code consistent with hand-written code.
+- **For the team:** decisions are traceable. A commit cites its requirement and decision IDs, DESIGN.md says why, and the CHANGELOG records what shipped, so a review or a handoff never starts from zero.
+
 ## Using UCL in an App
 
 ### 1. Point the app at GitHub Packages
