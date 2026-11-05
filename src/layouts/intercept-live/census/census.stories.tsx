@@ -254,7 +254,7 @@ export const FiltersSearch: Story = {
 	},
 };
 
-/** Group by hospital's other view (`groupedView="sections"`, the Prototype menu's Sections by hospital): a grid section each. */
+/** Group by hospital's other view (`groupedView="sections"`): a grid section each. */
 export const GroupedGrid: Story = {
 	args: { groupedView: "sections" },
 	play: async ({ canvas, userEvent }) => {
@@ -281,17 +281,6 @@ export const GroupingOneHospital: Story = {
 		await userEvent.click(canvas.getByRole("tab", { name: /^All hospitals/ }));
 		await waitFor(() => expect(canvas.getByRole("region", { name: "CVMC" })).toBeInTheDocument());
 		await expect(grouping).toBeChecked();
-	},
-};
-
-/** The Prototype menu's Sections by hospital (Views) turns grouping on, as hospital sections in the grid. */
-export const GroupedGridFromPrototypeMenu: Story = {
-	render: (args) => <LiveCensus {...args} />,
-	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: "Prototype" }));
-		await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Sections by hospital" }));
-		await waitFor(() => expect(canvas.getByRole("switch", { name: "Group by hospital" })).toBeChecked());
-		await expect(canvas.queryByRole("region", { name: "CVMC" })).not.toBeInTheDocument();
 	},
 };
 
@@ -364,8 +353,6 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 		onConsultNote,
 		logAlertAction,
 	} = useSampleLiveFeed();
-	// The Prototype menu's Sections by hospital view (Group by hospital's Kanban board is the default).
-	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
 	const location = usePrototypeLocation(interceptLivePages, {
 		page: props.defaultPage ?? "Census",
@@ -408,15 +395,11 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 			askInterceptNotice={live.notice}
 			onAlertAction={live.onAlertAction}
 			liveFeed={caption}
-			prototype={prototypeShortcuts({
-				startScenario,
-				groupedGrid,
-				onToggleGroupedGrid: () => setGroupedGrid(!groupedGrid),
-			})}
-			groupedView={groupedGrid ? "sections" : "board"}
+			prototype={prototypeShortcuts({ startScenario })}
 			onResetPrototype={resetPrototype}
 			defaultPage={location.defaultPage}
 			defaultPatient={location.defaultPatient}
+			defaultAlert={location.defaultAlert}
 			onLocationChange={location.onLocationChange}
 		/>
 	);

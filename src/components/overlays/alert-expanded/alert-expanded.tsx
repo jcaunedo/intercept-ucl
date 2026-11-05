@@ -90,7 +90,7 @@ type AlertExpandedProps = Omit<React.ComponentProps<"div">, "title"> &
 		titleAs?: React.ElementType;
 		/** The description's element. Inside a Dialog, pass `DialogDescription`. */
 		descriptionAs?: React.ElementType;
-		/** The buttons under the alert (Button `outline` `md`), one row at equal widths, e.g. Video consult and View pathway. */
+		/** The buttons under the alert (Button `outline` `md`), one row at equal widths, e.g. Video consult and Pathway. */
 		actions?: React.ReactNode;
 		/** The patient's live bedside monitor, the full four lanes. */
 		monitor?: PatientMonitorProps;
@@ -124,6 +124,11 @@ type AlertExpandedPanel = {
 	content: React.ReactNode;
 	/** The panel's scrolling column (it takes focus with `tabIndex={-1}`), e.g. to move focus there when it opens. */
 	ref?: React.Ref<HTMLDivElement>;
+	/**
+	 * A control at the right of the label, sticking with it, e.g. a Button `outline` `xs` that opens another panel. Up to
+	 * 24px tall: it overlaps the padding around the label, so the header keeps its height.
+	 */
+	action?: React.ReactNode;
 };
 
 /** Each side panel's width, which it opens to when there's room. */
@@ -442,9 +447,10 @@ function AlertExpanded({
 							>
 								{/* The label sticks to the top of its column as it scrolls (Nov 3, 2026, user's call), on the column's
 								    background, taking over the 24px padding above it and the 16px gap under it. */}
-								<h3 className='sticky -top-6 z-10 -mx-6 -mt-6 -mb-4 bg-background px-6 pt-6 pb-4 text-xs font-medium tracking-[0.04em] text-muted-foreground uppercase'>
-									{item.label}
-								</h3>
+								<div className='sticky -top-6 z-10 -mx-6 -mt-6 -mb-4 flex items-center justify-between gap-2 bg-background px-6 pt-6 pb-4'>
+									<h3 className='text-xs font-medium tracking-[0.04em] text-muted-foreground uppercase'>{item.label}</h3>
+									{item.action ? <div className='-my-[3px] shrink-0'>{item.action}</div> : null}
+								</div>
 								{item.content}
 							</motion.div>
 						</motion.aside>

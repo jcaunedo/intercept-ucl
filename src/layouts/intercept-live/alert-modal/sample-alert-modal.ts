@@ -354,6 +354,20 @@ const airways = { Invasive: "ventilator", NIV: "niv", Oxygen: "oxygen" } as cons
 
 type SampleVitals = MonitoringPatient["vitals"];
 
+// The bedside's simulated replies (Nov 5, 2026, user's call: "Simulate messages interaction"; simulator US7.2), one for
+// each message the clinician sends, in order. Short, as a nurse answers from the bedside; nothing clinical they'd have
+// to have done. Scenario 2's follow his night: the 1 h gas, then sending it.
+const sampleBedsideReplies = ["On it.", "Done. I'll message you if anything changes.", "Okay, will do."];
+const sampleScenario2Replies = [
+	"Will do. Rachel's drawing the 1 h gas now.",
+	"Okay. I'll send it here as soon as it's back.",
+	"Got it.",
+];
+
+// No thread starts with a message (Nov 5, 2026, user's call: "If I am initiating the messages interaction, no incoming
+// message should be there"): the clinician writes first, and the nurse's replies (`scriptedReplies`) follow. Scenario 2's
+// beats add the ED's messages as they play (`sample-scenario-2.ts`), and each opens the Messages column.
+
 // A reading for an order's "Based on", or nothing when the monitor doesn't have it.
 const reading = (label: string, value: number | undefined, unit: string) =>
 	value === undefined ? undefined : `${label} ${value}${unit}`;
@@ -547,6 +561,7 @@ function samplePatientParts(
 		bedside: nurse
 			? { name: nurse.name, role: "RN", initials: nurse.initials, src: nurse.src, tone: nurse.tone, presence: nurse.presence ?? "online", activity: "At the bedside" }
 			: undefined,
+		scriptedReplies: nurse ? sampleBedsideReplies : undefined,
 		room: {
 			airway: support && support in airways ? airways[support as keyof typeof airways] : "none",
 			pumps: Math.min(4, record?.infusions?.length ?? 0),
@@ -623,6 +638,9 @@ function sampleAlertDetails({
 					tags: live.tags ?? scenario.tags,
 					alert,
 					patient: { ...scenario.patient, tone: tones.get(alert.patientId) ?? scenario.patient.tone },
+					scriptedReplies:
+						scenario.scriptedReplies ?? (alert.id === "live-reynolds" ? sampleScenario2Replies : sampleBedsideReplies),
+					messages: scenario.messages,
 				},
 			];
 		}

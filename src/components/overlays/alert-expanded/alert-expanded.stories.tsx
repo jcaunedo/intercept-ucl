@@ -74,7 +74,7 @@ const consult = (
 		</Button>
 		<Button variant='outline'>
 			<GitForkIcon />
-			View pathway
+			Pathway
 		</Button>
 	</>
 );
@@ -92,7 +92,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** As in Figma: Hayes's Critical alert, its lifecycle actions, Video consult and View pathway, her score, monitor and tags. */
+/** As in Figma: Hayes's Critical alert, its lifecycle actions, Video consult and Pathway, her score, monitor and tags. */
 export const Default: Story = {
 	play: async ({ args, canvas, userEvent }) => {
 		// The name opens the patient; the × closes the panel.
@@ -203,7 +203,7 @@ export const WithConsult: Story = {
 				</Button>
 				<Button variant='outline'>
 					<GitForkIcon />
-					View pathway
+					Pathway
 				</Button>
 			</>
 		),

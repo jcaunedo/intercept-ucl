@@ -21,9 +21,10 @@ import { avatarTone, avatarTones, patientInitials } from "./patient-avatar";
 // 2026, user's call). A toast the clinician closes (× or Close all) stays closed until the app reloads, whatever its
 // severity, Critical and High included; the alert toasts again only if it goes above the severity it had when closed (Nov 3,
 // 2026, user's call). Other alerts, the same patient's new ones included, still toast. A new alert a hospital is calling
-// about (`consultRequest`, Scenario 2) rings as a consult request instead, whatever the scope or what was closed: it rings
-// until answered or declined (Nov 4, 2026, user's call), `ringAfter` seconds after the alert reaches the card. Answer opens
-// the alert with the call on. A toast that appears or moves to the front pings once (`playAlertPing`, Nov 4, 2026, user's calls).
+// about (`consultRequest`, Scenario 2) toasts as any new alert, then `ringAfter` seconds later rings a second toast, the
+// consult request, whatever the scope or what was closed (Nov 5, 2026, user's call: two toasts, the alert then the call;
+// it was the call alone). The call rings until answered or declined (Nov 4, 2026, user's call); Answer opens the alert with
+// the call on and closes the alert's own toast, as opening it from that toast does. A toast that appears or moves to the front pings once (`playAlertPing`, Nov 4, 2026, user's calls).
 
 const severityWords: Record<TriageAlertSeverity, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 
@@ -60,6 +61,9 @@ type AlertToastsProps = {
 	/** A Resolved toast closed with its ×: the patient's card drops its Resolved bar (`useClosedResolutions`). */
 	onCloseResolved?: (patientId: string) => void;
 };
+
+// A consult request's toast id: the alert's own id is its alert toast.
+const consultToastId = (alertId: string) => `${alertId}:consult`;
 
 // The ping, on the timeout right after Sonner places the toast; skipped if toasts were muted in between.
 const pingUnlessMuted = () =>
@@ -114,10 +118,10 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 		unheard.current.clear();
 	}, [muted]);
 	// Consult requests waiting to ring (`ringAfter`), cleared if the toasts go.
-	const ringTimers = React.useRef<number[]>([]);
+	const ringTimers = React.useRef(new Map<string, number>());
 	React.useEffect(
 		() => () => {
-			for (const timer of ringTimers.current) window.clearTimeout(timer);
+			for (const timer of ringTimers.current.values()) window.clearTimeout(timer);
 		},
 		[],
 	);
@@ -151,13 +155,12 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 		for (const change of changes) {
 			const { alert } = change;
 			const request = change.kind === "new" ? alert.consultRequest : undefined;
-			if (request) {
-				const caller = patients.find((item) => item.id === alert.patientId);
-				if (!caller) continue;
-				shown.current.set(alert.id, caller.id);
+			const caller = request && patients.find((item) => item.id === alert.patientId);
+			if (request && caller) {
+				// Its own toast, next to the alert's (below). Not in `shown`: My patients doesn't close a call.
 				const ring = () =>
 					toastAlert({
-						id: alert.id,
+						id: consultToastId(alert.id),
 						severity: "consult-request",
 						title: request.title,
 						// The counter starts when it rings.
@@ -178,14 +181,33 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 						reason: request.question ?? alert.reason,
 						latest: request.latest,
 						urgency: request.urgency,
-						onAnswer: openAlert ? () => openAlert(caller.id, alert.id, { consult: "answered" }) : undefined,
+						onAnswer: openAlert
+							? () => {
+									openAlert(caller.id, alert.id, { consult: "answered" });
+									toast.dismiss(alert.id);
+								}
+							: undefined,
 						// Declined, the alert stays in the queue and on the card; handing it to another intensivist isn't built yet.
 						onDecline: () => {},
 					});
-				// The alert reaches the card first; the call rings `ringAfter` seconds later (Nov 4, 2026, user's call: 4 s).
-				if (request.ringAfter) ringTimers.current.push(window.setTimeout(ring, request.ringAfter * 1000));
+				// The alert reaches the card and toasts first; the call rings `ringAfter` seconds later (Scenario 2: 4 s, Nov 5,
+				// 2026, user's call).
+				if (request.ringAfter)
+					ringTimers.current.set(
+						alert.id,
+						window.setTimeout(() => {
+							ringTimers.current.delete(alert.id);
+							ring();
+						}, request.ringAfter * 1000),
+					);
 				else ring();
-				continue;
+			}
+			// Its alert resolved (or the scenario restarted): nobody's calling about it any more, so the call stops ringing,
+			// or never rings. The call toast has its own id, so the alert's Resolved toast doesn't replace it.
+			if (change.kind === "resolved") {
+				window.clearTimeout(ringTimers.current.get(alert.id));
+				ringTimers.current.delete(alert.id);
+				toast.dismiss(consultToastId(alert.id));
 			}
 			const patient = byId.get(alert.patientId);
 			if (!patient) continue;

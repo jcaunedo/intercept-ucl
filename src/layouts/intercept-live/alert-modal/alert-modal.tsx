@@ -6,6 +6,7 @@ import {
 	GitForkIcon,
 	LoaderCircleIcon,
 	type LucideIcon,
+	MessageCircleMoreIcon,
 	MicIcon,
 	MicOffIcon,
 	PhoneOffIcon,
@@ -39,6 +40,7 @@ import {
 	iconSwapReducedVariants,
 	iconSwapVariants,
 	liveDotVariants,
+	motionDuration,
 	revealVariants,
 	useMotionPreference,
 } from "@/lib/motion";
@@ -67,9 +69,15 @@ import {
 } from "./care-pathway";
 import { useCallAudio } from "./call-audio";
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "./discharge-plan";
+import {
+	ConsultMessages,
+	ConsultMessagesButton,
+	useConsultMessages,
+	useUnreadMessages,
+	type ConsultMessage,
+} from "./consult-messages";
 import { KeepOrTransferPanel, type KeepOrTransfer, type KeepOrTransferDecision } from "./keep-or-transfer";
 import {
-	BedsidePhotos,
 	defaultVitalsEvery,
 	LowBandwidthBanner,
 	MonitorHeldLine,
@@ -170,6 +178,16 @@ type AlertDetailData = {
 	 * held and refreshed every few seconds, and the bedside's photos show under the call (Scenario 2, step 2).
 	 */
 	connection?: ConsultConnection;
+	/**
+	 * The consult's thread with the bedside nurse, oldest first (their hospital's messaging, bridged): the Video consult
+	 * panel's Messages opens it in the third column. Without it, the thread starts empty.
+	 */
+	messages?: ConsultMessage[];
+	/**
+	 * The prototype's simulated replies from the bedside, in order: one for each message the clinician sends, the nurse
+	 * typing first (simulator US7.2). The app leaves it out; real replies come in `messages`.
+	 */
+	scriptedReplies?: string[];
 	/** A suggested care pathway and its order set, e.g. Scenario 1's CHF exacerbation pathway (exploration). */
 	pathway?: CarePathway;
 	/** Where the pathway is when the modal opens, e.g. `active` once its orders were co-signed. Suggested by default. */
@@ -192,7 +210,7 @@ type AlertDetailData = {
  */
 type PatientConsultData = Pick<
 	AlertDetailData,
-	"patient" | "acuity" | "trajectory" | "monitor" | "tags" | "bedside" | "notetakerParties" | "room" | "video" | "connection"
+	"patient" | "acuity" | "trajectory" | "monitor" | "tags" | "bedside" | "notetakerParties" | "room" | "video" | "connection" | "messages" | "scriptedReplies"
 > & {
 	patientId: string;
 };
@@ -561,6 +579,10 @@ function ConsultTile({
 			{patient.bed ? <span className='rounded-full bg-(--gray-950)/70 px-2.5 py-1'>{patient.bed}</span> : null}
 		</div>
 	);
+	// A control that's off (camera or mic) reverses (Nov 5, 2026, user's call): a white icon on the call's dark overlay, as
+	// the nurse's name label, so off reads at a glance against the white circles that are on. Disabled too (audio only).
+	const offControl =
+		"data-off:bg-(--gray-950)/70 data-off:text-(--white) data-off:hover:bg-(--gray-950)/85 data-off:disabled:bg-(--gray-950)/70 data-off:disabled:text-(--white)/70";
 	const callControls = (
 		<div className='flex gap-2'>
 			<Button
@@ -568,6 +590,8 @@ function ConsultTile({
 				size='icon-md'
 				aria-label={audioOnly ? "Camera off for low bandwidth" : cameraOff ? "Turn on camera" : "Turn off camera"}
 				aria-pressed={audioOnly ? undefined : cameraOff}
+				data-off={audioOnly || cameraOff || undefined}
+				className={offControl}
 				disabled={audioOnly}
 				onClick={() => setCameraOff((current) => !current)}
 			>
@@ -578,6 +602,8 @@ function ConsultTile({
 				size='icon-md'
 				aria-label={muted ? "Unmute" : "Mute"}
 				aria-pressed={muted}
+				data-off={muted || undefined}
+				className={offControl}
 				onClick={() => setMuted((current) => !current)}
 			>
 				{muted ? <MicOffIcon /> : <MicIcon />}
@@ -706,7 +732,8 @@ function ConsultTile({
 										{bedside.src ? <AvatarImage src={bedside.src} alt='' /> : null}
 										<AvatarFallback tone={bedside.tone}>{bedside.initials}</AvatarFallback>
 									</Avatar>
-									{who} joined
+									{/* Who's on the call, without "joined" (Nov 5, 2026, user's call). */}
+									{who}
 								</span>
 							) : (
 								<span />
@@ -1035,7 +1062,6 @@ function ConsultPanelContent({
 				) : null}
 			</AnimatePresence>
 			{tile}
-			<BedsidePhotos photos={connection?.photos ?? []} />
 			{notetaker}
 		</>
 	);
@@ -1197,7 +1223,7 @@ function ConsultNotetaker({
 					role='status'
 					className='flex w-full flex-col items-center gap-1'
 				>
-					<p className='flex items-center gap-1.5 text-sm font-medium text-foreground'>
+					<p className='flex items-center gap-1.5 text-base font-bold text-foreground'>
 						{state === "recording" ? <LiveDot /> : null}
 						{state === "consent" || state === "processing" ? (
 							<LoaderCircleIcon
@@ -1309,13 +1335,18 @@ type AlertPanelProps = Omit<AlertDetailModalProps, "open" | "defaultOpen" | "onO
 	onClose?: () => void;
 	/** Set to what Escape should close first: an open form, dose edit or decision. Returns whether it closed one. */
 	escapeRef?: React.RefObject<(() => boolean) | null>;
+	/** A message the clinician sent the bedside nurse from the Messages column. */
+	onSendMessage?: (text: string) => void;
 	className?: string;
 };
+
+/** Who the consult's thread is with, "Kelly Ortiz, RN". */
+const threadWith = (bedside?: AlertDetailBedside) => (bedside ? `${bedside.name}, ${bedside.role}` : "the bedside nurse");
 
 /**
  * One alert, expanded, with everything the alert modal did (it replaces the modal, Nov 3, 2026, user's call): UCL's
  * AlertExpanded with the alert's lifecycle (Acknowledge, Escalate and Resolve, each form under the buttons),
- * Video consult and View pathway. Each opens a side panel that slides out on the right, the pathway's to the right of
+ * Video consult and Pathway. Each opens a side panel that slides out on the right, the pathway's to the right of
  * the call's when both are open: the call, with the AI Notetaker under it (Scenario 1, step 3), and the care pathway
  * with keep or transfer (steps 4 and 5). The alert's key findings are a flag, first in its tag row.
  *
@@ -1340,19 +1371,61 @@ function AlertPanel({
 	close,
 	onClose,
 	escapeRef,
+	onSendMessage,
 	className,
 }: AlertPanelProps) {
-	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
+	// Opened to call the bedside (a card's Video consult, the Prototype menu's Alert with video consult, `?consult=1`): it
+	// starts idle and calls once the modal has come in, so the Video consult panel slides out as it does from the button
+	// (Nov 5, 2026, user's call). Opened already on (a consult request answered) shows the panel at once.
+	const callOnOpen = defaultConsult === "connecting";
+	const [consult, setConsult] = useConsult(callOnOpen ? "idle" : defaultConsult, onConsultChange);
+	React.useEffect(() => {
+		if (!callOnOpen) return;
+		const timer = window.setTimeout(() => setConsult("connecting"), motionDuration.normal * 1000);
+		return () => window.clearTimeout(timer);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the modal opens.
+	}, []);
 	const lifecycle = useAlertLifecycle({ alert: data.alert, actions: actionsProp, escalationTargets, onAction });
-	const [pathwayOpen, setPathwayOpen] = React.useState(defaultPathwayOpen);
+	const consultOn = consult !== "idle";
+	// The third column (Nov 5, 2026, user's call): the pathway, or the messages with the bedside nurse, one at a time.
+	// The messages open from the actions row, with or without a call, and stay when the call ends (Nov 5, 2026, user's
+	// call); the Video consult panel's header opens them too.
+	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(defaultPathwayOpen ? "pathway" : null);
+	const pathwayOpen = sidePanel === "pathway";
+	const messagesOpen = sidePanel === "messages";
+	// The message field takes focus when the clinician opens the column, not when it opens on its own (below).
+	const [focusMessages, setFocusMessages] = React.useState(false);
+	const togglePanel = (panel: "pathway" | "messages") => {
+		setFocusMessages(panel === "messages");
+		setSidePanel((current) => (current === panel ? null : panel));
+	};
+	// When the hospital's connection drops mid-call (Scenario 2, step 2), the messages open on their own: the call goes on
+	// as audio, and the bedside's photos and messages still get through (Nov 5, 2026, user's call).
+	const lowBandwidth = data.connection?.mode === "low-bandwidth";
+	const [wasLowBandwidth, setWasLowBandwidth] = React.useState(lowBandwidth);
+	if (lowBandwidth !== wasLowBandwidth) {
+		setWasLowBandwidth(lowBandwidth);
+		if (lowBandwidth && consultOn) {
+			setFocusMessages(false);
+			setSidePanel("messages");
+		}
+	}
+	const [messages, sendMessage, nurseTyping] = useConsultMessages(
+		data.messages,
+		data.connection?.photos,
+		onSendMessage,
+		data.scriptedReplies,
+	);
+	// A message from the bedside arriving while the column is closed (or Pathway has it) doesn't open it: the Messages
+	// buttons count it (Nov 5, 2026, user's call).
+	const unread = useUnreadMessages(messages, messagesOpen);
 	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
 	if (escapeRef) escapeRef.current = () => lifecycle.escape() || Boolean(pathwayOpen && pathwayEscape.current?.());
-	// View pathway: the pathway section takes focus as it opens, so the keyboard lands there too.
+	// Pathway: the pathway section takes focus as it opens, so the keyboard lands there too.
 	const pathwayRef = React.useRef<HTMLDivElement>(null);
 	React.useEffect(() => {
 		if (pathwayOpen) pathwayRef.current?.focus({ preventScroll: true });
 	}, [pathwayOpen]);
-	const consultOn = consult !== "idle";
 	const alertFlag = findingsFlag(data);
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
 
@@ -1371,15 +1444,25 @@ function AlertPanel({
 			actions={
 				<>
 					<ConsultButton consult={consult} onConsultChange={setConsult} />
+					{/* Messages with the bedside nurse, between the call and Pathway, always shown (Nov 5, 2026, user's calls);
+					    the Video consult panel's header has the same toggle while the call is on. */}
+					<ConsultMessagesButton
+						size='md'
+						icon={MessageCircleMoreIcon}
+						open={messagesOpen}
+						unread={unread}
+						onToggle={() => togglePanel("messages")}
+					/>
 					{data.pathway ? (
 						<Button
 							variant='outline'
 							aria-expanded={pathwayOpen}
-							onClick={() => setPathwayOpen((open) => !open)}
+							onClick={() => togglePanel("pathway")}
 							className='aria-expanded:bg-accent'
 						>
 							<GitForkIcon />
-							{pathwayOpen ? "Hide pathway" : "View pathway"}
+							{/* "Pathway" (Nov 5, 2026, user's call; it was View pathway), Hide pathway while it's open. */}
+							{pathwayOpen ? "Hide pathway" : "Pathway"}
 						</Button>
 					) : null}
 				</>
@@ -1397,6 +1480,27 @@ function AlertPanel({
 										data={data}
 										tile={<ConsultTile data={data} state={consult} onEnd={() => setConsult("idle")} />}
 										notetaker={<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />}
+									/>
+								),
+								action: (
+									<ConsultMessagesButton open={messagesOpen} unread={unread} onToggle={() => togglePanel("messages")} />
+								),
+							},
+						]
+					: []),
+				// The third column, in the pathway's place (intercept.ds `alert-expanded` › Messages `1375:8218`).
+				...(messagesOpen
+					? [
+							{
+								id: "messages",
+								label: "Messages",
+								content: (
+									<ConsultMessages
+										messages={messages}
+										onSend={sendMessage}
+										nurse={threadWith(data.bedside)}
+										typing={nurseTyping}
+										autoFocus={focusMessages}
 									/>
 								),
 							},
@@ -1490,6 +1594,7 @@ function PatientConsultDialog({
 	onConsultChange,
 	onConsultNote,
 	onOpenPatient,
+	onSendMessage,
 }: {
 	data: PatientConsultData;
 	open?: boolean;
@@ -1498,8 +1603,21 @@ function PatientConsultDialog({
 	onConsultChange?: (state: AlertConsultState) => void;
 	onConsultNote?: (note: string) => void;
 	onOpenPatient?: () => void;
+	onSendMessage?: (text: string) => void;
 }) {
 	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
+	// The messages with the bedside nurse, as on the alert panel: a column right of the call's, while the call is on.
+	const [messagesShown, setMessagesShown] = React.useState(false);
+	const messagesOpen = messagesShown && consult !== "idle";
+	if (messagesShown && consult === "idle") setMessagesShown(false);
+	const [messages, sendMessage, nurseTyping] = useConsultMessages(
+		data.messages,
+		data.connection?.photos,
+		onSendMessage,
+		data.scriptedReplies,
+	);
+	// Messages from the bedside not yet seen, counted on the Messages button, as on the alert panel.
+	const unread = useUnreadMessages(messages, messagesOpen);
 	const { patient } = data;
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
 	return (
@@ -1548,7 +1666,32 @@ function PatientConsultDialog({
 									notetaker={<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />}
 								/>
 							),
+							action:
+								consult !== "idle" ? (
+									<ConsultMessagesButton
+										open={messagesOpen}
+										unread={unread}
+										onToggle={() => setMessagesShown((shown) => !shown)}
+									/>
+								) : undefined,
 						},
+						...(messagesOpen
+							? [
+									{
+										id: "messages",
+										label: "Messages",
+										content: (
+											<ConsultMessages
+												messages={messages}
+												onSend={sendMessage}
+												nurse={threadWith(data.bedside)}
+										typing={nurseTyping}
+												autoFocus
+											/>
+										),
+									},
+								]
+							: []),
 					]}
 					close={
 						<DialogClose asChild>
@@ -1568,7 +1711,7 @@ function PatientConsultDialog({
 
 /**
  * An alert, opened, 1400px wide in three columns. The patient: who they are, the alert (its bar, title, source and
- * lifecycle actions), their score, monitor and tags, then Video consult and View pathway. Clinical info: the key
+ * lifecycle actions), their score, monitor and tags, then Video consult and Pathway. Clinical info: the key
  * clinical findings and the history and labs, with the video consult floating over its bottom once it's on. Pathway,
  * for acting on it: the suggested care pathway with its decision at the bottom, then keep or transfer once the orders
  * are sent. Each column scrolls on its own. Replaced in the app by the alert panel (AlertPanelDialog, Nov 3, 2026).
@@ -1594,7 +1737,7 @@ function AlertDetailModal({
 	const lifecycle = useAlertLifecycle({ alert: data.alert, actions: actionsProp, escalationTargets, onAction });
 	const { prefersReducedMotion } = useMotionPreference();
 	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
-	// View pathway: the Pathway column back at its top, with focus, so the keyboard lands there too.
+	// Pathway: the Pathway column back at its top, with focus, so the keyboard lands there too.
 	const pathwayRef = React.useRef<HTMLElement>(null);
 	const viewPathway = () => {
 		const column = pathwayRef.current;
@@ -1631,7 +1774,7 @@ function AlertDetailModal({
 							{data.pathway ? (
 								<Button variant='outline' onClick={viewPathway}>
 									<GitForkIcon />
-									View pathway
+									Pathway
 								</Button>
 							) : null}
 						</>
@@ -1836,6 +1979,7 @@ export {
 	type PatientConsultData,
 	type AlertDetailAction,
 	type AlertDetailBedside,
+	type ConsultMessage,
 	type AlertDetailData,
 	type AlertDetailFact,
 	type AlertDetailModalProps,

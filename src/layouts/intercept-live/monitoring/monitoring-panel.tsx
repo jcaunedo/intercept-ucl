@@ -34,6 +34,7 @@ import {
 	PanelEmpty,
 	PanelGrid,
 	QuickViewChips,
+	StickyFilterBar,
 	PanelBoard,
 	useChangedSinceMount,
 	useSnapOrder,
@@ -388,6 +389,8 @@ function MonitoringPanel({
 	// Remembered across pages and patient details (`useSortBy`).
 	const [sortBy, setSortBy] = useSortBy("monitoring", "alert");
 	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
+	// Where the board's header row sticks: under the sticky filter bar, which reports it as its height changes.
+	const [boardTop, setBoardTop] = React.useState(0);
 	// Group by hospital: a Kanban column per hospital, the sort inside each; or, with the sections view, a grid section each.
 	// A view picked in the Prototype menu shows at once: cards, across all hospitals.
 	const [groupedChoice, setGrouped] = useGrouping(groupedView, () => {
@@ -651,29 +654,30 @@ function MonitoringPanel({
 					{/* As on the Census (Intercept-Live Census `167:5543`): the summary with the live feed's latest change at its
 					    right, which opens the live feed panel; then the filter chips, with the page's actions at the right, 8px
 					    apart; 24px between the rows. */}
-					<div className='flex flex-col gap-6'>
-						<div className='flex min-h-9 items-center gap-2'>
-							{/* The panel summary (PRD Monitoring §3.1): patients shown, where, and their active alerts. */}
-							<Typography as='h1' size='2xl' weight='regular' aria-live='polite' className='min-w-0 flex-1'>
-								<span className='font-bold'>
-									{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
-									{everyoneCount === 1 ? "patient" : "patients"}{" "}
-									{singleHospital
-										? `at ${singleHospital.name}`
-										: `across ${hospitalCount} ${hospitalCount === 1 ? "hospital" : "hospitals"}`}
-								</span>{" "}
-								· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
-							</Typography>
-							<LiveFeed
-								change={liveFeed}
-								open={rightPanel === "feed"}
-								onOpen={() => {
-									toggleRightPanel("feed");
-									onOpenLiveFeed?.();
-								}}
-							/>
-						</div>
+					<div className='flex min-h-9 items-center gap-2'>
+						{/* The panel summary (PRD Monitoring §3.1): patients shown, where, and their active alerts. */}
+						<Typography as='h1' size='2xl' weight='regular' aria-live='polite' className='min-w-0 flex-1'>
+							<span className='font-bold'>
+								{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
+								{everyoneCount === 1 ? "patient" : "patients"}{" "}
+								{singleHospital
+									? `at ${singleHospital.name}`
+									: `across ${hospitalCount} ${hospitalCount === 1 ? "hospital" : "hospitals"}`}
+							</span>{" "}
+							· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
+						</Typography>
+						<LiveFeed
+							change={liveFeed}
+							open={rightPanel === "feed"}
+							onOpen={() => {
+								toggleRightPanel("feed");
+								onOpenLiveFeed?.();
+							}}
+						/>
+					</div>
 
+					{/* Sticks under the page header while the page scrolls (StickyFilterBar). */}
+					<StickyFilterBar onBoardTopChange={setBoardTop}>
 						<FilterBar aria-label='Patient filters'>
 							{/* The search leads the chips, as on the Census, and pushes them along as it opens. */}
 							<FilterBarFilters>
@@ -710,7 +714,7 @@ function MonitoringPanel({
 								/>
 							</FilterBarControls>
 						</FilterBar>
-					</div>
+					</StickyFilterBar>
 
 					{density === "list" ? (
 						<MonitoringList
@@ -726,6 +730,7 @@ function MonitoringPanel({
 						/>
 					) : board ? (
 						<PanelBoard
+							stickyTop={boardTop}
 							{...pauseProps}
 							animateIn={boardSwitched}
 							patients={visible}

@@ -1087,8 +1087,8 @@ type GroupedView = "board" | "sections";
 
 /**
  * The user's Group by hospital choice, off to start. Inside the shell it's kept there, so it holds when the user
- * switches pages (`usePagePreferences`); a page on its own keeps it itself. Choosing another grouped view (the Prototype
- * menu's Sections by hospital, or back) turns it on and calls `onViewChange`, where the panel shows the view at once
+ * switches pages (`usePagePreferences`); a page on its own keeps it itself. Choosing another grouped view (a new
+ * `groupedView`) turns it on and calls `onViewChange`, where the panel shows the view at once
  * (cards, All hospitals). The panel turns grouping off while one hospital is picked, keeping this choice for All
  * hospitals.
  */
@@ -1133,8 +1133,73 @@ function usePatientScope(page: SortPage) {
 	return [scope, setScope] as const;
 }
 
-// Where the board's header row sticks: under the page's sticky header, compact while the page scrolls (AppHeader).
+// The page's sticky header, compact while the page scrolls (AppHeader): where the filter bar sticks, and the board's
+// header row without one.
 const stickyTop = 52;
+// The filter bar's space above and below it, kept while it's stuck: the page's 24px between rows.
+const filterBarPadding = 24;
+// The board's header row has a 16px opaque band over its headers (PanelBoard).
+const boardHeadBand = 16;
+
+/**
+ * The page's filter bar, stuck under the page header while the page scrolls (Nov 5, 2026, user's call), keeping its
+ * 24px above and below, opaque edge to edge so the cards pass under it. It must be a direct child of the page's `main`
+ * (sticky can't leave its parent), which has 24px padding: the bar takes it back on the sides and the 24px above.
+ *
+ * The 24px below is added only while stuck (padding and an equal negative margin, so nothing moves): at rest it would
+ * cover the gap above the first row, clipping a card that lifts on hover. `onBoardTopChange` reports where the board's
+ * header row should stick (`PanelBoard`'s `stickyTop`): under the bar, its 16px band over the bar's bottom padding, so
+ * the headers sit 24px under the chips, as at rest.
+ */
+function StickyFilterBar({
+	children,
+	onBoardTopChange,
+}: {
+	children: React.ReactNode;
+	onBoardTopChange?: (top: number) => void;
+}) {
+	const bar = React.useRef<HTMLDivElement>(null);
+	const content = React.useRef<HTMLDivElement>(null);
+	const [stuck, setStuck] = React.useState(false);
+
+	// Stuck while it rests at its sticky top. Any scroll may move it (the page's canvas scrolls, not the window), so the
+	// listener captures them all.
+	React.useEffect(() => {
+		const element = bar.current;
+		if (!element) return;
+		const check = () => setStuck(element.getBoundingClientRect().top <= stickyTop + 0.5);
+		check();
+		window.addEventListener("scroll", check, { capture: true, passive: true });
+		window.addEventListener("resize", check);
+		return () => {
+			window.removeEventListener("scroll", check, { capture: true });
+			window.removeEventListener("resize", check);
+		};
+	}, []);
+
+	// The bar's height changes when its chips wrap or the search opens, and the board's headers follow it.
+	const onBoardTopChangeRef = React.useRef(onBoardTopChange);
+	onBoardTopChangeRef.current = onBoardTopChange;
+	React.useEffect(() => {
+		const element = content.current;
+		if (!element) return;
+		const report = () =>
+			onBoardTopChangeRef.current?.(stickyTop + filterBarPadding * 2 + element.offsetHeight - boardHeadBand);
+		report();
+		const observer = new ResizeObserver(report);
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, []);
+
+	return (
+		<div
+			ref={bar}
+			className={cn("sticky top-[52px] z-[15] -mx-6 -mt-6 bg-background px-6 pt-6", stuck && "-mb-6 pb-6")}
+		>
+			<div ref={content}>{children}</div>
+		</div>
+	);
+}
 // How far above the screen's bottom a column taller than the screen stops.
 const columnBottomGap = 16;
 
@@ -1155,11 +1220,14 @@ function PanelBoard<Patient extends PanelPatient>({
 	spareColumns = 0,
 	animateIn = false,
 	snap = false,
+	stickyTop: headTop = stickyTop,
 	renderCard,
 	className,
 	style,
 	...props
 }: Omit<React.ComponentProps<"div">, "children"> & {
+	/** Where the header row sticks, its 16px band included: under the page header, or the filter bar (StickyFilterBar). */
+	stickyTop?: number;
 	patients: Patient[];
 	hospitals: PanelHospital[];
 	/** Empty tracks after the hospitals' columns, so each column is narrower (Compact: 1). */
@@ -1245,7 +1313,7 @@ function PanelBoard<Patient extends PanelPatient>({
 			const maxScroll = scroller.scrollHeight - scroller.clientHeight;
 			// The board's top in the page's scroll, so the numbers below don't depend on where the page is now.
 			const boardTop = board.top - box.top + scrolled;
-			const topRest = stickyTop + head.offsetHeight;
+			const topRest = headTop + head.offsetHeight;
 			for (const column of Array.from(body.children) as HTMLElement[]) {
 				const height = column.offsetHeight;
 				// How far the column can move down its board: the tallest one can't, and stays put.
@@ -1311,7 +1379,7 @@ function PanelBoard<Patient extends PanelPatient>({
 			for (const animation of animations) animation.cancel();
 			placeRef.current = undefined;
 		};
-	}, [hasPatients, columnKey]);
+	}, [hasPatients, columnKey, headTop]);
 	// Content above or inside the board can move it without resizing anything observed.
 	React.useEffect(() => placeRef.current?.());
 	if (!hasPatients) return null;
@@ -1332,7 +1400,11 @@ function PanelBoard<Patient extends PanelPatient>({
 			    16px below it, while the board scrolls, so a long column keeps its hospital in view (Oct 30, 2026, user's
 			    call). Opaque, the 16px band too, so cards pass under it; the band overlaps the space above the board, so the
 			    board doesn't move before it sticks. No shadow (removed Oct 30, 2026, user's call). */}
-			<div ref={headRef} className='sticky top-[52px] z-10 -mt-4 overflow-hidden bg-background pt-4 [gap:inherit]'>
+			<div
+				ref={headRef}
+				className='sticky z-10 -mt-4 overflow-hidden bg-background pt-4 [gap:inherit]'
+				style={{ top: headTop }}
+			>
 				<div className='grid [gap:inherit]' style={tracks}>
 					<AnimatePresence initial={false}>
 						{columns.map((column) => (
@@ -1428,6 +1500,7 @@ export {
 	PanelBoard,
 	PanelGrid,
 	QuickViewChips,
+	StickyFilterBar,
 	panelOrder,
 	resolvedTimes,
 	sortOrderById,

@@ -244,34 +244,31 @@ const muteTimeFormat = new Intl.DateTimeFormat(undefined, { hour: "numeric", min
 /* Pausing                                                                    */
 /* -------------------------------------------------------------------------- */
 
-// Sonner pauses every toast's timer while its stack is hovered (which expands it) or pressed (`interacting`, set by a
-// pointerdown on its list and cleared by a pointerup), and has no other way in. Pressing changes nothing on screen, so
-// holding the timers sends the list a pointerdown, and letting them go a pointerup. Counted, so the actions row and
-// `hidden` can each hold them. The pressed state is the Toaster's and outlives its list, which only exists while there
-// are toasts: a change with no list waits for the next one (`syncPause`, which the Toaster runs as toasts come and go),
-// so the timers never stay held, nor miss a hold.
+// Sonner pauses every toast's timer while its stack is hovered (which expands it) or pressed (`interacting`). UCL's copy
+// takes a `paused` prop that holds them the same way, without moving anything on screen. Counted, so the actions row and
+// `hidden` can each hold them, and kept here, outside the Toaster, so a hold made with no toasts reaches the next ones.
+// ⚠️ Don't go back to pressing the list with a synthetic pointerdown (until Nov 5, 2026): it bubbled to the document,
+// where an open Radix modal (the alert panel) took it for a click outside and closed (DESIGN.md "Sonner").
 let pauseCount = 0;
-let pressed = false;
-
-function syncPause() {
-	const want = pauseCount > 0;
-	if (want === pressed) return;
-	const list = document.querySelector<HTMLElement>("[data-sonner-toaster]");
-	if (!list) return;
-	list.dispatchEvent(new PointerEvent(want ? "pointerdown" : "pointerup", { bubbles: true }));
-	pressed = want;
-}
+const pauseListeners = new Set<() => void>();
+const subscribePause = (listener: () => void) => {
+	pauseListeners.add(listener);
+	return () => {
+		pauseListeners.delete(listener);
+	};
+};
+const toastsPaused = () => pauseCount > 0;
+const changePause = (delta: number) => {
+	pauseCount += delta;
+	for (const listener of pauseListeners) listener();
+};
 
 /** Holds every toast's timer while `paused`, without moving the stack: toasts neither leave nor expire meanwhile. */
 function usePauseToasts(paused: boolean) {
 	React.useEffect(() => {
 		if (!paused) return;
-		pauseCount++;
-		syncPause();
-		return () => {
-			pauseCount--;
-			syncPause();
-		};
+		changePause(1);
+		return () => changePause(-1);
 	}, [paused]);
 }
 
@@ -631,13 +628,9 @@ function Toaster({
 	// Hidden toasts wait instead of expiring unseen.
 	usePauseToasts(hiddenNow);
 	useCountOnScreen(!hiddenNow);
-	// A hold that changed while there was no list (no toasts) reaches the next one once it's on screen.
+	const paused = React.useSyncExternalStore(subscribePause, toastsPaused, () => false);
 	const anyToast = useSonner().toasts.length > 0;
 	useScrollableStack(anyToast, stackTopLimit(typeof offset === "number" ? offset : 16));
-	React.useEffect(() => {
-		const frame = requestAnimationFrame(syncPause);
-		return () => cancelAnimationFrame(frame);
-	}, [anyToast]);
 	return (
 		// The toasts and the buttons are fixed to the screen, so this wrapper takes no room; its opacity fades them both.
 		// Hidden, they're out of reach too (`inert`), and invisible once faded.
@@ -653,6 +646,7 @@ function Toaster({
 			}
 		>
 			<Sonner
+				paused={paused}
 				expand={expand || holdOpen}
 				className={cn("toaster group", className)}
 				position={position}

@@ -266,10 +266,21 @@ type InterceptLiveProps = {
 	/** A patient whose details show first, over `defaultPage`, with the list to step through. */
 	defaultPatient?: OpenPatient;
 	/**
+	 * An alert open from the start, over the page (and `defaultPatient`, if set), as if the user had opened it: the
+	 * patient's alert modal (their top alert without an `alertId`, as a card's alert bar opens it), with `consult: true`
+	 * its video consult already calling, as its Video consult button does. Needs `renderAlert`.
+	 */
+	defaultAlert?: OpenAlert;
+	/**
 	 * Where the user is, each time it changes (and once at the start): the Sidebar's page, and the patient whose details
 	 * are open over it, if any. E.g. to keep the address in step, so a shared link opens the same place.
 	 */
-	onLocationChange?: (location: { page: InterceptLivePage; patientId?: string }) => void;
+	onLocationChange?: (location: {
+		page: InterceptLivePage;
+		patientId?: string;
+		/** The alert open over it (the alert modal), if any, and whether it was opened with its video consult calling. */
+		alert?: { patientId: string; consult?: boolean };
+	}) => void;
 	/**
 	 * Answers questions in Ask Intercept Live, with the page and the patient on screen. Without it, the chat greets the
 	 * user and says it can't answer yet.
@@ -320,6 +331,8 @@ type PrototypeShortcut = {
 	page?: InterceptLivePage;
 	/** A patient whose details it opens, over `page`. */
 	patientId?: string;
+	/** An alert it opens (the alert modal) over `page`, with `consult: true` its video consult calling. */
+	alert?: OpenAlert;
 	/** Anything else it does, e.g. restart the scripted live feed. */
 	onSelect?: () => void;
 	/** A view that stays on until chosen again (e.g. the Kanban board): shown with a check while it's on. */
@@ -344,6 +357,7 @@ function InterceptLive({
 	renderPatientDetails,
 	renderAlert,
 	defaultPatient,
+	defaultAlert,
 	onLocationChange,
 	askIntercept,
 	askInterceptNotice,
@@ -359,7 +373,9 @@ function InterceptLive({
 	const [openPatient, setOpenPatient] = React.useState<OpenPatient | null>(defaultPatient ?? null);
 	// The alert modal over everything. The last alert stays after it closes, so the modal can animate out.
 	// `key` counts the openings, so each one starts the modal afresh (its consult, its scroll).
-	const [openAlert, setOpenAlert] = React.useState<(OpenAlert & { open: boolean; key: number }) | null>(null);
+	const [openAlert, setOpenAlert] = React.useState<(OpenAlert & { open: boolean; key: number }) | null>(() =>
+		defaultAlert ? { ...defaultAlert, open: true, key: 1 } : null,
+	);
 	// The left side panel: Ask Intercept Live (an action, not a page: it leaves the current page as it is) or, on a
 	// patient's page, the patient list. They share the place, so opening one closes the other.
 	const [leftPanel, setLeftPanel] = React.useState<"chat" | "patients" | null>(null);
@@ -423,6 +439,8 @@ function InterceptLive({
 	const openShortcut = (shortcut: PrototypeShortcut) => {
 		if (shortcut.page) setPage(shortcut.page);
 		setOpenPatient(shortcut.patientId ? { id: shortcut.patientId } : null);
+		const { alert } = shortcut;
+		if (alert) setOpenAlert((current) => ({ ...alert, open: true, key: (current?.key ?? 0) + 1 }));
 		shortcut.onSelect?.();
 	};
 	const prototypeMenu =
@@ -503,9 +521,15 @@ function InterceptLive({
 	// Reported after each navigation, not on every render: the latest callback is read when it fires.
 	const onLocationChangeRef = React.useRef(onLocationChange);
 	onLocationChangeRef.current = onLocationChange;
+	const alertPatientId = openAlert?.open ? openAlert.patientId : undefined;
+	const alertConsult = Boolean(openAlert?.open && openAlert.consult);
 	React.useEffect(() => {
-		onLocationChangeRef.current?.({ page, patientId: openPatientId ?? undefined });
-	}, [page, openPatientId]);
+		onLocationChangeRef.current?.({
+			page,
+			patientId: openPatientId ?? undefined,
+			alert: alertPatientId ? { patientId: alertPatientId, consult: alertConsult || undefined } : undefined,
+		});
+	}, [page, openPatientId, alertPatientId, alertConsult]);
 	// Each patient whose details open, from a page or stepped to, for the pages' Recently viewed sort.
 	const [viewedAt, setViewedAt] = React.useState<Record<string, string>>({});
 	React.useEffect(() => {

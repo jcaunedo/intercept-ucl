@@ -121,6 +121,8 @@ interface ToasterProps {
     icons?: ToastIcons;
     customAriaLabel?: string;
     containerAriaLabel?: string;
+    /** UCL: holds every toast's timer, as a press on the stack does. */
+    paused?: boolean;
 }
 type SwipeDirection = 'top' | 'right' | 'bottom' | 'left';
 interface ToastToDismiss {

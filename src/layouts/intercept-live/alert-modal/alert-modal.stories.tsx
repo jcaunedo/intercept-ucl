@@ -113,7 +113,14 @@ export const Default: Story = {
 		await userEvent.click(dialog.getByRole("button", { name: "Acknowledge" }));
 		await dialog.getByRole("button", { name: "Video consult" }).click();
 		await expect(await dialog.findByText("Calling Kayla Brandt…")).toBeInTheDocument();
-		await waitFor(() => expect(dialog.getByText("Kayla Brandt, RN joined")).toBeInTheDocument(), { timeout: 7000 });
+		// Live: the calling screen (which names the nurse too) has gone, and the nurse's label is on the video.
+		await waitFor(
+			() => {
+				expect(dialog.queryByText(/^Calling /)).not.toBeInTheDocument();
+				expect(dialog.getByText("Kayla Brandt, RN")).toBeInTheDocument();
+			},
+			{ timeout: 7000 },
+		);
 		await expect(args.onConsultChange).toHaveBeenLastCalledWith("live");
 		await dialog.getByRole("button", { name: "End" }).click();
 		await expect(await dialog.findByRole("button", { name: "Video consult" })).toBeInTheDocument();
@@ -152,7 +159,7 @@ export const InConsult: Story = {
  * in the app (Nov 3, 2026, user's call). Acknowledge confirms in place; Escalate and Resolve open their forms
  * under the buttons. Video consult rings Kayla Brandt, RN and slides a panel out with the call and the AI Notetaker under
  * it (Scenario 1, step 3): once the others on the call approve, it captures the consultation, prepares the notes and offers the draft
- * for review and approval; View pathway slides a second one out to its right with the CHF pathway, then keep or
+ * for review and approval; Pathway slides a second one out to its right with the CHF pathway, then keep or
  * transfer once its orders are sent (steps 4 and 5). End call and Hide pathway each slide theirs back.
  */
 export const Panel: Story = {
@@ -163,7 +170,14 @@ export const Panel: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Video consult" }));
 		const call = within(await canvas.findByRole("complementary", { name: "Video consult" }));
 		await expect(call.getByText("Calling Kayla Brandt…")).toBeInTheDocument();
-		await expect(await call.findByText("Kayla Brandt, RN joined", {}, { timeout: 7000 })).toBeInTheDocument();
+		// Live: the calling screen (which names the nurse too) has gone, and the nurse's label is on the video.
+		await waitFor(
+			() => {
+				expect(call.queryByText(/^Calling /)).not.toBeInTheDocument();
+				expect(call.getByText("Kayla Brandt, RN")).toBeInTheDocument();
+			},
+			{ timeout: 7000 },
+		);
 		// Under the call, the AI Notetaker. Starting it asks Kayla for approval; it records once she has.
 		await expect(call.getByText("AI Notetaker")).toBeInTheDocument();
 		await userEvent.click(call.getByRole("button", { name: "Start notetaker" }));
@@ -178,7 +192,7 @@ export const Panel: Story = {
 		await userEvent.click(call.getByRole("button", { name: "Approve notes" }));
 		await expect(await call.findByText(/Approved by you/)).toBeInTheDocument();
 		// The pathway opens in a second panel, to the right of the call's.
-		await userEvent.click(canvas.getByRole("button", { name: "View pathway" }));
+		await userEvent.click(canvas.getByRole("button", { name: "Pathway" }));
 		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
 		await expect(await pathway.findByRole("button", { name: "Accept and send" })).toBeInTheDocument();
 		const panels = canvas.getAllByRole("complementary").map((panel) => panel.getAttribute("aria-label"));

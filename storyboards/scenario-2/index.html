@@ -201,8 +201,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 			<p class="label steps">Steps</p>
 			<ol>
 				<li>Open <span class="ui">Prototype</span> at the bottom of the Sidebar and pick <span class="ui">Scenario 2: COPD</span>.</li>
-				<li>About 2 seconds later Dale's card joins the page, first, with its red <strong>Critical</strong> bar, and Alliance's tab counts him.</li>
-				<li>About 4 seconds after that, <strong>Dr. Brian Keller's call</strong> rings at the bottom right: "Urgent video consult request", how long it has rung, the patient, his <strong>Reason</strong> ("Hypercapnic failure on BiPAP. Can we keep him here?") and the <strong>Latest values</strong>.</li>
+				<li>About 2 seconds later Dale's card joins the page, first, with its red <strong>Critical</strong> bar, and Alliance's tab counts him. His <strong>Critical</strong> alert toasts at the bottom right.</li>
+				<li>About 4 seconds after that, <strong>Dr. Brian Keller's call</strong> rings in a second toast, in front of it: "Urgent video consult request", how long it has rung, the patient, his <strong>Reason</strong> ("Hypercapnic failure on BiPAP. Can we keep him here?") and the <strong>Latest values</strong>.</li>
 				<li>Point out that the call can't be missed: it rings until it's answered or declined, over any page, even with notifications paused.</li>
 				<li>Click <span class="ui">Answer</span>. Dale's alert opens with the video consult already on: <strong>Megan Foster, RN</strong>, at ED Bay 3, his NEWS2 7 and his live monitor (RR 30, SpO₂ 88% on BiPAP).</li>
 				<li>Click his <span class="ui">COPD exacerbation</span> flag, under his monitor: the arrival gas, GOLD 3 with 40 pack-years and no oxygen for 4 days, and his BiPAP settings. <kbd>Esc</kbd> closes it. Be quick: the connection drops about 6 seconds into the call.</li>
@@ -212,7 +212,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 	<div class="frames">
 		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 2: COPD." loading="lazy"><figcaption>Prototype › Scenario 2: COPD.</figcaption></figure>
 		<figure><img src="frames/02-call.jpg" alt="Dr. Brian Keller's call ringing at the bottom right: Urgent video consult request, the patient Reynolds, Dale, the reason, the latest values, Decline and Answer; Dale's card first on Monitoring." loading="lazy"><figcaption>Dr. Keller's consult request rings, with who, why and the latest values. Dale's card leads the page.</figcaption></figure>
-		<figure><img src="frames/03-answered.jpg" alt="Answered: his alert open with the video consult live beside it, Megan Foster, RN joined at Bay 3." loading="lazy"><figcaption>Answered: his alert, with the call already on.</figcaption></figure>
+		<figure><img src="frames/03-answered.jpg" alt="Answered: his alert open with the video consult live beside it, Megan Foster, RN, at Bay 3." loading="lazy"><figcaption>Answered: his alert, with the call already on.</figcaption></figure>
 		<figure><img src="frames/03b-flag.jpg" alt="The COPD exacerbation flag open during the call: hypercapnic respiratory failure, severe COPD, on BiPAP, with their numbers." loading="lazy"><figcaption>His COPD exacerbation flag: the findings behind the consult.</figcaption></figure>
 	</div>
 </section>
@@ -227,9 +227,9 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 			<p class="label steps">Steps</p>
 			<ol>
 				<li>Nothing to click. About 6 seconds into the call the picture freezes, greyed: "Connection weak · switching to audio only…".</li>
-				<li>About 2 seconds later the call is audio only ("Video paused for low bandwidth"), and <strong>Low-bandwidth mode</strong> tops the Video consult panel, with how long it has lasted.</li>
+				<li>About 2 seconds later the call is audio only ("Video paused for low bandwidth"), and <strong>Low-bandwidth mode</strong> tops the Video consult panel, with how long it has lasted. The <strong>Messages</strong> column opens on its own to the right of the call, with Megan Foster's note: "Video froze on our side. Rachel will send the BiPAP screen and the next gases here."</li>
 				<li>Point at his monitor: it shows the last hour's trends, with "Low bandwidth: vitals every 30 s · updated 12 s ago" over the numbers.</li>
-				<li>About 8 seconds later, a photo of the <strong>BiPAP screen</strong> arrives under the call, sent by Rachel Lindgren, RRT, with its readings: IPAP 12, EPAP 5, FiO₂ 35%, RR 28.</li>
+				<li>About 8 seconds later, a photo of the <strong>BiPAP screen</strong> arrives in Messages, sent by Rachel Lindgren, RRT, with its readings: IPAP 12, EPAP 5, FiO₂ 35%, RR 28.</li>
 			</ol>
 		</div>
 	</div>
@@ -248,7 +248,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		<div>
 			<p class="label steps">Steps</p>
 			<ol>
-				<li>Click <span class="ui">View pathway</span> under his alert. The <strong>COPD exacerbation pathway</strong> opens to the right of the call: BiPAP settings with a CO₂ target, nebulizers, steroids, an antibiotic, and intubation readiness.</li>
+				<li>Click <span class="ui">Pathway</span> under his alert. The <strong>COPD exacerbation pathway</strong> takes the Messages column's place, to the right of the call (<span class="ui">Messages</span> over the call brings the thread back): BiPAP settings with a CO₂ target, nebulizers, steroids, an antibiotic, and intubation readiness.</li>
 				<li>Click <span class="ui">Accept and send</span>. About 4 seconds later it's <strong>Co-signed by Dr. Brian Keller</strong>, the ED physician, and <strong>Keep or transfer</strong> opens under it.</li>
 				<li>Scroll the Pathway panel down. Walk through what the plan needs against Alliance tonight (BiPAP, a respiratory therapist, an airway plan, monitoring, the nurse stretched), then <strong>If transferred</strong>: Regional West has a bed, but Air reads <strong>Grounded</strong> and Ground <strong>Highway closed · ETA unknown</strong>.</li>
 			</ol>
@@ -292,7 +292,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 			<p class="label steps">Steps</p>
 			<ol>
 				<li>Nothing to click. About 6 seconds after Keep at Alliance, both checkpoints read <strong>Passed</strong> with his repeat gases, and <strong>Transfer avoided</strong> appears at the bottom of the Pathway panel: 60 mi each way on a closed road, 2 h of NIV, no intubation.</li>
-				<li>Point out his alert: <strong>Resolved</strong> by Megan Foster, RN, and his score now NEWS2 5, Medium. Both blood gases arrived as photos under the call.</li>
+				<li>Point out his alert: <strong>Resolved</strong> by Megan Foster, RN, and his score now NEWS2 5, Medium. Both blood gases arrived as photos, with Megan's "2 h gas is back: pH 7.31, PaCO₂ 64.": <span class="ui">Messages</span> counts them. Click it to show them.</li>
 				<li>His monitor still says it's in low-bandwidth mode: its numbers change only every 30 seconds.</li>
 			</ol>
 		</div>

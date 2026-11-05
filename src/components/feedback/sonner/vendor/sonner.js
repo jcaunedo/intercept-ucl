@@ -1028,7 +1028,7 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
     const { id, invert, position = 'bottom-right', hotkey = [
         'altKey',
         'KeyT'
-    ], expand, closeButton, className, offset, mobileOffset, theme = 'light', richColors, duration, style, visibleToasts = VISIBLE_TOASTS_AMOUNT, toastOptions, dir = getDocumentDirection(), gap = GAP, icons, customAriaLabel, containerAriaLabel = 'Notifications' } = props;
+    ], expand, closeButton, className, offset, mobileOffset, theme = 'light', richColors, duration, style, visibleToasts = VISIBLE_TOASTS_AMOUNT, toastOptions, dir = getDocumentDirection(), gap = GAP, icons, customAriaLabel, containerAriaLabel = 'Notifications', /* UCL: */ paused = false } = props;
     const [toasts, setToasts] = React.useState([]);
     const filteredToasts = React.useMemo(()=>{
         if (id) {
@@ -1269,7 +1269,9 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
                 invert: invert,
                 visibleToasts: visibleToasts,
                 closeButton: (_toastOptions_closeButton = toastOptions == null ? void 0 : toastOptions.closeButton) != null ? _toastOptions_closeButton : closeButton,
-                interacting: interacting,
+                // UCL: `paused` holds every toast's timer as a press on the stack does, without a synthetic pointerdown,
+                // which an open Radix modal took for a click outside it and closed (Nov 5, 2026).
+                interacting: interacting || paused,
                 position: position,
                 style: toastOptions == null ? void 0 : toastOptions.style,
                 unstyled: toastOptions == null ? void 0 : toastOptions.unstyled,

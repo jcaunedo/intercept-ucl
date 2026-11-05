@@ -12,6 +12,7 @@ import {
 } from "../monitoring/sample-monitoring";
 import type { AlertDetailData } from "../alert-modal/alert-modal";
 import type { DischargePlan } from "../alert-modal/discharge-plan";
+import type { ConsultMessage } from "../alert-modal/consult-messages";
 import type { BedsidePhoto } from "../alert-modal/low-bandwidth";
 import type { PatientRecord } from "../patient-details/patient-details";
 import {
@@ -44,8 +45,9 @@ import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
 // plays once he's kept at Alliance.
 //
 // Step 2 (the network drops) plays 6 s after his video consult first goes live: Alliance's connection drops, the call
-// freezes and goes on as audio, the monitor's numbers come every 30 s, and a photo of the BiPAP screen arrives 8 s later
-// (PRD Bedside camera CAM-014). The blood gases' photos come with the resolution.
+// freezes and goes on as audio, the monitor's numbers come every 30 s, the alert panel's Messages column opens with the
+// ED nurse's word, and a photo of the BiPAP screen arrives there 8 s later (PRD Bedside camera CAM-014; the photos moved
+// from under the call to the messages on Nov 5, 2026, user's call). The blood gases' photos come with the resolution.
 //
 // Step 6 (social needs flagged) plays 14 s after he's kept, once the resolution has played: the discharge workflow
 // flags "Uninsured" and "Can't afford home oxygen" from his chart, records the payer, and drafts the two referrals,
@@ -90,6 +92,14 @@ const withPhotos =
           },
         }
       : detail;
+
+/** Adds the ED nurse's messages to the consult's thread (the Messages column), as they're sent. */
+const withMessages =
+  (...messages: ConsultMessage[]) =>
+  (detail: AlertDetailData): AlertDetailData => ({
+    ...detail,
+    messages: [...(detail.messages ?? []), ...messages],
+  });
 
 /**
  * Step 6: what the discharge workflow finds in Dale Reynolds's chart, and the referrals it drafts. Pulmonary rehab is
@@ -189,7 +199,8 @@ const scenario2Beats: ScenarioBeat[] = [
             },
             question: "Hypercapnic failure on BiPAP. Can we keep him here?",
             latest: "pH 7.24 · PaCO₂ 78 · RR 30 · SpO₂ 88% on BiPAP",
-            // His card shows the Critical alert first; the call rings 4 s later (Nov 4, 2026, user's call).
+            // His Critical alert reaches his card and toasts first; the call rings 4 s later in its own toast (Nov 5, 2026,
+            // user's call).
             ringAfter: 4,
           },
           evidence: [
@@ -214,16 +225,23 @@ const scenario2Beats: ScenarioBeat[] = [
       const since = new Date().toISOString();
       return {
         details: {
-          "live-reynolds": (detail) => ({
-            ...detail,
-            connection: {
-              mode: "low-bandwidth",
-              since,
-              site: "Alliance",
-              vitalsEvery: 30,
-              photos: [],
-            },
-          }),
+          // The Messages column opens on its own (the alert panel), where the ED nurse says what comes next.
+          "live-reynolds": (detail) =>
+            withMessages({
+              id: "p21-message-dropped",
+              from: "bedside",
+              text: "Video froze on our side. Rachel will send the BiPAP screen and the next gases here.",
+              sentAt: since,
+            })({
+              ...detail,
+              connection: {
+                mode: "low-bandwidth",
+                since,
+                site: "Alliance",
+                vitalsEvery: 30,
+                photos: [],
+              },
+            }),
         },
         log: [
           {
@@ -307,6 +325,13 @@ const scenario2Beats: ScenarioBeat[] = [
           takenBy: "Rachel Lindgren, RRT",
         },
       );
+      // The ED nurse's word on the 2 h gas, after its photo.
+      const addMessage = withMessages({
+        id: "p21-message-resolved",
+        from: "bedside",
+        text: "2 h gas is back: pH 7.31, PaCO₂ 64. He stays with us on BiPAP.",
+        sentAt: new Date(Date.now() + 1000).toISOString(),
+      });
       return {
         census: { p21: sampleScenario2ResolvedCensus },
         monitoring: { p21: sampleScenario2ResolvedMonitoring },
@@ -320,7 +345,7 @@ const scenario2Beats: ScenarioBeat[] = [
         },
         details: {
           "live-reynolds": (detail) =>
-            addPhotos(sampleScenario2ResolvedDetail(detail)),
+            addMessage(addPhotos(sampleScenario2ResolvedDetail(detail))),
         },
       };
     },

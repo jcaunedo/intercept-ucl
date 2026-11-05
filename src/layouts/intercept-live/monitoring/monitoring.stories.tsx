@@ -98,7 +98,14 @@ export const VideoConsultWithoutAlert: Story = {
 		await expect(consult.getByRole("button", { name: "2 pressors" })).toBeInTheDocument();
 		// No button under the patient: the call runs in its tile, and the panel stays open when it ends.
 		await expect(consult.queryByRole("button", { name: /End call|Calling…/ })).toBeNull();
-		await expect(await consult.findByText("Grace Holloway, RN joined", {}, { timeout: 7000 })).toBeInTheDocument();
+		// Live: the calling screen (which names the nurse too) has gone, and the nurse's label is on the video.
+		await waitFor(
+			() => {
+				expect(consult.queryByText(/^Calling /)).not.toBeInTheDocument();
+				expect(consult.getByText("Grace Holloway, RN")).toBeInTheDocument();
+			},
+			{ timeout: 7000 },
+		);
 		await expect(consult.getByText("AI Notetaker")).toBeInTheDocument();
 		await userEvent.click(consult.getByRole("button", { name: "End" }));
 		await expect(await consult.findByText("Call ended")).toBeInTheDocument();
@@ -157,7 +164,14 @@ export const Scenario1HeartFailure: Story = {
 		await userEvent.click(await screen.findByRole("menuitem", { name: "Video consult" }));
 		const consult = within(await screen.findByRole("dialog", { name: reason }));
 		await expect(await consult.findByText("Calling Kayla Brandt…")).toBeInTheDocument();
-		await expect(await consult.findByText("Kayla Brandt, RN joined", {}, { timeout: 7000 })).toBeInTheDocument();
+		// Live: the calling screen (which names the nurse too) has gone, and the nurse's label is on the video.
+		await waitFor(
+			() => {
+				expect(consult.queryByText(/^Calling /)).not.toBeInTheDocument();
+				expect(consult.getByText("Kayla Brandt, RN")).toBeInTheDocument();
+			},
+			{ timeout: 7000 },
+		);
 		// Under the call, the AI Notetaker, ready to capture the consultation.
 		await expect(consult.getByText("AI Notetaker")).toBeInTheDocument();
 		// Her name leaves the modal for her page; the toasts stay hidden there too.
@@ -187,7 +201,7 @@ export const Scenario1Resolution: Story = {
 		});
 		await userEvent.click(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ }));
 		const modal = within(await screen.findByRole("dialog"));
-		await userEvent.click(modal.getByRole("button", { name: "View pathway" }));
+		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
 		await userEvent.click(await modal.findByRole("button", { name: "Accept and send" }));
 		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
 		await userEvent.click(panel.getByRole("button", { name: "Keep at Chadron" }));
@@ -245,12 +259,19 @@ export const Scenario2Copd: Story = {
 		// Step 2: 6 s after the call is on, Alliance's connection drops. The call goes on as audio, the banner says so, the
 		// monitor's numbers are held, and the BiPAP's photo arrives 8 s later.
 		await userEvent.click(modal.getByRole("button", { name: "Video consult" }));
-		await expect(await modal.findByText("Megan Foster, RN joined", {}, { timeout: 7000 })).toBeInTheDocument();
+		// Live: the calling screen (which names the nurse too) has gone, and the nurse's label is on the video.
+		await waitFor(
+			() => {
+				expect(modal.queryByText(/^Calling /)).not.toBeInTheDocument();
+				expect(modal.getByText("Megan Foster, RN")).toBeInTheDocument();
+			},
+			{ timeout: 7000 },
+		);
 		await expect(await modal.findByText("Low-bandwidth mode", {}, { timeout: 10000 })).toBeInTheDocument();
 		await expect(modal.getByText("Low bandwidth:")).toBeInTheDocument();
 		await expect(await modal.findByText("Video paused for low bandwidth", {}, { timeout: 5000 })).toBeInTheDocument();
 		await expect(await modal.findByText("BiPAP screen", {}, { timeout: 12000 })).toBeInTheDocument();
-		await userEvent.click(modal.getByRole("button", { name: "View pathway" }));
+		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
 		await expect(await modal.findByText("COPD exacerbation pathway")).toBeInTheDocument();
 		await userEvent.click(await modal.findByRole("button", { name: "Accept and send" }));
 		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
@@ -264,8 +285,13 @@ export const Scenario2Copd: Story = {
 		await expect(await panel.findByText("Transfer avoided", {}, { timeout: 10000 })).toBeInTheDocument();
 		await expect(panel.getAllByText(/Passed/)).toHaveLength(2);
 		await expect(await modal.findByText(/Resolved by Megan Foster, RN/)).toBeInTheDocument();
-		// The blood gases' photos arrive with it.
+		// The blood gases' photos and Megan's note arrive with it: Messages counts them and stays closed (Pathway keeps its
+		// column). The actions row's Messages opens them (the Video consult panel's header has one too).
+		const messagesButton = () => modal.getAllByRole("button", { name: /^Messages, \d+ new$/ })[0];
+		await waitFor(() => expect(messagesButton()).toBeInTheDocument());
+		await userEvent.click(messagesButton());
 		await waitFor(() => expect(modal.getByText("Blood gas, 2 h on BiPAP")).toBeInTheDocument());
+		await expect(modal.queryByRole("button", { name: /new$/ })).not.toBeInTheDocument();
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await waitFor(() => expect(within(reynolds() as HTMLElement).getByText("5")).toBeInTheDocument());
@@ -525,8 +551,6 @@ function LiveMonitoring(props: MonitoringProps) {
 		onConsultNote,
 		logAlertAction,
 	} = useSampleLiveFeed();
-	// The Prototype menu's Sections by hospital view (Group by hospital's Kanban board is the default).
-	const [groupedGrid, setGroupedGrid] = React.useState(false);
 	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
 	const location = usePrototypeLocation(interceptLivePages, {
 		page: props.defaultPage ?? "Monitoring",
@@ -570,15 +594,11 @@ function LiveMonitoring(props: MonitoringProps) {
 			onDischargeDecision={onDischargeDecision}
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}
-			prototype={prototypeShortcuts({
-				startScenario,
-				groupedGrid,
-				onToggleGroupedGrid: () => setGroupedGrid(!groupedGrid),
-			})}
-			groupedView={groupedGrid ? "sections" : "board"}
+			prototype={prototypeShortcuts({ startScenario })}
 			onResetPrototype={resetPrototype}
 			defaultPage={location.defaultPage}
 			defaultPatient={location.defaultPatient}
+			defaultAlert={location.defaultAlert}
 			onLocationChange={location.onLocationChange}
 		/>
 	);

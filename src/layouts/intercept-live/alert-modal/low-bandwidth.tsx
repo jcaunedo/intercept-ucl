@@ -1,15 +1,7 @@
 import * as React from "react";
 import { WifiOffIcon } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
 
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
-import {
-  expandVariants,
-  fadeVariants,
-  useExpandClip,
-  useMotionPreference,
-} from "@/lib/motion";
-import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 // Low-bandwidth mode (Demo Use Cases, Scenario 2, step 2; PRD Bedside camera CAM-014): when a hospital's connection
@@ -266,74 +258,32 @@ function DrawnPhoto({ photo }: { photo: BedsidePhoto }) {
   );
 }
 
-/** One photo as it arrives: it opens its place in the list (Expand), so the photos under it glide down. */
-function PhotoItem({ photo }: { photo: BedsidePhoto }) {
-  const { prefersReducedMotion } = useMotionPreference();
-  const clip = useExpandClip();
-  const readings = photo.values
-    .map((row) => `${row.label} ${row.value}`)
-    .join(" · ");
+/**
+ * A photo the bedside sent, as a 4:3 picture: the image, or drawn from its readings without one (a device screen or a
+ * blood gas printout). Named for screen readers by its title. The Messages column shows it in the sender's message
+ * (Nov 5, 2026, user's call: the photos moved there from under the call).
+ */
+function BedsidePhotoImage({ photo, className }: { photo: BedsidePhoto; className?: string }) {
   return (
-    // The clip's ref is a div's, so the item is a div in the list's role.
-    <motion.div
-      {...clip}
-      role="listitem"
-      variants={prefersReducedMotion ? fadeVariants : expandVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
+    <div
+      role="img"
+      aria-label={`Photo: ${photo.title}`}
+      className={cn(
+        "aspect-[4/3] overflow-hidden rounded-lg border border-border bg-(--gray-900)",
+        className,
+      )}
     >
-      <figure className="flex gap-3">
-        <div
-          role="img"
-          aria-label={`Photo: ${photo.title}`}
-          className="aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-lg border border-border bg-(--gray-900)"
-        >
-          {photo.src ? (
-            <img src={photo.src} alt="" className="size-full object-cover" />
-          ) : (
-            <DrawnPhoto photo={photo} />
-          )}
-        </div>
-        <figcaption className="flex min-w-0 flex-col gap-0.5 text-sm">
-          <span className="font-semibold text-foreground">{photo.title}</span>
-          <span className="text-muted-foreground">
-            {photo.takenBy} · {formatRelativeDate(photo.takenAt).label}
-          </span>
-          <span className="text-foreground">{readings}</span>
-        </figcaption>
-      </figure>
-    </motion.div>
-  );
-}
-
-/** The photos the bedside sent during the consult, newest first. Nothing until the first one. */
-function BedsidePhotos({ photos }: { photos: BedsidePhoto[] }) {
-  if (!photos.length) return null;
-  const newestFirst = [...photos].sort(
-    (a, b) => Date.parse(b.takenAt) - Date.parse(a.takenAt),
-  );
-  return (
-    <section
-      aria-label="Photos from the bedside"
-      className="flex flex-col gap-3"
-    >
-      <h3 className="text-sm font-semibold text-foreground">
-        Photos from the bedside
-      </h3>
-      <div role="list" className="flex flex-col gap-3">
-        <AnimatePresence initial={false}>
-          {newestFirst.map((photo) => (
-            <PhotoItem key={photo.id} photo={photo} />
-          ))}
-        </AnimatePresence>
-      </div>
-    </section>
+      {photo.src ? (
+        <img src={photo.src} alt="" className="size-full object-cover" />
+      ) : (
+        <DrawnPhoto photo={photo} />
+      )}
+    </div>
   );
 }
 
 export {
-  BedsidePhotos,
+  BedsidePhotoImage,
   defaultVitalsEvery,
   LowBandwidthBanner,
   MonitorHeldLine,

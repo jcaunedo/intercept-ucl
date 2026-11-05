@@ -32,8 +32,8 @@ const ringClassNames: Record<AlertToastSeverity, string> = {
 	medium: "border-severity-medium bg-severity-medium/5",
 	low: "border-severity-low bg-severity-low/5",
 	resolved: "border-success bg-success/5",
-	// Critical's ring: the call is as urgent (Nov 4, 2026, user's call; Figma's tint is bound to Resolved's green).
-	"consult-request": "border-severity-critical bg-severity-critical/5",
+	// No ring on a consult request (Nov 5, 2026, user's call): its card renders none.
+	"consult-request": "",
 };
 
 /** Who's calling for a consult, e.g. Dr. Brian Keller, ED physician, at Alliance ED. */
@@ -269,8 +269,8 @@ function AlertToast({
 				)}
 				{...props}
 			>
-				{ring}
-
+				{/* No ring and no tint, as Figma draws it (Nov 5, 2026, user's call): the dark surface already sets the call
+				    apart from the alerts. */}
 				<div className='flex items-center justify-between gap-2'>
 					<p className='flex min-w-0 items-center gap-2 text-sm'>
 						<VideoIcon aria-hidden='true' className='size-4 shrink-0' />

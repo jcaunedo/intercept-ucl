@@ -101,7 +101,7 @@ type TriageConsultRequest = {
 	latest?: string;
 	/** How urgent the caller says it is: the ringtone rings faster the more urgent (high, medium, low). Low by default. */
 	urgency?: "high" | "medium" | "low";
-	/** Seconds between the alert reaching the patient's card and the call ringing. At once by default. */
+	/** Seconds between the alert reaching the patient's card (and its alert toast) and the call ringing. At once by default. */
 	ringAfter?: number;
 };
 
