@@ -21,8 +21,17 @@ type PatientNavigation = {
 	 * modal when the layout has one (`renderAlert`), else the patient's details. `consult` opens it with the video consult
 	 * already calling the bedside (a card's Video consult); with no active alert, the modal without one (Nov 4, 2026).
 	 */
-	/** `consult`: with the video consult ringing the bedside (`true`), or already on, a consult request answered (`"answered"`). */
-	openAlert: (patientId: string, alertId?: string, options?: { consult?: boolean | "answered" }) => void;
+	/**
+	 * `consult`: with the video consult ringing the bedside (`true`), or already on, a consult request answered
+	 * (`"answered"`). `focus`: opened at a part of it, e.g. the discharge referrals a notice is about.
+	 */
+	openAlert: (
+		patientId: string,
+		alertId?: string,
+		options?: { consult?: boolean | "answered"; focus?: "discharge" },
+	) => void;
+	/** The patient whose alert is open now (the alert modal), so a toast about it can stay away. */
+	alertPatientId?: string;
 	/**
 	 * Opens Ask Intercept Live about the patient, from any page (e.g. Ask in an alert toast), and asks for a quick
 	 * overview. The chat stays about them until the chip is removed, the chat closes or another patient's details open.

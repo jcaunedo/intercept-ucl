@@ -15,7 +15,7 @@ import { BedsidePhotoImage, type BedsidePhoto } from "./low-bandwidth";
 // The video consult's messages with the bedside nurse (Nov 5, 2026, user's call; intercept.ds `alert-expanded` ›
 // Messages `1375:8218`): the thread the nurse sees in their hospital's messaging (Epic Secure Chat, Cerner Secure
 // Messaging, TigerConnect; Spec §6.11), in the alert panel's third column, where the pathway shows. Opened from the
-// actions row's Messages (or the Video consult panel's header), which count the messages from the bedside not yet seen.
+// actions row's Messages (or the Video consult panel's header), and on its own when a message from the bedside arrives.
 
 /** One message in the thread: from the bedside (the nurse, or `by` someone else there), or from the clinician ("you"). */
 type ConsultMessage = {
@@ -29,6 +29,13 @@ type ConsultMessage = {
 	/** When it was sent, ISO 8601. */
 	sentAt: string;
 };
+
+/**
+ * The prototype's simulated bedside replies: a list, one per message sent in order, or a function that answers each
+ * message from what it says (Nov 5, 2026, user's call: "related with the message the user sent … conversational, in
+ * context"). Nothing (undefined) means no reply.
+ */
+type ConsultReplies = readonly string[] | ((message: string) => string | undefined);
 
 /** A photo from the bedside as a message from whoever took it, at the time it was taken. */
 const photoMessage = (photo: BedsidePhoto): ConsultMessage => ({
@@ -55,7 +62,7 @@ function useConsultMessages(
 	incoming: readonly ConsultMessage[] = [],
 	photos: readonly BedsidePhoto[] = [],
 	onSend?: (text: string) => void,
-	replies: readonly string[] = [],
+	replies: ConsultReplies = [],
 ) {
 	const [local, setLocal] = React.useState<ConsultMessage[]>([]);
 	const [typing, setTyping] = React.useState(false);
@@ -76,7 +83,8 @@ function useConsultMessages(
 		(text: string) => {
 			add({ from: "you", text });
 			onSend?.(text);
-			const reply = repliesRef.current[nextReply.current];
+			const current = repliesRef.current;
+			const reply = typeof current === "function" ? current(text) : current[nextReply.current];
 			if (reply === undefined) return;
 			nextReply.current += 1;
 			pending.current += 1;
@@ -98,9 +106,22 @@ function useConsultMessages(
 }
 
 /**
+ * True on the render where a new message from the bedside arrives (a message, a reply or a photo), not for the ones
+ * already there when the thread mounted: the Messages column opens on its own for it (Nov 5, 2026, user's call: "Message
+ * panel will only open with a new incoming message, automatically open").
+ */
+function useNewIncoming(messages: readonly ConsultMessage[]) {
+	const count = messages.filter((message) => message.from === "bedside").length;
+	const [seen, setSeen] = React.useState(count);
+	if (count === seen) return false;
+	setSeen(count);
+	return count > seen;
+}
+
+/**
  * How many messages from the bedside (messages, replies, photos) arrived since the column was last open: all of them
- * until it first opens. Zero while it's open. The Messages buttons show it (Nov 5, 2026, user's call: notify, don't open
- * the column on its own).
+ * until it first opens. Zero while it's open. The Messages buttons show it (Nov 5, 2026, user's call). A message arriving
+ * while the alert is open opens the column (`useNewIncoming`), so this counts the ones that came while it wasn't.
  */
 function useUnreadMessages(messages: readonly ConsultMessage[], open: boolean) {
 	const count = messages.filter((message) => message.from === "bedside").length;
@@ -118,6 +139,7 @@ function ConsultMessagesButton({
 	onToggle,
 	unread = 0,
 	size = "xs",
+	solid = false,
 	icon: Icon = MessageCircleIcon,
 	className,
 }: {
@@ -125,12 +147,14 @@ function ConsultMessagesButton({
 	onToggle: () => void;
 	unread?: number;
 	size?: "xs" | "md";
+	/** Solid (`neutral`) while closed, as the alert's actions row; open, the outline on `accent` either way. */
+	solid?: boolean;
 	icon?: LucideIcon;
 	className?: string;
 }) {
 	return (
 		<Button
-			variant='outline'
+			variant={solid && !open ? "neutral" : "outline"}
 			size={size}
 			aria-expanded={open}
 			aria-label={unread ? `Messages, ${unread} new` : undefined}
@@ -305,4 +329,12 @@ function ConsultMessages({
 	);
 }
 
-export { ConsultMessages, ConsultMessagesButton, useConsultMessages, useUnreadMessages, type ConsultMessage };
+export {
+	ConsultMessages,
+	ConsultMessagesButton,
+	useConsultMessages,
+	useNewIncoming,
+	useUnreadMessages,
+	type ConsultMessage,
+	type ConsultReplies,
+};

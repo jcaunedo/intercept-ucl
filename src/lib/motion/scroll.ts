@@ -33,9 +33,10 @@ function scrollContainerTo(container: HTMLElement, top: number) {
 /**
  * Where `container` has to scroll so `element` is fully in view ("nearest": the least movement),
  * honoring the container's `scroll-padding` and the element's `scroll-margin` the way native
- * `scrollIntoView` does. Element taller than the space: its top is aligned.
+ * `scrollIntoView` does. Element taller than the space: its top is aligned. `start`: its top at the
+ * container's top, as far as the container can scroll.
  */
-function scrollTargetFor(element: HTMLElement, container: HTMLElement) {
+function scrollTargetFor(element: HTMLElement, container: HTMLElement, block: "nearest" | "start" = "nearest") {
 	const containerStyle = getComputedStyle(container);
 	const style = getComputedStyle(element);
 	const px = (value: string) => parseFloat(value) || 0;
@@ -48,7 +49,8 @@ function scrollTargetFor(element: HTMLElement, container: HTMLElement) {
 	const viewBottom = view.bottom - px(containerStyle.scrollPaddingBottom);
 
 	let delta = 0;
-	if (bottom > viewBottom) delta = Math.min(bottom - viewBottom, top - viewTop);
+	if (block === "start") delta = top - viewTop;
+	else if (bottom > viewBottom) delta = Math.min(bottom - viewBottom, top - viewTop);
 	else if (top < viewTop) delta = top - viewTop;
 
 	return Math.min(Math.max(view.scrollTop + delta, 0), view.maxScroll);
@@ -61,13 +63,17 @@ function scrollTargetFor(element: HTMLElement, container: HTMLElement) {
  * a row revealing, a sibling collapsing) and still land exactly where it settles — one continuous
  * movement instead of waiting for the layout first. Interruptible: any wheel, touch, pointer or key
  * input from the user stops it, and so does `element` leaving the page.
- * Reduced motion: jumps straight to the target.
+ * Reduced motion: jumps straight to the target. `block: "start"` brings its top to the container's top
+ * (under a sticky header, give the element a `scroll-margin-top`) instead of the least movement.
  * Returns a function that stops the scroll.
  */
-function scrollIntoViewSmoothly(element: HTMLElement, { reducedMotion = false } = {}) {
+function scrollIntoViewSmoothly(
+	element: HTMLElement,
+	{ reducedMotion = false, block = "nearest" }: { reducedMotion?: boolean; block?: "nearest" | "start" } = {},
+) {
 	const container = scrollContainerOf(element);
 	if (reducedMotion) {
-		scrollContainerTo(container, scrollTargetFor(element, container));
+		scrollContainerTo(container, scrollTargetFor(element, container, block));
 		return () => {};
 	}
 
@@ -76,7 +82,7 @@ function scrollIntoViewSmoothly(element: HTMLElement, { reducedMotion = false } 
 		...scrollTransition,
 		onUpdate: (progress) => {
 			if (!element.isConnected) return stop();
-			scrollContainerTo(container, start + (scrollTargetFor(element, container) - start) * progress);
+			scrollContainerTo(container, start + (scrollTargetFor(element, container, block) - start) * progress);
 		},
 	});
 

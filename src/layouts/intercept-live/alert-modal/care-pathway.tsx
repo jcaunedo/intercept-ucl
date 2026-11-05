@@ -7,7 +7,14 @@ import { Badge } from "@/components/data-display/badge";
 import { Input } from "@/components/forms/input";
 import { Label } from "@/components/forms/label";
 import { Textarea } from "@/components/forms/textarea";
-import { expandVariants, fadeVariants, scrollContainerOf, useExpandClip, useMotionPreference } from "@/lib/motion";
+import {
+	expandVariants,
+	fadeVariants,
+	scrollContainerOf,
+	scrollIntoViewSmoothly,
+	useExpandClip,
+	useMotionPreference,
+} from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { SourceLabel } from "../shared/source-label";
@@ -426,6 +433,34 @@ function CarePathwayPanel({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [status]);
 
+	// Sent (Accept, or the clinician's own pathway): the column scrolls the status line to its top, under the
+	// sticky label (`scroll-mt-13`: the label's height plus the banner's 12px top margin, or the sticky footer's background
+	// covers the label), and again when it's co-signed, as Keep or transfer opens under it (Nov 5, 2026, user's call), unless
+	// the clinician has scrolled, clicked or typed since: then they've moved on (e.g. to keep or transfer) and the column
+	// stays where they are. Not when the panel opens on a pathway already sent.
+	const followStatus = React.useRef(false);
+	const pendingRef = React.useRef<HTMLDivElement>(null);
+	const activeRef = React.useRef<HTMLDivElement>(null);
+	const { prefersReducedMotion } = useMotionPreference();
+	React.useEffect(() => {
+		const line = status === "pending" ? pendingRef.current : status === "active" ? activeRef.current : null;
+		if (!followStatus.current || !line) return;
+		const stopScroll = scrollIntoViewSmoothly(line, { reducedMotion: Boolean(prefersReducedMotion), block: "start" });
+		if (status === "active") {
+			followStatus.current = false;
+			return stopScroll;
+		}
+		const movedOn = () => {
+			followStatus.current = false;
+		};
+		const inputs = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+		for (const input of inputs) window.addEventListener(input, movedOn, { passive: true });
+		return () => {
+			stopScroll();
+			for (const input of inputs) window.removeEventListener(input, movedOn);
+		};
+	}, [status, prefersReducedMotion]);
+
 	// Escape cancels an open dose edit or decline, closes the own-pathway form (its draft is kept) or an empty note, before
 	// it closes the modal.
 	React.useEffect(() => {
@@ -481,6 +516,7 @@ function CarePathwayPanel({
 		setBuilding(false);
 		setSentNote("");
 		setSentAt(new Date());
+		followStatus.current = true;
 		setStatus("pending");
 		onDecision?.({ type: "create", title: own.title, orders: own.orders });
 	};
@@ -491,6 +527,7 @@ function CarePathwayPanel({
 		setNoting(false);
 		setSentNote(sent);
 		setSentAt(new Date());
+		followStatus.current = true;
 		setStatus("pending");
 		onDecision?.({
 			type: "accept",
@@ -650,7 +687,8 @@ function CarePathwayPanel({
 										Decline
 									</Button>
 									<Button variant='neutral' size='md' onClick={accept} disabled={editing !== null} className='flex-1'>
-										Accept and send
+										{/* "Accept" (Nov 5, 2026, user's call; it was Accept and send). */}
+										Accept
 									</Button>
 								</div>
 							</div>
@@ -728,45 +766,59 @@ function CarePathwayPanel({
 					) : null}
 					{status === "pending" ? (
 						<Expand key='pending'>
-							<p role='status' className='flex items-start gap-2 pt-3 text-sm text-foreground'>
+							{/* A banner, as Low-bandwidth mode's (Nov 5, 2026, user's call): neutral while it waits. */}
+							<div
+								ref={pendingRef}
+								role='status'
+								className='mt-3 flex scroll-mt-13 gap-3 rounded-xl border border-neutral-muted bg-neutral-subtle p-3 text-sm text-foreground'
+							>
 								<LoaderCircleIcon
 									aria-hidden='true'
 									className='mt-0.5 size-4 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none'
 								/>
-								<span>
-									Sent to {cosigner.name} for co-signature
-									{sentAt ? <span className='text-muted-foreground'> · {formatTime(sentAt)}</span> : null}
+								<div className='flex min-w-0 flex-col gap-0.5'>
+									<p className='font-semibold'>
+										Sent to {cosigner.name} for co-signature
+										{sentAt ? <span className='font-normal text-muted-foreground'> · {formatTime(sentAt)}</span> : null}
+									</p>
 									{edited.length ? (
-										<span className='block text-muted-foreground'>
-											With {edited.length === 1 ? "1 edited dose" : `${edited.length} edited doses`}
-										</span>
+										<p>With {edited.length === 1 ? "1 edited dose" : `${edited.length} edited doses`}</p>
 									) : null}
 									{sentNote ? (
-										<span className='block'>
+										<p>
 											<span className='text-muted-foreground'>Note: </span>
 											{sentNote}
-										</span>
+										</p>
 									) : null}
-								</span>
-							</p>
+								</div>
+							</div>
 						</Expand>
 					) : null}
 					{status === "active" ? (
 						<Expand key='active'>
-							<p role='status' className='flex items-start gap-2 pt-3 text-sm text-foreground'>
+							{/* A banner, as Low-bandwidth mode's (Nov 5, 2026, user's call): the success tones once co-signed. */}
+							<div
+								ref={activeRef}
+								role='status'
+								className='mt-3 flex scroll-mt-13 gap-3 rounded-xl border border-success-muted bg-success-subtle p-3 text-sm text-foreground'
+							>
 								<CircleCheckIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-success' />
-								<span>
-									Co-signed by {cosigner.name}
-									{cosignedAt ? <span className='text-muted-foreground'> · {formatTime(cosignedAt)}</span> : null}
-									<span className='block text-muted-foreground'>Orders active. The bedside team carries them out.</span>
+								<div className='flex min-w-0 flex-col gap-0.5'>
+									<p className='font-semibold'>
+										Co-signed by {cosigner.name}
+										{cosignedAt ? (
+											<span className='font-normal text-muted-foreground'> · {formatTime(cosignedAt)}</span>
+										) : null}
+									</p>
+									<p>Orders active. The bedside team carries them out.</p>
 									{sentNote ? (
-										<span className='block'>
+										<p>
 											<span className='text-muted-foreground'>Note: </span>
 											{sentNote}
-										</span>
+										</p>
 									) : null}
-								</span>
-							</p>
+								</div>
+							</div>
 						</Expand>
 					) : null}
 				</AnimatePresence>

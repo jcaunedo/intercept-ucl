@@ -9,6 +9,7 @@ import {
 	HeartCrackIcon,
 	LayoutGridIcon,
 	LifeBuoyIcon,
+	type LucideIcon,
 	MenuIcon,
 	MessageCircleMoreIcon,
 	ShieldIcon,
@@ -312,7 +313,7 @@ type InterceptLiveProps = {
  * The alert a page opened: the patient's, and which one when the page knows (a toast does, a card's bar doesn't).
  * `consult`: opened to start the video consult, so the call is already ringing.
  */
-type OpenAlert = { patientId: string; alertId?: string; consult?: boolean | "answered" };
+type OpenAlert = { patientId: string; alertId?: string; consult?: boolean | "answered"; focus?: "discharge" };
 
 /** What the alert modal needs from the shell. */
 type AlertControls = {
@@ -339,6 +340,8 @@ type PrototypeShortcut = {
 	checked?: boolean;
 	/** A page outside the prototype it opens in a new tab instead (e.g. a demo storyboard), with an external-link icon. */
 	href?: string;
+	/** An icon at the item's end, where a storyboard's external-link icon sits, e.g. play for a scenario. */
+	icon?: LucideIcon;
 };
 
 /**
@@ -464,6 +467,9 @@ function InterceptLive({
 								) : shortcut.checked === undefined ? (
 									<DropdownMenuItem key={shortcut.label} onSelect={() => openShortcut(shortcut)}>
 										{shortcut.label}
+										{shortcut.icon ? (
+											<shortcut.icon aria-hidden='true' className='ml-auto size-3.5 text-muted-foreground' />
+										) : null}
 									</DropdownMenuItem>
 								) : (
 									<DropdownMenuCheckboxItem
@@ -575,7 +581,14 @@ function InterceptLive({
 			// The alert modal (`renderAlert`); without one, the patient's details.
 			openAlert: (patientId, alertId, options) => {
 				if (renderAlert)
-					setOpenAlert((current) => ({ patientId, alertId, consult: options?.consult, open: true, key: (current?.key ?? 0) + 1 }));
+					setOpenAlert((current) => ({
+						patientId,
+						alertId,
+						consult: options?.consult,
+						focus: options?.focus,
+						open: true,
+						key: (current?.key ?? 0) + 1,
+					}));
 				else if (renderPatientDetails) setOpenPatient({ id: patientId });
 			},
 			askAboutPatient: (patientId, patientName, tags) => {
@@ -584,6 +597,7 @@ function InterceptLive({
 				setChatOpen(true);
 			},
 			setPageList: reportPageList,
+			alertPatientId,
 			compact: headerCompact,
 			patientOpen: openPatientId !== null,
 			viewedAt,
@@ -598,6 +612,7 @@ function InterceptLive({
 			setChatOpen,
 			hasMonitoring,
 			activeAlertsRequest,
+			alertPatientId,
 		],
 	);
 	const openAlertPatient = (patientId: string) => {

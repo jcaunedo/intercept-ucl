@@ -160,6 +160,12 @@ const screenInks = [
   "fill-(--gray-100)",
 ];
 
+/** A reading's number and its unit: "16 L/min" → "16", "L/min"; "35%" stays whole. */
+function splitUnit(value: string) {
+  const match = /^([\d.,]+%?)\s+(\S.*)$/.exec(value);
+  return match ? { number: match[1], unit: match[2] } : { number: value, unit: "" };
+}
+
 /** A photo with no URL, drawn from its readings: a device's screen in its bezel, or a blood gas printout. */
 function DrawnPhoto({ photo }: { photo: BedsidePhoto }) {
   const rows = photo.values.slice(0, 6);
@@ -250,7 +256,11 @@ function DrawnPhoto({ photo }: { photo: BedsidePhoto }) {
             textAnchor="end"
             className="text-[10px] font-semibold"
           >
-            {row.value}
+            {/* The unit smaller, as a device prints it, so a long reading ("16 L/min") clears its label. */}
+            {splitUnit(row.value).number}
+            {splitUnit(row.value).unit ? (
+              <tspan className="text-[6px] font-medium"> {splitUnit(row.value).unit}</tspan>
+            ) : null}
           </text>
         </g>
       ))}

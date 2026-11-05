@@ -9,6 +9,7 @@ import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleScenario1Record, sampleScenario1ResolvedRecord } from "../patient-details/sample-patient-records";
 import { sampleScenario1ResolvedTimeline, sampleScenario1Timeline } from "../patient-details/sections/sample-timeline";
 import { sampleScenario1ResolvedVitals, sampleScenario1Vitals } from "../patient-details/sections/sample-vitals";
+import type { AlertNotice } from "../shared/alert-toasts";
 
 // Story-only: Scenario 1 of the Demo Use Cases, "Heart failure at 2 a.m. in a 25-bed hospital", as beats the Prototype
 // menu plays. Margaret Hayes (`p15`, Chadron, Med-Surg) starts just before it, holding at NEWS2 5;
@@ -31,6 +32,11 @@ type ScenarioChanges = {
 	details?: Record<string, (detail: AlertDetailData) => AlertDetailData>;
 	/** Lines for the patients' activity logs, e.g. the consult falling back to audio (`at` is when the beat plays). */
 	log?: (Omit<PatientActivity, "id" | "at"> & { patientId: string })[];
+	/**
+	 * Something for the clinician to act on, shown as a toast unless its alert is open (Scenario 2's social needs). Its
+	 * `id` is made unique per run when the beat plays.
+	 */
+	notices?: AlertNotice[];
 };
 
 type ScenarioBeat = {

@@ -202,7 +202,7 @@ export const Scenario1Resolution: Story = {
 		await userEvent.click(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ }));
 		const modal = within(await screen.findByRole("dialog"));
 		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
-		await userEvent.click(await modal.findByRole("button", { name: "Accept and send" }));
+		await userEvent.click(await modal.findByRole("button", { name: "Accept" }));
 		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
 		await userEvent.click(panel.getByRole("button", { name: "Keep at Chadron" }));
 		// The form's own button: the one that opened it may still be fading out.
@@ -273,7 +273,7 @@ export const Scenario2Copd: Story = {
 		await expect(await modal.findByText("BiPAP screen", {}, { timeout: 12000 })).toBeInTheDocument();
 		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
 		await expect(await modal.findByText("COPD exacerbation pathway")).toBeInTheDocument();
-		await userEvent.click(await modal.findByRole("button", { name: "Accept and send" }));
+		await userEvent.click(await modal.findByRole("button", { name: "Accept" }));
 		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
 		await expect(panel.getByText(/Grounded by the storm/)).toBeInTheDocument();
 		await expect(panel.getByText(/Highway to Scottsbluff closed/)).toBeInTheDocument();
@@ -281,17 +281,15 @@ export const Scenario2Copd: Story = {
 		const form = within(await panel.findByRole("form", { name: "Keep at Alliance" }));
 		await userEvent.type(form.getByRole("textbox", { name: "Why keep at Alliance?" }), "No way out tonight; NIV with checkpoints");
 		await userEvent.click(form.getByRole("button", { name: "Keep at Alliance" }));
-		// 2 h on NIV, while the modal is open: both checkpoints pass and no transfer was needed.
-		await expect(await panel.findByText("Transfer avoided", {}, { timeout: 10000 })).toBeInTheDocument();
-		await expect(panel.getAllByText(/Passed/)).toHaveLength(2);
+		// 2 h on NIV, while the modal is open: the blood gases' photos and Megan's note arrive, and Messages opens on its own
+		// in Pathway's place.
+		await expect(await modal.findByText("Blood gas, 2 h on BiPAP", {}, { timeout: 10000 })).toBeInTheDocument();
 		await expect(await modal.findByText(/Resolved by Megan Foster, RN/)).toBeInTheDocument();
-		// The blood gases' photos and Megan's note arrive with it: Messages counts them and stays closed (Pathway keeps its
-		// column). The actions row's Messages opens them (the Video consult panel's header has one too).
-		const messagesButton = () => modal.getAllByRole("button", { name: /^Messages, \d+ new$/ })[0];
-		await waitFor(() => expect(messagesButton()).toBeInTheDocument());
-		await userEvent.click(messagesButton());
-		await waitFor(() => expect(modal.getByText("Blood gas, 2 h on BiPAP")).toBeInTheDocument());
-		await expect(modal.queryByRole("button", { name: /new$/ })).not.toBeInTheDocument();
+		// Back to Pathway: both checkpoints passed and no transfer was needed.
+		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
+		const resolved = within(await modal.findByRole("region", { name: "Keep or transfer" }));
+		await expect(await resolved.findByText("Transfer avoided")).toBeInTheDocument();
+		await expect(resolved.getAllByText(/Passed/)).toHaveLength(2);
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await waitFor(() => expect(within(reynolds() as HTMLElement).getByText("5")).toBeInTheDocument());
@@ -538,6 +536,7 @@ function LiveMonitoring(props: MonitoringProps) {
 		patients: fed,
 		alerts,
 		everyAlert,
+		notices,
 		caption,
 		startScenario,
 		withScenarioCensus,
@@ -594,6 +593,7 @@ function LiveMonitoring(props: MonitoringProps) {
 			onDischargeDecision={onDischargeDecision}
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}
+			notices={notices}
 			prototype={prototypeShortcuts({ startScenario })}
 			onResetPrototype={resetPrototype}
 			defaultPage={location.defaultPage}

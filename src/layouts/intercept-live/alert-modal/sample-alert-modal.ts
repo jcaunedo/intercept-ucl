@@ -6,6 +6,7 @@ import { sampleCameraVideo } from "../sample-data/sample-camera-video";
 import { avatarTones, patientInitials } from "../shared/patient-avatar";
 import type { AlertDetailData, PatientConsultData } from "./alert-modal";
 import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
+import { sampleBedsideReplier } from "./sample-bedside-replies";
 
 // Margaret Hayes's alert at 01:40 in Scenario 1 (Demo Use Cases), opened: the same numbers as her record, monitor and
 // card after the Prototype menu's beat 1 (`sample-scenario-1.ts`). A function, so the alert fires as it opens.
@@ -354,15 +355,6 @@ const airways = { Invasive: "ventilator", NIV: "niv", Oxygen: "oxygen" } as cons
 
 type SampleVitals = MonitoringPatient["vitals"];
 
-// The bedside's simulated replies (Nov 5, 2026, user's call: "Simulate messages interaction"; simulator US7.2), one for
-// each message the clinician sends, in order. Short, as a nurse answers from the bedside; nothing clinical they'd have
-// to have done. Scenario 2's follow his night: the 1 h gas, then sending it.
-const sampleBedsideReplies = ["On it.", "Done. I'll message you if anything changes.", "Okay, will do."];
-const sampleScenario2Replies = [
-	"Will do. Rachel's drawing the 1 h gas now.",
-	"Okay. I'll send it here as soon as it's back.",
-	"Got it.",
-];
 
 // No thread starts with a message (Nov 5, 2026, user's call: "If I am initiating the messages interaction, no incoming
 // message should be there"): the clinician writes first, and the nurse's replies (`scriptedReplies`) follow. Scenario 2's
@@ -561,7 +553,15 @@ function samplePatientParts(
 		bedside: nurse
 			? { name: nurse.name, role: "RN", initials: nurse.initials, src: nurse.src, tone: nurse.tone, presence: nurse.presence ?? "online", activity: "At the bedside" }
 			: undefined,
-		scriptedReplies: nurse ? sampleBedsideReplies : undefined,
+		// The nurse answers what the clinician writes, with the patient's live numbers (`sample-bedside-replies.ts`).
+		scriptedReplies: nurse
+			? sampleBedsideReplier({
+					firstName: patient.firstName,
+					sex: patient.sex,
+					vitals: monitored?.vitals,
+					ventilated: (monitored?.tags ?? patient.tags)?.some((tag) => tag.label === "Ventilated"),
+				})
+			: undefined,
 		room: {
 			airway: support && support in airways ? airways[support as keyof typeof airways] : "none",
 			pumps: Math.min(4, record?.infusions?.length ?? 0),
@@ -639,7 +639,14 @@ function sampleAlertDetails({
 					alert,
 					patient: { ...scenario.patient, tone: tones.get(alert.patientId) ?? scenario.patient.tone },
 					scriptedReplies:
-						scenario.scriptedReplies ?? (alert.id === "live-reynolds" ? sampleScenario2Replies : sampleBedsideReplies),
+						scenario.scriptedReplies ??
+						sampleBedsideReplier({
+							firstName: scenario.patient.firstName,
+							sex: scenario.patient.sex,
+							vitals: live.monitor?.vitals ?? scenario.monitor?.vitals,
+							scenario: alert.id === "live-reynolds" ? "copd" : alert.id === "live-hayes" ? "chf" : undefined,
+							ventilated: (live.tags ?? scenario.tags)?.some((tag) => tag.label === "Ventilated"),
+						}),
 					messages: scenario.messages,
 				},
 			];

@@ -42,6 +42,7 @@ import {
 	liveDotVariants,
 	motionDuration,
 	revealVariants,
+	scrollIntoViewSmoothly,
 	useMotionPreference,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -73,8 +74,10 @@ import {
 	ConsultMessages,
 	ConsultMessagesButton,
 	useConsultMessages,
+	useNewIncoming,
 	useUnreadMessages,
 	type ConsultMessage,
+	type ConsultReplies,
 } from "./consult-messages";
 import { KeepOrTransferPanel, type KeepOrTransfer, type KeepOrTransferDecision } from "./keep-or-transfer";
 import {
@@ -184,10 +187,11 @@ type AlertDetailData = {
 	 */
 	messages?: ConsultMessage[];
 	/**
-	 * The prototype's simulated replies from the bedside, in order: one for each message the clinician sends, the nurse
-	 * typing first (simulator US7.2). The app leaves it out; real replies come in `messages`.
+	 * The prototype's simulated replies from the bedside, the nurse typing first (simulator US7.2): a list, one for each
+	 * message the clinician sends in order, or a function that answers each from what it says. The app leaves it out;
+	 * real replies come in `messages`.
 	 */
-	scriptedReplies?: string[];
+	scriptedReplies?: ConsultReplies;
 	/** A suggested care pathway and its order set, e.g. Scenario 1's CHF exacerbation pathway (exploration). */
 	pathway?: CarePathway;
 	/** Where the pathway is when the modal opens, e.g. `active` once its orders were co-signed. Suggested by default. */
@@ -819,16 +823,17 @@ function ConsultButton({
 	consult: AlertConsultState;
 	onConsultChange: (state: AlertConsultState) => void;
 }) {
+	// Solid, as the actions row's other buttons (Nov 5, 2026, user's call: swapped with the lifecycle buttons' outline).
 	if (consult === "idle")
 		return (
-			<Button variant='outline' onClick={() => onConsultChange("connecting")}>
+			<Button variant='neutral' onClick={() => onConsultChange("connecting")}>
 				<VideoIcon />
 				Video consult
 			</Button>
 		);
 	if (consult === "connecting")
 		return (
-			<Button variant='outline' disabled>
+			<Button variant='neutral' disabled>
 				<LoaderCircleIcon className='animate-spin motion-reduce:animate-none' />
 				Calling…
 			</Button>
@@ -936,7 +941,8 @@ function useAlertLifecycle({
 					return (
 						<Button
 							key={action}
-							variant='neutral'
+							// Outline, under the actions row's solid buttons (Nov 5, 2026, user's call: the two rows swapped).
+							variant='outline'
 							size='sm'
 							aria-pressed={opensForm ? undefined : done}
 							aria-expanded={opensForm ? form === action : undefined}
@@ -946,7 +952,7 @@ function useAlertLifecycle({
 									? setForm((current) => (current === action ? null : action))
 									: act({ type: done ? "unacknowledge" : "acknowledge" })
 							}
-							className={cn(crowded ? "flex-auto" : "flex-1", "font-semibold aria-expanded:bg-neutral/90")}
+							className={cn(crowded ? "flex-auto" : "flex-1", "font-semibold aria-expanded:bg-accent")}
 						>
 							<AnimatePresence mode='popLayout' initial={false}>
 								<motion.span
@@ -1079,6 +1085,7 @@ function PathwayContent({
 	onDischargeDecision,
 	escapeRef,
 	fill = false,
+	focusDischarge = false,
 }: {
 	data: AlertDetailData;
 	onPathwayDecision?: (decision: CarePathwayDecision) => void;
@@ -1087,8 +1094,18 @@ function PathwayContent({
 	escapeRef: React.RefObject<(() => boolean) | null>;
 	/** Alone, the pathway fills its column, so its decision sits at the bottom. */
 	fill?: boolean;
+	/** Scrolls the column to the discharge referrals as it opens (a notice's Review referrals). */
+	focusDischarge?: boolean;
 }) {
 	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
+	// Opened from a notice: the referrals come to the top of the column, under its sticky label, as the panel slides out.
+	const dischargeRef = React.useRef<HTMLDivElement>(null);
+	const { prefersReducedMotion } = useMotionPreference();
+	React.useEffect(() => {
+		if (!focusDischarge || !dischargeRef.current) return;
+		return scrollIntoViewSmoothly(dischargeRef.current, { reducedMotion: Boolean(prefersReducedMotion), block: "start" });
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as it opens.
+	}, []);
 	const transferEscape = React.useRef<(() => boolean) | null>(null);
 	escapeRef.current = () => Boolean(pathwayEscape.current?.() || transferEscape.current?.());
 	const [pathwayStatus, setPathwayStatus] = React.useState<CarePathwayStatus>(data.pathwayStatus ?? "suggested");
@@ -1120,7 +1137,7 @@ function PathwayContent({
 				) : null}
 				{data.discharge ? (
 					<Expand key='discharge'>
-						<div className='flex flex-col gap-4 pt-4'>
+						<div ref={dischargeRef} className='flex scroll-mt-6 flex-col gap-4 pt-4'>
 							<hr className='border-border' />
 							<DischargePlanPanel plan={data.discharge} onDecision={onDischargeDecision} />
 						</div>
@@ -1326,6 +1343,8 @@ type AlertPanelProps = Omit<AlertDetailModalProps, "open" | "defaultOpen" | "onO
 	 * transfer decided), so a reopened alert shows where it was left.
 	 */
 	defaultPathwayOpen?: boolean;
+	/** Opened at the discharge referrals (a notice's Review referrals): Pathway open, scrolled to them. */
+	focusDischarge?: boolean;
 	/** The heading's element; inside a Dialog, `DialogTitle`. */
 	titleAs?: React.ElementType;
 	/** The description's element; inside a Dialog, `DialogDescription`. */
@@ -1364,7 +1383,9 @@ function AlertPanel({
 	onPathwayDecision,
 	onTransferDecision,
 	onDischargeDecision,
-	defaultPathwayOpen = (data.pathwayStatus !== undefined && data.pathwayStatus !== "suggested") ||
+	focusDischarge = false,
+	defaultPathwayOpen = focusDischarge ||
+		(data.pathwayStatus !== undefined && data.pathwayStatus !== "suggested") ||
 		Boolean(data.transfer?.decided),
 	titleAs,
 	descriptionAs,
@@ -1399,25 +1420,18 @@ function AlertPanel({
 		setFocusMessages(panel === "messages");
 		setSidePanel((current) => (current === panel ? null : panel));
 	};
-	// When the hospital's connection drops mid-call (Scenario 2, step 2), the messages open on their own: the call goes on
-	// as audio, and the bedside's photos and messages still get through (Nov 5, 2026, user's call).
-	const lowBandwidth = data.connection?.mode === "low-bandwidth";
-	const [wasLowBandwidth, setWasLowBandwidth] = React.useState(lowBandwidth);
-	if (lowBandwidth !== wasLowBandwidth) {
-		setWasLowBandwidth(lowBandwidth);
-		if (lowBandwidth && consultOn) {
-			setFocusMessages(false);
-			setSidePanel("messages");
-		}
-	}
 	const [messages, sendMessage, nurseTyping] = useConsultMessages(
 		data.messages,
 		data.connection?.photos,
 		onSendMessage,
 		data.scriptedReplies,
 	);
-	// A message from the bedside arriving while the column is closed (or Pathway has it) doesn't open it: the Messages
-	// buttons count it (Nov 5, 2026, user's call).
+	// Only a new message from the bedside opens the column on its own, in Pathway's place and without moving focus; the
+	// connection dropping doesn't (Nov 5, 2026, user's call). The Messages buttons count what came while the alert wasn't open.
+	if (useNewIncoming(messages) && sidePanel !== "messages") {
+		setFocusMessages(false);
+		setSidePanel("messages");
+	}
 	const unread = useUnreadMessages(messages, messagesOpen);
 	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
 	if (escapeRef) escapeRef.current = () => lifecycle.escape() || Boolean(pathwayOpen && pathwayEscape.current?.());
@@ -1448,6 +1462,7 @@ function AlertPanel({
 					    the Video consult panel's header has the same toggle while the call is on. */}
 					<ConsultMessagesButton
 						size='md'
+						solid
 						icon={MessageCircleMoreIcon}
 						open={messagesOpen}
 						unread={unread}
@@ -1455,7 +1470,8 @@ function AlertPanel({
 					/>
 					{data.pathway ? (
 						<Button
-							variant='outline'
+							// Solid while closed; open, the outline on `accent`, as before (Nov 5, 2026, user's call).
+							variant={pathwayOpen ? "outline" : "neutral"}
 							aria-expanded={pathwayOpen}
 							onClick={() => togglePanel("pathway")}
 							className='aria-expanded:bg-accent'
@@ -1522,6 +1538,7 @@ function AlertPanel({
 										onDischargeDecision={onDischargeDecision}
 										escapeRef={pathwayEscape}
 										fill
+										focusDischarge={focusDischarge}
 									/>
 								),
 							},
@@ -1547,7 +1564,7 @@ function AlertPanelDialog({
 	defaultOpen,
 	onOpenChange,
 	...props
-}: AlertDetailModalProps & { defaultPathwayOpen?: boolean }) {
+}: AlertDetailModalProps & { defaultPathwayOpen?: boolean; focusDischarge?: boolean }) {
 	const escapeRef = React.useRef<(() => boolean) | null>(null);
 	return (
 		<Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
@@ -1616,7 +1633,8 @@ function PatientConsultDialog({
 		onSendMessage,
 		data.scriptedReplies,
 	);
-	// Messages from the bedside not yet seen, counted on the Messages button, as on the alert panel.
+	// A new message from the bedside opens the column, and the button counts the ones not yet seen, as on the alert panel.
+	if (useNewIncoming(messages) && !messagesShown) setMessagesShown(true);
 	const unread = useUnreadMessages(messages, messagesOpen);
 	const { patient } = data;
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
@@ -1946,6 +1964,8 @@ function alertModalRenderer({
 				data={data}
 				// A consult request answered from its toast is on at once; Video consult from a card rings the bedside first.
 				defaultConsult={target.consult === "answered" ? "live" : target.consult ? "connecting" : "idle"}
+				// A notice's Review referrals opens it at the discharge referrals.
+				focusDischarge={target.focus === "discharge"}
 				open={open}
 				onOpenChange={onOpenChange}
 				onOpenPatient={openPatient}

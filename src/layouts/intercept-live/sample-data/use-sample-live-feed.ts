@@ -860,8 +860,15 @@ function useSampleLiveFeed() {
 		[log, notes, decisions, scenario],
 	);
 
+	// What the beats ask the clinician to act on, unique per run (the beat's time in the id), for the pages' toasts.
+	const notices = React.useMemo(
+		() => beats.flatMap(({ changes, at }) => (changes.notices ?? []).map((notice) => ({ ...notice, id: `${notice.id}@${at}` }))),
+		[beats],
+	);
+
 	return {
 		...feed,
+		notices,
 		caption,
 		startScenario,
 		withScenarioCensus,

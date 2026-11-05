@@ -1,3 +1,6 @@
+import bipapScreenPhoto from "./images/sample-photo-bipap-screen.jpg";
+import bloodGas1hPhoto from "./images/sample-photo-blood-gas-1h.jpg";
+import bloodGas2hPhoto from "./images/sample-photo-blood-gas-2h.jpg";
 import {
   sampleScenario2AlertDetail,
   sampleScenario2ResolvedDetail,
@@ -45,13 +48,14 @@ import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
 // plays once he's kept at Alliance.
 //
 // Step 2 (the network drops) plays 6 s after his video consult first goes live: Alliance's connection drops, the call
-// freezes and goes on as audio, the monitor's numbers come every 30 s, the alert panel's Messages column opens with the
-// ED nurse's word, and a photo of the BiPAP screen arrives there 8 s later (PRD Bedside camera CAM-014; the photos moved
+// freezes and goes on as audio, the monitor's numbers come every 30 s, 3 s later the ED nurse's word arrives and
+// opens the alert panel's Messages column, and a photo of the BiPAP screen 8 s after the drop (PRD Bedside camera CAM-014; the photos moved
 // from under the call to the messages on Nov 5, 2026, user's call). The blood gases' photos come with the resolution.
 //
-// Step 6 (social needs flagged) plays 14 s after he's kept, once the resolution has played: the discharge workflow
+// Step 6 (social needs flagged) plays 10 s after he's kept, once the resolution has played: the discharge workflow
 // flags "Uninsured" and "Can't afford home oxygen" from his chart, records the payer, and drafts the two referrals,
 // which the clinician sends (with who agreed) or skips, in his alert's Pathway panel or his page's Discharge section.
+// With his alert closed, a toast (a notice) says so and its Review referrals opens the alert at them.
 
 /** Dale Reynolds's record with every section, at a stage of the scenario; built when the beat plays. */
 function reynoldsRecord(stage: "alert" | "resolved"): PatientRecord {
@@ -225,23 +229,17 @@ const scenario2Beats: ScenarioBeat[] = [
       const since = new Date().toISOString();
       return {
         details: {
-          // The Messages column opens on its own (the alert panel), where the ED nurse says what comes next.
-          "live-reynolds": (detail) =>
-            withMessages({
-              id: "p21-message-dropped",
-              from: "bedside",
-              text: "Video froze on our side. Rachel will send the BiPAP screen and the next gases here.",
-              sentAt: since,
-            })({
-              ...detail,
-              connection: {
-                mode: "low-bandwidth",
-                since,
-                site: "Alliance",
-                vitalsEvery: 30,
-                photos: [],
-              },
-            }),
+          // The ED nurse's word follows 3 s later (next beat) and opens the alert panel's Messages column.
+          "live-reynolds": (detail) => ({
+            ...detail,
+            connection: {
+              mode: "low-bandwidth",
+              since,
+              site: "Alliance",
+              vitalsEvery: 30,
+              photos: [],
+            },
+          }),
         },
         log: [
           {
@@ -252,6 +250,27 @@ const scenario2Beats: ScenarioBeat[] = [
               "Alliance's connection dropped mid-consult. Vitals every 30 s; photos sent as they're taken",
           },
         ],
+      };
+    },
+  },
+  {
+    after: "consult",
+    // 3 s after the low-bandwidth banner (Nov 5, 2026, user's call), the ED nurse says what comes next. The drop plays at
+    // 6 s (`beatDelays.consult`), so 9 s.
+    delay: 9,
+    label: "Alliance's ED nurse: video froze, photos coming in Messages",
+    changes: () => {
+      // Taken once, as the beat plays: the change below is applied on every render.
+      const sentAt = new Date().toISOString();
+      return {
+        details: {
+          "live-reynolds": withMessages({
+            id: "p21-message-dropped",
+            from: "bedside",
+            text: "Video froze on our side. Rachel will send the BiPAP screen and the next gases here.",
+            sentAt,
+          }),
+        },
       };
     },
   },
@@ -274,6 +293,8 @@ const scenario2Beats: ScenarioBeat[] = [
             { label: "RR", value: "28" },
             { label: "Leak", value: "16 L/min" },
           ],
+          // AI-generated (Figma, Nov 5, 2026), its readings checked against `values`; no real patient or device.
+          src: bipapScreenPhoto,
           takenAt: new Date().toISOString(),
           takenBy: "Rachel Lindgren, RRT",
         }),
@@ -308,6 +329,7 @@ const scenario2Beats: ScenarioBeat[] = [
             { label: "PaO₂", value: "62" },
             { label: "HCO₃", value: "32" },
           ],
+          src: bloodGas1hPhoto,
           takenAt: secondsAgo(4),
           takenBy: "Rachel Lindgren, RRT",
         },
@@ -321,6 +343,7 @@ const scenario2Beats: ScenarioBeat[] = [
             { label: "PaO₂", value: "66" },
             { label: "HCO₃", value: "32" },
           ],
+          src: bloodGas2hPhoto,
           takenAt: new Date().toISOString(),
           takenBy: "Rachel Lindgren, RRT",
         },
@@ -352,7 +375,8 @@ const scenario2Beats: ScenarioBeat[] = [
   },
   {
     after: "keep",
-    delay: 14,
+    // 10 s after he's kept, 4 s after the resolution (Nov 5, 2026, user's call; it was 14 s).
+    delay: 10,
     // 6. Social needs flagged: the discharge workflow reads his chart, flags "uninsured" and "can't afford home oxygen",
     // and drafts referrals for Medicaid eligibility screening and pulmonary rehab closer to home. The clinician sends them.
     label:
@@ -367,6 +391,19 @@ const scenario2Beats: ScenarioBeat[] = [
         details: {
           "live-reynolds": (detail) => ({ ...detail, discharge, tags }),
         },
+        // With his alert closed, a toast says there's something to send, and opens the referrals (Nov 5, 2026, user's call).
+        notices: [
+          {
+            id: "p21-social-needs",
+            patientId: "p21",
+            alertId: "live-reynolds",
+            title: "Social needs at discharge",
+            description:
+              "Uninsured and can't afford home oxygen. 2 referrals drafted: Medicaid eligibility screening and pulmonary rehab.",
+            actionLabel: "Review referrals",
+            focus: "discharge",
+          },
+        ],
         log: [
           {
             patientId: "p21",

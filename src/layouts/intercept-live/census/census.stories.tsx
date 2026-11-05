@@ -340,6 +340,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 		patients: monitoring,
 		alerts,
 		everyAlert,
+		notices,
 		caption,
 		startScenario,
 		withScenarioCensus,
@@ -395,6 +396,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 			askInterceptNotice={live.notice}
 			onAlertAction={live.onAlertAction}
 			liveFeed={caption}
+			notices={notices}
 			prototype={prototypeShortcuts({ startScenario })}
 			onResetPrototype={resetPrototype}
 			defaultPage={location.defaultPage}

@@ -14,7 +14,7 @@ import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type Op
 import { MonitoringPanel, type MonitoringPatient } from "../monitoring/monitoring-panel";
 import { worstOpenSeverity } from "../monitoring/triage-queue";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
-import { AlertToasts, useClosedResolutions } from "../shared/alert-toasts";
+import { AlertToasts, useClosedResolutions, type AlertNotice } from "../shared/alert-toasts";
 import { withFlagDetails } from "../shared/flag-details";
 import { useAddressedAlerts } from "../shared/live-feed";
 import {
@@ -66,6 +66,8 @@ type CensusProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		onConsultChange?: (alertId: string, state: AlertConsultState, detail: AlertDetailData) => void;
 		/** The AI Notetaker's draft of a consult, approved in the alert modal, by alert. */
 		onConsultNote?: (alertId: string, note: string, detail: AlertDetailData) => void;
+		/** Things to act on, each a toast unless its alert is open (Scenario 2's social needs; `AlertToasts`). */
+		notices?: AlertNotice[];
 	};
 
 /**
@@ -95,6 +97,7 @@ function Census({
 	onDischargeDecision,
 	onConsultChange,
 	onConsultNote,
+	notices,
 	...shell
 }: CensusProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on the Census and Monitoring.
@@ -184,6 +187,7 @@ function Census({
 				alerts={alertsProp}
 				patients={patients}
 				onCloseResolved={closeResolved}
+				notices={notices}
 			/>
 		</InterceptLive>
 	);

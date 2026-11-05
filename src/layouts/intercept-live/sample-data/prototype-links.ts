@@ -1,4 +1,5 @@
 import * as React from "react";
+import { PlayIcon } from "lucide-react";
 
 import type { InterceptLivePage, OpenPatient, PrototypeShortcut } from "../intercept-live";
 import type { ScenarioId } from "./use-sample-live-feed";
@@ -18,8 +19,8 @@ import type { ScenarioId } from "./use-sample-live-feed";
  * the Kanban board, left the menu on Nov 5, 2026, user's call; the panels' `groupedView` still takes it.)
  */
 const prototypeShortcuts = ({ startScenario }: { startScenario: (scenario: ScenarioId) => void }): PrototypeShortcut[] => [
-	{ group: "Scenarios", label: "Scenario 1: Heart failure", page: "Monitoring", onSelect: () => startScenario("scenario-1") },
-	{ group: "Scenarios", label: "Scenario 2: COPD", page: "Monitoring", onSelect: () => startScenario("scenario-2") },
+	{ group: "Scenarios", label: "Scenario 1: Heart failure", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-1") },
+	{ group: "Scenarios", label: "Scenario 2: COPD", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-2") },
 	// Served by Storybook from `storyboards/` (`.storybook/main.ts`), relative to the story frame.
 	{ group: "Storyboard", label: "Scenario 1", href: "storyboards/scenario-1/index.html" },
 	{ group: "Storyboard", label: "Scenario 2", href: "storyboards/scenario-2/index.html" },

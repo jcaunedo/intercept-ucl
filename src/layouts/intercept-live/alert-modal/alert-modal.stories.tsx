@@ -194,7 +194,7 @@ export const Panel: Story = {
 		// The pathway opens in a second panel, to the right of the call's.
 		await userEvent.click(canvas.getByRole("button", { name: "Pathway" }));
 		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
-		await expect(await pathway.findByRole("button", { name: "Accept and send" })).toBeInTheDocument();
+		await expect(await pathway.findByRole("button", { name: "Accept" })).toBeInTheDocument();
 		const panels = canvas.getAllByRole("complementary").map((panel) => panel.getAttribute("aria-label"));
 		await expect(panels).toEqual(["Video consult", "Pathway"]);
 		await userEvent.click(canvas.getByRole("button", { name: "End call" }));
@@ -334,13 +334,13 @@ export const Pathway: Story = {
 		// Add note opens a note for the co-signer, which goes with the orders.
 		await userEvent.click(pathway.getByRole("button", { name: "Add note" }));
 		await userEvent.type(pathway.getByRole("textbox", { name: "Note for Dr. Tom Weller" }), "On 80 mg PO at home");
-		await userEvent.click(pathway.getByRole("button", { name: "Accept and send" }));
+		await userEvent.click(pathway.getByRole("button", { name: "Accept" }));
 		await expect(args.onPathwayDecision).toHaveBeenCalledWith(
 			expect.objectContaining({ type: "accept", edited: ["furosemide"], note: "On 80 mg PO at home" }),
 		);
 		await expect(await pathway.findByText(/Sent to Dr. Tom Weller for co-signature/)).toBeInTheDocument();
-		// The note shows under the status once its field has closed.
-		await waitFor(() => expect(pathway.getByText("On 80 mg PO at home").tagName).toBe("SPAN"));
+		// The note shows in the status banner once its field has closed.
+		await waitFor(() => expect(pathway.getByText("On 80 mg PO at home").closest("[role='status']")).not.toBeNull());
 		await waitFor(() => expect(pathway.getByText(/Co-signed by Dr. Tom Weller/)).toBeInTheDocument(), {
 			timeout: 6000,
 		});
@@ -380,7 +380,7 @@ export const PathwayDeclined: Story = {
 		await userEvent.click(pathway.getByRole("button", { name: "Undo decline" }));
 		await expect(args.onPathwayDecision).toHaveBeenLastCalledWith({ type: "undecline" });
 		await expect(region).toHaveAttribute("data-status", "suggested");
-		await expect(await pathway.findByRole("button", { name: "Accept and send" })).toBeInTheDocument();
+		await expect(await pathway.findByRole("button", { name: "Accept" })).toBeInTheDocument();
 	},
 };
 
@@ -443,7 +443,7 @@ export const KeepOrTransfer: Story = {
 		);
 		// Not before the plan: it follows the pathway's orders.
 		await expect(dialog.queryByRole("region", { name: "Keep or transfer" })).not.toBeInTheDocument();
-		await userEvent.click(dialog.getByRole("button", { name: "Accept and send" }));
+		await userEvent.click(dialog.getByRole("button", { name: "Accept" }));
 		const region = await dialog.findByRole("region", {
 			name: "Keep or transfer",
 		});
@@ -477,7 +477,7 @@ export const TransferRequested: Story = {
 				name: "Rising work of breathing, positive fluid balance, HFrEF",
 			}),
 		);
-		await userEvent.click(dialog.getByRole("button", { name: "Accept and send" }));
+		await userEvent.click(dialog.getByRole("button", { name: "Accept" }));
 		const region = await dialog.findByRole("region", {
 			name: "Keep or transfer",
 		});

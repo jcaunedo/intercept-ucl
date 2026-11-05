@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 2, 2026
 Created by: Julio Caunedo
-Last updated: Nov 4, 2026
+Last updated: Nov 5, 2026
 Scope: The alert maximized modal of Intercept Live: one alert opened in full from a Monitoring card, an alert toast or a card's "…" menu, with its evidence, a one-click video consult to the bedside and a suggested care pathway.
 Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-modal/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines the modal's structure, behavior, states, data and acceptance cr
 **Surface:** a modal over the Monitoring and Census pages, and over a patient's details  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 4, 2026
+**Last updated:** November 5, 2026
 
 ---
 
@@ -119,13 +119,13 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 | AMM-012 | **History and labs** | What the consult needs: home meds, last echo, trending labs, each value colored by how much it matters now (critical, or abnormal but known). With nothing, "No history or labs on file for this patient." ✅ **Not in the alert panel (Nov 3, 2026, user's call):** the AI Notetaker fills the Video consult panel under the call; Ask Intercept Live's answer about the patient has the history and labs. |
 | AMM-013 | **One-click video consult** | **Video consult** rings the patient's bedside nurse ("Calling Kayla Brandt…"), then opens the room's camera ("Kayla Brandt, RN joined", Live with a running time, Mute, End). The call floats over the bottom of Clinical info; the findings scroll under it (in the alert panel: a Video consult panel slides out beside the alert, the call over the AI Notetaker). **End call** (the button under the alert) or End (on the call) ends it (SV-07, CC-05). The camera session itself is PRD Bedside camera (CAM-007). |
 | AMM-014 | **Suggested pathway** | Every alert suggests a pathway for its kind (e.g. the CHF exacerbation pathway, the hour-1 sepsis bundle), with its source protocol and each order's evidence. Without one, "No care pathway suggested for this alert." |
-| AMM-015 | **Edit, accept, decline** | Each dose can be edited inline (an edited dose is marked, the suggestion struck through beside it). **Accept and send** sends the orders to the local physician for co-signature; once co-signed they're active and the bedside team carries them out. **Decline** asks why (required). **Add note**, under the orders, opens an optional note for the co-signer ("Note for Dr. Tom Weller"), sent with the orders and shown as "Note: …" under Awaiting co-signature and Active. Nothing becomes an order on its own (BR-06, OE-02). |
+| AMM-015 | **Edit, accept, decline** | Each dose can be edited inline (an edited dose is marked, the suggestion struck through beside it). **Accept** sends the orders to the local physician for co-signature; once co-signed they're active and the bedside team carries them out. **Decline** asks why (required). **Add note**, under the orders, opens an optional note for the co-signer ("Note for Dr. Tom Weller"), sent with the orders and shown as "Note: …" under Awaiting co-signature and Active. Nothing becomes an order on its own (BR-06, OE-02). |
 | AMM-016 | **Tiers** | A Critical alert's toast interrupts (AL-02); the modal itself doesn't change by tier beyond its colors. One alert per condition (AL-11): a repeat updates the alert the modal shows. |
 | AMM-017 | **Accessibility** | A modal dialog named by the reason line; focus moves in and is trapped, and returns to the trigger on close. Toggle and expanding buttons say their state (`aria-pressed`, `aria-expanded`). Every color-coded value also has words. |
 | AMM-018 | **Motion** | The modal fades and rises in; forms and the pathway's parts open in place; the call and the state line fade and rise in; a confirmed Acknowledge bumps once. Fades only under reduced motion (MOTION.md). |
 | AMM-019 | **Toasts wait** | While the modal is open, the alert toasts are hidden and paused, and come back when it closes (as on a patient's page and with the live feed open). |
 | AMM-020 | **Own pathway** | After declining, **Create your own pathway** opens a form in place of the declined order set: the pathway's name, then each order's name, dose or settings, and an optional target or condition; **Add order** adds one, × removes one, a blank one is left out. **Send for co-signature** (enabled once the name and every order's name and dose are filled) sends it to the same co-signer as the suggestion; it then shows in the suggestion's place, titled with its name, "Source: Created by you · Declined suggestion: …", awaiting co-signature, then active. Cancel or Escape closes the form and keeps what was typed. ✅ **Decision (Nov 3, 2026, user's call).** |
-| AMM-021 | **Undo decline** | Once declined, **Undo decline** puts the suggestion back as it was (Suggested; Decline and Accept and send again; a second Decline asks why again, the first reason prefilled). It's there until the intensivist sends their own pathway. ✅ **Decision (Nov 3, 2026, user's call).** |
+| AMM-021 | **Undo decline** | Once declined, **Undo decline** puts the suggestion back as it was (Suggested; Decline and Accept again; a second Decline asks why again, the first reason prefilled). It's there until the intensivist sends their own pathway. ✅ **Decision (Nov 3, 2026, user's call).** |
 | AMM-022 | **Keep or transfer** | For an alert that carries one (Scenario 1, step 5; DU-22), **Keep or transfer** opens under the pathway once its orders are sent (awaiting co-signature or active), or at once when a decision was already made. It sets **what the plan needs** (BiPAP, respiratory therapist, hourly vitals, nurse capacity) against what the hospital has tonight, each covered, limited or not available (an icon and words), and, **if transferred**, the receiving hospitals (bed, distance; one that can't take the patient is dimmed) and the transport (ground, air, with times). Source line: the hospital tonight and the regional transfer center. The platform doesn't pick one. ✅ **Placement (Nov 3, 2026, user's call):** the Pathway column, under the pathway. |
 | AMM-023 | **Decide, with a reason** | **Keep at {hospital}** shows the checkpoints it sets and asks why (required). **Transfer** asks for the receiving hospital and the transport (radio choices; the first available picked) and why (required), then **Request transfer**: "Transfer requested to … , by air · time", and the transfer center confirms the bed and the crew. **Change decision** takes either back. Escape closes an open form before the modal. |
 | AMM-024 | **Checkpoints** | Keeping sets checkpoints at 1 h and 4 h, each with what has to hold by then (from the pathway's targets) and its due time; once due, Passed or Missed with the readings behind it. A missed checkpoint raises a High alert (requirements spec, keep-or-transfer checkpoints) and the panel says so. |
@@ -146,7 +146,7 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 | **Marked AI wrong** (AI recommendation) | Severity colors | None | "Marked AI wrong by you · 1:45 AM" |
 | **Consult: calling** | — | Footer: "Calling…" (disabled) | The call shows the nurse ringing |
 | **Consult: live** | — | Footer: **End call** (flat destructive) | The room's camera, Live with its time |
-| **Pathway: suggested / awaiting co-signature / active / declined** | — | Decline · Accept and send while suggested; Undo decline · Create your own pathway once declined | Status badge and line in the Pathway column |
+| **Pathway: suggested / awaiting co-signature / active / declined** | — | Decline · Accept while suggested; Undo decline · Create your own pathway once declined | Status badge and line in the Pathway column |
 | **Own pathway: writing / awaiting co-signature / active** | The suggestion was declined | Cancel · Send for co-signature while writing | The form in place of the order set; once sent, the clinician's pathway with its status |
 | **Keep or transfer: to decide / keep / transfer requested** | — | Transfer · Keep at {hospital}; then each form's Cancel · Keep / Request transfer; Change decision once decided | Badge "To decide", "Keep at Chadron" or "Transfer requested"; the decision with its reason and time, then the checkpoints (keep) |
 | **Checkpoint missed / transfer avoided** | — | Change decision (missed); none (avoided) | "A checkpoint was missed, so a High alert was raised"; or the Transfer avoided panel |
@@ -196,7 +196,7 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | AMM-AC-12 | Toasts are on screen | The modal opens, then closes | The toasts fade out while it's open and come back after |
 | AMM-AC-13 | A short viewport | The modal's content is taller than the screen | The modal keeps 80px from the top and bottom, and each column scrolls |
 | AMM-AC-14 | The CHF pathway was declined | The intensivist creates their own pathway with a name and two orders and sends it | The pathway shows under its name, "Created by you", goes to Dr. Tom Weller for co-signature, then shows Active |
-| AMM-AC-15 | The CHF pathway was declined | The intensivist clicks Undo decline | The pathway is Suggested again, with Decline and Accept and send |
+| AMM-AC-15 | The CHF pathway was declined | The intensivist clicks Undo decline | The pathway is Suggested again, with Decline and Accept |
 | AMM-AC-16 | Hayes's CHF pathway is suggested | The intensivist accepts and sends it | Keep or transfer opens under it, "To decide", with Chadron's needs, the receiving hospitals and the transport |
 | AMM-AC-17 | Keep or transfer is open | The intensivist picks Keep at Chadron, writes why and confirms | "Keeping at Chadron · time" with the reason, and the 1 h and 4 h checkpoints with their due times |
 | AMM-AC-18 | Keep or transfer is open | The intensivist picks Transfer, Regional West, Air, writes why and requests it | "Transfer requested to Regional West Medical Center, by air · time" |

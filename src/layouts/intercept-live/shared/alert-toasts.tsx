@@ -1,5 +1,8 @@
 import * as React from "react";
+import { ClipboardListIcon, XIcon } from "lucide-react";
 
+import { Button } from "@/components/buttons/button";
+import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { toastAlert } from "@/components/feedback/alert-toast";
 import { toast, toastsMuted, toastsOnScreen, useToastsMuted, useToastsOnScreen } from "@/components/feedback/sonner";
 import { playAlertPing, stopAlertPing } from "@/lib/alert-ping";
@@ -60,7 +63,93 @@ type AlertToastsProps = {
 	patients: AlertToastPatient[];
 	/** A Resolved toast closed with its ×: the patient's card drops its Resolved bar (`useClosedResolutions`). */
 	onCloseResolved?: (patientId: string) => void;
+	/**
+	 * Things for the clinician to act on (Scenario 2's social needs at discharge): each toasts once, unless its patient's
+	 * alert is open, where the clinician already sees it. Its button opens the alert at the part it's about.
+	 */
+	notices?: AlertNotice[];
 };
+
+/** Something for the clinician to act on about a patient's alert, e.g. referrals to send at discharge. */
+type AlertNotice = {
+	/** Unique: a notice toasts once. */
+	id: string;
+	patientId: string;
+	/** The alert its button opens. */
+	alertId?: string;
+	title: string;
+	description: string;
+	/** The button, e.g. "Review referrals". */
+	actionLabel: string;
+	/** The part of the alert the button opens at: the discharge referrals. */
+	focus?: "discharge";
+};
+
+/**
+ * A notice's toast (Nov 5, 2026, user's call: "a sonner alert … so he can take action on it and continue the flow"):
+ * the alert toasts' surface and patient row, a clipboard where their severity pill sits, the title and what's to do, and
+ * one button that opens the alert at it. × closes it.
+ */
+function NoticeToast({
+	notice,
+	patientName,
+	location,
+	photo,
+	initials,
+	tone,
+	onAction,
+	onClose,
+}: {
+	notice: AlertNotice;
+	patientName: string;
+	location?: string;
+	photo?: string;
+	initials?: string;
+	tone?: AvatarFallbackProps["tone"];
+	onAction?: () => void;
+	onClose: () => void;
+}) {
+	return (
+		<div
+			data-slot='notice-toast'
+			className='relative flex w-[var(--width,400px)] max-w-full flex-col gap-3 rounded-card border border-border bg-popover p-4 font-sans text-popover-foreground shadow-toast'
+		>
+			<div className='flex items-start gap-2'>
+				<ClipboardListIcon aria-hidden='true' className='mt-1 size-4 shrink-0 text-icon-muted' />
+				<div className='flex min-w-0 flex-col'>
+					<p className='text-base font-bold text-foreground'>{notice.title}</p>
+					<p className='text-sm text-foreground'>{notice.description}</p>
+				</div>
+				<Button
+					variant='ghost'
+					size='icon-sm'
+					aria-label='Dismiss'
+					onClick={onClose}
+					className='-my-1 -mr-1 ml-auto shrink-0 text-muted-foreground'
+				>
+					<XIcon />
+				</Button>
+			</div>
+			<div className='flex min-w-0 items-center gap-2'>
+				{photo || initials ? (
+					<Avatar size='sm'>
+						{photo ? <AvatarImage src={photo} alt='' /> : null}
+						{initials ? <AvatarFallback tone={tone}>{initials}</AvatarFallback> : null}
+					</Avatar>
+				) : null}
+				<div className='flex min-w-0 flex-col'>
+					<p className='truncate text-base font-semibold text-foreground'>{patientName}</p>
+					{location ? <p className='-mt-0.5 truncate text-sm text-muted-foreground'>{location}</p> : null}
+				</div>
+			</div>
+			{onAction ? (
+				<Button variant='outline' size='sm' onClick={onAction} className='self-start'>
+					{notice.actionLabel}
+				</Button>
+			) : null}
+		</div>
+	);
+}
 
 // A consult request's toast id: the alert's own id is its alert toast.
 const consultToastId = (alertId: string) => `${alertId}:consult`;
@@ -89,7 +178,7 @@ function useClosedResolutions() {
  * alert: a later change to the same alert replaces its toast (AL-11). With My patients on in the page on screen, only
  * their patients toast, and turning it on closes the toasts of the others.
  */
-function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
+function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertToastsProps) {
 	const navigation = usePatientNavigation();
 	const openPatient = navigation?.openPatient;
 	const askAboutPatient = navigation?.askAboutPatient;
@@ -255,7 +344,59 @@ function AlertToasts({ alerts, patients, onCloseResolved }: AlertToastsProps) {
 		else for (const id of pinged) unheard.current.add(id);
 	}, [alerts, patients, mineOnly, tones, openPatient, openAlert, askAboutPatient, onCloseResolved, closed, closeToast]);
 
+	// Notices: each toasts once when it arrives (the ones there when the page opened don't), unless its patient's alert is
+	// open, where it already shows. Opening that alert later closes its toast: the clinician is there.
+	const seenNotices = React.useRef(new Set(notices.map((notice) => notice.id)));
+	const shownNotices = React.useRef(new Map<string, string>());
+	const openAlertPatient = navigation?.alertPatientId;
+	React.useEffect(() => {
+		for (const notice of notices) {
+			if (seenNotices.current.has(notice.id)) continue;
+			seenNotices.current.add(notice.id);
+			if (openAlertPatient === notice.patientId) continue;
+			const patient = patients.find((item) => item.id === notice.patientId);
+			if (!patient) continue;
+			shownNotices.current.set(notice.id, notice.patientId);
+			const close = () => {
+				toast.dismiss(notice.id);
+				shownNotices.current.delete(notice.id);
+			};
+			toast.custom(
+				() => (
+					<NoticeToast
+						notice={notice}
+						patientName={`${patient.lastName}, ${patient.firstName}`}
+						location={[patient.hospital, patient.unit, patient.bed].filter(Boolean).join(" · ")}
+						photo={patient.photo}
+						initials={patientInitials(patient)}
+						tone={tones.get(patient.id) ?? avatarTone(patient.id)}
+						onAction={
+							openAlert
+								? () => {
+										openAlert(notice.patientId, notice.alertId, { focus: notice.focus });
+										close();
+									}
+								: undefined
+						}
+						onClose={close}
+					/>
+				),
+				// It waits until acted on or closed, in front with the alerts.
+				{ id: notice.id, duration: Number.POSITIVE_INFINITY, priority: 1 },
+			);
+			if (toastsOnScreen()) pingUnlessMuted();
+		}
+	}, [notices, patients, tones, openAlert, openAlertPatient]);
+	React.useEffect(() => {
+		if (!openAlertPatient) return;
+		for (const [id, patientId] of shownNotices.current)
+			if (patientId === openAlertPatient) {
+				toast.dismiss(id);
+				shownNotices.current.delete(id);
+			}
+	}, [openAlertPatient]);
+
 	return null;
 }
 
-export { AlertToasts, useClosedResolutions, type AlertToastPatient, type AlertToastsProps };
+export { AlertToasts, useClosedResolutions, type AlertNotice, type AlertToastPatient, type AlertToastsProps };

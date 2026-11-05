@@ -353,7 +353,7 @@ function KeepOrTransferPanel({
 							<div className='flex flex-col gap-3'>
 								<ul aria-label='Receiving hospitals' className='flex flex-col gap-2'>
 									{data.receiving.map((item) => (
-										<li key={item.id} className={cn("flex flex-col text-sm", !item.accepting && "opacity-60")}>
+										<li key={item.id} className='flex flex-col text-sm'>
 											<span className='font-bold text-foreground'>{item.name}</span>
 											<span className='text-muted-foreground'>
 												{item.place} · {item.bed}
@@ -364,9 +364,22 @@ function KeepOrTransferPanel({
 								<hr className='border-border' />
 								<ul aria-label='Transport' className='flex flex-col gap-2'>
 									{data.transport.map((item) => (
-										<li key={item.id} className={cn("flex flex-col text-sm", !item.available && "opacity-60")}>
-											<span className='font-bold text-foreground'>{item.label}</span>
-											<span className='text-muted-foreground'>{item.status}</span>
+										// Not faded when unavailable (Nov 5, 2026, user's call: "difficult to read"): why air or ground
+										// can't go is what the decision turns on, so it reads in full, flagged with the alert triangle as
+										// the plan's limited needs are (user's call, same day); available, the check.
+										<li key={item.id} className='flex items-start gap-2 text-sm'>
+											{item.available ? (
+												<CircleCheckIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-success' />
+											) : (
+												<TriangleAlertIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-warning' />
+											)}
+											<div className='flex min-w-0 flex-col'>
+												<span className='font-bold text-foreground'>
+													{item.label}
+													<span className='sr-only'>: {item.available ? "Available" : "Not available"}</span>
+												</span>
+												<span className='text-foreground'>{item.status}</span>
+											</div>
 										</li>
 									))}
 								</ul>
