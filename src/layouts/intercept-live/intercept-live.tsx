@@ -58,7 +58,7 @@ import { cn } from "@/lib/utils";
 import { AskInterceptPanel, type AskInterceptNotice, type AskInterceptResponder } from "./ask-intercept-panel";
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
-import { PatientNavigationProvider, type PatientNavigation } from "./patient-navigation";
+import { PatientNavigationProvider, type ActiveAlertsRequest, type PatientNavigation } from "./patient-navigation";
 import { PageHidesToastsProvider, PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
 import { useLayoutSidebar } from "./use-layout-sidebar";
 
@@ -529,8 +529,21 @@ function InterceptLive({
 		const ids = pageList.page === page ? pageList.ids : [];
 		setOpenPatient({ id: openPatient.id, list: ids.includes(openPatient.id) ? ids : [openPatient.id, ...ids] });
 	}, [openPatient, pageList, page]);
+	// A hospital tab's alert count, clicked on any page: Monitoring, on that tab, with Active alerts on.
+	const [activeAlertsRequest, setActiveAlertsRequest] = React.useState<ActiveAlertsRequest | null>(null);
+	const hasMonitoring = Boolean(pages.Monitoring);
 	const navigation = React.useMemo<PatientNavigation>(
 		() => ({
+			showActiveAlerts: hasMonitoring
+				? (hospitalId, patientScope) => {
+						setOpenPatient(null);
+						setPage("Monitoring");
+						if (patientScope) setScope((current) => ({ ...current, monitoring: patientScope }));
+						setActiveAlertsRequest((current) => ({ hospitalId, key: (current?.key ?? 0) + 1 }));
+					}
+				: undefined,
+			activeAlertsRequest,
+			clearActiveAlertsRequest: () => setActiveAlertsRequest(null),
 			openPatient: (patientId, list) => {
 				if (!renderPatientDetails) return;
 				setOpenPatient({ id: patientId, list });
@@ -551,7 +564,17 @@ function InterceptLive({
 			patientOpen: openPatientId !== null,
 			viewedAt,
 		}),
-		[renderPatientDetails, renderAlert, reportPageList, headerCompact, openPatientId, viewedAt, setChatOpen],
+		[
+			renderPatientDetails,
+			renderAlert,
+			reportPageList,
+			headerCompact,
+			openPatientId,
+			viewedAt,
+			setChatOpen,
+			hasMonitoring,
+			activeAlertsRequest,
+		],
 	);
 	const openAlertPatient = (patientId: string) => {
 		setOpenAlert((current) => (current ? { ...current, open: false } : current));

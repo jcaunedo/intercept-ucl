@@ -309,7 +309,18 @@ function CensusPanel({
 			{/* The hospital bar, right under the header (Intercept-Live Census `83:2515`), with Group by hospital at its right
 			    (label first). */}
 			<div className='flex items-center justify-between gap-6 border-b border-border pr-6 pl-4'>
-				<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
+				<HospitalTabs
+					hospitals={hospitals}
+					patients={assigned}
+					value={hospitalId}
+					onValueChange={setHospitalId}
+					// A tab's alert count opens Monitoring on that tab with Active alerts on, with this page's My patients.
+					onShowAlerts={
+						navigation?.showActiveAlerts
+							? (id) => navigation.showActiveAlerts?.(id, scope)
+							: undefined
+					}
+				/>
 				<div className='shrink-0'>
 					<Switch
 						label='Group by hospital'

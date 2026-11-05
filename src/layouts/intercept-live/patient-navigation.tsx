@@ -29,6 +29,16 @@ type PatientNavigation = {
 	 * `tags` are the patient's tags ("Ventilated"…), for the chat's questions about them.
 	 */
 	askAboutPatient: (patientId: string, patientName: string, tags?: string[]) => void;
+	/**
+	 * Opens Monitoring on a hospital tab (`"all"` for All hospitals) with the Active alerts chip on, from a hospital tab's
+	 * alert count on any page (Nov 5, 2026, user's call). `scope` carries the source page's My patients, so Monitoring
+	 * shows the patients the count counted. Undefined when the layout has no Monitoring page.
+	 */
+	showActiveAlerts?: (hospitalId: string, scope?: "all" | "mine") => void;
+	/** The pending `showActiveAlerts` request, which Monitoring applies when it opens (or at once, if it's on screen). */
+	activeAlertsRequest: ActiveAlertsRequest | null;
+	/** Monitoring calls it once it has applied the request, so coming back later opens it as usual. */
+	clearActiveAlertsRequest: () => void;
 	/** Whether the canvas is scrolled, so the header and the patient header compact together. */
 	compact: boolean;
 	/** Whether a patient's details are open, so the page under them is hidden. */
@@ -37,7 +47,10 @@ type PatientNavigation = {
 	viewedAt: Record<string, string>;
 };
 
-const PatientNavigationContext = React.createContext<PatientNavigation | null>(null);
+/** A hospital tab's alert count, clicked: the hospital to open Monitoring on. `key` tells one click from the next. */
+type ActiveAlertsRequest = { hospitalId: string; key: number };
+
+const PatientNavigationContext =React.createContext<PatientNavigation | null>(null);
 
 const PatientNavigationProvider = PatientNavigationContext.Provider;
 
@@ -46,4 +59,4 @@ function usePatientNavigation() {
 	return React.useContext(PatientNavigationContext);
 }
 
-export { PatientNavigationProvider, usePatientNavigation, type PatientNavigation };
+export { PatientNavigationProvider, usePatientNavigation, type ActiveAlertsRequest, type PatientNavigation };

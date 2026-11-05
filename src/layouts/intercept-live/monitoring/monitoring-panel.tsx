@@ -363,14 +363,19 @@ function MonitoringPanel({
 	groupedView = "board",
 	closedResolutions = {},
 }: MonitoringPanelProps) {
-	const [hospitalId, setHospitalId] = React.useState("all");
+	const navigation = usePatientNavigation();
+	// A hospital tab's alert count, clicked on another page, opens Monitoring on that tab with Active alerts on.
+	const activeAlertsRequest = navigation?.activeAlertsRequest ?? null;
+	const [hospitalId, setHospitalId] = React.useState(() => activeAlertsRequest?.hospitalId ?? "all");
 	const [scope, setScope] = usePatientScope("monitoring");
 	// A status chip keeps the patients who matched when it was pressed: readings move every second and alerts come and go,
 	// and a live filter would add and drop cards under the clinician's eyes (PRD MON-013). Its count stays live; pressing
 	// it again clears it.
 	// The pressed status chip. A held chip keeps the patients who matched when it was pressed (`ids`; readings move every
 	// second, MON-013); Active alerts has none and matches live.
-	const [statusFilter, setStatusFilter] = React.useState<{ id: string; ids?: ReadonlySet<string> } | null>(null);
+	const [statusFilter, setStatusFilter] = React.useState<{ id: string; ids?: ReadonlySet<string> } | null>(() =>
+		activeAlertsRequest ? { id: "alerts" } : null,
+	);
 	const inStatusFilter = (patient: PanelMonitoringPatient) =>
 		!statusFilter ||
 		(statusFilter.ids
@@ -409,7 +414,6 @@ function MonitoringPanel({
 	const { sorts, sortNow } = useSortCadence(paused);
 	// Inside the shell, a card or a list row opens the patient's details over the page, stepping through the panel as it's
 	// shown now; an alert in the live feed opens them with the page's list as it stands (PRD PD-015).
-	const navigation = usePatientNavigation();
 	const openPatient = (patientId: string) => {
 		navigation?.openPatient(
 			patientId,
@@ -548,6 +552,24 @@ function MonitoringPanel({
 					: { id: filter.id, ids: new Set(patients.filter(filter.matches).map((patient) => patient.id)) },
 		);
 	};
+	// A hospital tab's alert count: that tab, with Active alerts on and nothing else narrowing it, so the cards are the
+	// alerts the count counted (Nov 5, 2026, user's call).
+	const showActiveAlerts = (id: string) => {
+		setHospitalId(id);
+		changeFilters({});
+		setQuery("");
+		pressStatusFilter("alerts");
+	};
+	// The same, asked from another page's tab (`navigation.showActiveAlerts`): opening on it is the initial state above;
+	// a request made while Monitoring is on screen is applied here. Cleared either way, so a later visit opens as usual.
+	const appliedRequest = React.useRef(activeAlertsRequest?.key);
+	React.useEffect(() => {
+		if (!activeAlertsRequest) return;
+		if (appliedRequest.current !== activeAlertsRequest.key) showActiveAlerts(activeAlertsRequest.hospitalId);
+		appliedRequest.current = activeAlertsRequest.key;
+		navigation?.clearActiveAlertsRequest();
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- only a new request applies.
+	}, [activeAlertsRequest]);
 	const alertCount = activeAlertCount(visible);
 	const renderCard = ({
 		id,
@@ -607,7 +629,13 @@ function MonitoringPanel({
 				{/* The hospital bar, right under the header, as on the Census (Intercept-Live Census `83:2515`), with Group by
 				    hospital at its right (label first). */}
 				<div className='flex items-center justify-between gap-6 border-b border-border pr-6 pl-4'>
-					<HospitalTabs hospitals={hospitals} patients={assigned} value={hospitalId} onValueChange={setHospitalId} />
+					<HospitalTabs
+						hospitals={hospitals}
+						patients={assigned}
+						value={hospitalId}
+						onValueChange={setHospitalId}
+						onShowAlerts={showActiveAlerts}
+					/>
 					<div className='shrink-0'>
 						<Switch
 							label='Group by hospital'

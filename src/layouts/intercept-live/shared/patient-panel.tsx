@@ -657,9 +657,22 @@ function hospitalTabCounts(patients: PanelPatient[]) {
  * worst one. Both are muted at rest and solid on the active tab (patients `secondary` → `neutral`, alerts
  * `<severity>-muted` → `<severity>`), easing between the two with the label. Hovering a counter names it in a
  * tooltip; screen readers get the same words from the tab's name, so the counters are hidden from them.
+ *
+ * With `onShowAlerts`, a click on the alert count opens Monitoring on this tab with Active alerts on (Nov 5, 2026,
+ * user's call), instead of picking the tab; on hover it turns solid. It sits inside the tab's button, so it can't be a
+ * button of its own: a pointer shortcut, while the keyboard reaches the same view through the tab and the chip.
  */
-function HospitalTabCounters({ patients, active }: { patients: PanelPatient[]; active: boolean }) {
+function HospitalTabCounters({
+	patients,
+	active,
+	onShowAlerts,
+}: {
+	patients: PanelPatient[];
+	active: boolean;
+	onShowAlerts?: () => void;
+}) {
 	const { severity, alerts, patientsText, alertsText } = hospitalTabCounts(patients);
+	const [alertsHovered, setAlertsHovered] = React.useState(false);
 
 	return (
 		<>
@@ -683,9 +696,26 @@ function HospitalTabCounters({ patients, active }: { patients: PanelPatient[]; a
 						<Counter
 							data-slot='counter'
 							aria-hidden
-							variant={active ? severity : `${severity}-muted`}
+							variant={active || (onShowAlerts && alertsHovered) ? severity : `${severity}-muted`}
 							count={alerts}
-							className='transition-colors'
+							className={cn("transition-colors", onShowAlerts && "cursor-pointer")}
+							{...(onShowAlerts
+								? {
+										onPointerEnter: () => setAlertsHovered(true),
+										onPointerLeave: () => setAlertsHovered(false),
+										// Radix picks the tab on mousedown, and focusing the tab picks it too: neither may happen, or the
+										// tab would switch before Monitoring opens.
+										onMouseDown: (event: React.MouseEvent) => {
+											event.preventDefault();
+											event.stopPropagation();
+										},
+										onClick: (event: React.MouseEvent) => {
+											event.preventDefault();
+											event.stopPropagation();
+											onShowAlerts();
+										},
+									}
+								: {})}
 						/>
 					</TooltipTrigger>
 					<TooltipContent side='top'>{alertsText}</TooltipContent>
@@ -703,20 +733,24 @@ function hospitalTabLabel(name: string, patients: PanelPatient[]) {
 
 /**
  * Hospital tabs: All hospitals, then one per hospital in alphabetical order (as Group by hospital orders them), each
- * with its patient count and its active alert count (`HospitalTabCounters`). Fills the page's hospital bar: 40px tall,
- * the active tab's underline over the bar's bottom border.
+ * with its patient count and its active alert count (`HospitalTabCounters`; with `onShowAlerts`, clicking the alert
+ * count opens Monitoring on that tab with Active alerts on). Fills the page's hospital bar: 40px tall, the active tab's
+ * underline over the bar's bottom border.
  */
 function HospitalTabs({
 	hospitals,
 	patients,
 	value,
 	onValueChange,
+	onShowAlerts,
 }: {
 	hospitals: PanelHospital[];
 	/** The patients the counters count (already narrowed to the patient scope). */
 	patients: PanelPatient[];
 	value: string;
 	onValueChange: (value: string) => void;
+	/** A tab's alert count, clicked: Monitoring on that tab (`"all"` for All hospitals) with Active alerts on. */
+	onShowAlerts?: (hospitalId: string) => void;
 }) {
 	const alphabetical = [...hospitals].sort((a, b) => a.name.localeCompare(b.name));
 
@@ -735,7 +769,11 @@ function HospitalTabs({
 				<TabsList variant='line' size='lg' aria-label='Hospital'>
 					<TabsTrigger value='all' aria-label={hospitalTabLabel("All hospitals", patients)}>
 						All hospitals
-						<HospitalTabCounters patients={patients} active={value === "all"} />
+						<HospitalTabCounters
+							patients={patients}
+							active={value === "all"}
+							onShowAlerts={onShowAlerts ? () => onShowAlerts("all") : undefined}
+						/>
 					</TabsTrigger>
 					{alphabetical.map((hospital) => {
 						const hospitalPatients = patients.filter((patient) => patient.hospitalId === hospital.id);
@@ -746,7 +784,11 @@ function HospitalTabs({
 								aria-label={hospitalTabLabel(hospital.name, hospitalPatients)}
 							>
 								{hospital.name}
-								<HospitalTabCounters patients={hospitalPatients} active={value === hospital.id} />
+								<HospitalTabCounters
+									patients={hospitalPatients}
+									active={value === hospital.id}
+									onShowAlerts={onShowAlerts ? () => onShowAlerts(hospital.id) : undefined}
+								/>
 							</TabsTrigger>
 						);
 					})}
