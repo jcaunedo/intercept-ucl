@@ -28,6 +28,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
+import { flagDetails } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "../alert-modal/discharge-plan";
 import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
@@ -91,6 +92,45 @@ type PatientVentilator = {
 	/** The last arterial blood gas, preformatted ("pH 7.29 · PaCO₂ 46 · …"). */
 	abg?: { values: string; collectedAt: string };
 	/** Where the values come from, e.g. "Ventilator" (PRD SV-074). */
+	source: string;
+	updatedAt: string;
+};
+
+/** The latest fall risk assessment, behind the Fall risk flag. Who assessed is the bedside nurse (`careTeam`). */
+type PatientFallRisk = {
+	/** "Morse Fall Scale". */
+	scale: string;
+	score: number;
+	/** "High risk": the scale's band for the score. */
+	risk: string;
+	assessedAt: string;
+	/** The assessment before, when the score changed. */
+	previous?: { score: number; at: string };
+	/** What's in place, e.g. "Bed alarm on", "Low bed". */
+	precautions: string[];
+};
+
+/** The order behind a code status flag (DNR). Who ordered it is the attending of record (`careTeam`). */
+type PatientCodeStatusOrder = {
+	orderedAt: string;
+	/** Who it was discussed with, e.g. "Patient and wife". */
+	discussedWith?: string;
+	/** The code status before, when it changed. */
+	previous?: { status: string; at: string };
+};
+
+/** The order behind an isolation flag: why, and since when. */
+type PatientIsolationOrder = {
+	/** "MRSA in the wound swab". */
+	reason: string;
+	orderedAt: string;
+};
+
+/** The ECMO circuit, behind the ECMO flag: the console's settings, written like the ventilator's. */
+type PatientEcmo = {
+	/** "VA-ECMO". */
+	mode: string;
+	settings: VentilatorSetting[];
 	source: string;
 	updatedAt: string;
 };
@@ -211,6 +251,11 @@ type PatientRecord = {
 	/** Only for a patient under sepsis screening or tracking (PRD PD-080). */
 	sepsis?: SepsisCase;
 	camera?: PatientCamera;
+	/** Behind the Fall risk, DNR, isolation and ECMO flags' popovers (Nov 5, 2026, user's call: every flag opens one). */
+	fallRisk?: PatientFallRisk;
+	codeStatusOrder?: PatientCodeStatusOrder;
+	isolationOrder?: PatientIsolationOrder;
+	ecmo?: PatientEcmo;
 	/** The deterioration score's breakdown, for the Overview's Early warning score. */
 	earlyWarning?: PatientEarlyWarning;
 	fluids?: PatientFluids;
@@ -362,14 +407,32 @@ function patientBadges(patient: PatientDetailsPatient, record?: PatientRecord): 
 	// safety badge.
 	const shown = [record?.codeStatus, record?.isolation].map((label) => label?.toLowerCase());
 	return [
-		record?.codeStatus ? { label: record.codeStatus, variant: "outline" } : { label: "Code status unknown" },
+		// The safety badges open the order behind them when the record has it, as the cards' flags do (Nov 5, 2026).
+		record?.codeStatus
+			? {
+					label: record.codeStatus,
+					variant: "outline",
+					details: record.codeStatusOrder ? flagDetails(record.codeStatus, record) : undefined,
+				}
+			: { label: "Code status unknown" },
 		allergies === undefined
 			? { label: "Allergies unknown" }
 			: allergies.length
 				? { label: `${allergies.length === 1 ? "Allergy" : "Allergies"}: ${allergies.join(", ")}`, variant: "red" }
 				: { label: "No known allergies", variant: "outline" },
-		...(record?.isolation ? [{ label: record.isolation, variant: "amber" as const }] : []),
-		...(patient.tags ?? []).filter(({ label }) => !shown.includes(label.toLowerCase())).map(({ label }) => ({ label })),
+		...(record?.isolation
+			? [
+					{
+						label: record.isolation,
+						variant: "amber" as const,
+						details: record.isolationOrder ? flagDetails(record.isolation, record) : undefined,
+					},
+				]
+			: []),
+		// Every flag opens its popover here too.
+		...(patient.tags ?? [])
+			.filter(({ label }) => !shown.includes(label.toLowerCase()))
+			.map(({ label, details }) => ({ label, details: details ?? flagDetails(label, record) })),
 	];
 }
 
@@ -707,6 +770,10 @@ export {
 	type PatientDetailsProps,
 	type PatientDetailsSources,
 	type PatientInfusion,
+	type PatientFallRisk,
+	type PatientCodeStatusOrder,
+	type PatientIsolationOrder,
+	type PatientEcmo,
 	type PatientLab,
 	type PatientAction,
 	type PatientBrief,

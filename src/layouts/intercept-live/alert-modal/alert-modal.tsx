@@ -317,6 +317,15 @@ function SectionEmpty({ children }: { children: React.ReactNode }) {
  * under its recommendation, with its source. Only while the alert is open; none without findings. The patient's
  * Monitoring card shows it too (`withAlertFlags`).
  */
+/**
+ * An evidence line as a popover line: what it's about (the words before its first number, "Lactate") as the term, the
+ * reading after it, so the term reads semibold. A line without a number stays whole.
+ */
+function evidenceItem(line: string) {
+	const match = /^(\D+?)\s+(?=[\d<>≥≤−+-])(.*)$/.exec(line);
+	return match ? { term: match[1], label: match[2] } : { label: line };
+}
+
 function findingsFlag(data: AlertDetailData): PatientCardTag | undefined {
 	const { alert, reasons } = data;
 	const evidence = alert.evidence ?? [];
@@ -331,7 +340,7 @@ function findingsFlag(data: AlertDetailData): PatientCardTag | undefined {
 						term: `${reason.label}:`,
 						label: `${reason.lead ? `${reason.lead}, ` : ""}${reason.detail}`,
 					}))
-				: evidence.map((line) => ({ label: line })),
+				: evidence.map(evidenceItem),
 			source: `${sourceLabels[alert.source.kind]} · ${alert.source.name}`,
 			updatedAt: alert.firedAt,
 		},

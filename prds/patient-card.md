@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 4, 2026
+Last updated: Nov 5, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines proposed presentation behavior, states and acceptance criteria 
 **Component:** Patient card  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 4, 2026
+**Last updated:** November 5, 2026
 
 ---
 
@@ -1214,7 +1214,7 @@ The full set of Patient card scenarios for design and prototype work. They are l
 - ℹ️ Each tag shows as a pill (UCL Badge). In P1, the **Ventilated** pill means invasive mechanical ventilation only (PC-050). A patient on noninvasive ventilation (a BiPAP or CPAP mask, no tube) gets its own **NIV** pill, never "Ventilated". Neither pill shows for room air or supplemental oxygen.
 - ✅ **Pressors counted (Nov 3, 2026, client feedback):** the pressor flag says how many are running, "1 pressor", "2 pressors" (it was "On pressors"): the pressors among the patient's continuous infusions (PC-060), from epinephrine, phenylephrine, norepinephrine, vasopressin, dopamine, dobutamine and angiotensin II (Giapreza). The Organ support quick view and Filters still group them as On pressors, any count.
 - ✅ **High-risk drips (Nov 3, 2026, client feedback):** a continuous infusion that's high-risk gets its own flag, as **Insulin infusion** has: **3% NaCl** (hypertonic saline). In the sample, Grace Whitfield (right MCA stroke, early swelling) is on it.
-- ✅ **Flag details (Nov 3, 2026, user's call; changed Nov 4, 2026, client feedback):** a click on a flag opens a popover and doesn't open the patient: what the bedside team changed in the last 12 hours ("Epinephrine drip increased by 75% in the last 3 hours", "FiO₂ increased from 40% to 60% in the last 2 hours"), what's behind it now (the pressors and their rates; the ventilator's mode and settings; a high-risk drip's rate and the lab watched with it: sodium for 3% NaCl, glucose for insulin) and its source and age ("Pump · 1 min ago"). The rule is PC-064. It closes as soon as the pointer leaves the flag; on touch or with the keyboard, with Escape or a tap outside. The same on the Monitoring card and the Patient details header. ~~What the flag means ("Drips that raise blood pressure, running now")~~: removed on Nov 4, 2026, the audience knows it; a flag with nothing behind it in the record (DNR, isolation, Fall risk, ECMO) is a plain pill.
+- ✅ **Flag details (Nov 3, 2026, user's call; changed Nov 4, 2026, client feedback):** a click on a flag opens a popover and doesn't open the patient: what the bedside team changed in the last 12 hours ("Epinephrine drip increased by 75% in the last 3 hours", "FiO₂ increased from 40% to 60% in the last 2 hours"), what's behind it now (the pressors and their rates; the ventilator's mode and settings; a high-risk drip's rate and the lab watched with it: sodium for 3% NaCl, glucose for insulin) and its source and age ("Pump · 1 min ago"). The rule is PC-064. It closes as soon as the pointer leaves the flag; on touch or with the keyboard, with Escape or a tap outside. The same on the Monitoring card and the Patient details header. ~~What the flag means ("Drips that raise blood pressure, running now")~~: removed on Nov 4, 2026, the audience knows it; ~~a flag with nothing behind it in the record (DNR, isolation, Fall risk, ECMO) is a plain pill~~. ✅ **Every flag opens a popover (Nov 5, 2026, user's call):** Fall risk shows the latest fall assessment (Morse score, precautions, who assessed), DNR the code status order (who ordered it, who it was discussed with), isolation its reason, ECMO the console's settings; a change in the last 12 hours leads, as for the others. A flag the record has nothing on says so. ⚠️ **Gap:** confirm the real feeds behind them (nursing assessment, code status and isolation orders, ECMO console).
 - ⚠️ **Gap:** safety tags (P2) and code status (P3) aren't in the PRD's data model yet. P1 partly maps to respiratory support (PC-050) and infusions (PC-060). Include them in OD-01 (mandatory fields).
 - ⚠️ **Gap:** "Transfer pending" (P5) isn't a census state in §5, and "Deceased" (P6) isn't one either. PC-130 says a discharged card leaves the active census; decide whether it shows greyed out first, and for how long.
 - ✅ **Resolved:** P4 matches PC-110 (no empty containers), and P7 matches PC-013 (facility context in multi-hospital views).

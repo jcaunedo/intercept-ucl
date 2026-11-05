@@ -255,8 +255,8 @@ export const LongContent: Story = {
 };
 
 /**
- * More tags than fit: they stay on one line, and the row scrolls sideways (wheel, trackpad, touch, or the arrow keys
- * once it's focused with Tab). A click on the row still opens the patient.
+ * More tags than fit: they stay on one line, and the row scrolls sideways (wheel, trackpad, touch, a mouse drag, or the
+ * arrow keys once it's focused with Tab). A click on the row still opens the patient; a drag doesn't.
  */
 export const ManyTags: Story = {
 	args: {
@@ -276,7 +276,18 @@ export const ManyTags: Story = {
 		if (new Set(badges).size !== 1) throw new Error("Tags should stay on one line");
 		if (row.scrollWidth <= row.clientWidth) throw new Error("The tags row should scroll");
 		row.click();
-		await expect(args.onOpen).toHaveBeenCalled();
+		await expect(args.onOpen).toHaveBeenCalledTimes(1);
+		// Click and slide: the row scrolls with the mouse, and the drag opens nothing.
+		const tag = within(row).getByText("ECMO");
+		const { left, top } = tag.getBoundingClientRect();
+		await userEvent.pointer([
+			{ keys: "[MouseLeft>]", target: tag, coords: { clientX: left + 10, clientY: top + 5 } },
+			{ target: tag, coords: { clientX: left - 30, clientY: top + 5 } },
+			{ target: tag, coords: { clientX: left - 80, clientY: top + 5 } },
+			{ keys: "[/MouseLeft]", target: tag, coords: { clientX: left - 80, clientY: top + 5 } },
+		]);
+		await expect(row.scrollLeft).toBeGreaterThan(0);
+		await expect(args.onOpen).toHaveBeenCalledTimes(1);
 	},
 };
 

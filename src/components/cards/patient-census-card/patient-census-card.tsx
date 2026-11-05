@@ -448,9 +448,79 @@ function PatientCardScore({
 	);
 }
 
+// How far the pointer moves before a press on the tags becomes a drag, in px: less is still a click.
+const dragThreshold = 4;
+
 /**
- * The tags on one line. When they're wider than the card, the row scrolls sideways (wheel, trackpad, touch, or the
- * arrow keys once focused) and its thin scrollbar shows there's more. It sits above the card's open target so it can
+ * Lets a mouse drag the row sideways (Nov 5, 2026, user's call: "User can click and slide tags"). Touch already scrolls
+ * natively. Past `dragThreshold` the press is a drag: the click that ends it is swallowed, so it neither opens a tag's
+ * details nor the patient. Returns whether a drag is under way, for the cursor.
+ */
+function useDragScroll(ref: React.RefObject<HTMLElement | null>, enabled: boolean) {
+	const [dragging, setDragging] = React.useState(false);
+	const drag = React.useRef<{ x: number; scroll: number; moved: boolean } | null>(null);
+	const swallowClick = React.useRef(false);
+	React.useEffect(() => {
+		const row = ref.current;
+		if (!row || !enabled) return;
+		const onPointerDown = (event: PointerEvent) => {
+			if (event.pointerType !== "mouse" || event.button !== 0) return;
+			drag.current = { x: event.clientX, scroll: row.scrollLeft, moved: false };
+		};
+		const onPointerMove = (event: PointerEvent) => {
+			const current = drag.current;
+			if (!current) return;
+			const dx = event.clientX - current.x;
+			if (!current.moved) {
+				if (Math.abs(dx) < dragThreshold) return;
+				current.moved = true;
+				// Keeps the drag going when the pointer leaves the row. A pointer the browser doesn't track (a scripted one) can't
+				// be captured; the drag works without it.
+				try {
+					row.setPointerCapture(event.pointerId);
+				} catch {}
+				setDragging(true);
+			}
+			row.scrollLeft = current.scroll - dx;
+		};
+		const onPointerUp = (event: PointerEvent) => {
+			const current = drag.current;
+			drag.current = null;
+			if (!current?.moved) return;
+			if (row.hasPointerCapture(event.pointerId)) row.releasePointerCapture(event.pointerId);
+			setDragging(false);
+			swallowClick.current = true;
+			// The click comes right after the pointerup, if at all; don't let a later one be swallowed.
+			window.setTimeout(() => {
+				swallowClick.current = false;
+			});
+		};
+		// Capture phase, so the click stops before a tag or the card sees it.
+		const onClick = (event: MouseEvent) => {
+			if (!swallowClick.current) return;
+			swallowClick.current = false;
+			event.preventDefault();
+			event.stopPropagation();
+		};
+		row.addEventListener("pointerdown", onPointerDown);
+		row.addEventListener("pointermove", onPointerMove);
+		row.addEventListener("pointerup", onPointerUp);
+		row.addEventListener("pointercancel", onPointerUp);
+		row.addEventListener("click", onClick, true);
+		return () => {
+			row.removeEventListener("pointerdown", onPointerDown);
+			row.removeEventListener("pointermove", onPointerMove);
+			row.removeEventListener("pointerup", onPointerUp);
+			row.removeEventListener("pointercancel", onPointerUp);
+			row.removeEventListener("click", onClick, true);
+		};
+	}, [ref, enabled]);
+	return dragging;
+}
+
+/**
+ * The tags on one line. When they're wider than the card, the row scrolls sideways (wheel, trackpad, touch, a mouse
+ * drag, or the arrow keys once focused) and its thin scrollbar shows there's more. It sits above the card's open target so it can
  * scroll; `onClick` passes a click through to that target, so the row still opens the patient.
  */
 function PatientCardTags({
@@ -482,6 +552,7 @@ function PatientCardTags({
 		for (const child of row.children) observer.observe(child);
 		return () => observer.disconnect();
 	}, [tags]);
+	const dragging = useDragScroll(rowRef, overflowing);
 
 	if (!tags.length) {
 		// No tags: a line of text the height of a tag, so cards with and without tags line up.
@@ -512,6 +583,13 @@ function PatientCardTags({
 			className={cn(
 				"relative z-10 flex gap-1.5 overflow-x-auto rounded-md scrollbar-soft outline-none focus-visible:ring-2 focus-visible:ring-ring",
 				openRef && "cursor-pointer",
+				// More to see: the row can be slid with the mouse. It keeps the pointer on hover (Nov 5, 2026, user's call); the
+				// grabbing hand shows only while sliding.
+				overflowing && "select-none",
+				// The scrollbar sits under the tags, not over them (Nov 5, 2026, user's call): 8px of room below them, taken back
+				// from the space under the row so the card keeps its height.
+				overflowing && "-mb-2 pb-2",
+				dragging && "cursor-grabbing [&_*]:cursor-grabbing",
 			)}
 		>
 			{tags.map((tag) =>

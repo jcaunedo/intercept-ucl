@@ -70,7 +70,7 @@ export const NoChanges: Story = {
 };
 
 /**
- * An alert's findings, each a sentence after a bold term, so a scan picks out every finding by its name (DESIGN.md
+ * An alert's findings, each a sentence after a semibold term, so a scan picks out every finding by its name (DESIGN.md
  * "Tags popover").
  */
 export const Findings: Story = {
@@ -89,7 +89,7 @@ export const Findings: Story = {
 	play: async ({ canvas }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "COPD exacerbation" }));
 		const popover = within(await screen.findByRole("dialog", { name: "COPD exacerbation" }));
-		await expect(popover.getByText("Severe COPD:")).toHaveClass("font-bold");
+		await expect(popover.getByText("Severe COPD:")).toHaveClass("font-semibold");
 	},
 };
 

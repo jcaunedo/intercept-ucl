@@ -7,13 +7,22 @@ import { isPressorFlag, pressorPattern } from "./pressors";
 // the bedside team changed lately, then what's behind the flag now, and where that comes from. Nurses titrate drips and
 // respiratory therapists change vent settings on their own, from the patient's status or labs, and often don't tell the
 // intensivist; the popover is where Intercept sees it. The flag's meaning isn't shown: the clinicians reading it know it.
-// A flag with nothing behind it in the record (DNR, isolation, Fall risk, ECMO) stays a plain badge.
+// Every flag opens one (Nov 5, 2026, user's call; until then DNR, isolation, Fall risk and ECMO were plain badges, and a
+// click on one opened the patient): Fall risk shows the latest fall assessment, DNR the code status order, isolation
+// why and since when, ECMO the console's settings. A flag the record has nothing on says so (`noRecordText`).
 
 /** How far back a change still shows. A shift. */
 const changeWindowMinutes = 12 * 60;
 
 /** Said when nothing behind the flag changed in that window, so "no line" never has to mean "no change". */
 const noChangesText = "No changes in the last 12 hours";
+
+/** Said by a flag the record has nothing behind, so it still opens and says where it stands. */
+const noRecordText = "Nothing more on this in the record";
+
+/** A care team member's name by role, e.g. the bedside nurse. */
+const careTeamName = (record: PatientRecord, role: string) => record.careTeam?.find((member) => member.role === role)?.name;
+
 
 // The drips behind a flag, by name, and the lab watched with them.
 const flagDrips: Record<string, { drip: RegExp; lab?: string }> = {
@@ -87,9 +96,86 @@ const newest =(times: (string | undefined)[]) => times.filter((time): time is st
 
 const rateItem = (infusion: PatientInfusion) => ({ label: infusion.drug, value: infusion.rate ?? "Rate unavailable" });
 
-/** One flag's popover, from the patient's record; none for a flag with nothing behind it there. */
+/** The popover of a flag the record has nothing behind. */
+const noRecordDetails: PatientCardTagDetails = { description: noRecordText };
+
+/**
+ * One flag's popover, from the patient's record: what's behind it, or `noRecordDetails` when the record has nothing.
+ * `undefined` only without a record.
+ */
 function flagDetails(label: string, record?: PatientRecord): PatientCardTagDetails | undefined {
 	if (!record) return undefined;
+	return recordDetails(label, record) ?? noRecordDetails;
+}
+
+/** What the record has behind a flag, or undefined. */
+function recordDetails(label: string, record: PatientRecord): PatientCardTagDetails | undefined {
+	if (label === "Fall risk" && record.fallRisk) {
+		const { scale, score, risk, assessedAt, previous, precautions } = record.fallRisk;
+		const nurse = careTeamName(record, "Bedside nurse");
+		const changed =
+			previous && previous.score !== score && recent(assessedAt)
+				? {
+						text: `${scale} score ${score > previous.score ? "up" : "down"} from ${previous.score} to ${score} ${since(assessedAt)}`,
+						at: assessedAt,
+					}
+				: undefined;
+		return {
+			...changeLines([changed]),
+			items: [
+				{ label: scale, value: `${score}, ${risk.toLowerCase()}` },
+				// A precaution can have a comma of its own ("Low bed, locked"), so they're set apart with dots.
+				...(precautions.length ? [{ label: "Precautions", value: precautions.join(" · ") }] : []),
+				...(nurse ? [{ label: "Assessed by", value: `${nurse}, RN` }] : []),
+			],
+			source: "Nursing assessment",
+			updatedAt: assessedAt,
+		};
+	}
+
+	if (label === record.codeStatus && record.codeStatusOrder) {
+		const { orderedAt, discussedWith, previous } = record.codeStatusOrder;
+		const attending = careTeamName(record, "Attending of record");
+		const changed =
+			previous && recent(orderedAt)
+				? { text: `Changed from ${previous.status} to ${record.codeStatus} ${since(orderedAt)}`, at: orderedAt }
+				: undefined;
+		return {
+			...changeLines([changed]),
+			items: [
+				// When it was ordered is the source line's time.
+				...(attending ? [{ label: "Ordered by", value: `Dr. ${attending}` }] : []),
+				...(discussedWith ? [{ label: "Discussed with", value: discussedWith }] : []),
+			],
+			source: "Code status order",
+			updatedAt: orderedAt,
+		};
+	}
+
+	if (label === record.isolation && record.isolationOrder) {
+		const { reason, orderedAt } = record.isolationOrder;
+		const started = recent(orderedAt) ? { text: `Isolation started ${ago(orderedAt)}`, at: orderedAt } : undefined;
+		return {
+			...changeLines([started]),
+			// When it started is the change line while it's recent, and the source line's time.
+			items: [{ label: "Reason", value: reason }],
+			source: "Infection prevention order",
+			updatedAt: orderedAt,
+		};
+	}
+
+	if (label === "ECMO" && record.ecmo) {
+		const { mode, settings, source, updatedAt } = record.ecmo;
+		return {
+			...changeLines(settings.map(settingChange)),
+			items: [
+				{ label: "Mode", value: mode },
+				...settings.map((setting) => ({ label: setting.label, value: [setting.value, setting.unit].filter(Boolean).join(" ") })),
+			],
+			source,
+			updatedAt,
+		};
+	}
 
 	if (isPressorFlag(label)) {
 		const drips = (record.infusions ?? []).filter((infusion) => pressorPattern.test(infusion.drug));

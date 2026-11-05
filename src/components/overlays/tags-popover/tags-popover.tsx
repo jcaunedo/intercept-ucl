@@ -25,7 +25,8 @@ type TagsPopoverDetails = {
 	description?: string;
 	/**
 	 * What's behind it now, one line each, e.g. `{ label: "Norepinephrine", value: "0.22 mcg/kg/min" }`. A sentence with
-	 * a name before it takes `term` ("Severe COPD:"), shown bold, with the rest of the line regular after it.
+	 * a name before it takes `term` ("Severe COPD:"), shown semibold, with the rest of the line regular after it. A line
+	 * without a term shows its `label` semibold and its `value` regular, so a scan picks out what each line is about.
 	 */
 	items?: { label: string; value?: string; term?: string }[];
 	/** Where the lines come from, e.g. "Pump". */
@@ -91,10 +92,17 @@ function TagsPopover({ label, details, variant = "outline", size = "sm" }: TagsP
 					<dl className='flex flex-col gap-1.5'>
 						{details.items.map((item) => (
 							<div key={`${item.term ?? ""}${item.label}`} className='flex items-baseline justify-between gap-3'>
-								{/* A term reads bold against a regular line, so a scan picks out each finding (DESIGN.md
-								    "Tags popover"). */}
-								<dt className={cn("text-foreground", item.term ? "font-normal" : "font-medium")}>
-									{item.term ? <span className='font-bold'>{item.term} </span> : null}
+								{/* The main term reads semibold against a regular line, so a scan picks out each finding (Nov 5,
+								    2026, user's call; DESIGN.md "Tags popover"). */}
+								<dt
+									className={cn(
+										"text-foreground",
+										item.term ? "font-normal" : "font-semibold",
+										// A short name beside its value stays on one line; the value wraps instead.
+										item.value && "shrink-0",
+									)}
+								>
+									{item.term ? <span className='font-semibold'>{item.term} </span> : null}
 									{item.label}
 								</dt>
 								{item.value ? <dd className='text-right tabular-nums text-foreground'>{item.value}</dd> : null}
