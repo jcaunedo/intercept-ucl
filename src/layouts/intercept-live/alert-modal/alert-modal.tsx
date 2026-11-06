@@ -10,6 +10,7 @@ import {
 	MessageCircleMoreIcon,
 	MicIcon,
 	MicOffIcon,
+	PencilLineIcon,
 	PhoneOffIcon,
 	ScanEyeIcon,
 	SparklesIcon,
@@ -1318,6 +1319,8 @@ function ConsultNotetaker({
 				disabled={!live}
 				onClick={() => setState(asked.length ? "consent" : "recording")}
 			>
+				{/* Intercept-Live `222:18365`: lucide `pencil-line` (Nov 5, 2026, user's call). */}
+				<PencilLineIcon aria-hidden='true' />
 				Start notetaker
 			</Button>
 		) : state === "consent" ? (
