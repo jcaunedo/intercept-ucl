@@ -77,7 +77,7 @@ import {
 	type CarePathwayStatus,
 } from "./care-pathway";
 import { useCallAudio } from "./call-audio";
-import { ConsultSessionScope, useSessionState } from "./consult-session";
+import { ConsultSessionScope, useSessionPeek, useSessionState } from "./consult-session";
 import { ConsultTranscriptView, type ConsultNote, type ConsultTranscript } from "./consult-transcript";
 import { BedsideTaskList, type BedsideTasks } from "./bedside-tasks";
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "./discharge-plan";
@@ -925,21 +925,50 @@ function focusDialog(event: Event) {
  * record of the consult has both ends.
  */
 function useConsult(defaultConsult: AlertConsultState, onConsultChange?: (state: AlertConsultState) => void) {
+	const peek = useSessionPeek();
+	// A call already in the patient's consult session was started elsewhere (the alert panel, before the patient's page):
+	// it isn't reported as starting again here, which would log it twice and, in Scenario 2, reset its connection.
+	const [inherited] = React.useState(() => peek("call").held);
 	// The call, in the patient's consult session: shown elsewhere next (the patient's page), it's still on.
 	const [consult, setConsultState] = useSessionState<AlertConsultState>("call", defaultConsult);
-	// The latest state and callback, read through a ref: the app passes a new callback on every render (live vitals
+	// Who hears about the call: this place's callback, else the one the place that started it left in the session (the
+	// alert's, so a call carried on to the patient's page still reports its end against the alert). Wrapped in an object:
+	// the session's setter treats a function as an updater.
+	const [sessionReporter, setSessionReporter] = useSessionState<{ report: (state: AlertConsultState) => void } | null>(
+		"callReporter",
+		null,
+	);
+	// The latest state and callbacks, read through a ref: the app passes a new callback on every render (live vitals
 	// re-render it each second), which mustn't restart the ringing timer below.
-	const latest = React.useRef({ consult, onConsultChange });
-	latest.current = { consult, onConsultChange };
-	const setConsult = React.useCallback((next: AlertConsultState) => {
-		setConsultState(next);
-		latest.current.onConsultChange?.(next);
+	const latest = React.useRef({ consult, onConsultChange, sessionReporter });
+	latest.current = { consult, onConsultChange, sessionReporter };
+	const report = React.useCallback((next: AlertConsultState) => {
+		const { onConsultChange: own, sessionReporter: shared } = latest.current;
+		if (own) own(next);
+		else shared?.report(next);
 	}, []);
+	const setConsult = React.useCallback(
+		(next: AlertConsultState) => {
+			setConsultState(next);
+			report(next);
+		},
+		[report],
+	);
 	React.useEffect(() => {
-		if (latest.current.consult !== "idle") latest.current.onConsultChange?.(latest.current.consult);
+		if (latest.current.onConsultChange)
+			setSessionReporter({ report: (state) => latest.current.onConsultChange?.(state) });
+		if (!inherited && latest.current.consult !== "idle") report(latest.current.consult);
 		return () => {
-			if (latest.current.consult !== "idle") latest.current.onConsultChange?.("idle");
+			if (latest.current.consult === "idle") return;
+			// Leaving ends the call only if nothing else picked it up: once this place's scope has left (after this
+			// cleanup), a session that still holds a call that's on means another place (the patient's page) carries it.
+			const reportEnd = latest.current.onConsultChange ?? latest.current.sessionReporter?.report;
+			window.setTimeout(() => {
+				const call = peek("call");
+				if (!call.held || call.value === "idle") reportEnd?.("idle");
+			});
 		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as it mounts and unmounts.
 	}, []);
 	React.useEffect(() => {
 		if (consult !== "connecting") return;

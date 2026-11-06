@@ -817,9 +817,11 @@ const airways = { Invasive: "ventilator", NIV: "niv", Oxygen: "oxygen" } as cons
 type SampleVitals = MonitoringPatient["vitals"];
 
 
-// No thread starts with a message (Nov 5, 2026, user's call: "If I am initiating the messages interaction, no incoming
-// message should be there"): the clinician writes first, and the nurse's replies (`scriptedReplies`) follow. Scenario 2's
-// beats add the ED's messages as they play (`sample-scenario-2.ts`), and each opens the Messages column.
+// A thread starts empty (Nov 5, 2026, user's call: "If I am initiating the messages interaction, no incoming message
+// should be there"): the clinician writes first, and the nurse's replies (`scriptedReplies`) follow. The exception is a
+// patient whose record counts unread messages: their thread holds that many from the nurse (`samplePatientParts`,
+// `sampleBedsideThread`), so the unread count and the thread agree. Scenario 2's beats add the ED's messages as they play
+// (`sample-scenario-2.ts`), and each opens the Messages column.
 
 // A reading for an order's "Based on", or nothing when the monitor doesn't have it.
 const reading = (label: string, value: number | undefined, unit: string) =>

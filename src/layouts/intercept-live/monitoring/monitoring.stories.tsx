@@ -199,10 +199,17 @@ export const Scenario1HeartFailure: Story = {
 		await expect(pageCall.queryByText(/^Calling /)).not.toBeInTheDocument();
 		await expect(pageCall.queryByText("AI Notetaker")).not.toBeInTheDocument();
 		await expect(await canvas.findByRole("complementary", { name: "Messages" })).toBeInTheDocument();
+		// Her log has the call, and not as ended: the alert closing behind her page didn't end it.
+		const log = within(canvas.getByRole("region", { name: "Log" }));
+		await expect(await log.findByText("Video consult with Kayla Brandt, RN")).toBeInTheDocument();
+		await expect(log.queryByText("Video consult ended")).toBeNull();
 		// Opened from the alert, her page still has the patient list: Monitoring's, as it shows now.
 		await userEvent.click(canvas.getByRole("button", { name: "Patient list" }));
 		const list = within(await canvas.findByRole("complementary", { name: "Patients" }));
 		await expect(list.getByText(/^From the Monitoring, in its order · \d+ of \d+$/)).toBeInTheDocument();
+		// Ended on her page, the call is logged as ended, against her alert.
+		await userEvent.click(canvas.getByRole("button", { name: "Close video consult" }));
+		await expect(await log.findByText("Video consult ended")).toBeInTheDocument();
 	},
 };
 

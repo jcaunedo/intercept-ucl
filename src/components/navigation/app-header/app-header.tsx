@@ -141,13 +141,13 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	 */
 	onVideoConsult?: () => void;
 	/**
-	 * Whether the video consult's panel is open: the button turns icon-only and pressed (`video-off`, "Close video
-	 * consult", `aria-expanded`), the panel's title naming it.
+	 * Whether the video consult's panel is open: the button is pressed (the `accent` fill, `video-off`, "Close video
+	 * consult", `aria-expanded`), the panel's title naming it. It keeps its label until the header is narrower than 60rem.
 	 */
 	videoConsultOpen?: boolean;
 	/** Opens the patient's messages. Without it, there's no Messages button. With `messagesOpen`, it closes them. */
 	onOpenMessages?: () => void;
-	/** Whether the messages panel is open: Messages turns icon-only and pressed (`message-circle-off`, "Close messages"). */
+	/** Whether the messages panel is open: Messages is pressed (`message-circle-off`, "Close messages"), its label kept. */
 	messagesOpen?: boolean;
 	/** Unread messages, shown as a Counter on Messages from 1. */
 	unreadMessages?: number;

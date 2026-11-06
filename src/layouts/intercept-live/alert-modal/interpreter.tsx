@@ -29,7 +29,8 @@ const CONNECT_INTERPRETER_MS = 3000;
 
 /**
  * The interpreter prompt under the call: the patient's preferred language and Add interpreter, then Connecting, then
- * the interpreter on the call (Remove takes them off). Dismissing the prompt hides it for this call. Shown only while
+ * the interpreter on the call (Remove takes them off). Dismissing the prompt hides it for the rest of the patient's
+ * consult session (it's kept there, so it stays dismissed on the patient's page and on a later call). Shown only while
  * the call is live and only for a language other than English.
  */
 function InterpreterPrompt({

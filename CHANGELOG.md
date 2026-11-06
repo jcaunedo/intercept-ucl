@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Intercept Live: a video consult carried from the alert to the patient's page is no longer logged as ended when the alert closes behind the page, and in Scenario 2 its connection no longer resets to video. The call's end is reported once, when it really ends, from wherever it ends (the page reports it against the alert). Layouts only. The Scenario 1 Heart Failure story now checks it.
+- Docs: stale passages brought up to date: the call no longer says "joined" (PRDs Alert maximized modal, Bedside camera), the alert panel's actions row is Video consult, Messages and Pathway (PRD Alert maximized modal), the notetaker starts on its own with Stop / Resume and Prepare notes (Scenario 1 storyboard, DESIGN.md), the AppHeader buttons keep their labels while pressed (CLAUDE.md, `app-header.tsx` comments), seeded bedside threads (ARCHITECTURE.md, `sample-alert-modal.ts`), and the page panels' 16px semibold title, the Send button and the Messages button style (DESIGN.md).
+
 - Intercept Live: the Census and Monitoring filter bar no longer clips a card that lifts on hover just after the bar sticks. Its opaque band under the chips grows as the cards scroll under it, keeping clear of the room a lift needs, instead of appearing in full the moment the bar sticks (Nov 6, 2026, user's report). Layouts only.
 - Intercept Live: in the video consult's live transcript, what the clinician says into the microphone is its own "You" entry with its own time; it no longer joins the transcript's previous line from them (Nov 6, 2026, user's call). Layouts only.
 - PRDs: **Video consult** (`prds/video-consult.md`, `VID-`) and **Messages** (`prds/messages.md`, `MSG-`), with their Storybook pages under PRDs.

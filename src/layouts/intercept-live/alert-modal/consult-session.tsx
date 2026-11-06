@@ -132,4 +132,21 @@ function useSessionState<T>(key: string, initial: T | (() => T)) {
 	return [value, setValue] as const;
 }
 
-export { ConsultSessionProvider, ConsultSessionScope, useSessionState };
+/**
+ * Reads the patient's session as it is now, outside React's render: whether it holds `key` and its value. For code that
+ * runs after the place showing it has gone (an unmount's cleanup, a timer), e.g. to tell whether another place picked
+ * the call up or the session ended with it. Outside a scope, always nothing.
+ */
+function useSessionPeek() {
+	const store = React.useContext(StoreContext);
+	const scope = React.useContext(ScopeContext);
+	return React.useCallback(
+		(key: string): { held: boolean; value?: unknown } =>
+			store && scope && store.has(scope.patientId, key)
+				? { held: true, value: store.get(scope.patientId, key) }
+				: { held: false },
+		[store, scope],
+	);
+}
+
+export { ConsultSessionProvider, ConsultSessionScope, useSessionPeek, useSessionState };

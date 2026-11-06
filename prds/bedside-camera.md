@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 3, 2026
 Created by: Julio Caunedo
-Last updated: Nov 4, 2026
+Last updated: Nov 6, 2026
 Scope: The bedside camera of Intercept Live: one camera session in the patient's room, opened to look in (Live Camera), to call the bedside nurse into it (Video consult) or to huddle with the AI Scribe; where each opens, its states, data and acceptance criteria. Governs `patient-details/sections/camera-section.tsx` and the alert modal's consult (`alert-modal/alert-modal.tsx`).
 Purpose: The specs describe one camera; the prototype built it twice, under three names. This PRD sets the one model the screens follow and lists what's still open.
 -->
@@ -19,7 +19,7 @@ Purpose: The specs describe one camera; the prototype built it twice, under thre
 **Surface:** Patient details › Camera view; the alert modal; a patient card's "…" menu  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 4, 2026
+**Last updated:** November 6, 2026
 
 ---
 
@@ -101,7 +101,7 @@ The specs have conference-style video too, for other people. They're separate ex
 | CAM-004 | **Presets** | Bed, Monitor, Pumps, Door, as the room's hardware allows (SV-12). The prototype switches prerecorded clips or reframes the drawn room (simulator US7.1). |
 | CAM-005 | **Audio** | The session starts muted. **Talk** opens the clinician's microphone into the room; pressing it again mutes. Never unmuted on its own. Where the hospital doesn't allow two-way audio, the controls say "No two-way audio at {hospital}" instead of Talk. |
 | CAM-006 | **Presence** | While live, the clinician shows as "In camera" (in a huddle, "In a huddle") to the bedside team and in the room's **Who's here** list (CC-05, Spec §6.12). |
-| CAM-007 | **Call the bedside nurse** (Video consult) | Calls the patient's bedside nurse through the hospital's messaging (SV-10, CC-07): "Calling Kayla Brandt…", then "Kayla Brandt, RN joined" when she reaches the room, and the session goes live. The nurse's name, role, avatar and presence come from Presence and Status. |
+| CAM-007 | **Call the bedside nurse** (Video consult) | Calls the patient's bedside nurse through the hospital's messaging (SV-10, CC-07): "Calling Kayla Brandt…", then "Kayla Brandt, RN" on the video (no "joined" since Nov 5, 2026) when she reaches the room, and the session goes live. The nurse's name, role, avatar and presence come from Presence and Status. |
 | CAM-008 | **Huddle and the AI Scribe** | **Start huddle** starts the session if needed and turns on the AI Scribe. Under a one-party consent profile it listens at once; under all-party, it waits until consent is recorded for everyone ("AI Scribe waiting"). While on, its state and Pause / Stop stay on screen (CD-01, PD-073). Ending the huddle leaves a drafted note for the clinician to review and sign (WF-05). |
 | CAM-008a | **AI Notetaker in a video consult** | Under the call in the alert panel: Start notetaker sends an approval request to every party on the call without a standing approval, and recording starts once they've approved (all-party consent, PD-073); then Capturing consultation, Preparing notes and Notes ready for review, an AI draft the clinician reviews, edits and approves. ✅ **Decision (Nov 3, 2026, user's call).** |
 | CAM-009 | **Recording is visible to both sides** | While the Scribe captures, the clinician's screen says so at all times, and the room's camera screen shows a recording indicator the bedside team can see (Spec §5.4; DU-28 capture states). |
@@ -126,7 +126,7 @@ The specs have conference-style video too, for other people. They're separate ex
 | **Connecting** | "Connecting…" | End session | "Connecting to the bedside camera" |
 | **Calling** (Video consult) | The nurse ringing: her avatar, presence and activity, "Calling Kayla Brandt…" | Footer: "Calling…" (disabled) | — |
 | **Live** | The room, Live · time, the overlay | End session · Talk · presets · Overlay · Start huddle | "In camera, Bed 11" |
-| **Live, nurse joined** (Video consult) | The room, "Kayla Brandt, RN joined", Live · time | Mute · End; footer: **End call** | — |
+| **Live, nurse on the call** (Video consult) | The room, "Kayla Brandt, RN" on the video (no "joined" since Nov 5, 2026), Live · time | Mute · End; footer: **End call** | — |
 | **Huddle: waiting for consent** | As Live, "AI Scribe waiting" | Record consent · Stop | "The AI Scribe is waiting for consent" |
 | **Huddle: listening / paused** | As Live, "AI Scribe on" / "AI Scribe paused" | Pause or Resume · Stop · End huddle | "The AI Scribe is listening" / "is paused" |
 | **Low bandwidth** (CAM-014) | Frozen and greyed for 2.5 s ("Connection weak · switching to audio only…"), then audio only: the nurse, "Audio only · time" | Mute · End; a Low-bandwidth mode banner over the call; bedside photos under it | The banner, once: "Low-bandwidth mode" |
@@ -165,9 +165,9 @@ The specs have conference-style video too, for other people. They're separate ex
 | CAM-AC-04 | A live session | The clinician picks the Monitor preset | The feed frames the monitor and the preset reads as picked |
 | CAM-AC-05 | A hospital under all-party consent | The clinician clicks Start huddle | The session starts, the Scribe reads "AI Scribe waiting", and nothing is captured until consent is recorded |
 | CAM-AC-06 | A huddle with the Scribe listening | The clinician ends the huddle | The camera is off, Recent sessions gains a Huddle row with "Note drafted" |
-| CAM-AC-07 | Hayes's alert modal | The clinician clicks Video consult | "Calling Kayla Brandt…", then "Kayla Brandt, RN joined" over the room; the footer reads End call (AMM-AC-08) |
+| CAM-AC-07 | Hayes's alert modal | The clinician clicks Video consult | "Calling Kayla Brandt…", then "Kayla Brandt, RN" on the video (no "joined" since Nov 5, 2026) over the room; the footer reads End call (AMM-AC-08) |
 | CAM-AC-08 | Hayes's card "…" menu | The clinician picks Video consult | The alert modal opens with the call already ringing (AMM-AC-09) |
-| CAM-AC-09 | A card for a patient with no active alert | The clinician picks Video consult | The alert modal opens without an alert, the patient's name as its heading, "Calling" their bedside nurse (e.g. "Calling Grace Holloway…" for Thomas Walker), then "joined"; no alert panel and no button under the patient. Ending the call in the tile keeps the panel open, "Call ended" with Video consult |
+| CAM-AC-09 | A card for a patient with no active alert | The clinician picks Video consult | The alert modal opens without an alert, the patient's name as its heading, "Calling" their bedside nurse (e.g. "Calling Grace Holloway…" for Thomas Walker), then her name on the video; no alert panel and no button under the patient. Ending the call in the tile keeps the panel open, "Call ended" with Video consult |
 | CAM-AC-10 | The patient page's header | The clinician clicks Live Camera | ⚠️ **Proposed:** the Camera view opens and the session starts |
 | CAM-AC-11 | Scenario 2 starts | 4 s after Dale Reynolds's card shows his Critical alert | Dr. Brian Keller's request rings at the bottom right: "Urgent video consult request", the patient, Reason, Latest values, a counter from 0:00, Decline and Answer; no × |
 | CAM-AC-12 | A High urgency request is ringing | The clinician listens | The ringtone repeats every 0.55 s, its notes at double tempo; a Medium one every 1.7 s, a Low one every 2.5 s, at the same notes and volume |
