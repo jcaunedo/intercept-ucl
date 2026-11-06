@@ -183,10 +183,20 @@ export const Scenario1HeartFailure: Story = {
 		);
 		// Under the call, the AI Notetaker, started on its own: it asks Kayla before it captures the consultation.
 		await expect(await consult.findByText("Waiting for approval")).toBeInTheDocument();
+		// Messages open too, so her page picks them up.
+		await userEvent.click(consult.getByRole("button", { name: "Messages" }));
+		await expect(await consult.findByRole("button", { name: "Hide messages" })).toBeInTheDocument();
 		// Her name leaves the modal for her page; the toasts stay hidden there too.
 		await userEvent.click(consult.getByRole("button", { name: "Hayes, Margaret, open patient" }));
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(toasts()).toHaveAttribute("data-hidden");
+		// The call goes with her: her page opens with the Video consult panel, still live (no ringing again), the notetaker
+		// where it was, and Messages open as they were.
+		const pageCall = within(await canvas.findByRole("complementary", { name: "Video consult" }));
+		await expect(pageCall.getByText("Kayla Brandt, RN")).toBeInTheDocument();
+		await expect(pageCall.queryByText(/^Calling /)).not.toBeInTheDocument();
+		await expect(pageCall.queryByText("AI Notetaker")).not.toBeInTheDocument();
+		await expect(await canvas.findByRole("complementary", { name: "Messages" })).toBeInTheDocument();
 		// Opened from the alert, her page still has the patient list: Monitoring's, as it shows now.
 		await userEvent.click(canvas.getByRole("button", { name: "Patient list" }));
 		const list = within(await canvas.findByRole("complementary", { name: "Patients" }));

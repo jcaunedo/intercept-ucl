@@ -74,6 +74,7 @@ import {
 	type CarePathwayStatus,
 } from "./care-pathway";
 import { useCallAudio } from "./call-audio";
+import { ConsultSessionScope, useSessionState } from "./consult-session";
 import { ConsultTranscriptView, type ConsultTranscript } from "./consult-transcript";
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "./discharge-plan";
 import {
@@ -545,7 +546,7 @@ function SelfView() {
 			role='img'
 			aria-label={status === "unavailable" ? "Your camera isn't available" : "Your camera"}
 			// A quarter of the call's width, 3:2, on the call's dark overlay until the picture comes.
-			className='absolute top-3 right-3 aspect-[3/2] w-1/4 overflow-hidden rounded-lg bg-(--gray-950)/70 ring-1 ring-(--white)/15'
+			className='absolute top-3 right-3 aspect-[3/2] w-1/4 overflow-hidden rounded-lg border-2 border-(--white) bg-(--gray-950)/70'
 		>
 			<video
 				ref={video}
@@ -614,13 +615,14 @@ function ConsultTile({
 		return () => window.clearTimeout(timer);
 	}, [lowBandwidth, since]);
 	const audioOnly = state === "live" && lowBandwidth && !freezing;
-	const [startedAt, setStartedAt] = React.useState<number | null>(null);
-	const [muted, setMuted] = React.useState(false);
+	// Kept in the patient's consult session, so the call goes on where the patient is shown next: its timer, mute, camera.
+	const [startedAt, setStartedAt] = useSessionState<number | null>("callStartedAt", null);
+	const [muted, setMuted] = useSessionState("callMuted", false);
 	const mutedChange = React.useRef(onMutedChange);
 	mutedChange.current = onMutedChange;
 	React.useEffect(() => mutedChange.current?.(muted), [muted]);
 	// The clinician's own camera, which the bedside sees (Nov 4, 2026, user's call). Audio only, it's off for everyone.
-	const [cameraOff, setCameraOff] = React.useState(false);
+	const [cameraOff, setCameraOff] = useSessionState("callCameraOff", false);
 	// The call's sound: ringback, the join and end chimes, the room (the monitor at the patient's heart rate, the BiPAP), the
 	// drop and the phone-line band while audio only (Nov 4, 2026, user's call). Mute silences it.
 	const vitals = data.monitor?.vitals;
@@ -879,7 +881,8 @@ function focusDialog(event: Event) {
  * record of the consult has both ends.
  */
 function useConsult(defaultConsult: AlertConsultState, onConsultChange?: (state: AlertConsultState) => void) {
-	const [consult, setConsultState] = React.useState<AlertConsultState>(defaultConsult);
+	// The call, in the patient's consult session: shown elsewhere next (the patient's page), it's still on.
+	const [consult, setConsultState] = useSessionState<AlertConsultState>("call", defaultConsult);
 	// The latest state and callback, read through a ref: the app passes a new callback on every render (live vitals
 	// re-render it each second), which mustn't restart the ringing timer below.
 	const latest = React.useRef({ consult, onConsultChange });
@@ -1315,10 +1318,11 @@ function ConsultNotetaker({
 	actionSlot?: HTMLElement | null;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
-	const [state, setState] = React.useState<NotetakerState>("idle");
-	const [reviewing, setReviewing] = React.useState(false);
-	const [draft, setDraft] = React.useState(() => draftConsultNote(data));
-	const [approvedAt, setApprovedAt] = React.useState<string | null>(null);
+	// In the patient's consult session, so the notetaker goes on where the call does.
+	const [state, setState] = useSessionState<NotetakerState>("notetaker", "idle");
+	const [reviewing, setReviewing] = useSessionState("notetakerReviewing", false);
+	const [draft, setDraft] = useSessionState("notetakerDraft", () => draftConsultNote(data));
+	const [approvedAt, setApprovedAt] = useSessionState<string | null>("notetakerApprovedAt", null);
 	const parties =
 		data.notetakerParties ??
 		(data.bedside ? [{ name: `${data.bedside.name}, ${data.bedside.role}`, autoApprove: false }] : []);
@@ -1330,14 +1334,14 @@ function ConsultNotetaker({
 		if (state === "consent") setState("idle");
 	}, [live, state]);
 	// On by default: each call starts it as it connects, from idle only (notes from an earlier call stay as they are).
-	const autoStarted = React.useRef(false);
+	const [autoStarted, setAutoStarted] = useSessionState("notetakerAutoStarted", false);
 	React.useEffect(() => {
 		if (!live) {
-			autoStarted.current = false;
+			setAutoStarted(false);
 			return;
 		}
-		if (!autoStart || autoStarted.current) return;
-		autoStarted.current = true;
+		if (!autoStart || autoStarted) return;
+		setAutoStarted(true);
 		if (state === "idle") setState(asked.length ? "consent" : "recording");
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- once per call, as it connects.
 	}, [live, autoStart]);
@@ -1535,7 +1539,16 @@ const threadWith = (bedside?: AlertDetailBedside) => (bedside ? `${bedside.name}
  *
  * Figma: [intercept.ds › alert-expanded](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1355-14776)
  */
-function AlertPanel({
+function AlertPanel(props: AlertPanelProps) {
+	return (
+		<ConsultSessionScope patientId={props.data.alert.patientId}>
+			<AlertPanelContent {...props} />
+		</ConsultSessionScope>
+	);
+}
+
+/** The alert panel, inside its patient's consult session (`AlertPanel`). */
+function AlertPanelContent({
 	data,
 	defaultConsult = "idle",
 	onConsultChange,
@@ -1567,7 +1580,8 @@ function AlertPanel({
 	// The call's microphone, so the notetaker stops transcribing the clinician while they're muted.
 	const [micMuted, setMicMuted] = React.useState(false);
 	React.useEffect(() => {
-		if (!callOnOpen) return;
+		// A call already on (picked up from the patient's page) isn't called again.
+		if (!callOnOpen || consult !== "idle") return;
 		const timer = window.setTimeout(() => setConsult("connecting"), motionDuration.normal * 1000);
 		return () => window.clearTimeout(timer);
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the modal opens.
@@ -1577,9 +1591,14 @@ function AlertPanel({
 	// The third column (Nov 5, 2026, user's call): the pathway, or the messages with the bedside nurse, one at a time.
 	// The messages open from the actions row, with or without a call, and stay when the call ends (Nov 5, 2026, user's
 	// call); only there (the Video consult panel's header lost its own, user's call, same day).
-	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(defaultPathwayOpen ? "pathway" : null);
+	// Messages open or closed goes with the consult session too, both ways between here and the patient's page.
+	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
+	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(
+		sharedMessagesOpen ? "messages" : defaultPathwayOpen ? "pathway" : null,
+	);
 	const pathwayOpen = sidePanel === "pathway";
 	const messagesOpen = sidePanel === "messages";
+	React.useEffect(() => setSharedMessagesOpen(messagesOpen), [messagesOpen, setSharedMessagesOpen]);
 	// The message field takes focus when the clinician opens the column, not when it opens on its own (below).
 	const [focusMessages, setFocusMessages] = React.useState(false);
 	const togglePanel = (panel: "pathway" | "messages") => {
@@ -1781,7 +1800,17 @@ function AlertPanelDialog({
  * End, then Video consult to call again, in its tile or the row). Messages and Pathway share the third column, one at a
  * time; with no alert there's no pathway suggested, which its column says. No lifecycle buttons: no alert to act on.
  */
-function PatientConsultDialog({
+function PatientConsultDialog(props: React.ComponentProps<typeof PatientConsultDialogContent>) {
+	// The dialog stays mounted once closed (to animate out); it's in the patient's consult session only while open.
+	return (
+		<ConsultSessionScope patientId={props.data.patientId} active={props.open ?? true}>
+			<PatientConsultDialogContent {...props} />
+		</ConsultSessionScope>
+	);
+}
+
+/** The patient consult, inside its patient's consult session (`PatientConsultDialog`). */
+function PatientConsultDialogContent({
 	data,
 	open,
 	onOpenChange,
@@ -1802,9 +1831,12 @@ function PatientConsultDialog({
 }) {
 	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
 	const [micMuted, setMicMuted] = React.useState(false);
-	// The third column, as on the alert panel: the messages with the bedside nurse, or the pathway, one at a time.
-	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(null);
+	// The third column, as on the alert panel: the messages with the bedside nurse, or the pathway, one at a time. Messages
+	// open or closed goes with the consult session.
+	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
+	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(sharedMessagesOpen ? "messages" : null);
 	const messagesOpen = sidePanel === "messages";
+	React.useEffect(() => setSharedMessagesOpen(messagesOpen), [messagesOpen, setSharedMessagesOpen]);
 	const pathwayOpen = sidePanel === "pathway";
 	const [focusMessages, setFocusMessages] = React.useState(false);
 	const togglePanel = (panel: "pathway" | "messages") => {

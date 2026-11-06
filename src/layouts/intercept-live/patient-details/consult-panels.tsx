@@ -23,6 +23,7 @@ import {
 	useConsult,
 	type PatientConsultData,
 } from "../alert-modal/alert-modal";
+import { ConsultSessionScope, useSessionState } from "../alert-modal/consult-session";
 import {
 	ConsultMessages,
 	useConsultMessages,
@@ -210,9 +211,20 @@ function MessagesFilter({
  * the tile to call again. Messages opens the thread to the right of the call (it takes focus in its field); its × or the
  * header's pressed Messages closes it, and so does Escape inside it. A new message from the bedside opens it on its own,
  * without moving focus, as on the alert panel. The header's unread count is the thread's. Mounted per patient (keyed by
- * the page): switching patient or going Back ends the call.
+ * the page): switching patient or going Back ends the call. The call, its notetaker and the thread are the patient's
+ * consult session (`consult-session.tsx`): opened from the alert panel's patient name, the page picks them up as they
+ * were, the call still on with its panel open and Messages open or closed (Nov 5, 2026, user's call).
  */
-function PatientConsultPanels({
+function PatientConsultPanels(props: React.ComponentProps<typeof PatientConsultPanelsContent>) {
+	return (
+		<ConsultSessionScope patientId={props.data.patientId}>
+			<PatientConsultPanelsContent {...props} />
+		</ConsultSessionScope>
+	);
+}
+
+/** The panels, inside the patient's consult session (`PatientConsultPanels`). */
+function PatientConsultPanelsContent({
 	data,
 	onOpenConsult,
 	onOpenMessages,
@@ -229,9 +241,10 @@ function PatientConsultPanels({
 	/** A message the clinician sent the bedside nurse. */
 	onSendMessage?: (text: string) => void;
 }) {
-	const [consultOpen, setConsultOpen] = React.useState(false);
 	const [consult, setConsult] = useConsult("idle");
-	const [messagesOpen, setMessagesOpen] = React.useState(false);
+	// A call picked up from the alert panel opens with its panel; Messages as they were there.
+	const [consultOpen, setConsultOpen] = React.useState(consult !== "idle");
+	const [messagesOpen, setMessagesOpen] = useSessionState("messagesOpen", false);
 	// The field takes focus when the clinician opens the thread, not when a new message opens it.
 	const [focusMessages, setFocusMessages] = React.useState(false);
 	const [notetakerSlot, setNotetakerSlot] = React.useState<HTMLDivElement | null>(null);

@@ -56,6 +56,7 @@ import {
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+import { ConsultSessionProvider } from "./alert-modal/consult-session";
 import { AskInterceptPanel, type AskInterceptNotice, type AskInterceptResponder } from "./ask-intercept-panel";
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
@@ -709,6 +710,8 @@ function InterceptLive({
 
 	return (
 		<PatientNavigationProvider value={navigation}>
+			{/* A patient's consult (the call, its notetaker, the thread) goes with them between the alert and their page. */}
+			<ConsultSessionProvider>
 			<PagePreferencesProvider value={pagePreferences}>
 				<PagePanelSlotProvider value={panelSlot}>
 					<PageHidesToastsProvider value={setPanelHidesToasts}>
@@ -890,6 +893,7 @@ function InterceptLive({
 					</PageHidesToastsProvider>
 				</PagePanelSlotProvider>
 			</PagePreferencesProvider>
+			</ConsultSessionProvider>
 		</PatientNavigationProvider>
 	);
 }

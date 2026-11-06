@@ -3,6 +3,7 @@ import { MicOffIcon, PauseIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { fadeVariants } from "@/lib/motion";
+import { useSessionState } from "./consult-session";
 import { cn } from "@/lib/utils";
 
 // The AI Notetaker's live transcript (Nov 5, 2026, user's call: "simulate transcription from video audio … similar to
@@ -258,12 +259,13 @@ function ConsultTranscriptView({
 	const nameOf = (id: string) => (id === you ? "You" : (speakers.find((speaker) => speaker.id === id)?.name ?? "Speaker"));
 	const capturing = status === "capturing";
 
-	const [clock, setClock] = React.useState<Clock>({ rec: 0, script: 0, started: [], cut: {}, pauses: [] });
+	// In the patient's consult session, so the transcript goes on where the call does (the patient's page).
+	const [clock, setClock] = useSessionState<Clock>("transcriptClock", { rec: 0, script: 0, started: [], cut: {}, pauses: [] });
 	const clockRef = React.useRef(clock);
 	clockRef.current = clock;
 
 	// The clinician's words, at the consult's time they started.
-	const [spoken, setSpoken] = React.useState<{ at: number; text: string }[]>([]);
+	const [spoken, setSpoken] = useSessionState<{ at: number; text: string }[]>("transcriptSpoken", []);
 	const interimAt = React.useRef<number | null>(null);
 	const { interim, status: micStatus } = useMicTranscript(capturing, muted, (text) => {
 		const at = interimAt.current ?? clockRef.current.rec;

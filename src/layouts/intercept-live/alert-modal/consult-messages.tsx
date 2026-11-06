@@ -9,6 +9,7 @@ import { fadeVariants, revealVariants, useMotionPreference } from "@/lib/motion"
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
+import { useSessionState } from "./consult-session";
 import { BedsidePhotoImage, type BedsidePhoto } from "./low-bandwidth";
 
 // The video consult's messages with the bedside nurse (Nov 5, 2026, user's call; intercept.ds `alert-expanded` ›
@@ -63,9 +64,10 @@ function useConsultMessages(
 	onSend?: (text: string) => void,
 	replies: ConsultReplies = [],
 ) {
-	const [local, setLocal] = React.useState<ConsultMessage[]>([]);
+	// The clinician's messages and the replies, in the patient's consult session: the thread goes on where the patient is
+	// shown next (the patient's page).
+	const [local, setLocal] = useSessionState<ConsultMessage[]>("messages", []);
 	const [typing, setTyping] = React.useState(false);
-	const count = React.useRef(0);
 	const nextReply = React.useRef(0);
 	const pending = React.useRef(0);
 	const timers = React.useRef<number[]>([]);
@@ -75,7 +77,7 @@ function useConsultMessages(
 	const add = React.useCallback((message: Omit<ConsultMessage, "id" | "sentAt">) => {
 		setLocal((current) => [
 			...current,
-			{ ...message, id: `local-${count.current++}`, sentAt: new Date().toISOString() },
+			{ ...message, id: `local-${current.length}`, sentAt: new Date().toISOString() },
 		]);
 	}, []);
 	const send = React.useCallback(
@@ -124,8 +126,11 @@ function useNewIncoming(messages: readonly ConsultMessage[]) {
  */
 function useUnreadMessages(messages: readonly ConsultMessage[], open: boolean) {
 	const count = messages.filter((message) => message.from === "bedside").length;
-	const [read, setRead] = React.useState(0);
+	// What was read goes with the consult session, so the patient's page doesn't count it again.
+	const [sharedRead, setSharedRead] = useSessionState("messagesRead", 0);
+	const [read, setRead] = React.useState(sharedRead);
 	if (open && read !== count) setRead(count);
+	React.useEffect(() => setSharedRead(read), [read, setSharedRead]);
 	return open ? 0 : Math.max(0, count - read);
 }
 
@@ -196,7 +201,8 @@ function ConsultMessages({
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const now = useCurrentMinute();
-	const [draft, setDraft] = React.useState("");
+	// An unsent message goes with the consult session too.
+	const [draft, setDraft] = useSessionState("messagesDraft", "");
 	const field = React.useRef<HTMLInputElement>(null);
 	const thread = React.useRef<HTMLDivElement>(null);
 	const shown = filter ? messages.filter(filter) : messages;
