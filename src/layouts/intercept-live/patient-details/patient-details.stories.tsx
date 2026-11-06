@@ -97,7 +97,7 @@ export const Default: Story = {
  * Video consult and Messages (Intercept-Live `219:16129`): the app header's Video consult opens the call in a panel right
  * of the page and rings the bedside (Start notetaker in the panel's header), and turns into a pressed icon that ends the
  * call and closes it. Messages opens the thread with her nurse to its right, the three unread messages in it; its count
- * clears, and × closes it.
+ * clears. Its filter narrows the thread by sender and to photos; × closes it.
  */
 export const VideoConsultAndMessages: Story = {
 	play: async ({ canvasElement, args }) => {
@@ -117,6 +117,16 @@ export const VideoConsultAndMessages: Story = {
 		const messages = within(await canvas.findByRole("complementary", { name: "Messages" }));
 		await expect(within(messages.getByRole("log")).getAllByRole("listitem")).toHaveLength(3);
 		await expect(actions.getByRole("button", { name: "Close messages" })).toHaveAttribute("aria-expanded", "true");
+
+		// The filter: Photos only leaves none of her nurse's three; Escape closes the menu, not the panel; Show all.
+		await userEvent.click(messages.getByRole("button", { name: "Filter messages" }));
+		await userEvent.click(await within(document.body).findByRole("menuitemcheckbox", { name: "Photos only" }));
+		await expect(await messages.findByText("No messages match the filter")).toBeVisible();
+		await userEvent.keyboard("{Escape}");
+		await expect(canvas.getByRole("complementary", { name: "Messages" })).toBeVisible();
+		await userEvent.click(messages.getByRole("button", { name: "Filter messages, filtered" }));
+		await userEvent.click(await within(document.body).findByRole("menuitem", { name: "Show all" }));
+		await waitFor(() => expect(within(messages.getByRole("log")).getAllByRole("listitem")).toHaveLength(3));
 
 		// Closing both: the messages' ×, then the pressed Video consult, which ends the call.
 		await userEvent.click(messages.getByRole("button", { name: "Close messages" }));

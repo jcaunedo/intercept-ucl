@@ -35,6 +35,7 @@ export {
   liveGlowVariants,
   urgencyRingVariants,
   arriveVariants,
+  unreadFlashVariants,
 } from "./variants";
 
 export {

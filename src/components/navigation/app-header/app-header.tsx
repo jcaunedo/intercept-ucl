@@ -43,6 +43,7 @@ import {
 	liveGlowVariants,
 	liveHaloVariants,
 	standardTransition,
+	unreadFlashVariants,
 	useMotionPreference,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -481,6 +482,7 @@ function PatientActions({
 	team = [],
 	onOpenTeam,
 }: AppHeaderPatientProps) {
+	const { prefersReducedMotion } = useMotionPreference();
 	const patientActions: AppHeaderMenuAction[] = [
 		{ label: "Raise concern", icon: FlagIcon, onSelect: onRaiseConcern },
 		{ label: "Huddle team", icon: WebcamIcon, onSelect: onHuddleTeam },
@@ -523,8 +525,18 @@ function PatientActions({
 							<MessageCircleMoreIcon aria-hidden='true' />
 						)}
 						<span className={collapsibleLabelClassName}>Messages</span>
+						{/* Solid neutral, flashing every 2 s while there's something unread (Unread pattern; Nov 5, 2026, user's
+						    call); still under reduced motion. */}
 						{unreadMessages && !messagesOpen ? (
-							<Counter variant='secondary' count={unreadMessages} max={99} aria-hidden='true' />
+							<motion.span
+								aria-hidden='true'
+								variants={unreadFlashVariants}
+								initial='rest'
+								animate={prefersReducedMotion ? "rest" : "flash"}
+								className='inline-flex'
+							>
+								<Counter variant='neutral' count={unreadMessages} max={99} />
+							</motion.span>
 						) : null}
 					</Button>
 				) : null}

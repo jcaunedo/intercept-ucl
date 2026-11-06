@@ -276,7 +276,29 @@ const arriveVariants: Variants = {
   },
 };
 
+/**
+ * Unread pattern (Nov 5, 2026, user's call: the Messages count "flash every 2 seconds"): an unread count flashes once
+ * every `motionDuration.unreadLoop` — it dims to half and swells to `motionScale.unreadFlash` over the first 10% of the
+ * cycle (200ms), comes back over the next 10%, and rests for the remaining 1.6s, so it reads as a blink, not a pulse.
+ * Opacity and scale only. Animate `flash` while there's something unread; `rest` (or nothing) under reduced motion:
+ * the count shows still.
+ */
+const unreadFlashVariants: Variants = {
+  rest: { opacity: 1, scale: 1 },
+  flash: {
+    opacity: [1, 0.5, 1, 1],
+    scale: [1, motionScale.unreadFlash, 1, 1],
+    transition: {
+      duration: motionDuration.unreadLoop,
+      repeat: Infinity,
+      times: [0, 0.1, 0.2, 1],
+      ease: "easeInOut",
+    },
+  },
+};
+
 export {
+  unreadFlashVariants,
   fadeVariants,
   rowRemoveVariants,
   revealVariants,

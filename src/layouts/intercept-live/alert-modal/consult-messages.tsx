@@ -178,6 +178,7 @@ function ConsultMessages({
 	nurse,
 	typing = false,
 	autoFocus = false,
+	filter,
 }: {
 	messages: readonly ConsultMessage[];
 	onSend: (text: string) => void;
@@ -187,12 +188,18 @@ function ConsultMessages({
 	typing?: boolean;
 	/** Focus the field as the column opens (from its button). */
 	autoFocus?: boolean;
+	/**
+	 * Which messages show, e.g. the patient page's Messages filter (by sender, photos only). With none matching, the
+	 * thread says so; the field stays.
+	 */
+	filter?: (message: ConsultMessage) => boolean;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const now = useCurrentMinute();
 	const [draft, setDraft] = React.useState("");
 	const field = React.useRef<HTMLInputElement>(null);
 	const thread = React.useRef<HTMLDivElement>(null);
+	const shown = filter ? messages.filter(filter) : messages;
 
 	// The latest message in view: at once as the column opens, then smoothly as each one arrives (after layout, so the
 	// new message's height counts).
@@ -205,7 +212,7 @@ function ConsultMessages({
 			behavior: opened.current && !prefersReducedMotion ? "smooth" : "auto",
 		});
 		opened.current = true;
-	}, [messages.length, typing, prefersReducedMotion]);
+	}, [shown.length, typing, prefersReducedMotion]);
 	React.useEffect(() => {
 		if (autoFocus) field.current?.focus({ preventScroll: true });
 	}, [autoFocus]);
@@ -231,10 +238,10 @@ function ConsultMessages({
 				aria-label={`Messages with ${nurse}`}
 				className='-mx-6 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6'
 			>
-				{messages.length ? (
+				{shown.length ? (
 					<ol className='flex flex-col gap-4'>
 						<AnimatePresence initial={false}>
-							{messages.map((message) => {
+							{shown.map((message) => {
 								const you = message.from === "you";
 								const sent = now !== null ? formatRelativeDate(message.sentAt, now) : undefined;
 								return (
@@ -288,7 +295,9 @@ function ConsultMessages({
 					// icon in `icon-subtle` over "No messages", 8px apart. Not the EmptyState component, whose title is a heading.
 					<div className='flex flex-1 flex-col items-center justify-center gap-2 text-center'>
 						<MessageCircleIcon aria-hidden='true' className='size-5 text-icon-subtle' />
-						<p className='text-sm text-muted-foreground'>No messages</p>
+						<p className='text-sm text-muted-foreground'>
+							{messages.length ? "No messages match the filter" : "No messages"}
+						</p>
 					</div>
 				)}
 				<AnimatePresence>

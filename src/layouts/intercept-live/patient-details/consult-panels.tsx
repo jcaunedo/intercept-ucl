@@ -1,8 +1,17 @@
 import * as React from "react";
-import { XIcon } from "lucide-react";
+import { ListFilterIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
 import { enterTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +23,13 @@ import {
 	useConsult,
 	type PatientConsultData,
 } from "../alert-modal/alert-modal";
-import { ConsultMessages, useConsultMessages, useNewIncoming, useUnreadMessages } from "../alert-modal/consult-messages";
+import {
+	ConsultMessages,
+	useConsultMessages,
+	useNewIncoming,
+	useUnreadMessages,
+	type ConsultMessage,
+} from "../alert-modal/consult-messages";
 import { PagePanel, usePatientHeaderActions } from "../side-panel";
 
 // The patient page's Video consult and Messages (Nov 5, 2026, Intercept-Live "Video and Messages Interations",
@@ -96,6 +111,97 @@ function PatientPanel({
 	);
 }
 
+/* -------------------------------------------------------------------------- */
+/* Messages filter                                                            */
+/* -------------------------------------------------------------------------- */
+
+/** Who sent a message: the clinician, the thread's nurse, or someone else at the bedside by name. */
+const senderOf = (message: ConsultMessage) => (message.from === "you" ? "you" : (message.by ?? "nurse"));
+
+/** What the thread shows: the senders left out, and whether only photos show. */
+type MessagesFilterState = { hidden: string[]; photosOnly: boolean };
+
+const noFilter: MessagesFilterState = { hidden: [], photosOnly: false };
+
+/**
+ * The Messages panel's filter (Nov 5, 2026, Intercept-Live `222:18380`; user's call: by sender and photos): a ghost
+ * `list-filter` button, on the hover fill while a filter is on, opening a menu. From: a checkbox per sender in the thread
+ * (the nurse, anyone else at the bedside who sent something, You), all checked at first; then Photos only (the bedside's
+ * pictures of a monitor, a blood gas); then Show all while anything is filtered. The menu stays open while boxes are
+ * ticked.
+ */
+function MessagesFilter({
+	messages,
+	nurse,
+	value,
+	onValueChange,
+}: {
+	messages: readonly ConsultMessage[];
+	/** The thread's nurse, "Kelly Ortiz, RN". */
+	nurse: string;
+	value: MessagesFilterState;
+	onValueChange: (value: MessagesFilterState) => void;
+}) {
+	// The nurse first, then the others at the bedside in the order they first wrote, then You.
+	const others = [...new Set(messages.map(senderOf))].filter((sender) => sender !== "nurse" && sender !== "you");
+	const senders = [
+		{ key: "nurse", label: nurse },
+		...others.map((sender) => ({ key: sender, label: sender })),
+		{ key: "you", label: "You" },
+	];
+	const filtered = value.hidden.length > 0 || value.photosOnly;
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button
+					variant='ghost'
+					size='icon-md'
+					aria-label={filtered ? "Filter messages, filtered" : "Filter messages"}
+					className={cn(filtered && "bg-accent")}
+				>
+					<ListFilterIcon aria-hidden='true' />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='end'>
+				<DropdownMenuLabel>From</DropdownMenuLabel>
+				{senders.map(({ key, label }) => (
+					<DropdownMenuCheckboxItem
+						key={key}
+						checked={!value.hidden.includes(key)}
+						onCheckedChange={(checked) =>
+							onValueChange({
+								...value,
+								hidden: checked ? value.hidden.filter((item) => item !== key) : [...value.hidden, key],
+							})
+						}
+						onSelect={(event) => event.preventDefault()}
+					>
+						{label}
+					</DropdownMenuCheckboxItem>
+				))}
+				<DropdownMenuSeparator />
+				<DropdownMenuCheckboxItem
+					checked={value.photosOnly}
+					onCheckedChange={(checked) => onValueChange({ ...value, photosOnly: checked })}
+					onSelect={(event) => event.preventDefault()}
+				>
+					Photos only
+				</DropdownMenuCheckboxItem>
+				{filtered ? (
+					<>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem onSelect={() => onValueChange(noFilter)}>Show all</DropdownMenuItem>
+					</>
+				) : null}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Panels                                                                     */
+/* -------------------------------------------------------------------------- */
+
 /**
  * The patient page's video consult and messages with the bedside nurse, in two panels right of the page (Intercept-Live
  * `219:16129`, Nov 5, 2026). The app header's Video consult opens the call's panel and rings the bedside at once (the
@@ -140,6 +246,8 @@ function PatientConsultPanels({
 		setMessagesOpen(true);
 	}
 	const unread = useUnreadMessages(messages, messagesOpen);
+	const [filter, setFilter] = React.useState<MessagesFilterState>(noFilter);
+	const nurse = threadWith(data.bedside);
 
 	// Closing the call's panel ends the call: no call runs out of sight.
 	const closeConsult = () => {
@@ -216,12 +324,22 @@ function PatientConsultPanels({
 				title='Messages'
 				open={messagesOpen}
 				action={
-					<Button variant='ghost' size='icon-md' aria-label='Close messages' onClick={() => setMessagesOpen(false)}>
-						<XIcon aria-hidden='true' />
-					</Button>
+					// The filter, then ×, 8px apart (Intercept-Live `222:18380`).
+					<div className='flex shrink-0 items-center gap-2'>
+						<MessagesFilter
+							messages={messages}
+							nurse={nurse}
+							value={filter}
+							onValueChange={setFilter}
+						/>
+						<Button variant='ghost' size='icon-md' aria-label='Close messages' onClick={() => setMessagesOpen(false)}>
+							<XIcon aria-hidden='true' />
+						</Button>
+					</div>
 				}
 				onKeyDown={(event) => {
-					if (event.key === "Escape") setMessagesOpen(false);
+					// Escape in the filter's menu (a portal, outside the panel's DOM) closes only the menu.
+					if (event.key === "Escape" && event.currentTarget.contains(event.target as Node)) setMessagesOpen(false);
 				}}
 				className={panelShadow}
 			>
@@ -230,9 +348,15 @@ function PatientConsultPanels({
 					<ConsultMessages
 						messages={messages}
 						onSend={sendMessage}
-						nurse={threadWith(data.bedside)}
+						nurse={nurse}
 						typing={nurseTyping}
 						autoFocus={focusMessages}
+						filter={
+							filter.hidden.length || filter.photosOnly
+								? (message) =>
+										!filter.hidden.includes(senderOf(message)) && (!filter.photosOnly || Boolean(message.photo))
+								: undefined
+						}
 					/>
 				</div>
 			</PatientPanel>

@@ -32,6 +32,11 @@ const motionDuration = {
 	 * than Pending.
 	 */
 	liveLoop: 1,
+	/**
+	 * One cycle of an unread count's flash (Unread pattern, Nov 5, 2026, user's call: "flash every 2 seconds"): a quick
+	 * flash, then the count at rest until the next.
+	 */
+	unreadLoop: 2,
 	/** A streamed AI answer: the average time between chunks of a few words. Each step varies around it, so it reads like real generation. */
 	streamStep: 0.035,
 	/** A streamed AI answer: the extra pause after a sentence or a list item ends. */
@@ -87,6 +92,8 @@ const motionScale = {
 	liveDotMin: 0.5,
 	/** How far a live status dot's halo spreads before it fades (Live pattern). */
 	liveHalo: 2.2,
+	/** Peak of an unread count's flash (Unread pattern): it swells a little as it dims. */
+	unreadFlash: 1.15,
 } as const;
 
 /** Pixels of blur. */
