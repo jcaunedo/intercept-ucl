@@ -1,16 +1,16 @@
 import * as React from "react";
-import { CircleCheckIcon, ClockIcon, TriangleAlertIcon } from "lucide-react";
+import { CircleCheckIcon, ClockIcon, GitForkIcon, TriangleAlertIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { cn } from "@/lib/utils";
 
-import { formatTime, NoData, SectionCard } from "./section-parts";
+import { formatTime, SectionCard } from "./section-parts";
 import type { PatientTimeline, TimelineEventKind } from "./sections/timeline-section";
 
 // What was done and decided about the patient, so the page tracks it (Nov 3, 2026, user's call): the care plan in force,
-// on the Overview (the pathway sent, and keep or transfer with its checkpoints: DU-22, DU-23), and the activity log, its
-// latest entries on the Overview and all of it on the Timeline's events lane, so each decision lines up with the vitals.
+// on the Overview (the pathway sent, and keep or transfer with its checkpoints: DU-22, DU-23), and the activity log, in
+// the Overview's log (`patient-overview.tsx`) and on the Timeline's events lane, so each decision lines up with the vitals.
 // The app records the log as things happen, with who and when (PRD PD-133).
 
 /* -------------------------------------------------------------------------- */
@@ -79,6 +79,26 @@ type PatientCarePlan = {
 	};
 };
 
+/**
+ * A pathway an open alert suggests that nobody has decided on yet: the Care plan shows it dashed, as the alert does, so
+ * the clinician who opens the patient first sees what's waiting for them (Nov 6, 2026).
+ */
+type PatientPathwaySuggestion = {
+	title: string;
+	/** Where it comes from, e.g. "Reference protocol, CHF exacerbation (configurable per hospital)". */
+	source: string;
+	/** How many orders it holds. */
+	orders: number;
+};
+
+/** Something the pathway runs now, in a line: "Hour-1 sepsis bundle", "3 of 5 done · 42 min left". */
+type PatientPathwayRunning = {
+	label: string;
+	detail?: string;
+	/** Overdue, or past its deadline: the line turns red. */
+	overdue?: boolean;
+};
+
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
@@ -102,9 +122,6 @@ const timelineKinds: Record<PatientActivityKind, TimelineEventKind> = {
 	outcome: "care",
 };
 
-/** How many entries the Overview shows, newest first; the Timeline has all of them. */
-const OVERVIEW_ENTRIES = 5;
-
 const byTime = (a: { at: string }, b: { at: string }) => Date.parse(a.at) - Date.parse(b.at);
 
 /* -------------------------------------------------------------------------- */
@@ -127,18 +144,68 @@ function pathwayLine(pathway: NonNullable<PatientCarePlan["pathway"]>) {
 }
 
 /**
- * The care plan in force (Overview): the pathway sent from an alert, its orders as sent (an edited dose marked, the
- * suggestion struck through, as in the alert) and where co-signature is; then keep or transfer, its reason, the
- * checkpoints and how they went, and "Transfer avoided" once they've passed.
+ * The care plan (Overview): the pathway sent from an alert, its orders as sent (an edited dose marked, the suggestion
+ * struck through, as in the alert) and where co-signature is; then keep or transfer, its reason, the checkpoints and how
+ * they went, and "Transfer avoided" once they've passed. Before anything is decided, the pathway an open alert suggests,
+ * dashed, as in the alert. What the pathway runs now (a sepsis bundle, a DKA protocol, the bedside tasks) follows in a
+ * line each. `onOpenPathway` adds the way to the pathway itself, in the heading row: Review pathway while it's a
+ * suggestion, Open pathway after (Nov 6, 2026: the page's Pathway panel, where the clinician acts on it).
  */
-function CarePlanCard({ plan }: { plan: PatientCarePlan }) {
+function CarePlanCard({
+	plan = {},
+	suggestion,
+	running = [],
+	onOpenPathway,
+	headingLevel = "h2",
+	className,
+}: {
+	plan?: PatientCarePlan;
+	suggestion?: PatientPathwaySuggestion;
+	running?: PatientPathwayRunning[];
+	onOpenPathway?: () => void;
+	/** The card's heading; its parts' headings are one level below. */
+	headingLevel?: "h2" | "h3";
+	className?: string;
+}) {
 	const { pathway, transfer } = plan;
+	const Part = headingLevel === "h2" ? "h3" : "h4";
+	const suggested = !pathway && suggestion;
 	return (
-		<SectionCard title='Care plan'>
+		<SectionCard
+			title='Care plan'
+			headingLevel={headingLevel}
+			className={className}
+			action={
+				onOpenPathway ? (
+					<Button variant='outline' size='sm' onClick={onOpenPathway}>
+						<GitForkIcon aria-hidden='true' />
+						{suggested ? "Review pathway" : "Open pathway"}
+					</Button>
+				) : undefined
+			}
+		>
+			{suggested ? (
+				// Dashed while it's a suggestion, as the alert's order set.
+				<section
+					aria-label={suggestion.title}
+					className='flex flex-col gap-1 rounded-xl border border-dashed border-muted-foreground p-3'
+				>
+					<div className='flex flex-wrap items-center gap-2'>
+						<Part className='text-sm font-semibold text-foreground'>{suggestion.title}</Part>
+						<Badge variant='secondary' size='xs'>
+							Suggested
+						</Badge>
+					</div>
+					<p className='text-sm text-foreground'>
+						{suggestion.orders === 1 ? "1 order" : `${suggestion.orders} orders`} waiting for your review
+					</p>
+					<p className='text-xs text-muted-foreground'>Source: {suggestion.source}</p>
+				</section>
+			) : null}
 			{pathway ? (
 				<section aria-label={pathway.title} className='flex flex-col gap-2'>
 					<div className='flex flex-wrap items-center gap-2'>
-						<h3 className='text-sm font-semibold text-foreground'>{pathway.title}</h3>
+						<Part className='text-sm font-semibold text-foreground'>{pathway.title}</Part>
 						<Badge variant={pathwayStatuses[pathway.status].variant} size='xs'>
 							{pathwayStatuses[pathway.status].label}
 						</Badge>
@@ -169,12 +236,30 @@ function CarePlanCard({ plan }: { plan: PatientCarePlan }) {
 				</section>
 			) : null}
 
-			{pathway && transfer ? <hr className='border-border-muted' /> : null}
+			{running.length ? (
+				<ul aria-label='Running now' className='flex flex-col gap-1'>
+					{running.map((item) => (
+						<li
+							key={item.label}
+							className='flex flex-col rounded-lg bg-background-subtle px-3 py-2 text-sm'
+						>
+							<span className='font-medium text-foreground'>{item.label}</span>
+							{item.detail ? (
+								<span className={cn("text-xs", item.overdue ? "text-destructive" : "text-muted-foreground")}>
+									{item.detail}
+								</span>
+							) : null}
+						</li>
+					))}
+				</ul>
+			) : null}
+
+			{(pathway || suggested || running.length > 0) && transfer ? <hr className='border-border-muted' /> : null}
 
 			{transfer ? (
 				<section aria-label='Keep or transfer' className='flex flex-col gap-2'>
 					<div className='flex flex-col'>
-						<h3 className='text-sm font-semibold text-foreground'>{transfer.label}</h3>
+						<Part className='text-sm font-semibold text-foreground'>{transfer.label}</Part>
 						<p className='text-xs text-muted-foreground'>
 							{transfer.by ? `${transfer.by} · ` : null}
 							{formatTime(transfer.at)}
@@ -236,46 +321,6 @@ function CarePlanCard({ plan }: { plan: PatientCarePlan }) {
 	);
 }
 
-/**
- * The latest activity (Overview): the newest entries first, each with its time, what happened, the particulars and
- * who. "View on Timeline" opens all of it on the Timeline, beside the vitals.
- */
-function ActivityCard({ activity, onShowAll }: { activity: PatientActivity[]; onShowAll?: () => void }) {
-	const latest = [...activity].sort(byTime).reverse().slice(0, OVERVIEW_ENTRIES);
-	return (
-		<SectionCard
-			title='Activity'
-			meta={activity.length > OVERVIEW_ENTRIES ? `Latest ${OVERVIEW_ENTRIES} of ${activity.length}` : undefined}
-			action={
-				onShowAll && activity.length ? (
-					<Button variant='link' size='xs' onClick={onShowAll} className='h-auto p-0'>
-						View on Timeline
-					</Button>
-				) : undefined
-			}
-		>
-			{latest.length ? (
-				<ol aria-label='Latest activity' className='flex flex-col gap-3'>
-					{latest.map((entry) => (
-						<li key={entry.id} className='grid grid-cols-[4rem_minmax(0,1fr)] gap-x-2 text-sm'>
-							<time dateTime={entry.at} className='pt-px text-xs text-muted-foreground tabular-nums'>
-								{formatTime(entry.at)}
-							</time>
-							<div className='flex min-w-0 flex-col'>
-								<span className='font-medium text-foreground'>{entry.title}</span>
-								{entry.detail ? <span className='text-muted-foreground'>{entry.detail}</span> : null}
-								{entry.by ? <span className='text-xs text-muted-foreground'>{entry.by}</span> : null}
-							</div>
-						</li>
-					))}
-				</ol>
-			) : (
-				<NoData>Nothing done or decided yet.</NoData>
-			)}
-		</SectionCard>
-	);
-}
-
 /** The Timeline with the activity on its events lane, in time order, each entry named with who did it. */
 function withActivityEvents(timeline: PatientTimeline, activity?: PatientActivity[]): PatientTimeline {
 	if (!activity?.length) return timeline;
@@ -294,12 +339,14 @@ function withActivityEvents(timeline: PatientTimeline, activity?: PatientActivit
 }
 
 export {
-	ActivityCard,
 	CarePlanCard,
+	timelineKinds as activityTimelineKinds,
 	withActivityEvents,
 	type PatientActivity,
 	type PatientActivityKind,
 	type PatientCarePlan,
 	type PatientCarePlanCheckpoint,
 	type PatientCarePlanOrder,
+	type PatientPathwayRunning,
+	type PatientPathwaySuggestion,
 };

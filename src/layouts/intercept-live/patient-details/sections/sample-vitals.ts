@@ -602,10 +602,90 @@ const sampleScenario2ResolvedVitals = () =>
 		temps: [37.4, 37.2],
 	});
 
+// Rosa Medina (Scenario 3): in Sidney's ED 50 min, on a cuff and room air. Two hourly readings at the screen: triage
+// (BP 96/58, HR 112, RR 22, SpO₂ 96%) and now (BP 84/48, HR 124, RR 24, SpO₂ 95%). Triage's 39.0 °C is in the
+// timeline; the chart keeps the last, 39.4 °C, 5 min ago.
+const medinaAt1530: VitalsSpec = {
+	seed: 23,
+	hours: 2,
+	hr: [112, 124],
+	systolic: [96, 84],
+	diastolic: [58, 48],
+	spo2: [96, 95],
+	rr: [22, 24],
+	arterialLine: false,
+	ventilated: false,
+	nurse: "Ashley Brooks",
+	temps: [39.4],
+	lastTemp: 5,
+};
+
+/**
+ * Rosa Medina's vitals at Scenario 3's first beat (`alert`), or at its resolution (`resolved`): then every point of the
+ * scenario is an hourly reading (triage, the screen, after fluids, on norepinephrine, at 6 h, at 12 h), as the
+ * prototype's 12 h pass in a few beats. The diastolics give the scenario's MAPs (`sample-monitoring.ts` says why: 88/49
+ * and 104/49). Built when the beat plays so the last reading is "now".
+ */
+function sampleScenario3Vitals(stage: "alert" | "resolved") {
+	if (stage === "alert") return buildVitals(medinaAt1530);
+	return buildVitals({
+		...medinaAt1530,
+		hours: 6,
+		hr: [112, 124, 112, 104, 96, 88],
+		systolic: [96, 84, 88, 104, 112, 118],
+		diastolic: [58, 48, 49, 49, 60, 66],
+		spo2: [96, 95, 95, 96, 97, 97],
+		rr: [22, 24, 22, 20, 18, 16],
+		temps: [37.8, 37.4],
+		lastTemp: 10,
+	});
+}
+
+// Tyler Kessler (Scenario 4): in Bridgeport 40 min, on a cuff and room air. Two hourly readings at the alert: triage
+// (BP 104/62, HR 116, RR 24, SpO₂ 99%) and now (BP 98/58, HR 122, RR 30, SpO₂ 99%). Triage's 37.0 °C is in the
+// timeline; the chart keeps the last, 37.2 °C, 5 min ago. Triage's RR is 24 so it scores NEWS2 5 (`sample-monitoring.ts`).
+const kesslerAt2300: VitalsSpec = {
+	seed: 24,
+	hours: 2,
+	hr: [116, 122],
+	systolic: [104, 98],
+	diastolic: [62, 58],
+	spo2: [99, 99],
+	rr: [24, 30],
+	arterialLine: false,
+	ventilated: false,
+	nurse: "Brittany Cole",
+	temps: [37.2],
+	lastTemp: 5,
+};
+
+/**
+ * Tyler Kessler's vitals at Scenario 4's first beat (`alert`), or once the gap has closed (`closed`): then every point
+ * of the scenario is an hourly reading (triage, the alert, 01:00, 05:00, 12:00), as the prototype's 14 h pass in a few
+ * beats. The day nurse charts the last temperature. Built when the beat plays so the last reading is "now".
+ */
+function sampleScenario4Vitals(stage: "alert" | "closed") {
+	if (stage === "alert") return buildVitals(kesslerAt2300);
+	return buildVitals({
+		...kesslerAt2300,
+		hours: 5,
+		hr: [116, 122, 108, 96, 82],
+		systolic: [104, 98, 108, 116, 122],
+		diastolic: [62, 58, 64, 70, 76],
+		spo2: [99, 99, 99, 99, 99],
+		rr: [24, 30, 24, 20, 16],
+		nurse: "Hannah Price",
+		temps: [37.2, 36.8],
+		lastTemp: 10,
+	});
+}
+
 export {
 	sampleScenario1ResolvedVitals,
 	sampleScenario1Vitals,
 	sampleScenario2ResolvedVitals,
 	sampleScenario2Vitals,
+	sampleScenario3Vitals,
+	sampleScenario4Vitals,
 	sampleVitalsByPatient,
 };

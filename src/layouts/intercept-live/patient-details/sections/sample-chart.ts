@@ -2,7 +2,7 @@ import { samplePatients } from "../../census/sample-census";
 import type { PatientRecord } from "../patient-details";
 import { samplePatientBaseRecords } from "../sample-patient-records";
 import type { ChartCulture, ChartHomeMedication, ChartImagingReport, ChartProblem, ChartResult, ChartResultPanel, PatientChart } from "./chart-section";
-import { sampleEhrFor } from "../../sample-data/sample-ehr";
+import { sampleEhrByHospital, sampleEhrFor } from "../../sample-data/sample-ehr";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's record at their hospital. Each chart is built
 // from the patient's base record (`sample-patient-records.ts`), so its results hold their key labs with the same values
@@ -57,7 +57,19 @@ const references: Record<string, Reference> = {
 	"NT-proBNP": { unit: "pg/mL", range: "Under 450", panel: "Cardiac" },
 	"Troponin I": { unit: "ng/mL", range: "Under 0.04", panel: "Cardiac" },
 	"Hemoglobin A1c": { unit: "%", range: "4.0–5.6", panel: "Other" },
+	// Shown as the lab reports it; the patient's record carries the flag (Scenario 3's Rosa Medina).
+	eGFR: { unit: "mL/min/1.73 m²", range: "Over 60", panel: "Chemistry" },
+	"Urine nitrite": { range: "Negative", panel: "Other" },
+	"Urine leukocyte esterase": { range: "Negative", panel: "Other" },
+	"Urine WBC": { unit: "/hpf", range: "0–5", panel: "Other" },
+	"Urine bacteria": { range: "None", panel: "Other" },
 	TSH: { unit: "mIU/L", range: "0.4–4.0", panel: "Other" },
+	// Scenario 4's Tyler Kessler (DKA): his venous gas, ketones and the gap the protocol closes.
+	"pH, venous": { range: "7.31–7.41", panel: "Blood gases" },
+	"Anion gap": { unit: "mmol/L", range: "4–12", panel: "Chemistry" },
+	"Beta-hydroxybutyrate": { unit: "mmol/L", range: "Under 0.4", panel: "Chemistry" },
+	Chloride: { unit: "mmol/L", range: "98–107", panel: "Chemistry" },
+	Lipase: { unit: "U/L", range: "13–60", panel: "Chemistry" },
 };
 
 const panelOrder: Panel[] = ["Chemistry", "Hematology", "Blood gases", "Coagulation", "Cardiac", "Other"];
@@ -100,6 +112,13 @@ type ChartSpec = {
 	ranges?: Record<string, string>;
 	/** For a patient not on the Census yet (a scenario's arrival); everyone else's comes from their card. */
 	sex?: "M" | "F";
+	/** The same, for the hospital, whose record system is the chart's source. */
+	hospital?: string;
+	/**
+	 * Who noted the problems, when it isn't the attending of record (an MD), e.g. a hospitalist APP leading an ED
+	 * encounter.
+	 */
+	notedBy?: string;
 	cultures: ChartCulture[];
 	imaging: ChartImagingReport[];
 };
@@ -122,11 +141,14 @@ const culture = (
 	};
 };
 
+// Who reads each hospital's imaging. Sidney's ICU studies keep the radiologist who read them at Harbor Point General,
+// which became Bridgeport on Nov 6, 2026 (user's call); a critical access hospital like Bridgeport sends its studies to
+// teleradiology.
 const radiologists = {
-	"Harbor Point General": "Alan Reyes, MD, Radiology",
-	"Alliance": "Owen Mitchell, MD, Teleradiology",
-	CVMC: "Farah Hadley, MD, Radiology",
-	"Chadron": "Neil Carver, MD, Teleradiology",
+	"Alliance Community": "Owen Mitchell, MD, Teleradiology",
+	"Sidney Regional": "Farah Hadley, MD, Radiology",
+	"Chadron Memorial": "Neil Carver, MD, Teleradiology",
+	"Bridgeport Valley": "Claire Donovan, MD, Teleradiology",
 } as Record<string, string>;
 
 const report = (
@@ -155,7 +177,7 @@ function buildChart(record: PatientRecord, spec: ChartSpec): PatientChart {
 		return typeof reference.range === "string" ? reference.range : reference.range[sex];
 	};
 	const attending = record.careTeam?.find((member) => member.role === "Attending of record")?.name;
-	const notedBy = attending ? `${attending}, MD` : undefined;
+	const notedBy = spec.notedBy ?? (attending ? `${attending}, MD` : undefined);
 	const onset = (value: number | string) => (typeof value === "number" ? dayAgo(value) : value);
 	const labs = record.labs ?? [];
 	// Most of the key labs come from one morning draw; the extras result with it.
@@ -235,7 +257,7 @@ function buildChart(record: PatientRecord, spec: ChartSpec): PatientChart {
 	);
 
 	return {
-		source: sampleEhrFor(record.id),
+		source: spec.hospital ? (sampleEhrByHospital[spec.hospital] ?? "Epic") : sampleEhrFor(record.id),
 		updatedAt,
 		problems,
 		allergies: (record.allergies ?? []).map((substance) => ({ substance, ...allergyDetails[substance] })),
@@ -263,16 +285,17 @@ const allergyDetails: Record<string, { reaction: string; severity: "mild" | "mod
 	Codeine: { reaction: "Nausea and vomiting", severity: "mild" },
 	Morphine: { reaction: "Itching, hives", severity: "moderate" },
 	Shellfish: { reaction: "Anaphylaxis", severity: "severe" },
+	Sulfonamides: { reaction: "Rash", severity: "mild" },
 };
 
 /* -------------------------------------------------------------------------- */
 /* Patients                                                                   */
 /* -------------------------------------------------------------------------- */
 
-const hpg = radiologists["Harbor Point General"];
-const alliance = radiologists["Alliance"];
-const cvmc = radiologists.CVMC;
-const chadron = radiologists["Chadron"];
+const sidneyIcu = "Alan Reyes, MD, Radiology";
+const alliance = radiologists["Alliance Community"];
+const sidney = radiologists.Sidney;
+const chadron = radiologists["Chadron Memorial"];
 const day = 1520;
 
 const chartSpecs: Record<string, ChartSpec> = {
@@ -324,14 +347,14 @@ const chartSpecs: Record<string, ChartSpec> = {
 				6,
 				"Worse bilateral airspace opacities, most in the right lower lobe, consistent with ARDS and pneumonia.",
 				"Endotracheal tube 4 cm above the carina. Right internal jugular line with its tip at the cavoatrial junction. Orogastric tube below the diaphragm. Bilateral patchy airspace opacities, worse than yesterday, densest in the right lower lobe. Small right pleural effusion. No pneumothorax.",
-				hpg,
+				sidneyIcu,
 			),
 			report(
 				"Chest X-ray, portable (after intubation)",
 				51,
 				"Endotracheal tube in good position. Right lower lobe consolidation.",
 				"Endotracheal tube 5 cm above the carina. Right lower lobe consolidation with air bronchograms. Left lung clear. No effusion or pneumothorax.",
-				hpg,
+				sidneyIcu,
 			),
 		],
 	},
@@ -352,7 +375,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 			culture("Blood cultures ×2 (admission)", 40, "no-growth", "No growth at 24 hours.", { updatedHours: 15 }),
 		],
 		imaging: [
-			report("Chest X-ray, portable", 8, "Diffuse bilateral opacities, unchanged from yesterday.", "Endotracheal tube 4 cm above the carina. Left internal jugular line tip in the superior vena cava. Diffuse bilateral airspace opacities, no larger than yesterday. No pneumothorax.", hpg),
+			report("Chest X-ray, portable", 8, "Diffuse bilateral opacities, unchanged from yesterday.", "Endotracheal tube 4 cm above the carina. Left internal jugular line tip in the superior vena cava. Diffuse bilateral airspace opacities, no larger than yesterday. No pneumothorax.", sidneyIcu),
 		],
 	},
 	p3: {
@@ -381,7 +404,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 			culture("Blood cultures ×2 (repeat)", 72, "no-growth", "No growth at 48 hours.", { updatedHours: 24 }),
 		],
 		imaging: [
-			report("CT abdomen and pelvis, without contrast", 114, "Left pyelonephritis. No abscess or obstruction.", "Mild left perinephric stranding with a swollen left kidney. No hydronephrosis or stone. No abscess. Bladder decompressed around a Foley catheter.", cvmc),
+			report("CT abdomen and pelvis, without contrast", 114, "Left pyelonephritis. No abscess or obstruction.", "Mild left perinephric stranding with a swollen left kidney. No hydronephrosis or stone. No abscess. Bladder decompressed around a Foley catheter.", sidney),
 		],
 	},
 	p4: {
@@ -399,7 +422,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 		cultures: [culture("MRSA nares PCR", 74, "final", "Negative.", { updatedHours: 60 })],
 		imaging: [
 			report("Echocardiogram, transthoracic", 30, "EF 20 to 25% with anterior and apical akinesis. Moderate mitral regurgitation.", "Severely reduced left ventricular function. Akinetic anterior wall and apex, no thrombus seen. Moderate functional mitral regurgitation. Right ventricle mildly reduced.", "Kofi Mensah, MD, Cardiology"),
-			report("Chest X-ray, portable", 6, "Mild pulmonary vascular congestion. Small bilateral effusions.", "Enlarged cardiac silhouette. Mild vascular congestion. Small bilateral pleural effusions. Right internal jugular line tip in the superior vena cava.", cvmc),
+			report("Chest X-ray, portable", 6, "Mild pulmonary vascular congestion. Small bilateral effusions.", "Enlarged cardiac silhouette. Mild vascular congestion. Small bilateral pleural effusions. Right internal jugular line tip in the superior vena cava.", sidney),
 		],
 	},
 	p5: {
@@ -416,7 +439,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 		extras: [["Sodium", "138"], ["Bicarbonate", "25"], ["Glucose", "158"], ["Platelets", "312"]],
 		abgBefore: ["pH 7.26 · PaCO₂ 61 · PaO₂ 70 · HCO₃ 26", 14],
 		cultures: [culture("Respiratory viral PCR", 20, "final", "Rhinovirus/enterovirus detected.", { updatedHours: 16 })],
-		imaging: [report("Chest X-ray, portable", 19, "Hyperinflated lungs. No pneumothorax or pneumonia.", "Hyperinflated lungs with flattened diaphragms. No consolidation, effusion or pneumothorax.", hpg)],
+		imaging: [report("Chest X-ray, portable", 19, "Hyperinflated lungs. No pneumothorax or pneumonia.", "Hyperinflated lungs with flattened diaphragms. No consolidation, effusion or pneumothorax.", sidneyIcu)],
 	},
 	p6: {
 		onsets: [40, 30, "2017"],
@@ -430,8 +453,8 @@ const chartSpecs: Record<string, ChartSpec> = {
 		extras: [["Bicarbonate", "24"], ["Glucose", "112"], ["Platelets", "174"], ["Albumin", "3.0"]],
 		cultures: [culture("Urine culture", 30, "final", "No growth.", { updatedHours: 8 })],
 		imaging: [
-			report("CT head, without contrast", 10, "No acute intracranial abnormality.", "No hemorrhage, mass or acute infarct. Chronic small-vessel changes and age-appropriate volume loss.", cvmc),
-			report("X-ray, left hip", 46, "Left hip hemiarthroplasty in good position.", "Cemented left hip hemiarthroplasty, well seated. No periprosthetic fracture.", cvmc),
+			report("CT head, without contrast", 10, "No acute intracranial abnormality.", "No hemorrhage, mass or acute infarct. Chronic small-vessel changes and age-appropriate volume loss.", sidney),
+			report("X-ray, left hip", 46, "Left hip hemiarthroplasty in good position.", "Cemented left hip hemiarthroplasty, well seated. No periprosthetic fracture.", sidney),
 		],
 	},
 	p7: {
@@ -454,7 +477,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 			culture("Peritoneal fluid culture", 82, "final", "Mixed enteric flora.", { organism: "Escherichia coli and Bacteroides fragilis", updatedHours: 40 }),
 			culture("Blood cultures ×2 (admission)", 84, "final", "No growth at 5 days.", { updatedHours: 2 }),
 		],
-		imaging: [report("CT abdomen and pelvis, with contrast", 85, "Perforated sigmoid diverticulitis with free air and a pelvic fluid collection.", "Sigmoid wall thickening with surrounding inflammation and extraluminal gas. 4 cm pelvic fluid collection. Free air under the diaphragm.", cvmc)],
+		imaging: [report("CT abdomen and pelvis, with contrast", 85, "Perforated sigmoid diverticulitis with free air and a pelvic fluid collection.", "Sigmoid wall thickening with surrounding inflammation and extraluminal gas. 4 cm pelvic fluid collection. Free air under the diaphragm.", sidney)],
 	},
 	p8: {
 		onsets: ["2015", "2017"],
@@ -485,7 +508,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 			culture("Sputum culture (endotracheal aspirate)", 25, "preliminary", "Gram-negative rods, many. Identification to follow.", { updatedHours: 5 }),
 			culture("Blood cultures ×2 (admission)", 28, "no-growth", "No growth at 24 hours.", { updatedHours: 4 }),
 		],
-		imaging: [report("Chest X-ray, portable", 7, "Right lower lobe consolidation, larger than on admission.", "Endotracheal tube 5 cm above the carina. Right lower lobe consolidation, larger than on admission. Hyperinflated lungs. No pneumothorax.", hpg)],
+		imaging: [report("Chest X-ray, portable", 7, "Right lower lobe consolidation, larger than on admission.", "Endotracheal tube 5 cm above the carina. Right lower lobe consolidation, larger than on admission. Hyperinflated lungs. No pneumothorax.", sidneyIcu)],
 	},
 	p10: {
 		onsets: ["2019", "2004", "2020"],
@@ -502,7 +525,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 			culture("Tissue culture, left thigh", 24, "preliminary", "Heavy growth. Susceptibilities to follow.", { organism: "Streptococcus pyogenes (group A)", updatedHours: 6 }),
 			culture("Blood cultures ×2", 27, "preliminary", "Gram-positive cocci in chains in 1 of 2 sets.", { updatedHours: 12 }),
 		],
-		imaging: [report("CT left thigh, without contrast", 30, "Gas along the fascia of the left thigh, consistent with necrotizing infection.", "Soft tissue gas tracking along the fascial planes of the anterior left thigh with surrounding edema. No drainable collection.", hpg)],
+		imaging: [report("CT left thigh, without contrast", 30, "Gas along the fascia of the left thigh, consistent with necrotizing infection.", "Soft tissue gas tracking along the fascial planes of the anterior left thigh with surrounding edema. No drainable collection.", sidneyIcu)],
 	},
 	p11: {
 		onsets: [31, "July"],
@@ -530,8 +553,8 @@ const chartSpecs: Record<string, ChartSpec> = {
 		extras: [["Bicarbonate", "25"], ["Platelets", "201"], ["INR", "1.0"], ["Hemoglobin A1c", "6.8"]],
 		cultures: [culture("Urine culture", 24, "no-growth", "No growth at 24 hours.", { updatedHours: 2 })],
 		imaging: [
-			report("CT head, without contrast", 20, "Evolving right MCA infarct with early swelling, without hemorrhage. No midline shift.", "Hypodensity in the right frontal and temporal lobes and insula, as expected after the stroke, with early effacement of the nearby sulci. No hemorrhage. No midline shift.", hpg),
-			report("CT angiography, head and neck", 50, "Occlusion of the right M1 segment.", "Abrupt occlusion of the right middle cerebral artery's M1 segment. Carotids patent without significant narrowing.", hpg),
+			report("CT head, without contrast", 20, "Evolving right MCA infarct with early swelling, without hemorrhage. No midline shift.", "Hypodensity in the right frontal and temporal lobes and insula, as expected after the stroke, with early effacement of the nearby sulci. No hemorrhage. No midline shift.", sidneyIcu),
+			report("CT angiography, head and neck", 50, "Occlusion of the right M1 segment.", "Abrupt occlusion of the right middle cerebral artery's M1 segment. Carotids patent without significant narrowing.", sidneyIcu),
 		],
 	},
 	p13: {
@@ -547,7 +570,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 		],
 		imaging: [
 			report("Echocardiogram, transthoracic", 20, "EF 10 to 15%. The aortic valve opens with every beat on ECMO.", "Severely reduced left ventricular function with an akinetic anterior wall. Aortic valve opening every beat. No pericardial effusion.", "Kofi Mensah, MD, Cardiology"),
-			report("Chest X-ray, portable", 6, "Cannulas stable. Mild pulmonary edema.", "Endotracheal tube in good position. ECMO return cannula unchanged. Mild interstitial edema, unchanged.", cvmc),
+			report("Chest X-ray, portable", 6, "Cannulas stable. Mild pulmonary edema.", "Endotracheal tube in good position. ECMO return cannula unchanged. Mild interstitial edema, unchanged.", sidney),
 		],
 	},
 	p14: {
@@ -562,7 +585,7 @@ const chartSpecs: Record<string, ChartSpec> = {
 		extras: [["Sodium", "139"], ["Bicarbonate", "24"], ["Glucose", "109"], ["WBC", "8.1"], ["Platelets", "245"], ["INR", "1.0"]],
 		cultures: [],
 		imaging: [
-			report("Chest X-ray, portable", 5, "No acute findings.", "Normal heart size. Lungs clear. No effusion.", cvmc),
+			report("Chest X-ray, portable", 5, "No acute findings.", "Normal heart size. Lungs clear. No effusion.", sidney),
 			report("Echocardiogram, transthoracic", 2, "Normal left ventricular size. EF about 50%.", "Normal left ventricular size, low-normal function in atrial fibrillation. Left atrium mildly enlarged. No significant valve disease.", "Kofi Mensah, MD, Cardiology", "preliminary"),
 		],
 	},
@@ -717,6 +740,7 @@ const sampleChartByPatient: Record<string, PatientChart> = Object.fromEntries(
 // seasonal job ended. Built when the scenario's first beat plays, from his record then.
 const reynoldsChart: ChartSpec = {
 	sex: "M",
+	hospital: "Alliance Community",
 	onsets: ["2017", "1980", "2021"],
 	medical: [
 		"COPD, severe (GOLD 3) · FEV₁ 42% predicted, home oxygen 2 L since 2021",
@@ -759,4 +783,92 @@ const reynoldsChart: ChartSpec = {
 /** Dale Reynolds's chart, from his record at Scenario 2's first beat. */
 const sampleScenario2Chart = (record: PatientRecord) => buildChart(record, reynoldsChart);
 
-export { sampleChartByPatient, sampleScenario2Chart };
+// Rosa Medina (Scenario 3, `p23`): type 2 diabetes on insulin (metformin stopped when her eGFR fell under 30) and CKD
+// stage 4, followed in Sidney's nephrology clinic. Built when the scenario's first beat plays, from her record then: the
+// first draw resulted 22 min before the screen, the urinalysis with it, and the urine culture reflexed from it (the
+// scenario doesn't name one; illustrative). No blood cultures or imaging yet: cultures come with the bundle, and the
+// renal ultrasound (no CT contrast at eGFR 22) at about 2 h. Plausible where the scenario is silent: her history's
+// dates, one earlier UTI, sodium, BUN, neutrophils and the September A1c's date.
+const medinaChart: ChartSpec = {
+	sex: "F",
+	hospital: "Sidney Regional",
+	notedBy: "Jenna Collins, NP",
+	onsets: ["2011", "2023", "2009", "2024"],
+	medical: [
+		"Type 2 diabetes · A1c 10.8% in September; on insulin since 2019",
+		"CKD stage 4 · eGFR 22, baseline creatinine 2.4; metformin stopped when eGFR fell under 30",
+		"Hypertension",
+		"Anemia of CKD",
+		"Urinary tract infection · 2025, treated as an outpatient",
+	],
+	surgical: ["Cesarean section · 2002"],
+	social: [
+		"Never smoker",
+		"No alcohol",
+		"Lives with her daughter Elena, 24",
+		"Prefers Spanish; a medical interpreter for consent and care decisions",
+		"Medicaid expansion enrollee",
+	],
+	home: [
+		["Insulin glargine", "20 units SC at bedtime"],
+		["Insulin lispro", "Sliding scale SC with meals"],
+		["Amlodipine", "10 mg by mouth daily", "held"],
+		["Atorvastatin", "40 mg by mouth daily"],
+		["Sodium bicarbonate", "650 mg by mouth twice a day"],
+		["Calcitriol", "0.25 mcg by mouth daily"],
+	],
+	extras: [
+		["Sodium", "134", { minutes: 22 }],
+		["BUN", "52", { minutes: 22 }],
+		["Neutrophils", "88", { minutes: 22 }],
+		["Platelets", "162", { minutes: 22 }],
+		["Urine nitrite", "Positive", { minutes: 22 }],
+		["Urine leukocyte esterase", "3+", { minutes: 22 }],
+		["Urine WBC", "Over 50", { minutes: 22 }],
+		["Urine bacteria", "Many", { minutes: 22 }],
+		["Hemoglobin A1c", "10.8", { minutes: 60 * 24 * 50 }],
+	],
+	cultures: [culture("Urine culture", 45 / 60, "pending", "Reflexed from the urinalysis. First read at 24 hours.")],
+	imaging: [],
+};
+
+/** Rosa Medina's chart, from her record at Scenario 3's first beat. */
+const sampleScenario3Chart = (record: PatientRecord) => buildChart(record, medinaChart);
+
+// Tyler Kessler (Scenario 4, `p24`): type 1 diabetes since age 11, uninsured since Medicaid ended at redetermination in
+// August. Built when the scenario's first beat plays, from his record then: the first draw (venous gas, BMP, CBC,
+// lipase, beta-hydroxybutyrate) resulted as the alert fired. No cultures or imaging: no sign of infection. Plausible where
+// the scenario is silent: his history's dates, alcohol and smoking, and lipase 34.
+const kesslerChart: ChartSpec = {
+	sex: "M",
+	hospital: "Bridgeport Valley",
+	notedBy: "Derek Lawson, PA-C",
+	onsets: ["2013", 0.5],
+	medical: ["Type 1 diabetes · since age 11; A1c 9.6% in April", "Diabetic ketoacidosis · last admitted 6 years ago"],
+	surgical: [],
+	social: [
+		"Never smoker",
+		"A few beers on weekends",
+		"Works at a grain elevator",
+		"Uninsured since August: Medicaid ended at redetermination",
+		"Says he's been making his insulin last since losing coverage (ED note)",
+	],
+	home: [
+		["Insulin glargine", "22 units SC at bedtime; out for 2 days", "held"],
+		["Insulin lispro", "4–8 units SC with meals; stretched", "held"],
+	],
+	extras: [
+		["Chloride", "97", { minutes: 1 }],
+		["BUN", "32", { minutes: 1 }],
+		["WBC", "14.2", { minutes: 1 }],
+		["Lipase", "34", { minutes: 1 }],
+		["Hemoglobin A1c", "9.6", { minutes: 210 * 24 * 60 }],
+	],
+	cultures: [],
+	imaging: [],
+};
+
+/** Tyler Kessler's chart, from his record at Scenario 4's first beat. */
+const sampleScenario4Chart = (record: PatientRecord) => buildChart(record, kesslerChart);
+
+export { sampleChartByPatient, sampleScenario2Chart, sampleScenario3Chart, sampleScenario4Chart };

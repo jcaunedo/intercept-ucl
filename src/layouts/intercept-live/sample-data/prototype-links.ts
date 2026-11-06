@@ -13,6 +13,10 @@ import type { ScenarioId } from "./use-sample-live-feed";
  * Heart failure ("Heart failure at 2 a.m. in a 25-bed hospital"): Margaret Hayes, holding until then, has her early
  * warning (NEWS2 5 → 10) and her Critical alert ranks #1. Scenario 2: COPD ("COPD respiratory failure during a
  * blizzard"): Alliance's ED requests a consult for Dale Reynolds, who joins the Census with his Critical alert.
+ * Scenario 3: Sepsis ("Sepsis in a patient with diabetes and kidney disease"): Rosa Medina joins Sidney's ED with a
+ * Critical alert for probable septic shock, and her hour-1 bundle starts. Scenario 4: DKA ("DKA caused by insulin
+ * rationing, managed by one night nurse"): Tyler Kessler joins Bridgeport with a Critical alert for severe DKA, and
+ * accepting his DKA pathway starts the hourly protocol.
  * Alert expanded opens Sarah Miller's Critical alert (Sepsis candidate) in the alert modal over Monitoring, and Alert
  * with video consult the same with its video consult calling, as its Video consult button does (Nov 5, 2026, user's
  * call); the address's `alert` and `consult` do the same. (Sections by hospital, the grid's hospital sections in place of
@@ -21,9 +25,13 @@ import type { ScenarioId } from "./use-sample-live-feed";
 const prototypeShortcuts = ({ startScenario }: { startScenario: (scenario: ScenarioId) => void }): PrototypeShortcut[] => [
 	{ group: "Scenarios", label: "Scenario 1: Heart failure", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-1") },
 	{ group: "Scenarios", label: "Scenario 2: COPD", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-2") },
+	{ group: "Scenarios", label: "Scenario 3: Sepsis", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-3") },
+	{ group: "Scenarios", label: "Scenario 4: DKA", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-4") },
 	// Served by Storybook from `storyboards/` (`.storybook/main.ts`), relative to the story frame.
 	{ group: "Storyboard", label: "Scenario 1", href: "storyboards/scenario-1/index.html" },
 	{ group: "Storyboard", label: "Scenario 2", href: "storyboards/scenario-2/index.html" },
+	{ group: "Storyboard", label: "Scenario 3", href: "storyboards/scenario-3/index.html" },
+	{ group: "Storyboard", label: "Scenario 4", href: "storyboards/scenario-4/index.html" },
 	{ group: "Views", label: "Alert expanded", page: "Monitoring", alert: { patientId: alertViewPatient } },
 	{
 		group: "Views",

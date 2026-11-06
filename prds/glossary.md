@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 4, 2026
+Last updated: Nov 6, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -253,7 +253,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Overall condition** | A clinical judgment of how the patient is doing, e.g. Stable, Unstable, Guarded. Not shown on the Patient card; at most a clinician-set, attributed status. ⚠️ **Decision needed:** OD-17, to discuss with the client. | PRD PC-031 |
 | **Overdue (alert)** | An active alert past its response target, shown as "Active · 32 min · Overdue". A display modifier of Active, not a lifecycle state. ⚠️ **Gap:** response targets aren't defined. | PRD §15.1 S3 |
 | **Partial data** | Some observations are available and others are missing. Available values stay visible and missing ones are clearly marked. | PRD PC-127 |
-| **Patient location** | Where the patient is, read from broad to specific: hospital (PC-013), unit, room and bed (PC-014), e.g. CVMC · MICU · Bed 9. Room and bed show only when the hospital supplies them. | PRD PC-013, PC-014 |
+| **Patient location** | Where the patient is, read from broad to specific: hospital (PC-013), unit, room and bed (PC-014), e.g. Sidney · MICU · Bed 9. Room and bed show only when the hospital supplies them. | PRD PC-013, PC-014 |
 | **Progressive disclosure** | Showing detail (provenance, extra alerts, measurement source) on demand instead of growing the card. | PRD PC-112 |
 | **Provenance** | Where a data item came from: originating tenant, source system or device, observation and ingestion timestamps, quality metadata and supporting evidence. | PRD PC-092 |
 | **Quick view** | The button on a Patient card's alert line, shown with two or more active alerts. Opens a popover listing them without leaving the census. | PRD PC-101 |
@@ -275,6 +275,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **ABCDEF Bundle** | ICU care bundle: Assessment of pain, Both spontaneous awakening and breathing trials, Choice of analgesia and sedation, Delirium monitoring, Early mobility, Family engagement. | Spec Appendix A |
 | **Admission / encounter** | A patient's hospital stay, with admission time, encounter identifier and status. | PRD PC-015 |
 | **ADT (Admission, Discharge, Transfer)** | The HL7v2 message family hospitals use for patient movement. Keeps the census aligned with the hospital. Real-time in Integrated mode, manually reconciled in Overlay. | Spec §7.12 |
+| **Anion gap** | The difference between measured cations and anions (Na − Cl − HCO₃), in mEq/L. Raised in DKA by ketoacids; the gap **closing** (12 or under, with bicarbonate 15 or more) is when DKA has resolved and the insulin drip can move to subcutaneous insulin. Scenario 4. | Demo Use Cases, Scenario 4 |
 | **APACHE II / IV (Acute Physiology and Chronic Health Evaluation)** | ICU severity score calculated once, in the first 24 hours of an ICU stay, to predict mortality and benchmark units. APACHE II runs 0–71; higher is sicker. Philips eICU uses APACHE IV. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **ARDS (Acute Respiratory Distress Syndrome)** | Acute hypoxemic respiratory failure with bilateral infiltrates not explained by cardiac failure or fluid overload, defined by the **Berlin criteria**. Roadmap protocol (Virtual ARDS). | Spec Appendix A |
 | **BP / MAP** | Blood pressure (systolic/diastolic, mmHg) / mean arterial pressure (mmHg). | PRD §7.1 |
@@ -286,12 +287,16 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Code status (DNR / DNI)** | The patient's documented resuscitation wishes. DNR: Do Not Resuscitate (no CPR). DNI: Do Not Intubate. Shown as a badge on the Patient card. ⚠️ **Gap:** not in the data model yet (OD-16). | General, PRD §15.1 P3 |
 | **Critical care** | The specialty that manages life-threatening conditions needing organ support and invasive monitoring. Intercept's v1 clinical anchor. | Spec Appendix A |
 | **CVICU** | Cardiovascular Intensive Care Unit. The ICU for patients with heart and major-vessel conditions, often after cardiac surgery. A unit code shown in the Patient card location. | General, PRD PC-014 |
+| **DKA (Diabetic ketoacidosis)** | A life-threatening complication of diabetes, mostly type 1: without enough insulin the body makes ketoacids. High glucose, low pH and bicarbonate, a raised anion gap. Treated with fluids, an insulin infusion and potassium, checked every hour. Scenario 4 (caused by cost-related insulin rationing). | Demo Use Cases, Scenario 4 |
 | **ECMO** | Extracorporeal Membrane Oxygenation. A machine that oxygenates the blood outside the body when the heart or lungs can't. | General, PRD §15.1 P1 |
 | **ED / ICU** | Emergency Department / Intensive Care Unit. | General |
 | **Epic Deterioration Index** | Epic's proprietary deterioration score, 0–100 (higher is sicker), recalculated about every 15 minutes. Only at Epic hospitals. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **FiO₂** | Fraction of inspired oxygen, a ventilator setting. | General, PRD PC-051 |
+| **Fluid-tolerance check** | *Proposed* A reassessment before each further fluid bolus in a patient at risk of overload (CKD, heart failure): lung sounds, SpO₂, RR, neck veins and edema. Stop and call the hub for new crackles, falling SpO₂ or rising RR. Shown on the bundle's fluids element, e.g. Rosa Medina's 30 mL/kg in 500 mL boluses. | Demo Use Cases Scenario 3, step 4 |
 | **Gender identity** | How the patient identifies. Used for respectful care (how staff address the patient), usually with pronouns and a name to use. A different data item from sex; not used for clinical calculations. | General, PRD PC-012 |
 | **Handoff** | The structured transfer of patient-care responsibility at shift change. Unresolved alerts and Clinician Intuition Alerts carry over to the incoming clinician. | Spec Appendix A, PRD PC-132 |
+| **Hard stop** | *Proposed* A protocol rule that blocks a step instead of warning about it, e.g. the DKA protocol holding insulin while potassium is under 3.3, until it is replaced. Shown red with a stop sign, apart from ordinary prompts. | Demo Use Cases, Scenario 4 |
+| **Hour-1 bundle** | The Surviving Sepsis Campaign's first-hour elements, counted from **time zero**: lactate (repeated if over 2 mmol/L), blood cultures before antibiotics, broad-spectrum antibiotics, 30 mL/kg crystalloid for hypotension or lactate ≥ 4, and vasopressors for MAP under 65 after fluids. The alert's bundle tracker shows its timer on the hub's and the hospital's screens; SEP-1's 3- and 6-hour deadlines stay on the patient's Sepsis section (which the demo leads with is open, Q-15). | Demo Use Cases Scenario 3; Requirements §7.1, Q-15 |
 | **HR / RR / SpO₂** | Heart rate (bpm) / respiratory rate (breaths/min) / peripheral oxygen saturation (%). | PRD §7.1 |
 | **I-PASS** | A structured handoff format: Illness severity, Patient summary, Action list, Situation awareness and contingency, Synthesis by receiver. *Proposed* for the Patient details handoff draft. ⚠️ **Decision needed:** handoff format (PD-OD-10). | General, PRD PD-110 |
 | **Inpatient status / Observation status** | Admitted care expected to span two or more midnights / hospital-bed care billed as outpatient, typically under two midnights. See Two-Midnight Rule. | Spec Appendix A |
@@ -320,6 +325,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Prone positioning** | Placing a severe-ARDS patient face-down to improve oxygenation. | Spec Appendix A |
 | **qSOFA (quick SOFA)** | A bedside sepsis screen of three signs, one point each: respiratory rate 22/min or more, altered mental state, systolic BP 100 mmHg or less. A screen, not a severity score: it belongs with sepsis, not on the card (OD-18). | General, PRD PC-030 |
 | **RASS** | Richmond Agitation-Sedation Scale. A bedside sedation-depth score. | Spec Appendix A |
+| **Renal dose review** | *Proposed* A check on a renally cleared drug's dose when kidney function is low (e.g. eGFR 22): the first dose in full, the following ones adjusted for creatinine clearance. The intensivist confirms it on the bundle's antibiotic element. | Demo Use Cases Scenario 3, step 4 |
 | **RN / RT** | Registered Nurse / Respiratory Therapist. | General |
 | **Rothman Index** | Proprietary score of overall condition, up to 100, calculated continuously from EMR data. Runs in reverse: lower is sicker. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **SAT / SBT** | Spontaneous Awakening Trial / Spontaneous Breathing Trial. Daily ventilator-liberation steps in the ABCDEF bundle. | Spec Appendix A |
@@ -330,7 +336,9 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **SICU** | Surgical Intensive Care Unit. The ICU for critically ill patients before or after surgery, or after trauma. A unit code shown in the Patient card location. | General, PRD PC-014 |
 | **SIRS** | Systemic Inflammatory Response Syndrome. Criteria based on temperature, heart rate, respiratory rate and white blood cell count, used in sepsis screening. | Spec Appendix A |
 | **SOFA (Sequential Organ Failure Assessment)** | ICU score of organ dysfunction, 0–24 (higher is sicker): six organ systems (lungs, blood clotting, liver, heart and circulation, brain, kidneys) scored 0–4 each. A rise of 2 or more is part of the sepsis definition. The leading candidate acuity score (OD-02). | General, PRD PC-030 |
+| **Subcutaneous overlap** | *Proposed* The move from an insulin drip to injected (subcutaneous) insulin once DKA resolves: basal insulin is given and the drip keeps running 1 to 2 h so there is no gap in insulin. The DKA protocol walks it step by step. | Demo Use Cases, Scenario 4 |
 | **Tele-critical care** | Delivering critical care remotely: an intensivist or APP manages ICU patients through camera, monitor and EMR access. The model the platform is built around. | Spec Appendix A |
+| **Tele-RN** | A nurse at the hub who monitors spoke patients remotely and supports their bedside nurses. In Scenario 4, an overdue DKA check nudges both the bedside RN and the tele-RN. | Demo Use Cases, site table and Scenario 4 |
 | **Telemetry** | Continuous device data from bedside monitors, ventilators, infusion pumps and wearables. | Spec §6.6 |
 | **Trauma ICU** | Intensive care unit for patients with severe injuries. A unit code in the Census unit menu. | General |
 | **Two-Midnight Rule** | Medicare guidance that inpatient admission is generally appropriate when care is expected to span two midnights. | Spec Appendix A |
@@ -403,8 +411,9 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 
 | Term | Definition | Source |
 | --- | --- | --- |
-| **Activity (activity log)** | *Proposed* on Patient details, everything done and decided about the patient with who and when: alerts and their actions, video consults, consult notes, pathways sent and co-signed, keep or transfer, checkpoints, Transfer avoided. The latest on the Overview, all of it on the Timeline. A synthetic audit trail, a design element, not a compliance system (CC-09). | PRD Patient details, Care plan and activity |
+| **Activity (activity log)** | *Proposed* on Patient details, everything done and decided about the patient with who and when: alerts and their actions, video consults, consult notes, pathways sent and co-signed, keep or transfer, checkpoints, Transfer avoided. The last 24 h in the Overview's log, all of it on the Timeline. A synthetic audit trail, a design element, not a compliance system (CC-09). | PRD Patient details, Care plan and activity |
 | **Ask Intercept Live** | *Proposed* name of the Provider Desktop's chat panel, where a clinician asks the Conversational Clinical Data Agent about their patients. Opened from the Sidebar or the patient-context app header. | PRD Chat composer §1, PRD PD-100 |
+| **Bedside tasks** | *Proposed* The bedside nurses' tasks an accepted order set generates (e.g. a peripheral norepinephrine's IV site check every hour), shared between the hub and the bedside: the nurses check them off, the hub sees the status. Open, done or cancelled; overdue 10 min past due. | Demo Use Cases Scenario 3, step 5; Requirements CC-06; DU-25 |
 | **Chat composer** | The message box at the bottom of Ask Intercept Live: a field, attachments, slash commands, dictation, and voice, Send or Stop. UCL `ChatComposer`. | PRD CC-010 |
 | **Data-completeness signal** | The Provider Desktop tells the clinician explicitly how deep the data is (Integrated versus Overlay). | Spec §8.7 |
 | **Data-depth notice** | *Proposed* plain-language note in a Patient details section saying what this hospital's data doesn't include ("Orders from this hospital are read-only"). Names what's available, never the integration mechanism. | Spec §9.1 Principle 1, PRD PD-121 |
@@ -415,6 +424,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Focus view** | *Proposed* side sheet on the Monitoring page with one patient's trends, respiratory and infusion context, alerts, bedside camera and actions, opened over the live panel. ⚠️ **Decision needed:** side sheet or full page (MON-OD-06). | PRD Monitoring MON-030 |
 | **Graceful degradation** | The UI stays useful and honest when data is missing, delayed or stale, without passing off old values as live. | Brief, PRD §12 |
 | **I-PASS** | Handoff format: Illness severity, Patient summary, Action list, Situation awareness, Synthesis by receiver. Used by /handoff drafts. ⚠️ **Decision needed:** the handoff format (PD-OD-10). | General, PRD PD-110, PRD CC-022 |
+| **Interpreter prompt** | *Proposed* The video consult's offer to add a qualified medical interpreter when the patient's preferred language isn't English, as soon as the call is on. Not family members. | Demo Use Cases Scenario 3, step 2 |
 | **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
 | **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (MON-OD-01). | Spec §5.2, PRD Monitoring MON-010 |
 | **Order recommendation** | An order change an AI agent suggests (Order-Entry Suggestion or Vent-Order Mismatch Agent) with its evidence and protocol. The clinician accepts, modifies or declines; it never becomes an order on its own. | Spec §5.5, §8.5, PRD PD-061 |
@@ -437,6 +447,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Three-cell-phone problem** | Clinicians carry up to three phones because desktop notifications (especially Epic Haiku) are unreliable. The reason the mobile companion exists. | Spec §6.10, §9.3 |
 | **Triage queue** | The Monitoring page's rail of active alerts for the panel, highest priority first, with Open, Acknowledge, Escalate and Resolve. The Alert Queue page is the full alert surface. ⚠️ **Decision needed:** whether both exist in v1 (MON-OD-03). | Spec §5.2, PRD Monitoring MON-020 |
 | **Consult request** | *Proposed* a hospital calling the hub for a video consult about a patient, e.g. Alliance's ED physician about Dale Reynolds. It rings until the intensivist answers or declines, with who's calling, the patient, the **Reason for consult** in the caller's words and the **Latest values** the platform has. | Demo Use Cases Scenario 2, step 1; PRD Bedside camera CAM-017 |
+| **Up next** | *Proposed* on the Patient details Overview: what's due for the patient in the next 12 h, soonest first (scheduled medications, checkpoints, order recommendations), each with how soon. | PRD Patient details, Care plan and activity |
 | **Video consult** | *Proposed* a camera session with the bedside nurse called in: the clinician reaches her through the hospital's messaging, and they talk through the room's camera, with the patient in view. Not a video conference: the bedside nurse has no Intercept screen (roadmap). Distinct from the specialist consult (SC-*). | Scenario 1 step 3, PRD Bedside camera CAM-007, PRD Alert maximized modal AMM-013 |
 | **What changed** | *Proposed* Patient details list of everything that changed since this clinician last viewed the patient. ⚠️ **Decision needed:** how "last viewed" is recorded (PD-OD-06). | PRD PD-023 |
 

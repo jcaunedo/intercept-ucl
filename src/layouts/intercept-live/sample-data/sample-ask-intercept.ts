@@ -98,7 +98,7 @@ const firstName = ({ census }: Patient) => `**${census.firstName ?? census.lastN
 const where = ({ census }: Patient) => [census.unit, census.bed].filter(Boolean).join(" ");
 /** "**Miller, Sarah** (MICU Bed 11)". */
 const who = (patient: Patient) => `${patientName(patient)} (${where(patient)})`;
-// The record system a patient's chart comes from, for an answer's Sources (Epic, or Meditech at Chadron).
+// The record system a patient's chart comes from, for an answer's Sources (Meditech, Cerner or TruBridge).
 const ehrOf = (record: PatientRecord | undefined) => record?.emr?.name ?? record?.chart?.source ?? "Hospital record";
 
 const severityWords = { critical: "Critical", high: "High", medium: "Medium", low: "Low" } as const;
@@ -523,42 +523,61 @@ function consultFor(patient: Patient): string | undefined {
 
 /**
  * What to do after an answer about one patient (Nov 3, 2026, user's call: the quick overview, then every answer after
- * it), four at most: open the patient's details, always first;
- * then by their worst open alert's status and severity (open it; with an active Critical or High one, what changed;
- * escalated, who's caring for them), what they're on (ventilator, sepsis tags), and how their score moves (rising:
- * what changed; without an alert: their last 24 hours), then their labs. The questions are ones the chat answers; the
- * one just `asked` isn't offered again, so the next one takes its place. Opening the details and the alert always stay.
+ * it): open the patient's details, always first, and their worst open alert; then up to four questions a physician at
+ * this patient's bedside would ask next (Nov 6, 2026, user's call: "aligned with this use case, a doctor checking a
+ * patient"), most pressing first: what changed (an active Critical or High alert, or a rising score), who's caring
+ * for them (escalated), the sepsis bundle (under screening), drips and doses (pressors), the ventilator and last blood
+ * gas, results still pending, what's due in the next 2 hours, the latest imaging; then the last 24 hours (no alert),
+ * labs and meds to fill in. Each is one the chat answers from the record, offered only when the record has something
+ * for it; the one just `asked` isn't offered again, so the next one takes its place.
  */
 function overviewActions(patient: Patient, asked = ""): AskInterceptAction[] {
-	const { census } = patient;
+	const { census, record } = patient;
 	const name = census.firstName ?? census.lastName;
 	const alert = patient.alerts[0];
 	const status = alert?.status ?? "active";
 	const tags = (census.tags ?? []).map((tag) => tag.label);
 	const ask = (question: string, label = question): AskInterceptAction => ({ type: "ask", label, question });
-	const changes = ask(`What changed for ${name} since I last looked?`, "What changed since I last looked?");
-	const actions: AskInterceptAction[] = [{ type: "open-patient", label: "Open patient details", patientId: census.id }];
-	if (alert) {
-		actions.push({
+	const opens: AskInterceptAction[] = [{ type: "open-patient", label: "Open patient details", patientId: census.id }];
+	if (alert)
+		opens.push({
 			type: "open-alert",
 			label: `Open the ${severityWords[alert.severity]} alert${status === "active" ? "" : `, ${status}`}`,
 			patientId: census.id,
 			alertId: alert.id,
 		});
-		if (status === "escalated") actions.push(ask(`Who's caring for ${name}?`, "Who's caring for them?"));
-		else if (status === "active" && (alert.severity === "critical" || alert.severity === "high")) actions.push(changes);
-	}
-	if (tags.includes("Ventilated") || tags.includes("NIV")) actions.push(ask(`Show ${name}'s ventilator settings`, "Show ventilator settings"));
-	if (tags.some(isPressorFlag)) actions.push(ask(`What drips is ${name} on?`, "Show drips and doses"));
-	if (!alert && census.trajectory?.trend === "up") actions.push(changes);
-	if (!alert) actions.push(ask(`Summarize ${name}'s last 24 hours`, "Summarize the last 24 hours"));
-	actions.push(ask(`Show ${name}'s latest labs`, "Show latest labs"));
-	actions.push(ask(`What meds is ${name} on?`, "What meds are they on?"));
+	const pending =
+		(record?.chart?.panels.some((panel) => panel.results.some((result) => result.status === "pending")) ?? false) ||
+		(record?.chart?.cultures ?? []).some((culture) => culture.status !== "final");
+	const dueSoon = (record?.medications?.scheduled ?? []).some(
+		(item) => item.nextDueAt && Date.parse(item.nextDueAt) - Date.now() < 2 * 60 * MINUTE,
+	);
+	const alerting = alert && status === "active" && (alert.severity === "critical" || alert.severity === "high");
+	const questions = [
+		alerting || census.trajectory?.trend === "up"
+			? ask(`What changed for ${name} since I last looked?`, "What changed since I last looked?")
+			: undefined,
+		alert && status === "escalated" ? ask(`Who's caring for ${name}?`, "Who's caring for them?") : undefined,
+		record?.sepsis ? ask(`Where is ${name}'s sepsis bundle?`, "Where is the sepsis bundle?") : undefined,
+		tags.some(isPressorFlag) ? ask(`What drips is ${name} on?`, "Show drips and doses") : undefined,
+		record?.ventilator || tags.includes("Ventilated") || tags.includes("NIV")
+			? ask(`Show ${name}'s ventilator settings and last blood gas`, "Ventilator and last blood gas")
+			: undefined,
+		pending ? ask(`What results are pending for ${name}?`, "What results are pending?") : undefined,
+		dueSoon ? ask(`What's due for ${name} in the next 2 hours?`, "What's due in the next 2 hours?") : undefined,
+		record?.chart?.imaging?.length ? ask(`Show ${name}'s latest imaging`, "Latest imaging") : undefined,
+		!alert ? ask(`Summarize ${name}'s last 24 hours`, "Summarize the last 24 hours") : undefined,
+		ask(`Show ${name}'s latest labs`, "Show latest labs"),
+		ask(`What meds is ${name} on?`, "What meds are they on?"),
+	].filter((action): action is AskInterceptAction => Boolean(action));
 	const same = (question: string) => question.trim().toLowerCase() === asked.trim().toLowerCase();
-	return actions
-		.filter((action, index) => actions.findIndex((other) => other.label === action.label) === index)
-		.filter((action) => action.type !== "ask" || !same(action.question))
-		.slice(0, 4);
+	return [
+		...opens,
+		...questions
+			.filter((action) => action.type !== "ask" || !same(action.question))
+			.filter((action, index, all) => all.findIndex((other) => other.label === action.label) === index)
+			.slice(0, 4),
+	];
 }
 
 /**
@@ -698,8 +717,15 @@ function answerForPatientTopic(patient: Patient, topic: Topic, question: string)
 	switch (topic) {
 		case "overview":
 			return overviewOf(patient);
-		case "summary":
-			return summaryOf(patient);
+		case "summary": {
+			// Asked from the Overview's brief ("Summarize what's behind the brief"): the summary, then what changed since the
+			// clinician last looked, so the brief's sentence opens up into everything behind it.
+			const summary = summaryOf(patient);
+			const lastViewedAt = record?.brief?.lastViewedAt;
+			if (!/\bbrief\b/i.test(question) || !lastViewedAt) return summary;
+			const changes = changesFor(patient, Date.parse(lastViewedAt), `since you last looked, ${ago(lastViewedAt)}`);
+			return { text: `${summary.text}\n${changes.text}`, sources: unique([...(summary.sources ?? []), ...(changes.sources ?? [])]) };
+		}
 		case "changes": {
 			const since = /since (i|you) (last )?(look|view|review|check)/i.test(question) && record?.brief?.lastViewedAt ? Date.parse(record.brief.lastViewedAt) : Date.now() - 60 * MINUTE;
 			return changesFor(patient, since, since === Date.now() - 60 * MINUTE ? "in the last hour" : `since you last looked, ${ago(record!.brief!.lastViewedAt!)}`);

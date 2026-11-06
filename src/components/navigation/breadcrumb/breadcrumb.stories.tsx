@@ -44,7 +44,7 @@ function Trail({ size, collapsed = false }: { size: "xs" | "sm"; collapsed?: boo
 				) : (
 					<>
 						<BreadcrumbItem>
-							<BreadcrumbLink href='#'>CVMC</BreadcrumbLink>
+							<BreadcrumbLink href='#'>Sidney</BreadcrumbLink>
 						</BreadcrumbItem>
 						<BreadcrumbSeparator />
 						<BreadcrumbItem>

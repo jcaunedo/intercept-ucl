@@ -836,6 +836,7 @@ function TimelineSection({ timeline, lastViewedAt }: TimelineSectionProps) {
 
 export {
 	TimelineSection,
+	eventKinds as timelineEventKinds,
 	type PatientTimeline,
 	type TimelineEvent,
 	type TimelineEventKind,

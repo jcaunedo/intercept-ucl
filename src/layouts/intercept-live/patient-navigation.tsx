@@ -35,9 +35,10 @@ type PatientNavigation = {
 	/**
 	 * Opens Ask Intercept Live about the patient, from any page (e.g. Ask in an alert toast), and asks for a quick
 	 * overview. The chat stays about them until the chip is removed, the chat closes or another patient's details open.
-	 * `tags` are the patient's tags ("Ventilated"…), for the chat's questions about them.
+	 * `tags` are the patient's tags ("Ventilated"…), for the chat's questions about them. `question` asks something else
+	 * first, e.g. the Overview's brief asks what's behind it.
 	 */
-	askAboutPatient: (patientId: string, patientName: string, tags?: string[]) => void;
+	askAboutPatient: (patientId: string, patientName: string, tags?: string[], question?: string) => void;
 	/**
 	 * Opens Monitoring on a hospital tab (`"all"` for All hospitals) with the Active alerts chip on, from a hospital tab's
 	 * alert count on any page (Nov 5, 2026, user's call). `scope` carries the source page's My patients, so Monitoring

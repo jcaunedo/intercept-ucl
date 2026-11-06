@@ -11,6 +11,7 @@ import {
 	enterTransition,
 	iconSwapReducedVariants,
 	iconSwapVariants,
+	unreadFlashVariants,
 	urgencyRingVariants,
 	useMotionPreference,
 	useUrgencyPhase,
@@ -40,8 +41,11 @@ function PanelLeftAltIcon(props: React.SVGProps<SVGSVGElement>) {
 	);
 }
 
-/** An item's alert, by severity (PatientCardAlert's names). `resolved` shows nothing, like no alert. */
-type SidebarAlert = "critical" | "high" | "medium" | "low" | "resolved";
+/**
+ * An item's alert, by severity (PatientCardAlert's names), or `unread` for something unread, e.g. messages. `resolved`
+ * shows nothing, like no alert.
+ */
+type SidebarAlert = "critical" | "high" | "medium" | "low" | "unread" | "resolved";
 
 type ActiveSidebarAlert = Exclude<SidebarAlert, "resolved">;
 
@@ -50,6 +54,8 @@ const sidebarAlertDot: Record<ActiveSidebarAlert, { className: string; label: st
 	high: { className: "bg-severity-high", label: "High alert" },
 	medium: { className: "bg-severity-medium", label: "Medium alert" },
 	low: { className: "bg-severity-low", label: "Low alert" },
+	// The brand color, as the unread Counters elsewhere (AppHeader's patient Messages), so it reads as news, not an alert.
+	unread: { className: "bg-primary", label: "Unread" },
 };
 
 type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
@@ -71,7 +77,7 @@ type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 	menu?: React.ReactNode;
 	/**
 	 * An active alert's severity: a dot on the icon's top-right corner in that severity's color, in both rail modes.
-	 * `resolved` or none shows no dot.
+	 * `unread` is a brand-colored dot that flashes on the Unread pattern. `resolved` or none shows no dot.
 	 */
 	alert?: SidebarAlert;
 };
@@ -79,15 +85,16 @@ type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 /**
  * The alert dot on a row's icon. Always mounted, so it fades and scales in and out (`iconSwapVariants`) instead of
  * popping, and keeps its last color while it fades out after the alert resolves. A new severity fades the color. While
- * shown it flashes (MOTION.md Urgency), on the clock the alert cards' rings share, so they flash together; steady under
- * reduced motion.
+ * shown it flashes (MOTION.md Urgency), on the clock the alert cards' rings share, so they flash together; an `unread` dot
+ * flashes on the calmer Unread pattern instead (every 2 s). Steady under reduced motion.
  */
 function SidebarAlertDot({ alert }: { alert?: SidebarAlert }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const active = alert && alert !== "resolved" ? alert : undefined;
 	const [shown, setShown] = React.useState(active);
 	if (active && active !== shown) setShown(active);
-	const phase = useUrgencyPhase(Boolean(active) && !prefersReducedMotion);
+	const unread = shown === "unread";
+	const phase = useUrgencyPhase(Boolean(active) && !unread && !prefersReducedMotion);
 
 	return (
 		<motion.span
@@ -100,9 +107,9 @@ function SidebarAlertDot({ alert }: { alert?: SidebarAlert }) {
 			className='pointer-events-none absolute -top-1.25 -right-1 flex size-1.5'
 		>
 			<motion.span
-				variants={urgencyRingVariants}
+				variants={unread ? unreadFlashVariants : urgencyRingVariants}
 				initial={false}
-				animate={phase}
+				animate={unread ? (active && !prefersReducedMotion ? "flash" : "rest") : phase}
 				className={cn(
 					"size-full rounded-full transition-colors duration-160 ease-in-out",
 					shown && sidebarAlertDot[shown].className,
@@ -231,7 +238,10 @@ type SidebarNavItem = {
 	 * `navigateTo`, and the item never becomes active.
 	 */
 	menu?: React.ReactNode;
-	/** An active alert's severity: a dot on the item's icon. `resolved` or none shows no dot. */
+	/**
+	 * An active alert's severity, or `unread`: a dot on the item's icon (`unread` in the brand color, flashing every 2 s).
+	 * `resolved` or none shows no dot.
+	 */
 	alert?: SidebarAlert;
 };
 

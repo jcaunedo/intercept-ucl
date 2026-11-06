@@ -99,7 +99,7 @@ const sarahSepsis: SepsisCase = {
 		},
 	],
 	hospitalProtocol: {
-		name: "Harbor Point General sepsis protocol",
+		name: "Sidney sepsis protocol",
 		elements: [
 			{
 				id: "huddle",
@@ -222,7 +222,7 @@ const harrisSepsis: SepsisCase = {
 		},
 	],
 	hospitalProtocol: {
-		name: "Harbor Point General sepsis protocol",
+		name: "Sidney sepsis protocol",
 		elements: [
 			{
 				id: "huddle",
@@ -344,7 +344,7 @@ const mooreSepsis: SepsisCase = {
 		},
 	],
 	hospitalProtocol: {
-		name: "Harbor Point General sepsis protocol",
+		name: "Sidney sepsis protocol",
 		elements: [
 			{
 				id: "huddle",

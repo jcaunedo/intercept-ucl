@@ -29,6 +29,7 @@ function formatElapsed(from: string, now: number) {
 
 /** A titled block of a section: its heading, where its data comes from (`meta`), an optional action, and its content. */
 function SectionCard({
+	id,
 	title,
 	meta,
 	action,
@@ -36,6 +37,8 @@ function SectionCard({
 	className,
 	children,
 }: {
+	/** Lets the page bring the card into view and focus it, e.g. from the header's "View alerts". */
+	id?: string;
 	title: string;
 	meta?: React.ReactNode;
 	/** A control at the right of the heading row, e.g. a window switch or "New note". */
@@ -48,8 +51,14 @@ function SectionCard({
 	const Heading = headingLevel;
 	return (
 		<section
+			id={id}
 			aria-labelledby={headingId}
-			className={cn("flex min-w-0 flex-col gap-3 rounded-card border border-border bg-card p-4", className)}
+			tabIndex={id ? -1 : undefined}
+			className={cn(
+				"flex min-w-0 flex-col gap-3 rounded-card border border-border bg-card p-4",
+				id && "scroll-mt-20 outline-none",
+				className,
+			)}
 		>
 			<div className='flex flex-wrap items-center justify-between gap-x-3 gap-y-1'>
 				<Heading id={headingId} className='text-base font-semibold text-foreground'>

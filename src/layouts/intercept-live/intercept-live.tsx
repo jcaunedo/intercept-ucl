@@ -260,6 +260,7 @@ type InterceptLiveProps = {
 	shiftEndsAt?: string;
 	/** The clinicians on shift with the user. */
 	team: AppHeaderPerson[];
+	/** Unread messages. From 1, the Sidebar's Messages item shows a flashing brand dot (`navAlerts.Messages` wins). */
 	unreadMessages: number;
 	/**
 	 * The content of each page the layout builds. The Sidebar's other pages show their title and an empty state. A page
@@ -444,18 +445,24 @@ function InterceptLive({
 	);
 	// Kept here, so the chat reopens at the width it was left at.
 	const [chatWidth, setChatWidth] = React.useState<number>(sidePanelWidth.default);
+	// Unread messages flash a brand dot on Messages (Nov 6, 2026, user's call: it replaced the header's Messages button),
+	// unless the page sets Messages' dot itself.
+	const shownNavAlerts = React.useMemo<Partial<Record<InterceptLivePage, SidebarAlert>>>(
+		() => ({ ...(unreadMessages > 0 ? { Messages: "unread" as const } : {}), ...navAlerts }),
+		[navAlerts, unreadMessages],
+	);
 	const groups = React.useMemo(
 		() =>
 			navGroups.map((group) =>
 				group.map((item) =>
 					item.label === askInterceptLabel
 						? { ...item, onClick: () => toggleLeftPanel("chat") }
-						: item.navigateTo && navAlerts?.[item.navigateTo as InterceptLivePage]
-							? { ...item, alert: navAlerts[item.navigateTo as InterceptLivePage] }
+						: item.navigateTo && shownNavAlerts[item.navigateTo as InterceptLivePage]
+							? { ...item, alert: shownNavAlerts[item.navigateTo as InterceptLivePage] }
 							: item,
 				),
 			),
-		[toggleLeftPanel, navAlerts],
+		[toggleLeftPanel, shownNavAlerts],
 	);
 	// The Prototype menu: its shortcuts by group, a divider between groups, then "Reset prototype" after a divider (as in
 	// bethere-ucl).
@@ -612,9 +619,9 @@ function InterceptLive({
 					}));
 				else if (renderPatientDetails) setOpenPatient({ id: patientId });
 			},
-			askAboutPatient: (patientId, patientName, tags) => {
+			askAboutPatient: (patientId, patientName, tags, question = patientOverviewQuestion) => {
 				setChatPatient({ id: patientId, name: patientName, tags });
-				setChatOpener({ id: String(openerCount.current++), question: patientOverviewQuestion });
+				setChatOpener({ id: String(openerCount.current++), question });
 				setChatOpen(true);
 			},
 			setPageList: reportPageList,
@@ -822,7 +829,6 @@ function InterceptLive({
 											clock={shownClock}
 											user={shownUser}
 											team={team}
-											unreadMessages={unreadMessages}
 											compact={headerCompact}
 											theme={theme}
 											onToggleTheme={toggleTheme}

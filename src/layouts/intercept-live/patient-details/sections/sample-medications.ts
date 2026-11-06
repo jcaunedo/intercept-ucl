@@ -15,7 +15,7 @@ const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).
 const minutesFromNow = (minutes: number) => minutesAgo(-minutes);
 
 const millerMedications: PatientMedications = {
-	hospital: "Harbor Point General",
+	hospital: "Sidney Regional",
 	updatedAt: minutesAgo(4),
 	continuous: [
 		{
@@ -611,4 +611,128 @@ const sampleScenario2Medications = () =>
 		[prn("Albuterol", "2.5 mg", "Nebulized, in line", "Every 1 h as needed", "Wheeze or shortness of breath")],
 	);
 
-export { sampleMedicationsByPatient, sampleScenario2Medications };
+/**
+ * Rosa Medina (Scenario 3): her medications at the sepsis screen, built when the scenario's first beat plays. What the
+ * ED gave before it, acetaminophen 1 g by mouth and ondansetron 4 mg IV 40 min ago, and the antibiotic ordered with the
+ * screen, not yet given (after blood cultures): piperacillin-tazobactam 4.5 g first, a full dose, then 2.25 g every 6 h
+ * for her CrCl of about 27 mL/min (renal dosing, eGFR 22). No infusions yet; fluids, norepinephrine and insulin come with
+ * the scenario's later beats. Her home insulin and amlodipine aren't ordered in the ED (amlodipine is held).
+ */
+/**
+ * Rosa Medina's medications (Scenario 3). At the screen: the antibiotic's first dose due in 10 min, after the cultures.
+ * At 12 h (`resolved`): the first dose given, the renal maintenance dose next, so Up next doesn't still list the first.
+ * The norepinephrine and insulin infusions are the record's `infusions`.
+ */
+const sampleScenario3Medications = (stage: "alert" | "resolved" = "alert") => {
+	const given = (drug: string, dose: string, route: string, indication: string, minutes: number): ScheduledMedication => ({
+		drug,
+		dose,
+		route,
+		frequency: "Once",
+		indication,
+		lastGivenAt: minutesAgo(minutes),
+		source: "MAR",
+		updatedAt: minutesAgo(minutes),
+	});
+	if (stage === "resolved") {
+		const medications = medicationsFor(
+			"p23",
+			[scheduled("Piperacillin-tazobactam", "2.25 g", "IV", every(6), { firstDueIn: 50, ordered: 30 }, "Renal dose for CrCl about 27 mL/min")],
+			[
+				prn("Acetaminophen", "650 mg", "PO", "Every 6 h as needed", "Fever or pain, at most 3 g a day", 20, 1),
+				prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea or vomiting", 40, 1),
+			],
+		);
+		return {
+			...medications,
+			updatedAt: minutesAgo(1),
+			scheduled: [
+				...medications.scheduled,
+				given("Piperacillin-tazobactam", "4.5 g", "IV", "Pyelonephritis with septic shock, first dose, after blood cultures", 28),
+				given("Acetaminophen", "1,000 mg", "PO", "Fever 39.0 °C at triage", 40),
+			],
+		};
+	}
+	const medications = medicationsFor(
+		"p23",
+		[
+			scheduled("Piperacillin-tazobactam", "4.5 g", "IV", ["Once", 24], { firstDueIn: 10, ordered: 0 }, "Pyelonephritis with septic shock, first dose, after blood cultures"),
+			scheduled(
+				"Piperacillin-tazobactam",
+				"2.25 g",
+				"IV",
+				every(6),
+				{ firstDueIn: 6 * 60 + 10, ordered: 0 },
+				"Renal dose for CrCl about 27 mL/min",
+			),
+		],
+		[prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea or vomiting", 40, 1)],
+	);
+	return {
+		...medications,
+		updatedAt: minutesAgo(1),
+		scheduled: [...medications.scheduled, given("Acetaminophen", "1,000 mg", "PO", "Fever 39.0 °C at triage", 40)],
+	};
+};
+
+/**
+ * Tyler Kessler (Scenario 4): Bridgeport's medications for his DKA, built when the beat plays. The DKA protocol's
+ * insulin infusion and fluids are written out here (`continuous`), with their order; the record's `infusions` say the
+ * same on the Overview.
+ * - `alert`: the protocol as it starts, insulin 7 units/h (0.1 units/kg/h) and the second liter of saline. In the
+ *   prototype the drip starts seconds after the alert, once the hub accepts the pathway, so these stand for the night.
+ * - `dextrose` (05:00): insulin 3.5 units/h with D5 0.45% saline and KCl at 150 mL/h; KCl 20 mEq/h IV ran from 03:00.
+ * - `closed` (13:00): glargine 22 units and lispro 6 units given at 12:12, the drip stopped after its 1 h overlap.
+ */
+const sampleScenario4Medications = (stage: "alert" | "dextrose" | "closed" = "alert") => {
+	const insulinOrder = {
+		drug: "Insulin, regular",
+		concentration: "100 units in 100 mL NS",
+		orderedRate: "0.1 units/kg/h to start (7 units/h), then by the hourly glucose",
+		titration: "DKA protocol: glucose to fall 50–75 mg/dL an hour; hold while potassium is under 3.3",
+		source: "Pump",
+	};
+	const fluidsOrder = { titration: "DKA protocol: D5 0.45% saline at 150 mL/h once glucose is under 250", source: "Pump" };
+	const ondansetron = prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea or vomiting", 30, 1);
+	const dextrose50 = prn("Dextrose 50%", "25 mL", "IV push", "As needed", "Glucose under 70");
+	const potassium = (lastGiven?: number) =>
+		prn("Potassium chloride", "20 mEq/h", "IV", "Per DKA protocol", "Potassium under 3.3, with insulin held", lastGiven, 1);
+
+	if (stage === "closed") {
+		const medications = medicationsFor(
+			"p24",
+			[
+				scheduled("Insulin glargine", "22 units", "SC", daily, 4, "Basal insulin, his home dose; given 1 h before the drip stopped"),
+				scheduled("Insulin lispro", "6 units", "SC", ["With meals", 5], 4, "Meal dose, with lunch"),
+			],
+			[
+				prn("Insulin lispro", "Per correction scale", "SC", "Before meals and at bedtime", "Fingerstick glucose over 150"),
+				potassium(30),
+				dextrose50,
+				ondansetron,
+			],
+		);
+		return { ...medications, updatedAt: minutesAgo(1) };
+	}
+
+	const medications = medicationsFor("p24", [], [potassium(stage === "dextrose" ? 6 : undefined), dextrose50, ondansetron]);
+	const continuous: ContinuousMedication[] =
+		stage === "dextrose"
+			? [
+					{ ...insulinOrder, pumpRate: "3.5 units/h", change: { direction: "down", from: "8", at: minutesAgo(1) }, updatedAt: minutesAgo(0) },
+					{ drug: "D5 0.45% saline + KCl 20 mEq/L", orderedRate: "150 mL/h", ...fluidsOrder, pumpRate: "150 mL/h", updatedAt: minutesAgo(1) },
+				]
+			: [
+					{ ...insulinOrder, pumpRate: "7 units/h", updatedAt: minutesAgo(0) },
+					{
+						drug: "Normal saline",
+						orderedRate: "1,000 mL/h for the second liter, then 0.45% saline + KCl 20 mEq/L at 250 mL/h",
+						...fluidsOrder,
+						pumpRate: "1,000 mL/h",
+						updatedAt: minutesAgo(5),
+					},
+				];
+	return { ...medications, updatedAt: minutesAgo(1), continuous };
+};
+
+export { sampleMedicationsByPatient, sampleScenario2Medications, sampleScenario3Medications, sampleScenario4Medications };

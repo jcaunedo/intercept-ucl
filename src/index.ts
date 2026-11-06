@@ -113,6 +113,7 @@ export {
 } from "@/components/data-display/avatar";
 export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display/badge";
 export { Counter, counterVariants, type CounterProps } from "@/components/data-display/counter";
+export { LabTile, labTileVariants, type LabTileFlag, type LabTileProps } from "@/components/data-display/lab-tile";
 export { HospitalSectionHeader, type HospitalSectionHeaderProps } from "@/components/data-display/hospital-section-header";
 export { PatientHeader, type PatientHeaderProps } from "@/components/data-display/patient-header";
 export { Logo, LogoSymbol, type LogoProps, type LogoSymbolProps } from "@/components/data-display/logo";

@@ -11,6 +11,7 @@ import {
 } from "../alert-modal/care-pathway";
 import { consentText, type DischargeDecision, type DischargePlan, type ReferralOutcome } from "../alert-modal/discharge-plan";
 import type { KeepOrTransferDecision, TransferChoice } from "../alert-modal/keep-or-transfer";
+import type { BundleDecision } from "../alert-modal/sepsis-bundle";
 import type { CensusPatient } from "../census/census-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleLiveScenario } from "../monitoring/sample-live-scenario";
@@ -22,6 +23,8 @@ import type { PatientNote } from "../patient-details/sections/notes-section";
 import type { ActiveOrder, OrderRecommendation, PatientOrders } from "../patient-details/sections/orders-section";
 import { sampleScenario1, type ScenarioBeat, type ScenarioChanges, type ScenarioDefinition } from "./sample-scenario-1";
 import { sampleScenario2 } from "./sample-scenario-2";
+import { sampleScenario3 } from "./sample-scenario-3";
+import { sampleScenario4 } from "./sample-scenario-4";
 import { sampleUser } from "./sample-workspace";
 
 // Story-only helpers: they play the scripted live feed into the Census and Monitoring stories. Apps get the same data
@@ -38,6 +41,8 @@ const nextChangeIn = (tick: number) =>
 const sampleScenarios = {
 	"scenario-1": sampleScenario1,
 	"scenario-2": sampleScenario2,
+	"scenario-3": sampleScenario3,
+	"scenario-4": sampleScenario4,
 } satisfies Record<string, ScenarioDefinition>;
 
 type ScenarioId = keyof typeof sampleScenarios;
@@ -51,7 +56,7 @@ const scenarioOfAlert = (alertId: string) => scenarioIds.find((id) => sampleScen
 // re-sort when the menu opens Monitoring, so the change shows in the order at once. After the consult is on: time to see
 // the call before something happens to it. The resolution: time to read "Keeping at …" and its checkpoints before they
 // pass; the night goes by in these seconds.
-const beatDelays: Record<ScenarioBeat["after"], number> = { start: 1.5, consult: 6, keep: 6 };
+const beatDelays: Record<ScenarioBeat["after"], number> = { start: 1.5, consult: 6, keep: 6, pathway: 6 };
 
 /**
  * What the clinician decided in an alert's modal: where its pathway is, the orders as sent (an edited dose, or their own
@@ -67,6 +72,10 @@ type ScenarioDecision = {
 	suggested?: CarePathwayOrder[];
 	edited?: string[];
 	rationale?: string;
+	/** The note that went to the co-signer with the orders. */
+	note?: string;
+	/** The orders are the clinician's own pathway, written after declining the suggestion. */
+	own?: boolean;
 };
 
 /** An activity log entry, with the patient it's about. */
@@ -245,10 +254,11 @@ function ordersWithPathway(
 	};
 }
 
-// A pathway's status after each decision. Co-signature is simulated, so an accepted or written pathway counts as active.
+// A pathway's status after each decision: an accepted or written pathway waits for the co-signature (simulated,
+// `COSIGN_DELAY_MS` later), which makes it active, so the alert and the patient's page agree on where it is.
 const pathwayStatusAfter: Record<CarePathwayDecision["type"], CarePathwayStatus> = {
-	accept: "active",
-	create: "active",
+	accept: "pending",
+	create: "pending",
 	decline: "declined",
 	undecline: "suggested",
 };
@@ -311,6 +321,8 @@ function useSampleLiveFeed() {
 	const redrops = React.useRef<Record<string, number>>({});
 	// The discharge referrals sent or skipped, by patient, then by referral.
 	const [dischargeDecisions, setDischargeDecisions] = React.useState<Record<string, Record<string, ReferralOutcome>>>({});
+	// The sepsis bundle's checks confirmed (Scenario 3's renal dose review), by alert, then by element; `null` is one undone.
+	const [bundleReviews, setBundleReviews] = React.useState<Record<string, Record<string, { by: string; at: string } | null>>>({});
 	// The beats, for callbacks that mustn't change with them.
 	const beatsPlayed = React.useRef(beats);
 	beatsPlayed.current = beats;
@@ -368,6 +380,7 @@ function useSampleLiveFeed() {
 			const { patientIds, alertIds } = sampleScenarios[scenario];
 			setBeats((current) => current.filter((beat) => beat.scenario !== scenario));
 			setDecisions((current) => Object.fromEntries(Object.entries(current).filter(([alertId]) => !alertIds.includes(alertId))));
+			setBundleReviews((current) => Object.fromEntries(Object.entries(current).filter(([alertId]) => !alertIds.includes(alertId))));
 			setDischargeDecisions((current) =>
 				Object.fromEntries(Object.entries(current).filter(([patientId]) => !patientIds.includes(patientId))),
 			);
@@ -412,8 +425,17 @@ function useSampleLiveFeed() {
 					suggested: decision.type === "accept" ? detail?.pathway?.orders : undefined,
 					edited: decision.type === "accept" ? decision.edited : undefined,
 					rationale: decision.type === "decline" ? decision.rationale : undefined,
+					note: decision.type === "accept" ? decision.note : undefined,
+					own: decision.type === "create",
 				},
 			}));
+			// Accepting the scenario's pathway plays what follows it (Scenario 3: pressors, then the resolution); declining it
+			// cancels them. Only a run's first acceptance plays them; once they've played, they stay.
+			const scenario = scenarioOfAlert(alertId);
+			if (scenario && !beatsPlayed.current.some((beat) => beat.scenario === scenario && beat.after === "pathway")) {
+				cancel(scenario, "pathway");
+				if (decision.type === "accept" || decision.type === "create") schedule(scenario, "pathway");
+			}
 			if (!detail) return;
 			const patientId = detail.alert.patientId;
 			const title = decision.type === "create" ? decision.title : (detail.pathway?.title ?? "Care pathway");
@@ -444,7 +466,9 @@ function useSampleLiveFeed() {
 				timer: window.setTimeout(() => {
 					const cosignedAt = new Date().toISOString();
 					setDecisions((current) =>
-						current[alertId]?.sentAt === at ? { ...current, [alertId]: { ...current[alertId], cosignedAt } } : current,
+						current[alertId]?.sentAt === at
+							? { ...current, [alertId]: { ...current[alertId], cosignedAt, pathwayStatus: "active" } }
+							: current,
 					);
 					addActivity(patientId, {
 						kind: "order",
@@ -453,6 +477,31 @@ function useSampleLiveFeed() {
 						by: cosigner ? `${cosigner.name}, ${cosigner.role}` : undefined,
 					});
 				}, COSIGN_DELAY_MS),
+			});
+		},
+		[addActivity, cancel, schedule],
+	);
+	// A bundle check confirmed or undone in the alert (Scenario 3's renal dose review): kept, and in the log.
+	const onBundleDecision = React.useCallback(
+		(alertId: string, decision: BundleDecision) => {
+			const at = new Date().toISOString();
+			setBundleReviews((current) => ({
+				...current,
+				[alertId]: {
+					...current[alertId],
+					[decision.elementId]: decision.type === "confirm-check" ? { by: "you", at } : null,
+				},
+			}));
+			const alert = everyAlert.current.find((item) => item.id === alertId);
+			if (!alert) return;
+			addActivity(alert.patientId, {
+				kind: "decision",
+				title: decision.type === "confirm-check" ? "Renal dose reviewed" : "Renal dose review taken back",
+				detail:
+					decision.type === "confirm-check"
+						? "Piperacillin-tazobactam 2.25 g every 6 h after the first dose (eGFR 22)"
+						: undefined,
+				by: YOU,
 			});
 		},
 		[addActivity],
@@ -540,8 +589,9 @@ function useSampleLiveFeed() {
 					// The first call: the beat drops it (still to come if an earlier call ended before it did).
 					setCallConnections(({ [alertId]: _, ...rest }) => rest);
 					if (!dropPending) schedule(scenario, "consult");
-				} else {
-					// A later call starts on video, and the connection, still bad, drops again as the first call's did.
+				} else if (detail?.connection) {
+					// A later call starts on video, and the connection, still bad, drops again as the first call's did (only a
+					// scenario whose beats dropped it: Scenario 2).
 					setCallConnections((current) => ({ ...current, [alertId]: { mode: "video" } }));
 					window.clearTimeout(redrops.current[alertId]);
 					redrops.current[alertId] = window.setTimeout(() => {
@@ -731,13 +781,43 @@ function useSampleLiveFeed() {
 									? {
 											...detail.pathway,
 											title: decided.orders.title ?? detail.pathway.title,
+											// An own pathway says so, as the alert's panel did when it was sent.
+											source: decided.own
+												? `Created by you · Declined suggestion: ${detail.pathway.title}`
+												: detail.pathway.source,
 											orders: decided.orders.orders,
 										}
 									: detail.pathway,
+							// What was decided, so the Pathway panel (the alert reopened, or the patient's page) reads as it was left.
+							pathwayRecord: {
+								sentAt: decided.sentAt,
+								cosignedAt: decided.cosignedAt,
+								note: decided.note,
+								rationale: decided.rationale,
+								edited: decided.edited,
+								suggested: decided.suggested,
+								own: decided.own,
+							},
 							transfer: detail.transfer && { ...detail.transfer, decided: decided.transfer },
 						}
 					: detail;
-				const changed = (scenario.details[detail.alert.id] ?? []).reduce((current, change) => change(current), withDecisions);
+				const beaten = (scenario.details[detail.alert.id] ?? []).reduce((current, change) => change(current), withDecisions);
+				// The bundle's checks as the clinician confirmed them, so the alert reopens as they left it.
+				const reviews = bundleReviews[detail.alert.id];
+				const changed: AlertDetailData =
+					reviews && beaten.bundle
+						? {
+								...beaten,
+								bundle: {
+									...beaten.bundle,
+									elements: beaten.bundle.elements.map((element) =>
+										element.check && element.id in reviews
+											? { ...element, check: { ...element.check, reviewed: reviews[element.id] ?? undefined } }
+											: element,
+									),
+								},
+							}
+						: beaten;
 				// The call's own connection, over the beats': back on video once it ended, dropped again on a later call.
 				const call = callConnections[detail.alert.id];
 				const connected =
@@ -749,7 +829,7 @@ function useSampleLiveFeed() {
 						: changed;
 				return withDischargeDecisions(connected, detail.alert.patientId);
 			}),
-		[decisions, scenario, withDischargeDecisions, callConnections],
+		[decisions, scenario, withDischargeDecisions, callConnections, bundleReviews],
 	);
 	/**
 	 * The records with what was done and decided (Patient details): the activity log (the scenarios' alerts as they fired and
@@ -878,6 +958,7 @@ function useSampleLiveFeed() {
 		onPathwayDecision,
 		onTransferDecision,
 		onDischargeDecision,
+		onBundleDecision,
 		onConsultChange,
 		onConsultNote,
 		logAlertAction,

@@ -1,11 +1,21 @@
 import type { CensusPatient } from "../census/census-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
-import { sampleMonitoringPatients, sampleScenario1Monitoring, sampleScenario2Monitoring } from "../monitoring/sample-monitoring";
+import {
+	sampleMonitoringPatients,
+	sampleScenario1Monitoring,
+	sampleScenario2Monitoring,
+	sampleScenario3Monitoring,
+	sampleScenario4Monitoring,
+} from "../monitoring/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleCameraVideo } from "../sample-data/sample-camera-video";
 import { avatarTones, patientInitials } from "../shared/patient-avatar";
 import type { AlertDetailData, PatientConsultData } from "./alert-modal";
+import type { BedsideTasks } from "./bedside-tasks";
 import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
+import type { DischargePlan } from "./discharge-plan";
+import type { DkaProtocol, DkaRules } from "./dka-protocol";
+import type { SepsisBundle } from "./sepsis-bundle";
 import { sampleBedsideThread } from "./sample-bedside-messages";
 import { sampleBedsideReplier } from "./sample-bedside-replies";
 import { sampleConsultTranscript } from "./sample-consult-transcript";
@@ -36,7 +46,7 @@ const sampleScenario1AlertDetail = (): AlertDetailData => ({
 		sex: "F",
 		age: 72,
 		mrn: "00826154",
-		hospital: "Chadron",
+		hospital: "Chadron Memorial",
 		unit: "Med-Surg",
 		bed: "Bed 4",
 	},
@@ -215,7 +225,7 @@ const sampleScenario2AlertDetail = (): AlertDetailData => {
 			sex: "M",
 			age: 64,
 			mrn: "00973518",
-			hospital: "Alliance",
+			hospital: "Alliance Community",
 			unit: "ED",
 			bed: "Bay 3",
 		},
@@ -356,6 +366,451 @@ function sampleScenario2ResolvedDetail(detail: AlertDetailData): AlertDetailData
 		},
 	};
 }
+
+/* -------------------------------------------------------------------------- */
+/* Scenario 3: Rosa Medina, septic shock at Sidney ED                         */
+/* -------------------------------------------------------------------------- */
+
+const minutesFromNow = (minutes: number) => new Date(Date.now() + minutes * 60_000).toISOString();
+
+/**
+ * Rosa Medina's hour-1 bundle at the screen (Scenario 3, step 1): time zero is now; the lactate behind the screen is
+ * already in, so it starts green. The antibiotic carries the renal dose review for her eGFR of 22, the fluids the
+ * fluid-tolerance check for her CKD (step 4). 30 mL/kg × 68 kg is 2,040 mL. Doses are illustrative until clinical review.
+ */
+const sampleScenario3Bundle = (startedAt: string): SepsisBundle => ({
+	source: "Surviving Sepsis Campaign hour-1 bundle (configurable per hospital)",
+	startedAt,
+	startedBy: "Sepsis Sniffer, confirmed by Jenna Collins, NP",
+	sharedWith: "Sidney ED",
+	elements: [
+		{
+			id: "lactate",
+			label: "Lactate",
+			target: "Measure now; repeat if over 2 mmol/L",
+			status: "complete",
+			result: "3.8 mmol/L",
+			documented: { by: "Lab, Sidney", at: new Date(Date.parse(startedAt) - 22 * 60_000).toISOString() },
+		},
+		{
+			id: "cultures",
+			label: "Blood cultures before antibiotics",
+			target: "2 sets, from 2 sites, before the first antibiotic dose",
+			status: "pending",
+		},
+		{
+			id: "antibiotics",
+			label: "Broad-spectrum antibiotics",
+			target: "Piperacillin-tazobactam IV, first dose now",
+			status: "pending",
+			check: {
+				label: "Renal dose review",
+				reason: "eGFR 22, CKD stage 4",
+				suggestion:
+					"Give the first dose in full, 4.5 g IV. Then 2.25 g every 6 h for a CrCl of about 27 mL/min (68 kg, creatinine 2.6).",
+				source: "Pharmacy rule, renal dosing (configurable per hospital)",
+				confirm: true,
+			},
+		},
+		{
+			id: "fluids",
+			label: "Crystalloid 30 mL/kg",
+			target: "Lactated Ringer's in 500 mL boluses, reassessed after each",
+			status: "pending",
+			fluids: { perKg: 30, weight: 68, boluses: [] },
+			check: {
+				label: "Fluid-tolerance check",
+				reason: "CKD stage 4, at risk of fluid overload",
+				suggestion:
+					"Before each next bolus: lung sounds, SpO₂, RR, neck veins and edema. Stop and call the hub for new crackles, SpO₂ falling or RR rising.",
+				source: "Sidney sepsis protocol (configurable per hospital)",
+			},
+		},
+		{
+			id: "repeat-lactate",
+			label: "Repeat lactate",
+			target: "Within 2 h, because the first was over 2",
+			status: "pending",
+			dueAfter: 120,
+		},
+	],
+});
+
+/**
+ * Step 5: MAP stays under 65 after 2,040 mL, so the pathway suggests peripheral norepinephrine per protocol, with the
+ * insulin infusion for her glucose (step 6), the renal maintenance dose and amlodipine held. Jenna Collins, NP, who
+ * leads at the bedside, co-signs. Illustrative until Intercept's peripheral vasopressor protocol is reviewed.
+ */
+const sampleScenario3Pathway = (): CarePathway => ({
+	title: "Septic shock after fluids",
+	source: "Reference protocol, septic shock with a peripheral vasopressor (configurable per hospital)",
+	orders: [
+		{
+			id: "norepinephrine",
+			name: "Norepinephrine, peripheral IV",
+			dose: "Start 0.05 mcg/kg/min; up 0.02 every 5 min to MAP ≥ 65; at most 0.2 peripherally",
+			detail: "18 g or larger, antecubital or above. IV site check every hour; central line above 0.2 or after 24 h",
+			evidence: "MAP 62 after 2,040 mL",
+		},
+		{
+			id: "insulin",
+			name: "Insulin infusion, regular",
+			dose: "Start 3 units/h per protocol",
+			detail: "Glucose every hour, target 140–180 mg/dL; potassium every 4 h",
+			evidence: "glucose 390 mg/dL, A1c 10.8%",
+		},
+		{
+			id: "pip-tazo",
+			name: "Piperacillin-tazobactam IV",
+			dose: "2.25 g every 6 h, from 6 h after the first dose",
+			detail: "Renal dose for a CrCl of about 27 mL/min",
+			evidence: "eGFR 22",
+		},
+		{ id: "amlodipine", name: "Hold amlodipine", dose: "Until she's off norepinephrine" },
+	],
+	cosigner: { name: "Jenna Collins, NP", role: "hospitalist APP" },
+});
+
+/**
+ * The bedside nurses' tasks the pathway's orders generate once accepted (step 5), the peripheral line's site checks
+ * among them. Due times count from when the pathway is suggested.
+ */
+const sampleScenario3Tasks = (): BedsideTasks => ({
+	sharedWith: "Sidney ED's nurses",
+	source: "The accepted orders and Sidney's peripheral vasopressor protocol",
+	tasks: [
+		{
+			id: "iv-site",
+			title: "IV site check, norepinephrine",
+			detail: "18 g, right antecubital: redness, swelling, blanching or pain. Stop the infusion and call if any.",
+			every: "Every hour",
+			from: "Norepinephrine, peripheral IV",
+			assignee: "Ashley Brooks, RN",
+			status: "open",
+			dueAt: minutesFromNow(5),
+		},
+		{
+			id: "blood-pressure",
+			title: "Blood pressure while titrating",
+			detail: "Every 5 min until MAP ≥ 65 holds 30 min, then every 15 min",
+			every: "Every 5 min",
+			from: "Norepinephrine, peripheral IV",
+			assignee: "Ashley Brooks, RN",
+			status: "open",
+			dueAt: minutesFromNow(5),
+		},
+		{
+			id: "glucose",
+			title: "Glucose check",
+			detail: "Fingerstick, entered so the insulin rate updates",
+			every: "Every hour",
+			from: "Insulin infusion, regular",
+			assignee: "Kristen Webb, RN",
+			status: "open",
+			dueAt: minutesFromNow(60),
+		},
+		{
+			id: "potassium",
+			title: "Potassium",
+			detail: "With the next labs; replace per protocol under 3.5",
+			every: "Every 4 h",
+			from: "Insulin infusion, regular",
+			assignee: "Kristen Webb, RN",
+			status: "open",
+			dueAt: minutesFromNow(240),
+		},
+		{
+			id: "urine-output",
+			title: "Urine output",
+			detail: "Call the hub if under 34 mL/h (0.5 mL/kg/h) for 2 h",
+			every: "Every hour",
+			from: "Septic shock after fluids",
+			assignee: "Ashley Brooks, RN",
+			status: "open",
+			dueAt: minutesFromNow(60),
+		},
+	],
+});
+
+/**
+ * Rosa Medina's alert in Scenario 3 (Demo Use Cases, "Sepsis in a patient with diabetes and kidney disease"), opened:
+ * Sidney ED at 15:30, boarding because the inpatient unit is full, with Jenna Collins, NP leading and two nurses. The
+ * Sepsis Sniffer flags probable septic shock from her vitals and lactate; the APP confirms it, which sets time zero and
+ * starts the hour-1 bundle on both screens. The same numbers as her record, monitor and card (`sample-scenario-3.ts`).
+ * She prefers Spanish, so the consult offers an interpreter. The pathway arrives with step 5, once fluids are in.
+ */
+const sampleScenario3AlertDetail = (firedAt = new Date().toISOString()): AlertDetailData => {
+	const monitor = sampleScenario3Monitoring();
+	return {
+		alert: {
+			id: "live-medina",
+			patientId: "p23",
+			severity: "critical",
+			title: "Probable septic shock: hour-1 bundle started",
+			reason: "BP 84/48 and lactate 3.8 with fever and a urinary source, on diabetes and CKD 4",
+			source: { kind: "ai", name: "Sepsis Sniffer" },
+			firedAt,
+		},
+		patient: {
+			lastName: "Medina",
+			firstName: "Rosa",
+			initials: "MR",
+			tone: 9,
+			sex: "F",
+			age: 51,
+			mrn: "01147382",
+			hospital: "Sidney Regional",
+			unit: "ED",
+			bed: "Bay 2",
+			preferredLanguage: "Spanish",
+		},
+		inLast24h: 1,
+		acuity: monitor.acuity,
+		trajectory: monitor.trajectory,
+		monitor: { vitals: monitor.vitals, limits: monitor.limits, alarmPriorities: monitor.alarmPriorities },
+		reasons: [
+			{ label: "Hypotension", lead: "BP 84/48", detail: "MAP 60, from 96/58 at triage 50 min ago. HR 124" },
+			{ label: "Lactate 3.8", detail: "Drawn 45 min ago, resulted 22 min ago · normal under 2" },
+			{ label: "Fever with a urinary source", lead: "39.4 °C", detail: "3 days of dysuria and left flank pain; urine nitrite positive" },
+			{ label: "Diabetes and CKD 4", detail: "Glucose 390, A1c 10.8%. eGFR 22: doses and fluids need checking" },
+		],
+		flag: "Septic shock",
+		tags: monitor.tags,
+		history: [
+			{
+				label: "Home meds",
+				items: [
+					{ name: "Insulin glargine", detail: "20 units at bedtime" },
+					{ name: "Insulin lispro", detail: "sliding scale with meals" },
+					{ name: "Amlodipine", detail: "10 mg daily" },
+					{ name: "Atorvastatin", detail: "40 mg daily" },
+					{ name: "Sodium bicarbonate", detail: "650 mg twice a day" },
+					{ name: "Calcitriol", detail: "0.25 mcg daily" },
+				],
+			},
+			{ label: "Lactate", value: "3.8 mmol/L", detail: "22 min ago · normal < 2", severity: "critical" },
+			{ label: "Creatinine", value: "2.6 mg/dL", detail: "eGFR 22 · baseline 2.4 (Aug 2026)", severity: "low" },
+			{ label: "Glucose", value: "390 mg/dL", detail: "A1c 10.8% three weeks ago", severity: "critical" },
+			{ label: "WBC", value: "18.6 K/µL", detail: "Urinalysis: nitrite +, leukocyte esterase 3+", severity: "critical" },
+			{ label: "Allergy", value: "Sulfonamides", detail: "Rash" },
+		],
+		bedside: { name: "Ashley Brooks", role: "RN", initials: "AB", tone: 4, presence: "online", activity: "At the bedside" },
+		interpreter: { name: "Lucía Herrera", role: "Medical interpreter, Spanish", initials: "LH", tone: 5 },
+		transcript: sampleConsultTranscript({ patientId: "p23", firstName: "Rosa", sex: "F", nurse: "Ashley Brooks" }),
+		room: { airway: "none", pumps: 1 },
+		video: sampleCameraVideo,
+		bundle: sampleScenario3Bundle(firedAt),
+	};
+};
+
+/* -------------------------------------------------------------------------- */
+/* Scenario 4: Tyler Kessler, DKA at Bridgeport                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The DKA pathway the hub accepts to start the protocol (Scenario 4, step 1). Typical DKA protocol values, as the
+ * Demo Use Cases give them, until Intercept's protocol replaces them. Derek Lawson, PA-C, Bridgeport's APP on call from
+ * home, co-signs.
+ */
+const sampleScenario4Pathway = (): CarePathway => ({
+	title: "DKA pathway",
+	source: "Reference protocol, diabetic ketoacidosis (typical values until Intercept's protocol replaces them)",
+	orders: [
+		{
+			id: "insulin",
+			name: "Insulin infusion, regular",
+			dose: "0.1 units/kg/h, 7 units/h; no bolus",
+			detail: "The rate follows each hourly glucose: a fall of 50–75 mg/dL an hour",
+			evidence: "glucose 520 mg/dL, pH 7.08",
+		},
+		{
+			id: "fluids",
+			name: "IV fluids",
+			dose: "0.9% saline 1 L/h for 2 h, then 0.45% saline 250 mL/h",
+			detail: "D5 0.45% saline at 150 mL/h once glucose is under 250",
+			evidence: "BP 98/58, HR 122",
+		},
+		{
+			id: "potassium",
+			name: "Potassium, per protocol",
+			dose: "None while over 5.2; KCl 20 mEq/L in fluids from 3.3 to 5.2",
+			detail: "Under 3.3: hold insulin and give KCl 20 mEq/h IV",
+			evidence: "K 5.6 mEq/L",
+		},
+		{
+			id: "checks",
+			name: "Hourly checks at the bedside",
+			dose: "Glucose, potassium, anion gap, fluids and the insulin rate, every hour",
+			detail: "A check 10 min overdue nudges the nurse and the hub's tele-RN",
+			evidence: "One RN on the inpatient side tonight",
+		},
+	],
+	cosigner: { name: "Derek Lawson, PA-C", role: "on-call APP" },
+});
+
+/** The protocol's thresholds: typical DKA values (Demo Use Cases, Scenario 4) until Intercept's protocol replaces them. */
+const sampleDkaRules: DkaRules = {
+	startPerKg: 0.1,
+	targetFall: [50, 75],
+	holdInsulinBelow: 3.3,
+	noPotassiumAbove: 5.2,
+	dextroseBelow: 250,
+	dextrosePerKg: 0.05,
+	dextroseRange: [150, 200],
+	closedGap: 12,
+	closedBicarbonate: 15,
+};
+
+/** Tyler Kessler's DKA protocol as it starts, before the first check (step 1). 70 kg. */
+const sampleScenario4Protocol = (startedAt: string): DkaProtocol => ({
+	title: "DKA insulin protocol",
+	source: "Typical DKA protocol values, until Intercept's protocol replaces them (configurable per hospital)",
+	startedAt,
+	startedBy: "started from the hub by Joanna Smith, MD",
+	sharedWith: "Bridgeport",
+	weight: 70,
+	rules: sampleDkaRules,
+	checks: [],
+});
+
+type OverlapDone = { by: string; at: string };
+
+/** The move to subcutaneous insulin once his gap closes (step 4), with the steps done so far. */
+const sampleScenario4Overlap = (done: {
+	closed?: OverlapDone;
+	basal?: OverlapDone;
+	overlap?: OverlapDone;
+	stop?: OverlapDone;
+}): NonNullable<DkaProtocol["overlap"]> => ({
+	title: "Moving to subcutaneous insulin",
+	steps: [
+		{ id: "closed", label: "Gap closed and eating", detail: "Gap 12 or under, HCO₃ 15 or more, and he can eat", done: done.closed },
+		{
+			id: "basal",
+			label: "Basal insulin, then the meal dose",
+			detail: "Glargine 22 units SC, his home dose, and lispro 6 units with lunch",
+			done: done.basal,
+		},
+		{
+			id: "overlap",
+			label: "Keep the drip 1 h more",
+			detail: "So the glargine is working before the drip stops (typical overlap: 1 to 2 h)",
+			done: done.overlap,
+		},
+		{ id: "stop", label: "Stop the drip", detail: "Fingersticks before meals and at bedtime; lispro by his correction scale", done: done.stop },
+	],
+});
+
+/**
+ * Tyler Kessler's social needs and referrals at discharge (step 6), from the structured field in his admission note
+ * and registration. For the clinician to send, each with who agreed.
+ */
+const sampleScenario4Discharge = (): DischargePlan => ({
+	source: "Discharge workflow, from the structured social need in his admission note and registration",
+	payer: "Uninsured (Medicaid lapsed in August)",
+	needs: [
+		{
+			id: "rationing",
+			label: "Insulin rationing",
+			detail: "Stretching his insulin for 3 months because of the cost",
+			evidence: "Admission note, structured field · Derek Lawson, PA-C",
+		},
+		{
+			id: "coverage",
+			label: "Coverage lapsed",
+			detail: "Lost Medicaid at redetermination, 3 months ago",
+			evidence: "Registration · payer: uninsured",
+		},
+	],
+	referrals: [
+		{
+			id: "medicaid",
+			title: "Medicaid re-enrollment",
+			to: "Bridgeport financial counseling",
+			detail: "Help reapplying, so his insulin and supplies are covered again",
+			needIds: ["coverage"],
+		},
+		{
+			id: "insulin-assistance",
+			title: "Insulin assistance program",
+			to: "His insulin maker's patient assistance program",
+			detail: "Free or low-cost insulin until his coverage is back",
+			needIds: ["rationing"],
+		},
+		{
+			id: "educator",
+			title: "Diabetes educator visit",
+			to: "Bridgeport Rural Health Clinic",
+			detail: "Within 7 days: sick-day rules, and what to do before he runs short",
+			needIds: ["rationing"],
+			reason: "Type 1 diabetes, his first DKA admission in 6 years",
+		},
+	],
+});
+
+/**
+ * Tyler Kessler's alert in Scenario 4 (Demo Use Cases, "DKA caused by insulin rationing, managed by one night nurse"),
+ * opened: Bridgeport at 23:00, one RN on the inpatient side, the APP on call from home. His labs cross the critical
+ * thresholds, and the DKA pathway is suggested for the hub to start (step 1). The same numbers as his record, monitor
+ * and card (`sample-scenario-4.ts`). The protocol arrives once the pathway is accepted.
+ */
+const sampleScenario4AlertDetail = (firedAt = new Date().toISOString()): AlertDetailData => {
+	const monitor = sampleScenario4Monitoring();
+	return {
+		alert: {
+			id: "live-kessler",
+			patientId: "p24",
+			severity: "critical",
+			title: "Severe DKA: pH 7.08, gap 28",
+			reason: "pH 7.08, bicarbonate 6 and glucose 520 in type 1 diabetes, insulin stretched for weeks",
+			source: { kind: "rule", name: "Critical labs" },
+			firedAt,
+		},
+		patient: {
+			lastName: "Kessler",
+			firstName: "Tyler",
+			initials: "TK",
+			tone: 3,
+			sex: "M",
+			age: 24,
+			mrn: "01208854",
+			hospital: "Bridgeport Valley",
+			unit: "Med-Surg",
+			bed: "Bed 3",
+		},
+		inLast24h: 1,
+		acuity: monitor.acuity,
+		trajectory: monitor.trajectory,
+		monitor: { vitals: monitor.vitals, limits: monitor.limits, alarmPriorities: monitor.alarmPriorities },
+		reasons: [
+			{ label: "Severe acidosis", lead: "pH 7.08", detail: "Bicarbonate 6, anion gap 28, beta-hydroxybutyrate 7.2" },
+			{ label: "Glucose 520", detail: "Potassium 5.6 before insulin; it falls once the drip starts" },
+			{ label: "Kussmaul breathing", lead: "RR 30", detail: "HR 122, BP 98/58. Vomiting since yesterday" },
+			{ label: "Insulin stretched", detail: "Type 1 since age 11. Off his glargine 2 days; lost Medicaid 3 months ago" },
+		],
+		flag: "DKA",
+		tags: monitor.tags,
+		history: [
+			{
+				label: "Home meds",
+				items: [
+					{ name: "Insulin glargine", detail: "22 units at bedtime; none for 2 days" },
+					{ name: "Insulin lispro", detail: "4–8 units with meals; stretched" },
+				],
+			},
+			{ label: "pH", value: "7.08", detail: "Venous gas, 20 min ago", severity: "critical" },
+			{ label: "Bicarbonate", value: "6 mEq/L", detail: "Anion gap 28", severity: "critical" },
+			{ label: "Glucose", value: "520 mg/dL", detail: "A1c 9.6% in April", severity: "critical" },
+			{ label: "Potassium", value: "5.6 mEq/L", detail: "Falls with insulin: checked every hour" },
+			{ label: "Creatinine", value: "1.4 mg/dL", detail: "Baseline 0.9: dehydration", severity: "low" },
+		],
+		bedside: { name: "Brittany Cole", role: "RN", initials: "BC", tone: 6, presence: "online", activity: "At the bedside" },
+		transcript: sampleConsultTranscript({ patientId: "p24", firstName: "Tyler", sex: "M", nurse: "Brittany Cole" }),
+		room: { airway: "none", pumps: 2 },
+		video: sampleCameraVideo,
+		pathway: sampleScenario4Pathway(),
+	};
+};
 
 const airways = { Invasive: "ventilator", NIV: "niv", Oxygen: "oxygen" } as const;
 
@@ -610,9 +1065,12 @@ function samplePatientConsults(patients: SamplePatients): PatientConsultData[] {
 }
 
 // The scenarios' alerts, written out in full: Hayes's (Scenario 1) and Reynolds's (Scenario 2).
-const scenarioAlertDetails: Record<string, () => AlertDetailData> = {
+// Each gets the alert as it fired, for what counts from it (Scenario 3's bundle timer starts at time zero).
+const scenarioAlertDetails: Record<string, (firedAt: string) => AlertDetailData> = {
 	"live-hayes": sampleScenario1AlertDetail,
 	"live-reynolds": sampleScenario2AlertDetail,
+	"live-medina": sampleScenario3AlertDetail,
+	"live-kessler": sampleScenario4AlertDetail,
 };
 
 /**
@@ -654,7 +1112,7 @@ function sampleAlertDetails({
 		};
 		const scenarioDetail = scenarioAlertDetails[alert.id];
 		if (scenarioDetail) {
-			const scenario = scenarioDetail();
+			const scenario = scenarioDetail(alert.firedAt);
 			return [
 				{
 					...scenario,
@@ -729,4 +1187,12 @@ export {
 	sampleScenario1ResolvedDetail,
 	sampleScenario2AlertDetail,
 	sampleScenario2ResolvedDetail,
+	sampleScenario3AlertDetail,
+	sampleScenario3Pathway,
+	sampleScenario3Tasks,
+	sampleScenario4AlertDetail,
+	sampleScenario4Discharge,
+	sampleScenario4Overlap,
+	sampleScenario4Pathway,
+	sampleScenario4Protocol,
 };

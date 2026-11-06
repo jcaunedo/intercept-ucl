@@ -6,14 +6,17 @@ import type { EmrFeed, EmrWriteBack, PatientEmr } from "./epic-section";
 import type { PatientNote } from "./notes-section";
 import { sampleNotesByPatient } from "./sample-notes";
 
-// Synthetic data (PRD Patient details PD-150): each Census patient's hospital record (Epic, Cerner at Alliance, Meditech at Chadron). Each hospital tells a
-// different data-depth story, in plain words (PD-121, PD-134):
-// - Harbor Point General: charted vitals are behind, so a charted temperature can read stale (Sarah Miller's 38.9 °C);
-//   signed Intercept notes are written back.
+// Synthetic data (PRD Patient details PD-150): each Census patient's hospital record (Cerner at Alliance, Meditech at
+// Sidney and Chadron, TruBridge at Bridgeport). Each hospital tells a different data-depth story, in plain words (PD-121,
+// PD-134):
 // - Alliance (Cerner): everything is up to date, and signed Intercept notes are written back.
-// - CVMC: lab results arrive late, and the hospital doesn't take Intercept notes back yet.
+// - Sidney (Meditech): lab results arrive late and charted vitals are behind, so a charted temperature can read stale
+//   (Sarah Miller's 38.9 °C); signed Intercept notes are written back. The vitals and write-back were Harbor Point
+//   General's story until Nov 6, 2026, when its patients moved here and it became Bridgeport (user's call).
 // - Chadron: up to date, but charted vitals come every 4 h on its med-surg floor, and it doesn't
 //   take Intercept notes back yet.
+// - Bridgeport (TruBridge, a critical access hospital, Demo Use Cases Scenario 4): results are current, vitals are
+//   charted hourly with one RN on at night, and it doesn't take Intercept notes back.
 // Orders are read-only everywhere. Write-backs come from each patient's notes in `sample-notes.ts`, so the two agree.
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -28,10 +31,21 @@ type HospitalProfile = {
 };
 
 const profiles: Record<string, HospitalProfile> = {
-	"Harbor Point General": {
-		prefix: "HPG",
-		state: "delayed",
+	"Alliance Community": {
+		prefix: "ACH",
+		state: "connected",
 		results: (latest) => ({ state: "current", updatedAt: latest }),
+		vitals: { state: "current", updatedAt: minutesAgo(6) },
+		notes: { access: "write" },
+	},
+	"Sidney Regional": {
+		prefix: "SRMC",
+		state: "delayed",
+		results: (latest) => ({
+			state: "delayed",
+			updatedAt: latest,
+			note: "Sidney's lab results are arriving late today. A result that's been drawn may not be here yet; check pending labs before acting on a trend.",
+		}),
 		vitals: {
 			state: "delayed",
 			updatedAt: minutesAgo(92),
@@ -39,28 +53,7 @@ const profiles: Record<string, HospitalProfile> = {
 		},
 		notes: { access: "write" },
 	},
-	"Alliance": {
-		prefix: "ACH",
-		state: "connected",
-		results: (latest) => ({ state: "current", updatedAt: latest }),
-		vitals: { state: "current", updatedAt: minutesAgo(6) },
-		notes: { access: "write" },
-	},
-	CVMC: {
-		prefix: "CVMC",
-		state: "delayed",
-		results: (latest) => ({
-			state: "delayed",
-			updatedAt: latest,
-			note: "CVMC's lab results are arriving late today. A result that's been drawn may not be here yet; check pending labs before acting on a trend.",
-		}),
-		vitals: { state: "current", updatedAt: minutesAgo(8) },
-		notes: {
-			access: "read",
-			note: "CVMC doesn't take Intercept notes back yet. Signed Intercept notes stay in Intercept.",
-		},
-	},
-	"Chadron": {
+	"Chadron Memorial": {
 		prefix: "CCH",
 		state: "connected",
 		results: (latest) => ({ state: "current", updatedAt: latest }),
@@ -72,6 +65,20 @@ const profiles: Record<string, HospitalProfile> = {
 		notes: {
 			access: "read",
 			note: "Chadron doesn't take Intercept notes back yet. Signed Intercept notes stay in Intercept.",
+		},
+	},
+	"Bridgeport Valley": {
+		prefix: "BRG",
+		state: "connected",
+		results: (latest) => ({ state: "current", updatedAt: latest }),
+		vitals: {
+			state: "current",
+			updatedAt: minutesAgo(35),
+			note: "Vitals are charted every hour or less often here, with one nurse on at night. Monitor values on this page come from the bedside, not from here.",
+		},
+		notes: {
+			access: "read",
+			note: "Bridgeport doesn't take Intercept notes back. Signed Intercept notes stay in Intercept.",
 		},
 	},
 };

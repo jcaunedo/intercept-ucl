@@ -509,6 +509,10 @@ function AskInterceptPanel({
 		if (samePatient && active) return;
 		askedOpeners.current.add(opener.id);
 		if (samePatient) {
+			// Never the same question twice about one patient (Nov 6, 2026, user's call: the Ask Intercept button pressed
+			// again repeated the Quick overview): the conversation stays as it is, its follow-ups under the last answer.
+			const asked = (text: string) => text.trim().toLowerCase();
+			if (questions.some((message) => asked(message.text) === asked(opener.question))) return;
 			const id = ask(opener.question);
 			if (id) setScrollToMessage(id);
 			return;

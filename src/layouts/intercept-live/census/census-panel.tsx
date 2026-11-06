@@ -257,13 +257,16 @@ function CensusPanel({
 	}, [setPageList, visibleKey]);
 	const everyoneCount = scope === "mine" ? filtered(patients).visible.length : visible.length;
 	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
-	// One hospital, picked on its tab or the only one the filters leave, reads by name: "7 patients at CVMC".
+	// One hospital, picked on its tab or the only one the filters leave, reads by name: "7 patients at Sidney".
 	const singleHospital =
 		hospitalId !== "all"
 			? hospitals.find((hospital) => hospital.id === hospitalId)
 			: hospitalCount === 1
 				? hospitals.find((hospital) => hospital.id === visible[0].hospitalId)
 				: undefined;
+	// A hospital tab with no patients at all (Bridgeport until Scenario 4's patient arrives) says so, rather than
+	// blaming the filters.
+	const emptyHospital = hospitalId !== "all" && !patients.some((patient) => patient.hospitalId === hospitalId) ? singleHospital : undefined;
 
 	// The cards show no alert, badge or ring (Oct 31, 2026, intercept.ds patient-card-compact; again Nov 2, 2026,
 	// `patient-census-card` 1108:3964, user's call): the Census is for managing patients; Monitoring and the live feed show
@@ -436,6 +439,13 @@ function CensusPanel({
 							<EmptyState
 								title='No patients on the census'
 								description='Patients admitted to your hospitals will appear here.'
+							/>
+						) : emptyHospital ? (
+							<EmptyState
+								title={`No patients at ${emptyHospital.name}`}
+								description='Patients admitted there will appear here.'
+								buttonLabel='Show all hospitals'
+								buttonProps={{ onClick: () => setHospitalId("all") }}
 							/>
 						) : (
 							<EmptyState

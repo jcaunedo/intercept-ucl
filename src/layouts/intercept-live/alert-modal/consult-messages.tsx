@@ -5,7 +5,14 @@ import { MessageCircleIcon, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/buttons/button";
 import { Counter } from "@/components/data-display/counter";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
-import { fadeVariants, revealVariants, useMotionPreference } from "@/lib/motion";
+import {
+	fadeVariants,
+	iconSwapReducedVariants,
+	iconSwapVariants,
+	revealVariants,
+	unreadFlashVariants,
+	useMotionPreference,
+} from "@/lib/motion";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
@@ -156,6 +163,7 @@ function ConsultMessagesButton({
 	icon?: LucideIcon;
 	className?: string;
 }) {
+	const { prefersReducedMotion } = useMotionPreference();
 	return (
 		<Button
 			variant={solid && !open ? "neutral" : "outline"}
@@ -167,8 +175,87 @@ function ConsultMessagesButton({
 		>
 			<Icon aria-hidden='true' />
 			{open ? "Hide messages" : "Messages"}
-			{unread ? <Counter count={unread} max={99} /> : null}
+			{/* Brand, flashing every 2 s while there's something unread, as the app header's (Unread pattern; Nov 6, 2026,
+			    user's call: everywhere); still under reduced motion. */}
+			{unread ? (
+				<motion.span
+					aria-hidden='true'
+					variants={unreadFlashVariants}
+					initial='rest'
+					animate={prefersReducedMotion ? "rest" : "flash"}
+					className='inline-flex'
+				>
+					<Counter count={unread} max={99} />
+				</motion.span>
+			) : null}
 		</Button>
+	);
+}
+
+/**
+ * A one-line field with its button inside, as a pill (Intercept-Live `221:17539`, `230:6395`): the Messages column's
+ * Send a message and the Video consult panel's Add a note. Enter or the button submits the trimmed text, never empty.
+ * The button shows only once there's text, growing in, and leaves when the field is cleared (Nov 6, 2026, user's call:
+ * no disabled button always in view); instant under reduced motion. The field keeps its 48px height either way.
+ */
+function ConsultField({
+	ref,
+	value,
+	onValueChange,
+	onSubmit,
+	placeholder,
+	label,
+	submitLabel,
+	className,
+}: {
+	ref?: React.Ref<HTMLInputElement>;
+	value: string;
+	onValueChange: (value: string) => void;
+	onSubmit: (text: string) => void;
+	placeholder: string;
+	/** The field's accessible name. */
+	label: string;
+	submitLabel: string;
+	className?: string;
+}) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const hasText = Boolean(value.trim());
+	return (
+		<form
+			onSubmit={(event) => {
+				event.preventDefault();
+				const text = value.trim();
+				if (text) onSubmit(text);
+			}}
+			className={cn("shrink-0", className)}
+		>
+			<div className='flex h-12 items-center gap-2 rounded-full border border-input bg-background py-2 pr-2 pl-5 shadow-xs transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring-outside'>
+				<input
+					ref={ref}
+					value={value}
+					onChange={(event) => onValueChange(event.target.value)}
+					placeholder={placeholder}
+					aria-label={label}
+					className='min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground'
+				/>
+				<AnimatePresence initial={false}>
+					{hasText ? (
+						<motion.div
+							key='submit'
+							variants={prefersReducedMotion ? iconSwapReducedVariants : iconSwapVariants}
+							initial='hidden'
+							animate='shown'
+							exit='hidden'
+							className='shrink-0'
+						>
+							<Button type='submit' variant='neutral' size='sm'>
+								{submitLabel}
+							</Button>
+						</motion.div>
+					) : null}
+				</AnimatePresence>
+			</div>
+		</form>
 	);
 }
 
@@ -223,10 +310,7 @@ function ConsultMessages({
 		if (autoFocus) field.current?.focus({ preventScroll: true });
 	}, [autoFocus]);
 
-	const submit = (event: React.FormEvent) => {
-		event.preventDefault();
-		const text = draft.trim();
-		if (!text) return;
+	const submit = (text: string) => {
 		onSend(text);
 		setDraft("");
 	};
@@ -322,26 +406,21 @@ function ConsultMessages({
 				</AnimatePresence>
 			</div>
 
-			<form onSubmit={submit} className='shrink-0'>
-				<div className='flex h-12 items-center gap-2 rounded-full border border-input bg-background py-2 pr-2 pl-5 shadow-xs transition-[border-color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring-outside'>
-					<input
-						ref={field}
-						value={draft}
-						onChange={(event) => setDraft(event.target.value)}
-						placeholder='Send a message…'
-						aria-label={`Message ${nurse}`}
-						className='min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground'
-					/>
-					<Button type='submit' variant='neutral' size='sm' disabled={!draft.trim()}>
-						Send
-					</Button>
-				</div>
-			</form>
+			<ConsultField
+				ref={field}
+				value={draft}
+				onValueChange={setDraft}
+				onSubmit={submit}
+				placeholder='Send a message…'
+				label={`Message ${nurse}`}
+				submitLabel='Send'
+			/>
 		</div>
 	);
 }
 
 export {
+	ConsultField,
 	ConsultMessages,
 	ConsultMessagesButton,
 	useConsultMessages,

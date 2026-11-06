@@ -41,6 +41,12 @@ type PatientNote = {
 	/** Drafted by AI Scribe from a camera session: always a draft for the clinician to review and sign (PRD PD-073). */
 	scribe?: { sessionAt: string };
 	sections: { heading?: string; text: string }[];
+	/**
+	 * Coded fields the note records alongside its text, e.g. a social need ("Social need": "Cost-related insulin
+	 * rationing", code "Z59.86"), so reports and the discharge workflow read them without parsing prose (Scenario 4,
+	 * step 5).
+	 */
+	fields?: { label: string; value: string; code?: string }[];
 };
 
 type PatientNotes = {
@@ -207,6 +213,23 @@ function NoteDetail({
 					</div>
 				))}
 			</div>
+
+			{note.fields?.length ? (
+				<div className='flex max-w-[72ch] flex-col gap-2 rounded-lg border border-border bg-background-subtle p-3'>
+					<h3 className='text-xs font-semibold tracking-wide text-muted-foreground uppercase'>Structured fields</h3>
+					<dl className='flex flex-col gap-1.5 text-sm'>
+						{note.fields.map((field) => (
+							<div key={field.label} className='flex flex-wrap items-baseline gap-x-2'>
+								<dt className='text-muted-foreground'>{field.label}</dt>
+								<dd className='font-medium text-foreground'>
+									{field.value}
+									{field.code ? <span className='ml-1.5 font-mono text-xs font-normal text-muted-foreground'>{field.code}</span> : null}
+								</dd>
+							</div>
+						))}
+					</dl>
+				</div>
+			) : null}
 
 			{note.status === "draft" && onEdit ? (
 				<div className='flex gap-2 border-t border-border-muted pt-3'>

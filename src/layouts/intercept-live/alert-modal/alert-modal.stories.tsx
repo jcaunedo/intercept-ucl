@@ -6,6 +6,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 import { Button } from "@/components/buttons/button";
 
 import { AlertDetailModal, AlertPanel, type AlertDetailModalProps } from "./alert-modal";
+import { dkaCalculate, type DkaCheck, type DkaReadings } from "./dka-protocol";
 import {
 	sampleEscalationTargets,
 	sampleMonitoringAlerts,
@@ -20,6 +21,11 @@ import {
 	sampleScenario1AlertDetail,
 	sampleScenario2AlertDetail,
 	sampleScenario2ResolvedDetail,
+	sampleScenario3AlertDetail,
+	sampleScenario3Pathway,
+	sampleScenario3Tasks,
+	sampleScenario4AlertDetail,
+	sampleScenario4Protocol,
 } from "./sample-alert-modal";
 
 /**
@@ -45,6 +51,7 @@ const meta = {
 		onPathwayDecision: fn(),
 		onTransferDecision: fn(),
 		onDischargeDecision: fn(),
+		onBundleDecision: fn(),
 	},
 	render: (args) => <Demo {...args} />,
 } satisfies Meta<typeof AlertDetailModal>;
@@ -641,5 +648,167 @@ export const SocialNeedsAtDischarge: Story = {
 		await userEvent.click(await rehab.findByRole("button", { name: "Undo skip" }));
 		await expect(args.onDischargeDecision).toHaveBeenLastCalledWith({ type: "undo", referralId: "pulmonary-rehab" });
 		await expect(await panel.findByText("1 to send")).toBeInTheDocument();
+	},
+};
+
+/**
+ * Rosa Medina's hour-1 sepsis bundle mid-way (Scenario 3, steps 3 to 5), in the alert panel: the timer from time zero 34
+ * min ago, lactate, cultures and the antibiotic green, two boluses in with their reassessments, and the renal dose review
+ * to confirm. MAP stayed under 65, so the septic shock pathway is suggested under the bundle; accepting it shows the
+ * bedside tasks its orders generate, the norepinephrine's IV site checks first.
+ */
+export const SepsisBundle: Story = {
+	args: {
+		data: (() => {
+			const detail = sampleScenario3AlertDetail();
+			const at = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+			const startedAt = at(34);
+			return {
+				...detail,
+				alert: { ...detail.alert, firedAt: startedAt },
+				pathway: sampleScenario3Pathway(),
+				tasks: sampleScenario3Tasks(),
+				bundle: detail.bundle && {
+					...detail.bundle,
+					startedAt,
+					elements: detail.bundle.elements.map((element) => {
+						switch (element.id) {
+							case "cultures":
+								return { ...element, status: "complete" as const, result: "2 sets, both arms", documented: { by: "Ashley Brooks, RN", at: at(28) } };
+							case "antibiotics":
+								return {
+									...element,
+									status: "complete" as const,
+									result: "Piperacillin-tazobactam 4.5 g IV, first dose",
+									documented: { by: "Ashley Brooks, RN", at: at(22) },
+								};
+							case "fluids":
+								return {
+									...element,
+									status: "in-progress" as const,
+									fluids: element.fluids && {
+										...element.fluids,
+										boluses: [
+											{ id: "b1", volume: 500, at: at(18), reassessment: "Lungs clear, SpO₂ 95%, RR 22, MAP 61", tolerated: true, by: "Jenna Collins, NP" },
+											{ id: "b2", volume: 500, at: at(8), reassessment: "Lungs clear, SpO₂ 95%, RR 22, MAP 61", tolerated: true, by: "Jenna Collins, NP" },
+										],
+									},
+								};
+							default:
+								return element;
+						}
+					}),
+				},
+			};
+		})(),
+	},
+	render: (args) => <PanelDemo {...args} />,
+	play: async ({ canvas, args, userEvent }) => {
+		// The bundle opens with the alert, so its timer is in view.
+		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
+		const bundle = within(pathway.getByRole("region", { name: "Hour-1 bundle" }));
+		await expect(bundle.getByText("Left in hour 1")).toBeInTheDocument();
+		await expect(bundle.getByText("3 of 5")).toBeInTheDocument();
+		await expect(bundle.getByText("1,000 mL")).toBeInTheDocument();
+		// The renal dose review: confirmed here, and can be taken back.
+		await userEvent.click(bundle.getByRole("button", { name: "Confirm dose" }));
+		await expect(args.onBundleDecision).toHaveBeenCalledWith({ type: "confirm-check", elementId: "antibiotics" });
+		await expect(await bundle.findByText(/Reviewed by you/)).toBeInTheDocument();
+		// Accepting the pathway generates the bedside tasks, shared with Sidney ED's nurses.
+		await expect(pathway.queryByRole("region", { name: "Bedside tasks" })).not.toBeInTheDocument();
+		await userEvent.click(pathway.getByRole("button", { name: "Accept" }));
+		const tasks = within(await pathway.findByRole("region", { name: "Bedside tasks" }));
+		await expect(tasks.getByText("IV site check, norepinephrine")).toBeInTheDocument();
+	},
+};
+
+/**
+ * Tyler Kessler's DKA protocol 6 h in (Scenario 4, steps 1 to 3), in the alert panel: the pathway active, the hourly
+ * checks from 7 units/h, the rate up at hour 3 (signed on the intensivist's phone), the potassium hard stop at hour 4
+ * (insulin held, then replaced), and at hour 6 glucose under 250: dextrose prompted and the rate down to 3.5 units/h,
+ * waiting for sign-off. The next check is due. Each rate is the calculator's (`dkaCalculate`), as in the scenario.
+ */
+export const DkaProtocol: Story = {
+	name: "DKA Protocol",
+	args: {
+		data: (() => {
+			const detail = sampleScenario4AlertDetail();
+			const start = Date.now() - (6 * 60 + 8) * 60_000;
+			const at = (hour: number, minute = 0) => new Date(start + hour * 60 * 60_000 + minute * 60_000).toISOString();
+			const protocol = sampleScenario4Protocol(at(0));
+			const nurse = "Brittany Cole, RN";
+			const readings: DkaReadings[] = [
+				{ glucose: 520, potassium: 5.6, gap: 28, bicarbonate: 6, fluids: "0.9% saline 1,000 mL/h, second liter" },
+				{ glucose: 468, potassium: 5.1, gap: 26, bicarbonate: 8, fluids: "0.45% saline + KCl 20 mEq/L, 250 mL/h" },
+				{ glucose: 415, potassium: 4.4, gap: 24, bicarbonate: 10, fluids: "0.45% saline + KCl 20 mEq/L, 250 mL/h" },
+				{ glucose: 386, potassium: 3.9, gap: 22, bicarbonate: 11, fluids: "0.45% saline + KCl 20 mEq/L, 250 mL/h" },
+				{ glucose: 318, potassium: 3.1, gap: 20, bicarbonate: 12, fluids: "0.45% saline + KCl 20 mEq/L, 250 mL/h" },
+				{ glucose: 296, potassium: 3.6, gap: 19, bicarbonate: 13, fluids: "0.45% saline + KCl 20 mEq/L, 250 mL/h; KCl 20 mEq/h IV" },
+				{ glucose: 238, potassium: 3.9, gap: 17, bicarbonate: 14, fluids: "0.45% saline + KCl 20 mEq/L, 250 mL/h" },
+			];
+			const checks: DkaCheck[] = [];
+			readings.forEach((entry, hour) => {
+				const previous = checks.at(-1);
+				const { insulin, prompts } = dkaCalculate(protocol, entry, previous);
+				const before = previous?.insulin;
+				const changed = before && !before.held && !insulin.held && before.rate !== insulin.rate;
+				checks.push({
+					id: `h${hour}`,
+					hour,
+					at: at(hour),
+					status: "done",
+					readings: entry,
+					insulin,
+					// The hard stop's prompts were acted on; the dextrose prompt is still open.
+					prompts: prompts.map((prompt, index) => ({
+						...prompt,
+						id: `h${hour}-${index}`,
+						done: hour === 4 ? { by: nurse, at: at(4, 8), result: prompt.kind === "hard-stop" ? "drip paused" : "KCl 20 mEq/h IV" } : undefined,
+					})),
+					rateChange: changed
+						? {
+								from: before.rate,
+								to: insulin.rate,
+								signOff:
+									hour === 3
+										? { status: "signed", by: "Joanna Smith, MD", at: at(3, 5), via: "phone", seconds: 38 }
+										: { status: "pending", sentTo: "Dr. Smith", at: at(hour, 3) },
+							}
+						: undefined,
+					done: { by: nurse, at: at(hour, 3) },
+				});
+			});
+			checks.push({ id: "h7", hour: 7, at: at(7), status: "due" });
+			return { ...detail, alert: { ...detail.alert, firedAt: at(0, -2) }, pathwayStatus: "active" as const, protocol: { ...protocol, checks } };
+		})(),
+	},
+	render: (args) => <PanelDemo {...args} />,
+	play: async ({ canvas }) => {
+		// A running protocol opens with the alert.
+		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
+		const protocol = within(pathway.getByRole("region", { name: "DKA insulin protocol" }));
+		// The summary: the rate running (the change waits for sign-off) and the next check.
+		await expect(protocol.getByText("Next check", { exact: false })).toBeInTheDocument();
+		await expect(protocol.getByText("Hour 7")).toBeInTheDocument();
+		// The latest check in full: dextrose prompted, the rate change waiting for sign-off.
+		await expect(protocol.getByText("Add dextrose")).toBeInTheDocument();
+		await expect(protocol.getByText(/Waiting for sign-off/)).toBeInTheDocument();
+		// The hard stop folds into its check's line once it's older.
+		await expect(protocol.getAllByText("Insulin held").length).toBeGreaterThan(0);
+	},
+};
+
+/**
+ * Rosa Medina prefers Spanish (Scenario 3, step 2): once the video consult is on, it offers a medical interpreter. Add
+ * interpreter connects one, who joins the call.
+ */
+export const Interpreter: Story = {
+	args: { data: sampleScenario3AlertDetail(), defaultConsult: "live" },
+	render: (args) => <PanelDemo {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		const call = within(await canvas.findByRole("complementary", { name: "Video consult" }));
+		await expect(await call.findByText("Rosa prefers Spanish.")).toBeInTheDocument();
+		await userEvent.click(call.getByRole("button", { name: "Add interpreter" }));
+		await expect(await call.findByText("Lucía Herrera joined the call", {}, { timeout: 6000 })).toBeInTheDocument();
 	},
 };

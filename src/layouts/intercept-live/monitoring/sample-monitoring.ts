@@ -1,3 +1,11 @@
+import {
+	sampleScenario3CensusAt,
+	sampleScenario3Flags,
+	sampleScenario4CensusAt,
+	sampleScenario4Flags,
+	type Scenario3Stage,
+	type Scenario4Stage,
+} from "../census/sample-census";
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 
@@ -26,14 +34,14 @@ const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toI
 const monitoringPatients: MonitoringPatient[] = [
 	{
 		id: "p1",
-		hospitalId: "hpg",
+		hospitalId: "sidney",
 		lastName: "Miller",
 		firstName: "Sarah",
 		photo: samplePatientPhotos.p1,
 		mrn: "01033876",
 		sex: "F",
 		age: 39,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 11",
 		acuity: { label: news2, score: 17, level: "high" },
@@ -45,7 +53,7 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p2",
-		hospitalId: "hpg",
+		hospitalId: "sidney",
 		mine: true,
 		lastName: "Johnson",
 		firstName: "Daniel",
@@ -53,7 +61,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00482917",
 		sex: "M",
 		age: 58,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 3",
 		acuity: { label: news2, score: 15, level: "high" },
@@ -64,13 +72,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p3",
-		hospitalId: "cvmc",
+		hospitalId: "sidney",
 		lastName: "Davis",
 		firstName: "Linda",
 		mrn: "00519364",
 		sex: "F",
 		age: 67,
-		hospital: "CVMC",
+		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 7",
 		acuity: { label: news2, score: 10, level: "high" },
@@ -83,13 +91,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p4",
-		hospitalId: "cvmc",
+		hospitalId: "sidney",
 		lastName: "Thompson",
 		firstName: "Robert",
 		mrn: "00290451",
 		sex: "M",
 		age: 72,
-		hospital: "CVMC",
+		hospital: "Sidney Regional",
 		unit: "CVICU",
 		bed: "Bed 5",
 		acuity: { label: news2, score: 5, level: "medium" },
@@ -101,14 +109,14 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p5",
-		hospitalId: "hpg",
+		hospitalId: "sidney",
 		lastName: "Carter",
 		firstName: "Emily",
 		photo: samplePatientPhotos.p5,
 		mrn: "00956113",
 		sex: "F",
 		age: 29,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 6",
 		acuity: { label: news2 },
@@ -118,13 +126,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p6",
-		hospitalId: "cvmc",
+		hospitalId: "sidney",
 		lastName: "Anderson",
 		firstName: "James",
 		mrn: "00164529",
 		sex: "M",
 		age: 81,
-		hospital: "CVMC",
+		hospital: "Sidney Regional",
 		unit: "SICU",
 		bed: "Bed 2",
 		acuity: { label: news2, score: 3, level: "low" },
@@ -135,13 +143,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p7",
-		hospitalId: "cvmc",
+		hospitalId: "sidney",
 		lastName: "Taylor",
 		firstName: "Susan",
 		mrn: "00377208",
 		sex: "F",
 		age: 45,
-		hospital: "CVMC",
+		hospital: "Sidney Regional",
 		unit: "SICU",
 		bed: "Bed 12",
 		acuity: { label: news2, score: 0, level: "low" },
@@ -152,13 +160,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p8",
-		hospitalId: "hpg",
+		hospitalId: "sidney",
 		lastName: "Wilson",
 		firstName: "Michael",
 		mrn: "00841290",
 		sex: "M",
 		age: 54,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "PCU",
 		bed: "Bed 14",
 		acuity: { label: news2, score: 0, level: "low" },
@@ -168,14 +176,14 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p9",
-		hospitalId: "hpg",
+		hospitalId: "sidney",
 		mine: true,
 		lastName: "Harris",
 		firstName: "William",
 		mrn: "00615874",
 		sex: "M",
 		age: 70,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 8",
 		acuity: { label: news2, score: 16, level: "high" },
@@ -186,13 +194,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p10",
-		hospitalId: "hpg",
+		hospitalId: "sidney",
 		lastName: "Moore",
 		firstName: "Patricia",
 		mrn: "01120438",
 		sex: "F",
 		age: 61,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "SICU",
 		bed: "Bed 4",
 		acuity: { label: news2, score: 7, level: "high" },
@@ -204,13 +212,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p11",
-		hospitalId: "hpg",
+		hospitalId: "sidney",
 		lastName: "Clark",
 		firstName: "Jennifer",
 		mrn: "00908135",
 		sex: "F",
 		age: 34,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "OB-ICU",
 		bed: "Bed 1",
 		acuity: { label: news2, score: 1, level: "low" },
@@ -222,13 +230,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p12",
-		hospitalId: "hpg",
+		hospitalId: "sidney",
 		lastName: "Whitfield",
 		firstName: "Grace",
 		mrn: "00257719",
 		sex: "F",
 		age: 88,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "Neuro ICU",
 		bed: "Bed 2",
 		acuity: { label: news2 },
@@ -238,13 +246,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p13",
-		hospitalId: "cvmc",
+		hospitalId: "sidney",
 		lastName: "Walker",
 		firstName: "Thomas",
 		mrn: "00733062",
 		sex: "M",
 		age: 63,
-		hospital: "CVMC",
+		hospital: "Sidney Regional",
 		unit: "CVICU",
 		bed: "Bed 3",
 		acuity: { label: news2, score: 14, level: "high" },
@@ -255,13 +263,13 @@ const monitoringPatients: MonitoringPatient[] = [
 	},
 	{
 		id: "p14",
-		hospitalId: "cvmc",
+		hospitalId: "sidney",
 		lastName: "Bennett",
 		firstName: "Karen",
 		mrn: "00499320",
 		sex: "F",
 		age: 50,
-		hospital: "CVMC",
+		hospital: "Sidney Regional",
 		unit: "CCU",
 		bed: "Bed 9",
 		acuity: { label: news2, score: 1, level: "low" },
@@ -279,7 +287,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00826154",
 		sex: "F",
 		age: 72,
-		hospital: "Chadron",
+		hospital: "Chadron Memorial",
 		unit: "Med-Surg",
 		bed: "Bed 4",
 		// Just before Scenario 1 (`sampleScenario1Monitoring`, 01:40): inside her alarm limits. Her med-surg bed alarms on
@@ -300,7 +308,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00731942",
 		sex: "M",
 		age: 79,
-		hospital: "Chadron",
+		hospital: "Chadron Memorial",
 		unit: "Med-Surg",
 		bed: "Bed 6",
 		acuity: { label: news2, score: 2, level: "low" },
@@ -318,7 +326,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00749318",
 		sex: "F",
 		age: 68,
-		hospital: "Chadron",
+		hospital: "Chadron Memorial",
 		unit: "Med-Surg",
 		bed: "Bed 2",
 		acuity: { label: news2, score: 1, level: "low" },
@@ -335,7 +343,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00862047",
 		sex: "M",
 		age: 61,
-		hospital: "Chadron",
+		hospital: "Chadron Memorial",
 		unit: "Med-Surg",
 		bed: "Bed 8",
 		acuity: { label: news2, score: 0, level: "low" },
@@ -353,7 +361,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00658213",
 		sex: "F",
 		age: 67,
-		hospital: "Alliance",
+		hospital: "Alliance Community",
 		unit: "Med-Surg",
 		bed: "Bed 10",
 		acuity: { label: news2, score: 6, level: "medium" },
@@ -371,7 +379,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00914370",
 		sex: "M",
 		age: 54,
-		hospital: "Alliance",
+		hospital: "Alliance Community",
 		unit: "Med-Surg",
 		bed: "Bed 5",
 		acuity: { label: news2, score: 1, level: "low" },
@@ -389,7 +397,7 @@ const monitoringPatients: MonitoringPatient[] = [
 		mrn: "00684529",
 		sex: "F",
 		age: 79,
-		hospital: "Alliance",
+		hospital: "Alliance Community",
 		unit: "Med-Surg",
 		bed: "Bed 3",
 		acuity: { label: news2, score: 3, level: "low" },
@@ -592,7 +600,7 @@ const sampleScenario2Monitoring = (): MonitoringPatient => ({
 	mrn: "00973518",
 	sex: "M",
 	age: 64,
-	hospital: "Alliance",
+	hospital: "Alliance Community",
 	unit: "ED",
 	bed: "Bay 3",
 	limits: { spo2: [85, 100], rr: [8, 28] },
@@ -628,6 +636,149 @@ const sampleScenario2ResolvedMonitoring: Partial<MonitoringPatient> = {
 	},
 };
 
+// Rosa Medina (Scenario 3): her monitor's seed, after Dale Reynolds's four.
+const medinaSeed = reynoldsSeed + 4;
+
+type MonitorVitals = NonNullable<MonitoringPatient["vitals"]>;
+
+/**
+ * Rosa Medina's monitor values at each point of Scenario 3 (Demo Use Cases, "Sepsis in a patient with diabetes and
+ * kidney disease"), from the scenario's facts. MAP is (systolic + 2 × diastolic) / 3, as everywhere here, so the
+ * diastolic is set to give the scenario's MAP: 88/49 for MAP 62 (`fluids`) and 104/49 for MAP 67 (`pressor`), where the
+ * scenario's 88/50 and 104/56 would work out to 63 and 72.
+ */
+const medinaVitals: Record<"triage" | "alert" | Scenario3Stage, MonitorVitals> = {
+	triage: { hr: 112, spo2: 96, systolic: 96, diastolic: 58, map: 71, rr: 22 },
+	alert: { hr: 124, spo2: 95, systolic: 84, diastolic: 48, map: 60, rr: 24 },
+	fluids: { hr: 112, spo2: 95, systolic: 88, diastolic: 49, map: 62, rr: 22 },
+	pressor: { hr: 104, spo2: 96, systolic: 104, diastolic: 49, map: 67, rr: 20 },
+	"6h": { hr: 96, spo2: 97, systolic: 112, diastolic: 60, map: 77, rr: 18 },
+	resolved: { hr: 88, spo2: 97, systolic: 118, diastolic: 66, map: 83, rr: 16 },
+};
+
+/** Her last hour, moving from one point's values to the next's (the next's are the end). */
+const medinaTrends = (from: MonitorVitals, to: MonitorVitals): MonitoringPatient["trends"] => ({
+	hr: lastHour(to.hr, (to.hr ?? 0) - (from.hr ?? 0), 2, medinaSeed),
+	spo2: lastHour(to.spo2, (to.spo2 ?? 0) - (from.spo2 ?? 0), 0.6, medinaSeed + 1)?.map((value) => Math.min(100, value)),
+	systolic: lastHour(to.systolic, (to.systolic ?? 0) - (from.systolic ?? 0), 2.5, medinaSeed + 2),
+	rr: lastHour(to.rr, (to.rr ?? 0) - (from.rr ?? 0), 1, medinaSeed + 3),
+});
+
+/**
+ * Rosa Medina's monitor at Scenario 3's first beat (Sidney ED Bay 2, 15:30): BP 84/48 (MAP 60), HR 124, RR 24, SpO₂
+ * 95% on room air, T 39.4 °C, so NEWS2 10, High, up 3 from triage. Not on the Census until then. The monitor has no MAP
+ * alarm, so her systolic one says it: the adult default (90–160) flags 84 with ▼, and HR 124 is over the default 120
+ * (▲). Her last hour: from triage, 50 min ago (BP 96/58, HR 112, RR 22), to now.
+ */
+const sampleScenario3Monitoring = (): MonitoringPatient => ({
+	id: "p23",
+	hospitalId: "sidney",
+	lastName: "Medina",
+	firstName: "Rosa",
+	mrn: "01147382",
+	sex: "F",
+	age: 51,
+	hospital: "Sidney Regional",
+	unit: "ED",
+	bed: "Bay 2",
+	// The ED's adult limits, written out so the low systolic stays flagged whatever the card's defaults become.
+	limits: { systolic: [90, 160], hr: [50, 120] },
+	alarmPriorities: sampleAlarmPriorities,
+	acknowledgedAlarms: [],
+	acuity: { label: news2, score: 10, level: "high" },
+	trajectory: { label: change, value: "+3", trend: "up" },
+	scoreChange4h: 3,
+	tags: sampleScenario3Flags(),
+	vitals: medinaVitals.alert,
+	trends: medinaTrends(medinaVitals.triage, medinaVitals.alert),
+});
+
+/**
+ * Rosa Medina's monitor at each later stage of Scenario 3, as on her Census card (`sampleScenario3CensusAt` says how the
+ * scores are worked out). Each stage's last hour settles to its values from the stage before.
+ */
+function sampleScenario3MonitoringAt(stage: Scenario3Stage): Partial<MonitoringPatient> {
+	const census = sampleScenario3CensusAt(stage);
+	const previous = { fluids: "alert", pressor: "fluids", "6h": "pressor", resolved: "6h" } as const;
+	return {
+		acuity: census.acuity,
+		// Monitoring's change arrow takes its color from the value, so no `trendVariant` here.
+		trajectory: census.trajectory && { label: census.trajectory.label, value: census.trajectory.value, trend: census.trajectory.trend },
+		scoreChange4h: census.scoreChange4h,
+		vitals: medinaVitals[stage],
+		trends: medinaTrends(medinaVitals[previous[stage]], medinaVitals[stage]),
+	};
+}
+
+// Tyler Kessler (Scenario 4): his monitor's seed, after Rosa Medina's four.
+const kesslerSeed = medinaSeed + 4;
+
+/**
+ * Tyler Kessler's monitor values at each point of Scenario 4 (Demo Use Cases, "DKA caused by insulin rationing, managed
+ * by one night nurse"). Triage's RR is 24, not the 26 first given, so triage scores NEWS2 5 as the cards say (26 would
+ * score 3 for RR and make it 6).
+ */
+const kesslerVitals: Record<"triage" | "alert" | Scenario4Stage, MonitorVitals> = {
+	triage: { hr: 116, spo2: 99, systolic: 104, diastolic: 62, map: 76, rr: 24 },
+	alert: { hr: 122, spo2: 99, systolic: 98, diastolic: 58, map: 71, rr: 30 },
+	early: { hr: 108, spo2: 99, systolic: 108, diastolic: 64, map: 79, rr: 24 },
+	dextrose: { hr: 96, spo2: 99, systolic: 116, diastolic: 70, map: 85, rr: 20 },
+	closed: { hr: 82, spo2: 99, systolic: 122, diastolic: 76, map: 91, rr: 16 },
+};
+
+/** His last hour, moving from one point's values to the next's (the next's are the end). */
+const kesslerTrends = (from: MonitorVitals, to: MonitorVitals): MonitoringPatient["trends"] => ({
+	hr: lastHour(to.hr, (to.hr ?? 0) - (from.hr ?? 0), 2, kesslerSeed),
+	spo2: lastHour(to.spo2, (to.spo2 ?? 0) - (from.spo2 ?? 0), 0.6, kesslerSeed + 1)?.map((value) => Math.min(100, value)),
+	systolic: lastHour(to.systolic, (to.systolic ?? 0) - (from.systolic ?? 0), 2.5, kesslerSeed + 2),
+	rr: lastHour(to.rr, (to.rr ?? 0) - (from.rr ?? 0), 1, kesslerSeed + 3),
+});
+
+/**
+ * Tyler Kessler's monitor at Scenario 4's first beat (Bridgeport Med-Surg Bed 3, 23:00): HR 122, BP 98/58 (MAP 71), RR
+ * 30 and deep (Kussmaul), SpO₂ 99% on room air, so NEWS2 7, High, up 2 from triage. Not on the Census until then.
+ * Bridgeport's med-surg limits flag RR over 28 (▲) and HR over 120 (▲). His last hour: from triage, 40 min ago (HR 116,
+ * BP 104/62, RR 24), to now.
+ */
+const sampleScenario4Monitoring = (): MonitoringPatient => ({
+	id: "p24",
+	hospitalId: "bridgeport",
+	lastName: "Kessler",
+	firstName: "Tyler",
+	mrn: "01208854",
+	sex: "M",
+	age: 24,
+	hospital: "Bridgeport Valley",
+	unit: "Med-Surg",
+	bed: "Bed 3",
+	limits: { hr: [50, 120], rr: [8, 28] },
+	alarmPriorities: sampleAlarmPriorities,
+	acknowledgedAlarms: [],
+	acuity: { label: news2, score: 7, level: "high" },
+	trajectory: { label: change, value: "+2", trend: "up" },
+	scoreChange4h: 2,
+	tags: sampleScenario4Flags(),
+	vitals: kesslerVitals.alert,
+	trends: kesslerTrends(kesslerVitals.triage, kesslerVitals.alert),
+});
+
+/**
+ * Tyler Kessler's monitor at each later stage of Scenario 4, as on his Census card (`sampleScenario4CensusAt` says how
+ * the scores are worked out). Each stage's last hour settles to its values from the stage before. No `tags`, as there.
+ */
+function sampleScenario4MonitoringAt(stage: Scenario4Stage): Partial<MonitoringPatient> {
+	const census = sampleScenario4CensusAt(stage);
+	const previous = { early: "alert", dextrose: "early", closed: "dextrose" } as const;
+	return {
+		acuity: census.acuity,
+		// Monitoring's change arrow takes its color from the value, so no `trendVariant` here.
+		trajectory: census.trajectory && { label: census.trajectory.label, value: census.trajectory.value, trend: census.trajectory.trend },
+		scoreChange4h: census.scoreChange4h,
+		vitals: kesslerVitals[stage],
+		trends: kesslerTrends(kesslerVitals[previous[stage]], kesslerVitals[stage]),
+	};
+}
+
 export {
 	sampleEscalationTargets,
 	sampleMonitoringAlerts,
@@ -636,4 +787,8 @@ export {
 	sampleScenario1ResolvedMonitoring,
 	sampleScenario2Monitoring,
 	sampleScenario2ResolvedMonitoring,
+	sampleScenario3Monitoring,
+	sampleScenario3MonitoringAt,
+	sampleScenario4Monitoring,
+	sampleScenario4MonitoringAt,
 };

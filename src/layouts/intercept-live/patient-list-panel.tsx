@@ -15,7 +15,7 @@ type PatientListEntry = {
 	id: string;
 	/** "Miller, Sarah". */
 	name: string;
-	/** "MICU · Bed 11 · Harbor Point General", broad to specific within the unit. */
+	/** "MICU · Bed 11 · Sidney", broad to specific within the unit. */
 	location?: string;
 	alert?: PatientCensusCardProps["alert"];
 	acuity?: PatientCensusCardProps["acuity"];

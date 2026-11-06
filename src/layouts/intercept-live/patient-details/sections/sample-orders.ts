@@ -9,8 +9,8 @@ import type { ActiveOrder, OrderAgentCheck, OrderRecommendation, PatientOrders }
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
 const sarahOrders: PatientOrders = {
-	hospital: "Harbor Point General",
-	source: "Epic",
+	hospital: "Sidney Regional",
+	source: "Meditech",
 	updatedAt: minutesAgo(2),
 	writeBack: true,
 	supervisor: "Joanna Smith",
@@ -44,7 +44,7 @@ const sarahOrders: PatientOrders = {
 				{ label: "K 3.8", source: "Lab", at: minutesAgo(1520) },
 				{ label: "Creatinine 1.9", source: "Lab", at: minutesAgo(95) },
 			],
-			protocol: { kind: "hospital", name: "Harbor Point General electrolyte replacement" },
+			protocol: { kind: "hospital", name: "Sidney electrolyte replacement" },
 			suggestedAt: minutesAgo(80),
 			needsCosign: true,
 		},
@@ -138,10 +138,13 @@ const clock = (hours: number, minutes: number) => {
 };
 
 const hospitals = {
-	hpg: { hospital: "Harbor Point General", source: "Epic" },
-	alliance: { hospital: "Alliance", source: "Cerner" },
-	cvmc: { hospital: "CVMC", source: "Epic" },
-	chadron: { hospital: "Chadron", source: "Meditech" },
+	alliance: { hospital: "Alliance Community", source: "Cerner" },
+	// Meditech, as in `sample-data/sample-ehr.ts` (Epic until the hospital's rename, Nov 6, 2026).
+	sidney: { hospital: "Sidney Regional", source: "Meditech" },
+	chadron: { hospital: "Chadron Memorial", source: "Meditech" },
+	// TruBridge, as in `sample-data/sample-ehr.ts` (Demo Use Cases, Scenario 4). Was Harbor Point General (Epic) until
+	// Nov 6, 2026; its patients moved to Sidney.
+	bridgeport: { hospital: "Bridgeport Valley", source: "TruBridge" },
 };
 
 /** An evidence value with its source, `minutes` ago or at a clock time. */
@@ -217,7 +220,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Severe ARDS from influenza, paralyzed and proned. Electrolytes are in range, so nothing to recommend.
 	p2: patientOrders("p2", {
-		hospital: "hpg",
+		hospital: "sidney",
 		checks: [
 			ventMatches("AC/VC, rate 26, tidal volume 450 mL, FiO₂ 80%, PEEP 14"),
 			nothingToRecommend("Potassium 4.2 and creatinine 1.1 need no replacement, and there's no sepsis screen."),
@@ -240,7 +243,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Septic shock improving on day 3 of ceftriaxone (sulfa allergy). The bundle's repeat lactate was taken overnight.
 	p3: patientOrders("p3", {
-		hospital: "cvmc",
+		hospital: "sidney",
 		recommendations: [
 			{
 				kind: "sepsis-bundle",
@@ -275,7 +278,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Cardiogenic shock, DNR: nothing in the v1 classes applies, and nothing escalates beyond goals of care.
 	p4: patientOrders("p4", {
-		hospital: "cvmc",
+		hospital: "sidney",
 		checks: [
 			noVentilator("Oxygen 3 L/min by nasal cannula, as ordered"),
 			nothingToRecommend("Potassium 4.9 and creatinine 1.7 need no replacement. DNR, with goals of care documented yesterday."),
@@ -299,7 +302,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Status asthmaticus: potassium 3.2 on continuous albuterol, normal kidneys, so the protocol's full dose.
 	p5: patientOrders("p5", {
-		hospital: "hpg",
+		hospital: "sidney",
 		recommendations: [
 			{
 				kind: "electrolyte",
@@ -307,7 +310,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 				order: "Potassium chloride 20 mEq in 100 mL · IV over 2 h · 2 doses",
 				reason: "Potassium is 3.2, down from 3.9, on continuous albuterol. Creatinine is 0.7, so the full dose applies.",
 				evidence: [evidence("K 3.2", "Lab", 300), evidence("K 3.9", "Lab", 1150), evidence("Creatinine 0.7", "Lab", 300)],
-				protocol: { kind: "hospital", name: "Harbor Point General electrolyte replacement" },
+				protocol: { kind: "hospital", name: "Sidney electrolyte replacement" },
 				suggested: 290,
 				needsCosign: true,
 			},
@@ -328,7 +331,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Post-op hip with delirium: sodium 131 is outside the replacement protocol, so no recommendation.
 	p6: patientOrders("p6", {
-		hospital: "cvmc",
+		hospital: "sidney",
 		checks: [
 			noVentilator("Room air"),
 			nothingToRecommend("Sodium 131 is outside the replacement protocol, which covers potassium, magnesium and phosphate. Potassium is 4.0."),
@@ -351,7 +354,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Improving after Hartmann's. Yesterday's potassium replacement was taken; nothing new.
 	p7: patientOrders("p7", {
-		hospital: "cvmc",
+		hospital: "sidney",
 		recommendations: [
 			{
 				kind: "electrolyte",
@@ -359,7 +362,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 				order: "Potassium chloride 20 mEq in 100 mL · IV over 2 h · once",
 				reason: "Potassium was 3.5 on IV fluids with nothing by mouth.",
 				evidence: [evidence("K 3.5", "Lab", 1680)],
-				protocol: { kind: "hospital", name: "CVMC electrolyte replacement" },
+				protocol: { kind: "hospital", name: "Sidney electrolyte replacement" },
 				suggested: 1670,
 				outcome: { kind: "taken", at: minutesAgo(1650), by: "James Turner", writeBack: { status: "signed", by: "Marcus Reed", at: minutesAgo(1630) } },
 			},
@@ -382,7 +385,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Upper GI bleed after clipping, stable. Nothing in the v1 classes applies.
 	p8: patientOrders("p8", {
-		hospital: "hpg",
+		hospital: "sidney",
 		checks: [noVentilator("Room air"), nothingToRecommend("Potassium 4.1 needs no replacement, and there's no sepsis screen.")],
 		active: [
 			["medication", "Pantoprazole infusion", "8 mg/h IV · 72 h", "Laura Mitchell", 1980],
@@ -401,7 +404,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 	// The ventilator reads PEEP 8 against James Turner's order of 10 from 10:42 (his Vent-Order Mismatch alert). Sepsis
 	// Sniffer has him as a candidate: lactate 2.6 and MAP 64, so a repeat lactate and 30 mL/kg fluids.
 	p9: patientOrders("p9", {
-		hospital: "hpg",
+		hospital: "sidney",
 		recommendations: [
 			{
 				agent: "Vent-Order Mismatch",
@@ -412,7 +415,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 					"The ventilator has read PEEP 8 since 10:15. The active order from 10:42 is PEEP 10. Accept to ask respiratory therapy to set 10, or Modify to change the order to 8.",
 				evidence: [
 					evidence("PEEP 8", "Ventilator", 1),
-					evidence("Order PEEP 10", "Epic", clock(10, 42)),
+					evidence("Order PEEP 10", "Meditech", clock(10, 42)),
 					evidence("No change since 10:15", "Ventilator", clock(10, 15)),
 				],
 				protocol: { kind: "intercept", name: "Intercept vent-order alignment" },
@@ -460,7 +463,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 	// Necrotizing soft tissue infection on CRRT. Potassium 5.4 is CRRT's to manage, so no replacement; the bundle's
 	// fluids were declined for end-stage kidney disease.
 	p10: patientOrders("p10", {
-		hospital: "hpg",
+		hospital: "sidney",
 		recommendations: [
 			{
 				kind: "sepsis-bundle",
@@ -511,7 +514,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Preeclampsia after cesarean, on magnesium (level 6.1, in range): no replacement, and glucose isn't resulted.
 	p11: patientOrders("p11", {
-		hospital: "hpg",
+		hospital: "sidney",
 		checks: [
 			noVentilator("Room air"),
 			nothingToRecommend("Magnesium 6.1 is in the treatment range on the infusion, so no replacement."),
@@ -532,7 +535,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// Stroke after thrombectomy, DNR. Glucose 182 is one value under the enrollment threshold of two over 180.
 	p12: patientOrders("p12", {
-		hospital: "hpg",
+		hospital: "sidney",
 		checks: [
 			noVentilator("Oxygen 2 L/min by nasal cannula, as ordered"),
 			nothingToRecommend("Glucose 182 is one result over 180; enrollment needs two in 12 h. Potassium 4.1. DNR, per her advance directive."),
@@ -555,7 +558,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// VA-ECMO after STEMI. Potassium 5.1 is high, so no replacement; the concern is ECMO flow, outside the v1 classes.
 	p13: patientOrders("p13", {
-		hospital: "cvmc",
+		hospital: "sidney",
 		checks: [
 			ventMatches("PC, rate 10, FiO₂ 40%, PEEP 10"),
 			nothingToRecommend("Potassium 5.1 is high, so no replacement. ECMO flow and pressors are outside the recommendation classes."),
@@ -579,7 +582,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 
 	// New atrial fibrillation: magnesium 1.7 is under the protocol's 2.0 target, so replacement.
 	p14: patientOrders("p14", {
-		hospital: "cvmc",
+		hospital: "sidney",
 		recommendations: [
 			{
 				kind: "electrolyte",
@@ -587,7 +590,7 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 				order: "Magnesium sulfate 2 g in 50 mL · IV over 1 h · once",
 				reason: "Magnesium is 1.7, under the protocol's target of 2.0 in atrial fibrillation. Creatinine is 0.8.",
 				evidence: [evidence("Mg 1.7", "Lab", 240), evidence("Creatinine 0.8", "Lab", 240), evidence("K 3.6", "Lab", 240)],
-				protocol: { kind: "hospital", name: "CVMC electrolyte replacement" },
+				protocol: { kind: "hospital", name: "Sidney electrolyte replacement" },
 				suggested: 230,
 				needsCosign: true,
 			},
@@ -754,4 +757,94 @@ const sampleScenario2Orders = () =>
 		],
 	});
 
-export { sampleOrdersByPatient, sampleScenario2Orders };
+/**
+ * Rosa Medina (Scenario 3): Sidney ED's orders at the sepsis screen, built when the scenario's first beat plays. The
+ * first labs and the doses given before it are done; with the screen, Jenna Collins, NP ordered blood cultures ×2 and
+ * piperacillin-tazobactam after them (renally dosed after a full first dose). The rest of the bundle (fluids, the repeat
+ * lactate, norepinephrine) comes from her alert's pathway during the scenario, so it isn't suggested here. Glycemic
+ * management enrollment is (type 2 diabetes, glucose 390), without proposing an insulin dose. The monitoring and IV
+ * orders are illustrative.
+ */
+const sampleScenario3Orders = () =>
+	patientOrders("p23", {
+		hospital: "sidney",
+		recommendations: [
+			{
+				kind: "glucose",
+				title: "Enroll in glycemic management",
+				order: "Glycemic management protocol · enrollment",
+				reason: "Type 2 diabetes on insulin, with glucose 390 in septic shock.",
+				evidence: [evidence("Glucose 390", "Lab", 22), evidence("A1c 10.8%", "Chart", 60 * 24 * 50)],
+				protocol: { kind: "glycemic", name: "Glycemic management system" },
+				suggested: 1,
+			},
+		],
+		checks: [
+			noVentilator("Room air, SpO₂ 95%"),
+			{
+				agent: "Order-Entry Suggestion",
+				result: "Sepsis bundle in the alert",
+				detail: "The sepsis screen just fired. Its bundle (cultures, antibiotics, fluids, repeat lactate) is tracked in her alert's pathway, not suggested here. Potassium 5.1 needs no replacement.",
+				at: minutesAgo(0),
+			},
+		],
+		active: [
+			["lab", "Blood cultures ×2", "Two sets from two sites, before antibiotics", "Jenna Collins", 0, "Pending"],
+			["medication", "Piperacillin-tazobactam", "4.5 g IV once now, after blood cultures, then 2.25 g IV every 6 h · renal dose, CrCl about 27 mL/min", "Jenna Collins", 0],
+			["medication", "Acetaminophen", "1,000 mg by mouth once", "Jenna Collins", 44, "Completed"],
+			["medication", "Ondansetron", "4 mg IV every 6 h as needed for nausea", "Jenna Collins", 44],
+			["lab", "Lactate", "Once", "Jenna Collins", 47, "Resulted"],
+			["lab", "CBC with differential", "Once", "Jenna Collins", 47, "Resulted"],
+			["lab", "Basic metabolic panel", "Once", "Jenna Collins", 47, "Resulted"],
+			["lab", "Urinalysis with reflex culture", "Once", "Jenna Collins", 47, "Resulted"],
+			["nursing", "Cardiac monitor and continuous pulse oximetry", "Vital signs every 15 min", "Jenna Collins", 45],
+			["nursing", "Two peripheral IVs", "18 g or larger", "Jenna Collins", 45],
+			["nursing", "Medical interpreter", "Spanish, for consent and care decisions", "Jenna Collins", 45],
+			["diet", "Nothing by mouth", "Vomiting", "Jenna Collins", 45],
+		],
+	});
+
+/**
+ * Tyler Kessler (Scenario 4): Bridgeport's orders for his DKA, built when the scenario's first beat plays. The ED
+ * physician's first orders (a liter of saline, ondansetron, the first labs) and the on-call APP's admission by phone,
+ * then the DKA protocol started from the hub and co-signed by the APP: the insulin infusion, the fluids and potassium
+ * by the hourly checks, and those checks. Insulin dosing is the protocol's, not a recommendation, so nothing is suggested
+ * here. Ryan Mercer, the ED physician, and the nursing orders' details are illustrative.
+ */
+const sampleScenario4Orders = () =>
+	patientOrders("p24", {
+		hospital: "bridgeport",
+		checks: [
+			noVentilator("Room air, SpO₂ 99%"),
+			{
+				agent: "Order-Entry Suggestion",
+				result: "DKA protocol in the alert",
+				detail: "Insulin, fluids and potassium follow the DKA protocol's hourly checks in his alert, so nothing is suggested here. Potassium 5.6 needs no replacement while it's over 5.2.",
+				at: minutesAgo(0),
+			},
+		],
+		active: [
+			["medication", "Insulin regular infusion", "DKA protocol · 0.1 units/kg/h, 7 units/h to start, then by the hourly glucose · no bolus", "Joanna Smith", 0],
+			["medication", "0.9% saline", "1 L bolus, then 1,000 mL/h for 1 L; then 0.45% saline + KCl 20 mEq/L at 250 mL/h", "Ryan Mercer", 35],
+			["medication", "D5 0.45% saline + KCl 20 mEq/L", "150 mL/h once glucose is under 250", "Joanna Smith", 0, "Pending"],
+			[
+				"medication",
+				"Potassium chloride",
+				"DKA protocol · none while potassium is over 5.2; 20 mEq/L in fluids from 3.3 to 5.2; 20 mEq/h IV under 3.3, with insulin held",
+				"Joanna Smith",
+				0,
+			],
+			["medication", "Ondansetron", "4 mg IV every 6 h as needed for nausea", "Ryan Mercer", 32],
+			["lab", "Glucose, point of care", "Every hour on the insulin drip", "Joanna Smith", 0],
+			["lab", "Basic metabolic panel", "Every hour on the insulin drip · potassium, anion gap, bicarbonate", "Joanna Smith", 0, "Scheduled"],
+			["lab", "Venous blood gas", "Once", "Ryan Mercer", 22, "Resulted"],
+			["lab", "Beta-hydroxybutyrate", "Once", "Ryan Mercer", 22, "Resulted"],
+			["lab", "Basic metabolic panel, CBC and lipase", "Once", "Ryan Mercer", 22, "Resulted"],
+			["nursing", "Admit to Med-Surg", "Bed 3 · phone order", "Derek Lawson", 12],
+			["nursing", "Vital signs", "Every hour while on the insulin drip", "Derek Lawson", 12],
+			["nursing", "Strict intake and output", "Hourly", "Derek Lawson", 12],
+			["diet", "Nothing by mouth", "Ice chips; clear liquids once the vomiting stops", "Derek Lawson", 12],
+		],
+	});
+
+export { sampleOrdersByPatient, sampleScenario2Orders, sampleScenario3Orders, sampleScenario4Orders };

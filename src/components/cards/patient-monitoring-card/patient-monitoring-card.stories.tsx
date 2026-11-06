@@ -50,7 +50,7 @@ const meta = {
 		mrn: "01033876",
 		sex: "F",
 		age: 39,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 11",
 		vitals: stable,

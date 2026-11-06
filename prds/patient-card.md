@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 5, 2026
+Last updated: Nov 6, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines proposed presentation behavior, states and acceptance criteria 
 **Component:** Patient card  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 5, 2026
+**Last updated:** November 6, 2026
 
 ---
 
@@ -269,18 +269,18 @@ The card shows an initials avatar next to the name. It adds a human element and 
 
 | Level | Example | What it is |
 | --- | --- | --- |
-| Hospital | CVMC | The facility (PC-013). |
+| Hospital | Sidney | The facility (PC-013). |
 | Unit | MICU | A department inside the hospital with its own team (nurses, intensivist, respiratory therapists), usually 10–30 beds on one floor or wing. Not a room. |
 | Room | 12 | A physical room in that unit. |
 | Bed | 3 or 12A | One patient's place in a room. |
 
 ℹ️ ICU rooms are almost always private (one patient per room), so the room and the bed are effectively the same and hospitals often send only one of them. That's why the example skips the room. Shared rooms are more common on regular wards, e.g. 4 West · Room 412 · Bed B.
 
-**Example:** CVMC · MICU · Bed 9
+**Example:** Sidney · MICU · Bed 9
 
 | Part | Meaning |
 | --- | --- |
-| CVMC | The hospital the patient is in (PC-013). A sample abbreviation from mockup data, most likely ending in "Medical Center"; its full name isn't defined. |
+| Sidney | The hospital the patient is in (PC-013), by its short name. ℹ️ The mockups' "CVMC" was renamed Sidney on Nov 6, 2026, the Demo Use Cases' spoke for Scenario 3. |
 | MICU | The unit: the Medical Intensive Care Unit, the department inside that hospital. |
 | Bed 9 | The patient's bed number in that unit. |
 
@@ -288,7 +288,7 @@ The card shows an initials avatar next to the name. It adds a human element and 
 
 | Card shows | Data field | Figma placeholder | Example value | HL7 ADT location (PV1-3) |
 | --- | --- | --- | --- | --- |
-| CVMC | `hospitalCode` | `{hospital-code}` | `"CVMC"` | Facility (PL.4) |
+| Sidney | `hospitalCode` | `{hospital-code}` | `"Sidney"` | Facility (PL.4) |
 | *(not shown; for a tooltip or screen reader label)* | `hospitalName` | `{hospital-name}` | Not in the mockup data | — |
 | MICU | `unitCode` | `{unit-code}` | `"MICU"` | Point of care (PL.1) |
 | *(not shown; for a tooltip or screen reader label)* | `unitName` | `{unit-name}` | `"Medical Intensive Care Unit"` | — |
@@ -1209,7 +1209,7 @@ The full set of Patient card scenarios for design and prototype work. They are l
 | P4 | No tags | "No tags" in muted text, in a row the height of a tag, so cards keep the same height (Oct 30, 2026) |
 | P5 | Transfer pending | "MICU · Bed 9 → CCU" |
 | P6 | Discharged / deceased | Card greyed out, read-only |
-| P7 | Multi-site | Site badge visible (CVMC); hidden in single-site setups |
+| P7 | Multi-site | Site badge visible (Sidney); hidden in single-site setups |
 
 - ℹ️ Each tag shows as a pill (UCL Badge). In P1, the **Ventilated** pill means invasive mechanical ventilation only (PC-050). A patient on noninvasive ventilation (a BiPAP or CPAP mask, no tube) gets its own **NIV** pill, never "Ventilated". Neither pill shows for room air or supplemental oxygen.
 - ✅ **Pressors counted (Nov 3, 2026, client feedback):** the pressor flag says how many are running, "1 pressor", "2 pressors" (it was "On pressors"): the pressors among the patient's continuous infusions (PC-060), from epinephrine, phenylephrine, norepinephrine, vasopressin, dopamine, dobutamine and angiotensin II (Giapreza). The Organ support quick view and Filters still group them as On pressors, any count.

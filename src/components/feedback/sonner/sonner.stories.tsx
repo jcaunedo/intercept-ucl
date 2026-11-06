@@ -150,7 +150,7 @@ export const AllVariants: Story = {
 			<Button variant='outline' onClick={() => toast.info("Chadron's feed is back")}>
 				Info
 			</Button>
-			<Button variant='outline' onClick={() => toast.warning("Harbor Point data is delayed")}>
+			<Button variant='outline' onClick={() => toast.warning("Bridgeport data is delayed")}>
 				Warning
 			</Button>
 			<Button variant='outline' onClick={() => toast.error("Couldn't send the escalation")}>

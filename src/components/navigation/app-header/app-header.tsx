@@ -5,6 +5,7 @@ import {
 	ChevronDownIcon,
 	EllipsisIcon,
 	FlagIcon,
+	GitForkIcon,
 	ListIcon,
 	MessageCircleMoreIcon,
 	MessageCircleOffIcon,
@@ -89,7 +90,12 @@ type AppHeaderDefaultProps = AppHeaderCommonProps & {
 	/** The signed-in user. */
 	user: AppHeaderUser;
 	onOpenUserMenu?: () => void;
-	unreadMessages: number;
+	/**
+	 * @deprecated The default header no longer has a Messages button (Nov 6, 2026): unread messages show as a dot on the
+	 * Sidebar's Messages item (`alert: "unread"`). Ignored; removed in the next breaking release.
+	 */
+	unreadMessages?: number;
+	/** @deprecated See `unreadMessages`. Ignored; removed in the next breaking release. */
 	onOpenMessages?: () => void;
 	/**
 	 * @deprecated The header no longer has a Search button (search is in the Sidebar). Ignored; removed in the next
@@ -102,8 +108,8 @@ type AppHeaderDefaultProps = AppHeaderCommonProps & {
 type AppHeaderPatientProps = AppHeaderCommonProps & {
 	/**
 	 * `patient`: on a patient's page, Back, the patient list and Ask Intercept (when the app handles them), then a
-	 * breadcrumb back to where the user came from, on the left; Video consult, Messages, a "…" menu and the care team on
-	 * the right, the menu holding the patient's actions (Raise concern, Huddle team, Escalate) and `moreActions`.
+	 * breadcrumb back to where the user came from, on the left; Video consult, Messages, Pathway, a "…" menu and the care
+	 * team on the right, the menu holding the patient's actions (Raise concern, Huddle team, Escalate) and `moreActions`.
 	 */
 	variant: "patient";
 	/** The page the user came from, e.g. "Census". The breadcrumb's back link. */
@@ -145,6 +151,13 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	messagesOpen?: boolean;
 	/** Unread messages, shown as a Counter on Messages from 1. */
 	unreadMessages?: number;
+	/**
+	 * Opens the patient's care pathway (Nov 6, 2026): what an alert suggested, its orders and what it runs. Without it,
+	 * there's no Pathway button. With `pathwayOpen`, it closes it.
+	 */
+	onOpenPathway?: () => void;
+	/** Whether the pathway's panel is open: Pathway is pressed and closes it ("Close pathway", `aria-expanded`). */
+	pathwayOpen?: boolean;
 	/** Raises a concern about the patient (a Clinician Intuition Alert). First in the "…" menu, shown with its handler. */
 	onRaiseConcern?: () => void;
 	/** Starts a huddle with the patient's team. In the "…" menu, shown with its handler. */
@@ -434,28 +447,20 @@ function AccountMenu({ user, onOpenUserMenu }: Pick<AppHeaderDefaultProps, "user
 	);
 }
 
-/** Default: Messages and Theme 8px apart, then the team and the user's menu, 16px apart. */
+/**
+ * Default: Theme, then the team and the user's menu, 16px apart. No Messages button since Nov 6, 2026: unread messages
+ * show on the Sidebar's Messages item.
+ */
 function DefaultActions({
-	unreadMessages,
-	onOpenMessages,
 	team,
 	onOpenTeam,
 	user,
 	onOpenUserMenu,
 	themeButton,
 }: AppHeaderDefaultProps & { themeButton: React.ReactNode }) {
-	const messagesLabel = `${unreadMessages} ${unreadMessages === 1 ? "message" : "messages"}`;
-
 	return (
 		<div className='flex items-center gap-4'>
-			<div className='flex items-center gap-2'>
-				{/* The accessible name starts with the visible label, so voice control users can say what they see. */}
-				<Button variant='outline' onClick={onOpenMessages} aria-label={`${messagesLabel} unread`}>
-					<MessageCircleMoreIcon aria-hidden='true' />
-					{messagesLabel}
-				</Button>
-				{themeButton}
-			</div>
+			{themeButton}
 			<TeamMenu team={team} onOpenTeam={onOpenTeam} />
 			<AccountMenu user={user} onOpenUserMenu={onOpenUserMenu} />
 		</div>
@@ -463,7 +468,7 @@ function DefaultActions({
 }
 
 /**
- * Patient: Video consult and Messages (each with its handler) and the "…" menu, 8px apart (no Theme since Nov 5, 2026),
+ * Patient: Video consult, Messages and Pathway (each with its handler) and the "…" menu, 8px apart (no Theme since Nov 5, 2026),
  * then 16px to the care team. The menu opens with
  * the patient's actions (Raise concern, Huddle team, Escalate, each with its handler), then a rule, then `moreActions`
  * (Nov 5, 2026: the actions left the bar, and Video consult and Messages came up from the Patient Header). While its
@@ -475,6 +480,8 @@ function PatientActions({
 	onOpenMessages,
 	messagesOpen,
 	unreadMessages = 0,
+	onOpenPathway,
+	pathwayOpen,
 	onRaiseConcern,
 	onHuddleTeam,
 	onEscalate,
@@ -525,8 +532,8 @@ function PatientActions({
 							<MessageCircleMoreIcon aria-hidden='true' />
 						)}
 						<span className={collapsibleLabelClassName}>Messages</span>
-						{/* Solid neutral, flashing every 2 s while there's something unread (Unread pattern; Nov 5, 2026, user's
-						    call); still under reduced motion. */}
+						{/* Brand (Counter `default`, Nov 6, 2026, user's call), flashing every 2 s while there's something unread
+						    (Unread pattern, Nov 5, 2026); still under reduced motion. */}
 						{unreadMessages && !messagesOpen ? (
 							<motion.span
 								aria-hidden='true'
@@ -535,9 +542,23 @@ function PatientActions({
 								animate={prefersReducedMotion ? "rest" : "flash"}
 								className='inline-flex'
 							>
-								<Counter variant='neutral' count={unreadMessages} max={99} />
+								<Counter count={unreadMessages} max={99} />
 							</motion.span>
 						) : null}
+					</Button>
+				) : null}
+				{onOpenPathway ? (
+					// After Messages, as on the alert panel's actions row (Nov 6, 2026). No "off" icon for a fork: pressed, the
+					// hover fill and its name say it closes.
+					<Button
+						variant='outline'
+						aria-expanded={pathwayOpen}
+						aria-label={pathwayOpen ? "Close pathway" : undefined}
+						onClick={onOpenPathway}
+						className={cn(collapsibleClassName, pathwayOpen && pressedClassName)}
+					>
+						<GitForkIcon aria-hidden='true' />
+						<span className={collapsibleLabelClassName}>Pathway</span>
 					</Button>
 				) : null}
 				{groups.length ? (
@@ -569,9 +590,9 @@ function PatientActions({
 }
 
 /**
- * Intercept Live's top bar. `default`: connection status and clock on the left; messages, theme, the team on shift and
+ * Intercept Live's top bar. `default`: connection status and clock on the left; theme, the team on shift and
  * the user's menu on the right. `patient`: Back, the patient list, Ask Intercept and a breadcrumb back from a patient's
- * page on the left; Video consult, Messages, a "…" menu with the patient's actions and the care team on the right. Each button calls its own handler; the
+ * page on the left; Video consult, Messages, Pathway, a "…" menu with the patient's actions and the care team on the right. Each button calls its own handler; the
  * header holds no state.
  *
  * Figma: [intercept.ds › app-header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1169-318)
@@ -601,6 +622,8 @@ function AppHeader(props: AppHeaderProps) {
 		onVideoConsult: _onVideoConsult,
 		videoConsultOpen: _videoConsultOpen,
 		messagesOpen: _messagesOpen,
+		onOpenPathway: _onOpenPathway,
+		pathwayOpen: _pathwayOpen,
 		onRaiseConcern: _onRaiseConcern,
 		onHuddleTeam: _onHuddleTeam,
 		onEscalate: _onEscalate,

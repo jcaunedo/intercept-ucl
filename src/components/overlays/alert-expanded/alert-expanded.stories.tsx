@@ -15,7 +15,7 @@ const hayes = {
 	sex: "F",
 	age: 72,
 	mrn: "00826154",
-	hospital: "Chadron",
+	hospital: "Chadron Memorial",
 	unit: "Med-Surg",
 	bed: "Bed 4",
 	alert: { variant: "critical", inLast24h: 3, since: new Date(Date.now() - 214_000).toISOString() },

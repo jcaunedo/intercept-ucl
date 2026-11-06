@@ -5,7 +5,8 @@ import { sampleEhrFor } from "../../sample-data/sample-ehr";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's notes, newest first, written by their own care
 // team (`sample-patient-records.ts`). Where a hospital takes Intercept notes back, signed Intercept notes are written to
-// their record (Harbor Point General and Alliance); CVMC doesn't yet, so they stay signed in Intercept.
+// their record (Sidney and Alliance); elsewhere they stay signed in Intercept. Sidney took Harbor Point General's place
+// here on Nov 6, 2026, when Harbor Point's patients moved to Sidney and it became Bridgeport (user's call).
 // `sample-epic.ts` lists the same write-backs.
 //
 // Sarah Miller (`p1`) is the reference: one note of each status and an AI Scribe draft, in step with her record. She
@@ -15,7 +16,7 @@ import { sampleEhrFor } from "../../sample-data/sample-ehr";
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 const hoursAgo = (hours: number) => minutesAgo(hours * 60);
 
-const writesBack: Record<string, boolean> = { "Harbor Point General": true, "Alliance": true, CVMC: false };
+const writesBack: Record<string, boolean> = { "Alliance Community": true, "Sidney Regional": true, "Bridgeport Valley": false };
 
 const sarahNotes: PatientNote[] = [
 	{
@@ -59,7 +60,7 @@ const sarahNotes: PatientNote[] = [
 	{
 		id: "p1-n3",
 		type: "Nursing note",
-		author: { name: "Kelly Ortiz", role: "RN", organization: "Harbor Point General" },
+		author: { name: "Kelly Ortiz", role: "RN", organization: "Sidney Regional" },
 		at: minutesAgo(25),
 		origin: "hospital",
 		status: "signed",
@@ -72,7 +73,7 @@ const sarahNotes: PatientNote[] = [
 	{
 		id: "p1-n4",
 		type: "Respiratory therapy note",
-		author: { name: "Dana Brooks", role: "RRT", organization: "Harbor Point General" },
+		author: { name: "Dana Brooks", role: "RRT", organization: "Sidney Regional" },
 		at: hoursAgo(3),
 		origin: "hospital",
 		status: "signed",
@@ -106,7 +107,7 @@ const sarahNotes: PatientNote[] = [
 		origin: "intercept",
 		status: "write-back-failed",
 		failure:
-			"Epic didn't accept this note: Harbor Point General closed the night encounter for review at 06:00. Your note is kept here. Try again, or ask Harbor Point's health information team to reopen it.",
+			"Meditech didn't accept this note: Sidney closed the night encounter for review at 06:00. Your note is kept here. Try again, or ask Sidney's health information team to reopen it.",
 		sections: [
 			{
 				text: "Camera check at the bedside team's request: patient comfortable on the ventilator, no distress. MAP 64 on norepinephrine 0.08. Bedside RN aware. No changes made.",
@@ -116,7 +117,7 @@ const sarahNotes: PatientNote[] = [
 	{
 		id: "p1-n7",
 		type: "ICU progress note",
-		author: { name: "Laura Mitchell", role: "MD, Attending", organization: "Harbor Point General" },
+		author: { name: "Laura Mitchell", role: "MD, Attending", organization: "Sidney Regional" },
 		at: hoursAgo(26),
 		origin: "hospital",
 		status: "signed",
@@ -144,7 +145,7 @@ const sarahNotes: PatientNote[] = [
 	{
 		id: "p1-n9",
 		type: "History and physical",
-		author: { name: "Laura Mitchell", role: "MD, Attending", organization: "Harbor Point General" },
+		author: { name: "Laura Mitchell", role: "MD, Attending", organization: "Sidney Regional" },
 		at: hoursAgo(52),
 		origin: "hospital",
 		status: "signed",
@@ -183,9 +184,10 @@ type NotesSpec = {
 };
 
 const therapists: Record<string, [name: string, role: string]> = {
-	"Harbor Point General": ["Dana Brooks", "RRT"],
-	"Alliance": ["Rachel Lindgren", "RRT"],
-	CVMC: ["Ben Carter", "RRT"],
+	"Alliance Community": ["Rachel Lindgren", "RRT"],
+	"Sidney Regional": ["Ben Carter", "RRT"],
+	// A critical access hospital: the respiratory therapist covers the ED and the floor.
+	"Bridgeport Valley": ["Erin Walsh", "RRT"],
 };
 
 function buildNotes(record: PatientRecord, spec: NotesSpec): PatientNote[] {
@@ -196,7 +198,7 @@ function buildNotes(record: PatientRecord, spec: NotesSpec): PatientNote[] {
 	const hoursSince = (iso?: string) => (iso ? (Date.now() - Date.parse(iso)) / 3_600_000 : 0);
 	const stay = hoursSince(record.admittedAt);
 	const icu = hoursSince(record.icuAdmittedAt);
-	// Signed Intercept notes: written to Epic where the hospital takes them back, otherwise signed in Intercept.
+	// Signed Intercept notes: written to the hospital's record where it takes them back, otherwise signed in Intercept.
 	const signed = (minutes: number): Pick<PatientNote, "status" | "writtenBackAt"> =>
 		writesBack[hospital] ? { status: "written-back", writtenBackAt: minutesAgo(minutes - 3) } : { status: "signed" };
 	const id = (n: number) => `${record.id}-n${n}`;
@@ -313,7 +315,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		yesterday: "Severe ARDS from influenza A. P/F 96. Continue paralysis and prone positioning. Vancomycin stopped, MRSA swab negative. Oseltamivir day 2.",
 		events: "Proned overnight, P/F 110 prone, 78 supine. Fentanyl increased to 100 for ventilator dyssynchrony.",
 		apPlan: "Prone again this afternoon. Hold sedation wean while paralyzed. Daily ABG.",
-		plan: "Prone now rather than at 16:00. If P/F stays under 80 prone, call Harbor Point's ECMO team for a consult. Conservative fluids.",
+		plan: "Prone now rather than at 16:00. If P/F stays under 80 prone, call Sidney's ECMO team for a consult. Conservative fluids.",
 	},
 	p3: {
 		history: "67-year-old woman with CKD stage 3 and atrial fibrillation on apixaban, 2 days of confusion and fever. BP 78/40, lactate 4.6, pyuria. Intubated for airway protection after fluids.",
@@ -323,7 +325,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		yesterday: "E. coli bacteremia from the urine, sensitive to ceftriaxone. Norepinephrine 0.10. Creatinine 2.6, improving. Restart rate control when off pressors.",
 		events: "Norepinephrine down to 0.08 from 0.10 overnight. Morning WBC 14.1 from 18.0, procalcitonin 3.2 from 7.8.",
 		apPlan: "Keep weaning norepinephrine to MAP 65. Ceftriaxone day 3 of 7. Spontaneous breathing trial tomorrow.",
-		plan: "Off norepinephrine by tonight if MAP holds. Ask CVMC's team about restarting apixaban once she's off pressors and creatinine keeps improving.",
+		plan: "Off norepinephrine by tonight if MAP holds. Ask Sidney's team about restarting apixaban once she's off pressors and creatinine keeps improving.",
 	},
 	p4: {
 		history: "72-year-old man with ischemic cardiomyopathy, NSTEMI with cardiogenic shock. PCI to the circumflex in the cath lab, then dobutamine for a cardiac index of 1.8.",
@@ -450,7 +452,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 
 // Margaret Hayes (`p15`), Scenario 1 at 01:40: only the hospital's notes. She's on a med-surg floor and no one from
 // Intercept has looked in yet, so there's no Intercept note to draft or sign.
-const chadron = "Chadron";
+const chadron = "Chadron Memorial";
 const hayesNotes: PatientNote[] = [
 	{
 		id: "p15-n1",
@@ -591,7 +593,7 @@ const hansenNotes: PatientNote[] = [
 ];
 
 const sampleNotesByPatient: Record<string, PatientNotes> = {
-	p1: { emr: "Epic", notes: sarahNotes },
+	p1: { emr: sampleEhrFor("p1"), notes: sarahNotes },
 	p15: { emr: sampleEhrFor("p15"), notes: hayesNotes },
 	p16: { emr: sampleEhrFor("p16"), notes: ericksonNotes },
 	p19: { emr: sampleEhrFor("p19"), notes: carlsonNotes },
@@ -606,7 +608,7 @@ const sampleNotesByPatient: Record<string, PatientNotes> = {
 // Dale Reynolds (`p21`, Scenario 2): the ED's notes when the hub consult is requested. Built when the scenario's first
 // beat plays, so their times read from then.
 const sampleScenario2Notes = (): PatientNote[] => {
-	const alliance = "Alliance";
+	const alliance = "Alliance Community";
 	return [
 		{
 			id: "p21-n1",
@@ -659,4 +661,157 @@ const sampleScenario2Notes = (): PatientNote[] => {
 	];
 };
 
-export { sampleNotesByPatient, sampleScenario2Notes };
+// Rosa Medina (`p23`, Scenario 3): Sidney ED's notes when the sepsis screen fires. Built when the scenario's first beat
+// plays, so their times read from then. Hospital notes, signed in Sidney's record (Meditech); none of them is an Intercept
+// note, so there's nothing to write back. The nurse's note on the falling pressure is
+// illustrative (the scenario only gives the reading, 5 min before the screen).
+const sampleScenario3Notes = (): PatientNote[] => {
+	const sidney = "Sidney Regional";
+	return [
+		{
+			id: "p23-n1",
+			type: "ED provider note",
+			author: { name: "Jenna Collins", role: "NP, Hospital medicine", organization: sidney },
+			at: minutesAgo(3),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					heading: "History",
+					text: "51-year-old woman with type 2 diabetes on insulin (A1c 10.8%) and CKD stage 4 (baseline creatinine 2.4). Three days of dysuria and left flank pain, fevers and rigors since last night, vomiting this morning. Walked in with her daughter. Prefers Spanish; history taken with a medical interpreter. Sulfonamide allergy (rash).",
+				},
+				{
+					heading: "Assessment",
+					text: "Sepsis from left pyelonephritis, now hypotensive: BP 84/48 (MAP 60), HR 124, T 39.4 °C, RR 24, SpO₂ 95% on room air, alert. Lactate 3.8, WBC 18.6. Urinalysis nitrite positive, leukocyte esterase 3+, WBC over 50/hpf. Creatinine 2.6 from her baseline 2.4, eGFR 22; potassium 5.1, bicarbonate 17, glucose 390. Left CVA tenderness. Probable septic shock.",
+				},
+				{
+					heading: "Plan",
+					text: "Sepsis screen positive. Blood cultures ×2, then piperacillin-tazobactam 4.5 g IV, then 2.25 g every 6 h for her kidney function. Fluids by 500 mL boluses with reassessment after each, given CKD 4. No CT contrast; renal ultrasound instead. Hold amlodipine. Hub intensivist to review. Boarding in the ED: our inpatient unit is full.",
+				},
+			],
+		},
+		{
+			id: "p23-n2",
+			type: "Nursing note",
+			author: { name: "Ashley Brooks", role: "RN", organization: sidney },
+			at: minutesAgo(5),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "BP down to 84/48 on recheck, HR 124, T 39.4 °C. Alert, says she feels worse, and her daughter says she's more tired. Second 18 g IV placed by Kristen. Jenna Collins, NP at the bedside.",
+				},
+			],
+		},
+		{
+			id: "p23-n3",
+			type: "ED triage note",
+			author: { name: "Ashley Brooks", role: "RN", organization: sidney },
+			at: minutesAgo(48),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "Walk-in with her daughter. Dysuria and left flank pain for 3 days, fevers and rigors since last night, vomited this morning. BP 96/58, HR 112, T 39.0 °C, RR 22, SpO₂ 96% on room air. Alert. Diabetic on insulin, kidney disease. Prefers Spanish; daughter interpreting for triage only, medical interpreter requested. ESI 2.",
+				},
+			],
+		},
+	];
+};
+
+// Tyler Kessler (`p24`, Scenario 4): Bridgeport's notes, built when a beat plays so their times read from then. Hospital
+// notes in Bridgeport's record (TruBridge), none of them Intercept's, and Bridgeport doesn't take Intercept notes back
+// anyway. At 23:00 (`admission`): the ED physician's note with triage, the on-call APP's phone orders from home, and the
+// night RN's admission note. At 07:30 (`noted`) the APP's history and physical joins them: it records the rationing as a
+// structured social need (`fields`), not only in its text (step 5). The earlier notes sit 10 min further back then, as
+// the night passes in seconds. Ryan Mercer, the ED physician, and the notes' wording are illustrative.
+const sampleScenario4Notes = (stage: "admission" | "noted" = "admission"): PatientNote[] => {
+	const bridgeport = "Bridgeport Valley";
+	const back = stage === "noted" ? 10 : 0;
+	const admission: PatientNote[] = [
+		{
+			id: "p24-n1",
+			type: "Nursing admission note",
+			author: { name: "Brittany Cole", role: "RN", organization: bridgeport },
+			at: minutesAgo(back + 3),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "Up from the ED to Med-Surg Bed 3. Drowsy but answers questions, oriented ×3. Deep, fast breathing, RR 30. HR 122, BP 98/58, SpO₂ 99% on room air. Second liter of saline running through an 18 g in the left forearm; second IV placed, 20 g right hand. No vomiting since the ondansetron. Fingerstick reads HI. Only RN on the inpatient side tonight.",
+				},
+			],
+		},
+		{
+			id: "p24-n2",
+			type: "Telephone orders",
+			author: { name: "Derek Lawson", role: "PA-C", organization: bridgeport },
+			at: minutesAgo(back + 14),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "Called by Dr. Mercer from the ED; on call from home. Admit to Med-Surg, Bed 3, under my care, for severe DKA. The hub intensivist will start and supervise the DKA protocol tonight; I'll co-sign its orders. Hourly vitals, strict intake and output, nothing by mouth. I'll see him in the morning and write the history and physical.",
+				},
+			],
+		},
+		{
+			id: "p24-n3",
+			type: "ED provider note",
+			author: { name: "Ryan Mercer", role: "MD, Emergency medicine", organization: bridgeport },
+			at: minutesAgo(back + 15),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					heading: "History",
+					text: "24-year-old man with type 1 diabetes since age 11. Out of his glargine for 2 days; says he's been making his insulin last since he lost his insurance. Vomiting since yesterday, belly pain, very thirsty. Walked in at 22:20. Triage: HR 116, BP 104/62, RR 24, SpO₂ 99% on room air, T 37.0 °C; meter glucose reads HI.",
+				},
+				{
+					heading: "Assessment",
+					text: "Severe DKA. Venous pH 7.08, bicarbonate 6, anion gap 28, beta-hydroxybutyrate 7.2, glucose 520, potassium 5.6, sodium 131, chloride 97, creatinine 1.4 (baseline 0.9), BUN 32. WBC 14.2, likely stress; lipase normal, no sign of infection. Kussmaul breathing at 30, alert and oriented.",
+				},
+				{
+					heading: "Plan",
+					text: "0.9% saline 1 L bolus, then 1 L/h. No insulin bolus. Ondansetron. Admitted to Med-Surg under Derek Lawson, PA-C, on call; the hub intensivist is asked to run the DKA protocol tonight. No ICU here, and one RN on the inpatient side.",
+				},
+			],
+		},
+	];
+	if (stage === "admission") return admission;
+	return [
+		{
+			id: "p24-n4",
+			type: "History and physical",
+			author: { name: "Derek Lawson", role: "PA-C", organization: bridgeport },
+			at: minutesAgo(0),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					heading: "History of present illness",
+					text: "24-year-old man with type 1 diabetes since age 11, on glargine 22 units at bedtime and lispro 4–8 units with meals. Works at a grain elevator. He lost Medicaid at redetermination in August, and since then he has been rationing his insulin because of the cost: skipping meal doses and cutting his glargine to make each pen last. He ran out of glargine 2 days ago, started vomiting yesterday and came to our ED last night. Last DKA admission 6 years ago. A1c 9.6% in April.",
+				},
+				{
+					heading: "Hospital course",
+					text: "Severe DKA on arrival: venous pH 7.08, bicarbonate 6, anion gap 28, glucose 520, potassium 5.6. DKA protocol started from the hub at 23:00, insulin 7 units/h. Potassium 3.1 at 03:00: insulin held 1 h with KCl 20 mEq/h IV. Glucose 238 at 05:00: D5 0.45% saline added, insulin 3.5 units/h. At the 06:00 check, glucose 182, gap 16, bicarbonate 15.",
+				},
+				{
+					heading: "Assessment",
+					text: "Severe DKA from missed insulin, improving on the protocol. The cause is cost-related insulin rationing after he lost his coverage. Prerenal acute kidney injury, improving with fluids.",
+				},
+				{
+					heading: "Plan",
+					text: "Continue the DKA protocol with hourly checks. When the gap closes and he's eating, glargine 22 units, his home dose, then stop the drip 1 to 2 h later. Financial counseling today for Medicaid re-enrollment, and an insulin-assistance program so he leaves with insulin he can afford. Diabetes educator visit at our rural health clinic after discharge.",
+				},
+			],
+			fields: [
+				{ label: "Social need", value: "Cost-related insulin rationing", code: "Z91.120" },
+				{ label: "Coverage", value: "Lapsed: Medicaid ended at redetermination in August" },
+			],
+		},
+		...admission,
+	];
+};
+
+export { sampleNotesByPatient, sampleScenario2Notes, sampleScenario3Notes, sampleScenario4Notes };

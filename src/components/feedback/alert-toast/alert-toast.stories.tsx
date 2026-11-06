@@ -18,7 +18,7 @@ const hayes = {
 	firedAt: justNow,
 	reason: "Rising RR, SpO₂ decline, positive fluid balance, HFrEF",
 	patientName: "Hayes, Margaret",
-	location: "Chadron · Med-Surg · Bed 4",
+	location: "Chadron Memorial · Med-Surg · Bed 4",
 	initials: "HM",
 	tone: 3,
 } satisfies ToastAlertOptions;
@@ -29,7 +29,7 @@ const moore = {
 	firedAt: threeMinutesAgo,
 	reason: "MAP 57 mmHg, HR 108 bpm",
 	patientName: "Moore, Patricia",
-	location: "Harbor Point General · SICU · Bed 4",
+	location: "Sidney Regional · SICU · Bed 4",
 	initials: "MP",
 	tone: 6,
 } satisfies ToastAlertOptions;
@@ -40,7 +40,7 @@ const anderson = {
 	firedAt: justNow,
 	reason: "HR 102 bpm, up from 84 over 2 h",
 	patientName: "Anderson, James",
-	location: "CVMC · SICU · Bed 2",
+	location: "Sidney Regional · SICU · Bed 2",
 	initials: "AJ",
 	tone: 2,
 } satisfies ToastAlertOptions;

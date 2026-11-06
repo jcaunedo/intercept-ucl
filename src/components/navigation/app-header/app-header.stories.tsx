@@ -17,14 +17,12 @@ const meta = {
 	tags: ["autodocs"],
 	args: {
 		clock: "Wed Oct 21 · 4:54 PM",
-		unreadMessages: 3,
 		team: [
 			{ name: "Maria Ruiz", initials: "MR", src: samplePhoto2, tone: 3 },
 			{ name: "James Turner", initials: "JT", src: samplePhoto1, tone: 6 },
 			{ name: "Ava Brooks", initials: "AB", tone: 2 },
 		],
 		user: { name: "Joanna Smith", initials: "JS", src: samplePhoto3, tone: 1, shiftEnds: "Shift ends on 3:45" },
-		onOpenMessages: fn(),
 		onToggleTheme: fn(),
 		onOpenTeam: fn(),
 		onOpenUserMenu: fn(),
@@ -59,15 +57,9 @@ export const InitialsOnly: Story = {
 	},
 };
 
-/** One unread message: the label turns singular. */
-export const OneMessage: Story = {
-	args: { unreadMessages: 1 },
-};
-
-/** A long name and a large unread count. */
+/** A long name. */
 export const LongContent: Story = {
 	args: {
-		unreadMessages: 128,
 		user: {
 			name: "Alexandra Montgomery-Whitfield",
 			initials: "AM",
@@ -87,6 +79,7 @@ const patientArgs = {
 	onVideoConsult: fn(),
 	onOpenMessages: fn(),
 	unreadMessages: 3,
+	onOpenPathway: fn(),
 	onRaiseConcern: fn(),
 	onHuddleTeam: fn(),
 	onEscalate: fn(),
@@ -107,7 +100,7 @@ const patientArgs = {
 
 /**
  * On a patient's page: Back, the patient list and Ask Intercept (shown when the app handles them), then a breadcrumb
- * back to where the user came from; Video consult, Messages (with its unread count) and "…", then 16px to the
+ * back to where the user came from; Video consult, Messages (with its unread count), Pathway and "…", then 16px to the
  * patient's care team (its first three). The menu holds Raise concern, Huddle team and Escalate, then a rule, then New
  * note, Prepare handoff and Copy link.
  */
@@ -123,11 +116,12 @@ export const PatientContext: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		await expect(canvas.queryByRole("button", { name: "Escalate" })).toBeNull();
-		// Video consult, then Messages, then "…" (no Theme on a patient's page).
+		// Video consult, then Messages, then Pathway, then "…" (no Theme on a patient's page).
 		const buttons = within(canvas.getByRole("group", { name: "Patient actions" })).getAllByRole("button");
 		await expect(buttons.map((button) => button.getAttribute("aria-label") ?? button.textContent)).toEqual([
 			"Video consult",
 			"Messages, 3 unread",
+			"Pathway",
 			"More actions",
 		]);
 		await userEvent.click(canvas.getByRole("button", { name: "More actions" }));
@@ -145,7 +139,8 @@ export const PatientContext: Story = {
 
 /**
  * The page's Video consult and Messages panels open (Intercept-Live `219:16129`): each button is an icon, pressed (the
- * `accent` fill), "Close video consult" and "Close messages", that closes its panel.
+ * `accent` fill), "Close video consult" and "Close messages", that closes its panel. Pathway shares the Messages
+ * panel's place on the page, so it's open in the next story instead.
  */
 export const PatientPanelsOpen: Story = {
 	render: (args) => (
@@ -166,17 +161,27 @@ export const PatientPanelsOpen: Story = {
 	},
 };
 
-/** Every state the header has: photo and initials avatars, one and many messages, short and long content, and the
- * patient variant. */
+/** The page's Pathway panel open (Nov 6, 2026): Pathway is pressed, "Close pathway", and closes it. */
+export const PatientPathwayOpen: Story = {
+	render: (args) => (
+		<AppHeader {...patientArgs} pathwayOpen onToggleTheme={args.onToggleTheme} theme={args.theme} />
+	),
+	play: async ({ canvasElement }) => {
+		const actions = within(within(canvasElement).getByRole("group", { name: "Patient actions" }));
+		await expect(actions.getByRole("button", { name: "Close pathway" })).toHaveAttribute("aria-expanded", "true");
+	},
+};
+
+/** Every state the header has: photo and initials avatars, short and long content, and the patient variant. */
 export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-6'>
 			<AppHeader {...args} />
 			<AppHeader {...args} {...InitialsOnly.args} />
-			<AppHeader {...args} {...OneMessage.args} />
 			<AppHeader {...args} {...LongContent.args} />
 			<AppHeader {...patientArgs} />
 			<AppHeader {...patientArgs} videoConsultOpen messagesOpen unreadMessages={0} />
+			<AppHeader {...patientArgs} videoConsultOpen pathwayOpen unreadMessages={0} />
 		</div>
 	),
 };

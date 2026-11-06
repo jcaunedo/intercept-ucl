@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { SourceLabel } from "../shared/source-label";
+import { useSessionState } from "./consult-session";
 
 // Exploration (DESIGN.md "Alert modal" › "Care pathway"): Scenario 1, step 4. The platform suggests a pathway's order
 // set; the intensivist reviews it, edits a dose if needed, and accepts it, which sends the orders to the local physician
@@ -67,6 +68,26 @@ type CarePathwayDecision =
 	| { type: "undecline" }
 	| { type: "create"; title: string; orders: CarePathwayOrder[] };
 
+/**
+ * What was decided, as the app recorded it, so a pathway shown again (the alert reopened, or the patient's page) reads as
+ * it was left: when it was sent and co-signed, the note for the co-signer, a decline's reason, which doses were edited
+ * (with the suggested dose each replaced), and whether the orders are the intensivist's own pathway.
+ */
+type CarePathwayRecord = {
+	/** When it was sent for co-signature (ISO 8601). */
+	sentAt?: string;
+	/** When the local physician co-signed it (ISO 8601). */
+	cosignedAt?: string;
+	note?: string;
+	rationale?: string;
+	/** The ids of the orders whose dose was edited before sending. */
+	edited?: string[];
+	/** The orders as suggested, for the edited ones' suggested dose. */
+	suggested?: CarePathwayOrder[];
+	/** The orders are the intensivist's own pathway, written after declining the suggestion. */
+	own?: boolean;
+};
+
 /** An order being written in the intensivist's own pathway. */
 type DraftOrder = { id: string; name: string; dose: string; detail: string };
 
@@ -84,7 +105,10 @@ const statusBadges: Record<CarePathwayStatus, { label: string; variant: "seconda
 	active: { label: "Active", variant: "green" },
 };
 
-const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+/** The session key of one pathway's state: by the alert it came with, so two alerts' pathways never mix. */
+const pathwaySessionKey = (scope: string, name: string) => `pathway:${scope}:${name}`;
 
 /* -------------------------------------------------------------------------- */
 /* Parts                                                                      */
@@ -112,6 +136,7 @@ function Expand({ children, className }: { children: React.ReactNode; className?
 function OrderRow({
 	order,
 	dose,
+	edited,
 	editing,
 	editable,
 	active,
@@ -121,6 +146,8 @@ function OrderRow({
 }: {
 	order: CarePathwayOrder;
 	dose: string;
+	/** The dose differs from the suggestion's: marked Edited. */
+	edited: boolean;
 	editing: boolean;
 	editable: boolean;
 	active: boolean;
@@ -130,7 +157,6 @@ function OrderRow({
 }) {
 	const [draft, setDraft] = React.useState(dose);
 	const inputId = React.useId();
-	const edited = dose !== order.dose;
 	React.useEffect(() => {
 		if (editing) setDraft(dose);
 	}, [editing, dose]);
@@ -382,6 +408,8 @@ function useStuckToBottom(ref: React.RefObject<HTMLElement | null>) {
 function CarePathwayPanel({
 	pathway,
 	defaultStatus = "suggested",
+	record,
+	sessionKey,
 	onDecision,
 	onStatusChange,
 	escapeRef,
@@ -389,32 +417,42 @@ function CarePathwayPanel({
 }: {
 	pathway: CarePathway;
 	defaultStatus?: CarePathwayStatus;
+	/** What was decided, as the app recorded it: the panel starts from it (times, note, reason, edited doses). */
+	record?: CarePathwayRecord;
+	/**
+	 * Keeps the panel's state in the patient's consult session under this key (the alert's id): a dose being edited, a
+	 * note, a decline's reason, an own pathway being written, and where co-signature is. The alert panel and the patient
+	 * page's Pathway panel then show the same pathway as it was left, either way (Nov 6, 2026). Defaults to the title.
+	 */
+	sessionKey?: string;
 	onDecision?: (decision: CarePathwayDecision) => void;
 	onStatusChange?: (status: CarePathwayStatus) => void;
 	escapeRef?: React.RefObject<(() => boolean) | null>;
 	className?: string;
 }) {
-	const [status, setStatusState] = React.useState<CarePathwayStatus>(defaultStatus);
-	const [doses, setDoses] = React.useState<Record<string, string>>({});
-	const [editing, setEditing] = React.useState<string | null>(null);
-	const [declining, setDeclining] = React.useState(false);
-	const [rationale, setRationale] = React.useState("");
+	const key = (name: string) => pathwaySessionKey(sessionKey ?? pathway.title, name);
+	const [status, setStatusState] = useSessionState<CarePathwayStatus>(key("status"), defaultStatus);
+	const [doses, setDoses] = useSessionState<Record<string, string>>(key("doses"), {});
+	const [editing, setEditing] = useSessionState<string | null>(key("editing"), null);
+	const [declining, setDeclining] = useSessionState(key("declining"), false);
+	const [rationale, setRationale] = useSessionState(key("rationale"), record?.rationale ?? "");
 	const decisionRef = React.useRef<HTMLDivElement>(null);
 	const decisionStuck = useStuckToBottom(decisionRef);
-	const [declinedWith, setDeclinedWith] = React.useState("");
-	const [noting, setNoting] = React.useState(false);
-	const [note, setNote] = React.useState("");
-	const [sentNote, setSentNote] = React.useState("");
-	const [sentAt, setSentAt] = React.useState<Date | null>(null);
-	const [cosignedAt, setCosignedAt] = React.useState<Date | null>(null);
+	const [declinedWith, setDeclinedWith] = useSessionState(key("declinedWith"), record?.rationale ?? "");
+	const [noting, setNoting] = useSessionState(key("noting"), false);
+	const [note, setNote] = useSessionState(key("note"), "");
+	const [sentNote, setSentNote] = useSessionState(key("sentNote"), record?.note ?? "");
+	const [sentAt, setSentAt] = useSessionState<string | null>(key("sentAt"), record?.sentAt ?? null);
+	const [cosignedAt, setCosignedAt] = useSessionState<string | null>(key("cosignedAt"), record?.cosignedAt ?? null);
 	// The intensivist's own pathway, after a decline: the draft keeps what was typed while the form is closed, and `custom`
-	// is the pathway once sent, which the panel then shows in the suggestion's place.
-	const [custom, setCustom] = React.useState<CarePathway | null>(null);
-	const [building, setBuilding] = React.useState(false);
-	const [draftTitle, setDraftTitle] = React.useState("");
-	const nextDraftOrder = React.useRef(0);
-	const newDraftOrder = (): DraftOrder => ({ id: `own-${++nextDraftOrder.current}`, name: "", dose: "", detail: "" });
-	const [draftOrders, setDraftOrders] = React.useState<DraftOrder[]>(() => [newDraftOrder()]);
+	// is the pathway once sent, which the panel then shows in the suggestion's place. Recorded as sent, the pathway the app
+	// passes back is already the own one.
+	const [custom, setCustom] = useSessionState<CarePathway | null>(key("custom"), record?.own ? pathway : null);
+	const [building, setBuilding] = useSessionState(key("building"), false);
+	const [draftTitle, setDraftTitle] = useSessionState(key("draftTitle"), "");
+	// Unique across mounts, since the draft outlives the panel in the session.
+	const newDraftOrder = (): DraftOrder => ({ id: `own-${crypto.randomUUID().slice(0, 8)}`, name: "", dose: "", detail: "" });
+	const [draftOrders, setDraftOrders] = useSessionState<DraftOrder[]>(key("draftOrders"), () => [newDraftOrder()]);
 	const rationaleId = React.useId();
 	const noteId = React.useId();
 	const builderId = React.useId();
@@ -423,12 +461,18 @@ function CarePathwayPanel({
 		onStatusChange?.(next);
 	};
 
+	// The co-signature comes `COSIGN_DELAY_MS` after sending, counted from when it was sent, so a panel that opens on a
+	// pathway already waiting (the alert reopened, the patient's page) doesn't start the wait over.
 	React.useEffect(() => {
 		if (status !== "pending") return;
-		const timer = window.setTimeout(() => {
-			setCosignedAt(new Date());
-			setStatus("active");
-		}, COSIGN_DELAY_MS);
+		const waited = sentAt ? Date.now() - Date.parse(sentAt) : 0;
+		const timer = window.setTimeout(
+			() => {
+				setCosignedAt(new Date().toISOString());
+				setStatus("active");
+			},
+			Math.max(0, COSIGN_DELAY_MS - waited),
+		);
 		return () => window.clearTimeout(timer);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [status]);
@@ -491,7 +535,12 @@ function CarePathwayPanel({
 
 	const shown = custom ?? pathway;
 	const doseOf = (order: CarePathwayOrder) => doses[order.id] ?? order.dose;
-	const edited = custom ? [] : pathway.orders.filter((order) => doseOf(order) !== order.dose).map((order) => order.id);
+	// Once sent, the app's record says which doses were edited: the pathway it passes back already has the doses as sent.
+	const edited = custom
+		? []
+		: status !== "suggested" && record?.edited
+			? record.edited
+			: pathway.orders.filter((order) => doseOf(order) !== order.dose).map((order) => order.id);
 	const { cosigner } = pathway;
 	const badge = statusBadges[status];
 
@@ -515,7 +564,7 @@ function CarePathwayPanel({
 		setCustom(own);
 		setBuilding(false);
 		setSentNote("");
-		setSentAt(new Date());
+		setSentAt(new Date().toISOString());
 		followStatus.current = true;
 		setStatus("pending");
 		onDecision?.({ type: "create", title: own.title, orders: own.orders });
@@ -526,7 +575,7 @@ function CarePathwayPanel({
 		setEditing(null);
 		setNoting(false);
 		setSentNote(sent);
-		setSentAt(new Date());
+		setSentAt(new Date().toISOString());
 		followStatus.current = true;
 		setStatus("pending");
 		onDecision?.({
@@ -613,6 +662,7 @@ function CarePathwayPanel({
 										key={order.id}
 										order={order}
 										dose={doseOf(order)}
+										edited={edited.includes(order.id)}
 										editing={editing === order.id}
 										editable={status === "suggested" && !declining}
 										active={status === "active"}
@@ -831,9 +881,11 @@ export {
 	CarePathwayPanel,
 	COSIGN_DELAY_MS,
 	Expand,
+	pathwaySessionKey,
 	type CarePathway,
 	type CarePathwayCosigner,
 	type CarePathwayDecision,
 	type CarePathwayOrder,
+	type CarePathwayRecord,
 	type CarePathwayStatus,
 };

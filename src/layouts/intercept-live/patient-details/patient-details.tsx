@@ -23,16 +23,22 @@ import { PatientHeader, type PatientHeaderProps } from "@/components/data-displa
 import { EmptyState } from "@/components/feedback/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/navigation/tabs";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
+import { useMotionPreference } from "@/lib/motion";
 
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import { flagDetails } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
-import type { PatientConsultData } from "../alert-modal/alert-modal";
+import type { AlertDetailData, PatientConsultData } from "../alert-modal/alert-modal";
+import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-modal/care-pathway";
+import { ConsultSessionScope, useSessionState } from "../alert-modal/consult-session";
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "../alert-modal/discharge-plan";
+import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
+import type { BundleDecision } from "../alert-modal/sepsis-bundle";
+import { usePatientNavigation } from "../patient-navigation";
 import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
-import { PatientConsultPanels } from "./consult-panels";
-import { PatientOverview } from "./patient-overview";
+import { PatientConsultPanels, useOpenPathwayPanel, type PatientPathways } from "./consult-panels";
+import { overviewSectionIds, PatientOverview } from "./patient-overview";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { ChartSection, type PatientChart } from "./sections/chart-section";
 import { EpicSection, type PatientEmr } from "./sections/epic-section";
@@ -313,6 +319,13 @@ type PatientDetailsProps = {
 	 * click (`onAction`).
 	 */
 	consult?: PatientConsultData;
+	/**
+	 * The patient's alerts that come with a pathway (or a sepsis bundle, or a protocol), the one to show first leading:
+	 * the app header's Pathway opens it in a panel right of the page, as on the alert (Nov 6, 2026), and the Overview's
+	 * Care plan shows it (suggested, or what it runs) with the way to it. The panel needs `consult` (it's one of the
+	 * page's panels); without it, Open pathway opens the alert.
+	 */
+	pathways?: PatientPathways;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -535,9 +548,20 @@ const patientName = (patient: Pick<PatientDetailsPatient, "lastName" | "firstNam
 
 /**
  * One patient's page (PRD Patient details): the Patient Header, then the sections as Line tabs (PD-OD-02), Overview first.
- * Stepping to another patient keeps the section and announces the new patient to screen readers (PD-015).
+ * Stepping to another patient keeps the section and announces the new patient to screen readers (PD-015). The page is
+ * in the patient's consult session (`consult-session.tsx`), so its panels, its Care plan and the alert panel share the
+ * call, the thread and the pathway.
  */
-function PatientDetails({
+function PatientDetails(props: PatientDetailsProps) {
+	return (
+		<ConsultSessionScope patientId={props.patient.id}>
+			<PatientDetailsContent {...props} />
+		</ConsultSessionScope>
+	);
+}
+
+/** The page, inside the patient's consult session (`PatientDetails`). */
+function PatientDetailsContent({
 	patient,
 	tone,
 	record,
@@ -548,8 +572,29 @@ function PatientDetails({
 	onAction,
 	onDischargeDecision,
 	consult,
+	pathways,
 }: PatientDetailsProps) {
 	const [section, setSection] = React.useState<SectionId>("overview");
+	// The pathway the Overview shows: the first alert's, where it is now (the session's, as the panels and the alert have
+	// it, or the app's), and the way to it: the page's Pathway panel, or the alert without one.
+	const navigation = usePatientNavigation();
+	const openPathwayPanel = useOpenPathwayPanel();
+	const pathwayDetail = pathways?.details[0];
+	const [pathwayStatus] = useSessionState<CarePathwayStatus>(
+		pathwaySessionKey(pathwayDetail?.alert.id ?? "", "status"),
+		pathwayDetail?.pathwayStatus ?? "suggested",
+	);
+	const overviewPathway = pathwayDetail
+		? {
+				detail: pathwayDetail,
+				status: pathwayStatus,
+				onOpen: consult
+					? openPathwayPanel
+					: navigation
+						? () => navigation.openAlert(patient.id, pathwayDetail.alert.id)
+						: undefined,
+			}
+		: undefined;
 	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080), Discharge only once the
 	// discharge workflow has flagged social needs (Scenario 2, step 6).
 	// The hospital's record section is named after its system (Epic, Meditech…).
@@ -570,6 +615,16 @@ function PatientDetails({
 		record?.icuAdmittedAt && now !== null ? `ICU day ${icuDay(record.icuAdmittedAt, now)}` : undefined,
 		record?.weight,
 	].filter((detail): detail is string => Boolean(detail));
+	// The header's "View breakdown" and "View alerts" open the Overview and bring the card into view, with focus on it.
+	const { prefersReducedMotion } = useMotionPreference();
+	const showOverviewCard = (id: string) => {
+		setSection("overview");
+		requestAnimationFrame(() => {
+			const card = document.getElementById(id);
+			card?.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+			card?.focus({ preventScroll: true });
+		});
+	};
 	const shownId = React.useRef(patient.id);
 	React.useEffect(() => {
 		if (shownId.current === patient.id) return;
@@ -587,11 +642,12 @@ function PatientDetails({
 				<PatientConsultPanels
 					key={patient.id}
 					data={consult}
+					pathways={pathways}
 					onOpenConsult={() => onAction?.("video-consult")}
 					onOpenMessages={() => onAction?.("messages")}
 				/>
 			) : null}
-			{/* 16px below the app header and above the tabs (Intercept-Live's Top Container). */}
+			{/* 16px below the app header and above the tabs: the header's own padding (intercept.ds `1191:3147`). */}
 			<PatientHeader
 				lastName={patient.lastName}
 				firstName={patient.firstName}
@@ -607,13 +663,17 @@ function PatientDetails({
 				bed={patient.bed}
 				details={details}
 				tags={patientBadges(patient, record)}
-				className='mt-4'
+				acuity={patient.acuity}
+				trajectory={patient.trajectory}
+				alert={alertPill(alerts)}
+				onViewScore={patient.acuity ? () => showOverviewCard(overviewSectionIds.earlyWarning) : undefined}
+				onViewAlerts={() => showOverviewCard(overviewSectionIds.alerts)}
 			/>
 
 			<Tabs
 				value={shownSection}
 				onValueChange={(value) => setSection(value as SectionId)}
-				className='mt-4 flex flex-1 flex-col gap-0'
+				className='flex flex-1 flex-col gap-0'
 			>
 				<div className='border-y border-border px-4'>
 					<TabsList variant='line' size='lg' aria-label='Patient sections'>
@@ -633,7 +693,8 @@ function PatientDetails({
 						alerts={alerts}
 						escalationTargets={escalationTargets}
 						onAlertAction={onAlertAction}
-						onShowTimeline={() => setSection("timeline")}
+						onShowSection={setSection}
+						pathway={overviewPathway}
 					/>
 				</TabsContent>
 				{sections.map((item) => {
@@ -687,7 +748,33 @@ type PatientDetailsSources = {
 	onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
 	/** Each patient's video consult and thread with the bedside nurse, for the page's Video consult and Messages panels. */
 	consults?: PatientConsultData[];
+	/**
+	 * The alerts' details, as the alert panel shows them: a patient's alerts that come with a pathway give their page's
+	 * Pathway panel and Care plan (Nov 6, 2026).
+	 */
+	alertDetails?: AlertDetailData[];
+	/** A pathway accepted, declined or written on a patient's page, by alert, as from the alert panel. */
+	onPathwayDecision?: (alertId: string, decision: CarePathwayDecision, detail: AlertDetailData) => void;
+	/** Keep or transfer decided on a patient's page, by alert. */
+	onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
+	/** A sepsis bundle check confirmed or undone on a patient's page, by alert. */
+	onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
 };
+
+/**
+ * A patient's alerts that come with a pathway, a sepsis bundle or a protocol, with each alert as it stands now: the
+ * open ones first, most urgent first (the alert their cards show), then the rest, newest first.
+ */
+function patientPathwayDetails(patientId: string, details: AlertDetailData[], alerts: TriageAlert[]) {
+	return details
+		.filter((detail) => detail.alert.patientId === patientId && (detail.pathway || detail.bundle || detail.protocol))
+		.map((detail) => ({ ...detail, alert: alerts.find((alert) => alert.id === detail.alert.id) ?? detail.alert }))
+		.sort(
+			(a, b) =>
+				Number(isOpenAlert(b.alert)) - Number(isOpenAlert(a.alert)) ||
+				(isOpenAlert(a.alert) ? compareTriageAlerts(a.alert, b.alert) : b.alert.firedAt.localeCompare(a.alert.firedAt)),
+		);
+}
 
 /**
  * A patient's details for the shell's `renderPatientDetails`: their name for the breadcrumb and the page, from the
@@ -708,6 +795,10 @@ function patientDetailsView(
 		onAction,
 		onDischargeDecision,
 		consults = [],
+		alertDetails = [],
+		onPathwayDecision,
+		onTransferDecision,
+		onBundleDecision,
 	}: PatientDetailsSources,
 ): PatientDetailsView | null {
 	const find = (id?: string) => patients.find((item) => item.id === id) ?? monitoringPatients.find((item) => item.id === id);
@@ -724,6 +815,7 @@ function patientDetailsView(
 	} = patient as PatientDetailsPatient & PatientMonitorData;
 
 	const act = (action: PatientAction) => () => onAction?.(patientId, action);
+	const pathwayDetails = patientPathwayDetails(patientId, alertDetails, alerts);
 
 	// The list the patient was opened from, as the source page shows it (PRD PD-015). Patients none of the sources has
 	// are left out.
@@ -780,6 +872,17 @@ function patientDetailsView(
 				onAction={onAction ? (action) => onAction(patientId, action) : undefined}
 				onDischargeDecision={onDischargeDecision ? (decision) => onDischargeDecision(patientId, decision) : undefined}
 				consult={consults.find((item) => item.patientId === patientId)}
+				pathways={
+					pathwayDetails.length
+						? {
+								details: pathwayDetails,
+								onPathwayDecision,
+								onTransferDecision,
+								onBundleDecision,
+								onDischargeDecision: onDischargeDecision && ((decision) => onDischargeDecision(patientId, decision)),
+							}
+						: undefined
+				}
 			/>
 		),
 	};

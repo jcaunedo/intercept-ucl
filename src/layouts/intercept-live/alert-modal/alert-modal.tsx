@@ -63,21 +63,26 @@ import {
 	type TriageAlert,
 	type TriageAlertAction,
 } from "../monitoring/triage-queue";
+import { CarePlanCard, type PatientCarePlan } from "../patient-details/activity";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { RoomScene, RoomVideo, type RoomEquipment } from "../patient-details/sections/camera-section";
 import { withFlagDetails } from "../shared/flag-details";
 import {
 	CarePathwayPanel,
 	Expand,
+	pathwaySessionKey,
 	type CarePathway,
 	type CarePathwayDecision,
+	type CarePathwayRecord,
 	type CarePathwayStatus,
 } from "./care-pathway";
 import { useCallAudio } from "./call-audio";
 import { ConsultSessionScope, useSessionState } from "./consult-session";
-import { ConsultTranscriptView, type ConsultTranscript } from "./consult-transcript";
+import { ConsultTranscriptView, type ConsultNote, type ConsultTranscript } from "./consult-transcript";
+import { BedsideTaskList, type BedsideTasks } from "./bedside-tasks";
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "./discharge-plan";
 import {
+	ConsultField,
 	ConsultMessages,
 	ConsultMessagesButton,
 	useConsultMessages,
@@ -86,6 +91,7 @@ import {
 	type ConsultMessage,
 	type ConsultReplies,
 } from "./consult-messages";
+import { InterpreterPrompt, type ConsultInterpreter } from "./interpreter";
 import { KeepOrTransferPanel, type KeepOrTransfer, type KeepOrTransferDecision } from "./keep-or-transfer";
 import {
 	defaultVitalsEvery,
@@ -94,12 +100,17 @@ import {
 	useHeldValue,
 	type ConsultConnection,
 } from "./low-bandwidth";
+import { DkaProtocolPanel, type DkaProtocol } from "./dka-protocol";
+import { SepsisBundlePanel, type BundleDecision, type SepsisBundle } from "./sepsis-bundle";
 
 // The alert modal that a Monitoring card's alert bar and an alert toast's maximize button open (DESIGN.md "Alert
 // modal"). Scenario 1, steps 2 to 4. Left, what's happening: the alert, the patient's score, monitor and score inputs,
 // the key clinical findings behind the alert and the history and labs the intensivist needs. Right, what to do about it:
 // a one-click video consult to the bedside, step 4's care pathway (`care-pathway.tsx`) and, once its orders are sent,
-// step 5's keep or transfer (`keep-or-transfer.tsx`), both explorations.
+// step 5's keep or transfer (`keep-or-transfer.tsx`), both explorations. Scenario 3 adds the hour-1 sepsis bundle
+// (`sepsis-bundle.tsx`) before the pathway, the bedside tasks its orders generate (`bedside-tasks.tsx`) and the interpreter
+// prompt in the call (`interpreter.tsx`). Scenario 4 adds the DKA protocol's hourly checklist (`dka-protocol.tsx`) under
+// the pathway that starts it.
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -117,6 +128,11 @@ type AlertDetailPatient = {
 	hospital?: string;
 	unit?: string;
 	bed?: string;
+	/**
+	 * The patient's preferred language when it isn't English, e.g. "Spanish": the video consult offers a medical
+	 * interpreter (Scenario 3, step 2).
+	 */
+	preferredLanguage?: string;
 };
 
 /**
@@ -205,10 +221,36 @@ type AlertDetailData = {
 	 * real replies come in `messages`.
 	 */
 	scriptedReplies?: ConsultReplies;
+	/**
+	 * Who the hospital's interpreter service sends when the clinician adds one to the call, for a patient with a
+	 * `preferredLanguage` (Scenario 3, step 2; mock).
+	 */
+	interpreter?: ConsultInterpreter;
+	/**
+	 * The hour-1 sepsis bundle, element by element, with its timer from time zero (Scenario 3; exploration). It leads the
+	 * Pathway panel, which opens with the alert.
+	 */
+	bundle?: SepsisBundle;
 	/** A suggested care pathway and its order set, e.g. Scenario 1's CHF exacerbation pathway (exploration). */
 	pathway?: CarePathway;
 	/** Where the pathway is when the modal opens, e.g. `active` once its orders were co-signed. Suggested by default. */
 	pathwayStatus?: CarePathwayStatus;
+	/**
+	 * What was decided about the pathway, as the app recorded it: when it was sent and co-signed, the note, a decline's
+	 * reason, the edited doses and whether it's the intensivist's own. The Pathway panel starts from it, so a reopened
+	 * alert or the patient's page shows the pathway as it was left.
+	 */
+	pathwayRecord?: CarePathwayRecord;
+	/**
+	 * The bedside nurses' tasks from the pathway's orders, shared with them (Scenario 3, step 5; exploration). Shows under
+	 * the pathway once its orders are sent.
+	 */
+	tasks?: BedsideTasks;
+	/**
+	 * A protocol the pathway's orders start, run at the bedside hour by hour (Scenario 4's DKA insulin protocol;
+	 * exploration). Shows under the pathway, and the column brings it into view as it arrives.
+	 */
+	protocol?: DkaProtocol;
 	/**
 	 * Keep or transfer, for a hospital that may not be able to hold the patient (Scenario 1, step 5; exploration). It
 	 * shows under the pathway once its orders are sent, or at once when a decision was already made.
@@ -227,7 +269,7 @@ type AlertDetailData = {
  */
 type PatientConsultData = Pick<
 	AlertDetailData,
-	"patient" | "acuity" | "trajectory" | "monitor" | "tags" | "bedside" | "notetakerParties" | "transcript" | "room" | "video" | "connection" | "messages" | "scriptedReplies"
+	"patient" | "acuity" | "trajectory" | "monitor" | "tags" | "bedside" | "notetakerParties" | "transcript" | "room" | "video" | "connection" | "messages" | "scriptedReplies" | "interpreter"
 > & {
 	patientId: string;
 };
@@ -235,7 +277,7 @@ type PatientConsultData = Pick<
 /** What the call and its notetaker read: the patient and who the call reaches, and the alert when there is one. */
 type ConsultData = Pick<
 	AlertDetailData,
-	"patient" | "bedside" | "notetakerParties" | "transcript" | "room" | "video" | "connection" | "monitor"
+	"patient" | "bedside" | "notetakerParties" | "transcript" | "room" | "video" | "connection" | "monitor" | "interpreter"
 > &
 	Partial<Pick<AlertDetailData, "alert" | "reasons" | "pathway">>;
 
@@ -275,6 +317,8 @@ type AlertDetailModalProps = {
 	onTransferDecision?: (decision: KeepOrTransferDecision) => void;
 	/** A discharge referral sent (with who agreed to it) or skipped, or a skip taken back. */
 	onDischargeDecision?: (decision: DischargeDecision) => void;
+	/** A sepsis bundle element's check confirmed (a renal dose review), or taken back. */
+	onBundleDecision?: (decision: BundleDecision) => void;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1138,19 +1182,23 @@ function useConnectionMonitor(monitor: AlertDetailData["monitor"], connection: C
 }
 
 /**
- * The Video consult panel's content: the low-bandwidth banner while the connection is down, the call, the bedside's
- * photos and the AI Notetaker.
+ * The Video consult panel's content: the low-bandwidth banner while the connection is down, the call, the interpreter
+ * prompt for a patient who prefers another language (while the call is live), and the AI Notetaker.
  */
 function ConsultPanelContent({
 	data,
 	tile,
 	notetaker,
+	live = false,
 }: {
 	data: ConsultData;
 	tile: React.ReactNode;
 	notetaker: React.ReactNode;
+	/** The call is on: the interpreter prompt shows. */
+	live?: boolean;
 }) {
-	const { connection } = data;
+	const { connection, patient } = data;
+	const language = patient.preferredLanguage;
 	return (
 		<>
 			<AnimatePresence initial={false}>
@@ -1161,21 +1209,32 @@ function ConsultPanelContent({
 				) : null}
 			</AnimatePresence>
 			{tile}
+			{language && language !== "English" ? (
+				<InterpreterPrompt
+					firstName={patient.firstName}
+					language={language}
+					interpreter={data.interpreter}
+					live={live}
+				/>
+			) : null}
 			{notetaker}
 		</>
 	);
 }
 
 /**
- * The care pathway (Scenario 1, step 4), then keep or transfer once its orders are sent (step 5), or at once when a
- * decision was already made, then social needs at discharge once the discharge workflow has flagged them (Scenario 2,
- * step 6). `escapeRef` closes an open dose edit, decline or form first.
+ * The hour-1 sepsis bundle when there is one (Scenario 3), the care pathway (Scenario 1, step 4), the protocol it
+ * starts once it's running (Scenario 4's DKA checklist), the bedside tasks its orders generate once they're sent
+ * (Scenario 3, step 5), then keep or transfer once its orders are sent (step 5), or at
+ * once when a decision was already made, then social needs at discharge once the discharge workflow has flagged them
+ * (Scenario 2, step 6). `escapeRef` closes an open dose edit, decline or form first.
  */
 function PathwayContent({
 	data,
 	onPathwayDecision,
 	onTransferDecision,
 	onDischargeDecision,
+	onBundleDecision,
 	escapeRef,
 	fill = false,
 	focusDischarge = false,
@@ -1184,6 +1243,7 @@ function PathwayContent({
 	onPathwayDecision?: (decision: CarePathwayDecision) => void;
 	onTransferDecision?: (decision: KeepOrTransferDecision) => void;
 	onDischargeDecision?: (decision: DischargeDecision) => void;
+	onBundleDecision?: (decision: BundleDecision) => void;
 	escapeRef: React.RefObject<(() => boolean) | null>;
 	/** Alone, the pathway fills its column, so its decision sits at the bottom. */
 	fill?: boolean;
@@ -1201,25 +1261,88 @@ function PathwayContent({
 	}, []);
 	const transferEscape = React.useRef<(() => boolean) | null>(null);
 	escapeRef.current = () => Boolean(pathwayEscape.current?.() || transferEscape.current?.());
-	const [pathwayStatus, setPathwayStatus] = React.useState<CarePathwayStatus>(data.pathwayStatus ?? "suggested");
-	const showTransfer = Boolean(
-		data.transfer && (data.transfer.decided || pathwayStatus === "pending" || pathwayStatus === "active"),
+	// The same session key as the pathway's own status, so the alert panel and the patient's page agree on it.
+	const [pathwayStatus, setPathwayStatus] = useSessionState<CarePathwayStatus>(
+		pathwaySessionKey(data.alert.id, "status"),
+		data.pathwayStatus ?? "suggested",
 	);
+	const pathwaySent = pathwayStatus === "pending" || pathwayStatus === "active";
+	const showTransfer = Boolean(data.transfer && (data.transfer.decided || pathwaySent));
+	const showTasks = Boolean(data.tasks && pathwaySent);
+	// Scenario 3: the pathway arrives under the bundle while the column is open (fluids in, MAP still under 65), so the
+	// column brings it into view as it opens, under its sticky label. Not when the panel opens on it.
+	const arrivedRef = React.useRef<HTMLDivElement>(null);
+	// Keyed on whether there's a pathway, not the objects: the feed rebuilds them on every change, and a re-run would
+	// cancel the scroll.
+	const hasBundle = Boolean(data.bundle);
+	const hasPathway = Boolean(data.pathway);
+	const hadPathway = React.useRef(hasPathway);
+	React.useEffect(() => {
+		const arrived = hasBundle && hasPathway && !hadPathway.current;
+		hadPathway.current = hasPathway;
+		if (!arrived || !arrivedRef.current) return;
+		return scrollIntoViewSmoothly(arrivedRef.current, { reducedMotion: Boolean(prefersReducedMotion), block: "start" });
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the pathway arrives.
+	}, [hasBundle, hasPathway]);
+	// Scenario 4: the protocol arrives just after its pathway is accepted, under it; the column brings it into view, as
+	// the pathway's arrival above. Not when the panel opens with it running.
+	const protocolRef = React.useRef<HTMLDivElement>(null);
+	const hasProtocol = Boolean(data.protocol);
+	const hadProtocol = React.useRef(hasProtocol);
+	React.useEffect(() => {
+		const arrived = hasProtocol && !hadProtocol.current;
+		hadProtocol.current = hasProtocol;
+		if (!arrived || !protocolRef.current) return;
+		return scrollIntoViewSmoothly(protocolRef.current, { reducedMotion: Boolean(prefersReducedMotion), block: "start" });
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the protocol arrives.
+	}, [hasProtocol]);
+	const pathwayPanel = data.pathway ? (
+		<CarePathwayPanel
+			pathway={data.pathway}
+			defaultStatus={data.pathwayStatus}
+			record={data.pathwayRecord}
+			sessionKey={data.alert.id}
+			onDecision={onPathwayDecision}
+			onStatusChange={setPathwayStatus}
+			escapeRef={pathwayEscape}
+			className={cn(fill && !showTransfer && !showTasks && !data.bundle && !data.protocol && "flex-1")}
+		/>
+	) : null;
 	return (
 		<>
-			{data.pathway ? (
-				<CarePathwayPanel
-					pathway={data.pathway}
-					defaultStatus={data.pathwayStatus}
-					onDecision={onPathwayDecision}
-					onStatusChange={setPathwayStatus}
-					escapeRef={pathwayEscape}
-					className={cn(fill && !showTransfer && "flex-1")}
-				/>
+			{data.bundle ? <SepsisBundlePanel bundle={data.bundle} onDecision={onBundleDecision} /> : null}
+			{data.bundle ? (
+				// With a bundle, the pathway comes later (Scenario 3: once fluids leave MAP under 65) and opens under it.
+				<AnimatePresence initial={false}>
+					{pathwayPanel ? (
+						<Expand key='pathway'>
+							<div ref={arrivedRef} className='flex scroll-mt-6 flex-col gap-4 pt-4'>
+								<hr className='border-border' />
+								{pathwayPanel}
+							</div>
+						</Expand>
+					) : null}
+				</AnimatePresence>
 			) : (
-				<p className='text-sm text-muted-foreground'>No care pathway suggested for this alert.</p>
+				(pathwayPanel ?? <p className='text-sm text-muted-foreground'>No care pathway suggested for this alert.</p>)
 			)}
 			<AnimatePresence initial={false}>
+				{data.protocol ? (
+					<Expand key='protocol'>
+						<div ref={protocolRef} className='flex scroll-mt-6 flex-col gap-4 pt-4'>
+							<hr className='border-border' />
+							<DkaProtocolPanel protocol={data.protocol} />
+						</div>
+					</Expand>
+				) : null}
+				{showTasks && data.tasks ? (
+					<Expand key='tasks'>
+						<div className='flex flex-col gap-4 pt-4'>
+							<hr className='border-border' />
+							<BedsideTaskList tasks={data.tasks} />
+						</div>
+					</Expand>
+				) : null}
 				{showTransfer && data.transfer ? (
 					<Expand key='transfer'>
 						<div className='flex flex-col gap-4 pt-4'>
@@ -1250,7 +1373,8 @@ const CONSENT_DELAY_MS = 2500;
 
 // Each state's title and supporting text (Nov 3, 2026, user's copy).
 const notetakerCopy: Record<NotetakerState, { title: string; text: string }> = {
-	idle: { title: "AI Notetaker", text: "Capture this consultation and draft clinical notes." },
+	// Not started yet: a quiet line under `pencil-line`, not a title (Intercept-Live `230:6416`, Nov 6, 2026, user's copy).
+	idle: { title: "Getting ready…", text: "" },
 	consent: { title: "Waiting for approval", text: "" },
 	recording: { title: "Capturing consultation", text: "Listening and organizing your notes in real time." },
 	// Stopped by the clinician, to resume (Nov 5, 2026, user's call: "the user can stop and resume").
@@ -1260,10 +1384,10 @@ const notetakerCopy: Record<NotetakerState, { title: string; text: string }> = {
 };
 
 /**
- * The draft the notetaker writes from the consult: who was on it, the alert, what was found and the plan. Without an
- * alert, it says there was none open.
+ * The draft the notetaker writes from the consult: who was on it, the alert, what was found, the clinician's own notes
+ * (Add a note) and the plan. Without an alert, it says there was none open.
  */
-function draftConsultNote(data: ConsultData) {
+function draftConsultNote(data: ConsultData, notes: readonly ConsultNote[] = []) {
 	const { alert, bedside, pathway, reasons = [] } = data;
 	return [
 		`Video consult${bedside ? ` with ${bedside.name}, ${bedside.role}, at the bedside` : " with the bedside team"}.`,
@@ -1271,6 +1395,7 @@ function draftConsultNote(data: ConsultData) {
 		reasons.length
 			? `Findings: ${reasons.map((reason) => `${reason.label} (${reason.detail})`).join("; ")}.`
 			: undefined,
+		notes.length ? `Clinician notes: ${notes.map((note) => note.text.replace(/[.\s]+$/, "")).join("; ")}.` : undefined,
 		`Plan: ${pathway ? `${pathway.title}, sent for local co-signature` : "continue monitoring"}; reassess at the bedside.`,
 	]
 		.filter(Boolean)
@@ -1295,6 +1420,7 @@ function ConsultNotetaker({
 	live,
 	onApprove,
 	actionSlot,
+	noteSlot,
 	muted = false,
 	autoStart = true,
 }: {
@@ -1316,6 +1442,12 @@ function ConsultNotetaker({
 	 * `219:16129`, Nov 5, 2026). Null until that element is there.
 	 */
 	actionSlot?: HTMLElement | null;
+	/**
+	 * Where Add a note goes (Intercept-Live `230:6415`, Nov 6, 2026): the patient page's Video consult panel pins it to
+	 * the panel's bottom. Without a slot there's no field (the alert panel). Shown while the call is live or the
+	 * transcript shows; each note joins the transcript at its time into the consult and goes into the draft.
+	 */
+	noteSlot?: HTMLElement | null;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	// In the patient's consult session, so the notetaker goes on where the call does.
@@ -1323,6 +1455,9 @@ function ConsultNotetaker({
 	const [reviewing, setReviewing] = useSessionState("notetakerReviewing", false);
 	const [draft, setDraft] = useSessionState("notetakerDraft", () => draftConsultNote(data));
 	const [approvedAt, setApprovedAt] = useSessionState<string | null>("notetakerApprovedAt", null);
+	// The clinician's own notes during the consult, and one not yet added.
+	const [notes, setNotes] = useSessionState<ConsultNote[]>("consultNotes", []);
+	const [noteDraft, setNoteDraft] = useSessionState("consultNoteDraft", "");
 	const parties =
 		data.notetakerParties ??
 		(data.bedside ? [{ name: `${data.bedside.name}, ${data.bedside.role}`, autoApprove: false }] : []);
@@ -1387,7 +1522,15 @@ function ConsultNotetaker({
 				Resume
 			</Button>
 		) : state === "ready" && !reviewing ? (
-			<Button variant='outline' size='md' onClick={() => setReviewing(true)}>
+			<Button
+				variant='outline'
+				size='md'
+				onClick={() => {
+					// The draft takes every note added up to now.
+					setDraft(draftConsultNote(data, notes));
+					setReviewing(true);
+				}}
+			>
 				Review notes
 			</Button>
 		) : null;
@@ -1395,6 +1538,23 @@ function ConsultNotetaker({
 	// Recording and after: the transcript fills the column under a top-aligned state line, until the draft opens.
 	const captured = state === "recording" || state === "paused" || state === "processing" || state === "ready";
 	const transcribing = captured && !reviewing;
+	const noteField =
+		noteSlot && (live || transcribing) && !reviewing
+			? createPortal(
+					<ConsultField
+						value={noteDraft}
+						onValueChange={setNoteDraft}
+						onSubmit={(text) => {
+							setNotes((current) => [...current, { id: crypto.randomUUID(), text }]);
+							setNoteDraft("");
+						}}
+						placeholder='Add a note'
+						label='Add a note to the consult'
+						submitLabel='Add'
+					/>,
+					noteSlot,
+				)
+			: null;
 
 	return (
 		<div
@@ -1412,31 +1572,50 @@ function ConsultNotetaker({
 						animate='animate'
 						exit='exit'
 						role='status'
-						className={cn("flex flex-col gap-1", transcribing ? "min-w-0 flex-1 items-start" : "w-full items-center")}
+						className={cn(
+							"flex flex-col",
+							state === "idle" ? "gap-2" : "gap-1",
+							transcribing ? "min-w-0 flex-1 items-start" : "w-full items-center",
+						)}
 					>
-						<p className='flex items-center gap-1.5 text-base font-bold text-foreground'>
-							{state === "recording" ? <LiveDot /> : null}
-							{state === "consent" || state === "processing" ? (
-								<LoaderCircleIcon
-									aria-hidden='true'
-									className='size-3.5 animate-spin text-icon-muted motion-reduce:animate-none'
-								/>
-							) : null}
-							{title}
-						</p>
-						<p className='text-xs text-muted-foreground'>{text}</p>
-						{/* Stopped, the notes can be prepared from what was captured, without ending the call. */}
-						{state === "paused" ? (
-							<Button variant='link' size='xs' className='h-auto px-0' onClick={() => setState("processing")}>
-								Prepare notes
-							</Button>
-						) : null}
+						{state === "idle" ? (
+							// The icon in `icon-subtle` over the line, 8px apart, as Messages' "No messages".
+							<>
+								<PencilLineIcon aria-hidden='true' className='size-5 text-icon-subtle' />
+								<p className='text-sm text-muted-foreground'>{title}</p>
+							</>
+						) : (
+							<>
+								{/* Waiting for approval in medium, the other states bold (Nov 6, 2026, user's call). */}
+								<p
+									className={cn(
+										"flex items-center gap-1.5 text-base text-foreground",
+										state === "consent" ? "font-medium" : "font-semibold",
+									)}
+								>
+									{state === "recording" ? <LiveDot /> : null}
+									{state === "consent" || state === "processing" ? (
+										<LoaderCircleIcon
+											aria-hidden='true'
+											className='size-3.5 animate-spin text-icon-muted motion-reduce:animate-none'
+										/>
+									) : null}
+									{title}
+								</p>
+								<p className='text-xs text-muted-foreground'>{text}</p>
+								{/* Stopped, the notes can be prepared from what was captured, without ending the call. */}
+								{state === "paused" ? (
+									<Button variant='link' size='xs' className='h-auto px-0' onClick={() => setState("processing")}>
+										Prepare notes
+									</Button>
+								) : null}
+							</>
+						)}
 					</motion.div>
 				</AnimatePresence>
 
 				{actionSlot === undefined ? action : actionSlot ? createPortal(action, actionSlot) : null}
 			</div>
-			{state === "idle" && !live ? <p className='text-xs text-muted-foreground'>Starts once the call connects.</p> : null}
 
 			{/* Kept mounted from recording to review, so what it captured stays. */}
 			{captured ? (
@@ -1444,9 +1623,11 @@ function ConsultNotetaker({
 					transcript={data.transcript}
 					status={state === "recording" ? "capturing" : state === "paused" ? "paused" : "stopped"}
 					muted={muted}
+					notes={notes}
 					className={cn(!transcribing && "hidden")}
 				/>
 			) : null}
+			{noteField}
 
 			<AnimatePresence initial={false}>
 				{state === "ready" && reviewing ? (
@@ -1560,8 +1741,13 @@ function AlertPanelContent({
 	onPathwayDecision,
 	onTransferDecision,
 	onDischargeDecision,
+	onBundleDecision,
 	focusDischarge = false,
+	// A sepsis bundle opens with the alert, so its hour-1 timer is in view from the start (Scenario 3, step 1); so does a
+	// running protocol, so a nudge about an overdue check opens on the checklist (Scenario 4, step 3).
 	defaultPathwayOpen = focusDischarge ||
+		Boolean(data.bundle) ||
+		Boolean(data.protocol) ||
 		(data.pathwayStatus !== undefined && data.pathwayStatus !== "suggested") ||
 		Boolean(data.transfer?.decided),
 	titleAs,
@@ -1592,13 +1778,16 @@ function AlertPanelContent({
 	// The messages open from the actions row, with or without a call, and stay when the call ends (Nov 5, 2026, user's
 	// call); only there (the Video consult panel's header lost its own, user's call, same day).
 	// Messages open or closed goes with the consult session too, both ways between here and the patient's page.
+	// So is Pathway (Nov 6, 2026): open on the patient's page, the alert opens with it, and the other way round.
 	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
+	const [sharedPathwayOpen, setSharedPathwayOpen] = useSessionState("pathwayOpen", false);
 	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(
-		sharedMessagesOpen ? "messages" : defaultPathwayOpen ? "pathway" : null,
+		sharedMessagesOpen ? "messages" : defaultPathwayOpen || sharedPathwayOpen ? "pathway" : null,
 	);
 	const pathwayOpen = sidePanel === "pathway";
 	const messagesOpen = sidePanel === "messages";
 	React.useEffect(() => setSharedMessagesOpen(messagesOpen), [messagesOpen, setSharedMessagesOpen]);
+	React.useEffect(() => setSharedPathwayOpen(pathwayOpen), [pathwayOpen, setSharedPathwayOpen]);
 	// The message field takes focus when the clinician opens the column, not when it opens on its own (below).
 	const [focusMessages, setFocusMessages] = React.useState(false);
 	const togglePanel = (panel: "pathway" | "messages") => {
@@ -1653,7 +1842,7 @@ function AlertPanelContent({
 						unread={unread}
 						onToggle={() => togglePanel("messages")}
 					/>
-					{data.pathway ? (
+					{data.pathway || data.bundle ? (
 						<Button
 							// Solid while closed; open, the outline on `accent`, as before (Nov 5, 2026, user's call).
 							variant={pathwayOpen ? "outline" : "neutral"}
@@ -1679,6 +1868,7 @@ function AlertPanelContent({
 								content: (
 									<ConsultPanelContent
 										data={data}
+										live={consult === "live"}
 										tile={
 											<ConsultTile
 												data={data}
@@ -1732,6 +1922,7 @@ function AlertPanelContent({
 										onPathwayDecision={onPathwayDecision}
 										onTransferDecision={onTransferDecision}
 										onDischargeDecision={onDischargeDecision}
+										onBundleDecision={onBundleDecision}
 										escapeRef={pathwayEscape}
 										fill
 										focusDischarge={focusDischarge}
@@ -1819,8 +2010,14 @@ function PatientConsultDialogContent({
 	onConsultNote,
 	onOpenPatient,
 	onSendMessage,
+	carePlan,
 }: {
 	data: PatientConsultData;
+	/**
+	 * The patient's care plan in force, from an earlier alert: the Pathway column shows it (read-only, as on their page)
+	 * instead of saying there's no pathway (Nov 6, 2026).
+	 */
+	carePlan?: PatientCarePlan;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 	defaultConsult?: AlertConsultState;
@@ -1914,6 +2111,7 @@ function PatientConsultDialogContent({
 							content: (
 								<ConsultPanelContent
 									data={data}
+									live={consult === "live"}
 									tile={
 										<ConsultTile
 											data={data}
@@ -1956,7 +2154,10 @@ function PatientConsultDialogContent({
 									{
 										id: "pathway",
 										label: "Pathway",
-										content: (
+										content: carePlan?.pathway || carePlan?.transfer ? (
+											// The plan an earlier alert's pathway put in force; acting on it is the alert's.
+											<CarePlanCard plan={carePlan} headingLevel='h3' className='border-0 bg-transparent p-0' />
+										) : (
 											// No alert, so nothing suggested: pathways come with an alert's findings.
 											<EmptyState
 												icon={<GitForkIcon />}
@@ -2154,6 +2355,7 @@ function alertModalRenderer({
 	onPathwayDecision,
 	onTransferDecision,
 	onDischargeDecision,
+	onBundleDecision,
 	onConsultChange,
 	onConsultNote,
 	records,
@@ -2178,6 +2380,8 @@ function alertModalRenderer({
 	onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
 	/** A discharge referral decided in the modal, by patient: the patient's page shows the same referrals. */
 	onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
+	/** A sepsis bundle check confirmed or taken back in the modal (Scenario 3's renal dose review), by alert. */
+	onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
 	/** The video consult rang, went live or ended (closing the modal ends it), by alert. */
 	onConsultChange?: (alertId: string, state: AlertConsultState, detail: AlertDetailData) => void;
 	/** The AI Notetaker's draft of the consult, approved, by alert. */
@@ -2196,6 +2400,7 @@ function alertModalRenderer({
 				return (
 					<PatientConsultDialog
 						data={{ ...consult, tags: consult.tags && flagged.tags }}
+						carePlan={records?.find((record) => record.id === consult.patientId)?.carePlan}
 						open={open}
 						onOpenChange={onOpenChange}
 						onOpenPatient={openPatient}
@@ -2232,6 +2437,7 @@ function alertModalRenderer({
 				onPathwayDecision={onPathwayDecision && ((decision) => onPathwayDecision(alert.id, decision, data))}
 				onTransferDecision={onTransferDecision && ((decision) => onTransferDecision(alert.id, decision, data))}
 				onDischargeDecision={onDischargeDecision && ((decision) => onDischargeDecision(alert.patientId, decision))}
+				onBundleDecision={onBundleDecision && ((decision) => onBundleDecision(alert.id, decision))}
 				onConsultChange={onConsultChange && ((state) => onConsultChange(alert.id, state, data))}
 				onConsultNote={onConsultNote && ((note) => onConsultNote(alert.id, note, data))}
 				onAction={(action) => {
@@ -2250,6 +2456,7 @@ export {
 	AlertPanel,
 	AlertPanelDialog,
 	PatientConsultDialog,
+	PathwayContent,
 	alertModalRenderer,
 	withAlertFlags,
 	ConsultNotetaker,
@@ -2257,7 +2464,9 @@ export {
 	ConsultTile,
 	CONNECT_DELAY_MS,
 	threadWith,
+	useAlertLifecycle,
 	useConsult,
+	sourceLabels as alertSourceLabels,
 	type AlertConsultState,
 	type PatientConsultData,
 	type AlertDetailAction,

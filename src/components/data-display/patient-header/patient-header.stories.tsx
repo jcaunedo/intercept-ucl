@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { MessageCircleMoreIcon, VideoIcon } from "lucide-react";
+import { expect, fn } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
 import samplePhoto3 from "@/components/data-display/avatar/images/sample-photo-3.png";
@@ -23,7 +24,7 @@ const meta = {
 		mrn: "01033876",
 		sex: "F",
 		age: 39,
-		hospital: "Harbor Point General",
+		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 11",
 		details: ["ICU day 3", "64 kg"],
@@ -33,6 +34,11 @@ const meta = {
 			{ label: "Allergy: Penicillin" },
 			{ label: "Droplet isolation" },
 		],
+		acuity: { label: "NEWS2", score: 10, level: "high" },
+		trajectory: { label: "Change in last 24 h", value: "+1", trend: "up" },
+		alert: { variant: "critical", count: 2 },
+		onViewScore: fn(),
+		onViewAlerts: fn(),
 	},
 } satisfies Meta<typeof PatientHeader>;
 
@@ -41,9 +47,33 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * As in Figma: the 56px photo beside the name and the line under it (MRN, sex and age, and location), then the tags (all
- * outline) from the left edge, 12px below. No score: the page's Overview shows it.
+ * outline) from the left edge, 12px below. On the right half: NEWS2 and its level, the change in the last 24 h with the
+ * previous score, and the open alerts in the worst one's color, each after a rule.
  */
-export const Default: Story = {};
+export const Default: Story = {
+	play: async ({ canvas, args }) => {
+		await expect(canvas.getByText("Previous:")).toHaveTextContent("Previous: 9");
+		await expect(canvas.getByText("2")).toHaveClass("text-severity-critical");
+		canvas.getByRole("button", { name: "View breakdown" }).click();
+		canvas.getByRole("button", { name: "View alerts" }).click();
+		await expect(args.onViewScore).toHaveBeenCalled();
+		await expect(args.onViewAlerts).toHaveBeenCalled();
+	},
+};
+
+/** No open alert: the count reads 0 in the text color. A falling score's ▼ is green. */
+export const NoAlerts: Story = {
+	args: {
+		acuity: { label: "NEWS2", score: 3, level: "low" },
+		trajectory: { label: "Change in last 24 h", value: "−2", trend: "down" },
+		alert: undefined,
+	},
+};
+
+/** No score, change or alert to show, and no View alerts: the patient's side alone, as before Nov 6, 2026. */
+export const WithoutStats: Story = {
+	args: { acuity: undefined, trajectory: undefined, alert: undefined, onViewAlerts: undefined },
+};
 
 /**
  * The `actions` slot on the right, for an app that keeps a patient's actions in the header. Intercept Live leaves it
@@ -101,6 +131,8 @@ export const AllVariants: Story = {
 		<div className='flex flex-col gap-8 py-6'>
 			<PatientHeader {...args} />
 			<PatientHeader {...args} photo={undefined} />
+			<PatientHeader {...args} {...NoAlerts.args} />
+			<PatientHeader {...args} {...WithoutStats.args} />
 			<PatientHeader {...args} {...WithActions.args} />
 		</div>
 	),

@@ -33,6 +33,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import {
 	fadeVariants,
+	motionDistance,
 	motionDuration,
 	reducedMotionTransition,
 	reorderSpring,
@@ -725,7 +726,7 @@ function HospitalTabCounters({
 	);
 }
 
-/** The tab's accessible name: "CVMC, 6 patients, 4 active alerts, highest Medium". */
+/** The tab's accessible name: "Sidney, 14 patients, 4 active alerts, highest Critical". */
 function hospitalTabLabel(name: string, patients: PanelPatient[]) {
 	const { patientsText, alertsText } = hospitalTabCounts(patients);
 	return [name, patientsText, alertsText].filter(Boolean).join(", ");
@@ -1140,14 +1141,17 @@ const stickyTop = 52;
 const filterBarPadding = 24;
 // The board's header row has a 16px opaque band over its headers (PanelBoard).
 const boardHeadBand = 16;
+// The room a card needs above it to lift on hover: the Lift's rise and the top of its `shadow-lg`.
+const liftRoom = motionDistance.hover + 2;
 
 /**
  * The page's filter bar, stuck under the page header while the page scrolls (Nov 5, 2026, user's call), keeping its
  * 24px above and below, opaque edge to edge so the cards pass under it. It must be a direct child of the page's `main`
  * (sticky can't leave its parent), which has 24px padding: the bar takes it back on the sides and the 24px above.
  *
- * The 24px below is added only while stuck (padding and an equal negative margin, so nothing moves): at rest it would
- * cover the gap above the first row, clipping a card that lifts on hover. `onBoardTopChange` reports where the board's
+ * The band below (padding and an equal negative margin, so nothing moves) grows only as the content scrolls under it,
+ * up to 24px, and stays `liftRoom` clear of the first row's top until then (Nov 6, 2026): a full band as soon as the bar
+ * stuck covered the gap above the first row, clipping a card that lifts on hover (its top border went under the bar). `onBoardTopChange` reports where the board's
  * header row should stick (`PanelBoard`'s `stickyTop`): under the bar, its 16px band over the bar's bottom padding, so
  * the headers sit 24px under the chips, as at rest.
  */
@@ -1160,14 +1164,23 @@ function StickyFilterBar({
 }) {
 	const bar = React.useRef<HTMLDivElement>(null);
 	const content = React.useRef<HTMLDivElement>(null);
-	const [stuck, setStuck] = React.useState(false);
+	// The band under the chips, in px: 0 until the bar sticks, then how far the content has scrolled into the 24px gap
+	// under the chips, less `liftRoom`, so a resting first row keeps room to lift (`StickyFilterBar`'s rule).
+	const [band, setBand] = React.useState(0);
 
-	// Stuck while it rests at its sticky top. Any scroll may move it (the page's canvas scrolls, not the window), so the
-	// listener captures them all.
+	// Any scroll may move it (the page's canvas scrolls, not the window), so the listener captures them all.
 	React.useEffect(() => {
 		const element = bar.current;
 		if (!element) return;
-		const check = () => setStuck(element.getBoundingClientRect().top <= stickyTop + 0.5);
+		const check = () => {
+			const stuck = element.getBoundingClientRect().top <= stickyTop + 0.5;
+			const chips = content.current?.getBoundingClientRect().bottom ?? 0;
+			// What follows the bar (the summary-less grid, the board): how far its top has come into the gap. Without
+			// anything after it, a full band.
+			const next = element.nextElementSibling?.getBoundingClientRect().top;
+			const scrolledIn = next === undefined ? filterBarPadding : filterBarPadding - (next - chips);
+			setBand(stuck ? Math.round(Math.min(filterBarPadding, Math.max(0, scrolledIn - liftRoom))) : 0);
+		};
 		check();
 		window.addEventListener("scroll", check, { capture: true, passive: true });
 		window.addEventListener("resize", check);
@@ -1194,7 +1207,8 @@ function StickyFilterBar({
 	return (
 		<div
 			ref={bar}
-			className={cn("sticky top-[52px] z-[15] -mx-6 -mt-6 bg-background px-6 pt-6", stuck && "-mb-6 pb-6")}
+			className='sticky top-[52px] z-[15] -mx-6 -mt-6 bg-background px-6 pt-6'
+			style={band ? { paddingBottom: band, marginBottom: -band } : undefined}
 		>
 			<div ref={content}>{children}</div>
 		</div>

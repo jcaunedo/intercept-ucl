@@ -41,11 +41,14 @@ type ScenarioChanges = {
 
 type ScenarioBeat = {
 	/**
-	 * When it plays: when the scenario starts, once the scenario's video consult is on (its first time in a run), or once
-	 * the clinician keeps the patient (keep or transfer).
+	 * When it plays: when the scenario starts, once the scenario's video consult is on (its first time in a run), once
+	 * the clinician keeps the patient (keep or transfer), or once they accept the scenario's pathway (Scenario 3).
 	 */
-	after: "start" | "consult" | "keep";
-	/** Seconds after that. By default 1.5 s after the start, 6 s after the consult is on and 6 s after the keep. */
+	after: "start" | "consult" | "keep" | "pathway";
+	/**
+	 * Seconds after that. By default 1.5 s after the start, 6 s after the consult is on, 6 s after the keep and 6 s after
+	 * the pathway is accepted.
+	 */
 	delay?: number;
 	/** What happens, for the hospital bar's Live feed. */
 	label: string;

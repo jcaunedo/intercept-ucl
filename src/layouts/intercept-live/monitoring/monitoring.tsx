@@ -9,6 +9,7 @@ import {
 } from "../alert-modal/alert-modal";
 import type { CarePathwayDecision } from "../alert-modal/care-pathway";
 import type { DischargeDecision } from "../alert-modal/discharge-plan";
+import type { BundleDecision } from "../alert-modal/sepsis-bundle";
 import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
 import { CensusPanel, type CensusPatient } from "../census/census-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
@@ -61,6 +62,8 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		 * Discharge section.
 		 */
 		onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
+		/** A sepsis bundle check (Scenario 3's renal dose review) confirmed or undone in the alert modal, by alert. */
+		onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
 		/** The alert modal's video consult rang, went live or ended, by alert. */
 		onConsultChange?: (alertId: string, state: AlertConsultState, detail: AlertDetailData) => void;
 		/** The AI Notetaker's draft of a consult, approved in the alert modal, by alert. */
@@ -94,6 +97,7 @@ function Monitoring({
 	onPathwayDecision,
 	onTransferDecision,
 	onDischargeDecision,
+	onBundleDecision,
 	onConsultChange,
 	onConsultNote,
 	notices,
@@ -134,6 +138,7 @@ function Monitoring({
 							onPathwayDecision,
 							onTransferDecision,
 							onDischargeDecision,
+							onBundleDecision,
 							onConsultChange,
 							onConsultNote,
 						})
@@ -150,6 +155,11 @@ function Monitoring({
 					onAction: onPatientDetailsAction,
 					onDischargeDecision,
 					consults: patientConsults,
+					// The alerts' pathways, on the patient's page too (its Pathway panel and Care plan).
+					alertDetails,
+					onPathwayDecision,
+					onTransferDecision,
+					onBundleDecision,
 				})
 			}
 			pages={{

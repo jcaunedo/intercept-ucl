@@ -1,5 +1,5 @@
 import * as React from "react";
-import { MicOffIcon, PauseIcon } from "lucide-react";
+import { MicOffIcon, PauseIcon, PencilLineIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { fadeVariants } from "@/lib/motion";
@@ -216,14 +216,21 @@ type Line = {
 	key: string;
 	speaker: string;
 	at: number;
+	/** Heard from the clinician's microphone, not the call's transcription. */
+	live?: boolean;
 	/** Settled words. */
 	text: string;
 	/** Words still being heard, muted. */
 	pending?: string;
 };
 
-/** A line, or the mark where the notetaker was stopped. */
-type Item = Line | { key: string; pause: { from: number; to?: number }; at: number };
+/** A note the clinician added during the consult (Add a note, Nov 6, 2026). */
+type ConsultNote = { id: string; text: string };
+
+type NoteItem = { key: string; note: string; at: number };
+
+/** A line, a note, or the mark where the notetaker was stopped. */
+type Item = Line | NoteItem | { key: string; pause: { from: number; to?: number }; at: number };
 
 /** Cuts every segment in progress at the script's current time: what was heard of it is what's kept. */
 function cutInProgress(clock: Clock, timed: TimedSegment[]): Record<number, number> {
@@ -245,12 +252,15 @@ function ConsultTranscriptView({
 	transcript,
 	status,
 	muted = false,
+	notes = [],
 	className,
 }: {
 	transcript?: ConsultTranscript;
 	status: ConsultTranscriptStatus;
 	/** The call's microphone is muted: the clinician's words aren't captured. */
 	muted?: boolean;
+	/** The clinician's notes, oldest first: each shows at the consult's time it first appears here. */
+	notes?: readonly ConsultNote[];
 	className?: string;
 }) {
 	const timed = React.useMemo(() => timeline(transcript?.segments ?? []), [transcript]);
@@ -277,6 +287,17 @@ function ConsultTranscriptView({
 	else if (!interim) interimAt.current = null;
 	const speaking = React.useRef(false);
 	speaking.current = Boolean(interim);
+
+	// Each note is stamped with the consult's time when it's added (or, added before the transcript started, its start).
+	const [noteTimes, setNoteTimes] = useSessionState<Record<string, number>>("transcriptNoteTimes", {});
+	React.useEffect(() => {
+		if (notes.every((note) => note.id in noteTimes)) return;
+		setNoteTimes((current) => {
+			const next = { ...current };
+			for (const note of notes) if (!(note.id in next)) next[note.id] = clockRef.current.rec;
+			return next;
+		});
+	}, [notes, noteTimes]);
 
 	// Stopping cuts the sentences in progress and, for a pause, opens a gap; resuming closes it.
 	const previous = React.useRef(status);
@@ -345,29 +366,35 @@ function ConsultTranscriptView({
 				},
 			];
 		}),
-		...spoken.map((line, index): Line => ({ key: `y${index}`, speaker: you, at: line.at, text: line.text })),
-		...(interim ? [{ key: "y-now", speaker: you, at: interimAt.current ?? clock.rec, text: "", pending: interim }] : []),
+		...spoken.map((line, index): Line => ({ key: `y${index}`, speaker: you, at: line.at, text: line.text, live: true })),
+		...(interim
+			? [{ key: "y-now", speaker: you, at: interimAt.current ?? clock.rec, text: "", pending: interim, live: true }]
+			: []),
 		...clock.pauses.map((pause, index): Item => ({ key: `p${index}`, pause, at: pause.from })),
+		...notes.map((note): NoteItem => ({ key: `n${note.id}`, note: note.text, at: noteTimes[note.id] ?? clock.rec })),
 	].sort((a, b) => a.at - b.at);
-	const lines = items.filter((item): item is Line => !("pause" in item));
+	const lines = items.filter((item): item is Line => "speaker" in item);
 
-	// One turn per speaker until someone else speaks or the notetaker was stopped.
-	type Turn = { key: string; speaker: string; at: number; lines: Line[] };
-	const turns: (Turn | Extract<Item, { pause: unknown }>)[] = [];
+	// One turn per speaker until someone else speaks, the clinician adds a note or the notetaker was stopped. What the
+	// clinician says into their microphone is a turn of its own, with its own time (Nov 6, 2026, user's call): it never
+	// joins the transcript's line before it, even when that line is theirs too.
+	type Turn = { key: string; speaker: string; at: number; live?: boolean; lines: Line[] };
+	const turns: (Turn | NoteItem | Extract<Item, { pause: unknown }>)[] = [];
 	for (const item of items) {
-		if ("pause" in item) {
+		if (!("speaker" in item)) {
 			turns.push(item);
 			continue;
 		}
 		const turn = turns.at(-1);
-		if (turn && "lines" in turn && turn.speaker === item.speaker) turn.lines.push(item);
-		else turns.push({ key: item.key, speaker: item.speaker, at: item.at, lines: [item] });
+		if (turn && "lines" in turn && turn.speaker === item.speaker && Boolean(turn.live) === Boolean(item.live))
+			turn.lines.push(item);
+		else turns.push({ key: item.key, speaker: item.speaker, at: item.at, live: item.live, lines: [item] });
 	}
 
 	// Follows the newest words, unless the clinician scrolled up to read.
 	const scroller = React.useRef<HTMLDivElement>(null);
 	const following = React.useRef(true);
-	const content = `${lines.map((line) => `${line.text}${line.pending ?? ""}`).join("|")}#${clock.pauses.length}`;
+	const content = `${lines.map((line) => `${line.text}${line.pending ?? ""}`).join("|")}#${clock.pauses.length}#${notes.length}`;
 	React.useLayoutEffect(() => {
 		const element = scroller.current;
 		if (element && following.current) element.scrollTop = element.scrollHeight;
@@ -411,6 +438,24 @@ function ConsultTranscriptView({
 												: `Not captured · ${stamp(turn.pause.from)}–${stamp(turn.pause.to)}`}
 										</span>
 										<span aria-hidden='true' className='h-px flex-1 bg-border' />
+									</motion.li>
+								) : "note" in turn ? (
+									// The clinician's note: marked as one, apart from what was said.
+									<motion.li
+										key={turn.key}
+										variants={fadeVariants}
+										initial='initial'
+										animate='animate'
+										className='flex flex-col gap-1'
+									>
+										<p className='flex items-baseline gap-2 text-xs'>
+											<span className='flex items-center gap-1 self-center font-semibold text-foreground'>
+												<PencilLineIcon aria-hidden='true' className='size-3.5 text-icon-muted' />
+												Your note
+											</span>
+											<span className='font-mono text-muted-foreground tabular-nums'>{stamp(turn.at)}</span>
+										</p>
+										<p className='text-sm text-foreground'>{turn.note}</p>
 									</motion.li>
 								) : (
 									<motion.li
@@ -457,6 +502,7 @@ function ConsultTranscriptView({
 
 export {
 	ConsultTranscriptView,
+	type ConsultNote,
 	type ConsultTranscript,
 	type ConsultTranscriptSegment,
 	type ConsultTranscriptSpeaker,

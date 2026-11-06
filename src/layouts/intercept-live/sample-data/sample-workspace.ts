@@ -8,14 +8,19 @@ import type { PanelHospital } from "../shared/patient-panel";
 // Synthetic data (PRD PC-180) shared by every Intercept Live screen: the user's hospitals, the user and their team.
 
 const sampleHospitals: PanelHospital[] = [
-	{ id: "hpg", name: "Harbor Point General" },
+	// A critical access hospital about 40 miles from the hub, with no ICU: one RN on the inpatient side at night, an APP
+	// on call from home, the hub's tele-RN and intensivist covering remotely (Demo Use Cases, Scenario 4). Starts with no
+	// patients. Was Harbor Point General until Nov 6, 2026 (user's call); its patients moved to Sidney.
+	{ id: "bridgeport", name: "Bridgeport Valley" },
 	// A critical access hospital: an ED with an ED physician and two nurses at night, a small med-surg floor under
 	// tele-ICU coverage (Demo Use Cases, Scenario 2). Was Mercy West Hospital until Nov 4, 2026 (user's call).
-	{ id: "alliance", name: "Alliance" },
-	{ id: "cvmc", name: "CVMC" },
+	{ id: "alliance", name: "Alliance Community" },
+	// A spoke hospital: an ED that boards patients when the inpatient unit is full, two nurses and a hospitalist APP
+	// (Demo Use Cases, Scenario 3). Was CVMC until Nov 6, 2026 (user's call).
+	{ id: "sidney", name: "Sidney Regional" },
 	// A 25-bed critical access hospital: one RN on the floor at night, the family physician on call from home (Demo Use
 	// Cases, Scenario 1).
-	{ id: "chadron", name: "Chadron" },
+	{ id: "chadron", name: "Chadron Memorial" },
 ];
 
 const sampleUser: AppHeaderUser = {

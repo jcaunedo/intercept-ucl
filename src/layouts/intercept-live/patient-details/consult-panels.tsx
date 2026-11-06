@@ -16,14 +16,28 @@ import { enterTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/forms/select";
+
+import {
 	ConsultNotetaker,
 	ConsultPanelContent,
 	ConsultTile,
+	PathwayContent,
 	threadWith,
 	useConsult,
+	type AlertDetailData,
 	type PatientConsultData,
 } from "../alert-modal/alert-modal";
-import { ConsultSessionScope, useSessionState } from "../alert-modal/consult-session";
+import type { CarePathwayDecision } from "../alert-modal/care-pathway";
+import { useSessionState } from "../alert-modal/consult-session";
+import type { DischargeDecision } from "../alert-modal/discharge-plan";
+import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
+import type { BundleDecision } from "../alert-modal/sepsis-bundle";
 import {
 	ConsultMessages,
 	useConsultMessages,
@@ -36,7 +50,33 @@ import { PagePanel, usePatientHeaderActions } from "../side-panel";
 // The patient page's Video consult and Messages (Nov 5, 2026, Intercept-Live "Video and Messages Interations",
 // `219:16129`): the app header's two buttons open them as panels right of the page, full height, Video consult first.
 // The call, its AI Notetaker and the thread with the bedside nurse are the alert panel's (`alert-modal.tsx`,
-// `consult-messages.tsx`).
+// `consult-messages.tsx`). Pathway (Nov 6, 2026, user's call: a side panel, as on the alert) shares the Messages panel's
+// place, one at a time as on the alert panel, and shows the alert panel's own Pathway column (`PathwayContent`).
+
+/**
+ * The patient's pathways, for the page's Pathway panel: the details of their alerts that come with one (a pathway, a
+ * sepsis bundle or a protocol), the alert to show first, then the others, and where each decision goes, by alert.
+ */
+type PatientPathways = {
+	details: AlertDetailData[];
+	onPathwayDecision?: (alertId: string, decision: CarePathwayDecision, detail: AlertDetailData) => void;
+	onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
+	onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
+	onDischargeDecision?: (decision: DischargeDecision) => void;
+};
+
+/**
+ * Opens the page's Pathway panel, in Messages' place, from anywhere on the patient's page (the Care plan's Open
+ * pathway): it's kept in the patient's consult session, which the page's panels read.
+ */
+function useOpenPathwayPanel() {
+	const [, setPathwayOpen] = useSessionState("pathwayOpen", false);
+	const [, setMessagesOpen] = useSessionState("messagesOpen", false);
+	return React.useCallback(() => {
+		setMessagesOpen(false);
+		setPathwayOpen(true);
+	}, [setMessagesOpen, setPathwayOpen]);
+}
 
 /** Each panel's width, Figma's. Fixed: the call keeps its 352 × 248 shape at any width, and nothing needs resizing. */
 const panelWidth = 416;
@@ -98,7 +138,8 @@ function PatientPanel({
 								ref={heading}
 								id={`${id}-title`}
 								tabIndex={-1}
-								className='min-w-0 flex-1 truncate px-2 text-lg font-medium text-foreground outline-none'
+								// 16px semibold, 8px in, as Figma's title (a Breadcrumb `sm` page; Intercept-Live `221:18234`, Nov 6, 2026).
+							className='min-w-0 flex-1 truncate px-2 text-base font-semibold text-foreground outline-none'
 							>
 								{title}
 							</h2>
@@ -204,7 +245,7 @@ function MessagesFilter({
 /* -------------------------------------------------------------------------- */
 
 /**
- * The patient page's video consult and messages with the bedside nurse, in two panels right of the page (Intercept-Live
+ * The patient page's video consult, messages with the bedside nurse and pathway, in panels right of the page (Intercept-Live
  * `219:16129`, Nov 5, 2026). The app header's Video consult opens the call's panel and rings the bedside at once (the
  * call, then the AI Notetaker under it, its button in the panel's header); pressed again (it's an icon then), it ends
  * the call and closes the panel. The call's own End leaves the panel open, the notes still to come, with Video consult in
@@ -214,24 +255,26 @@ function MessagesFilter({
  * the page): switching patient or going Back ends the call. The call, its notetaker and the thread are the patient's
  * consult session (`consult-session.tsx`): opened from the alert panel's patient name, the page picks them up as they
  * were, the call still on with its panel open and Messages open or closed (Nov 5, 2026, user's call).
+ *
+ * With `pathways`, the header's Pathway opens the alert's Pathway column as a panel in Messages' place (Nov 6, 2026):
+ * the pathway to review, edit, accept or decline, then what it runs (the sepsis bundle, the DKA protocol, the bedside
+ * tasks) and keep or transfer, as on the alert. What's being done on it (a dose edit, a note, a decline's reason) and
+ * whether it's open go with the consult session too, both ways between here and the alert panel. With more than one
+ * alert's pathway, a select at its top picks the alert. Its × or the header's pressed Pathway closes it; Escape closes
+ * an open edit or form first.
+ *
+ * Inside the patient's `ConsultSessionScope`, which the page provides around everything on it.
  */
-function PatientConsultPanels(props: React.ComponentProps<typeof PatientConsultPanelsContent>) {
-	return (
-		<ConsultSessionScope patientId={props.data.patientId}>
-			<PatientConsultPanelsContent {...props} />
-		</ConsultSessionScope>
-	);
-}
-
-/** The panels, inside the patient's consult session (`PatientConsultPanels`). */
-function PatientConsultPanelsContent({
+function PatientConsultPanels({
 	data,
+	pathways,
 	onOpenConsult,
 	onOpenMessages,
 	onConsultNote,
 	onSendMessage,
 }: {
 	data: PatientConsultData;
+	pathways?: PatientPathways;
 	/** The call's panel opened (the call rings). */
 	onOpenConsult?: () => void;
 	/** The messages panel opened from the header. */
@@ -245,9 +288,17 @@ function PatientConsultPanelsContent({
 	// A call picked up from the alert panel opens with its panel; Messages as they were there.
 	const [consultOpen, setConsultOpen] = React.useState(consult !== "idle");
 	const [messagesOpen, setMessagesOpen] = useSessionState("messagesOpen", false);
+	// Pathway shares Messages' place: one at a time.
+	const [pathwayOpen, setPathwayOpen] = useSessionState("pathwayOpen", false);
+	const pathwayDetails = pathways?.details ?? [];
+	const [pathwayAlertId, setPathwayAlertId] = useSessionState<string | undefined>("pathwayAlert", undefined);
+	const pathwayDetail = pathwayDetails.find((detail) => detail.alert.id === pathwayAlertId) ?? pathwayDetails[0];
+	const pathwayShown = pathwayOpen && !messagesOpen && Boolean(pathwayDetail);
+	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
 	// The field takes focus when the clinician opens the thread, not when a new message opens it.
 	const [focusMessages, setFocusMessages] = React.useState(false);
 	const [notetakerSlot, setNotetakerSlot] = React.useState<HTMLDivElement | null>(null);
+	const [noteSlot, setNoteSlot] = React.useState<HTMLDivElement | null>(null);
 	// The call's microphone, so the notetaker stops transcribing the clinician while they're muted.
 	const [micMuted, setMicMuted] = React.useState(false);
 	const [messages, sendMessage, nurseTyping] = useConsultMessages(
@@ -259,6 +310,7 @@ function PatientConsultPanelsContent({
 	if (useNewIncoming(messages) && !messagesOpen) {
 		setFocusMessages(false);
 		setMessagesOpen(true);
+		setPathwayOpen(false);
 	}
 	const unread = useUnreadMessages(messages, messagesOpen);
 	const [filter, setFilter] = React.useState<MessagesFilterState>(noFilter);
@@ -289,9 +341,23 @@ function PatientConsultPanelsContent({
 				return;
 			}
 			setFocusMessages(true);
+			setPathwayOpen(false);
 			setMessagesOpen(true);
 			onOpenMessages?.();
 		},
+		...(pathwayDetail
+			? {
+					pathwayOpen: pathwayShown,
+					onOpenPathway: () => {
+						if (pathwayShown) {
+							setPathwayOpen(false);
+							return;
+						}
+						setMessagesOpen(false);
+						setPathwayOpen(true);
+					},
+				}
+			: {}),
 	});
 
 	return (
@@ -301,13 +367,9 @@ function PatientConsultPanelsContent({
 				title='Video consult'
 				open={consultOpen}
 				action={
-					// The notetaker's button, then ×, 8px apart (Intercept-Live `222:18365`).
-					<div className='flex shrink-0 items-center gap-2'>
-						<div ref={setNotetakerSlot} className='flex items-center' />
-						<Button variant='ghost' size='icon-md' aria-label='Close video consult' onClick={closeConsult}>
-							<XIcon aria-hidden='true' />
-						</Button>
-					</div>
+					// The notetaker's button only. No Close here (Nov 6, 2026, user's call): the app header's Video consult,
+					// pressed while the panel is open ("Close video consult"), closes it.
+					<div ref={setNotetakerSlot} className='flex shrink-0 items-center' />
 				}
 				onOpened={(heading) => heading?.focus({ preventScroll: true })}
 				className={panelShadow}
@@ -331,10 +393,13 @@ function PatientConsultPanelsContent({
 								muted={micMuted}
 								onApprove={onConsultNote}
 								actionSlot={notetakerSlot}
+								noteSlot={noteSlot}
 							/>
 						}
 					/>
 				</div>
+				{/* Add a note, pinned under the scrolling content, 16px from the panel's bottom (Intercept-Live `230:6415`). */}
+				<div ref={setNoteSlot} className='shrink-0 px-6 pb-4 empty:hidden' />
 			</PatientPanel>
 			<PatientPanel
 				id='patient-messages'
@@ -377,8 +442,65 @@ function PatientConsultPanelsContent({
 					/>
 				</div>
 			</PatientPanel>
+			<PatientPanel
+				id='patient-pathway'
+				title='Pathway'
+				open={pathwayShown}
+				action={
+					<Button variant='ghost' size='icon-md' aria-label='Close pathway' onClick={() => setPathwayOpen(false)}>
+						<XIcon aria-hidden='true' />
+					</Button>
+				}
+				onOpened={(heading) => heading?.focus({ preventScroll: true })}
+				onKeyDown={(event) => {
+					// Escape closes an open dose edit, decline or form first, then the panel. Not from a select's list (a
+					// portal, outside the panel's DOM).
+					if (event.key !== "Escape" || !event.currentTarget.contains(event.target as Node)) return;
+					if (!pathwayEscape.current?.()) setPathwayOpen(false);
+				}}
+				className={panelShadow}
+			>
+				{pathwayDetail ? (
+					// The alert panel's Pathway column: 24px in, its parts 16px apart, its decision stuck to the bottom.
+					<div className='flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6'>
+						{pathwayDetails.length > 1 ? (
+							<Select value={pathwayDetail.alert.id} onValueChange={setPathwayAlertId}>
+								<SelectTrigger size='sm' aria-label='Alert' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{pathwayDetails.map((detail) => (
+										<SelectItem key={detail.alert.id} value={detail.alert.id}>
+											{detail.alert.title}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : null}
+						<PathwayContent
+							key={pathwayDetail.alert.id}
+							data={pathwayDetail}
+							onPathwayDecision={
+								pathways?.onPathwayDecision &&
+								((decision) => pathways.onPathwayDecision?.(pathwayDetail.alert.id, decision, pathwayDetail))
+							}
+							onTransferDecision={
+								pathways?.onTransferDecision &&
+								((decision) => pathways.onTransferDecision?.(pathwayDetail.alert.id, decision, pathwayDetail))
+							}
+							onBundleDecision={
+								pathways?.onBundleDecision &&
+								((decision) => pathways.onBundleDecision?.(pathwayDetail.alert.id, decision))
+							}
+							onDischargeDecision={pathways?.onDischargeDecision}
+							escapeRef={pathwayEscape}
+							fill
+						/>
+					</div>
+				) : null}
+			</PatientPanel>
 		</PagePanel>
 	);
 }
 
-export { PatientConsultPanels };
+export { PatientConsultPanels, useOpenPathwayPanel, type PatientPathways };

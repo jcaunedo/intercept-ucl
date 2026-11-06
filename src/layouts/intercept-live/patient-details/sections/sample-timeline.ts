@@ -1034,10 +1034,148 @@ const sampleScenario1ResolvedTimeline = () => hayesTimeline("resolved");
 const sampleScenario2Timeline = () => reynoldsTimeline("alert");
 const sampleScenario2ResolvedTimeline = () => reynoldsTimeline("resolved");
 
+/**
+ * Rosa Medina (Scenario 3), in Sidney's ED since 50 min before the sepsis screen: triage BP 96/58, HR 112, T 39.0 °C;
+ * labs at 45 min, acetaminophen and ondansetron at 40, lactate 3.8 and the BMP at 22, BP down to 84/48 at 5, the screen
+ * now. No fluids or antibiotics before it. At the resolution the scenario's 12 h are compressed, as Dale Reynolds's 2 h
+ * are: the screen sits 30 min back and each stage a few minutes after the last (after fluids 24, on norepinephrine 18,
+ * at 6 h 10, at 12 h now); the labels give the scenario's times. The insulin and norepinephrine rates, the lactates and
+ * glucoses follow `sample-patient-records.ts`.
+ */
+function medinaTimeline(stage: "alert" | "resolved"): PatientTimeline {
+	const resolved = stage === "resolved";
+	// Where the screen sits, and so where everything before it sits.
+	const zero = resolved ? 30 : 0;
+	const before = (minutes: number) => zero + minutes;
+	const after = (...keys: [number, number][]): [number, number][] => (resolved ? keys : []);
+	return timeline({
+		span: before(50),
+		seed: 231,
+		hr: [[before(50), 112], [before(25), 116], [before(5), 122], [zero, 124], ...after([24, 112], [18, 104], [10, 96], [0, 88])],
+		map: [[before(50), 71], [before(25), 68], [before(5), 60], [zero, 60], ...after([24, 62], [18, 67], [10, 77], [0, 83])],
+		bp: resolved ? [118, 66] : [84, 48],
+		spo2: [[before(50), 96], [zero, 95], ...after([24, 95], [18, 96], [10, 97], [0, 97])],
+		rr: [[before(50), 22], [before(5), 24], [zero, 24], ...after([24, 22], [18, 20], [10, 18], [0, 16])],
+		temp: [[before(50), 39.0], [before(5), 39.4], ...after([18, 38.6], [10, 37.8], [2, 37.4])],
+		lanes: [
+			...(resolved
+				? [
+						pump("Norepinephrine", "mcg/kg/min", [[21, 0.05], [18, 0.08], [10, 0.04], [4, 0]]),
+						pump("Insulin, regular", "units/h", [[18, 3], [10, 2]], "other"),
+					]
+				: []),
+			labLane("Lactate", "mmol/L", [[before(22), 3.8], ...after([16, 2.6], [10, 1.6])], { high: 2 }),
+			labLane("Glucose", "mg/dL", [[before(22), 390], ...after([18, 312], [10, 172], [2, 158])], { high: 180 }, "lab-2"),
+		],
+		events: [
+			[before(50), "care", "Walked in with her daughter: BP 96/58, HR 112, T 39.0 °C, RR 22, SpO₂ 96% on room air"],
+			[before(48), "note", "ED triage: dysuria and left flank pain for 3 days, fevers and rigors, vomiting"],
+			[before(45), "care", "Lactate, CBC, BMP, urinalysis and glucose drawn"],
+			[before(40), "care", "Acetaminophen 1,000 mg by mouth, ondansetron 4 mg IV"],
+			[before(22), "lab", "Lactate 3.8 mmol/L · creatinine 2.6, eGFR 22 · glucose 390 · WBC 18.6"],
+			[before(20), "lab", "Urinalysis: nitrite positive, leukocyte esterase 3+, WBC over 50/hpf"],
+			[before(5), "care", "BP 84/48 (MAP 60), HR 124, T 39.4 °C"],
+			[zero, "alert", "Sepsis screen: probable septic shock · Critical"],
+			...(resolved
+				? ([
+						[28, "care", "Blood cultures ×2 drawn, before antibiotics"],
+						[27, "care", "Piperacillin-tazobactam 4.5 g IV, first dose"],
+						[26, "care", "Lactated Ringer's 500 mL bolus, 1 of 4"],
+						[24, "care", "2,000 mL of LR given (at 45 min); lungs clear at each reassessment"],
+						[21, "drip", "Norepinephrine 0.05 mcg/kg/min, peripheral IV"],
+						[18, "drip", "Norepinephrine 0.05 → 0.08 mcg/kg/min (at 1 h 15 min); insulin infusion 3 units/h"],
+						[16, "lab", "Repeat lactate 2.6 mmol/L (at 2 h)"],
+						[14, "note", "Renal ultrasound: swollen left kidney, no hydronephrosis or abscess"],
+						[10, "drip", "Norepinephrine 0.08 → 0.04 mcg/kg/min, insulin 3 → 2 units/h (at 6 h)"],
+						[10, "lab", "Lactate 1.6 mmol/L (at 6 h)"],
+						[4, "drip", "Norepinephrine off (at 11 h)"],
+						[2, "lab", "Blood cultures: gram-negative rods in 2 of 2, E. coli · creatinine 2.5"],
+						[1, "care", "Admitted to Sidney's inpatient unit, hub co-management"],
+					] as PatientSpec["events"])
+				: []),
+		],
+	});
+}
+
+const sampleScenario3Timeline = (stage: "alert" | "resolved") => medinaTimeline(stage);
+
+/**
+ * Tyler Kessler (Scenario 4), in Bridgeport since 40 min before the alert: triage HR 116, BP 104/62, RR 24, a liter of
+ * saline as a bolus, ondansetron, labs at 20 min, admitted to Med-Surg at 10, the second liter at 5, the critical labs
+ * now. No insulin before the protocol. At `closed` the scenario's 14 h are compressed, as Rosa Medina's 12 h are: the
+ * alert sits 44 min back and each hour of the protocol 3 min after the last, so the drip stops (hour 14) 2 min ago; the
+ * labels give the scenario's times. The hourly checks and insulin rates are the protocol's (`sample-scenario-4.ts`).
+ */
+function kesslerTimeline(stage: "alert" | "closed"): PatientTimeline {
+	const closed = stage === "closed";
+	// Where the alert sits, and so where everything before it sits.
+	const zero = closed ? 44 : 0;
+	const before = (minutes: number) => zero + minutes;
+	/** Minutes back to the protocol's hour `h` (23:00 is hour 0). */
+	const hour = (h: number) => (14 - h) * 3 + 2;
+	const after = (...keys: [number, number][]): [number, number][] => (closed ? keys : []);
+	const checks = (values: number[]): [number, number][] => (closed ? values.map((value, h) => [hour(h), value]) : [[before(1), values[0]]]);
+	return timeline({
+		span: before(40),
+		seed: 241,
+		hr: [[before(40), 116], [before(20), 119], [zero, 122], ...after([hour(2), 108], [hour(6), 96], [0, 82])],
+		map: [[before(40), 76], [before(20), 74], [zero, 71], ...after([hour(2), 79], [hour(6), 85], [0, 91])],
+		bp: closed ? [122, 76] : [98, 58],
+		spo2: [[before(40), 99], [zero, 99], ...after([0, 99])],
+		rr: [[before(40), 24], [before(20), 28], [zero, 30], ...after([hour(2), 24], [hour(6), 20], [0, 16])],
+		temp: [[before(40), 37.0], [before(5), 37.2], ...after([hour(6), 36.9], [hour(13), 36.8])],
+		lanes: [
+			...(closed
+				? [
+						pump("Insulin, regular", "units/h", [[hour(0), 7], [hour(3), 8], [hour(4), 0], [hour(5), 8], [hour(6), 3.5], [hour(10), 4], [hour(14), 0]]),
+						pump("Potassium chloride", "mEq/h", [[hour(4), 20], [hour(5), 0]], "other"),
+					]
+				: []),
+			pump("IV fluids", "mL/h", [[before(35), 2000], [before(5), 1000], ...after([hour(1), 250], [hour(6), 150], [hour(14), 0])], "fluid"),
+			labLane("Anion gap", "mmol/L", checks([28, 26, 24, 22, 20, 19, 17, 16, 15, 14, 14, 13, 13, 11]), { high: 12 }),
+			labLane("Glucose", "mg/dL", checks([520, 468, 415, 386, 318, 296, 238, 182, 176, 168, 205, 188, 172, 164]), { high: 180 }, "lab-2"),
+			labLane("Potassium", "mmol/L", checks([5.6, 5.1, 4.4, 3.9, 3.1, 3.6, 3.9, 4.0, 4.1, 4.2, 4.2, 4.3, 4.3, 4.4]), { low: 3.5, high: 5 }),
+		],
+		events: [
+			[before(40), "care", "Walked into the ED: HR 116, BP 104/62, RR 24, SpO₂ 99% on room air, T 37.0 °C"],
+			[before(38), "note", "ED triage: type 1 diabetes, out of his glargine 2 days, vomiting since yesterday"],
+			[before(35), "drip", "0.9% saline, 1 L bolus"],
+			[before(30), "care", "Ondansetron 4 mg IV"],
+			[before(20), "care", "Venous gas, BMP, beta-hydroxybutyrate, CBC and lipase drawn"],
+			[before(10), "care", "Admitted to Med-Surg, Bed 3 · Derek Lawson, PA-C on call by phone"],
+			[before(5), "drip", "0.9% saline, second liter at 1,000 mL/h"],
+			[before(1), "lab", "pH 7.08 · bicarbonate 6 · gap 28 · glucose 520 · potassium 5.6 · beta-hydroxybutyrate 7.2"],
+			[zero, "alert", "Critical labs: severe DKA · Critical"],
+			...(closed
+				? ([
+						[hour(0) - 1, "drip", "DKA protocol started from the hub: insulin 7 units/h, 0.1 units/kg/h (23:00)"],
+						[hour(1), "drip", "0.45% saline with KCl 20 mEq/L at 250 mL/h (00:00)"],
+						[hour(3), "drip", "Insulin 7 → 8 units/h: glucose fell only 29 (02:00), signed on the phone in 38 s"],
+						[hour(4), "lab", "Potassium 3.1 (03:00)"],
+						[hour(4) - 1, "drip", "Insulin held; KCl 20 mEq/h IV"],
+						[hour(5), "drip", "Potassium 3.6: insulin back at 8 units/h (04:00)"],
+						[hour(6), "drip", "Glucose 238: D5 0.45% saline with KCl at 150 mL/h, insulin 8 → 3.5 units/h (05:00)"],
+						[hour(7) - 1, "care", "06:00 check in 14 min late, after the nudge"],
+						[hour(8), "care", "Day shift: Hannah Price, RN takes the checklist (07:00)"],
+						[hour(8) - 1, "note", "History and physical signed: cost-related insulin rationing recorded (07:30)"],
+						[hour(10), "drip", "Insulin 3.5 → 4 units/h: glucose 205 (09:00)"],
+						[hour(13), "lab", "Anion gap 11, bicarbonate 19, pH 7.34: gap closed (12:00)"],
+						[hour(13) - 1, "care", "Glargine 22 units SC and lispro 6 units with lunch (12:12)"],
+						[hour(14), "drip", "Insulin drip stopped after 14 h (13:00)"],
+					] as PatientSpec["events"])
+				: []),
+		],
+	});
+}
+
+const sampleScenario4Timeline = (stage: "alert" | "closed") => kesslerTimeline(stage);
+
 export {
 	sampleScenario1ResolvedTimeline,
 	sampleScenario1Timeline,
 	sampleScenario2ResolvedTimeline,
 	sampleScenario2Timeline,
+	sampleScenario3Timeline,
+	sampleScenario4Timeline,
 	sampleTimelineByPatient,
 };

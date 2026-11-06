@@ -533,14 +533,17 @@ function MonitoringPanel({
 	}, [setPageList, visibleKey]);
 	const everyoneCount = scope === "mine" ? filtered(patients).length : visible.length;
 	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
-	// As on the Census: one hospital, picked on its tab or the only one the filters leave, reads by name ("7 patients at
-	// Harbor Point General"); otherwise "across 4 hospitals".
+	// As on the Census: one hospital, picked on its tab or the only one the filters leave, reads by name ("14 patients at
+	// Sidney"); otherwise "across 3 hospitals".
 	const singleHospital =
 		hospitalId !== "all"
 			? hospitals.find((hospital) => hospital.id === hospitalId)
 			: hospitalCount === 1
 				? hospitals.find((hospital) => hospital.id === visible[0].hospitalId)
 				: undefined;
+	// A hospital tab with no patients at all (Bridgeport until Scenario 4's patient arrives) says so, rather than
+	// blaming the filters.
+	const emptyHospital = hospitalId !== "all" && !patients.some((patient) => patient.hospitalId === hospitalId) ? singleHospital : undefined;
 
 	// Active alerts re-sorts by who to see first on the click itself: the cards land in their places, no glide.
 	const [snapOrder, snapNextOrder] = useSnapOrder();
@@ -759,6 +762,13 @@ function MonitoringPanel({
 								<EmptyState
 									title='No patients being monitored'
 									description="Patients you're monitoring will appear here, with their live vitals and trends."
+								/>
+							) : emptyHospital ? (
+								<EmptyState
+									title={`No patients at ${emptyHospital.name}`}
+									description='Patients admitted there will appear here.'
+									buttonLabel='Show all hospitals'
+									buttonProps={{ onClick: () => setHospitalId("all") }}
 								/>
 							) : (
 								<EmptyState

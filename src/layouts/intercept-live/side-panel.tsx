@@ -260,12 +260,19 @@ function useHideToasts(hidden: boolean) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * What a patient's page runs itself in the app header (Nov 5, 2026: the video consult and messages panels): each
- * button's handler and whether its panel is open, and the thread's unread count. Over `PatientDetailsView.headerActions`.
+ * What a patient's page runs itself in the app header (Nov 5, 2026: the video consult and messages panels; Nov 6, 2026:
+ * the pathway's): each button's handler and whether its panel is open, and the thread's unread count. Over
+ * `PatientDetailsView.headerActions`.
  */
 type PatientHeaderActions = Pick<
 	AppHeaderPatientProps,
-	"onVideoConsult" | "videoConsultOpen" | "onOpenMessages" | "messagesOpen" | "unreadMessages"
+	| "onVideoConsult"
+	| "videoConsultOpen"
+	| "onOpenMessages"
+	| "messagesOpen"
+	| "unreadMessages"
+	| "onOpenPathway"
+	| "pathwayOpen"
 >;
 
 const PatientHeaderActionsContext = React.createContext<((actions: PatientHeaderActions | null) => void) | null>(null);
@@ -282,18 +289,21 @@ function usePatientHeaderActions(actions: PatientHeaderActions) {
 	const setActions = React.useContext(PatientHeaderActionsContext);
 	const latest = React.useRef(actions);
 	latest.current = actions;
-	const { videoConsultOpen, messagesOpen, unreadMessages } = actions;
+	const { videoConsultOpen, messagesOpen, unreadMessages, pathwayOpen } = actions;
 	const hasVideoConsult = Boolean(actions.onVideoConsult);
 	const hasMessages = Boolean(actions.onOpenMessages);
+	const hasPathway = Boolean(actions.onOpenPathway);
 	React.useEffect(() => {
 		setActions?.({
 			videoConsultOpen,
 			messagesOpen,
 			unreadMessages,
+			pathwayOpen,
 			...(hasVideoConsult ? { onVideoConsult: () => latest.current.onVideoConsult?.() } : {}),
 			...(hasMessages ? { onOpenMessages: () => latest.current.onOpenMessages?.() } : {}),
+			...(hasPathway ? { onOpenPathway: () => latest.current.onOpenPathway?.() } : {}),
 		});
-	}, [setActions, videoConsultOpen, messagesOpen, unreadMessages, hasVideoConsult, hasMessages]);
+	}, [setActions, videoConsultOpen, messagesOpen, unreadMessages, pathwayOpen, hasVideoConsult, hasMessages, hasPathway]);
 	React.useEffect(() => (setActions ? () => setActions(null) : undefined), [setActions]);
 }
 

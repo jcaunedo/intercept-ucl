@@ -6,8 +6,8 @@ import type { ConsultTranscript, ConsultTranscriptSegment } from "./consult-tran
 // Story-only: what the AI Notetaker hears on a video consult, as speech recognition writes it (prototype only; an app
 // gets real segments from its transcription service). Each conversation is the intensivist and the bedside nurse going
 // over the patient: how they're doing, the numbers, the plan and what the pathway could be, and the family. Sarah Miller
-// (p1), Margaret Hayes (Scenario 1) and Dale Reynolds (Scenario 2) have their own, from their charts and scenarios; every
-// other patient's is built from their record. Doses and settings are illustrative until clinical review. A `heard` line
+// (p1), Margaret Hayes (Scenario 1), Dale Reynolds (Scenario 2), Rosa Medina (Scenario 3) and Tyler Kessler (Scenario 4)
+// have their own, from their charts and scenarios; every other patient's is built from their record. Doses and settings are illustrative until clinical review. A `heard` line
 // is recognition's first guess at a word it mishears, corrected as the segment ends, as Whisper does.
 // Nobody says the clinician's name or Intercept's (Nov 5, 2026, user's call: "so it is agnostic"): the script fits
 // whoever is on the call; the transcript labels them You.
@@ -36,7 +36,7 @@ const firstOf = (name: string) => name.split(" ")[0];
 const clinicianOf = (record?: PatientRecord) => record?.careTeam?.find((member) => member.you)?.name ?? "Joanna Smith";
 
 /* -------------------------------------------------------------------------- */
-/* Sarah Miller (p1): septic shock from pneumonia, ARDS, Harbor Point General  */
+/* Sarah Miller (p1): septic shock from pneumonia, ARDS, Sidney               */
 /* -------------------------------------------------------------------------- */
 
 function sarahMiller(nurse: string, clinician: string): ConsultTranscript {
@@ -211,6 +211,83 @@ function daleReynolds(nurse: string, clinician: string): ConsultTranscript {
 	};
 }
 
+/**
+ * Rosa Medina (Scenario 3): Sidney ED, with Jenna Collins, NP leading at the bedside and a Spanish interpreter on the
+ * call. Rosa speaks Spanish; the interpreter gives it in English, which is what the notes keep. The bundle, the renal
+ * dose and the fluid-tolerance check, then the plan if MAP stays under 65.
+ */
+function rosaMedina(nurse: string, clinician: string): ConsultTranscript {
+	const n = firstOf(nurse);
+	return {
+		speakers: [
+			{ id: "you", name: clinician, you: true },
+			{ id: "nurse", name: `${nurse}, RN` },
+			{ id: "app", name: "Jenna Collins, NP" },
+			{ id: "interpreter", name: "Lucía Herrera, interpreter" },
+			{ id: "patient", name: "Rosa Medina" },
+		],
+		segments: segments([
+			["you", `Hi ${n}. I'm watching Rosa's bundle with you. Is Jenna there?`],
+			["app", "I'm here. 51, diabetes and CKD 4, three days of flank pain and burning. Pressure's 84 over 48, lactate 3.8."],
+			["you", "Agreed, septic shock from the kidney. Cultures first, then the pip-tazo.", "Agreed, septic shock from the kidney. Cultures first, then the pip tazo."],
+			["nurse", "Both sets are drawn. The antibiotic is hanging now."],
+			["you", "Give the first dose in full. With her eGFR of 22, the next doses are 2.25 every six hours. I've confirmed it on the bundle.", "Give the first dose in full. With her EGFR of 22, the next doses are 2.25 every six hours. I've confirmed it on the bundle."],
+			["you", "Fluids in 500 boluses. Listen to her lungs and check her sats before each one; her kidneys won't clear much.", "Fluids in 500 boluses. Listen to her lungs and check her SATs before each one; her kidneys won't clear much."],
+			["app", "Will do. First one's running."],
+			["you", "Lucía, can you tell Rosa who I am, and ask how she's feeling?"],
+			["interpreter", "Of course."],
+			["patient", "Me duele mucho el costado y tengo frío. ¿Me voy a quedar aquí?", undefined, 1.2],
+			["interpreter", "She says her side hurts a lot and she feels cold. She's asking if she'll be staying here."],
+			["you", "Tell her we're treating the infection in her kidney now, and we're working to keep her here in Sidney, close to her daughter."],
+			["interpreter", "She says thank you. Her daughter Elena is with her."],
+			["you", "Jenna, if her MAP is still under 65 after the fluids, we'll start norepinephrine through a peripheral line. Is there a good IV above the wrist?", "Jenna, if her map is still under 65 after the fluids, we'll start norepinephrine through a peripheral line. Is there a good IV above the wrist?"],
+			["nurse", "18 gauge in the right antecubital. It's clean."],
+			["you", "Good. Site checks every hour, and her glucose is 390, so we'll start the insulin drip too."],
+			["you", "Call me after the fourth bolus, or sooner if she gets crackles or her sats drop.", "Call me after the fourth bolus, or sooner if she gets crackles or her SATs drop."],
+		]),
+	};
+}
+
+/**
+ * Tyler Kessler (Scenario 4): Bridgeport at 23:00, with Brittany Cole, the one night RN on the inpatient side, at the
+ * bedside. Tyler is drowsy but talking: he tells them he's been stretching his insulin since he lost Medicaid. The
+ * protocol's start, the potassium to watch as insulin pushes it down, and why the hourly checklist matters with one
+ * nurse on.
+ */
+function tylerKessler(nurse: string, clinician: string): ConsultTranscript {
+	const n = firstOf(nurse);
+	return {
+		speakers: [
+			{ id: "you", name: clinician, you: true },
+			{ id: "nurse", name: `${nurse}, RN` },
+			{ id: "patient", name: "Tyler Kessler" },
+		],
+		segments: segments([
+			["you", `Hi ${n}. I've got Tyler's labs up. pH 7.08, bicarb 6, gap 28. How is he?`, `Hi ${n}. I've got Tyler's labs up. PH 7.08, bicarb 6, gap 28. How is he?`],
+			["nurse", "Drowsy, but he answers. Breathing deep and fast, about 30. Heart rate 122, pressure 98 over 58."],
+			["nurse", "Second liter of saline is running. Nothing else yet."],
+			["you", "Okay. I'm starting the DKA protocol from here. Insulin at 7 units an hour, no bolus. Derek will co-sign."],
+			["you", "His potassium is 5.6 now, but it'll fall fast once the insulin's in. No potassium in the fluids while it's over 5.2."],
+			["nurse", "Got it. And under 3.3?"],
+			["you", "Under 3.3 the protocol holds the insulin and asks for KCl. It'll tell you on the checklist; you don't have to do the math."],
+			["you", "Can I talk to Tyler for a second?", undefined, 1.0],
+			["nurse", "Tyler, the doctor on the screen wants to talk to you."],
+			["patient", "Yeah. Hi. Sorry. I feel really sick."],
+			["you", "Hi Tyler. You're in the right place. When did you last take your long-acting insulin?"],
+			["patient", "Two days ago. I ran out. I've been, like, stretching it since I lost my Medicaid in August."],
+			["patient", "I'd skip the shots at meals and take less at night so a pen would last longer.", undefined, 1.2],
+			["you", "Thank you for telling me. That's not on you. We'll get you through tonight, and before you go home we'll work on getting you insulin you can afford."],
+			["patient", "Okay. Thanks."],
+			["you", `${n}, you're the only nurse on tonight, right?`],
+			["nurse", "Just me on the inpatient side. Derek's on call from home."],
+			["you", "Then lean on the checklist. Glucose and potassium every hour; it sets the rate from each glucose, and if a check runs ten minutes late, you and our tele-RN both get a nudge."],
+			["you", "Rate changes come to my phone. I'll sign them right away."],
+			["nurse", "Okay. First check at midnight."],
+			["you", "Call me if he gets more drowsy, if potassium comes back under 3.3, or if his pressure drops under 90."],
+		]),
+	};
+}
+
 /* -------------------------------------------------------------------------- */
 /* Every other patient, from their chart                                      */
 /* -------------------------------------------------------------------------- */
@@ -299,6 +376,8 @@ function sampleConsultTranscript(context: ConsultTranscriptContext): ConsultTran
 	if (context.patientId === "p1") return sarahMiller(nurse, clinician);
 	if (context.patientId === "p15") return margaretHayes(nurse, clinician);
 	if (context.patientId === "p21") return daleReynolds(nurse, clinician);
+	if (context.patientId === "p23") return rosaMedina(nurse, clinician);
+	if (context.patientId === "p24") return tylerKessler(nurse, clinician);
 	return fromRecord(context, nurse, clinician);
 }
 

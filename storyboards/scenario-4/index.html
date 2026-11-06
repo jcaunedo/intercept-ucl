@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenario 4 Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* A presenter's script: one column of beats, each with what to click, what to say, and the screen it lands on.
+   Colors follow Intercept Live's tokens (theme.css): neutral surfaces, the severity red as the only accent. */
+:root {
+	--bg: oklch(0.985 0.002 250);
+	--surface: oklch(1 0 0);
+	--fg: oklch(0.21 0.01 260);
+	--muted: oklch(0.5 0.012 260);
+	--border: oklch(0.91 0.005 260);
+	--critical: oklch(0.58 0.22 27);
+	--critical-subtle: oklch(0.96 0.025 20);
+	--success: oklch(0.55 0.14 150);
+	--success-subtle: oklch(0.96 0.035 150);
+	--note: oklch(0.96 0.03 85);
+	--note-fg: oklch(0.42 0.09 70);
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Roboto Mono", ui-monospace, monospace;
+	color-scheme: light;
+	/* archielabs.ds icons (lucide paths): `mouse-pointer` before Steps, `text` before each screenshot's note. */
+	--icon-pointer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 12.586 19 19'/%3E%3Cpath d='M3.688 3.037a.497.497 0 0 0-.651.651l6.5 15.999a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z'/%3E%3C/svg%3E");
+	--icon-text: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 6.1H3'/%3E%3Cpath d='M21 12.1H3'/%3E%3Cpath d='M15.1 18H3'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: oklch(0.17 0.006 260);
+		--surface: oklch(0.21 0.008 260);
+		--fg: oklch(0.96 0.003 260);
+		--muted: oklch(0.7 0.01 260);
+		--border: oklch(0.32 0.01 260);
+		--critical: oklch(0.68 0.19 25);
+		--critical-subtle: oklch(0.27 0.06 25);
+		--success: oklch(0.72 0.14 150);
+		--success-subtle: oklch(0.26 0.05 150);
+		--note: oklch(0.28 0.04 85);
+		--note-fg: oklch(0.85 0.08 85);
+		color-scheme: dark;
+	}
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font: 400 16px/1.55 var(--font-sans);
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 4px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: max(16px, 4vw); }
+
+header.top { padding-block: 48px 32px; }
+.eyebrow { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 10px 0 12px; text-wrap: balance; }
+/* The line under the title: the title's type, muted. */
+h1:has(+ .h1-sub) { margin-bottom: 0; }
+.h1-sub { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 400; margin: 0 0 12px; color: var(--muted); }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; }
+.setting { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+
+nav.beats {
+	position: sticky; top: 0; z-index: 5;
+	background: color-mix(in oklch, var(--bg) 92%, transparent);
+	backdrop-filter: blur(8px);
+	border-block: 1px solid var(--border);
+}
+nav.beats ol { list-style: none; display: flex; gap: 4px; margin: 0 auto; padding-block: 10px; overflow-x: auto; }
+nav.beats li:first-child a { margin-left: -12px; }
+nav.beats a { display: block; white-space: nowrap; text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 10px; color: var(--muted); }
+nav.beats a:hover { background: var(--surface); color: var(--fg); }
+nav.beats .num { font-family: var(--font-mono); margin-right: 6px; }
+
+section.prep, section.beat, section.gaps { padding-block: 72px; border-bottom: 1px solid var(--border); }
+h2 { font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.beat-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.time { font: 500 14px/1 var(--font-mono); color: var(--muted); }
+
+/* One column: what to say under the title, then what to do. */
+.script { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px; max-width: 72ch; }
+.script > div { min-width: 0; }
+.label { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.label.steps { display: flex; align-items: center; gap: 6px; }
+.label.steps::before {
+	content: "";
+	flex: none;
+	width: 14px;
+	height: 14px;
+	background: currentColor;
+	-webkit-mask: var(--icon-pointer) center / contain no-repeat;
+	mask: var(--icon-pointer) center / contain no-repeat;
+}
+.script ol, .script ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.say { margin: 0; font-size: 16px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+kbd, .ui { font: 600 0.92em var(--font-sans); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+
+/* One screenshot per row, full width, so the screen can be read. */
+.frames { display: grid; grid-template-columns: 1fr; gap: 40px; }
+figure { margin: 0; min-width: 0; }
+figure img { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+figure.narrow img { max-width: 420px; }
+figcaption { font-size: 16px; color: var(--fg); margin-top: 16px; display: flex; align-items: flex-start; gap: 8px; }
+/* archielabs.ds `text`, as a mask so it takes the caption's color; centered on the first line. */
+figcaption::before {
+	content: "";
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin-top: 4px;
+	background: currentColor;
+	-webkit-mask: var(--icon-text) center / contain no-repeat;
+	mask: var(--icon-text) center / contain no-repeat;
+}
+
+.callout { border-radius: 12px; padding: 14px 16px; font-size: 15px; margin-top: 16px; }
+.callout.note { background: var(--note); color: var(--note-fg); }
+.callout.done { background: var(--success-subtle); }
+.callout strong { font-weight: 600; }
+.pending { display: inline-block; font: 600 12px/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--note-fg); background: var(--note); border-radius: 999px; padding: 6px 10px; }
+
+.prep ol { display: grid; gap: 8px; padding-left: 20px; max-width: 72ch; }
+.prep ol ol { list-style: upper-alpha; margin-top: 8px; }
+.gaps table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+	<p class="eyebrow">Intercept Live · Demo storyboard</p>
+	<h1>Scenario 4: DKA caused by insulin rationing, managed by one night nurse</h1>
+	<p class="h1-sub">Patient: Tyler Kessler</p>
+	<p class="lede">A single nurse safely runs a 14-hour insulin-drip protocol, with the platform doing the arithmetic and the reminders, and the stay ends by dealing with why the patient got sick. It's the clearest demonstration of prevention, the word the fund uses for chronic disease. Follow the beats in order: each one says what to click, what to say, and what the screen should look like.</p>
+	<div class="setting">
+		<span class="chip">Bridgeport, NE · inpatient side</span>
+		<span class="chip">23:00</span>
+		<span class="chip">One RN; the APP on call from home</span>
+		<span class="chip">Hub tele-RN and intensivist remote</span>
+		<span class="chip">Uninsured: Medicaid lapsed</span>
+		<span class="chip">Type 1 diabetes</span>
+	</div>
+</header>
+
+<nav class="beats" aria-label="Beats">
+	<ol class="wrap">
+		<li><a href="#prep">Before you start</a></li>
+		<li><a href="#beat-1"><span class="num">1</span>Protocol launch</a></li>
+		<li><a href="#beat-2"><span class="num">2</span>Calculator</a></li>
+		<li><a href="#beat-3"><span class="num">3</span>Nudges</a></li>
+		<li><a href="#beat-4"><span class="num">4</span>Gap closure</a></li>
+		<li><a href="#beat-5"><span class="num">5</span>The cause</a></li>
+		<li><a href="#beat-6"><span class="num">6</span>Prevention</a></li>
+		<li><a href="#gaps">Known gaps</a></li>
+	</ol>
+</nav>
+
+<main>
+<section class="prep wrap" id="prep">
+	<div class="beat-head"><h2>Before you start, a few things to know</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">This is the hub at night: patients across four rural hospitals, one intensivist watching all of them. Bridgeport is a critical access hospital. Tonight it has one nurse on the inpatient side, and its APP is on call from home.</p>
+		</div>
+		<div>
+			<ol>
+				<li>Open the prototype on <strong>Monitoring</strong>. If you've already played it, use <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span> first.</li>
+				<li>Tyler isn't on the page yet, and Bridgeport's tab reads 0. He arrives with the scenario, when his labs come back.</li>
+				<li>New to the page? The <a href="../scenario-1/index.html#prep">Scenario 1 storyboard</a> walks through the hospital tabs, the quick filters, the monitoring cards and the alert notifications.</li>
+				<li>Once you accept his DKA pathway (beat 1), the rest of the night plays on its own over about 100 seconds. Keep his alert open with <strong>Pathway</strong> out, and scroll the column to follow the checklist.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames one">
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Tyler Kessler arrives." loading="lazy"><figcaption>Monitoring before the scenario starts. Bridgeport has no patients yet.</figcaption></figure>
+	</div>
+	<div class="callout note"><strong>The checklist shows the night's times; the screen's clock shows today's.</strong> The protocol's checks read 11:00 PM to 1:00 PM, as the night happened, while 14 hours pass in under two minutes on the real clock. Ask the audience to picture the night going by.</div>
+</section>
+
+<section class="beat wrap" id="beat-1">
+	<div class="beat-head"><h2>1. Protocol launch</h2><span class="time">23:00</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Tyler Kessler, 24. Type 1 diabetes since he was 11; he works at a grain elevator. He lost Medicaid at redetermination three months ago and has been stretching his insulin. His pH is 7.08, bicarbonate 6, anion gap 28, glucose 520, potassium 5.6. That's severe DKA, a 14-hour insulin drip with checks every hour, and Bridgeport has one nurse tonight. The intensivist starts the DKA pathway from the hub, and the nurse's screen becomes an hourly checklist.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Open <span class="ui">Prototype</span> at the bottom of the Sidebar and pick <span class="ui">Scenario 4: DKA</span>.</li>
+				<li>About 2 seconds later Tyler's card joins the page, first, with its red <strong>Critical</strong> bar: NEWS2 7, HR and RR outside their limits, and a <strong>Coverage lapsed</strong> flag. His alert toasts: <strong>Severe DKA: pH 7.08, gap 28</strong>.</li>
+				<li>Click his card's alert bar, then <span class="ui">Pathway</span>. The <strong>DKA pathway</strong> is suggested: the insulin infusion at 0.1 units/kg/h (7 units/h), fluids, potassium per protocol and the hourly checks at the bedside.</li>
+				<li>Click <span class="ui">Accept</span>. The orders go to Derek Lawson, PA-C, for co-signature, and about 2 seconds later the <strong>DKA insulin protocol</strong> opens under them: insulin 7 units/h, the first check in, and "Same checklist on Bridgeport's screen".</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 4: DKA." loading="lazy"><figcaption>Prototype › Scenario 4: DKA.</figcaption></figure>
+		<figure><img src="frames/02-alert.jpg" alt="Tyler Kessler's card first on Monitoring: Bridgeport, Med-Surg, Bed 3, a Critical bar, NEWS2 7 High, HR 123 and RR 30 flagged, Coverage lapsed." loading="lazy"><figcaption>Tyler arrives with a Critical alert from his labs.</figcaption></figure>
+		<figure><img src="frames/03-pathway.jpg" alt="His alert open: pH 7.08, bicarbonate 6 and glucose 520 in type 1 diabetes; beside it the DKA pathway, suggested, with Decline and Accept." loading="lazy"><figcaption>The DKA pathway, for the hub to start.</figcaption></figure>
+		<figure><img src="frames/04-protocol.jpg" alt="The DKA pathway co-signed and, under it, the DKA insulin protocol running: insulin 7 units/h, the first check done, the next due." loading="lazy"><figcaption>Accepted: the protocol starts, and the checklist is on both screens.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-2">
+	<div class="beat-head"><h2>2. Built-in calculator</h2><span class="time">00:00 to 05:00</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Every hour the nurse enters the glucose, potassium, gap and fluids, and the platform works out the insulin rate. If the glucose falls too slowly, the rate goes up. If potassium drops under 3.3, the protocol stops insulin outright and prompts replacement: that's a hard stop, not a suggestion. When glucose falls under 250, it prompts dextrose and turns the rate down, so the drip can keep closing the gap without sending him low.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click. A check comes in every 6 seconds or so. At <strong>02:00</strong> the glucose fell only 29: the calculator raises the rate to 8 units/h.</li>
+				<li>At <strong>03:00</strong> potassium is <strong>3.1</strong>: the summary reads <strong>Held</strong> in red, and the check shows the hard stop, <strong>Insulin held</strong>, with <strong>Replace potassium</strong> under it. Seconds later the nurse documents KCl 20 mEq an hour, and at 04:00 (K 3.6) insulin is back on at 8 units/h.</li>
+				<li>At <strong>05:00</strong> glucose is <strong>238</strong>: <strong>Add dextrose</strong>, and the rate drops to 3.5 units/h. The summary keeps 8 running, "3.5 units/h waiting for sign-off" (beat 3).</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/05-rate-up.jpg" alt="The 02:00 check: glucose 386, K 3.9, gap 22; the calculator: glucose fell 29, under 50 an hour, up 1 unit/h; rate 7 to 8 units/h, signed on the phone in 38 s." loading="lazy"><figcaption>02:00: the calculator raises the rate.</figcaption></figure>
+		<figure><img src="frames/06-hard-stop.jpg" alt="The 03:00 check: K 3.1 in red; resumes at 8 units/h; a red Insulin held hard stop and a Replace potassium prompt." loading="lazy"><figcaption>03:00: potassium 3.1 holds insulin, a hard stop.</figcaption></figure>
+		<figure><img src="frames/07-dextrose.jpg" alt="The summary: 8 units/h running, 3.5 units/h waiting for sign-off; glucose 238, K 3.9, gap 17, HCO3 14; the gap's bar two-thirds of the way." loading="lazy"><figcaption>05:00: glucose under 250, the new rate waits for sign-off.</figcaption></figure>
+		<figure><img src="frames/07b-dextrose-check.jpg" alt="The 05:00 check: Add dextrose prompt, and rate 8 to 3.5 units/h, waiting for sign-off, sent to Dr. Smith's phone." loading="lazy"><figcaption>The dextrose prompt and the rate change.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-3">
+	<div class="beat-head"><h2>3. Hourly nudges</h2><span class="time">05:00 to 06:14</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Rate changes go to the intensivist's phone, and she signs them in under a minute. And with one nurse for the whole floor, a check can slip: if one is ten minutes overdue, the nurse and the hub's tele-RN both get an alert.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>About 5 seconds after the 05:00 check: <strong>Signed by Joanna Smith, MD on their phone · 41 s after the request</strong>, and the dextrose prompt turns green as the nurse switches the fluids. The summary now reads 3.5.</li>
+				<li>About 6 seconds later the <strong>06:00</strong> check turns red, <strong>Overdue</strong>: "10 min overdue at 6:10 AM: nudged Brittany Cole, RN and Ava Brooks, tele-RN". With his alert closed, the same nudge toasts at the hub, with <span class="ui">Open protocol</span>.</li>
+				<li>Seconds later the check is in, <strong>14 min late</strong>; glucose 182 on dextrose, rate unchanged.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/08-signed.jpg" alt="The 05:00 check: Add dextrose done by Brittany Cole, RN; rate 8 to 3.5 units/h signed by Joanna Smith, MD on their phone, 41 s after the request." loading="lazy"><figcaption>Signed from the phone in 41 seconds.</figcaption></figure>
+		<figure><img src="frames/09-overdue.jpg" alt="The summary reads Overdue · 6:00 AM in red; the 06:00 check red and overdue: nudged Brittany Cole, RN and Ava Brooks, tele-RN." loading="lazy"><figcaption>06:10: the check is overdue; both nurses are nudged.</figcaption></figure>
+		<figure><img src="frames/09b-late.jpg" alt="The 06:00 check done at 6:14 AM, 14 min late; glucose 182, rate stays 3.5 units/h." loading="lazy"><figcaption>The check comes in, 14 minutes late.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-4">
+	<div class="beat-head"><h2>4. Gap closure</h2><span class="time">07:00 to 13:00</span></div>
+	<div class="script">
+		<div>
+			<p class="say">The day nurse takes over the same checklist at seven. The anion gap closes at hour 13. Then the platform walks the switch to injected insulin: basal insulin first, the drip kept on another hour so there's no gap in coverage, then the drip stops.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>About 75 seconds after Accept, hours 8 to 12 arrive together, all on time, entered by Hannah Price, RN; one rate change at 09:00, signed in 29 s.</li>
+				<li>About 7 seconds later, <strong>12:00</strong>: gap 11, bicarbonate 19. The badge reads <strong>Gap closed</strong>, the bar turns green, and <strong>Moving to subcutaneous insulin</strong> opens: gap closed and eating ✓, glargine 22 units and lispro with lunch ✓.</li>
+				<li>About 7 seconds later, <strong>13:00</strong>: the overlap is done and the drip stops after 14 h (<strong>Drip stopped</strong>). His alert is <strong>Resolved</strong> by Derek Lawson, PA-C, and the outcomes are written.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/11-gap-closed.jpg" alt="The summary: 4 units/h, glucose 164, gap 11, HCO3 19, the bar green, gap closed at hour 13; Moving to subcutaneous insulin, the first two steps done by Hannah Price, RN." loading="lazy"><figcaption>12:00: the gap closes; the overlap begins.</figcaption></figure>
+		<figure><img src="frames/12-stopped.jpg" alt="The protocol: Off, drip stopped after 14 h; the four overlap steps done." loading="lazy"><figcaption>13:00: the drip stops after 14 hours.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-5">
+	<div class="beat-head"><h2>5. The cause, captured</h2><span class="time">07:30</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Why did a 24-year-old end up in DKA? Because insulin costs more than he could pay after losing his coverage. The APP's admission note records that as a structured social-needs field, "cost-related insulin rationing", not a line buried in free text, so the discharge workflow and the reports can act on it.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click. About 68 seconds after Accept (07:30), an <strong>Insulin rationing</strong> flag joins his tags on every card and in his alert.</li>
+				<li>Later, on his page, <strong>Notes</strong> › <strong>History and physical</strong> (Derek Lawson, PA-C) ends with <strong>Structured fields</strong>: Social need, Cost-related insulin rationing (Z91.120); Coverage, lapsed.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/10-flag.jpg" alt="His alert after the 06:00 check, with his tags now DKA, Insulin rationing and Coverage lapsed." loading="lazy"><figcaption>The Insulin rationing flag, from the admission note.</figcaption></figure>
+		<figure><img src="frames/16-note.jpg" alt="His History and physical by Derek Lawson, PA-C, signed in TruBridge, ending with Structured fields: Social need, Cost-related insulin rationing, Z91.120; Coverage, lapsed." loading="lazy"><figcaption>The note's structured fields.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-6">
+	<div class="beat-head"><h2>6. Prevention at discharge</h2><span class="time">13:00</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Treating the DKA isn't enough if he goes home and rations again. At discharge the platform drafts the referrals that fix the cause: Medicaid re-enrollment, a manufacturer's insulin-assistance program, and a diabetes educator visit at the rural health clinic down the road. The clinician sends each one, with who agreed.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>About 7 seconds after the drip stops, <strong>Social needs at discharge</strong> appears at the bottom of the Pathway column: Insulin rationing and Coverage lapsed, payer uninsured, and three referrals. With his alert closed, a toast says <strong>3 referrals to send</strong>, with <span class="ui">Review referrals</span>.</li>
+				<li>Send one: pick who agreed (<span class="ui">The patient</span>), then <span class="ui">Send referral</span>.</li>
+				<li>Close his alert and click his card. His page shows the night: the brief, the care plan with the DKA pathway, his flags, a <strong>Discharge</strong> tab with the same referrals, and on <strong>Overview</strong> the log with the outcomes recorded (gap closed at 13 h, 13 of 14 checks on time, no hypoglycemia, one low potassium caught, the social need recorded, uninsured).</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/13-referrals.jpg" alt="His alert resolved by Derek Lawson, PA-C; Social needs at discharge: Insulin rationing and Coverage lapsed flagged, payer uninsured; the Medicaid re-enrollment referral to send, with Who agreed?" loading="lazy"><figcaption>The referrals that address the cause.</figcaption></figure>
+		<figure><img src="frames/14-monitoring.jpg" alt="Monitoring after the scenario: his Resolved toast, Severe DKA, Bridgeport, Med-Surg, Bed 3, in the stack." loading="lazy"><figcaption>Back on Monitoring: his Resolved toast.</figcaption></figure>
+		<figure><img src="frames/15-patient.jpg" alt="Tyler Kessler's page: Bridgeport, Med-Surg, Bed 3, 70 kg; flags Insulin rationing and Coverage lapsed; NEWS2 0 Low; the brief; the care plan with the DKA pathway active." loading="lazy"><figcaption>His page, at 13:00.</figcaption></figure>
+		<figure><img src="frames/17-activity.jpg" alt="His log: DKA outcomes recorded, the drip stopped, the gap closed, the checks, the hard stop and the signed rate changes." loading="lazy"><figcaption>The night in his log, with the outcomes.</figcaption></figure>
+	</div>
+</section>
+
+<section class="gaps wrap" id="gaps">
+	<div class="beat-head"><h2>Known gaps</h2></div>
+	<p style="margin:0 0 16px;color:var(--muted);max-width:68ch">Where the prototype differs from the scenario, in case someone asks.</p>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>What the audience sees</th><th>The scenario</th><th>Why</th></tr></thead>
+			<tbody>
+				<tr><td>14 hours pass in about 100 seconds; the checklist shows the night's times, the rest of the screen today's</td><td>23:00 to 13:00</td><td>The prototype runs on the real clock</td></tr>
+				<tr><td>"Same checklist on Bridgeport's screen" is a line of text; the hub's view stands in for the nurse's</td><td>The RN's screen becomes an hourly checklist</td><td>The nurse's own view (DU-25) isn't built yet</td></tr>
+				<tr><td>"Signed … on their phone" is a line in the checklist</td><td>The intensivist signs off rate changes from a phone</td><td>Mock, as the scenario marks it; the phone isn't built, and the hub can't sign in the panel yet</td></tr>
+				<tr><td>The overdue nudge shows at the hub (the check, and a toast)</td><td>The RN and the hub tele-RN both get an alert</td><td>The nurse's side isn't built</td></tr>
+				<tr><td>Bridgeport has no other patients</td><td>One RN on the inpatient side</td><td>Bridgeport replaced Harbor Point General (Nov 6, 2026); its patients moved to Sidney</td></tr>
+				<tr><td>If you open his page before accepting the pathway, his medications already show the drip</td><td>—</td><td>His medications are built for the night, not rebuilt at each check</td></tr>
+				<tr><td>Referrals stay in the prototype</td><td>Referrals go out</td><td>Delivery to clinics and programs is funded work</td></tr>
+				<tr><td>Every threshold, the starting rate and the 1 h overlap</td><td>—</td><td>Typical DKA protocol values; replace them with Intercept's protocol before the demo (the scenario's clinical review)</td></tr>
+			</tbody>
+		</table>
+	</div>
+</section>
+</main>
+
+<footer class="wrap">
+	Source: InterceptLIVE Demo Use Cases, Scenario 4 (NETECH Rural Health Catalyst Fund). Tyler Kessler and everyone in the prototype are synthetic. To run it again: <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span>.
+</footer>
+</body>
+</html>

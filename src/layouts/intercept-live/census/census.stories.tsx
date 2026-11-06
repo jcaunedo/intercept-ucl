@@ -261,7 +261,7 @@ export const GroupedGrid: Story = {
 		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
 		const hospitals = new Set(samplePatients.map((patient) => patient.hospital)).size;
 		await waitFor(() => expect(canvas.getAllByRole("heading", { level: 2 })).toHaveLength(hospitals));
-		await expect(canvas.queryByRole("region", { name: "CVMC" })).not.toBeInTheDocument();
+		await expect(canvas.queryByRole("region", { name: "Sidney Regional" })).not.toBeInTheDocument();
 	},
 };
 
@@ -273,13 +273,13 @@ export const GroupingOneHospital: Story = {
 	play: async ({ canvas, userEvent }) => {
 		const grouping = canvas.getByRole("switch", { name: "Group by hospital" });
 		await userEvent.click(grouping);
-		await waitFor(() => expect(canvas.getByRole("region", { name: "CVMC" })).toBeInTheDocument());
-		await userEvent.click(canvas.getByRole("tab", { name: /^CVMC/ }));
-		await waitFor(() => expect(canvas.queryByRole("region", { name: "CVMC" })).not.toBeInTheDocument());
+		await waitFor(() => expect(canvas.getByRole("region", { name: "Sidney Regional" })).toBeInTheDocument());
+		await userEvent.click(canvas.getByRole("tab", { name: /^Sidney/ }));
+		await waitFor(() => expect(canvas.queryByRole("region", { name: "Sidney Regional" })).not.toBeInTheDocument());
 		await expect(grouping).not.toBeChecked();
 		await expect(grouping).toBeDisabled();
 		await userEvent.click(canvas.getByRole("tab", { name: /^All hospitals/ }));
-		await waitFor(() => expect(canvas.getByRole("region", { name: "CVMC" })).toBeInTheDocument());
+		await waitFor(() => expect(canvas.getByRole("region", { name: "Sidney Regional" })).toBeInTheDocument());
 		await expect(grouping).toBeChecked();
 	},
 };
@@ -350,6 +350,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 		onPathwayDecision,
 		onTransferDecision,
 		onDischargeDecision,
+		onBundleDecision,
 		onConsultChange,
 		onConsultNote,
 		logAlertAction,
@@ -389,6 +390,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 			onPathwayDecision={onPathwayDecision}
 			onTransferDecision={onTransferDecision}
 			onDischargeDecision={onDischargeDecision}
+			onBundleDecision={onBundleDecision}
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}
 			alerts={alerts}

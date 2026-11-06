@@ -148,13 +148,15 @@ export const Scenario1HeartFailure: Story = {
 		await expect(await chat.findByText(/#1/, { selector: "strong" }, { timeout: 20000 })).toBeInTheDocument();
 		// The answer types out, so the consult's last line comes later.
 		await expect(await chat.findByText(/Normal is under 100 pg\/mL/, {}, { timeout: 20000 })).toBeInTheDocument();
-		// Then its follow-ups: her details first, then her active Critical alert and what led to it.
+		// Then its follow-ups: her details first, then her active Critical alert, then what a physician asks next about her.
 		const followUps = within(await chat.findByRole("list", { name: "Follow-up actions" }, { timeout: 20000 }));
 		await expect(followUps.getAllByRole("button").map((button) => button.textContent)).toEqual([
 			"Open patient details",
 			"Open the Critical alert",
 			"What changed since I last looked?",
-			"Show latest labs",
+			"Ventilator and last blood gas",
+			"What's due in the next 2 hours?",
+			"Latest imaging",
 		]);
 		// Her card's alert bar opens the alert panel: the reason line as its title, and the one-click consult.
 		const card = canvas.getAllByRole("article").find((article) => within(article).queryByText("Hayes, Margaret"));
@@ -246,13 +248,13 @@ export const Scenario1Resolution: Story = {
 		const reopened = within(await screen.findByRole("dialog"));
 		await expect(await reopened.findByText(/Keeping at Chadron/)).toBeInTheDocument();
 		await expect(reopened.getByText("Transfer avoided")).toBeInTheDocument();
-		// Her page tracks it all: the care plan, and the activity with who did what.
+		// Her page tracks it all: the care plan, and the log with who did what.
 		await userEvent.click(reopened.getByRole("button", { name: "Hayes, Margaret, open patient" }));
 		const plan = within(await screen.findByRole("region", { name: "Care plan" }));
 		await expect(plan.getByText("Keeping at Chadron")).toBeInTheDocument();
 		await expect(plan.getByText("Transfer avoided")).toBeInTheDocument();
-		const activity = within(screen.getByRole("region", { name: "Activity" }));
-		await expect(activity.getByText("Alert resolved")).toBeInTheDocument();
+		const log = within(screen.getByRole("region", { name: "Log" }));
+		await expect(log.getByText("Alert resolved")).toBeInTheDocument();
 	},
 };
 
@@ -565,6 +567,7 @@ function LiveMonitoring(props: MonitoringProps) {
 		onPathwayDecision,
 		onTransferDecision,
 		onDischargeDecision,
+		onBundleDecision,
 		onConsultChange,
 		onConsultNote,
 		logAlertAction,
@@ -610,6 +613,7 @@ function LiveMonitoring(props: MonitoringProps) {
 			onPathwayDecision={onPathwayDecision}
 			onTransferDecision={onTransferDecision}
 			onDischargeDecision={onDischargeDecision}
+			onBundleDecision={onBundleDecision}
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}
 			notices={notices}

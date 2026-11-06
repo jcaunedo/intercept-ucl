@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenario 3 Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* A presenter's script: one column of beats, each with what to click, what to say, and the screen it lands on.
+   Colors follow Intercept Live's tokens (theme.css): neutral surfaces, the severity red as the only accent. */
+:root {
+	--bg: oklch(0.985 0.002 250);
+	--surface: oklch(1 0 0);
+	--fg: oklch(0.21 0.01 260);
+	--muted: oklch(0.5 0.012 260);
+	--border: oklch(0.91 0.005 260);
+	--critical: oklch(0.58 0.22 27);
+	--critical-subtle: oklch(0.96 0.025 20);
+	--success: oklch(0.55 0.14 150);
+	--success-subtle: oklch(0.96 0.035 150);
+	--note: oklch(0.96 0.03 85);
+	--note-fg: oklch(0.42 0.09 70);
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Roboto Mono", ui-monospace, monospace;
+	color-scheme: light;
+	/* archielabs.ds icons (lucide paths): `mouse-pointer` before Steps, `text` before each screenshot's note. */
+	--icon-pointer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 12.586 19 19'/%3E%3Cpath d='M3.688 3.037a.497.497 0 0 0-.651.651l6.5 15.999a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z'/%3E%3C/svg%3E");
+	--icon-text: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 6.1H3'/%3E%3Cpath d='M21 12.1H3'/%3E%3Cpath d='M15.1 18H3'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: oklch(0.17 0.006 260);
+		--surface: oklch(0.21 0.008 260);
+		--fg: oklch(0.96 0.003 260);
+		--muted: oklch(0.7 0.01 260);
+		--border: oklch(0.32 0.01 260);
+		--critical: oklch(0.68 0.19 25);
+		--critical-subtle: oklch(0.27 0.06 25);
+		--success: oklch(0.72 0.14 150);
+		--success-subtle: oklch(0.26 0.05 150);
+		--note: oklch(0.28 0.04 85);
+		--note-fg: oklch(0.85 0.08 85);
+		color-scheme: dark;
+	}
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font: 400 16px/1.55 var(--font-sans);
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 4px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: max(16px, 4vw); }
+
+header.top { padding-block: 48px 32px; }
+.eyebrow { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 10px 0 12px; text-wrap: balance; }
+/* The line under the title: the title's type, muted. */
+h1:has(+ .h1-sub) { margin-bottom: 0; }
+.h1-sub { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 400; margin: 0 0 12px; color: var(--muted); }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; }
+.setting { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+
+nav.beats {
+	position: sticky; top: 0; z-index: 5;
+	background: color-mix(in oklch, var(--bg) 92%, transparent);
+	backdrop-filter: blur(8px);
+	border-block: 1px solid var(--border);
+}
+nav.beats ol { list-style: none; display: flex; gap: 4px; margin: 0 auto; padding-block: 10px; overflow-x: auto; }
+nav.beats li:first-child a { margin-left: -12px; }
+nav.beats a { display: block; white-space: nowrap; text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 10px; color: var(--muted); }
+nav.beats a:hover { background: var(--surface); color: var(--fg); }
+nav.beats .num { font-family: var(--font-mono); margin-right: 6px; }
+
+section.prep, section.beat, section.gaps { padding-block: 72px; border-bottom: 1px solid var(--border); }
+h2 { font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.beat-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.time { font: 500 14px/1 var(--font-mono); color: var(--muted); }
+
+/* One column: what to say under the title, then what to do. */
+.script { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px; max-width: 72ch; }
+.script > div { min-width: 0; }
+.label { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.label.steps { display: flex; align-items: center; gap: 6px; }
+.label.steps::before {
+	content: "";
+	flex: none;
+	width: 14px;
+	height: 14px;
+	background: currentColor;
+	-webkit-mask: var(--icon-pointer) center / contain no-repeat;
+	mask: var(--icon-pointer) center / contain no-repeat;
+}
+.script ol, .script ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.say { margin: 0; font-size: 16px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+kbd, .ui { font: 600 0.92em var(--font-sans); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+
+/* One screenshot per row, full width, so the screen can be read. */
+.frames { display: grid; grid-template-columns: 1fr; gap: 40px; }
+figure { margin: 0; min-width: 0; }
+figure img { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+figure.narrow img { max-width: 420px; }
+figcaption { font-size: 16px; color: var(--fg); margin-top: 16px; display: flex; align-items: flex-start; gap: 8px; }
+/* archielabs.ds `text`, as a mask so it takes the caption's color; centered on the first line. */
+figcaption::before {
+	content: "";
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin-top: 4px;
+	background: currentColor;
+	-webkit-mask: var(--icon-text) center / contain no-repeat;
+	mask: var(--icon-text) center / contain no-repeat;
+}
+
+.callout { border-radius: 12px; padding: 14px 16px; font-size: 15px; margin-top: 16px; }
+.callout.note { background: var(--note); color: var(--note-fg); }
+.callout.done { background: var(--success-subtle); }
+.callout strong { font-weight: 600; }
+.pending { display: inline-block; font: 600 12px/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--note-fg); background: var(--note); border-radius: 999px; padding: 6px 10px; }
+
+.prep ol { display: grid; gap: 8px; padding-left: 20px; max-width: 72ch; }
+.prep ol ol { list-style: upper-alpha; margin-top: 8px; }
+.gaps table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
+</style>
+<body>
+
+<header class="top wrap">
+	<p class="eyebrow">Intercept Live · Demo storyboard</p>
+	<h1>Scenario 3: Sepsis in a patient with diabetes and kidney disease</h1>
+	<p class="h1-sub">Patient: Rosa Medina</p>
+	<p class="lede">A hospitalist APP runs a septic shock resuscitation in a small ED, and the platform gives her intensivist-level protocol support, with doses and fluids adjusted for the patient's chronic disease. This scenario shows the platform raising the quality of the care the local team delivers, not only the remote team's. Follow the beats in order: each one says what to click, what to say, and what the screen should look like.</p>
+	<div class="setting">
+		<span class="chip">Sidney, NE · ED</span>
+		<span class="chip">15:30</span>
+		<span class="chip">Inpatient unit full: she boards in the ED</span>
+		<span class="chip">A hospitalist APP and two nurses</span>
+		<span class="chip">Medicaid</span>
+		<span class="chip">Prefers Spanish</span>
+	</div>
+</header>
+
+<nav class="beats" aria-label="Beats">
+	<ol class="wrap">
+		<li><a href="#prep">Before you start</a></li>
+		<li><a href="#beat-1"><span class="num">1</span>Sepsis screen</a></li>
+		<li><a href="#beat-2"><span class="num">2</span>Interpreter</a></li>
+		<li><a href="#beat-3"><span class="num">3</span>Bundle tracker</a></li>
+		<li><a href="#beat-4"><span class="num">4</span>Safety checks</a></li>
+		<li><a href="#beat-5"><span class="num">5</span>Vasopressors</a></li>
+		<li><a href="#beat-6"><span class="num">6</span>Resolution</a></li>
+		<li><a href="#gaps">Known gaps</a></li>
+	</ol>
+</nav>
+
+<main>
+<section class="prep wrap" id="prep">
+	<div class="beat-head"><h2>Before you start, a few things to know</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">This is the hub in the afternoon: patients across four rural hospitals, one intensivist watching all of them. Sidney is a small spoke hospital. Its inpatient unit is full, so a sick patient waits in the ED, looked after by a hospitalist APP and two nurses.</p>
+		</div>
+		<div>
+			<ol>
+				<li>Open the prototype on <strong>Monitoring</strong>. If you've already played it, use <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span> first.</li>
+				<li>Rosa isn't on the page yet. She arrives with the scenario, when the sepsis screen flags her.</li>
+				<li>New to the page? The <a href="../scenario-1/index.html#prep">Scenario 1 storyboard</a> walks through the hospital tabs, the quick filters, the monitoring cards and the alert notifications.</li>
+				<li>Most beats arrive on their own, so keep her alert open. Once the video consult is on, the bedside documents the bundle over about 45 seconds (beats 3 and 4). Once you accept the pathway (beat 5), the rest plays over about 25 seconds (beat 6).</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames one">
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Rosa Medina arrives." loading="lazy"><figcaption>Monitoring before the scenario starts. Sidney has 6 patients.</figcaption></figure>
+	</div>
+	<div class="callout note"><strong>The clock shows today's time, not 15:30.</strong> The prototype runs on the real clock, so the hour-1 timer counts real seconds and twelve hours pass in about a minute. Ask the audience to picture an afternoon turning into night.</div>
+</section>
+
+<section class="beat wrap" id="beat-1">
+	<div class="beat-head"><h2>1. Sepsis screen fires</h2><span class="time">15:30</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Rosa Medina, 51. Type 2 diabetes with an A1c of 10.8, stage 4 kidney disease, high blood pressure. Three days of burning and left flank pain. Her pressure is 84 over 48, heart rate 124, temperature 39.4, lactate 3.8, glucose 390. The platform flags probable septic shock from her vitals and lactate, her APP confirms it at the bedside, and the hour-1 bundle timer starts, on the hub's screen and on Sidney ED's.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Open <span class="ui">Prototype</span> at the bottom of the Sidebar and pick <span class="ui">Scenario 3: Sepsis</span>.</li>
+				<li>About 2 seconds later Rosa's card joins the page, first, with its red <strong>Critical</strong> bar, and Sidney's tab counts her. Her alert toasts at the bottom right: <strong>Probable septic shock: hour-1 bundle started</strong>.</li>
+				<li>Click her card's alert bar. Her alert opens with <strong>Pathway</strong> already out: the <strong>Hour-1 bundle</strong>, its timer counting down from 60:00, "Same timer on Sidney ED's screen", and the <strong>Lactate</strong> element already green, because the lactate behind the screen is in.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 3: Sepsis." loading="lazy"><figcaption>Prototype › Scenario 3: Sepsis.</figcaption></figure>
+		<figure><img src="frames/02-alert.jpg" alt="Rosa Medina's card first on Monitoring with a Critical bar, and her alert toast: Probable septic shock, hour-1 bundle started." loading="lazy"><figcaption>Rosa arrives with a Critical alert from the Sepsis Sniffer.</figcaption></figure>
+		<figure><img src="frames/03-bundle.jpg" alt="Her alert open: BP 84/48 and lactate 3.8 with fever and a urinary source, on diabetes and CKD 4; beside it the Hour-1 bundle, 59:55 left in hour 1, 1 of 5 done, Lactate green." loading="lazy"><figcaption>Her alert opens on the hour-1 bundle: the timer, and the lactate already in.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-2">
+	<div class="beat-head"><h2>2. Interpreter in the room</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">Rosa prefers Spanish. Her daughter is with her, but care decisions go through a qualified medical interpreter, not the family. As soon as the call is on, the platform offers one, from her preferred language in the record.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Click <span class="ui">Video consult</span>. It rings <strong>Ashley Brooks, RN</strong>, then goes live, and the bedside starts documenting the bundle (beat 3).</li>
+				<li>Under the call: "<strong>Rosa prefers Spanish.</strong> Add a medical interpreter to the call?" Click <span class="ui">Add interpreter</span>.</li>
+				<li>About 3 seconds later, <strong>Lucía Herrera joined the call</strong>, medical interpreter, Spanish. In the notetaker's transcript, Rosa speaks Spanish and Lucía gives it in English.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/05a-interpreter.jpg" alt="The video consult live with Ashley Brooks, RN; under it, Rosa prefers Spanish. Add a medical interpreter to the call? with Add interpreter." loading="lazy"><figcaption>The call offers an interpreter as soon as it's on.</figcaption></figure>
+		<figure><img src="frames/05b-joined.jpg" alt="Lucía Herrera joined the call, medical interpreter, Spanish, under the live call." loading="lazy"><figcaption>The interpreter on the call.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-3">
+	<div class="beat-head"><h2>3. Bundle tracker</h2><span class="time">Hour 1</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Each element of the bundle turns green as it's documented at the bedside: lactate, blood cultures before antibiotics, broad-spectrum antibiotics, fluids, repeat lactate. The hub and the ED see the same list and the same clock, so nobody has to ask what's been done.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click. About 8 seconds into the call <strong>Blood cultures before antibiotics</strong> turns green: 2 sets, both arms, by Ashley Brooks, RN. About 7 seconds later, <strong>Broad-spectrum antibiotics</strong>: piperacillin-tazobactam 4.5 g IV.</li>
+				<li>Scroll the Pathway panel to <strong>Crystalloid 30 mL/kg</strong>: 30 mL/kg × 68 kg is 2,040 mL. The boluses come in every 7 seconds, each with its reassessment.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/06-green.jpg" alt="The bundle with Lactate, Blood cultures before antibiotics and Broad-spectrum antibiotics green, each with what was documented and by whom." loading="lazy"><figcaption>Cultures before antibiotics, then the antibiotic: green as they're documented.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-4">
+	<div class="beat-head"><h2>4. Chronic-aware safety checks</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">Her kidneys change two things. The antibiotic step flags her eGFR of 22 for a renal dose review: the first dose goes in full, the next ones are adjusted. And the fluid step shows the 30 mL/kg target next to a fluid-tolerance check, so her APP reassesses her lungs and oxygen after every bolus instead of giving it all blind.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>On <strong>Broad-spectrum antibiotics</strong>, read the <strong>Renal dose review</strong>: eGFR 22, first dose 4.5 g in full, then 2.25 g every 6 h for a creatinine clearance of about 27. Click <span class="ui">Confirm dose</span>: "Reviewed by you". You can do this before or during the call.</li>
+				<li>On <strong>Crystalloid 30 mL/kg</strong>, read the <strong>Fluid-tolerance check</strong>, then each bolus as it arrives: "Tolerated: lungs clear, SpO₂ 95%, RR 22, MAP 61", by Jenna Collins, NP.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/04a-renal.jpg" alt="The antibiotic element with the Renal dose review: eGFR 22, CKD stage 4, the suggested doses, the pharmacy rule, and Confirm dose." loading="lazy"><figcaption>The renal dose review on the antibiotic.</figcaption></figure>
+		<figure><img src="frames/04b-reviewed.jpg" alt="The Renal dose review confirmed: Reviewed by you, with Undo." loading="lazy"><figcaption>Confirmed by the intensivist.</figcaption></figure>
+		<figure><img src="frames/07-boluses.jpg" alt="Crystalloid 30 mL/kg in progress: 1,500 mL of 2,040 mL, three boluses each tolerated with its reassessment, and the fluid-tolerance check." loading="lazy"><figcaption>Fluids toward the target, reassessed after each bolus.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-5">
+	<div class="beat-head"><h2>5. Vasopressor guidance</h2><span class="time">After 2 L</span></div>
+	<div class="script">
+		<div>
+			<p class="say">After 2 liters her MAP is still 62. The intensivist guides peripheral norepinephrine per protocol, with an insulin infusion for her glucose. Accepting the orders turns them into the bedside nurses' tasks, the IV site checks a peripheral pressor needs among them, on a list the ED and the hub share.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click at first. About 45 seconds into the call the fourth bolus completes fluids (2,040 mL, green), and <strong>Septic shock after fluids</strong> opens under the bundle and scrolls into view: norepinephrine peripheral IV, the insulin infusion, the renal maintenance dose, and amlodipine held.</li>
+				<li>Click <span class="ui">Accept</span>. About 4 seconds later it's <strong>Co-signed by Jenna Collins, NP</strong>, and <strong>Bedside tasks</strong> appears under it: IV site check every hour, blood pressure while titrating, glucose every hour, potassium, urine output, each with its nurse.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/08-pathway.jpg" alt="Septic shock after fluids, suggested: norepinephrine peripheral IV, insulin infusion, piperacillin-tazobactam renal dose, hold amlodipine; Decline and Accept." loading="lazy"><figcaption>MAP still under 65 after fluids: the pathway suggests peripheral norepinephrine.</figcaption></figure>
+		<figure><img src="frames/09-tasks.jpg" alt="Co-signed by Jenna Collins, NP; Bedside tasks: IV site check, norepinephrine; blood pressure while titrating; glucose check; each with its nurse and the order it comes from." loading="lazy"><figcaption>The accepted orders become the nurses' tasks, shared with the ED.</figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-6">
+	<div class="beat-head"><h2>6. Glucose and resolution</h2><span class="time">6 h, then 12 h</span></div>
+	<div class="script">
+		<div>
+			<p class="say">On norepinephrine her MAP reaches 67, and the insulin infusion brings her glucose down. Her repeat lactate is 2.6, and the bundle is complete. By 6 hours her lactate is 1.6; by 12 hours she's off pressors, and when a bed opens she's admitted at Sidney, close to home, with the hub co-managing.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Nothing to click. About 6 seconds after Accept: MAP 67, and the nurses tick off the first IV site check and blood pressure. About 6 seconds later the <strong>Repeat lactate</strong> turns green: the bundle reads <strong>Complete</strong>, 5 of 5.</li>
+				<li>About 12 seconds after that her alert is <strong>Resolved</strong> by Jenna Collins, NP: off norepinephrine, MAP 83, admitted at Sidney's Med-Surg, Bed 6. Her score is NEWS2 0.</li>
+				<li>Close her alert, then click her card. Her page shows the same night: the <strong>Sepsis</strong> tab tracks the SEP-1 bundle from the same time zero, and on <strong>Overview</strong> the log lists every step, with the outcomes recorded (time to antibiotics, bundle 5 of 5, time to MAP ≥ 65, pressor-free, cared for at Sidney, Medicaid, Spanish).</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/10-complete.jpg" alt="The bundle complete: 5 of 5 done, every element green; her NEWS2 3 on norepinephrine." loading="lazy"><figcaption>The repeat lactate completes the bundle.</figcaption></figure>
+		<figure><img src="frames/10b-tasks-done.jpg" alt="Bedside tasks with the IV site check, blood pressure and glucose checked off by the nurses." loading="lazy"><figcaption>The nurses check tasks off at the bedside; the hub sees it.</figcaption></figure>
+		<figure><img src="frames/11-resolved.jpg" alt="Her alert resolved by Jenna Collins, NP: off norepinephrine since 11 h, MAP 83, lactate 1.6, admitted at Sidney under hub co-management; NEWS2 0." loading="lazy"><figcaption>At 12 h: off pressors, admitted locally, resolved.</figcaption></figure>
+		<figure><img src="frames/12-monitoring.jpg" alt="Monitoring after the scenario: the live feed reads Medina at 12 h, off pressors, admitted at Sidney; her Resolved toast at the bottom right, Sidney · Med-Surg · Bed 6." loading="lazy"><figcaption>Back on Monitoring: the live feed and her Resolved toast tell the same story.</figcaption></figure>
+		<figure><img src="frames/13-patient.jpg" alt="Rosa Medina's page: Sidney, Med-Surg, Bed 6; NEWS2 0 Low; the brief; the care plan with the septic shock pathway active." loading="lazy"><figcaption>Her page, at 12 h.</figcaption></figure>
+		<figure><img src="frames/14-sepsis.jpg" alt="Her Sepsis tab: validated and tracking, time zero, SIRS 4 of 4, and the SEP-1 bundle's 3-hour elements done." loading="lazy"><figcaption>The Sepsis tab: the same case, as SEP-1 counts it.</figcaption></figure>
+		<figure><img src="frames/15-activity.jpg" alt="Her log: admitted at Sidney, sepsis outcomes recorded, alert resolved, lactate 1.6 at 6 h, repeat lactate, insulin infusion started." loading="lazy"><figcaption>The night in her log, with the outcomes.</figcaption></figure>
+	</div>
+</section>
+
+<section class="gaps wrap" id="gaps">
+	<div class="beat-head"><h2>Known gaps</h2></div>
+	<p style="margin:0 0 16px;color:var(--muted);max-width:68ch">Where the prototype differs from the scenario, in case someone asks.</p>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>What the audience sees</th><th>The scenario</th><th>Why</th></tr></thead>
+			<tbody>
+				<tr><td>Today's clock time; the bundle is done in about a minute, 12 hours pass in under a minute</td><td>15:30, the hour-1 bundle, then 6 h and 12 h</td><td>The prototype runs on the real clock</td></tr>
+				<tr><td>The hour-1 timer in her alert; SEP-1's 3 h and 6 h deadlines on her page</td><td>An hour-1 bundle timer</td><td>Which one the demo leads with is open (Requirements Q-15)</td></tr>
+				<tr><td>"Same timer on Sidney ED's screen" is a line of text</td><td>The timer on both the hub and the bedside screens</td><td>The bedside's screen isn't part of this prototype</td></tr>
+				<tr><td>The bedside tasks show only at the hub</td><td>Line-site checks built into the RN task list</td><td>The nurse's phone view (DU-25) isn't built yet</td></tr>
+				<tr><td>The interpreter is in the panel and the transcript, not the call's picture</td><td>An interpreter added to the video call</td><td>Mock, as the scenario marks it</td></tr>
+				<tr><td>The hub intensivist confirms the renal dose</td><td>"The antibiotic step flags eGFR 22 for renal dose review"</td><td>Who confirms it (the hub, the APP or pharmacy) is open</td></tr>
+				<tr><td>Orders and documentation stay in the prototype</td><td>—</td><td>Live write-back is funded work</td></tr>
+				<tr><td>Doses, the fluid target, the bundle elements</td><td>—</td><td>Illustrative; to align with the reported measure set and Intercept's peripheral vasopressor protocol (the scenario's clinical review)</td></tr>
+			</tbody>
+		</table>
+	</div>
+</section>
+</main>
+
+<footer class="wrap">
+	Source: InterceptLIVE Demo Use Cases, Scenario 3 (NETECH Rural Health Catalyst Fund). Rosa Medina and everyone in the prototype are synthetic. To run it again: <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span>.
+</footer>
+</body>
+</html>

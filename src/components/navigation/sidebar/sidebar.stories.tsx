@@ -189,6 +189,7 @@ export const MenuButtonStates: Story = {
 /**
  * An item with an active alert shows a dot on its icon in the severity's color; a resolved alert, or none, shows no dot.
  * Here Monitoring has a critical alert and Alert Queue a medium one. The page shell passes the most severe open alert.
+ * Messages has unread messages: `unread`, a brand-colored dot that flashes every 2 s (MOTION.md Unread).
  */
 export const ItemAlerts: Story = {
 	args: {
@@ -198,6 +199,7 @@ export const ItemAlerts: Story = {
 				if (item.label === "Monitoring") return { ...item, alert: "critical" as const };
 				if (item.label === "Alert Queue") return { ...item, alert: "medium" as const };
 				if (item.label === "Census") return { ...item, alert: "resolved" as const };
+				if (item.label === "Messages") return { ...item, alert: "unread" as const };
 				return item;
 			}),
 		),
@@ -206,8 +208,9 @@ export const ItemAlerts: Story = {
 		await expect(canvas.getByRole("button", { name: "Monitoring, Critical alert" })).toBeInTheDocument();
 		await expect(canvas.getByRole("button", { name: "Alert Queue, Medium alert" })).toBeInTheDocument();
 		await expect(canvas.getByRole("button", { name: "Census" })).toBeInTheDocument();
+		await expect(canvas.getByRole("button", { name: "Messages, Unread" })).toBeInTheDocument();
 		const dots = canvasElement.querySelectorAll("[data-slot=sidebar-menu-button-alert][data-severity]");
-		await expect(dots).toHaveLength(2);
+		await expect(dots).toHaveLength(3);
 		// Figma puts the 6px dot 24px from the row's left edge and 2px from its top (2px over the 18px icon's corner).
 		const dot = dots[0].getBoundingClientRect();
 		const row = canvas.getByRole("button", { name: "Monitoring, Critical alert" }).getBoundingClientRect();

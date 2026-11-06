@@ -4,9 +4,11 @@ import type { CameraPerson, CameraPreset, CameraSession, PatientCamera } from ".
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's bedside camera. Who's here comes from each
 // record's care team (`sample-patient-records.ts`), with what each person is doing now; anyone else in the room (a
-// respiratory therapist, a perfusionist) is added per patient. Cameras and consent follow the hospital: Harbor Point
-// General is all-party, so a huddle waits for consent before the AI Scribe listens (PD-073); CVMC's cameras have no
-// two-way audio and no door preset; Alliance's have no pump preset; Chadron's med-surg room has only bed and monitor.
+// respiratory therapist, a perfusionist) is added per patient. Cameras and consent follow the hospital: Sidney is
+// all-party, so a huddle waits for consent before the AI Scribe listens (PD-073); Alliance's cameras have no pump preset;
+// Chadron's med-surg room has only bed and monitor; Bridgeport's has only bed and monitor and no two-way audio. Sidney
+// took Harbor Point General's cameras and consent on Nov 6, 2026, with its patients, when Harbor Point became
+// Bridgeport (user's call); until then Sidney's cameras had no two-way audio and no door preset.
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
@@ -18,10 +20,10 @@ const preset = {
 } satisfies Record<CameraPreset["id"], CameraPreset>;
 
 const hospitals = {
-	hpg: { presets: [preset.bed, preset.monitor, preset.pumps, preset.door], talk: true, consent: "all-party" },
 	alliance: { presets: [preset.bed, preset.monitor, preset.door], talk: true, consent: "one-party" },
-	cvmc: { presets: [preset.bed, preset.monitor, preset.pumps], talk: false, consent: "one-party" },
+	sidney: { presets: [preset.bed, preset.monitor, preset.pumps, preset.door], talk: true, consent: "all-party" },
 	chadron: { presets: [preset.bed, preset.monitor], talk: true, consent: "one-party" },
+	bridgeport: { presets: [preset.bed, preset.monitor], talk: false, consent: "one-party" },
 } satisfies Record<string, Pick<PatientCamera, "presets" | "talk" | "consent">>;
 
 const presenceOrder: CameraPerson["presence"][] = ["online", "away", "offline"];
@@ -97,7 +99,7 @@ const visitor = (name: string, role: string, initials: string, tone: CameraPerso
 
 const sampleCameraByPatient: Record<string, PatientCamera> = {
 	// Miller: septic shock, ventilated, on pressors.
-	p1: camera("p1", "hpg", "Bed 11", { "Kelly Ortiz": "At the bedside", "Laura Mitchell": "Away · in the OR", "James Turner": "Viewing the chart" }, [
+	p1: camera("p1", "sidney", "Bed 11", { "Kelly Ortiz": "At the bedside", "Laura Mitchell": "Away · in the OR", "James Turner": "Viewing the chart" }, [
 		["look-in", "James Turner", 48, 4],
 		["huddle", "Joanna Smith", 205, 12, "drafted"],
 		["huddle", "Maria Ruiz", 1180, 9, "signed"],
@@ -105,7 +107,7 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 	// Johnson: ARDS, proned.
 	p2: camera(
 		"p2",
-		"hpg",
+		"sidney",
 		"Bed 3",
 		{ "Brooke Sullivan": "At the bedside", "Laura Mitchell": "Rounding in the unit" },
 		[
@@ -114,30 +116,30 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 		],
 		[visitor("Lena Fox", "Respiratory therapist", "LF", 5, "At the bedside · prone check")],
 	),
-	p3: camera("p3", "cvmc", "Bed 7", { "Tara Becker": "At the bedside", "Ellen Parker": "Away · family meeting", "James Turner": "Viewing the chart" }, [
+	p3: camera("p3", "sidney", "Bed 7", { "Tara Becker": "At the bedside", "Ellen Parker": "Away · family meeting", "James Turner": "Viewing the chart" }, [
 		["look-in", "James Turner", 25, 5],
 		["huddle", "Joanna Smith", 300, 10, "signed"],
 	]),
-	p4: camera("p4", "cvmc", "Bed 5", { "Grace Holloway": "Charting at the station", "Daniel Reyes": "At the bedside" }, [
+	p4: camera("p4", "sidney", "Bed 5", { "Grace Holloway": "Charting at the station", "Daniel Reyes": "At the bedside" }, [
 		["look-in", "Joanna Smith", 70, 3],
 		["look-in", "Maria Ruiz", 520, 2],
 	]),
 	// Carter: on NIV, Kelly also covers Miller in Bed 11.
-	p5: camera("p5", "hpg", "Bed 6", { "Kelly Ortiz": "In Bed 11", "Laura Mitchell": "Away · in the OR" }, [
+	p5: camera("p5", "sidney", "Bed 6", { "Kelly Ortiz": "In Bed 11", "Laura Mitchell": "Away · in the OR" }, [
 		["look-in", "James Turner", 15, 6],
 		["huddle", "Maria Ruiz", 400, 8, "drafted"],
 	]),
-	p6: camera("p6", "cvmc", "Bed 2", { "Lucy Hart": "At the bedside" }, [["look-in", "Maria Ruiz", 240, 2]]),
-	p7: camera("p7", "cvmc", "Bed 12", { "Hannah Cole": "Gowning in · contact isolation", "Samuel Grant": "Away · in the OR" }, [
+	p6: camera("p6", "sidney", "Bed 2", { "Lucy Hart": "At the bedside" }, [["look-in", "Maria Ruiz", 240, 2]]),
+	p7: camera("p7", "sidney", "Bed 12", { "Hannah Cole": "Gowning in · contact isolation", "Samuel Grant": "Away · in the OR" }, [
 		["look-in", "Joanna Smith", 130, 4],
 	]),
-	p8: camera("p8", "hpg", "Bed 14", { "Rachel Dixon": "Charting at the station", "Laura Mitchell": "Away · in the OR" }, [
+	p8: camera("p8", "sidney", "Bed 14", { "Rachel Dixon": "Charting at the station", "Laura Mitchell": "Away · in the OR" }, [
 		["look-in", "James Turner", 600, 2],
 	]),
 	// Harris: a vent-order mismatch.
 	p9: camera(
 		"p9",
-		"hpg",
+		"sidney",
 		"Bed 8",
 		{ "Kelly Ortiz": "In Bed 11", "Laura Mitchell": "Away · in the OR" },
 		[
@@ -147,21 +149,21 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 		[visitor("Owen Price", "Respiratory therapist", "OP", 9, "At the bedside · checking vent settings")],
 	),
 	// Moore: on CRRT and norepinephrine.
-	p10: camera("p10", "hpg", "Bed 4", { "Rachel Dixon": "At the bedside", "Nathan Brooks": "Rounding in the unit" }, [
+	p10: camera("p10", "sidney", "Bed 4", { "Rachel Dixon": "At the bedside", "Nathan Brooks": "Rounding in the unit" }, [
 		["huddle", "James Turner", 80, 11, "signed"],
 		["look-in", "Maria Ruiz", 380, 4],
 	]),
-	p11: camera("p11", "hpg", "Bed 1", { "Amy Dalton": "At the bedside", "Helen Foster": "At the bedside" }, [
+	p11: camera("p11", "sidney", "Bed 1", { "Amy Dalton": "At the bedside", "Helen Foster": "At the bedside" }, [
 		["look-in", "Joanna Smith", 35, 5],
 	]),
-	p12: camera("p12", "hpg", "Bed 2", { "Amy Dalton": "On another patient", "Victor Hale": "Away · in clinic" }, [
+	p12: camera("p12", "sidney", "Bed 2", { "Amy Dalton": "On another patient", "Victor Hale": "Away · in clinic" }, [
 		["look-in", "Maria Ruiz", 150, 3],
 		["huddle", "Joanna Smith", 1300, 15, "signed"],
 	]),
 	// Walker: VA-ECMO, with the perfusionist in the room.
 	p13: camera(
 		"p13",
-		"cvmc",
+		"sidney",
 		"Bed 3",
 		{ "Grace Holloway": "At the bedside", "Daniel Reyes": "At the bedside", "James Turner": "Viewing the chart" },
 		[
@@ -170,7 +172,7 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 		],
 		[visitor("Mark Hadley", "Perfusionist", "MH", 2, "At the ECMO console")],
 	),
-	p14: camera("p14", "cvmc", "Bed 9", { "Lucy Hart": "On another patient", "Ellen Parker": "At the bedside" }, [
+	p14: camera("p14", "sidney", "Bed 9", { "Lucy Hart": "On another patient", "Ellen Parker": "At the bedside" }, [
 		["look-in", "James Turner", 95, 4],
 	]),
 	// Hayes: no one from Intercept has looked in yet; Dr. Weller is on call from home.
@@ -198,4 +200,32 @@ const sampleScenario2Camera = () =>
 		visitor("Rachel Lindgren", "Respiratory therapist", "RL", 4, "At the BiPAP"),
 	]);
 
-export { sampleCameraByPatient, sampleScenario2Camera };
+/**
+ * Rosa Medina (Scenario 3): Sidney ED Bay 2 (Sidney's cameras, all-party consent), at the sepsis screen. Her two ED nurses
+ * and the hospitalist APP are at the bedside, with her daughter Elena. No one from Intercept has looked in yet.
+ */
+const sampleScenario3Camera = () =>
+	camera(
+		"p23",
+		"sidney",
+		"Bay 2",
+		{ "Ashley Brooks": "At the bedside", "Kristen Webb": "At the bedside · second IV", "Jenna Collins": "At the bedside" },
+		[],
+		[visitor("Elena Medina", "Daughter", "EM", 5, "At the bedside")],
+	);
+
+/**
+ * Tyler Kessler (Scenario 4): Bridgeport Med-Surg Bed 3 (its cameras show bed and monitor, one-party consent, no two-way
+ * audio), at the alert. The one night RN is at the bedside, the APP on call from home, the day nurse off until 07:00.
+ * No one from Intercept has looked in yet.
+ */
+const sampleScenario4Camera = () =>
+	camera(
+		"p24",
+		"bridgeport",
+		"Bed 3",
+		{ "Brittany Cole": "At the bedside", "Derek Lawson": "On call from home", "Hannah Price": "Off shift · from 07:00", "Ava Brooks": "Watching the protocol" },
+		[],
+	);
+
+export { sampleCameraByPatient, sampleScenario2Camera, sampleScenario3Camera, sampleScenario4Camera };

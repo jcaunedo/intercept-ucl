@@ -9,7 +9,7 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
-	args: { name: "CVMC", patientCount: 4, alertCount: 3 },
+	args: { name: "Sidney Regional", patientCount: 4, alertCount: 3 },
 } satisfies Meta<typeof HospitalSectionHeader>;
 
 export default meta;
@@ -20,12 +20,12 @@ export const Default: Story = {};
 
 /** One patient, one alert: singular words. */
 export const Singular: Story = {
-	args: { name: "Alliance", patientCount: 1, alertCount: 1 },
+	args: { name: "Alliance Community", patientCount: 1, alertCount: 1 },
 };
 
 /** No active alerts. */
 export const NoAlerts: Story = {
-	args: { name: "Harbor Point General", patientCount: 7, alertCount: 0 },
+	args: { name: "Chadron Memorial", patientCount: 4, alertCount: 0 },
 };
 
 /** A long name truncates; the counts stay whole. */
@@ -44,9 +44,9 @@ export const LongName: Story = {
 export const AllVariants: Story = {
 	render: () => (
 		<div className='flex flex-col gap-6'>
-			<HospitalSectionHeader name='CVMC' patientCount={4} alertCount={3} />
-			<HospitalSectionHeader name='Alliance' patientCount={1} alertCount={1} />
-			<HospitalSectionHeader name='Harbor Point General' patientCount={7} alertCount={0} />
+			<HospitalSectionHeader name='Sidney Regional' patientCount={4} alertCount={3} />
+			<HospitalSectionHeader name='Alliance Community' patientCount={1} alertCount={1} />
+			<HospitalSectionHeader name='Chadron Memorial' patientCount={4} alertCount={0} />
 		</div>
 	),
 };

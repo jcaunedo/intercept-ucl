@@ -3,8 +3,8 @@ import samplePhoto2 from "@/components/data-display/avatar/images/sample-photo-2
 import samplePhoto3 from "@/components/data-display/avatar/images/sample-photo-3.png";
 
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
-import type { CareTeamMember, PatientLab, PatientRecord, PatientVentilator } from "./patient-details";
-// Synthetic data (PRD Patient details PD-150). The reference patient is Sarah Miller (`p1`: Harbor Point General, MICU
+import type { CareTeamMember, PatientEarlyWarning, PatientLab, PatientRecord, PatientVentilator } from "./patient-details";
+// Synthetic data (PRD Patient details PD-150). The reference patient is Sarah Miller (`p1`: Sidney, MICU
 // Bed 11, SOFA 13, ventilated, on pressors), in step with her alerts in `sample-monitoring.ts`: lactate 4.1 up from 2.2,
 // MAP 58 on norepinephrine 0.22, temperature 38.9 °C, WBC 17.2. Every other patient on the Census has a record as full
 // as hers, in step with their card's tags, their live values in `sample-monitoring.ts` and their alerts. These are the
@@ -151,8 +151,8 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			{ name: "Procalcitonin", collectedAt: minutesAgo(50) },
 		],
 		careTeam: [
-			{ role: "Bedside nurse", name: "Kelly Ortiz", initials: "KO", tone: 4, organization: "Harbor Point General", presence: "online" },
-			{ role: "Attending of record", name: "Laura Mitchell", initials: "LM", tone: 8, organization: "Harbor Point General", presence: "away" },
+			{ role: "Bedside nurse", name: "Kelly Ortiz", initials: "KO", tone: 4, organization: "Sidney Regional", presence: "online" },
+			{ role: "Attending of record", name: "Laura Mitchell", initials: "LM", tone: 8, organization: "Sidney Regional", presence: "away" },
 			{ role: "Intercept intensivist", name: "Joanna Smith", initials: "JS", src: samplePhoto3, tone: 1, presence: "online", you: true },
 			{ role: "Intercept APP", name: "James Turner", initials: "JT", src: samplePhoto1, tone: 6, presence: "online" },
 			{ role: "Intercept RN", name: "Maria Ruiz", initials: "MR", src: samplePhoto2, tone: 3, presence: "away" },
@@ -205,7 +205,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Procalcitonin", "0.4", "ng/mL", 180, "high"),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Brooke Sullivan", "BS", 9, "online"], ["Laura Mitchell", "LM", 8, "away"]),
+			...hospitalStaff("Sidney Regional", ["Brooke Sullivan", "BS", 9, "online"], ["Laura Mitchell", "LM", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -253,7 +253,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Procalcitonin", "3.2", "ng/mL", 260, "high", ["7.8", 1700]),
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Tara Becker", "TB", 5, "online"], ["Ellen Parker", "EP", 9, "away"]),
+			...hospitalStaff("Sidney Regional", ["Tara Becker", "TB", 5, "online"], ["Ellen Parker", "EP", 9, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -291,7 +291,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			{ name: "Troponin I", collectedAt: minutesAgo(25) },
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Grace Holloway", "GH", 8, "online"], ["Daniel Reyes", "DR", 4, "online"]),
+			...hospitalStaff("Sidney Regional", ["Grace Holloway", "GH", 8, "online"], ["Daniel Reyes", "DR", 4, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -335,7 +335,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Magnesium", "2.6", "mg/dL", 300, "high", ["1.9", 1150]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Kelly Ortiz", "KO", 4, "online"], ["Laura Mitchell", "LM", 8, "away"]),
+			...hospitalStaff("Sidney Regional", ["Kelly Ortiz", "KO", 4, "online"], ["Laura Mitchell", "LM", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -374,7 +374,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("INR", "1.1", "", 210, undefined),
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Lucy Hart", "LH", 2, "online"], ["Samuel Grant", "SG", 6, "offline"]),
+			...hospitalStaff("Sidney Regional", ["Lucy Hart", "LH", 2, "online"], ["Samuel Grant", "SG", 6, "offline"]),
 			...interceptTeam,
 		],
 	},
@@ -407,7 +407,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("CRP", "88", "mg/L", 240, "high", ["164", 1680]),
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Hannah Cole", "HC", 10, "online"], ["Samuel Grant", "SG", 6, "away"]),
+			...hospitalStaff("Sidney Regional", ["Hannah Cole", "HC", 10, "online"], ["Samuel Grant", "SG", 6, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -438,7 +438,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Lactate", "1.0", "mmol/L", 600, undefined, ["2.1", 1950]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Rachel Dixon", "RD", 3, "online"], ["Laura Mitchell", "LM", 8, "away"]),
+			...hospitalStaff("Sidney Regional", ["Rachel Dixon", "RD", 3, "online"], ["Laura Mitchell", "LM", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -486,7 +486,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Procalcitonin", "1.8", "ng/mL", 160, "high"),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Kelly Ortiz", "KO", 4, "online"], ["Laura Mitchell", "LM", 8, "away"]),
+			...hospitalStaff("Sidney Regional", ["Kelly Ortiz", "KO", 4, "online"], ["Laura Mitchell", "LM", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -520,7 +520,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("CK", "2,450", "U/L", 200, "high", ["1,380", 1460]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Rachel Dixon", "RD", 3, "online"], ["Nathan Brooks", "NB", 5, "online"]),
+			...hospitalStaff("Sidney Regional", ["Rachel Dixon", "RD", 3, "online"], ["Nathan Brooks", "NB", 5, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -557,7 +557,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Hemoglobin", "10.2", "g/dL", 120, "low", ["11.0", 900]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Amy Dalton", "AD", 7, "online"], ["Helen Foster", "HF", 1, "online"]),
+			...hospitalStaff("Sidney Regional", ["Amy Dalton", "AD", 7, "online"], ["Helen Foster", "HF", 1, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -600,7 +600,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("WBC", "9.0", "K/µL", 300, undefined, ["8.4", 1740]),
 		],
 		careTeam: [
-			...hospitalStaff("Harbor Point General", ["Amy Dalton", "AD", 7, "online"], ["Victor Hale", "VH", 9, "away"]),
+			...hospitalStaff("Sidney Regional", ["Amy Dalton", "AD", 7, "online"], ["Victor Hale", "VH", 9, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -662,7 +662,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			{ name: "Lactate (repeat)", collectedAt: minutesAgo(15) },
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Grace Holloway", "GH", 8, "online"], ["Daniel Reyes", "DR", 4, "online"]),
+			...hospitalStaff("Sidney Regional", ["Grace Holloway", "GH", 8, "online"], ["Daniel Reyes", "DR", 4, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -691,7 +691,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			{ name: "TSH", collectedAt: minutesAgo(240) },
 		],
 		careTeam: [
-			...hospitalStaff("CVMC", ["Lucy Hart", "LH", 2, "online"], ["Ellen Parker", "EP", 9, "online"]),
+			...hospitalStaff("Sidney Regional", ["Lucy Hart", "LH", 2, "online"], ["Ellen Parker", "EP", 9, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -756,7 +756,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Glucose", "186", "mg/dL", 75, "high", ["214", 1180]),
 		],
 		careTeam: [
-			...hospitalStaff("Chadron", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...hospitalStaff("Chadron Memorial", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -791,7 +791,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Sodium", "136", "mmol/L", 300, undefined, ["133", 1740]),
 		],
 		careTeam: [
-			...hospitalStaff("Chadron", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...hospitalStaff("Chadron Memorial", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -818,7 +818,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("CRP", "4.2", "mg/dL", 320, "high", ["9.1", 1760]),
 		],
 		careTeam: [
-			...hospitalStaff("Chadron", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...hospitalStaff("Chadron Memorial", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -846,7 +846,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Sodium", "139", "mmol/L", 300, undefined, ["146", 1740]),
 		],
 		careTeam: [
-			...hospitalStaff("Chadron", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
+			...hospitalStaff("Chadron Memorial", ["Kayla Brandt", "KB", 5, "online"], ["Tom Weller", "TW", 8, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -881,7 +881,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Creatinine", "0.8", "mg/dL", 210, undefined),
 		],
 		careTeam: [
-			...hospitalStaff("Alliance", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "away"]),
+			...hospitalStaff("Alliance Community", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -915,7 +915,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Beta-hydroxybutyrate", "0.8", "mmol/L", 90, "high", ["6.4", 1260]),
 		],
 		careTeam: [
-			...hospitalStaff("Alliance", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "online"]),
+			...hospitalStaff("Alliance Community", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "online"]),
 			...interceptTeam,
 		],
 	},
@@ -953,7 +953,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("Creatinine", "1.0", "mg/dL", 240, undefined, ["1.1", 2000]),
 		],
 		careTeam: [
-			...hospitalStaff("Alliance", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "away"]),
+			...hospitalStaff("Alliance Community", ["Ashley Bell", "AB", 7, "online"], ["Marcus Reed", "MR", 2, "away"]),
 			...interceptTeam,
 		],
 	},
@@ -1045,12 +1045,35 @@ const sampleScenario1ResolvedRecord = (): Partial<PatientRecord> => ({
 
 // The ED's nurse and physician tonight; the physician co-signs the hub's orders at the bedside.
 const reynoldsCareTeam: CareTeamMember[] = [
-	...hospitalStaff("Alliance", ["Megan Foster", "MF", 6, "online"], ["Brian Keller", "BK", 3, "online"]),
+	...hospitalStaff("Alliance Community", ["Megan Foster", "MF", 6, "online"], ["Brian Keller", "BK", 3, "online"]),
 	...interceptTeam,
 ];
 
+// Rosa Medina (Scenario 3, below): Sidney ED's day shift. Her bedside nurse (the one the video consult calls), the second
+// ED nurse, and the hospitalist APP leading her case, who is the attending of record for this ED encounter and co-signs
+// the hub's orders. Built directly rather than with `hospitalStaff`: the APP isn't an "Attending of record" MD, and
+// there are two nurses.
+const medinaCareTeam: CareTeamMember[] = [
+	{ role: "Bedside nurse", name: "Ashley Brooks", initials: "AB", tone: 4, organization: "Sidney Regional", presence: "online" },
+	{ role: "ED nurse", name: "Kristen Webb", initials: "KW", tone: 2, organization: "Sidney Regional", presence: "online" },
+	{ role: "Hospitalist APP", name: "Jenna Collins", initials: "JC", tone: 7, organization: "Sidney Regional", presence: "online" },
+	...interceptTeam,
+];
+
+// Tyler Kessler (Scenario 4, below): Bridgeport's night. The one RN on the inpatient side (the one the video consult
+// calls), the day nurse who takes over at 07:00, and the APP on call from home, who admits him and co-signs the hub's
+// orders. The hub's tele-RN tonight is Ava Brooks, who gets the overdue-check nudges with the bedside nurse, so she
+// takes the Intercept RN's place on his team.
+const kesslerCareTeam: CareTeamMember[] = [
+	{ role: "Bedside nurse", name: "Brittany Cole", initials: "BC", tone: 6, organization: "Bridgeport Valley", presence: "online" },
+	{ role: "Day nurse, from 07:00", name: "Hannah Price", initials: "HP", tone: 8, organization: "Bridgeport Valley", presence: "offline" },
+	{ role: "APP on call", name: "Derek Lawson", initials: "DL", tone: 5, organization: "Bridgeport Valley", presence: "online" },
+	...interceptTeam.filter((member) => member.role !== "Intercept RN"),
+	{ role: "Intercept tele-RN", name: "Ava Brooks", initials: "AB", tone: 2, presence: "online" },
+];
+
 /** Care teams of the patients a scenario adds to the Census, by id, for the sections that look a record up by id. */
-const sampleScenarioCareTeams: Record<string, CareTeamMember[]> = { p21: reynoldsCareTeam };
+const sampleScenarioCareTeams: Record<string, CareTeamMember[]> = { p21: reynoldsCareTeam, p23: medinaCareTeam, p24: kesslerCareTeam };
 
 /**
  * Dale Reynolds's record at Scenario 2's first beat (22:15): in the ED 40 min, blood gas 30 min ago (pH 7.24, PaCO₂
@@ -1163,11 +1186,411 @@ const sampleScenario2ResolvedRecord = (): Partial<PatientRecord> => ({
 	},
 });
 
+/* -------------------------------------------------------------------------- */
+/* Scenario 3: Rosa Medina                                                    */
+/* -------------------------------------------------------------------------- */
+
+// Scenario 3 (Demo Use Cases, "Sepsis in a patient with diabetes and kidney disease"): Rosa Medina, 51, type 2 diabetes
+// on insulin and CKD stage 4, boarding in Sidney's ED because its inpatient unit is full. She walked in with her daughter
+// 50 min before the sepsis screen fires (15:30), the scenario's first beat, so her record is built when it plays (its
+// times read "just now") and isn't in `samplePatientBaseRecords`. Every value is illustrative until clinical review.
+//
+// The scenario's 12 h pass in a few beats, so each later stage's earlier points sit a couple of minutes apart, as Dale
+// Reynolds's 2 h do; the brief says the real times ("at 6 h").
+
+type Scenario3RecordStage = "pressor" | "6h" | "resolved";
+
+/** The scenario's points in order: NEWS2 at each, from the facts' vitals. */
+const medinaScores: [stage: "triage" | "alert" | "fluids" | Scenario3RecordStage, news2: number][] = [
+	["triage", 7],
+	["alert", 10],
+	["fluids", 9],
+	["pressor", 3],
+	["6h", 1],
+	["resolved", 0],
+];
+
+/** Minutes back from `stage` to the first beat (the screen), with the stages between two minutes apart. */
+const medinaAlertBack = (stage: "alert" | Scenario3RecordStage) =>
+	(medinaScores.findIndex(([name]) => name === stage) - 1) * 2;
+
+/** Her NEWS2 trend up to `stage`: triage 50 min before the screen, then each stage. */
+function medinaScoreTrend(stage: "alert" | Scenario3RecordStage): PatientEarlyWarning["trend"] {
+	const last = medinaScores.findIndex(([name]) => name === stage);
+	const alertBack = medinaAlertBack(stage);
+	return medinaScores.slice(0, last + 1).map(([, value], index) => ({
+		at: minutesAgo(index === 0 ? alertBack + 50 : (last - index) * 2),
+		value,
+	}));
+}
+
+/**
+ * Her key labs at the screen and after: the first draw resulted 22 min before the screen (lactate, BMP, CBC); the
+ * repeat lactate (at 2 h in the scenario) comes with `pressor`, 1.6 at `6h`, creatinine 2.5 by the morning. Baseline
+ * creatinine 2.4 is from her nephrology clinic 3 months ago. Plausible where the scenario is silent: potassium 4.6 at
+ * the 4 h check on insulin, then 4.4; WBC 14.2, bicarbonate 20 and hemoglobin 10.6 (after 2 L of fluid) by morning.
+ */
+function medinaLabs(stage: "alert" | Scenario3RecordStage): PatientLab[] {
+	const first = medinaAlertBack(stage) + 22;
+	const baseline = 90 * 24 * 60;
+	const at = (point: "pressor" | "6h" | "resolved") => medinaAlertBack(stage) - medinaAlertBack(point);
+	const reached = (point: Scenario3RecordStage) =>
+		stage !== "alert" && medinaScores.findIndex(([name]) => name === stage) >= medinaScores.findIndex(([name]) => name === point);
+	const lactate = reached("6h")
+		? lab("Lactate", "1.6", "mmol/L", at("6h"), undefined, ["2.6", at("pressor")])
+		: reached("pressor")
+			? lab("Lactate", "2.6", "mmol/L", at("pressor"), "high", ["3.8", first])
+			: lab("Lactate", "3.8", "mmol/L", first, "high");
+	const glucose = reached("resolved")
+		? lab("Glucose", "158", "mg/dL", at("resolved"), "high", ["172", at("6h")])
+		: reached("6h")
+			? lab("Glucose", "172", "mg/dL", at("6h"), "high", ["312", at("pressor")])
+			: reached("pressor")
+				? lab("Glucose", "312", "mg/dL", at("pressor"), "high", ["390", first])
+				: lab("Glucose", "390", "mg/dL", first, "high");
+	const morning = reached("resolved");
+	return [
+		lactate,
+		morning
+			? lab("Creatinine", "2.5", "mg/dL", at("resolved"), "high", ["2.6", first])
+			: lab("Creatinine", "2.6", "mg/dL", first, "high", ["2.4", baseline]),
+		morning ? lab("eGFR", "23", "mL/min/1.73 m²", at("resolved"), "low", ["22", first]) : lab("eGFR", "22", "mL/min/1.73 m²", first, "low"),
+		glucose,
+		morning ? lab("WBC", "14.2", "K/µL", at("resolved"), "high", ["18.6", first]) : lab("WBC", "18.6", "K/µL", first, "high"),
+		morning
+			? lab("Potassium", "4.4", "mmol/L", at("resolved"), undefined, ["4.6", at("6h")])
+			: reached("6h")
+				? lab("Potassium", "4.6", "mmol/L", at("6h"), undefined, ["5.1", first])
+				: lab("Potassium", "5.1", "mmol/L", first, "high"),
+		morning ? lab("Bicarbonate", "20", "mmol/L", at("resolved"), "low", ["17", first]) : lab("Bicarbonate", "17", "mmol/L", first, "low"),
+		morning ? lab("Hemoglobin", "10.6", "g/dL", at("resolved"), "low", ["11.2", first]) : lab("Hemoglobin", "11.2", "g/dL", first, "low"),
+	];
+}
+
+/**
+ * Rosa Medina's record at Scenario 3's first beat (Sidney ED, 15:30): BP 84/48 (MAP 60), HR 124, T 39.4 °C, RR 24,
+ * SpO₂ 95% on room air, alert; lactate 3.8, urinalysis positive. The sepsis screen fires: probable septic shock, time
+ * zero now. No fluids or antibiotics yet (they're the bundle). NEWS2 10 (High), up from 7 at triage, which was already
+ * in the alert band, so it crossed then.
+ */
+const sampleScenario3BaseRecord = (): PatientRecord => ({
+	id: "p23",
+	weight: "68 kg",
+	brief: {
+		text: "Walked in 50 min ago with her daughter after 3 days of dysuria and left flank pain, with fevers and rigors since last night and vomiting this morning. Her pressure has fallen to 84/48 (MAP 60) with HR 124, T 39.4 °C and RR 24, SpO₂ 95% on room air, still alert. Lactate 3.8, WBC 18.6, and the urinalysis is positive for nitrite and leukocytes: probable septic shock from left pyelonephritis. No fluids or antibiotics yet. Type 2 diabetes with glucose 390, and CKD stage 4 (creatinine 2.6, eGFR 22), so every drug needs renal dosing and no CT contrast. Prefers Spanish. NEWS2 10 (High), up from 7 at triage.",
+		sourceCount: 11,
+		updatedAt: minutesAgo(0),
+	},
+	codeStatus: "Full code",
+	allergies: ["Sulfonamides"],
+	// On her list since a rash on trimethoprim-sulfamethoxazole for an earlier UTI (when, illustrative).
+	allergyDetails: [{ substance: "Sulfonamides", reaction: "Rash", severity: "mild", verified: true, recordedAt: hoursAgo(24 * 400) }],
+	diagnosis: "Septic shock from left pyelonephritis",
+	problems: [
+		"Type 2 diabetes, A1c 10.8% · on insulin",
+		"CKD stage 4, eGFR 22 · baseline creatinine 2.4",
+		"Hypertension",
+		"Anemia of CKD",
+	],
+	admittedAt: minutesAgo(50),
+	admittedFrom: "Walk-in, with her daughter",
+	ventilator: charted("Room air", 5),
+	earlyWarning: {
+		score: "NEWS2",
+		value: 10,
+		band: "High",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		crossedAt: minutesAgo(50),
+		trend: medinaScoreTrend("alert"),
+		inputs: [
+			{ label: "Respiratory rate", value: "24/min", points: 2 },
+			{ label: "SpO₂", value: "95%", points: 1 },
+			{ label: "Oxygen", value: "Room air", points: 0 },
+			{ label: "Heart rate", value: "124 bpm", points: 2 },
+			{ label: "Systolic BP", value: "84 mmHg", points: 3 },
+			{ label: "Consciousness", value: "Alert", points: 0 },
+			{ label: "Temperature", value: "39.4 °C", points: 2 },
+		],
+	},
+	labs: medinaLabs("alert"),
+	careTeam: medinaCareTeam,
+});
+
+/**
+ * Rosa Medina's record at a later stage of Scenario 3, over her base record:
+ * - `pressor` (about 1 h 15 min): 2,000 mL of LR given, lungs clear at each reassessment, MAP still 62, so peripheral
+ *   norepinephrine, now 0.08: MAP 67. Repeat lactate 2.6. Insulin infusion at 3 units/h for glucose 390 → 312. NEWS2 3.
+ * - `6h`: lactate 1.6, BP 112/60 on norepinephrine 0.04, glucose 172 on insulin 2 units/h. NEWS2 1.
+ * - `resolved` (12 h, about 03:30): off norepinephrine for 1 h, BP 118/66, glucose 158 on the insulin infusion (2 units/h
+ *   is illustrative; the scenario doesn't say), creatinine 2.5, E. coli in 2 of 2 blood cultures. Admitted to Sidney's
+ *   inpatient unit under hub co-management. NEWS2 0.
+ */
+function sampleScenario3RecordAt(stage: Scenario3RecordStage): Partial<PatientRecord> {
+	const earlyWarning = (value: number, band: string, inputs: PatientEarlyWarning["inputs"]): PatientEarlyWarning => ({
+		score: "NEWS2",
+		value,
+		band,
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		trend: medinaScoreTrend(stage),
+		inputs,
+	});
+	const vitalsInputs = (rr: number, spo2: number, hr: [number, number], sbp: [number, number], temp: [number, number]) => [
+		{ label: "Respiratory rate", value: `${rr}/min`, points: 0 },
+		{ label: "SpO₂", value: `${spo2}%`, points: 0 },
+		{ label: "Oxygen", value: "Room air", points: 0 },
+		{ label: "Heart rate", value: `${hr[0]} bpm`, points: hr[1] },
+		{ label: "Systolic BP", value: `${sbp[0]} mmHg`, points: sbp[1] },
+		{ label: "Consciousness", value: "Alert", points: 0 },
+		{ label: "Temperature", value: `${temp[0]} °C`, points: temp[1] },
+	];
+	const labs = medinaLabs(stage);
+
+	switch (stage) {
+		case "pressor":
+			return {
+				brief: {
+					text: "Responding to the sepsis bundle. Blood cultures ×2 were drawn, then piperacillin-tazobactam 4.5 g IV, a full first dose, then 2.25 g every 6 h for CrCl about 27 mL/min. She had 2,000 mL of lactated Ringer's in four 500 mL boluses with her lungs clear at each reassessment, but MAP stayed at 62, so peripheral norepinephrine was started and is at 0.08 mcg/kg/min: BP 104/49 (MAP 67), HR 104, T 38.6 °C. Repeat lactate 2.6, from 3.8. Glucose 312, from 390, on an insulin infusion at 3 units/h. NEWS2 3 (Low), down from 10, but it doesn't count the norepinephrine holding her pressure.",
+					sourceCount: 16,
+					updatedAt: minutesAgo(0),
+				},
+				// NEWS2 scores what it sees: it has no input for vasopressors, so 3 here is on norepinephrine 0.08.
+				earlyWarning: earlyWarning(3, "Low", vitalsInputs(20, 96, [104, 1], [104, 1], [38.6, 1])),
+				labs,
+				infusions: [
+					{ drug: "Norepinephrine", rate: "0.08 mcg/kg/min", change: { direction: "up", from: "0.05", at: minutesAgo(1) }, updatedAt: minutesAgo(0) },
+					{ drug: "Insulin, regular", rate: "3 units/h", updatedAt: minutesAgo(1) },
+				],
+			};
+		case "6h":
+			return {
+				brief: {
+					text: "At 6 h the bundle is done and lactate has cleared to 1.6. BP 112/60 (MAP 77) on norepinephrine weaned to 0.04 mcg/kg/min, HR 96, RR 18, SpO₂ 97% on room air, T 37.8 °C. Glucose 172 on the insulin infusion, down to 2 units/h. Piperacillin-tazobactam continues at the renal dose. Still boarding in the ED. NEWS2 1 (Low).",
+					sourceCount: 19,
+					updatedAt: minutesAgo(0),
+				},
+				earlyWarning: earlyWarning(1, "Low", vitalsInputs(18, 97, [96, 1], [112, 0], [37.8, 0])),
+				labs,
+				infusions: [
+					{ drug: "Norepinephrine", rate: "0.04 mcg/kg/min", change: { direction: "down", from: "0.08", at: minutesAgo(1) }, updatedAt: minutesAgo(0) },
+					{ drug: "Insulin, regular", rate: "2 units/h", change: { direction: "down", from: "3", at: minutesAgo(1) }, updatedAt: minutesAgo(0) },
+				],
+			};
+		case "resolved":
+			return {
+				brief: {
+					text: "Out of shock by morning: off norepinephrine for 1 h with BP 118/66 (MAP 83), HR 88, RR 16, SpO₂ 97% on room air, T 37.4 °C. Blood cultures grew gram-negative rods in 2 of 2 sets, E. coli, sensitivities pending; piperacillin-tazobactam continues at the renal dose. Creatinine 2.5, from 2.6, near her baseline of 2.4. Glucose 158 on the insulin infusion, with a move to basal-bolus insulin planned this morning. A bed opened, so she's admitted to Sidney's inpatient unit under hub co-management. NEWS2 0 (Low).",
+					sourceCount: 23,
+					updatedAt: minutesAgo(0),
+				},
+				earlyWarning: earlyWarning(0, "Low", vitalsInputs(16, 97, [88, 0], [118, 0], [37.4, 0])),
+				labs,
+				// Norepinephrine is off, so it isn't on the pump list.
+				infusions: [{ drug: "Insulin, regular", rate: "2 units/h", updatedAt: minutesAgo(0) }],
+				ventilator: charted("Room air", 0),
+			};
+	}
+}
+
+/* -------------------------------------------------------------------------- */
+/* Scenario 4: Tyler Kessler                                                  */
+/* -------------------------------------------------------------------------- */
+
+// Scenario 4 (Demo Use Cases, "DKA caused by insulin rationing, managed by one night nurse"): Tyler Kessler, 24, type 1
+// diabetes since 11, uninsured since Medicaid ended at redetermination in August. He came into Bridgeport's ED at 22:20
+// and was admitted to its inpatient side; his labs cross the critical thresholds at 23:00, the scenario's first beat, so
+// his record is built when it plays (its times read "just now") and isn't in `samplePatientBaseRecords`. Every value is
+// illustrative until clinical review.
+//
+// The scenario's 14 h pass in a few beats, so each later stage's earlier points sit a couple of minutes apart, as Rosa
+// Medina's do; the brief says the real times ("at 05:00").
+
+type Scenario4RecordStage = "dextrose" | "closed";
+
+/** The scenario's points in order: NEWS2 at each, from the vitals (`kesslerVitals` in `sample-monitoring.ts`). */
+const kesslerScores: [stage: "triage" | "alert" | "early" | Scenario4RecordStage, news2: number][] = [
+	["triage", 5],
+	["alert", 7],
+	["early", 4],
+	["dextrose", 1],
+	["closed", 0],
+];
+
+const kesslerIndex = (stage: (typeof kesslerScores)[number][0]) => kesslerScores.findIndex(([name]) => name === stage);
+
+/** Minutes back from `stage` to the first beat (the alert), with the stages between two minutes apart. */
+const kesslerAlertBack = (stage: "alert" | Scenario4RecordStage) => (kesslerIndex(stage) - 1) * 2;
+
+/** His NEWS2 trend up to `stage`: triage 40 min before the alert, then each stage. */
+function kesslerScoreTrend(stage: "alert" | Scenario4RecordStage): PatientEarlyWarning["trend"] {
+	const last = kesslerIndex(stage);
+	const alertBack = kesslerAlertBack(stage);
+	return kesslerScores.slice(0, last + 1).map(([, value], index) => ({
+		at: minutesAgo(index === 0 ? alertBack + 40 : (last - index) * 2),
+		value,
+	}));
+}
+
+/**
+ * His key labs at each stage. The first draw (venous gas, BMP, beta-hydroxybutyrate) was at 22:40 and resulted as the
+ * alert fired; baseline creatinine 0.9 is from April, with his A1c. Then the protocol's checks: the 05:00 BMP (glucose
+ * 238, potassium 3.9, gap 17, bicarbonate 14) and the 12:00 one that closes the gap (164, 4.4, 11, 19, pH 7.34).
+ * Illustrative where the scenario is silent: sodium 135 and creatinine 1.1 at 05:00, 137 and 0.9 at 12:00.
+ */
+function kesslerLabs(stage: "alert" | Scenario4RecordStage): PatientLab[] {
+	const first = kesslerAlertBack(stage) + 1;
+	const april = 210 * 24 * 60;
+	const at = (point: Scenario4RecordStage) => kesslerAlertBack(stage) - kesslerAlertBack(point);
+	if (stage === "closed") {
+		return [
+			lab("pH, venous", "7.34", "", at("closed"), "low", ["7.08", first]),
+			lab("Bicarbonate", "19", "mmol/L", at("closed"), "low", ["18", at("closed") + 1]),
+			lab("Anion gap", "11", "mmol/L", at("closed"), undefined, ["13", at("closed") + 1]),
+			lab("Glucose", "164", "mg/dL", at("closed"), "high", ["172", at("closed") + 1]),
+			lab("Potassium", "4.4", "mmol/L", at("closed"), undefined, ["4.3", at("closed") + 1]),
+			lab("Creatinine", "0.9", "mg/dL", at("closed"), undefined, ["1.1", at("dextrose")]),
+			lab("Sodium", "137", "mmol/L", at("closed"), undefined, ["135", at("dextrose")]),
+		];
+	}
+	if (stage === "dextrose") {
+		return [
+			lab("Bicarbonate", "14", "mmol/L", at("dextrose"), "low", ["13", at("dextrose") + 1]),
+			lab("Anion gap", "17", "mmol/L", at("dextrose"), "high", ["19", at("dextrose") + 1]),
+			lab("Glucose", "238", "mg/dL", at("dextrose"), "high", ["296", at("dextrose") + 1]),
+			lab("Potassium", "3.9", "mmol/L", at("dextrose"), undefined, ["3.6", at("dextrose") + 1]),
+			lab("Creatinine", "1.1", "mg/dL", at("dextrose"), "high", ["1.4", first]),
+			lab("Sodium", "135", "mmol/L", at("dextrose"), undefined, ["131", first]),
+		];
+	}
+	return [
+		lab("pH, venous", "7.08", "", first, "critical"),
+		lab("Bicarbonate", "6", "mmol/L", first, "critical"),
+		lab("Anion gap", "28", "mmol/L", first, "high"),
+		lab("Glucose", "520", "mg/dL", first, "critical"),
+		lab("Potassium", "5.6", "mmol/L", first, "high"),
+		lab("Beta-hydroxybutyrate", "7.2", "mmol/L", first, "high"),
+		lab("Creatinine", "1.4", "mg/dL", first, "high", ["0.9", april]),
+		lab("Sodium", "131", "mmol/L", first, "low"),
+	];
+}
+
+/** His NEWS2 inputs on room air and alert: RR, HR and systolic with their points, and temperature. */
+const kesslerInputs = (rr: [number, number], hr: [number, number], sbp: [number, number], temp: number) => [
+	{ label: "Respiratory rate", value: `${rr[0]}/min`, points: rr[1] },
+	{ label: "SpO₂", value: "99%", points: 0 },
+	{ label: "Oxygen", value: "Room air", points: 0 },
+	{ label: "Heart rate", value: `${hr[0]} bpm`, points: hr[1] },
+	{ label: "Systolic BP", value: `${sbp[0]} mmHg`, points: sbp[1] },
+	{ label: "Consciousness", value: "Alert", points: 0 },
+	{ label: "Temperature", value: `${temp} °C`, points: 0 },
+];
+
+/**
+ * Tyler Kessler's record at Scenario 4's first beat (Bridgeport Med-Surg Bed 3, 23:00): venous pH 7.08, bicarbonate 6,
+ * gap 28, glucose 520, potassium 5.6; RR 30 (Kussmaul), HR 122, BP 98/58, SpO₂ 99% on room air, alert. Severe DKA. The
+ * ED's first liter of saline is in and the second is running; no insulin until the hub starts the DKA protocol. NEWS2 7
+ * (High), up from 5 at triage, so it crossed now.
+ */
+const sampleScenario4BaseRecord = (): PatientRecord => ({
+	id: "p24",
+	weight: "70 kg",
+	brief: {
+		text: "Type 1 diabetes since age 11. He lost Medicaid in August and has been stretching his insulin; out of his glargine for 2 days and vomiting since yesterday. Came into the ED at 22:20 and was admitted to Med-Surg. Venous pH 7.08, bicarbonate 6, anion gap 28, beta-hydroxybutyrate 7.2 and glucose 520: severe DKA. Potassium 5.6 before any insulin, so it will fall once the drip starts. Breathing deep and fast at 30 (Kussmaul), HR 122, BP 98/58, SpO₂ 99% on room air, alert. Creatinine 1.4 from a baseline of 0.9. Second liter of saline running; no insulin yet, with the DKA pathway suggested. One RN on the inpatient side tonight. NEWS2 7 (High), up from 5 at triage.",
+		sourceCount: 10,
+		updatedAt: minutesAgo(0),
+	},
+	codeStatus: "Full code",
+	allergies: [],
+	diagnosis: "Severe diabetic ketoacidosis",
+	problems: ["Type 1 diabetes, A1c 9.6% in April", "Acute kidney injury from dehydration · creatinine 1.4, baseline 0.9"],
+	admittedAt: minutesAgo(40),
+	admittedFrom: "Walked into Bridgeport's ED",
+	ventilator: charted("Room air", 5),
+	earlyWarning: {
+		score: "NEWS2",
+		value: 7,
+		band: "High",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		crossedAt: minutesAgo(0),
+		trend: kesslerScoreTrend("alert"),
+		inputs: kesslerInputs([30, 3], [122, 2], [98, 2], 37.2),
+	},
+	// The ED's second liter; insulin starts with the protocol.
+	infusions: [{ drug: "Normal saline", rate: "1,000 mL/h", updatedAt: minutesAgo(5) }],
+	labs: kesslerLabs("alert"),
+	careTeam: kesslerCareTeam,
+});
+
+/**
+ * Tyler Kessler's record at a later stage of Scenario 4, over his base record:
+ * - `dextrose` (05:00, hour 6): glucose 238, so D5 0.45% saline with KCl at 150 mL/h and insulin down to 3.5 units/h,
+ *   signed on the intensivist's phone. Gap 17, bicarbonate 14. Potassium 3.1 at 03:00 held insulin for an hour. NEWS2 1.
+ * - `closed` (hour 13 to 14): gap 11, bicarbonate 19, pH 7.34 at 12:00. Glargine at 12:12, lispro with lunch, the drip
+ *   stopped at 13:00 after 14 h. The day nurse has the bedside; the night nurse is off shift. NEWS2 0.
+ */
+function sampleScenario4RecordAt(stage: Scenario4RecordStage): Partial<PatientRecord> {
+	const earlyWarning = (value: number, inputs: PatientEarlyWarning["inputs"]): PatientEarlyWarning => ({
+		score: "NEWS2",
+		value,
+		band: "Low",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		trend: kesslerScoreTrend(stage),
+		inputs,
+	});
+	const labs = kesslerLabs(stage);
+
+	switch (stage) {
+		case "dextrose":
+			return {
+				brief: {
+					text: "Six hours into the DKA protocol. Glucose 238, from 520, so dextrose is in (D5 0.45% saline with KCl 20 mEq/L at 150 mL/h) and insulin came down to 3.5 units/h (0.05 units/kg/h), signed on the intensivist's phone. Anion gap 17 and bicarbonate 14, closing. Potassium fell to 3.1 at 03:00, so insulin was held for an hour while KCl 20 mEq/h ran; it's 3.9 now. HR 96, BP 116/70, RR 20, SpO₂ 99% on room air, alert. Every hourly check on time so far, with one RN on the floor. NEWS2 1 (Low).",
+					sourceCount: 17,
+					updatedAt: minutesAgo(0),
+				},
+				earlyWarning: earlyWarning(1, kesslerInputs([20, 0], [96, 1], [116, 0], 36.9)),
+				labs,
+				infusions: [
+					{ drug: "Insulin, regular", rate: "3.5 units/h", change: { direction: "down", from: "8", at: minutesAgo(1) }, updatedAt: minutesAgo(0) },
+					{ drug: "D5 0.45% saline + KCl 20 mEq/L", rate: "150 mL/h", updatedAt: minutesAgo(1) },
+				],
+			};
+		case "closed":
+			return {
+				brief: {
+					text: "The anion gap closed at hour 13 (12:00): gap 11, bicarbonate 19, pH 7.34, glucose 164. He ate lunch. Glargine 22 units SC, his home dose, at 12:12 and lispro 6 units with the meal; the drip ran 1 h more and stopped at 13:00, after 14 h. One low potassium (3.1 at 03:00), caught by the protocol with insulin held; no hypoglycemia. Creatinine 0.9, back to his baseline. HR 82, BP 122/76, RR 16, SpO₂ 99% on room air. The APP's admission note records cost-related insulin rationing after he lost Medicaid in August. Staying at Bridgeport, with referrals to send at discharge. NEWS2 0 (Low).",
+					sourceCount: 26,
+					updatedAt: minutesAgo(0),
+				},
+				earlyWarning: earlyWarning(0, kesslerInputs([16, 0], [82, 0], [122, 0], 36.8)),
+				labs,
+				// The drip and its dextrose stopped at 13:00, so nothing is on the pumps.
+				infusions: [],
+				careTeam: [
+					{ role: "Bedside nurse", name: "Hannah Price", initials: "HP", tone: 8, organization: "Bridgeport Valley", presence: "online" },
+					{ role: "Night nurse", name: "Brittany Cole", initials: "BC", tone: 6, organization: "Bridgeport Valley", presence: "offline" },
+					...kesslerCareTeam.filter((member) => member.organization !== "Bridgeport Valley" || member.name === "Derek Lawson"),
+				],
+			};
+	}
+}
+
 export {
 	samplePatientBaseRecords,
 	sampleScenario1Record,
 	sampleScenario1ResolvedRecord,
 	sampleScenario2BaseRecord,
 	sampleScenario2ResolvedRecord,
+	sampleScenario3BaseRecord,
+	sampleScenario3RecordAt,
+	sampleScenario4BaseRecord,
+	sampleScenario4RecordAt,
 	sampleScenarioCareTeams,
+	type Scenario4RecordStage,
 };
