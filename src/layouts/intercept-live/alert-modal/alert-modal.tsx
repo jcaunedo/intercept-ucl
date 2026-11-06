@@ -4,6 +4,7 @@ import {
 	ArrowUpFromLineIcon,
 	CheckCheckIcon,
 	CheckIcon,
+	CircleStopIcon,
 	GitForkIcon,
 	LoaderCircleIcon,
 	type LucideIcon,
@@ -12,6 +13,7 @@ import {
 	MicOffIcon,
 	PencilLineIcon,
 	PhoneOffIcon,
+	PlayIcon,
 	ScanEyeIcon,
 	SparklesIcon,
 	Undo2Icon,
@@ -72,6 +74,7 @@ import {
 	type CarePathwayStatus,
 } from "./care-pathway";
 import { useCallAudio } from "./call-audio";
+import { ConsultTranscriptView, type ConsultTranscript } from "./consult-transcript";
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "./discharge-plan";
 import {
 	ConsultMessages,
@@ -175,6 +178,12 @@ type AlertDetailData = {
 	 * approves each time.
 	 */
 	notetakerParties?: { name: string; autoApprove: boolean }[];
+	/**
+	 * What the AI Notetaker hears from the call, as speech recognition writes it: it streams in while the notetaker
+	 * records (`consult-transcript.tsx`). The prototype's is sample data; the clinician's own words are added from their
+	 * microphone either way.
+	 */
+	transcript?: ConsultTranscript;
 	/** The room's equipment, for the drawn camera feed. */
 	room?: RoomEquipment;
 	/** The room's camera, a video URL for the consult. Without it, or if it can't load, the consult draws the room. */
@@ -217,7 +226,7 @@ type AlertDetailData = {
  */
 type PatientConsultData = Pick<
 	AlertDetailData,
-	"patient" | "acuity" | "trajectory" | "monitor" | "tags" | "bedside" | "notetakerParties" | "room" | "video" | "connection" | "messages" | "scriptedReplies"
+	"patient" | "acuity" | "trajectory" | "monitor" | "tags" | "bedside" | "notetakerParties" | "transcript" | "room" | "video" | "connection" | "messages" | "scriptedReplies"
 > & {
 	patientId: string;
 };
@@ -225,7 +234,7 @@ type PatientConsultData = Pick<
 /** What the call and its notetaker read: the patient and who the call reaches, and the alert when there is one. */
 type ConsultData = Pick<
 	AlertDetailData,
-	"patient" | "bedside" | "notetakerParties" | "room" | "video" | "connection" | "monitor"
+	"patient" | "bedside" | "notetakerParties" | "transcript" | "room" | "video" | "connection" | "monitor"
 > &
 	Partial<Pick<AlertDetailData, "alert" | "reasons" | "pathway">>;
 
@@ -572,6 +581,7 @@ function ConsultTile({
 	state,
 	onEnd,
 	onStart,
+	onMutedChange,
 }: {
 	data: ConsultData;
 	state: AlertConsultState;
@@ -582,6 +592,8 @@ function ConsultTile({
 	 * tile shows only while it's on.
 	 */
 	onStart?: () => void;
+	/** The clinician muted or unmuted their microphone: the notetaker stops or starts transcribing them. */
+	onMutedChange?: (muted: boolean) => void;
 }) {
 	const { bedside, patient, room, video, connection } = data;
 	const now = useCurrentSecond();
@@ -604,6 +616,9 @@ function ConsultTile({
 	const audioOnly = state === "live" && lowBandwidth && !freezing;
 	const [startedAt, setStartedAt] = React.useState<number | null>(null);
 	const [muted, setMuted] = React.useState(false);
+	const mutedChange = React.useRef(onMutedChange);
+	mutedChange.current = onMutedChange;
+	React.useEffect(() => mutedChange.current?.(muted), [muted]);
 	// The clinician's own camera, which the bedside sees (Nov 4, 2026, user's call). Audio only, it's off for everyone.
 	const [cameraOff, setCameraOff] = React.useState(false);
 	// The call's sound: ringback, the join and end chimes, the room (the monitor at the patient's heart rate, the BiPAP), the
@@ -1223,7 +1238,7 @@ function PathwayContent({
 	);
 }
 
-type NotetakerState = "idle" | "consent" | "recording" | "processing" | "ready";
+type NotetakerState = "idle" | "consent" | "recording" | "paused" | "processing" | "ready";
 
 // Stands in for the AI turning the recording into notes, so the prototype shows Preparing notes.
 const NOTES_DELAY_MS = 3000;
@@ -1235,6 +1250,8 @@ const notetakerCopy: Record<NotetakerState, { title: string; text: string }> = {
 	idle: { title: "AI Notetaker", text: "Capture this consultation and draft clinical notes." },
 	consent: { title: "Waiting for approval", text: "" },
 	recording: { title: "Capturing consultation", text: "Listening and organizing your notes in real time." },
+	// Stopped by the clinician, to resume (Nov 5, 2026, user's call: "the user can stop and resume").
+	paused: { title: "Notetaker stopped", text: "Nothing is captured until you resume." },
 	processing: { title: "Preparing notes", text: "Turning the consultation into a structured clinical summary." },
 	ready: { title: "Notes ready for review", text: "Review, edit, and approve your draft notes." },
 };
@@ -1263,19 +1280,35 @@ function draftConsultNote(data: ConsultData) {
  * have (consent before capture, PD-073); with no one to ask, it starts at once. It then prepares the notes and offers
  * the draft for review: the draft says it's AI-written and needs the clinician's approval (Spec §5.4, §8.6). Ending the
  * call while it records stops it, and the notes are prepared from what it captured. Fills the column under the call.
+ * While it records, the conversation streams in under the state line (`ConsultTranscriptView`, Nov 5, 2026, user's
+ * call): the call's side from `data.transcript`, the clinician's from their microphone unless they're muted. It stays
+ * there, top-aligned, while the notes are prepared and until Review notes opens the draft in its place. It starts on
+ * its own as the call connects (`autoStart`); Start notetaker is there for a call where it was cancelled. Stop pauses
+ * it (the call goes on, uncaptured, marked in the transcript), Resume picks it up again, and Prepare notes, while
+ * stopped, turns what was captured into the draft without ending the call.
  */
 function ConsultNotetaker({
 	data,
 	live,
 	onApprove,
 	actionSlot,
+	muted = false,
+	autoStart = true,
 }: {
 	data: ConsultData;
 	live: boolean;
+	/**
+	 * Starts on its own once the call connects (Nov 5, 2026, user's call: "notetaker by default"): the approval request
+	 * goes out as the call goes live, and recording starts once it's approved, as Start notetaker does. Once per call: a
+	 * request the clinician cancels isn't sent again until the next call.
+	 */
+	autoStart?: boolean;
+	/** The clinician's microphone is muted on the call: the transcript doesn't capture them. */
+	muted?: boolean;
 	/** The clinician approved the draft: it goes to the chart as a draft for signature. */
 	onApprove?: (note: string) => void;
 	/**
-	 * Where the notetaker's button goes (Start notetaker, Cancel request, Stop and prepare notes, Review notes) when it
+	 * Where the notetaker's button goes (Start notetaker, Cancel request, Stop, Resume, Review notes) when it
 	 * isn't under the state line: the patient page's Video consult panel puts it in the panel's header (Intercept-Live
 	 * `219:16129`, Nov 5, 2026). Null until that element is there.
 	 */
@@ -1290,12 +1323,24 @@ function ConsultNotetaker({
 		data.notetakerParties ??
 		(data.bedside ? [{ name: `${data.bedside.name}, ${data.bedside.role}`, autoApprove: false }] : []);
 	const asked = parties.filter((party) => !party.autoApprove).map((party) => party.name);
-	// The call ending stops recording, and drops a request still waiting.
+	// The call ending stops recording (or a stop), and drops a request still waiting.
 	React.useEffect(() => {
 		if (live) return;
-		if (state === "recording") setState("processing");
+		if (state === "recording" || state === "paused") setState("processing");
 		if (state === "consent") setState("idle");
 	}, [live, state]);
+	// On by default: each call starts it as it connects, from idle only (notes from an earlier call stay as they are).
+	const autoStarted = React.useRef(false);
+	React.useEffect(() => {
+		if (!live) {
+			autoStarted.current = false;
+			return;
+		}
+		if (!autoStart || autoStarted.current) return;
+		autoStarted.current = true;
+		if (state === "idle") setState(asked.length ? "consent" : "recording");
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- once per call, as it connects.
+	}, [live, autoStart]);
 	React.useEffect(() => {
 		if (state !== "consent" && state !== "processing") return;
 		const timer = window.setTimeout(
@@ -1328,8 +1373,14 @@ function ConsultNotetaker({
 				Cancel request
 			</Button>
 		) : state === "recording" ? (
-			<Button variant='outline' size='md' onClick={() => setState("processing")}>
-				Stop and prepare notes
+			<Button variant='outline' size='md' onClick={() => setState("paused")}>
+				<CircleStopIcon aria-hidden='true' />
+				Stop
+			</Button>
+		) : state === "paused" ? (
+			<Button variant='outline' size='md' onClick={() => setState("recording")}>
+				<PlayIcon aria-hidden='true' />
+				Resume
 			</Button>
 		) : state === "ready" && !reviewing ? (
 			<Button variant='outline' size='md' onClick={() => setReviewing(true)}>
@@ -1337,34 +1388,61 @@ function ConsultNotetaker({
 			</Button>
 		) : null;
 
-	return (
-		<div className='flex flex-1 flex-col items-center justify-center gap-4 px-12 py-6 text-center'>
-			<AnimatePresence mode='wait' initial={false}>
-				<motion.div
-					key={state}
-					variants={fadeVariants}
-					initial='initial'
-					animate='animate'
-					exit='exit'
-					role='status'
-					className='flex w-full flex-col items-center gap-1'
-				>
-					<p className='flex items-center gap-1.5 text-base font-bold text-foreground'>
-						{state === "recording" ? <LiveDot /> : null}
-						{state === "consent" || state === "processing" ? (
-							<LoaderCircleIcon
-								aria-hidden='true'
-								className='size-3.5 animate-spin text-icon-muted motion-reduce:animate-none'
-							/>
-						) : null}
-						{title}
-					</p>
-					<p className='text-xs text-muted-foreground'>{text}</p>
-				</motion.div>
-			</AnimatePresence>
+	// Recording and after: the transcript fills the column under a top-aligned state line, until the draft opens.
+	const captured = state === "recording" || state === "paused" || state === "processing" || state === "ready";
+	const transcribing = captured && !reviewing;
 
-			{actionSlot === undefined ? action : actionSlot ? createPortal(action, actionSlot) : null}
+	return (
+		<div
+			className={cn(
+				"flex flex-1 flex-col gap-4",
+				transcribing ? "min-h-0" : "items-center justify-center px-12 py-6 text-center",
+			)}
+		>
+			<div className={cn("flex w-full", transcribing ? "items-start justify-between gap-3" : "flex-col items-center gap-4")}>
+				<AnimatePresence mode='wait' initial={false}>
+					<motion.div
+						key={state}
+						variants={fadeVariants}
+						initial='initial'
+						animate='animate'
+						exit='exit'
+						role='status'
+						className={cn("flex flex-col gap-1", transcribing ? "min-w-0 flex-1 items-start" : "w-full items-center")}
+					>
+						<p className='flex items-center gap-1.5 text-base font-bold text-foreground'>
+							{state === "recording" ? <LiveDot /> : null}
+							{state === "consent" || state === "processing" ? (
+								<LoaderCircleIcon
+									aria-hidden='true'
+									className='size-3.5 animate-spin text-icon-muted motion-reduce:animate-none'
+								/>
+							) : null}
+							{title}
+						</p>
+						<p className='text-xs text-muted-foreground'>{text}</p>
+						{/* Stopped, the notes can be prepared from what was captured, without ending the call. */}
+						{state === "paused" ? (
+							<Button variant='link' size='xs' className='h-auto px-0' onClick={() => setState("processing")}>
+								Prepare notes
+							</Button>
+						) : null}
+					</motion.div>
+				</AnimatePresence>
+
+				{actionSlot === undefined ? action : actionSlot ? createPortal(action, actionSlot) : null}
+			</div>
 			{state === "idle" && !live ? <p className='text-xs text-muted-foreground'>Starts once the call connects.</p> : null}
+
+			{/* Kept mounted from recording to review, so what it captured stays. */}
+			{captured ? (
+				<ConsultTranscriptView
+					transcript={data.transcript}
+					status={state === "recording" ? "capturing" : state === "paused" ? "paused" : "stopped"}
+					muted={muted}
+					className={cn(!transcribing && "hidden")}
+				/>
+			) : null}
 
 			<AnimatePresence initial={false}>
 				{state === "ready" && reviewing ? (
@@ -1486,6 +1564,8 @@ function AlertPanel({
 	// (Nov 5, 2026, user's call). Opened already on (a consult request answered) shows the panel at once.
 	const callOnOpen = defaultConsult === "connecting";
 	const [consult, setConsult] = useConsult(callOnOpen ? "idle" : defaultConsult, onConsultChange);
+	// The call's microphone, so the notetaker stops transcribing the clinician while they're muted.
+	const [micMuted, setMicMuted] = React.useState(false);
 	React.useEffect(() => {
 		if (!callOnOpen) return;
 		const timer = window.setTimeout(() => setConsult("connecting"), motionDuration.normal * 1000);
@@ -1580,8 +1660,22 @@ function AlertPanel({
 								content: (
 									<ConsultPanelContent
 										data={data}
-										tile={<ConsultTile data={data} state={consult} onEnd={() => setConsult("idle")} />}
-										notetaker={<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />}
+										tile={
+											<ConsultTile
+												data={data}
+												state={consult}
+												onEnd={() => setConsult("idle")}
+												onMutedChange={setMicMuted}
+											/>
+										}
+										notetaker={
+											<ConsultNotetaker
+												data={data}
+												live={consult === "live"}
+												muted={micMuted}
+												onApprove={onConsultNote}
+											/>
+										}
 									/>
 								),
 							},
@@ -1707,6 +1801,7 @@ function PatientConsultDialog({
 	onSendMessage?: (text: string) => void;
 }) {
 	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
+	const [micMuted, setMicMuted] = React.useState(false);
 	// The third column, as on the alert panel: the messages with the bedside nurse, or the pathway, one at a time.
 	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(null);
 	const messagesOpen = sidePanel === "messages";
@@ -1793,9 +1888,17 @@ function PatientConsultDialog({
 											state={consult}
 											onEnd={() => setConsult("idle")}
 											onStart={() => setConsult("connecting")}
+											onMutedChange={setMicMuted}
 										/>
 									}
-									notetaker={<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />}
+									notetaker={
+										<ConsultNotetaker
+											data={data}
+											live={consult === "live"}
+											muted={micMuted}
+											onApprove={onConsultNote}
+										/>
+									}
 								/>
 							),
 						},

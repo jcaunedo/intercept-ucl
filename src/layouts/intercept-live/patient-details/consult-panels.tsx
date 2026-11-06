@@ -235,6 +235,8 @@ function PatientConsultPanels({
 	// The field takes focus when the clinician opens the thread, not when a new message opens it.
 	const [focusMessages, setFocusMessages] = React.useState(false);
 	const [notetakerSlot, setNotetakerSlot] = React.useState<HTMLDivElement | null>(null);
+	// The call's microphone, so the notetaker stops transcribing the clinician while they're muted.
+	const [micMuted, setMicMuted] = React.useState(false);
 	const [messages, sendMessage, nurseTyping] = useConsultMessages(
 		data.messages,
 		data.connection?.photos,
@@ -306,12 +308,14 @@ function PatientConsultPanels({
 								state={consult}
 								onEnd={() => setConsult("idle")}
 								onStart={() => setConsult("connecting")}
+								onMutedChange={setMicMuted}
 							/>
 						}
 						notetaker={
 							<ConsultNotetaker
 								data={data}
 								live={consult === "live"}
+								muted={micMuted}
 								onApprove={onConsultNote}
 								actionSlot={notetakerSlot}
 							/>

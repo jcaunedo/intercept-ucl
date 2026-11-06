@@ -178,12 +178,23 @@ export const Panel: Story = {
 			},
 			{ timeout: 7000 },
 		);
-		// Under the call, the AI Notetaker. Starting it asks Kayla for approval; it records once she has.
-		await expect(call.getByText("AI Notetaker")).toBeInTheDocument();
-		await userEvent.click(call.getByRole("button", { name: "Start notetaker" }));
+		// Under the call, the AI Notetaker, on by default: as the call connects it asks Kayla for approval, and records once
+		// she has.
 		await expect(await call.findByText("Recording starts once Kayla Brandt, RN approves.")).toBeInTheDocument();
 		await expect(await call.findByText("Capturing consultation", {}, { timeout: 6000 })).toBeInTheDocument();
-		await userEvent.click(call.getByRole("button", { name: "Stop and prepare notes" }));
+		// The conversation streams into the live transcript, the clinician first, then Kayla; it stays once stopped.
+		const transcript = within(call.getByRole("log", { name: "Live transcript" }));
+		await expect(await transcript.findByText("Kayla Brandt, RN", {}, { timeout: 15000 })).toBeInTheDocument();
+		await expect(transcript.getByText("You")).toBeInTheDocument();
+		// Stop pauses it, marked in the transcript; Resume picks it up; stopped again, Prepare notes drafts them.
+		await userEvent.click(call.getByRole("button", { name: "Stop" }));
+		await expect(await call.findByText("Notetaker stopped")).toBeInTheDocument();
+		await expect(transcript.getByText(/^Stopped at /)).toBeInTheDocument();
+		await userEvent.click(call.getByRole("button", { name: "Resume" }));
+		await expect(await transcript.findByText(/^Not captured · /)).toBeInTheDocument();
+		await userEvent.click(await call.findByRole("button", { name: "Stop" }));
+		await userEvent.click(await call.findByRole("button", { name: "Prepare notes" }));
+		await expect(transcript.getByText("Kayla Brandt, RN")).toBeInTheDocument();
 		await expect(await call.findByText("Preparing notes")).toBeInTheDocument();
 		await expect(await call.findByText("Notes ready for review", {}, { timeout: 6000 })).toBeInTheDocument();
 		await userEvent.click(call.getByRole("button", { name: "Review notes" }));

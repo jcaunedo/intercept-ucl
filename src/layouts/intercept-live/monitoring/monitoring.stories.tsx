@@ -113,7 +113,8 @@ export const VideoConsultWithoutAlert: Story = {
 			},
 			{ timeout: 7000 },
 		);
-		await expect(consult.getByText("AI Notetaker")).toBeInTheDocument();
+		// The AI Notetaker starts on its own as the call connects, asking the nurse first.
+		await expect(await consult.findByText("Waiting for approval")).toBeInTheDocument();
 		await userEvent.click(consult.getByRole("button", { name: "End" }));
 		await expect(await consult.findByText("Call ended")).toBeInTheDocument();
 		// Video consult calls again, from the tile or the row.
@@ -180,8 +181,8 @@ export const Scenario1HeartFailure: Story = {
 			},
 			{ timeout: 7000 },
 		);
-		// Under the call, the AI Notetaker, ready to capture the consultation.
-		await expect(consult.getByText("AI Notetaker")).toBeInTheDocument();
+		// Under the call, the AI Notetaker, started on its own: it asks Kayla before it captures the consultation.
+		await expect(await consult.findByText("Waiting for approval")).toBeInTheDocument();
 		// Her name leaves the modal for her page; the toasts stay hidden there too.
 		await userEvent.click(consult.getByRole("button", { name: "Hayes, Margaret, open patient" }));
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());

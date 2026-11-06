@@ -8,6 +8,7 @@ import type { AlertDetailData, PatientConsultData } from "./alert-modal";
 import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
 import { sampleBedsideThread } from "./sample-bedside-messages";
 import { sampleBedsideReplier } from "./sample-bedside-replies";
+import { sampleConsultTranscript } from "./sample-consult-transcript";
 
 // Margaret Hayes's alert at 01:40 in Scenario 1 (Demo Use Cases), opened: the same numbers as her record, monitor and
 // card after the Prototype menu's beat 1 (`sample-scenario-1.ts`). A function, so the alert fires as it opens.
@@ -79,6 +80,8 @@ const sampleScenario1AlertDetail = (): AlertDetailData => ({
 		{ label: "BNP", value: "2,400 pg/mL", detail: "Up from 1,850 on admission · normal < 100", severity: "critical" },
 	],
 	bedside: { name: "Kayla Brandt", role: "RN", initials: "KB", tone: 5, presence: "online", activity: "At the bedside" },
+	// What the notetaker hears: Kayla, Margaret herself, then the plan for tonight.
+	transcript: sampleConsultTranscript({ patientId: "p15", firstName: "Margaret", sex: "F", nurse: "Kayla Brandt" }),
 	room: { airway: "oxygen", pumps: 1 },
 	video: sampleCameraVideo,
 	// Step 4: BiPAP, escalated IV diuretic with a urine-output target, and nitrate if blood pressure allows. Doses and
@@ -253,6 +256,8 @@ const sampleScenario2AlertDetail = (): AlertDetailData => {
 			{ label: "Bicarbonate", value: "33 mmol/L", detail: "Chronic CO₂ retention, compensated · normal 22–26", severity: "low" },
 		],
 		bedside: { name: "Megan Foster", role: "RN", initials: "MF", tone: 6, presence: "online", activity: "At the bedside" },
+		// What the notetaker hears, on audio only: Megan, Rachel at the BiPAP, then his wife.
+		transcript: sampleConsultTranscript({ patientId: "p21", firstName: "Dale", sex: "M", nurse: "Megan Foster" }),
 		room: { airway: "niv", pumps: 0 },
 		video: sampleCameraVideo,
 		pathway: {
@@ -553,6 +558,18 @@ function samplePatientParts(
 			: undefined,
 		bedside: nurse
 			? { name: nurse.name, role: "RN", initials: nurse.initials, src: nurse.src, tone: nurse.tone, presence: nurse.presence ?? "online", activity: "At the bedside" }
+			: undefined,
+		// What the notetaker hears on the call: the nurse's update, the plan, the family (`sample-consult-transcript.ts`).
+		transcript: nurse
+			? sampleConsultTranscript({
+					patientId,
+					firstName: patient.firstName,
+					lastName: patient.lastName,
+					sex: patient.sex,
+					vitals: monitored?.vitals,
+					nurse: nurse.name,
+					record,
+				})
 			: undefined,
 		// The nurse answers what the clinician writes, with the patient's live numbers (`sample-bedside-replies.ts`).
 		scriptedReplies: nurse
