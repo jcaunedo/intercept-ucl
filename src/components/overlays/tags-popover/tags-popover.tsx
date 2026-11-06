@@ -45,6 +45,50 @@ type TagsPopoverProps = {
 	size?: BadgeProps["size"];
 };
 
+type TagsPopoverItem = NonNullable<TagsPopoverDetails["items"]>[number];
+
+/**
+ * One line of what's behind the tag. A short value sits beside its label, right-aligned ("Norepinephrine 0.22
+ * mcg/kg/min"). A value that's a sentence, one that wraps beside its label, moves under it as a paragraph, left-aligned
+ * (Nov 5, 2026, user's call): two rows read better than two narrow columns.
+ */
+function DetailsItem({ item }: { item: TagsPopoverItem }) {
+	const valueRef = React.useRef<HTMLElement>(null);
+	const [stacked, setStacked] = React.useState(false);
+
+	// Measured before paint: a value taller than one line wraps, so it stacks. Once stacked it stays (it has the full
+	// width then, so measuring again would always say it fits).
+	React.useLayoutEffect(() => {
+		const value = valueRef.current;
+		if (!value || stacked) return;
+		const lineHeight = Number.parseFloat(getComputedStyle(value).lineHeight);
+		if (value.offsetHeight > lineHeight * 1.5) setStacked(true);
+	}, [item.value, stacked]);
+
+	return (
+		<div className={cn("flex", stacked ? "flex-col gap-0.5" : "items-baseline justify-between gap-3")}>
+			{/* The main term reads semibold against a regular line, so a scan picks out each finding (Nov 5, 2026, user's call;
+			    DESIGN.md "Tags popover"). */}
+			<dt
+				className={cn(
+					"text-foreground",
+					item.term ? "font-normal" : "font-semibold",
+					// A short name beside its value stays on one line; the value wraps instead.
+					item.value && !stacked && "shrink-0",
+				)}
+			>
+				{item.term ? <span className='font-semibold'>{item.term} </span> : null}
+				{item.label}
+			</dt>
+			{item.value ? (
+				<dd ref={valueRef} className={cn("tabular-nums text-foreground", !stacked && "text-right")}>
+					{item.value}
+				</dd>
+			) : null}
+		</div>
+	);
+}
+
 /**
  * A patient's tag (a flag) with details: a Badge button that opens them in a popover, and a mouse leaving the tag closes
  * it, so it's there only while the clinician points at it. Touch and keyboard close it with Escape or a click outside (a
@@ -91,22 +135,7 @@ function TagsPopover({ label, details, variant = "outline", size = "sm" }: TagsP
 				{details.items?.length ? (
 					<dl className='flex flex-col gap-1.5'>
 						{details.items.map((item) => (
-							<div key={`${item.term ?? ""}${item.label}`} className='flex items-baseline justify-between gap-3'>
-								{/* The main term reads semibold against a regular line, so a scan picks out each finding (Nov 5,
-								    2026, user's call; DESIGN.md "Tags popover"). */}
-								<dt
-									className={cn(
-										"text-foreground",
-										item.term ? "font-normal" : "font-semibold",
-										// A short name beside its value stays on one line; the value wraps instead.
-										item.value && "shrink-0",
-									)}
-								>
-									{item.term ? <span className='font-semibold'>{item.term} </span> : null}
-									{item.label}
-								</dt>
-								{item.value ? <dd className='text-right tabular-nums text-foreground'>{item.value}</dd> : null}
-							</div>
+							<DetailsItem key={`${item.term ?? ""}${item.label}`} item={item} />
 						))}
 					</dl>
 				) : null}

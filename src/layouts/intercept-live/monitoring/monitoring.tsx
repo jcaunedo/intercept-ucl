@@ -149,6 +149,7 @@ function Monitoring({
 					onAlertAction: handleAlertAction,
 					onAction: onPatientDetailsAction,
 					onDischargeDecision,
+					consults: patientConsults,
 				})
 			}
 			pages={{

@@ -150,6 +150,7 @@ function Census({
 					onAlertAction: handleAlertAction,
 					onAction: onPatientDetailsAction,
 					onDischargeDecision,
+					consults: patientConsults,
 				})
 			}
 			pages={{

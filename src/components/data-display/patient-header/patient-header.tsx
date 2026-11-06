@@ -1,17 +1,9 @@
 import * as React from "react";
 
-import {
-	PatientCardAlert,
-	patientCardAcuityLevels,
-	scoreTrendClassName,
-	type PatientCensusCardProps,
-} from "@/components/cards/patient-census-card";
+import { PatientCardTags, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
-import { Badge } from "@/components/data-display/badge";
-import { TagsPopover } from "@/components/overlays/tags-popover";
 import { Typography } from "@/components/typography/typography";
 import { cn } from "@/lib/utils";
-
 
 type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 	Pick<
@@ -25,11 +17,20 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 		| "unit"
 		| "room"
 		| "bed"
-		| "alert"
-		| "acuity"
-		| "trajectory"
 		| "tags"
 	> & {
+		/**
+		 * @deprecated Ignored since Nov 5, 2026: the header no longer shows the score and its change (user's call,
+		 * following intercept.ds `1191:3147`). The page's Overview shows the Early warning score.
+		 */
+		acuity?: PatientCensusCardProps["acuity"];
+		/** @deprecated Ignored since Nov 5, 2026, with `acuity`. */
+		trajectory?: PatientCensusCardProps["trajectory"];
+		/**
+		 * @deprecated Ignored since Nov 5, 2026: the header no longer shows the alert pill (intercept.ds `1191:3147`). The
+		 * page shows its alerts on the Overview and in toasts.
+		 */
+		alert?: PatientCensusCardProps["alert"];
 		/** Photo URL. Without it, the avatar shows `initials`. */
 		photo?: string;
 		initials?: string;
@@ -44,8 +45,8 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 	};
 
 /**
- * Heads a patient's page: photo (a circle), name and top alert, then the acuity score by its name ("NEWS2 10 High"), its 24h change, demographics, MRN and location on one
- * line, then badges (safety and organ support). An optional slot on the right takes actions.
+ * Heads a patient's page: photo (a circle) beside the name and one line with MRN, sex and age, and location; under them
+ * the tags, from the left edge (one line that scrolls sideways). An optional slot on the right takes actions.
  *
  * Figma: [intercept.ds › Patient Header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1191-3147)
  */
@@ -59,9 +60,9 @@ function PatientHeader({
 	unit,
 	room,
 	bed,
-	alert,
-	acuity,
-	trajectory,
+	alert: _alert,
+	acuity: _acuity,
+	trajectory: _trajectory,
 	tags = [],
 	photo,
 	initials,
@@ -72,85 +73,34 @@ function PatientHeader({
 	className,
 	...props
 }: PatientHeaderProps) {
-	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
-	const demographics = [age, sex].filter((part) => part !== undefined && part !== "").join(" ");
-	const facts = [demographics, mrn ? `MRN ${mrn}` : undefined, hospital, unit, room, bed, ...details].filter(Boolean);
-	const change = trajectory?.value !== undefined && trajectory.value !== "0" && trajectory.variant !== "missing";
+	// "MRN 01033876 - F, 39": the identifiers first, then sex and age, as intercept.ds writes them.
+	const demographics = [sex, age].filter((part) => part !== undefined && part !== "").join(", ");
+	const identity = [mrn ? `MRN ${mrn}` : undefined, demographics].filter(Boolean).join(" - ");
+	const facts = [identity, hospital, unit, room, bed, ...details].filter(Boolean);
 
 	return (
 		<div data-slot='patient-header' className={cn("flex items-center gap-4 px-6", className)} {...props}>
-			<div className='flex min-w-0 flex-1 items-start gap-4'>
-				{/* 64px, above Avatar's sizes, and Avatar's circle; the initials keep Avatar's proportion (11px at 32px). */}
-				<Avatar aria-hidden='true' className='size-16'>
-					{photo ? <AvatarImage src={photo} alt='' /> : null}
-					<AvatarFallback tone={tone} className='text-[22px]'>
-						{initials}
-					</AvatarFallback>
-				</Avatar>
+			<div className='flex min-w-0 flex-1 flex-col gap-3'>
+				<div className='flex min-w-0 items-center gap-4'>
+					{/* 56px, above Avatar's sizes, and Avatar's circle; the initials keep Avatar's proportion (11px at 32px). */}
+					<Avatar aria-hidden='true' className='size-14'>
+						{photo ? <AvatarImage src={photo} alt='' /> : null}
+						<AvatarFallback tone={tone} className='text-[19px]'>
+							{initials}
+						</AvatarFallback>
+					</Avatar>
 
-				<div className='flex min-w-0 flex-1 flex-col gap-2.5'>
-					<div className='flex flex-col gap-px'>
-						<div className='flex flex-wrap items-center gap-x-4 gap-y-1'>
-							<Typography as={headingLevel} size='3xl' weight='bold' className='break-words'>
-								{lastName}, {firstName}
-							</Typography>
-							{alert ? (
-								<PatientCardAlert variant={alert.variant} count={alert.count}>
-									{alert.label}
-								</PatientCardAlert>
-							) : null}
-						</div>
-						<p className='text-base text-foreground'>
-							{acuity ? (
-								<>
-									<span className='font-bold'>
-										{acuity.label} {acuity.score ?? "--"}
-									</span>
-									{acuityLevel ? (
-										<span className={cn("ml-2 font-semibold", patientCardAcuityLevels[acuityLevel].className)}>
-											{patientCardAcuityLevels[acuityLevel].label}
-										</span>
-									) : null}
-								</>
-							) : null}
-							{change ? (
-								<>
-									{acuity ? " · " : null}
-									{trajectory.trend ? (
-										<span
-											aria-hidden='true'
-											className={cn(
-												"font-bold",
-												scoreTrendClassName(trajectory),
-											)}
-										>
-											{trajectory.trend === "up" ? "▲" : "▼"}{" "}
-										</span>
-									) : null}
-									<span className='font-bold'>{trajectory.value}</span> in last 24 h
-								</>
-							) : null}
-							{facts.length ? `${acuity || change ? " · " : ""}${facts.join(" · ")}` : null}
-						</p>
+					<div className='flex min-w-0 flex-1 flex-col gap-px'>
+						<Typography as={headingLevel} size='3xl' weight='bold' className='break-words'>
+							{lastName}, {firstName}
+						</Typography>
+						{facts.length ? <p className='text-base text-foreground'>{facts.join(" · ")}</p> : null}
 					</div>
-
-					{tags.length ? (
-						<ul aria-label='Badges' className='flex flex-wrap gap-1.5'>
-							{tags.map((tag) => (
-								<li key={tag.label}>
-									{/* A tag with details opens them in a popover, as on the patient's card. */}
-									{tag.details ? (
-										<TagsPopover label={tag.label} variant={tag.variant ?? "secondary"} details={tag.details} size='xs' />
-									) : (
-										<Badge variant={tag.variant ?? "secondary"} size='xs'>
-											{tag.label}
-										</Badge>
-									)}
-								</li>
-							))}
-						</ul>
-					) : null}
 				</div>
+
+				{/* The cards' tag row, from the left edge under the avatar: 32px outline tags on one line that scrolls
+				    sideways, each flag opening its popover. */}
+				{tags.length ? <PatientCardTags tags={tags} name={`${firstName} ${lastName}`} /> : null}
 			</div>
 
 			{actions ? <div className='flex shrink-0 items-center gap-2'>{actions}</div> : null}

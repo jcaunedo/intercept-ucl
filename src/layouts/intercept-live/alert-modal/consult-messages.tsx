@@ -4,7 +4,6 @@ import { MessageCircleIcon, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { Counter } from "@/components/data-display/counter";
-import { EmptyState } from "@/components/feedback/empty-state";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { fadeVariants, revealVariants, useMotionPreference } from "@/lib/motion";
 import { formatRelativeDate } from "@/lib/relative-date";
@@ -15,7 +14,7 @@ import { BedsidePhotoImage, type BedsidePhoto } from "./low-bandwidth";
 // The video consult's messages with the bedside nurse (Nov 5, 2026, user's call; intercept.ds `alert-expanded` ›
 // Messages `1375:8218`): the thread the nurse sees in their hospital's messaging (Epic Secure Chat, Cerner Secure
 // Messaging, TigerConnect; Spec §6.11), in the alert panel's third column, where the pathway shows. Opened from the
-// actions row's Messages (or the Video consult panel's header), and on its own when a message from the bedside arrives.
+// actions row's Messages, and on its own when a message from the bedside arrives.
 
 /** One message in the thread: from the bedside (the nurse, or `by` someone else there), or from the clinician ("you"). */
 type ConsultMessage = {
@@ -132,7 +131,7 @@ function useUnreadMessages(messages: readonly ConsultMessage[], open: boolean) {
 
 /**
  * A Messages button: shows the Messages column, or hides it ("Hide messages"), with the unread count after the label
- * ("Messages, 2 new" to screen readers). `xs` in the Video consult panel's header, `md` in the alert's actions row.
+ * ("Messages, 2 new" to screen readers). The actions row's passes `md`, `solid` and `message-circle-more`.
  */
 function ConsultMessagesButton({
 	open,
@@ -285,14 +284,12 @@ function ConsultMessages({
 						</AnimatePresence>
 					</ol>
 				) : (
-					// No message yet: the thread's empty state, centered in its space (Nov 5, 2026, user's call).
-					<EmptyState
-						className='flex-1'
-						headingLevel='h3'
-						icon={<MessageCircleIcon aria-hidden='true' />}
-						title='No messages yet'
-						description={`Messages with ${nurse} show here.`}
-					/>
+					// No message yet: a quiet line centered in the thread's space (Intercept-Live `222:18375`, Nov 5, 2026): the
+					// icon in `icon-subtle` over "No messages", 8px apart. Not the EmptyState component, whose title is a heading.
+					<div className='flex flex-1 flex-col items-center justify-center gap-2 text-center'>
+						<MessageCircleIcon aria-hidden='true' className='size-5 text-icon-subtle' />
+						<p className='text-sm text-muted-foreground'>No messages</p>
+					</div>
 				)}
 				<AnimatePresence>
 					{typing ? (

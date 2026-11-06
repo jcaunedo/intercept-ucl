@@ -108,8 +108,36 @@ function flagDetails(label: string, record?: PatientRecord): PatientCardTagDetai
 	return recordDetails(label, record) ?? noRecordDetails;
 }
 
+/**
+ * The Allergy tag: each allergy's reaction, severity and whether it's confirmed, newest addition first in the change
+ * line. A list without details still shows its substances, with "Reaction not recorded".
+ */
+function allergyDetails(record: PatientRecord): PatientCardTagDetails | undefined {
+	const allergies = record.allergies ?? [];
+	if (!allergies.length) return undefined;
+	const entries = allergies.map((substance) => record.allergyDetails?.find((entry) => entry.substance === substance));
+	const added = entries
+		.filter((entry) => entry && recent(entry.recordedAt))
+		.map((entry) => ({ text: `${entry!.substance} added to the allergy list ${ago(entry!.recordedAt)}`, at: entry!.recordedAt }));
+	return {
+		...changeLines(added),
+		items: allergies.map((substance, index) => {
+			const entry = entries[index];
+			if (!entry) return { label: substance, value: "Reaction not recorded" };
+			const status = [entry.kind === "intolerance" ? "intolerance" : undefined, entry.verified ? "confirmed" : "patient reported"]
+				.filter(Boolean)
+				.join(", ");
+			return { label: substance, value: `${entry.reaction}, ${entry.severity} · ${status}` };
+		}),
+		source: "Allergy list",
+		updatedAt: newest(entries.map((entry) => entry?.recordedAt)),
+	};
+}
+
 /** What the record has behind a flag, or undefined. */
 function recordDetails(label: string, record: PatientRecord): PatientCardTagDetails | undefined {
+	if (/^Allerg(y|ies): /.test(label)) return allergyDetails(record);
+
 	if (label === "Fall risk" && record.fallRisk) {
 		const { scale, score, risk, assessedAt, previous, precautions } = record.fallRisk;
 		const nurse = careTeamName(record, "Bedside nurse");

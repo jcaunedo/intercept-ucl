@@ -1,0 +1,243 @@
+import * as React from "react";
+import { XIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+
+import { Button } from "@/components/buttons/button";
+import { enterTransition, useMotionPreference } from "@/lib/motion";
+import { cn } from "@/lib/utils";
+
+import {
+	ConsultNotetaker,
+	ConsultPanelContent,
+	ConsultTile,
+	threadWith,
+	useConsult,
+	type PatientConsultData,
+} from "../alert-modal/alert-modal";
+import { ConsultMessages, useConsultMessages, useNewIncoming, useUnreadMessages } from "../alert-modal/consult-messages";
+import { PagePanel, usePatientHeaderActions } from "../side-panel";
+
+// The patient page's Video consult and Messages (Nov 5, 2026, Intercept-Live "Video and Messages Interations",
+// `219:16129`): the app header's two buttons open them as panels right of the page, full height, Video consult first.
+// The call, its AI Notetaker and the thread with the bedside nurse are the alert panel's (`alert-modal.tsx`,
+// `consult-messages.tsx`).
+
+/** Each panel's width, Figma's. Fixed: the call keeps its 352 × 248 shape at any width, and nothing needs resizing. */
+const panelWidth = 416;
+
+// The shadows fall to the right (Nov 5, 2026, user's call: "review the shadows, are to the right"): each panel sits
+// under whatever is on its left, the page or the call. The canvas sits under the shell's page panel slot in the stacking
+// order, so a panel can't show the page's shadow from below: each panel draws it as an inset on its own left edge, and
+// casts none itself. The same shadow on both (user's call, same day: "use the shadow 1 in 2"; Messages had Figma's 8%).
+const panelShadow = "shadow-[inset_16px_0_32px_-16px_oklch(0_0_0/5%)]";
+
+/**
+ * A panel right of the page, in the shell's page panel slot: a 60px header (its title, `lg` medium, and one control on
+ * the right) over a rule, then its content. It slides open by growing its width (`enterTransition`, as the shell's side
+ * panels), so the page narrows beside it; instant under reduced motion. `onOpened` runs once it's open.
+ */
+function PatientPanel({
+	id,
+	title,
+	open,
+	action,
+	onOpened,
+	onKeyDown,
+	className,
+	children,
+}: {
+	id: string;
+	title: string;
+	open: boolean;
+	/** The header's control, right of the title. */
+	action?: React.ReactNode;
+	onOpened?: (heading: HTMLHeadingElement | null) => void;
+	onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+	className?: string;
+	children: React.ReactNode;
+}) {
+	const { resolve } = useMotionPreference();
+	const heading = React.useRef<HTMLHeadingElement>(null);
+	return (
+		<AnimatePresence initial={false}>
+			{open ? (
+				<motion.aside
+					key={id}
+					id={id}
+					aria-labelledby={`${id}-title`}
+					initial={{ width: 0 }}
+					animate={{ width: panelWidth }}
+					exit={{ width: 0 }}
+					transition={resolve(enterTransition)}
+					onAnimationComplete={(definition) => {
+						if ((definition as { width?: number }).width === panelWidth) onOpened?.(heading.current);
+					}}
+					onKeyDown={onKeyDown}
+					className={cn("relative h-full shrink-0 overflow-hidden border-l border-border bg-background", className)}
+				>
+					{/* At the panel's width and kept to its right edge, so the content slides in with the edge without reflowing. */}
+					<div className='absolute inset-y-0 right-0 flex flex-col' style={{ width: panelWidth }}>
+						<div className='flex h-15 shrink-0 items-center gap-4 border-b border-border px-4'>
+							<h2
+								ref={heading}
+								id={`${id}-title`}
+								tabIndex={-1}
+								className='min-w-0 flex-1 truncate px-2 text-lg font-medium text-foreground outline-none'
+							>
+								{title}
+							</h2>
+							{action}
+						</div>
+						{children}
+					</div>
+				</motion.aside>
+			) : null}
+		</AnimatePresence>
+	);
+}
+
+/**
+ * The patient page's video consult and messages with the bedside nurse, in two panels right of the page (Intercept-Live
+ * `219:16129`, Nov 5, 2026). The app header's Video consult opens the call's panel and rings the bedside at once (the
+ * call, then the AI Notetaker under it, its button in the panel's header); pressed again (it's an icon then), it ends
+ * the call and closes the panel. The call's own End leaves the panel open, the notes still to come, with Video consult in
+ * the tile to call again. Messages opens the thread to the right of the call (it takes focus in its field); its × or the
+ * header's pressed Messages closes it, and so does Escape inside it. A new message from the bedside opens it on its own,
+ * without moving focus, as on the alert panel. The header's unread count is the thread's. Mounted per patient (keyed by
+ * the page): switching patient or going Back ends the call.
+ */
+function PatientConsultPanels({
+	data,
+	onOpenConsult,
+	onOpenMessages,
+	onConsultNote,
+	onSendMessage,
+}: {
+	data: PatientConsultData;
+	/** The call's panel opened (the call rings). */
+	onOpenConsult?: () => void;
+	/** The messages panel opened from the header. */
+	onOpenMessages?: () => void;
+	/** The clinician approved the AI Notetaker's draft. */
+	onConsultNote?: (note: string) => void;
+	/** A message the clinician sent the bedside nurse. */
+	onSendMessage?: (text: string) => void;
+}) {
+	const [consultOpen, setConsultOpen] = React.useState(false);
+	const [consult, setConsult] = useConsult("idle");
+	const [messagesOpen, setMessagesOpen] = React.useState(false);
+	// The field takes focus when the clinician opens the thread, not when a new message opens it.
+	const [focusMessages, setFocusMessages] = React.useState(false);
+	const [notetakerSlot, setNotetakerSlot] = React.useState<HTMLDivElement | null>(null);
+	const [messages, sendMessage, nurseTyping] = useConsultMessages(
+		data.messages,
+		data.connection?.photos,
+		onSendMessage,
+		data.scriptedReplies,
+	);
+	if (useNewIncoming(messages) && !messagesOpen) {
+		setFocusMessages(false);
+		setMessagesOpen(true);
+	}
+	const unread = useUnreadMessages(messages, messagesOpen);
+
+	// Closing the call's panel ends the call: no call runs out of sight.
+	const closeConsult = () => {
+		setConsult("idle");
+		setConsultOpen(false);
+	};
+
+	usePatientHeaderActions({
+		videoConsultOpen: consultOpen,
+		onVideoConsult: () => {
+			if (consultOpen) {
+				closeConsult();
+				return;
+			}
+			setConsultOpen(true);
+			setConsult("connecting");
+			onOpenConsult?.();
+		},
+		messagesOpen,
+		unreadMessages: unread,
+		onOpenMessages: () => {
+			if (messagesOpen) {
+				setMessagesOpen(false);
+				return;
+			}
+			setFocusMessages(true);
+			setMessagesOpen(true);
+			onOpenMessages?.();
+		},
+	});
+
+	return (
+		<PagePanel>
+			<PatientPanel
+				id='patient-video-consult'
+				title='Video consult'
+				open={consultOpen}
+				action={
+					// The notetaker's button, then ×, 8px apart (Intercept-Live `222:18365`).
+					<div className='flex shrink-0 items-center gap-2'>
+						<div ref={setNotetakerSlot} className='flex items-center' />
+						<Button variant='ghost' size='icon-md' aria-label='Close video consult' onClick={closeConsult}>
+							<XIcon aria-hidden='true' />
+						</Button>
+					</div>
+				}
+				onOpened={(heading) => heading?.focus({ preventScroll: true })}
+				className={panelShadow}
+			>
+				<div className='flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pt-6 pb-4'>
+					<ConsultPanelContent
+						data={data}
+						tile={
+							<ConsultTile
+								data={data}
+								state={consult}
+								onEnd={() => setConsult("idle")}
+								onStart={() => setConsult("connecting")}
+							/>
+						}
+						notetaker={
+							<ConsultNotetaker
+								data={data}
+								live={consult === "live"}
+								onApprove={onConsultNote}
+								actionSlot={notetakerSlot}
+							/>
+						}
+					/>
+				</div>
+			</PatientPanel>
+			<PatientPanel
+				id='patient-messages'
+				title='Messages'
+				open={messagesOpen}
+				action={
+					<Button variant='ghost' size='icon-md' aria-label='Close messages' onClick={() => setMessagesOpen(false)}>
+						<XIcon aria-hidden='true' />
+					</Button>
+				}
+				onKeyDown={(event) => {
+					if (event.key === "Escape") setMessagesOpen(false);
+				}}
+				className={panelShadow}
+			>
+				{/* 24px bottom: the thread pulls its field 8px down, to Figma's 16px. */}
+				<div className='flex min-h-0 flex-1 flex-col px-6 pt-6 pb-6'>
+					<ConsultMessages
+						messages={messages}
+						onSend={sendMessage}
+						nurse={threadWith(data.bedside)}
+						typing={nurseTyping}
+						autoFocus={focusMessages}
+					/>
+				</div>
+			</PatientPanel>
+		</PagePanel>
+	);
+}
+
+export { PatientConsultPanels };

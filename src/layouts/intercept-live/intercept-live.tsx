@@ -60,7 +60,13 @@ import { AskInterceptPanel, type AskInterceptNotice, type AskInterceptResponder 
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
 import { PatientNavigationProvider, type ActiveAlertsRequest, type PatientNavigation } from "./patient-navigation";
-import { PageHidesToastsProvider, PagePanelSlotProvider, sidePanelWidth } from "./side-panel";
+import {
+	PageHidesToastsProvider,
+	PagePanelSlotProvider,
+	PatientHeaderActionsProvider,
+	sidePanelWidth,
+	type PatientHeaderActions,
+} from "./side-panel";
 import { useLayoutSidebar } from "./use-layout-sidebar";
 
 // A patient's details reveal at twice Reveal's duration (1 s; Oct 31, 2026, user's call), so the page change reads. On
@@ -207,7 +213,18 @@ const headerClassName = (compact: boolean) =>
 type PatientDetailsView = {
 	name: string;
 	content: React.ReactNode;
-	headerActions?: Pick<AppHeaderPatientProps, "onRaiseConcern" | "onHuddleTeam" | "onEscalate" | "moreActions">;
+	headerActions?: Pick<
+		AppHeaderPatientProps,
+		| "onVideoConsult"
+		| "onOpenMessages"
+		| "unreadMessages"
+		| "onRaiseConcern"
+		| "onHuddleTeam"
+		| "onEscalate"
+		| "moreActions"
+		| "team"
+		| "onOpenTeam"
+	>;
 	/** The patients of the list the patient was opened from, in its order, for the patient list (PRD PD-015). */
 	patientList?: PatientListEntry[];
 	/** The patient's tags ("Ventilated"…), for Ask Intercept Live's questions about them. */
@@ -414,6 +431,9 @@ function InterceptLive({
 	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);
+	// A patient page's own header actions (its video consult and messages panels; usePatientHeaderActions), over the
+	// view's `headerActions`.
+	const [patientHeaderActions, setPatientHeaderActions] = React.useState<PatientHeaderActions | null>(null);
 	// How many of a page's panels hide the toasts (the live feed, Filters; useHideToasts): both can be open, so closing one
 	// keeps them hidden while the other stays.
 	const [panelsHidingToasts, setPanelsHidingToasts] = React.useState(0);
@@ -692,178 +712,181 @@ function InterceptLive({
 			<PagePreferencesProvider value={pagePreferences}>
 				<PagePanelSlotProvider value={panelSlot}>
 					<PageHidesToastsProvider value={setPanelHidesToasts}>
-						<div className='flex h-screen bg-background-subtle'>
-							<Sidebar
-								groups={groups}
-								footerItems={footerItems}
-								activeItem={page}
-								onNavigate={(navigateTo) => {
-									setOpenPatient(null);
-									setPage(navigateTo as InterceptLivePage);
-								}}
-								collapsed={sidebarCollapsed}
-								onCollapsedChange={handleSidebarCollapsedChange}
-								className='h-full'
-							/>
-
-							{/* Global: opens on every page, between the Sidebar and the page. */}
-							<AskInterceptPanel
-								open={chatOpen}
-								onOpenChange={setChatOpen}
-								carded={sidebarCollapsed}
-								width={chatWidth}
-								onWidthChange={setChatWidth}
-								context={{
-									page,
-									patientName: chatPatientName,
-									patientTags: chatPatientTags,
-									openPatientId: openPatientId ?? undefined,
-								}}
-								respond={askIntercept}
-								notice={askInterceptNotice}
-								onRemovePatientContext={chatInPatientContext ? () => setChatPatient(null) : undefined}
-								opener={chatOpener}
-								onOpenPatient={renderPatientDetails ? (patientId) => navigation.openPatient(patientId) : undefined}
-								onOpenAlert={renderAlert ? (patientId, alertId) => navigation.openAlert(patientId, alertId) : undefined}
-							/>
-
-							{/* On a patient's page: the list they were opened from, else the page's, to switch patient (PRD PD-015). */}
-							{patientView?.patientList && openPatient ? (
-								<PatientListPanel
-									open={patientListOpen}
-									onOpenChange={(open) => setLeftPanel(open ? "patients" : null)}
-									carded={sidebarCollapsed}
-									width={patientListWidth}
-									onWidthChange={setPatientListWidth}
-									sourcePage={page}
-									patients={patientView.patientList}
-									currentId={openPatient.id}
-									onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}
+						<PatientHeaderActionsProvider value={setPatientHeaderActions}>
+							<div className='flex h-screen bg-background-subtle'>
+								<Sidebar
+									groups={groups}
+									footerItems={footerItems}
+									activeItem={page}
+									onNavigate={(navigateTo) => {
+										setOpenPatient(null);
+										setPage(navigateTo as InterceptLivePage);
+									}}
+									collapsed={sidebarCollapsed}
+									onCollapsedChange={handleSidebarCollapsedChange}
+									className='h-full'
 								/>
-							) : null}
-
-							{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
-							    (0 0 26px; 16% since Nov 4, 2026, user's call, Figma 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
-							    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
-							    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
-							    stay right when it's scrolled. */}
-							<motion.div
-								ref={canvasRef}
-								layoutScroll
-								className={cn(
-									"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-									// With a left panel open the panel takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
-									// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
-									chatOpen || patientListOpen
-										? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/16%)]"
-										: sidebarCollapsed
-											? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/16%)]"
-											: "rounded-none shadow-none",
-								)}
-							>
-								{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). On
-								    a patient's details, the patient variant: a breadcrumb back to the page, and the patient's actions. */}
-								{patientView ? (
-									<AppHeader
-										variant='patient'
+	
+								{/* Global: opens on every page, between the Sidebar and the page. */}
+								<AskInterceptPanel
+									open={chatOpen}
+									onOpenChange={setChatOpen}
+									carded={sidebarCollapsed}
+									width={chatWidth}
+									onWidthChange={setChatWidth}
+									context={{
+										page,
+										patientName: chatPatientName,
+										patientTags: chatPatientTags,
+										openPatientId: openPatientId ?? undefined,
+									}}
+									respond={askIntercept}
+									notice={askInterceptNotice}
+									onRemovePatientContext={chatInPatientContext ? () => setChatPatient(null) : undefined}
+									opener={chatOpener}
+									onOpenPatient={renderPatientDetails ? (patientId) => navigation.openPatient(patientId) : undefined}
+									onOpenAlert={renderAlert ? (patientId, alertId) => navigation.openAlert(patientId, alertId) : undefined}
+								/>
+	
+								{/* On a patient's page: the list they were opened from, else the page's, to switch patient (PRD PD-015). */}
+								{patientView?.patientList && openPatient ? (
+									<PatientListPanel
+										open={patientListOpen}
+										onOpenChange={(open) => setLeftPanel(open ? "patients" : null)}
+										carded={sidebarCollapsed}
+										width={patientListWidth}
+										onWidthChange={setPatientListWidth}
 										sourcePage={page}
-										patientName={patientView.name}
-										onBack={() => setOpenPatient(null)}
-										// Opens the chat about this patient (or makes an open chat about them) with their Quick overview, as Ask in a
-										// toast does: a conversation about anyone else is cleared first (Nov 4, 2026, user's call: it kept the last
-										// patient's overview under this one's chip). Pressed again, closes it.
-										onToggleAskIntercept={() => {
-											if (chatInPatientContext) setChatOpen(false);
-											else {
-												if (openPatientId !== null) {
-													setChatPatient({ id: openPatientId });
-													setChatOpener({ id: String(openerCount.current++), question: patientOverviewQuestion });
-												}
-												setChatOpen(true);
-											}
-										}}
-										askInterceptOpen={chatOpen}
-										// Always: a patient opened from an alert gets the page's list (Nov 3, 2026, user's call).
-										onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
-										patientListOpen={patientListOpen}
-										{...patientView.headerActions}
-										compact={headerCompact}
-										theme={theme}
-										onToggleTheme={toggleTheme}
-										className={headerClassName(headerCompact)}
+										patients={patientView.patientList}
+										currentId={openPatient.id}
+										onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}
 									/>
-								) : (
-									<AppHeader
-										clock={shownClock}
-										user={shownUser}
-										team={team}
-										unreadMessages={unreadMessages}
-										compact={headerCompact}
-										theme={theme}
-										onToggleTheme={toggleTheme}
-										className={headerClassName(headerCompact)}
-									/>
-								)}
-
-								{/* Under an open patient the page stays mounted, hidden, so its filters, sort and scroll are as they were on
-								    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. It leaves at once
-								    and glides back in on Back. */}
+								) : null}
+	
+								{/* With the rail collapsed, the canvas sits on the page as a card: 16px left radius and Figma's raw canvas shadow
+								    (0 0 26px; 16% since Nov 4, 2026, user's call, Figma 8%; no effect style yet). Expanded, it meets the white rail flush. Both change with the rail's
+								    width. `relative` puts the canvas above the Sidebar (itself `relative`), so the shadow falls over the rail
+								    instead of under it. layoutScroll: the cards' layout animations measure against this scroll container, so they
+								    stay right when it's scrolled. */}
 								<motion.div
-									initial={false}
-									animate={
-										patientView
-											? { opacity: 0, x: -glideDistance, transition: { duration: 0 } }
-											: { opacity: 1, x: 0, transition: enterTransition }
-									}
-									className={cn("flex min-w-0 flex-1 flex-col", patientView && "hidden")}
+									ref={canvasRef}
+									layoutScroll
+									className={cn(
+										"relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-background transition-[border-radius,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+										// With a left panel open the panel takes the card edge, and the canvas keeps its shadow plus a 1px `border` on its
+										// left, a divider that still shows in dark mode, where the shadow doesn't (Intercept-Live "Chat open").
+										chatOpen || patientListOpen
+											? "rounded-none border-l border-border shadow-[0_0_26px_0_oklch(0_0_0/16%)]"
+											: sidebarCollapsed
+												? "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/16%)]"
+												: "rounded-none shadow-none",
+									)}
 								>
-									<PagePanelSlotProvider value={patientView ? null : panelSlot}>
-										{pages[page] ?? (
-											// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area
-											// below the header.
-											<main className='relative flex flex-1 flex-col p-6'>
-												<Typography as='h1' size='2xl' weight='bold'>
-													{page}
-												</Typography>
-												<EmptyState
-													className='absolute inset-0 px-6'
-													title={emptyPages[page].title}
-													description={emptyPages[page].description}
-												/>
-											</main>
-										)}
-									</PagePanelSlotProvider>
-								</motion.div>
-								{/* popLayout: on Back the leaving details are taken out of the flow (over the page) while they slide out, so
-								    the page takes its place at once and comes in beside them. */}
-								<AnimatePresence mode='popLayout' initial={false}>
+									{/* A direct child of the canvas, so it can stay stuck for the whole scroll (sticky can't leave its parent). On
+									    a patient's details, the patient variant: a breadcrumb back to the page, and the patient's actions. */}
 									{patientView ? (
-										<motion.div
-											key='details'
-											variants={prefersReducedMotion ? fadeVariants : detailsRevealVariants}
-											initial={mounted.current ? "initial" : false}
-											animate='animate'
-											exit='exit'
-											className='flex min-w-0 flex-1 flex-col'
-										>
-											{patientView.content}
-										</motion.div>
-									) : null}
-								</AnimatePresence>
-							</motion.div>
-
-							{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
-							    `contents`, so the panel is a flex item of this row. */}
-							<div ref={setPanelSlot} className='contents' />
-						</div>
-						{children}
-						{alertView ? (
-							<React.Fragment key={openAlert?.key}>{alertView}</React.Fragment>
-						) : null}
-						{/* The app's one toast region: alert toasts and any other message. Hidden while the alert modal or a patient's
-						    page is open, so a toast never covers them, and while the live feed is open, which already lists every
-						    alert; they come back, with any that arrived meanwhile, when it closes. */}
-						<Toaster hidden={Boolean((openAlert?.open && alertView) || patientView || panelsHidingToasts > 0)} />
+										<AppHeader
+											variant='patient'
+											sourcePage={page}
+											patientName={patientView.name}
+											onBack={() => setOpenPatient(null)}
+											// Opens the chat about this patient (or makes an open chat about them) with their Quick overview, as Ask in a
+											// toast does: a conversation about anyone else is cleared first (Nov 4, 2026, user's call: it kept the last
+											// patient's overview under this one's chip). Pressed again, closes it.
+											onToggleAskIntercept={() => {
+												if (chatInPatientContext) setChatOpen(false);
+												else {
+													if (openPatientId !== null) {
+														setChatPatient({ id: openPatientId });
+														setChatOpener({ id: String(openerCount.current++), question: patientOverviewQuestion });
+													}
+													setChatOpen(true);
+												}
+											}}
+											askInterceptOpen={chatOpen}
+											// Always: a patient opened from an alert gets the page's list (Nov 3, 2026, user's call).
+											onTogglePatientList={patientView.patientList ? () => toggleLeftPanel("patients") : undefined}
+											patientListOpen={patientListOpen}
+											{...patientView.headerActions}
+											{...patientHeaderActions}
+											compact={headerCompact}
+											theme={theme}
+											onToggleTheme={toggleTheme}
+											className={headerClassName(headerCompact)}
+										/>
+									) : (
+										<AppHeader
+											clock={shownClock}
+											user={shownUser}
+											team={team}
+											unreadMessages={unreadMessages}
+											compact={headerCompact}
+											theme={theme}
+											onToggleTheme={toggleTheme}
+											className={headerClassName(headerCompact)}
+										/>
+									)}
+	
+									{/* Under an open patient the page stays mounted, hidden, so its filters, sort and scroll are as they were on
+									    Back (PRD PD-AC-04). Its side panel hides with it (no slot) and comes back open if it was. It leaves at once
+									    and glides back in on Back. */}
+									<motion.div
+										initial={false}
+										animate={
+											patientView
+												? { opacity: 0, x: -glideDistance, transition: { duration: 0 } }
+												: { opacity: 1, x: 0, transition: enterTransition }
+										}
+										className={cn("flex min-w-0 flex-1 flex-col", patientView && "hidden")}
+									>
+										<PagePanelSlotProvider value={patientView ? null : panelSlot}>
+											{pages[page] ?? (
+												// A page this layout doesn't build: its title, and an empty state centered, both ways, in the page area
+												// below the header.
+												<main className='relative flex flex-1 flex-col p-6'>
+													<Typography as='h1' size='2xl' weight='bold'>
+														{page}
+													</Typography>
+													<EmptyState
+														className='absolute inset-0 px-6'
+														title={emptyPages[page].title}
+														description={emptyPages[page].description}
+													/>
+												</main>
+											)}
+										</PagePanelSlotProvider>
+									</motion.div>
+									{/* popLayout: on Back the leaving details are taken out of the flow (over the page) while they slide out, so
+									    the page takes its place at once and comes in beside them. */}
+									<AnimatePresence mode='popLayout' initial={false}>
+										{patientView ? (
+											<motion.div
+												key='details'
+												variants={prefersReducedMotion ? fadeVariants : detailsRevealVariants}
+												initial={mounted.current ? "initial" : false}
+												animate='animate'
+												exit='exit'
+												className='flex min-w-0 flex-1 flex-col'
+											>
+												{patientView.content}
+											</motion.div>
+										) : null}
+									</AnimatePresence>
+								</motion.div>
+	
+								{/* The current page's side panel (PagePanel) lands here, between the canvas and the screen's right edge.
+								    `contents`, so the panel is a flex item of this row. */}
+								<div ref={setPanelSlot} className='contents' />
+							</div>
+							{children}
+							{alertView ? (
+								<React.Fragment key={openAlert?.key}>{alertView}</React.Fragment>
+							) : null}
+							{/* The app's one toast region: alert toasts and any other message. Hidden while the alert modal or a patient's
+							    page is open, so a toast never covers them, and while the live feed is open, which already lists every
+							    alert; they come back, with any that arrived meanwhile, when it closes. */}
+							<Toaster hidden={Boolean((openAlert?.open && alertView) || patientView || panelsHidingToasts > 0)} />
+						</PatientHeaderActionsProvider>
 					</PageHidesToastsProvider>
 				</PagePanelSlotProvider>
 			</PagePreferencesProvider>

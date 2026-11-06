@@ -7,8 +7,11 @@ import {
 	FlagIcon,
 	ListIcon,
 	MessageCircleMoreIcon,
+	MessageCircleOffIcon,
 	MoonIcon,
 	SunIcon,
+	VideoIcon,
+	VideoOffIcon,
 	WebcamIcon,
 	type LucideIcon,
 } from "lucide-react";
@@ -16,6 +19,7 @@ import { motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
 import { Avatar, AvatarFallback, AvatarGroup, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
+import { Counter } from "@/components/data-display/counter";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -28,6 +32,7 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/overlays/dropdown-menu";
 import { Typography } from "@/components/typography/typography";
@@ -62,6 +67,7 @@ type AppHeaderMenuAction = { label: string; icon?: LucideIcon; onSelect?: () => 
 
 /** What both variants share: Theme on the right, and the compact padding. */
 type AppHeaderCommonProps = React.ComponentProps<"header"> & {
+	/** The default variant's theme button. The patient variant has none since Nov 5, 2026 (intercept.ds `1169:319`). */
 	onToggleTheme?: () => void;
 	/** The current color mode. The theme button shows the moon in light mode (to go dark) and the sun in dark mode. */
 	theme?: "light" | "dark";
@@ -94,9 +100,9 @@ type AppHeaderDefaultProps = AppHeaderCommonProps & {
 
 type AppHeaderPatientProps = AppHeaderCommonProps & {
 	/**
-	 * `patient`: on a patient's page, Back, Ask Intercept and the patient list (when the app handles them), then a
-	 * breadcrumb back to where the user came from, on the left; the patient's actions (Raise concern, Huddle team, Escalate), Theme
-	 * and a "…" menu on the right.
+	 * `patient`: on a patient's page, Back, the patient list and Ask Intercept (when the app handles them), then a
+	 * breadcrumb back to where the user came from, on the left; Video consult, Messages, a "…" menu and the care team on
+	 * the right, the menu holding the patient's actions (Raise concern, Huddle team, Escalate) and `moreActions`.
 	 */
 	variant: "patient";
 	/** The page the user came from, e.g. "Census". The breadcrumb's back link. */
@@ -122,13 +128,38 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	onTogglePatientList?: () => void;
 	/** Whether the patient list is open (`aria-expanded` on its button; no pressed look since Oct 31, 2026). */
 	patientListOpen?: boolean;
-	/** Raises a concern about the patient (a Clinician Intuition Alert). */
+	/**
+	 * Calls the bedside nurse on video. Without it, there's no Video consult button. With `videoConsultOpen`, it's pressed
+	 * again to close the call's panel.
+	 */
+	onVideoConsult?: () => void;
+	/**
+	 * Whether the video consult's panel is open: the button turns icon-only and pressed (`video-off`, "Close video
+	 * consult", `aria-expanded`), the panel's title naming it.
+	 */
+	videoConsultOpen?: boolean;
+	/** Opens the patient's messages. Without it, there's no Messages button. With `messagesOpen`, it closes them. */
+	onOpenMessages?: () => void;
+	/** Whether the messages panel is open: Messages turns icon-only and pressed (`message-circle-off`, "Close messages"). */
+	messagesOpen?: boolean;
+	/** Unread messages, shown as a Counter on Messages from 1. */
+	unreadMessages?: number;
+	/** Raises a concern about the patient (a Clinician Intuition Alert). First in the "…" menu, shown with its handler. */
 	onRaiseConcern?: () => void;
-	/** Starts a huddle with the patient's team. */
+	/** Starts a huddle with the patient's team. In the "…" menu, shown with its handler. */
 	onHuddleTeam?: () => void;
+	/** In the "…" menu, shown with its handler. */
 	onEscalate?: () => void;
-	/** The "…" menu's items. Without any, there's no "…" button. */
+	/** The "…" menu's other items, after a rule. Without them or a patient action, there's no "…" button. */
 	moreActions?: AppHeaderMenuAction[];
+	/**
+	 * The patient's care team (Nov 5, 2026, intercept.ds `1169:319`; user's call: the patient's, not the team on shift):
+	 * the first three overlap 16px after "…", opening `onOpenTeam`; the button's name lists everyone. Without it, no
+	 * avatars.
+	 */
+	team?: AppHeaderPerson[];
+	/** Opens the care team. */
+	onOpenTeam?: () => void;
 };
 
 type AppHeaderProps = AppHeaderDefaultProps | AppHeaderPatientProps;
@@ -141,6 +172,18 @@ type AppHeaderAllProps = AppHeaderCommonProps &
 // Vertical padding in px, default and compact. The bottom loses 1px to the border line, so the header is 60px (52px
 // compact), as Figma draws it with the line inside.
 const headerPaddingY = { default: 12, compact: 8 } as const;
+
+// A patient action whose panel is open: the outline button on the hover fill, held (`states/hover`).
+const pressedClassName = "bg-accent";
+
+// Video consult and Messages drop their labels when the header is narrower than everything it holds (60rem: the left
+// side with a long name, the buttons with their labels and count, the care team), e.g. with both of the page's panels
+// open (Intercept-Live `219:16129`, Nov 5, 2026, user's call: "if space available, keep label"). Then they're square
+// 36px icon buttons with an 18px icon, as `icon-md`; screen readers keep the label. A container query, so it follows the
+// header's own width, not the screen's.
+const collapsibleClassName =
+	"@max-[60rem]/app-header:px-2 @max-[60rem]/app-header:has-[>svg]:pl-2 @max-[60rem]/app-header:[&_svg]:size-4.5";
+const collapsibleLabelClassName = "@max-[60rem]/app-header:sr-only";
 
 const focusClassName = "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
@@ -344,13 +387,18 @@ function PatientNavigation({
 	);
 }
 
-/** The team on shift, overlapping, opening the team menu. */
-function TeamMenu({ team, onOpenTeam }: Pick<AppHeaderDefaultProps, "team" | "onOpenTeam">) {
+/** A team, overlapping, opening the team menu: the team on shift, or a patient's care team (its first `max`). */
+function TeamMenu({
+	team,
+	onOpenTeam,
+	label = "Team on shift",
+	max,
+}: Pick<AppHeaderDefaultProps, "team" | "onOpenTeam"> & { label?: string; max?: number }) {
 	return (
 		<button
 			type='button'
 			onClick={onOpenTeam}
-			aria-label={`Team on shift: ${team.map((person) => person.name).join(", ")}`}
+			aria-label={`${label}: ${team.map((person) => person.name).join(", ")}`}
 			className={menuClassName}
 		>
 			{/* Full 36px photos with a 2.7px separating ring outside them, as Figma draws it (AvatarGroup's own ring is
@@ -360,7 +408,7 @@ function TeamMenu({ team, onOpenTeam }: Pick<AppHeaderDefaultProps, "team" | "on
 				aria-hidden='true'
 				className='*:data-[slot=avatar]:border-0 *:data-[slot=avatar]:shadow-[0_0_0_2.7px_var(--color-background)] *:data-[slot=avatar]:transition-shadow group-hover/menu:*:data-[slot=avatar]:shadow-[0_0_0_2.7px_var(--color-accent),0_0_0_2.7px_var(--color-background)]'
 			>
-				{team.map((person) => (
+				{team.slice(0, max).map((person) => (
 					<PersonAvatar key={person.name} person={person} />
 				))}
 			</AvatarGroup>
@@ -385,7 +433,7 @@ function AccountMenu({ user, onOpenUserMenu }: Pick<AppHeaderDefaultProps, "user
 	);
 }
 
-/** Default: Messages, Theme, the team and the user's menu, one 8px row. */
+/** Default: Messages and Theme 8px apart, then the team and the user's menu, 16px apart. */
 function DefaultActions({
 	unreadMessages,
 	onOpenMessages,
@@ -398,67 +446,121 @@ function DefaultActions({
 	const messagesLabel = `${unreadMessages} ${unreadMessages === 1 ? "message" : "messages"}`;
 
 	return (
-		<div className='flex items-center gap-2'>
-			{/* The accessible name starts with the visible label, so voice control users can say what they see. */}
-			<Button variant='outline' onClick={onOpenMessages} aria-label={`${messagesLabel} unread`}>
-				<MessageCircleMoreIcon aria-hidden='true' />
-				{messagesLabel}
-			</Button>
-			{themeButton}
+		<div className='flex items-center gap-4'>
+			<div className='flex items-center gap-2'>
+				{/* The accessible name starts with the visible label, so voice control users can say what they see. */}
+				<Button variant='outline' onClick={onOpenMessages} aria-label={`${messagesLabel} unread`}>
+					<MessageCircleMoreIcon aria-hidden='true' />
+					{messagesLabel}
+				</Button>
+				{themeButton}
+			</div>
 			<TeamMenu team={team} onOpenTeam={onOpenTeam} />
 			<AccountMenu user={user} onOpenUserMenu={onOpenUserMenu} />
 		</div>
 	);
 }
 
-/** Patient: the patient's actions, Theme and the "…" menu, one 8px row. */
+/**
+ * Patient: Video consult and Messages (each with its handler) and the "…" menu, 8px apart (no Theme since Nov 5, 2026),
+ * then 16px to the care team. The menu opens with
+ * the patient's actions (Raise concern, Huddle team, Escalate, each with its handler), then a rule, then `moreActions`
+ * (Nov 5, 2026: the actions left the bar, and Video consult and Messages came up from the Patient Header). While its
+ * panel is open, Video consult or Messages is an icon button, pressed (the `accent` fill), that closes it.
+ */
 function PatientActions({
+	onVideoConsult,
+	videoConsultOpen,
+	onOpenMessages,
+	messagesOpen,
+	unreadMessages = 0,
 	onRaiseConcern,
 	onHuddleTeam,
 	onEscalate,
 	moreActions = [],
-	themeButton,
-}: AppHeaderPatientProps & { themeButton: React.ReactNode }) {
+	team = [],
+	onOpenTeam,
+}: AppHeaderPatientProps) {
+	const patientActions: AppHeaderMenuAction[] = [
+		{ label: "Raise concern", icon: FlagIcon, onSelect: onRaiseConcern },
+		{ label: "Huddle team", icon: WebcamIcon, onSelect: onHuddleTeam },
+		{ label: "Escalate", icon: ArrowUpIcon, onSelect: onEscalate },
+	].filter((action) => action.onSelect);
+	const groups = [patientActions, moreActions].filter((group) => group.length);
+
+	// The buttons 8px apart, then 16px to the care team, as the default variant's menus.
 	return (
-		<div role='group' aria-label='Patient actions' className='flex items-center gap-2'>
-			<Button variant='outline' onClick={onRaiseConcern}>
-				<FlagIcon aria-hidden='true' />
-				Raise concern
-			</Button>
-			<Button variant='outline' onClick={onHuddleTeam}>
-				<WebcamIcon aria-hidden='true' />
-				Huddle team
-			</Button>
-			<Button variant='outline' onClick={onEscalate}>
-				<ArrowUpIcon aria-hidden='true' />
-				Escalate
-			</Button>
-			{themeButton}
-			{moreActions.length ? (
-				<DropdownMenu>
-					<DropdownMenuTrigger asChild>
-						<Button variant='outline' size='icon-md' aria-label='More actions'>
-							<EllipsisIcon aria-hidden='true' />
-						</Button>
-					</DropdownMenuTrigger>
-					<DropdownMenuContent align='end'>
-						{moreActions.map(({ label, icon: Icon, onSelect }) => (
-							<DropdownMenuItem key={label} onSelect={onSelect}>
-								{Icon ? <Icon aria-hidden='true' /> : null}
-								{label}
-							</DropdownMenuItem>
-						))}
-					</DropdownMenuContent>
-				</DropdownMenu>
-			) : null}
+		<div className='flex items-center gap-4'>
+			<div role='group' aria-label='Patient actions' className='flex items-center gap-2'>
+				{onVideoConsult ? (
+					// One button, open or closed: `video-off` and the hover fill while its panel is open, "Close video consult".
+					// `aria-expanded` only when the app runs a panel for it; without, the button only reports the click.
+					<Button
+						variant='outline'
+						aria-expanded={videoConsultOpen}
+						aria-label={videoConsultOpen ? "Close video consult" : undefined}
+						onClick={onVideoConsult}
+						className={cn(collapsibleClassName, videoConsultOpen && pressedClassName)}
+					>
+						{videoConsultOpen ? <VideoOffIcon aria-hidden='true' /> : <VideoIcon aria-hidden='true' />}
+						<span className={collapsibleLabelClassName}>Video consult</span>
+					</Button>
+				) : null}
+				{onOpenMessages ? (
+					// The unread count is a Counter, code ahead of Figma; the name starts with the visible label.
+					<Button
+						variant='outline'
+						aria-expanded={messagesOpen}
+						aria-label={
+							messagesOpen ? "Close messages" : unreadMessages ? `Messages, ${unreadMessages} unread` : undefined
+						}
+						onClick={onOpenMessages}
+						className={cn(collapsibleClassName, messagesOpen && pressedClassName)}
+					>
+						{messagesOpen ? (
+							<MessageCircleOffIcon aria-hidden='true' />
+						) : (
+							<MessageCircleMoreIcon aria-hidden='true' />
+						)}
+						<span className={collapsibleLabelClassName}>Messages</span>
+						{unreadMessages && !messagesOpen ? (
+							<Counter variant='secondary' count={unreadMessages} max={99} aria-hidden='true' />
+						) : null}
+					</Button>
+				) : null}
+				{groups.length ? (
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant='outline' size='icon-md' aria-label='More actions'>
+								<EllipsisIcon aria-hidden='true' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align='end'>
+							{groups.map((group, index) => (
+								<React.Fragment key={index}>
+									{index ? <DropdownMenuSeparator /> : null}
+									{group.map(({ label, icon: Icon, onSelect }) => (
+										<DropdownMenuItem key={label} onSelect={onSelect}>
+											{Icon ? <Icon aria-hidden='true' /> : null}
+											{label}
+										</DropdownMenuItem>
+									))}
+								</React.Fragment>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				) : null}
+			</div>
+			{team.length ? <TeamMenu team={team} onOpenTeam={onOpenTeam} label='Care team' max={3} /> : null}
 		</div>
 	);
 }
 
 /**
  * Intercept Live's top bar. `default`: connection status and clock on the left; messages, theme, the team on shift and
- * the user's menu on the right. `patient`: Back, Ask Intercept, the patient list and a breadcrumb back from a patient's
- * page on the left; the patient's actions, theme and a "…" menu on the right. Each button calls its own handler; the header holds no state.
+ * the user's menu on the right. `patient`: Back, the patient list, Ask Intercept and a breadcrumb back from a patient's
+ * page on the left; Video consult, Messages, a "…" menu with the patient's actions and the care team on the right. Each button calls its own handler; the
+ * header holds no state.
  *
  * Figma: [intercept.ds › app-header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1169-318)
  */
@@ -484,6 +586,9 @@ function AppHeader(props: AppHeaderProps) {
 		onOpenUserMenu: _onOpenUserMenu,
 		unreadMessages: _unreadMessages,
 		onOpenMessages: _onOpenMessages,
+		onVideoConsult: _onVideoConsult,
+		videoConsultOpen: _videoConsultOpen,
+		messagesOpen: _messagesOpen,
 		onRaiseConcern: _onRaiseConcern,
 		onHuddleTeam: _onHuddleTeam,
 		onEscalate: _onEscalate,
@@ -512,7 +617,7 @@ function AppHeader(props: AppHeaderProps) {
 			data-slot='app-header'
 			data-variant={variant}
 			data-compact={compact ? "" : undefined}
-			className={cn("border-b border-border bg-background px-4", className)}
+			className={cn("@container/app-header border-b border-border bg-background px-4", className)}
 			{...headerProps}
 		>
 			{/* Motion animates the vertical padding here, so the header's own props stay plain HTML. */}
@@ -525,7 +630,7 @@ function AppHeader(props: AppHeaderProps) {
 				{props.variant === "patient" ? <PatientNavigation {...props} /> : <StatusAndClock clock={props.clock} />}
 
 				{props.variant === "patient" ? (
-					<PatientActions {...props} themeButton={themeButton} />
+					<PatientActions {...props} />
 				) : (
 					<DefaultActions {...props} themeButton={themeButton} />
 				)}

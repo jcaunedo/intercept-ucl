@@ -4,6 +4,7 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
+import { samplePatientConsults } from "../alert-modal/sample-alert-modal";
 import { Census } from "../census/census";
 import { samplePatients, sampleScenario1ResolvedCensus } from "../census/sample-census";
 import { Monitoring } from "../monitoring/monitoring";
@@ -37,6 +38,11 @@ const meta = {
 		patients: samplePatients,
 		monitoringPatients: sampleMonitoringPatients,
 		patientRecords: samplePatientRecords,
+		patientConsults: samplePatientConsults({
+			censusPatients: samplePatients,
+			monitoringPatients: sampleMonitoringPatients,
+			records: samplePatientRecords,
+		}),
 		alerts: sampleMonitoringAlerts,
 		escalationTargets: sampleEscalationTargets,
 		user: sampleUser,
@@ -58,10 +64,10 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * Sarah Miller, opened from the Census (Intercept-Live › Patient Details). The app header turns to its patient variant
- * ("← Census › Miller, Sarah") with Raise concern, Huddle team, Escalate, Theme and "…". The Patient Header shows her
- * photo, name and alert, acuity and its 24h change, demographics, MRN and location, then code status, allergy, isolation
- * and organ support, with Live Camera and Messages on the right. Line tabs: Overview (the AI brief, live
- * monitor, ventilator, infusions and key labs in the main column; her alerts, care team and encounter in the rail), then
+ * ("← Census › Miller, Sarah") with Video consult, Messages (3 unread) and "…" (Raise concern, Huddle team,
+ * Escalate, then New note, Prepare handoff, Copy link), then her care team. The Patient Header shows her photo and name,
+ * then MRN, sex and age, and location, then her flags (organ support, code status only when it limits care, allergy
+ * and isolation, all outline). Line tabs: Overview (the AI brief, live monitor, ventilator, infusions and key labs in the main column; her alerts, care team and encounter in the rail), then
  * Vitals, Chart, Timeline, Medications, Orders, Epic, Notes, Sepsis and Camera view. Every Census patient has the same
  * depth of data: go back and open another. Back returns to the Census as it was.
  */
@@ -70,14 +76,55 @@ export const Default: Story = {
 		const canvas = within(canvasElement);
 		await expect(await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" })).toBeVisible();
 		await expect(canvas.getByText("Allergy: Penicillin")).toBeVisible();
+		// The allergy tag opens the allergy list: reaction, severity and whether it's confirmed.
+		await userEvent.click(canvas.getByRole("button", { name: /Allergy: Penicillin/ }));
+		await expect(await within(document.body).findByText("Hives and lip swelling, moderate · confirmed")).toBeVisible();
+		await userEvent.keyboard("{Escape}");
 
-		// Actions are reported to the app.
+		// Actions are reported to the app. The patient's actions are in the app header's "…" menu.
 		const actions = within(canvas.getByRole("group", { name: "Patient actions" }));
-		await userEvent.click(actions.getByRole("button", { name: "Escalate" }));
+		await userEvent.click(actions.getByRole("button", { name: "More actions" }));
+		await userEvent.click(await within(document.body).findByRole("menuitem", { name: "Escalate" }));
 		await expect(args.onPatientDetailsAction).toHaveBeenCalledWith("p1", "escalate");
-		// Live Camera is on the Patient Header.
-		await userEvent.click(canvas.getByRole("button", { name: "Live Camera" }));
-		await expect(args.onPatientDetailsAction).toHaveBeenCalledWith("p1", "live-camera");
+		// Video consult and Messages are in the app header's patient actions, with her care team after "…".
+		await expect(actions.getByRole("button", { name: "Video consult" })).toBeVisible();
+		await expect(actions.getByRole("button", { name: "Messages, 3 unread" })).toBeVisible();
+		await expect(canvas.getByRole("button", { name: /^Care team: / })).toBeVisible();
+	},
+};
+
+/**
+ * Video consult and Messages (Intercept-Live `219:16129`): the app header's Video consult opens the call in a panel right
+ * of the page and rings the bedside (Start notetaker in the panel's header), and turns into a pressed icon that ends the
+ * call and closes it. Messages opens the thread with her nurse to its right, the three unread messages in it; its count
+ * clears, and × closes it.
+ */
+export const VideoConsultAndMessages: Story = {
+	play: async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
+		const actions = within(canvas.getByRole("group", { name: "Patient actions" }));
+
+		await userEvent.click(actions.getByRole("button", { name: "Video consult" }));
+		await expect(args.onPatientDetailsAction).toHaveBeenCalledWith("p1", "video-consult");
+		const consult = within(await canvas.findByRole("complementary", { name: "Video consult" }));
+		await expect(await consult.findByText(/^Calling /)).toBeVisible();
+		await expect(consult.getByRole("button", { name: "Start notetaker" })).toBeDisabled();
+		await expect(actions.getByRole("button", { name: "Close video consult" })).toHaveAttribute("aria-expanded", "true");
+
+		await userEvent.click(actions.getByRole("button", { name: "Messages, 3 unread" }));
+		await expect(args.onPatientDetailsAction).toHaveBeenCalledWith("p1", "messages");
+		const messages = within(await canvas.findByRole("complementary", { name: "Messages" }));
+		await expect(within(messages.getByRole("log")).getAllByRole("listitem")).toHaveLength(3);
+		await expect(actions.getByRole("button", { name: "Close messages" })).toHaveAttribute("aria-expanded", "true");
+
+		// Closing both: the messages' ×, then the pressed Video consult, which ends the call.
+		await userEvent.click(messages.getByRole("button", { name: "Close messages" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Messages" })).toBeNull());
+		await expect(actions.getByRole("button", { name: "Messages" })).toBeVisible();
+		await userEvent.click(actions.getByRole("button", { name: "Close video consult" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Video consult" })).toBeNull());
+		await expect(actions.getByRole("button", { name: "Video consult" })).toBeVisible();
 	},
 };
 

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 import {
 	ArrowUpFromLineIcon,
 	CheckCheckIcon,
@@ -29,6 +30,7 @@ import {
 	AvatarImage,
 	type AvatarFallbackProps,
 } from "@/components/data-display/avatar";
+import { EmptyState } from "@/components/feedback/empty-state";
 import { Textarea } from "@/components/forms/textarea";
 import { AlertExpanded, AlertExpandedClose } from "@/components/overlays/alert-expanded";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/overlays/dialog";
@@ -486,6 +488,75 @@ function LiveDot() {
 	);
 }
 
+/**
+ * The clinician's own camera, as the bedside sees them (Nov 5, 2026, user's call: "Active computer's camera"): the
+ * computer's camera, mirrored, in a small picture in the call's top right, 12px from its edges, fading in. It turns the
+ * camera on as it mounts and off again (the device's light too) as it leaves: the clinician turns their camera off (the
+ * box goes), the call goes audio only or ends. With no camera or no permission the box says so; the call goes on.
+ */
+function SelfView() {
+	const video = React.useRef<HTMLVideoElement>(null);
+	const [status, setStatus] = React.useState<"starting" | "on" | "unavailable">("starting");
+	React.useEffect(() => {
+		if (!navigator.mediaDevices?.getUserMedia) {
+			setStatus("unavailable");
+			return;
+		}
+		const element = video.current;
+		let stream: MediaStream | null = null;
+		let cancelled = false;
+		navigator.mediaDevices
+			.getUserMedia({ video: { width: { ideal: 320 }, height: { ideal: 240 }, facingMode: "user" }, audio: false })
+			.then((started) => {
+				if (cancelled) {
+					started.getTracks().forEach((track) => track.stop());
+					return;
+				}
+				stream = started;
+				if (element) element.srcObject = started;
+				setStatus("on");
+			})
+			.catch(() => {
+				if (!cancelled) setStatus("unavailable");
+			});
+		return () => {
+			cancelled = true;
+			stream?.getTracks().forEach((track) => track.stop());
+			if (element) element.srcObject = null;
+		};
+	}, []);
+	const showing = status === "on";
+	return (
+		<motion.div
+			variants={fadeVariants}
+			initial='initial'
+			animate='animate'
+			exit='exit'
+			role='img'
+			aria-label={status === "unavailable" ? "Your camera isn't available" : "Your camera"}
+			// A quarter of the call's width, 3:2, on the call's dark overlay until the picture comes.
+			className='absolute top-3 right-3 aspect-[3/2] w-1/4 overflow-hidden rounded-lg bg-(--gray-950)/70 ring-1 ring-(--white)/15'
+		>
+			<video
+				ref={video}
+				autoPlay
+				muted
+				playsInline
+				className={cn("size-full -scale-x-100 object-cover", !showing && "invisible")}
+			/>
+			{showing ? null : (
+				<span className='absolute inset-0 flex items-center justify-center text-(--gray-200)'>
+					{status === "unavailable" ? (
+						<VideoOffIcon aria-hidden='true' className='size-4' />
+					) : (
+						<LoaderCircleIcon aria-hidden='true' className='size-4 animate-spin motion-reduce:animate-none' />
+					)}
+				</span>
+			)}
+		</motion.div>
+	);
+}
+
 // When the connection drops, the video freezes this long, saying it's switching, before the call goes audio only.
 const FREEZE_MS = 2500;
 
@@ -573,9 +644,10 @@ function ConsultTile({
 			</p>
 		</>
 	) : null;
-	// The call's top row, on video or audio: the Live dot with how long it's been on, and the bed.
+	// The call's top row, on video or audio: the Live dot with how long it's been on, then the bed beside it on the left
+	// (Nov 5, 2026, user's call: the top right holds the clinician's own camera).
 	const callTop = (label: string) => (
-		<div className='absolute inset-x-3 top-3 flex items-center justify-between gap-2 text-xs font-medium'>
+		<div className='absolute top-3 left-3 flex items-center gap-2 text-xs font-medium'>
 			<span className='flex items-center gap-1.5 rounded-full bg-(--gray-950)/70 px-2.5 py-1'>
 				<LiveDot />
 				{label} · <time className='tabular-nums'>{formatElapsed(elapsed)}</time>
@@ -729,6 +801,8 @@ function ConsultTile({
 							) : null}
 						</AnimatePresence>
 						{callTop("Live")}
+						{/* Turned off, the box leaves (Nov 5, 2026, user's call: "If user turn off camera, remove frame"), fading. */}
+						<AnimatePresence>{cameraOff ? null : <SelfView key='self' />}</AnimatePresence>
 						<div className='absolute inset-x-3 bottom-3 flex items-end justify-between gap-2'>
 							{bedside ? (
 								<span className='flex items-center gap-2 rounded-full bg-(--gray-950)/70 py-1 pr-3 pl-1 text-xs font-medium'>
@@ -1193,11 +1267,18 @@ function ConsultNotetaker({
 	data,
 	live,
 	onApprove,
+	actionSlot,
 }: {
 	data: ConsultData;
 	live: boolean;
 	/** The clinician approved the draft: it goes to the chart as a draft for signature. */
 	onApprove?: (note: string) => void;
+	/**
+	 * Where the notetaker's button goes (Start notetaker, Cancel request, Stop and prepare notes, Review notes) when it
+	 * isn't under the state line: the patient page's Video consult panel puts it in the panel's header (Intercept-Live
+	 * `219:16129`, Nov 5, 2026). Null until that element is there.
+	 */
+	actionSlot?: HTMLElement | null;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const [state, setState] = React.useState<NotetakerState>("idle");
@@ -1228,6 +1309,31 @@ function ConsultNotetaker({
 			? `Recording starts once ${joinNames(asked)} ${asked.length === 1 ? "approves" : "approve"}.`
 			: notetakerCopy[state].text;
 
+	// The one thing to do next, by state.
+	const action =
+		state === "idle" ? (
+			<Button
+				variant='outline'
+				size='md'
+				disabled={!live}
+				onClick={() => setState(asked.length ? "consent" : "recording")}
+			>
+				Start notetaker
+			</Button>
+		) : state === "consent" ? (
+			<Button variant='ghost' size='md' onClick={() => setState("idle")}>
+				Cancel request
+			</Button>
+		) : state === "recording" ? (
+			<Button variant='outline' size='md' onClick={() => setState("processing")}>
+				Stop and prepare notes
+			</Button>
+		) : state === "ready" && !reviewing ? (
+			<Button variant='outline' size='md' onClick={() => setReviewing(true)}>
+				Review notes
+			</Button>
+		) : null;
+
 	return (
 		<div className='flex flex-1 flex-col items-center justify-center gap-4 px-12 py-6 text-center'>
 			<AnimatePresence mode='wait' initial={false}>
@@ -1254,31 +1360,8 @@ function ConsultNotetaker({
 				</motion.div>
 			</AnimatePresence>
 
-			{state === "idle" ? (
-				<>
-					<Button
-						variant='outline'
-						size='md'
-						disabled={!live}
-						onClick={() => setState(asked.length ? "consent" : "recording")}
-					>
-						Start notetaker
-					</Button>
-					{!live ? <p className='text-xs text-muted-foreground'>Starts once the call connects.</p> : null}
-				</>
-			) : state === "consent" ? (
-				<Button variant='ghost' size='md' onClick={() => setState("idle")}>
-					Cancel request
-				</Button>
-			) : state === "recording" ? (
-				<Button variant='outline' size='md' onClick={() => setState("processing")}>
-					Stop and prepare notes
-				</Button>
-			) : state === "ready" && !reviewing ? (
-				<Button variant='outline' size='md' onClick={() => setReviewing(true)}>
-					Review notes
-				</Button>
-			) : null}
+			{actionSlot === undefined ? action : actionSlot ? createPortal(action, actionSlot) : null}
+			{state === "idle" && !live ? <p className='text-xs text-muted-foreground'>Starts once the call connects.</p> : null}
 
 			<AnimatePresence initial={false}>
 				{state === "ready" && reviewing ? (
@@ -1410,7 +1493,7 @@ function AlertPanel({
 	const consultOn = consult !== "idle";
 	// The third column (Nov 5, 2026, user's call): the pathway, or the messages with the bedside nurse, one at a time.
 	// The messages open from the actions row, with or without a call, and stay when the call ends (Nov 5, 2026, user's
-	// call); the Video consult panel's header opens them too.
+	// call); only there (the Video consult panel's header lost its own, user's call, same day).
 	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(defaultPathwayOpen ? "pathway" : null);
 	const pathwayOpen = sidePanel === "pathway";
 	const messagesOpen = sidePanel === "messages";
@@ -1459,7 +1542,7 @@ function AlertPanel({
 				<>
 					<ConsultButton consult={consult} onConsultChange={setConsult} />
 					{/* Messages with the bedside nurse, between the call and Pathway, always shown (Nov 5, 2026, user's calls);
-					    the Video consult panel's header has the same toggle while the call is on. */}
+					    the only Messages button (the Video consult panel's header had one too until the same day). */}
 					<ConsultMessagesButton
 						size='md'
 						solid
@@ -1497,9 +1580,6 @@ function AlertPanel({
 										tile={<ConsultTile data={data} state={consult} onEnd={() => setConsult("idle")} />}
 										notetaker={<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />}
 									/>
-								),
-								action: (
-									<ConsultMessagesButton open={messagesOpen} unread={unread} onToggle={() => togglePanel("messages")} />
 								),
 							},
 						]
@@ -1598,10 +1678,11 @@ function AlertPanelDialog({
 
 /**
  * A video consult with no alert open (Nov 4, 2026, user's calls): what a card's Video consult opens when the patient has
- * no active alert. The alert panel without its alert: the patient (the name, the heading, opens their details), their
- * score, monitor and tags, and the Video consult panel, always open, with the AI Notetaker under the call. The call runs
- * in its tile (already ringing; Cancel, End, then Video consult to call again), so there's no button under the patient.
- * No lifecycle buttons and no pathway: there's no alert to act on.
+ * no active alert. The alert panel without its alert: the patient (the name, the heading, opens their details), the
+ * actions row (Nov 5, 2026, user's call: Video consult, Messages and Pathway, as on the alert panel), their score, monitor
+ * and tags, and the Video consult panel, always open, with the AI Notetaker under the call (already ringing; Cancel,
+ * End, then Video consult to call again, in its tile or the row). Messages and Pathway share the third column, one at a
+ * time; with no alert there's no pathway suggested, which its column says. No lifecycle buttons: no alert to act on.
  */
 function PatientConsultDialog({
 	data,
@@ -1623,18 +1704,26 @@ function PatientConsultDialog({
 	onSendMessage?: (text: string) => void;
 }) {
 	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
-	// The messages with the bedside nurse, as on the alert panel: a column right of the call's, while the call is on.
-	const [messagesShown, setMessagesShown] = React.useState(false);
-	const messagesOpen = messagesShown && consult !== "idle";
-	if (messagesShown && consult === "idle") setMessagesShown(false);
+	// The third column, as on the alert panel: the messages with the bedside nurse, or the pathway, one at a time.
+	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(null);
+	const messagesOpen = sidePanel === "messages";
+	const pathwayOpen = sidePanel === "pathway";
+	const [focusMessages, setFocusMessages] = React.useState(false);
+	const togglePanel = (panel: "pathway" | "messages") => {
+		setFocusMessages(panel === "messages");
+		setSidePanel((current) => (current === panel ? null : panel));
+	};
 	const [messages, sendMessage, nurseTyping] = useConsultMessages(
 		data.messages,
 		data.connection?.photos,
 		onSendMessage,
 		data.scriptedReplies,
 	);
-	// A new message from the bedside opens the column, and the button counts the ones not yet seen, as on the alert panel.
-	if (useNewIncoming(messages) && !messagesShown) setMessagesShown(true);
+	// A new message from the bedside opens the column, and the buttons count the ones not yet seen, as on the alert panel.
+	if (useNewIncoming(messages) && sidePanel !== "messages") {
+		setFocusMessages(false);
+		setSidePanel("messages");
+	}
 	const unread = useUnreadMessages(messages, messagesOpen);
 	const { patient } = data;
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
@@ -1659,6 +1748,28 @@ function PatientConsultDialog({
 					hospital={patient.hospital}
 					unit={patient.unit}
 					bed={patient.bed}
+					actions={
+						<>
+							<ConsultButton consult={consult} onConsultChange={setConsult} />
+							<ConsultMessagesButton
+								size='md'
+								solid
+								icon={MessageCircleMoreIcon}
+								open={messagesOpen}
+								unread={unread}
+								onToggle={() => togglePanel("messages")}
+							/>
+							<Button
+								variant={pathwayOpen ? "outline" : "neutral"}
+								aria-expanded={pathwayOpen}
+								onClick={() => togglePanel("pathway")}
+								className='aria-expanded:bg-accent'
+							>
+								<GitForkIcon />
+								{pathwayOpen ? "Hide pathway" : "Pathway"}
+							</Button>
+						</>
+					}
 					acuity={data.acuity}
 					trajectory={data.trajectory}
 					monitor={connectionMonitor.monitor}
@@ -1684,14 +1795,6 @@ function PatientConsultDialog({
 									notetaker={<ConsultNotetaker data={data} live={consult === "live"} onApprove={onConsultNote} />}
 								/>
 							),
-							action:
-								consult !== "idle" ? (
-									<ConsultMessagesButton
-										open={messagesOpen}
-										unread={unread}
-										onToggle={() => setMessagesShown((shown) => !shown)}
-									/>
-								) : undefined,
 						},
 						...(messagesOpen
 							? [
@@ -1703,8 +1806,26 @@ function PatientConsultDialog({
 												messages={messages}
 												onSend={sendMessage}
 												nurse={threadWith(data.bedside)}
-										typing={nurseTyping}
-												autoFocus
+												typing={nurseTyping}
+												autoFocus={focusMessages}
+											/>
+										),
+									},
+								]
+							: []),
+						...(pathwayOpen
+							? [
+									{
+										id: "pathway",
+										label: "Pathway",
+										content: (
+											// No alert, so nothing suggested: pathways come with an alert's findings.
+											<EmptyState
+												icon={<GitForkIcon />}
+												title='No care pathway'
+												description={`Pathways are suggested with an alert. ${patient.firstName ?? "This patient"} has no active alert.`}
+												headingLevel='h3'
+												className='flex-1'
 											/>
 										),
 									},
@@ -1993,8 +2114,12 @@ export {
 	PatientConsultDialog,
 	alertModalRenderer,
 	withAlertFlags,
+	ConsultNotetaker,
+	ConsultPanelContent,
 	ConsultTile,
 	CONNECT_DELAY_MS,
+	threadWith,
+	useConsult,
 	type AlertConsultState,
 	type PatientConsultData,
 	type AlertDetailAction,

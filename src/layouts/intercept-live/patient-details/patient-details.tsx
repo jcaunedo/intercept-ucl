@@ -11,13 +11,11 @@ import {
 	HeartCrackIcon,
 	HospitalIcon,
 	LinkIcon,
-	MessageCircleMoreIcon,
 	PillIcon,
 	VideoIcon,
 	type LucideIcon,
 } from "lucide-react";
 
-import { Button } from "@/components/buttons/button";
 import type { PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import type { MonitorLimits, MonitorTrends, MonitorVitals, PatientMonitorProps } from "@/components/cards/patient-monitoring-card";
 import type { AvatarFallbackProps } from "@/components/data-display/avatar";
@@ -30,8 +28,10 @@ import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import { flagDetails } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
+import type { PatientConsultData } from "../alert-modal/alert-modal";
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "../alert-modal/discharge-plan";
 import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
+import { PatientConsultPanels } from "./consult-panels";
 import { PatientOverview } from "./patient-overview";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { ChartSection, type PatientChart } from "./sections/chart-section";
@@ -117,6 +117,21 @@ type PatientCodeStatusOrder = {
 	discussedWith?: string;
 	/** The code status before, when it changed. */
 	previous?: { status: string; at: string };
+};
+
+/** One entry on the patient's allergy list, behind the Allergy tag's popover (Nov 5, 2026, user's call). */
+type PatientAllergy = {
+	/** As it reads in `allergies`, e.g. "Iodinated contrast". */
+	substance: string;
+	/** "Hives and itching". */
+	reaction: string;
+	severity: "mild" | "moderate" | "severe";
+	/** An intolerance (nausea from codeine) rather than an allergy. Defaults to allergy. */
+	kind?: "allergy" | "intolerance";
+	/** Confirmed by a clinician or pharmacist, or only reported by the patient or family. */
+	verified: boolean;
+	/** When it was added to the list. */
+	recordedAt: string;
 };
 
 /** The order behind an isolation flag: why, and since when. */
@@ -229,6 +244,8 @@ type PatientRecord = {
 	codeStatus?: string;
 	/** An empty list reads "No known allergies"; missing reads "Allergies unknown". */
 	allergies?: string[];
+	/** Each allergy's reaction, severity and status, behind the Allergy tag's popover. */
+	allergyDetails?: PatientAllergy[];
 	isolation?: string;
 	diagnosis?: string;
 	problems?: string[];
@@ -290,22 +307,29 @@ type PatientDetailsProps = {
 	onAction?: (action: PatientAction) => void;
 	/** A referral in the Discharge section sent (with who agreed to it) or skipped, or a skip taken back. */
 	onDischargeDecision?: (decision: DischargeDecision) => void;
+	/**
+	 * Who the patient's video consult reaches and their thread with the bedside nurse: with it, the app header's Video
+	 * consult and Messages open their panels right of the page (`consult-panels.tsx`). Without it, they only report the
+	 * click (`onAction`).
+	 */
+	consult?: PatientConsultData;
 };
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
-/** The patient's actions (PRD PD-014): the app header's, the "…" menu's, and the Patient Header's Live Camera and Messages. */
+/** The patient's actions (PRD PD-014): the app header's, the "…" menu's, and the Patient Header's Video consult and Messages. */
 type PatientAction =
 	| "raise-concern"
 	| "huddle-team"
-	| "live-camera"
+	| "video-consult"
 	| "escalate"
 	| "messages"
 	| "new-note"
 	| "handoff"
-	| "copy-link";
+	| "copy-link"
+	| "care-team";
 
 type SectionId =
 	| "overview"
@@ -391,7 +415,7 @@ const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon
 		label: "Camera view",
 		icon: VideoIcon,
 		title: "Camera is off",
-		description: "The bedside camera will appear here when you start Live Camera.",
+		description: "The bedside camera will appear here when you start a video consult.",
 	},
 ];
 
@@ -401,38 +425,34 @@ const DAY = 24 * 60 * 60_000;
 const icuDay = (since: string, now: number) => Math.floor((now - Date.parse(since)) / DAY) + 1;
 
 /** The Patient Header's badges: safety first, in words (PRD PD-011), then the patient's tags. */
+/** "Full code": no limit on resuscitation, every patient's default. */
+const isFullCode = (codeStatus?: string) => codeStatus?.trim().toLowerCase() === "full code";
+
 function patientBadges(patient: PatientDetailsPatient, record?: PatientRecord): NonNullable<PatientHeaderProps["tags"]> {
 	const allergies = record?.allergies;
 	// A card tag that repeats the record's code status or isolation ("DNR", "Contact isolation") shows once, as the
 	// safety badge.
 	const shown = [record?.codeStatus, record?.isolation].map((label) => label?.toLowerCase());
+	// intercept.ds `Patient Header` (`1191:3147`, Nov 5, 2026): every tag is Badge `outline` (PatientHeader's default),
+	// the words carry the meaning (PRD PD-011); the interventions come first, then the safety tags.
 	return [
-		// The safety badges open the order behind them when the record has it, as the cards' flags do (Nov 5, 2026).
-		record?.codeStatus
-			? {
-					label: record.codeStatus,
-					variant: "outline",
-					details: record.codeStatusOrder ? flagDetails(record.codeStatus, record) : undefined,
-				}
-			: { label: "Code status unknown" },
-		allergies === undefined
-			? { label: "Allergies unknown" }
-			: allergies.length
-				? { label: `${allergies.length === 1 ? "Allergy" : "Allergies"}: ${allergies.join(", ")}`, variant: "red" }
-				: { label: "No known allergies", variant: "outline" },
-		...(record?.isolation
-			? [
-					{
-						label: record.isolation,
-						variant: "amber" as const,
-						details: record.isolationOrder ? flagDetails(record.isolation, record) : undefined,
-					},
-				]
-			: []),
 		// Every flag opens its popover here too.
 		...(patient.tags ?? [])
 			.filter(({ label }) => !shown.includes(label.toLowerCase()))
 			.map(({ label, details }) => ({ label, details: details ?? flagDetails(label, record) })),
+		// The safety badges open what's behind them too, as every flag does (Nov 5, 2026, user's call): the code status
+		// order, the allergy list, the isolation order, or "Nothing more on this in the record".
+		// Full code, the default (everything is done if the heart or breathing stops), isn't a tag (Nov 5, 2026, user's
+		// call): only a limit on it (DNR, DNR/DNI) or not knowing it changes what the team does.
+		...[
+			...(isFullCode(record?.codeStatus) ? [] : [record?.codeStatus ?? "Code status unknown"]),
+			allergies === undefined
+				? "Allergies unknown"
+				: allergies.length
+					? `${allergies.length === 1 ? "Allergy" : "Allergies"}: ${allergies.join(", ")}`
+					: "No known allergies",
+			...(record?.isolation ? [record.isolation] : []),
+		].map((label) => ({ label, details: flagDetails(label, record) })),
 	];
 }
 
@@ -527,6 +547,7 @@ function PatientDetails({
 	onAlertAction,
 	onAction,
 	onDischargeDecision,
+	consult,
 }: PatientDetailsProps) {
 	const [section, setSection] = React.useState<SectionId>("overview");
 	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080), Discharge only once the
@@ -549,8 +570,6 @@ function PatientDetails({
 		record?.icuAdmittedAt && now !== null ? `ICU day ${icuDay(record.icuAdmittedAt, now)}` : undefined,
 		record?.weight,
 	].filter((detail): detail is string => Boolean(detail));
-	const unread = record?.unreadMessages;
-	const messagesLabel = unread === undefined ? undefined : `${unread} ${unread === 1 ? "message" : "messages"}`;
 	const shownId = React.useRef(patient.id);
 	React.useEffect(() => {
 		if (shownId.current === patient.id) return;
@@ -563,6 +582,15 @@ function PatientDetails({
 			<p aria-live='polite' className='sr-only'>
 				{announcement}
 			</p>
+			{/* Keyed by patient: switching patient ends the call and closes both panels. */}
+			{consult ? (
+				<PatientConsultPanels
+					key={patient.id}
+					data={consult}
+					onOpenConsult={() => onAction?.("video-consult")}
+					onOpenMessages={() => onAction?.("messages")}
+				/>
+			) : null}
 			{/* 16px below the app header and above the tabs (Intercept-Live's Top Container). */}
 			<PatientHeader
 				lastName={patient.lastName}
@@ -577,27 +605,8 @@ function PatientDetails({
 				unit={patient.unit}
 				room={patient.room}
 				bed={patient.bed}
-				alert={alertPill(alerts)}
-				acuity={patient.acuity}
-				trajectory={patient.trajectory}
 				details={details}
 				tags={patientBadges(patient, record)}
-				actions={
-					<>
-						<Button variant='outline' onClick={() => onAction?.("live-camera")}>
-							<VideoIcon aria-hidden='true' />
-							Live Camera
-						</Button>
-						<Button
-							variant='neutral'
-							onClick={() => onAction?.("messages")}
-							aria-label={messagesLabel ? `${messagesLabel} unread` : undefined}
-						>
-							<MessageCircleMoreIcon aria-hidden='true' />
-							{messagesLabel ?? "Messages"}
-						</Button>
-					</>
-				}
 				className='mt-4'
 			/>
 
@@ -676,6 +685,8 @@ type PatientDetailsSources = {
 	onAction?: (patientId: string, action: PatientAction) => void;
 	/** A referral in a patient's Discharge section, by patient. */
 	onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
+	/** Each patient's video consult and thread with the bedside nurse, for the page's Video consult and Messages panels. */
+	consults?: PatientConsultData[];
 };
 
 /**
@@ -696,6 +707,7 @@ function patientDetailsView(
 		onAlertAction,
 		onAction,
 		onDischargeDecision,
+		consults = [],
 	}: PatientDetailsSources,
 ): PatientDetailsView | null {
 	const find = (id?: string) => patients.find((item) => item.id === id) ?? monitoringPatients.find((item) => item.id === id);
@@ -731,10 +743,20 @@ function patientDetailsView(
 		patientList,
 		tags: patient.tags?.map((tag) => tag.label),
 		headerActions: {
+			// Video consult and Messages are in the app header since Nov 5, 2026 (intercept.ds `1169:319`, user's call). With
+			// the patient's consult, the page runs them instead (its panels, the thread's unread count; `consult-panels.tsx`).
+			onVideoConsult: act("video-consult"),
+			onOpenMessages: act("messages"),
+			unreadMessages: records.find((item) => item.id === patientId)?.unreadMessages,
 			onRaiseConcern: act("raise-concern"),
 			onHuddleTeam: act("huddle-team"),
 			onEscalate: act("escalate"),
 			moreActions: moreActions.map(({ label, icon, action }) => ({ label, icon, onSelect: act(action) })),
+			// The patient's care team, after "…" (intercept.ds `1169:319`, Nov 5, 2026, user's call).
+			team: records
+				.find((item) => item.id === patientId)
+				?.careTeam?.map(({ name, initials, src, tone }) => ({ name, initials, src, tone })),
+			onOpenTeam: act("care-team"),
 		},
 		content: (
 			<PatientDetails
@@ -757,6 +779,7 @@ function patientDetailsView(
 				onAlertAction={onAlertAction}
 				onAction={onAction ? (action) => onAction(patientId, action) : undefined}
 				onDischargeDecision={onDischargeDecision ? (decision) => onDischargeDecision(patientId, decision) : undefined}
+				consult={consults.find((item) => item.patientId === patientId)}
 			/>
 		),
 	};
@@ -771,6 +794,7 @@ export {
 	type PatientDetailsSources,
 	type PatientInfusion,
 	type PatientFallRisk,
+	type PatientAllergy,
 	type PatientCodeStatusOrder,
 	type PatientIsolationOrder,
 	type PatientEcmo,

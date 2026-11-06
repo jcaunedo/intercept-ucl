@@ -81,8 +81,9 @@ export const Default: Story = {
 
 /**
  * Video consult in the "…" menu of a patient with no active alert (Thomas Walker) still opens the modal, without an
- * alert on it: his name heads it, his score, monitor and flags under it, and the Video consult panel open with the call
- * to his bedside nurse already ringing. The call runs in its tile: End, then Video consult to call again.
+ * alert on it: his name heads it, the actions row (Video consult, Messages, Pathway, as on an alert; Nov 5, 2026), his
+ * score, monitor and flags under it, and the Video consult panel open with the call to his bedside nurse already ringing.
+ * End, then Video consult to call again. Pathway says there's none: pathways come with an alert.
  */
 export const VideoConsultWithoutAlert: Story = {
 	render: (args) => <LiveMonitoring {...args} />,
@@ -96,8 +97,14 @@ export const VideoConsultWithoutAlert: Story = {
 		await expect(await consult.findByText("Calling Grace Holloway…")).toBeInTheDocument();
 		await expect(consult.queryByRole("region", { name: "Alert" })).toBeNull();
 		await expect(consult.getByRole("button", { name: "2 pressors" })).toBeInTheDocument();
-		// No button under the patient: the call runs in its tile, and the panel stays open when it ends.
-		await expect(consult.queryByRole("button", { name: /End call|Calling…/ })).toBeNull();
+		// The actions row, as on an alert: the call's button (Calling… while it rings), Messages and Pathway.
+		await expect(consult.getByRole("button", { name: /End call|Calling…/ })).toBeInTheDocument();
+		// Messages, in the row only (the Video consult panel's header has none since Nov 5, 2026), with the messages his
+		// nurse sent before the call (his record counts them unread).
+		await expect(consult.getAllByRole("button", { name: /^Messages(, \d+ new)?$/ })).toHaveLength(1);
+		await userEvent.click(consult.getByRole("button", { name: "Pathway" }));
+		await expect(await consult.findByText("No care pathway")).toBeInTheDocument();
+		await userEvent.click(consult.getByRole("button", { name: "Hide pathway" }));
 		// Live: the calling screen (which names the nurse too) has gone, and the nurse's label is on the video.
 		await waitFor(
 			() => {
@@ -109,7 +116,8 @@ export const VideoConsultWithoutAlert: Story = {
 		await expect(consult.getByText("AI Notetaker")).toBeInTheDocument();
 		await userEvent.click(consult.getByRole("button", { name: "End" }));
 		await expect(await consult.findByText("Call ended")).toBeInTheDocument();
-		await userEvent.click(consult.getByRole("button", { name: "Video consult" }));
+		// Video consult calls again, from the tile or the row.
+		await userEvent.click(consult.getAllByRole("button", { name: "Video consult" })[0]);
 		await expect(await consult.findByText("Calling Grace Holloway…")).toBeInTheDocument();
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());

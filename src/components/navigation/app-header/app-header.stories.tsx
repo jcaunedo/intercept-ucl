@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ArrowRightLeftIcon, FilePenLineIcon, LinkIcon } from "lucide-react";
-import { expect, fn } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import samplePhoto1 from "@/components/data-display/avatar/images/sample-photo-1.png";
 import samplePhoto2 from "@/components/data-display/avatar/images/sample-photo-2.png";
@@ -84,6 +84,9 @@ const patientArgs = {
 	onBack: fn(),
 	onToggleAskIntercept: fn(),
 	onTogglePatientList: fn(),
+	onVideoConsult: fn(),
+	onOpenMessages: fn(),
+	unreadMessages: 3,
 	onRaiseConcern: fn(),
 	onHuddleTeam: fn(),
 	onEscalate: fn(),
@@ -92,11 +95,21 @@ const patientArgs = {
 		{ label: "Prepare handoff", icon: ArrowRightLeftIcon, onSelect: fn() },
 		{ label: "Copy link", icon: LinkIcon, onSelect: fn() },
 	],
+	// The patient's care team, after "…"; the first three show.
+	team: [
+		{ name: "Kayla Brandt", initials: "KB", src: samplePhoto3, tone: 1 },
+		{ name: "Daniel Reyes", initials: "DR", src: samplePhoto1, tone: 6 },
+		{ name: "Megan Hart", initials: "MH", tone: 2 },
+		{ name: "Ryan Cole", initials: "RC", tone: 8 },
+	],
+	onOpenTeam: fn(),
 } as const;
 
 /**
- * On a patient's page: Back, Ask Intercept and the patient list (shown when the app handles them), then a breadcrumb
- * back to where the user came from; Raise concern, Huddle team, Escalate, Theme and "…".
+ * On a patient's page: Back, the patient list and Ask Intercept (shown when the app handles them), then a breadcrumb
+ * back to where the user came from; Video consult, Messages (with its unread count) and "…", then 16px to the
+ * patient's care team (its first three). The menu holds Raise concern, Huddle team and Escalate, then a rule, then New
+ * note, Prepare handoff and Copy link.
  */
 export const PatientContext: Story = {
 	render: (args) => (
@@ -107,6 +120,50 @@ export const PatientContext: Story = {
 			compact={args.compact}
 		/>
 	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(canvas.queryByRole("button", { name: "Escalate" })).toBeNull();
+		// Video consult, then Messages, then "…" (no Theme on a patient's page).
+		const buttons = within(canvas.getByRole("group", { name: "Patient actions" })).getAllByRole("button");
+		await expect(buttons.map((button) => button.getAttribute("aria-label") ?? button.textContent)).toEqual([
+			"Video consult",
+			"Messages, 3 unread",
+			"More actions",
+		]);
+		await userEvent.click(canvas.getByRole("button", { name: "More actions" }));
+		const menu = within(await within(document.body).findByRole("menu"));
+		const items = menu.getAllByRole("menuitem").map((item) => item.textContent);
+		await expect(items).toEqual(["Raise concern", "Huddle team", "Escalate", "New note", "Prepare handoff", "Copy link"]);
+		await expect(menu.getByRole("separator")).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		// The care team: three avatars, everyone in its name.
+		await expect(
+			canvas.getByRole("button", { name: "Care team: Kayla Brandt, Daniel Reyes, Megan Hart, Ryan Cole" }),
+		).toBeVisible();
+	},
+};
+
+/**
+ * The page's Video consult and Messages panels open (Intercept-Live `219:16129`): each button is an icon, pressed (the
+ * `accent` fill), "Close video consult" and "Close messages", that closes its panel.
+ */
+export const PatientPanelsOpen: Story = {
+	render: (args) => (
+		<AppHeader
+			{...patientArgs}
+			videoConsultOpen
+			messagesOpen
+			unreadMessages={0}
+			onToggleTheme={args.onToggleTheme}
+			theme={args.theme}
+		/>
+	),
+	play: async ({ canvasElement }) => {
+		const actions = within(within(canvasElement).getByRole("group", { name: "Patient actions" }));
+		for (const name of ["Close video consult", "Close messages"]) {
+			await expect(actions.getByRole("button", { name })).toHaveAttribute("aria-expanded", "true");
+		}
+	},
 };
 
 /** Every state the header has: photo and initials avatars, one and many messages, short and long content, and the
@@ -119,6 +176,7 @@ export const AllVariants: Story = {
 			<AppHeader {...args} {...OneMessage.args} />
 			<AppHeader {...args} {...LongContent.args} />
 			<AppHeader {...patientArgs} />
+			<AppHeader {...patientArgs} videoConsultOpen messagesOpen unreadMessages={0} />
 		</div>
 	),
 };

@@ -67,10 +67,25 @@ const tabsListVariants = cva(
 				// Figma "lg - 40"
 				lg: "group-data-[orientation=horizontal]/tabs:h-10",
 			},
+			baseline: {
+				true: "",
+				false: "",
+			},
 		},
+		compoundVariants: [
+			// Line tabs on a 1px rule: one continuous line under the row (on the right when vertical). An inset shadow, not a
+			// border, so the row keeps its height and the active tab's 2px underline covers the rule.
+			{
+				variant: "line",
+				baseline: true,
+				className:
+					"group-data-[orientation=horizontal]/tabs:shadow-[inset_0_-1px_0_var(--border)] group-data-[orientation=vertical]/tabs:shadow-[inset_-1px_0_0_var(--border)]",
+			},
+		],
 		defaultVariants: {
 			variant: "default",
 			size: "md",
+			baseline: false,
 		},
 	},
 );
@@ -87,11 +102,12 @@ const TabsListContext = React.createContext<{ variant: TabsListVariant; size: Ta
 type TabsListProps = React.ComponentProps<typeof TabsPrimitive.List> & VariantProps<typeof tabsListVariants>;
 
 /**
- * The row of triggers. `default` is a track with a raised active tab; `line` underlines the active tab.
+ * The row of triggers. `default` is a track with a raised active tab; `line` underlines the active tab, and with
+ * `baseline` sets the row on a 1px rule.
  *
  * Figma: [intercept.ds › Tabs Groups](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1091-94)
  */
-function TabsList({ className, variant = "default", size = "md", ...props }: TabsListProps) {
+function TabsList({ className, variant = "default", size = "md", baseline = false, ...props }: TabsListProps) {
 	const resolvedVariant = variant ?? "default";
 	const resolvedSize = size ?? "md";
 
@@ -101,7 +117,7 @@ function TabsList({ className, variant = "default", size = "md", ...props }: Tab
 				data-slot='tabs-list'
 				data-variant={resolvedVariant}
 				data-size={resolvedSize}
-				className={cn(tabsListVariants({ variant: resolvedVariant, size: resolvedSize }), className)}
+				className={cn(tabsListVariants({ variant: resolvedVariant, size: resolvedSize, baseline }), className)}
 				{...props}
 			/>
 		</TabsListContext.Provider>

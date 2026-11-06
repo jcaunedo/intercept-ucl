@@ -1,4 +1,5 @@
 import type { PatientRecord } from "./patient-details";
+import { sampleAllergiesByPatient } from "./sample-allergies";
 import { samplePatientBaseRecords } from "./sample-patient-records";
 import { sampleCameraByPatient } from "./sections/sample-camera";
 import { sampleChartByPatient } from "./sections/sample-chart";
@@ -14,6 +15,7 @@ import { sampleVitalsByPatient } from "./sections/sample-vitals";
 // section's data, which lives beside its section (`sections/sample-*.ts`), keyed by patient.
 const samplePatientRecords: PatientRecord[] = samplePatientBaseRecords.map((record) => ({
 	...record,
+	allergyDetails: sampleAllergiesByPatient[record.id],
 	vitals: sampleVitalsByPatient[record.id],
 	chart: sampleChartByPatient[record.id],
 	timeline: sampleTimelineByPatient[record.id],

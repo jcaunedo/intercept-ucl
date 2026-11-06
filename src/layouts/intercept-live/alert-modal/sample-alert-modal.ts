@@ -6,6 +6,7 @@ import { sampleCameraVideo } from "../sample-data/sample-camera-video";
 import { avatarTones, patientInitials } from "../shared/patient-avatar";
 import type { AlertDetailData, PatientConsultData } from "./alert-modal";
 import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
+import { sampleBedsideThread } from "./sample-bedside-messages";
 import { sampleBedsideReplier } from "./sample-bedside-replies";
 
 // Margaret Hayes's alert at 01:40 in Scenario 1 (Demo Use Cases), opened: the same numbers as her record, monitor and
@@ -567,6 +568,16 @@ function samplePatientParts(
 			pumps: Math.min(4, record?.infusions?.length ?? 0),
 		},
 		video: sampleCameraVideo,
+		// The messages the nurse wrote before the page opened, as many as the record counts unread.
+		messages: record?.unreadMessages
+			? sampleBedsideThread({
+					patientId,
+					firstName: patient.firstName,
+					sex: patient.sex,
+					vitals: monitored?.vitals,
+					count: record.unreadMessages,
+				})
+			: undefined,
 	};
 }
 

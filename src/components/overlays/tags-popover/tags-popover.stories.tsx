@@ -93,6 +93,36 @@ export const Findings: Story = {
 	},
 };
 
+/**
+ * A value that's a sentence moves under its label as a paragraph (two rows); a short one stays beside its label,
+ * right-aligned.
+ */
+export const ParagraphValue: Story = {
+	args: {
+		label: "Allergy: Iodinated contrast",
+		details: {
+			changes: ["Iodinated contrast added to the allergy list 6 hours ago"],
+			items: [
+				{ label: "Iodinated contrast", value: "Hives and itching during the cardiac cath, moderate · confirmed" },
+				{ label: "Premedication", value: "On file" },
+			],
+			source: "Allergy list",
+			updatedAt: minutesAgo(360),
+		},
+	},
+	play: async ({ canvas }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Allergy: Iodinated contrast" }));
+		const popover = within(await screen.findByRole("dialog", { name: "Allergy: Iodinated contrast" }));
+		const sentence = popover.getByText(/Hives and itching/);
+		const label = popover.getByText("Iodinated contrast", { selector: "dt" });
+		// Stacked: the sentence starts under its label, left-aligned.
+		await waitFor(() => expect(sentence.getBoundingClientRect().top).toBeGreaterThan(label.getBoundingClientRect().bottom - 1));
+		await expect(sentence).not.toHaveClass("text-right");
+		// A short value stays beside its label.
+		await expect(popover.getByText("On file")).toHaveClass("text-right");
+	},
+};
+
 /** The tag at each Badge size the cards and the patient header use, and in their variants. */
 export const AllVariants: Story = {
 	render: (args) => (

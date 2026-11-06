@@ -71,6 +71,32 @@ export const Line: Story = {
 	),
 };
 
+/**
+ * `baseline` (Line only): the row sits on a 1px `border` rule, under every tab and the gaps between them; the active
+ * tab's 2px underline covers it. Figma's Line · "Default (line)" state. Here the row fills its container.
+ */
+export const LineBaseline: Story = {
+	render: (args) => (
+		<Tabs {...args} className='w-[480px]'>
+			<TabsList variant='line' baseline className='w-full justify-start'>
+				<TabsTrigger value='account' className='flex-none'>
+					Account
+				</TabsTrigger>
+				<TabsTrigger value='password' className='flex-none'>
+					Password
+				</TabsTrigger>
+				<TabsTrigger value='settings' className='flex-none'>
+					Settings
+				</TabsTrigger>
+			</TabsList>
+		</Tabs>
+	),
+	play: async ({ canvasElement }) => {
+		const list = canvasElement.querySelector<HTMLElement>("[data-slot=tabs-list]");
+		await expect(list && getComputedStyle(list).boxShadow).toMatch(/inset/);
+	},
+};
+
 /** A 16px icon before the label. */
 export const WithIcons: Story = {
 	render: (args) => (
@@ -200,14 +226,18 @@ export const Controlled: Story = {
 	},
 };
 
-/** Both variants at both sizes, as Figma's Tabs Groups shows them. */
+/** Both variants at both sizes, as Figma's Tabs Groups shows them, then Line with its baseline. */
 export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex flex-col items-start gap-6'>
-			{(["default", "line"] as const).flatMap((variant) =>
+			{(["default", "line", "line-baseline"] as const).flatMap((variant) =>
 				(["md", "lg"] as const).map((size) => (
 					<Tabs key={`${variant}-${size}`} {...args}>
-						<TabsList variant={variant} size={size}>
+						<TabsList
+							variant={variant === "default" ? "default" : "line"}
+							baseline={variant === "line-baseline"}
+							size={size}
+						>
 							<TabsTrigger value='account'>Account</TabsTrigger>
 							<TabsTrigger value='password'>Password</TabsTrigger>
 							<TabsTrigger value='settings'>Settings</TabsTrigger>

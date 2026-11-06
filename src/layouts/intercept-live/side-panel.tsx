@@ -4,6 +4,7 @@ import { XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
+import type { AppHeaderPatientProps } from "@/components/navigation/app-header";
 import { Typography } from "@/components/typography/typography";
 import { enterTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -254,7 +255,52 @@ function useHideToasts(hidden: boolean) {
 	}, [setHidden, hidden]);
 }
 
+/* -------------------------------------------------------------------------- */
+/* Patient header actions                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * What a patient's page runs itself in the app header (Nov 5, 2026: the video consult and messages panels): each
+ * button's handler and whether its panel is open, and the thread's unread count. Over `PatientDetailsView.headerActions`.
+ */
+type PatientHeaderActions = Pick<
+	AppHeaderPatientProps,
+	"onVideoConsult" | "videoConsultOpen" | "onOpenMessages" | "messagesOpen" | "unreadMessages"
+>;
+
+const PatientHeaderActionsContext = React.createContext<((actions: PatientHeaderActions | null) => void) | null>(null);
+
+/** Lets a patient's page set the app header's actions: provide it with the shell's setter. */
+const PatientHeaderActionsProvider = PatientHeaderActionsContext.Provider;
+
+/**
+ * Puts the page's own header actions in the shell's app header while the caller is mounted, and takes them out after.
+ * The header gets stable handlers that call the latest ones, so it updates only when an open state or the count
+ * changes, never on each render (the page re-renders with the shell, each live-vitals tick).
+ */
+function usePatientHeaderActions(actions: PatientHeaderActions) {
+	const setActions = React.useContext(PatientHeaderActionsContext);
+	const latest = React.useRef(actions);
+	latest.current = actions;
+	const { videoConsultOpen, messagesOpen, unreadMessages } = actions;
+	const hasVideoConsult = Boolean(actions.onVideoConsult);
+	const hasMessages = Boolean(actions.onOpenMessages);
+	React.useEffect(() => {
+		setActions?.({
+			videoConsultOpen,
+			messagesOpen,
+			unreadMessages,
+			...(hasVideoConsult ? { onVideoConsult: () => latest.current.onVideoConsult?.() } : {}),
+			...(hasMessages ? { onOpenMessages: () => latest.current.onOpenMessages?.() } : {}),
+		});
+	}, [setActions, videoConsultOpen, messagesOpen, unreadMessages, hasVideoConsult, hasMessages]);
+	React.useEffect(() => (setActions ? () => setActions(null) : undefined), [setActions]);
+}
+
 export {
+	PatientHeaderActionsProvider,
+	usePatientHeaderActions,
+	type PatientHeaderActions,
 	PageHidesToastsProvider,
 	PagePanel,
 	PagePanelSlotProvider,
