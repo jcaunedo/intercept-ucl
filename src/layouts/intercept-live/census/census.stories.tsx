@@ -122,7 +122,8 @@ export const AskIntercept: Story = {
 		await waitFor(() => expect(chat.getByRole("log", { name: "Conversation" })).toHaveAttribute("aria-busy", "true"));
 		await expect(chat.queryByRole("button", { name: "Stop generating" })).toBeNull();
 		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), "What changed?{Enter}");
-		await expect(await chat.findByText("What changed?")).toBeVisible();
+		const question = await chat.findByText("What changed?");
+		await waitFor(() => expect(question).toBeVisible());
 		await userEvent.click(canvas.getByRole("button", { name: "Close Ask Intercept Live" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Ask Intercept Live" })).not.toBeInTheDocument());
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));

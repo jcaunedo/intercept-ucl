@@ -153,25 +153,29 @@ function closeAllToasts() {
 /* Muting                                                                     */
 /* -------------------------------------------------------------------------- */
 
-// Whether toasts are muted: `until` a timestamp (Don't show), or `untilReload` (the muted notice closed with its ×), or
-// neither. One for the whole app, like the Toaster; replaced on each change, so it can be a store snapshot.
-type MuteState = { until: number | null; untilReload: boolean };
-const unmuted: MuteState = { until: null, untilReload: false };
+// Whether toasts are muted: `until` a timestamp (Don't show), `paused` with no end (Close all, until Resume), or
+// `untilReload` (the muted notice closed with its ×), or none. One for the whole app, like the Toaster; replaced on each
+// change, so it can be a store snapshot.
+type MuteState = { until: number | null; paused: boolean; untilReload: boolean };
+const unmuted: MuteState = { until: null, paused: false, untilReload: false };
 let muteState: MuteState = unmuted;
 const muteListeners = new Set<() => void>();
 
 /**
- * Stops alert toasts, an unaddressed Critical included (Nov 3, 2026, user's call), until `until`, or
- * until the app reloads with `"reload"`, or shows them again with `null`. `toastAlert()` checks it (`toastsMuted()`)
- * before showing a toast; the Toaster's Don't show menu and its muted notice set it.
+ * Stops alert toasts, an unaddressed Critical included (Nov 3, 2026, user's call), until `until`, with no end until
+ * they're resumed with `"paused"` (Close all, Nov 6, 2026, user's call), or until the app reloads with `"reload"`, or
+ * shows them again with `null`. `toastAlert()` checks it (`toastsMuted()`) before showing a toast; the Toaster's Don't
+ * show menu, its Close all and its muted notice set it.
  */
-function muteToasts(until: Date | "reload" | null) {
+function muteToasts(until: Date | "paused" | "reload" | null) {
 	muteState =
 		until === "reload"
-			? { until: null, untilReload: true }
-			: until && until.getTime() > Date.now()
-				? { until: until.getTime(), untilReload: false }
-				: unmuted;
+			? { until: null, paused: false, untilReload: true }
+			: until === "paused"
+				? { until: null, paused: true, untilReload: false }
+				: until && until.getTime() > Date.now()
+					? { until: until.getTime(), paused: false, untilReload: false }
+					: unmuted;
 	muteListeners.forEach((listener) => listener());
 }
 
@@ -181,9 +185,9 @@ function toastsMutedUntil(): Date | undefined {
 	return until !== null && until > Date.now() ? new Date(until) : undefined;
 }
 
-/** Whether toasts are muted, for a time or until the app reloads. */
+/** Whether toasts are muted: for a time, until resumed (after Close all), or until the app reloads. */
 function toastsMuted(): boolean {
-	return muteState.untilReload || toastsMutedUntil() !== undefined;
+	return muteState.untilReload || muteState.paused || toastsMutedUntil() !== undefined;
 }
 
 function useMuteState() {
@@ -399,8 +403,8 @@ const trailingIcon = "has-[>svg]:pl-[11px] has-[>svg]:pr-[7px]";
 /**
  * The row over the stack, right-aligned with it. With any toast, Don't show (a menu of how long: closes every toast on
  * screen and holds every new one back, Critical too); with two or more, Close all too (closes every toast
- * as its × would, running its close handler; alerts stay in the queue). While muted, "Muted until 4:42 PM", there even
- * without toasts, with Play to show toasts again and × to close the notice and keep them muted until the app reloads
+ * as its × would, running its close handler, and holds new ones back until Resume: "Toasts paused"; Nov 6, 2026, user's
+ * call). While muted, "Muted until 4:42 PM" (or "Toasts paused"), there even without toasts, with Play to show toasts again and × to close the notice and keep them muted until the app reloads
  * (Nov 3, 2026; the × showed them again before). Over it the stack stays as it was: expanded when the pointer comes from
  * it, collapsed when it comes from elsewhere, so the buttons never move away from the pointer. While the clinician is on
  * the row (pointer over it, keyboard focus in it, or its menu open), the toasts' timers hold (Nov 3, 2026, user's call),
@@ -418,14 +422,14 @@ function ToasterActions({
 	onHoldOpenChange: (hold: boolean) => void;
 }) {
 	const { toasts } = useSonner();
-	const { until: mutedUntilTime, untilReload } = useMuteState();
+	const { until: mutedUntilTime, paused, untilReload } = useMuteState();
 	// A kept toast (an incoming call) can't be muted or closed, so it doesn't count: with only kept toasts left, as after
 	// Close all, the row goes (Nov 4, 2026, user's call). Close all shows with two toasts or more, one of them closable.
 	useKeptToastsVersion();
 	const closable = toasts.filter((item) => !keptToasts.has(item.id)).length;
 	const any = closable > 0;
 	const several = any && toasts.length >= 2;
-	const show = any || mutedUntilTime !== null;
+	const show = any || mutedUntilTime !== null || paused;
 	const stackBottom = useStackTop(any, stackTopLimit(right));
 	// Without toasts (muted), the row sits where the stack would.
 	const bottom = stackBottom ?? right;
@@ -504,10 +508,12 @@ function ToasterActions({
 						if (!event.currentTarget.contains(event.relatedTarget)) setFocusIn(false);
 					}}
 				>
-					{mutedUntilTime !== null ? (
+					{mutedUntilTime !== null || paused ? (
 						<span className='inline-flex h-8 items-center gap-1 rounded-button-md bg-neutral/80 pr-1 pl-3 text-sm text-neutral-foreground shadow-xs'>
 							<BellOffIcon aria-hidden='true' className='size-4' />
-							<span className='px-1'>Muted until {muteTimeFormat.format(mutedUntilTime)}</span>
+							<span className='px-1'>
+								{mutedUntilTime !== null ? `Muted until ${muteTimeFormat.format(mutedUntilTime)}` : "Toasts paused"}
+							</span>
 							{/* Each named in a tooltip, over the toasts like the row (Nov 3, 2026, user's call). */}
 							<TooltipProvider>
 								<Tooltip>
@@ -567,7 +573,17 @@ function ToasterActions({
 						</DropdownMenu>
 					) : null}
 					{several ? (
-						<Button variant='outline' size='sm' onClick={closeAllToasts} className={floatingHover}>
+						<Button
+							variant='outline'
+							size='sm'
+							// Closes every toast and stops new ones until Resume (Nov 6, 2026, user's call: alerts should stop),
+							// alert sounds with them; an incoming call still rings.
+							onClick={() => {
+								closeAllToasts();
+								muteToasts("paused");
+							}}
+							className={floatingHover}
+						>
 							{closeAllLabel}
 						</Button>
 					) : null}

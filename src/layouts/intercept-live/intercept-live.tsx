@@ -28,7 +28,7 @@ import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-mo
 import { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 import { EmptyState } from "@/components/feedback/empty-state";
-import { Toaster } from "@/components/feedback/sonner";
+import { muteToasts, Toaster } from "@/components/feedback/sonner";
 import {
 	AppHeader,
 	type AppHeaderPatientProps,
@@ -515,7 +515,13 @@ function InterceptLive({
 				))}
 				{prototype.length && onResetPrototype ? <DropdownMenuSeparator /> : null}
 				{onResetPrototype ? (
-					<DropdownMenuItem onSelect={onResetPrototype}>
+					<DropdownMenuItem
+						onSelect={() => {
+							// Starting over shows toasts again, whatever Close all or Don't show held back (Nov 6, 2026, user's call).
+							muteToasts(null);
+							onResetPrototype();
+						}}
+					>
 						<Undo2Icon aria-hidden='true' />
 						Reset prototype
 					</DropdownMenuItem>

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
-import { Toaster } from "@/components/feedback/sonner";
+import { muteToasts, Toaster } from "@/components/feedback/sonner";
 
 import { AlertToast, toastAlert, type ToastAlertOptions } from "./alert-toast";
 
@@ -67,6 +67,10 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
+	// Close all pauses toasts for the whole app until Resume, so each story starts with them showing.
+	beforeEach: () => {
+		muteToasts(null);
+	},
 	args: {
 		...hayes,
 		onOpen: fn(),
@@ -227,9 +231,16 @@ export const NewestFirst: Story = {
 		await waitFor(() => expect(stackOrder()).toEqual([anderson.title, moore.title, hayes.title]));
 		await userEvent.click(canvas.getByRole("button", { name: "Moore up to High" }));
 		await waitFor(() => expect(stackOrder()).toEqual([moore.title, anderson.title, hayes.title]));
-		// Open alerts don't leave on their own: clear them, so the next story starts with an empty stack.
+		// Open alerts don't leave on their own: Close all clears them and pauses new ones until Resume (Nov 6, 2026, user's
+		// call): "Toasts paused" takes Don't show's place, and a new alert waits.
 		await userEvent.click(screen.getByRole("button", { name: "Close all" }));
 		await waitFor(() => expect(stackOrder()).toEqual([]));
+		await expect(await screen.findByText("Toasts paused")).toBeVisible();
+		await userEvent.click(canvas.getByRole("button", { name: "Moore up to High" }));
+		await expect(stackOrder()).toEqual([]);
+		// Resume shows them again.
+		await userEvent.click(screen.getByRole("button", { name: "Resume toasts" }));
+		await waitFor(() => expect(screen.queryByText("Toasts paused")).toBeNull());
 	},
 };
 

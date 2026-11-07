@@ -13,6 +13,10 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
+	// Close all pauses toasts for the whole app until Resume, so each story starts with them showing.
+	beforeEach: () => {
+		muteToasts(null);
+	},
 } satisfies Meta<typeof Toaster>;
 
 export default meta;
