@@ -194,6 +194,28 @@ netlify.toml                # Hosts the Storybook site on Netlify
 
 The rules for building components, tokens and releases are in [CLAUDE.md](CLAUDE.md) and [DESIGN.md](DESIGN.md), and the motion rules are in [MOTION.md](MOTION.md). The skills read CLAUDE.md and DESIGN.md before they start, plus MOTION.md when the work involves animation.
 
+## Product specs (PRDs)
+
+The [`prds/`](prds/) folder holds the product's specs (PRDs): one per screen, component or flow, plus the [glossary](prds/glossary.md). CLAUDE.md and DESIGN.md say how the library is built. A PRD says what the product should do, for whom, and why: its states and rules, its copy, the requirement IDs it maps to, the decisions made (marked ✅ with a date and who decided) and what's still open (marked ⚠️). Storybook shows each one under PRDs. When a layout and its PRD disagree, the PRD says what was intended: fix the code, or update the PRD if the decision changed.
+
+### Keeping PRDs current
+
+When you work on a component or layout with Claude Code, the design decisions you make are added to the related PRD automatically. You don't have to ask. The rule lives in [CLAUDE.md → Keeping PRDs Current](CLAUDE.md), and the `ucl-generate-component` and `ucl-generate-layout` skills check it before they finish.
+
+**What triggers an update:** a change that settles or changes a product decision, meaning what the user sees or can do: a state, a rule (validation, statuses, limits), copy, the steps of a flow, or what's shown or hidden and when.
+
+**What doesn't:** visual or implementation fixes (spacing, tokens, a Figma value, a bug, a refactor) that don't change what the user sees or can do. Those go to DESIGN.md when they could easily be undone, and nowhere otherwise.
+
+**What Claude Code does:**
+
+1. **Finds the PRD that covers the work.** It searches `prds/` for the file's path, the component's name (under **Component:**) or the screen it belongs to. A component is often covered by the PRD of the screen that uses it, e.g. the Patient card → [patient-card.md](prds/patient-card.md). There's no rule that every component gets its own PRD.
+2. **Updates it in the same change:** rewrites the rule where it's described, adds a dated ✅ note saying who decided (`✅ **Decision (Nov 6, 2026, design):** …`), closes or rewords any ⚠️ note or open question the decision answers, and updates both `Last updated` lines.
+3. **Asks when no PRD covers the work:** create a dedicated PRD, or add a section to an existing one. It never creates a PRD on its own.
+4. **Names the PRD it updated** in its reply, so you can review the change.
+5. **Keeps the trace:** cites the requirement IDs the decision touches in the note and the commit, and adds new terms to the glossary.
+
+ℹ️ When you edit code without Claude Code, follow the same steps by hand.
+
 ## Retrying a Failed Netlify Deploy
 
 The Storybook site deploys to Netlify on every push to `main` (see `netlify.toml`). If a deploy fails before the build

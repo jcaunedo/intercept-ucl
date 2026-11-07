@@ -165,6 +165,7 @@ From the repo root:
 
 - `npm run lint` (`tsc --noEmit`) — must pass.
 - `npm run build` — must succeed.
+- PRD: if the change settled or changed a product decision (states, rules, copy, flow steps, what's shown when), update the PRD that covers it in the same change, per CLAUDE.md → "Keeping PRDs Current". If no PRD covers it, ask before creating one.
 
 ## Stop-and-ask checklist (do not assume)
 

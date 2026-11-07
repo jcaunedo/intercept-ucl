@@ -348,6 +348,20 @@ Apps also load the webfonts the font tokens name, because `theme.css` declares t
 import { Button } from "@jcaunedo/intercept-ucl";
 ```
 
+## Keeping PRDs Current
+
+When a change to a component or layout settles or changes a **product decision**, update the PRD in `prds/` that covers it in the same change, without being asked. A product decision is what the product does: a state, a rule (validation, statuses, limits), copy, the steps of a flow, what's shown or hidden and when.
+
+1. **Find the PRD.** Search `prds/` for the file's path, the component's name (PRDs name it under **Component:**), or the screen it belongs to. A component is often covered by the PRD of the screen that uses it (e.g. the Patient card → `prds/patient-card.md`). There's no rule that every component gets its own PRD.
+2. **Update it:** change the rule where it's described, add a dated ✅ note saying who decided (`✅ **Decision (Nov 6, 2026, design):** …`), close or reword any ⚠️ note or open question it answers, and update both `Last updated` lines (the header comment and the doc's **Last updated:** field).
+3. **No PRD covers it → ask** whether to create a dedicated one or add a section to an existing one. Don't create a PRD silently.
+4. **Say which PRD you updated** in the reply.
+5. **Keep the trace.** If the decision touches a requirement, cite its ID in the note and in the commit (see "Traceability"). A new term goes to [prds/glossary.md](prds/glossary.md) in the same change.
+
+**Not a PRD change:** visual or implementation fixes (spacing, tokens, a Figma value, a bug, a refactor) that don't change what the user sees or can do. Those go to DESIGN.md when a later edit or resync could easily undo them, and nowhere otherwise. Many decisions need both: the PRD records the decision, DESIGN.md the code that protects it.
+
+**Why:** PRDs are the source of truth for product behavior. A decision made only in code is invisible to the team and gets reopened.
+
 ## prds writing conventions
 
 Conventions for every doc under `prds/`.
