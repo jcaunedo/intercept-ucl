@@ -529,7 +529,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		weight: "79 kg",
 		unreadMessages: 1,
 		brief: {
-			text: "Blood pressure is 162/96 on a nicardipine drip, up from 148/88 an hour ago. Postpartum day 1 after cesarean for severe preeclampsia. Platelets are 98 and AST 142. Magnesium level is 6.1, in range.",
+			text: "Blood pressure is 162/96 on a nicardipine drip, up from 148/88 an hour ago. Day 2 of a hypertensive emergency with PRES, after a seizure at home. Platelets are 98 and AST 142. No seizures since on levetiracetam.",
 			sourceCount: 15,
 			updatedAt: minutesAgo(30),
 			lastViewedAt: minutesAgo(140),
@@ -538,14 +538,13 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		isolationOrder: { reason: "Influenza B, PCR positive", orderedAt: hoursAgo(30) },
 		allergies: [],
 		isolation: "Droplet isolation",
-		diagnosis: "Severe preeclampsia, after cesarean delivery",
-		problems: ["Influenza B", "Gestational diabetes"],
+		diagnosis: "Hypertensive emergency with PRES",
+		problems: ["Influenza B", "Type 2 diabetes"],
 		admittedAt: hoursAgo(31),
-		admittedFrom: "Labor and delivery",
+		admittedFrom: "Emergency department",
 		icuAdmittedAt: hoursAgo(26),
 		ventilator: charted("Room air", 45),
 		infusions: [
-			{ drug: "Magnesium sulfate", rate: "2 g/h", updatedAt: minutesAgo(2) },
 			{ drug: "Nicardipine", rate: "7.5 mg/h", change: { direction: "up", from: "5", at: minutesAgo(35) }, updatedAt: minutesAgo(2) },
 		],
 		labs: [
@@ -553,7 +552,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			lab("AST", "142", "U/L", 120, "high", ["88", 900]),
 			lab("LDH", "610", "U/L", 120, "high", ["455", 900]),
 			lab("Creatinine", "1.1", "mg/dL", 120, "high", ["0.9", 900]),
-			lab("Magnesium", "6.1", "mg/dL", 60, undefined, ["5.2", 300]),
+			lab("Magnesium", "2.0", "mg/dL", 60, undefined, ["1.9", 300]),
 			lab("Hemoglobin", "10.2", "g/dL", 120, "low", ["11.0", 900]),
 		],
 		careTeam: [
@@ -957,6 +956,164 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			...interceptTeam,
 		],
 	},
+	// Bridgeport's inpatient side (Nov 6, 2026, user's call): its one night RN, Brittany Cole (Scenario 4's), and the
+	// family physician of record, Paul Sorensen, off shift while the APP is on call. Then a patient in its ED.
+	{
+		// Diverticulitis, improving on day 2 of IV antibiotics.
+		id: "p25",
+		weight: "92 kg",
+		brief: {
+			text: "Acute sigmoid diverticulitis without an abscess on CT, day 2 of IV ceftriaxone and metronidazole. Pain is down from 7/10 to 3/10, no fever since yesterday afternoon, and WBC fell from 15.6 to 11.2. Tolerating clear liquids. NEWS2 is 0 (Low), down from 2.",
+			sourceCount: 8,
+			updatedAt: minutesAgo(120),
+		},
+		codeStatus: "Full code",
+		allergies: [],
+		diagnosis: "Acute sigmoid diverticulitis, uncomplicated",
+		problems: ["Hypertension", "Hyperlipidemia"],
+		admittedAt: hoursAgo(44),
+		admittedFrom: "Emergency department",
+		ventilator: charted("Room air", 120),
+		infusions: [{ drug: "Lactated Ringer's", rate: "75 mL/h", change: { direction: "down", from: "125", at: minutesAgo(720) }, updatedAt: minutesAgo(5) }],
+		labs: [
+			lab("WBC", "11.2", "K/µL", 280, "high", ["15.6", 1700]),
+			lab("Creatinine", "1.0", "mg/dL", 280, undefined, ["1.2", 1700]),
+			lab("Potassium", "3.9", "mmol/L", 280, undefined, ["3.6", 1700]),
+			lab("Sodium", "138", "mmol/L", 280, undefined),
+		],
+		careTeam: [
+			...hospitalStaff("Bridgeport Valley", ["Brittany Cole", "BC", 6, "online"], ["Paul Sorensen", "PS", 9, "offline"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// Influenza A with viral pneumonia, day 1: on 2 L, the fever gone overnight. DNR, as her POLST says.
+		id: "p26",
+		weight: "58 kg",
+		brief: {
+			text: "Influenza A with viral pneumonia, day 1 of oseltamivir. NEWS2 is 5 (Medium), down from 6 on arrival: RR 21 and SpO₂ 94% on 2 L, HR 88. The fever broke overnight with acetaminophen. Procalcitonin 0.18, so ceftriaxone stops if her sputum culture stays negative. Drinking with encouragement, eating little.",
+			sourceCount: 9,
+			updatedAt: minutesAgo(60),
+		},
+		codeStatus: "DNR",
+		codeStatusOrder: { orderedAt: hoursAgo(18), discussedWith: "Patient and her daughter; POLST on file" },
+		isolationOrder: { reason: "Influenza A, PCR positive", orderedAt: hoursAgo(19) },
+		allergies: ["Sulfa drugs"],
+		isolation: "Droplet isolation",
+		diagnosis: "Influenza A with viral pneumonia",
+		problems: ["Hypothyroidism", "Osteoarthritis"],
+		admittedAt: hoursAgo(18),
+		admittedFrom: "Emergency department",
+		ventilator: charted("Oxygen", 60, [{ label: "Nasal cannula", value: "2", unit: "L/min" }]),
+		labs: [
+			lab("WBC", "7.8", "K/µL", 300, undefined, ["9.4", 1100]),
+			lab("Procalcitonin", "0.18", "ng/mL", 300, undefined),
+			lab("Sodium", "133", "mmol/L", 300, "low", ["131", 1100]),
+			lab("Creatinine", "1.1", "mg/dL", 300, "high", ["1.3", 1100]),
+			lab("Potassium", "4.0", "mmol/L", 300, undefined),
+		],
+		careTeam: [
+			...hospitalStaff("Bridgeport Valley", ["Brittany Cole", "BC", 6, "online"], ["Paul Sorensen", "PS", 9, "offline"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// A swing bed for rehab after a knee replacement at Sidney Regional; going home with his wife.
+		id: "p27",
+		weight: "86 kg",
+		brief: {
+			text: "In a swing bed for rehab, day 3, after a left total knee replacement at Sidney Regional 6 days ago. Walking 120 feet with a walker, the knee bending to 85°. Pain 2–4/10 on scheduled acetaminophen, with oxycodone before therapy. Incision dry. NEWS2 is 0 (Low). Home in 2 to 3 days if he manages the three steps at his door.",
+			sourceCount: 6,
+			updatedAt: minutesAgo(180),
+		},
+		codeStatus: "Full code",
+		fallRisk: {
+			scale: "Morse Fall Scale",
+			score: 45,
+			risk: "High risk",
+			assessedAt: hoursAgo(9),
+			previous: { score: 55, at: hoursAgo(70) },
+			precautions: ["Bed alarm on", "Walker at bedside", "Call before getting up"],
+		},
+		allergies: ["Morphine"],
+		diagnosis: "Left total knee arthroplasty, rehabilitation",
+		problems: ["Osteoarthritis, both knees", "Hypertension", "Type 2 diabetes, diet-controlled"],
+		admittedAt: hoursAgo(70),
+		admittedFrom: "Transfer from Sidney Regional",
+		ventilator: charted("Room air", 180),
+		labs: [
+			lab("Hemoglobin", "11.2", "g/dL", 1500, "low", ["10.6", 4300]),
+			lab("Creatinine", "0.9", "mg/dL", 1500, undefined),
+			lab("Potassium", "4.3", "mmol/L", 1500, undefined),
+			lab("Sodium", "139", "mmol/L", 1500, undefined),
+		],
+		careTeam: [
+			...hospitalStaff("Bridgeport Valley", ["Brittany Cole", "BC", 6, "online"], ["Paul Sorensen", "PS", 9, "offline"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// Observation for an upper GI bleed from ibuprofen: hemoglobin holding, endoscopy next.
+		id: "p28",
+		weight: "70 kg",
+		brief: {
+			text: "Observation for an upper GI bleed: two days of black stools after a week of ibuprofen for back pain. Hemoglobin 10.6 and holding (10.9 on arrival, 10.4 at 6 h), no more black stools since she arrived, BUN 34. Pantoprazole IV every 12 h, nothing by mouth for an upper endoscopy by the visiting general surgeon. NEWS2 is 1 (Low): HR 94, BP 114/66.",
+			sourceCount: 7,
+			updatedAt: minutesAgo(90),
+		},
+		codeStatus: "Full code",
+		fallRisk: {
+			scale: "Morse Fall Scale",
+			score: 45,
+			risk: "High risk",
+			assessedAt: hoursAgo(4),
+			precautions: ["Bed alarm on", "Call before getting up", "Sit before standing"],
+		},
+		allergies: ["Latex"],
+		diagnosis: "Upper GI bleed, suspected NSAID-related ulcer",
+		problems: ["Chronic low back pain", "Hypertension"],
+		admittedAt: hoursAgo(16),
+		admittedFrom: "Emergency department",
+		ventilator: charted("Room air", 90),
+		infusions: [{ drug: "Normal saline", rate: "75 mL/h", change: { direction: "down", from: "150", at: minutesAgo(480) }, updatedAt: minutesAgo(5) }],
+		labs: [
+			lab("Hemoglobin", "10.6", "g/dL", 120, "low", ["10.4", 600]),
+			lab("BUN", "34", "mg/dL", 120, "high", ["38", 960]),
+			lab("Creatinine", "0.8", "mg/dL", 120, undefined),
+			lab("INR", "1.0", "", 960, undefined),
+		],
+		careTeam: [
+			...hospitalStaff("Bridgeport Valley", ["Brittany Cole", "BC", 6, "online"], ["Paul Sorensen", "PS", 9, "offline"]),
+			...interceptTeam,
+		],
+	},
+	{
+		// In Bridgeport's ED with an asthma attack, better after three nebulizers; likely home tonight.
+		id: "p29",
+		weight: "66 kg",
+		brief: {
+			text: "Asthma exacerbation after a cold, improving in the ED. After three ipratropium-albuterol nebulizers and prednisone 50 mg, peak flow is 62% of her best, up from 38%, with SpO₂ 96% on room air and RR 20. HR 104 from the albuterol. NEWS2 is 1 (Low), down from 5. Observing 1 more hour; home on a prednisone burst if she holds.",
+			sourceCount: 5,
+			updatedAt: minutesAgo(15),
+		},
+		codeStatus: "Full code",
+		allergies: [],
+		diagnosis: "Asthma exacerbation, moderate",
+		problems: ["Asthma, moderate persistent", "Allergic rhinitis"],
+		admittedAt: hoursAgo(3),
+		admittedFrom: "Walked into Bridgeport's ED",
+		ventilator: charted("Room air", 20),
+		labs: [
+			lab("Potassium", "3.6", "mmol/L", 150, undefined),
+			lab("Glucose", "142", "mg/dL", 150, "high"),
+			lab("WBC", "9.8", "K/µL", 150, undefined),
+		],
+		// The ED's nurse and physician tonight.
+		careTeam: [
+			...hospitalStaff("Bridgeport Valley", ["Kelsey Morgan", "KM", 4, "online"], ["Ryan Mercer", "RM", 10, "online"]),
+			...interceptTeam,
+		],
+	},
 ];
 
 /**
@@ -1190,7 +1347,7 @@ const sampleScenario2ResolvedRecord = (): Partial<PatientRecord> => ({
 /* Scenario 3: Rosa Medina                                                    */
 /* -------------------------------------------------------------------------- */
 
-// Scenario 3 (Demo Use Cases, "Sepsis in a patient with diabetes and kidney disease"): Rosa Medina, 51, type 2 diabetes
+// Scenario 3 (Demo Use Cases, "Sepsis in a patient with diabetes and kidney disease"): Rosa Medina, 58, type 2 diabetes
 // on insulin and CKD stage 4, boarding in Sidney's ED because its inpatient unit is full. She walked in with her daughter
 // 50 min before the sepsis screen fires (15:30), the scenario's first beat, so her record is built when it plays (its
 // times read "just now") and isn't in `samplePatientBaseRecords`. Every value is illustrative until clinical review.
@@ -1399,7 +1556,7 @@ function sampleScenario3RecordAt(stage: Scenario3RecordStage): Partial<PatientRe
 /* Scenario 4: Tyler Kessler                                                  */
 /* -------------------------------------------------------------------------- */
 
-// Scenario 4 (Demo Use Cases, "DKA caused by insulin rationing, managed by one night nurse"): Tyler Kessler, 24, type 1
+// Scenario 4 (Demo Use Cases, "DKA caused by insulin rationing, managed by one night nurse"): Tyler Kessler, 60, type 1
 // diabetes since 11, uninsured since Medicaid ended at redetermination in August. He came into Bridgeport's ED at 22:20
 // and was admitted to its inpatient side; his labs cross the critical thresholds at 23:00, the scenario's first beat, so
 // his record is built when it plays (its times read "just now") and isn't in `samplePatientBaseRecords`. Every value is

@@ -512,23 +512,23 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 		],
 	}),
 
-	// Preeclampsia after cesarean, on magnesium (level 6.1, in range): no replacement, and glucose isn't resulted.
+	// Hypertensive emergency with PRES, on nicardipine. Magnesium 2.0 is in range: no replacement, and glucose isn't resulted.
 	p11: patientOrders("p11", {
 		hospital: "sidney",
 		checks: [
 			noVentilator("Room air"),
-			nothingToRecommend("Magnesium 6.1 is in the treatment range on the infusion, so no replacement."),
+			nothingToRecommend("Magnesium 2.0 is in range, so no replacement."),
 		],
 		active: [
-			["medication", "Magnesium sulfate infusion", "2 g/h IV · 24 h after delivery", "Helen Foster", 1800],
 			["medication", "Nicardipine infusion", "2.5–15 mg/h IV · systolic under 160", "Helen Foster", 1500],
+			["medication", "Levetiracetam", "500 mg IV every 12 h", "Helen Foster", 1800],
 			["medication", "Oseltamivir", "75 mg by mouth every 12 h", "Helen Foster", 1800],
 			["medication", "Acetaminophen", "1 g by mouth every 6 h", "Helen Foster", 1800],
-			["lab", "Magnesium level", "Every 6 h", "Helen Foster", 1800],
+			["lab", "Magnesium level", "Daily at 04:00", "Helen Foster", 1800],
 			["lab", "Platelets, AST, LDH", "Every 12 h", "Helen Foster", 1800, "Scheduled"],
-			["nursing", "Deep tendon reflexes and urine output", "Every 1 h on magnesium", "Helen Foster", 1800],
+			["nursing", "Neuro checks and urine output", "Every 1 h", "Helen Foster", 1800],
 			["nursing", "Droplet isolation", "Influenza B", "Helen Foster", 1850],
-			["nursing", "Fundal checks", "Every 4 h", "Helen Foster", 1800],
+			["nursing", "Seizure precautions", "Padded rails, suction at the bedside", "Helen Foster", 1800],
 			["diet", "Clear liquids", "Advance as tolerated", "Helen Foster", 1500],
 		],
 	}),
@@ -729,6 +729,94 @@ const sampleOrdersByPatient: Record<string, PatientOrders> = {
 			["nursing", "Wean oxygen", "To keep SpO₂ 92% or more", "Marcus Reed", 120],
 			["nursing", "Physical therapy", "Twice a day · weight bearing as tolerated", "Marcus Reed", 1400],
 			["diet", "Regular diet", "", "Marcus Reed", 1400],
+		],
+	}),
+
+	// Bridgeport's floor (Nov 6, 2026): nothing in the v1 classes applies to any of them.
+	// Diverticulitis, improving on day 2.
+	p25: patientOrders("p25", {
+		hospital: "bridgeport",
+		checks: [noVentilator("Room air"), nothingToRecommend("Potassium 3.9 and creatinine 1.0 are in range.")],
+		active: [
+			["medication", "Lactated Ringer's", "75 mL/h IV", "Paul Sorensen", 720],
+			["medication", "Ceftriaxone", "2 g IV daily", "Paul Sorensen", 2600],
+			["medication", "Metronidazole", "500 mg IV every 8 h", "Paul Sorensen", 2600],
+			["medication", "Enoxaparin", "40 mg SC daily", "Paul Sorensen", 2600],
+			["lab", "Complete blood count", "Daily at 05:00", "Paul Sorensen", 2600, "Scheduled"],
+			["nursing", "Vital signs", "Every 4 h", "Paul Sorensen", 2600],
+			["diet", "Clear liquid diet", "Advance to low-residue as tolerated", "Paul Sorensen", 1100],
+		],
+	}),
+
+	// Influenza A pneumonia on 2 L; sodium 133 is mild and rising.
+	p26: patientOrders("p26", {
+		hospital: "bridgeport",
+		checks: [
+			noVentilator("Nasal cannula at 2 L/min"),
+			nothingToRecommend("Sodium 133 is mild and rising; potassium 4.0 needs no replacement."),
+		],
+		active: [
+			["medication", "Oseltamivir", "30 mg by mouth every 12 h · renal dose", "Paul Sorensen", 1060],
+			["medication", "Ceftriaxone", "1 g IV daily · until the sputum culture is back", "Paul Sorensen", 1060],
+			["medication", "Heparin", "5,000 units SC every 8 h", "Paul Sorensen", 1060],
+			["lab", "Sputum culture", "Once", "Paul Sorensen", 1060, "Collected"],
+			["lab", "Basic metabolic panel and CBC", "Daily at 05:00", "Paul Sorensen", 1060, "Scheduled"],
+			["respiratory", "Oxygen by nasal cannula", "Titrate to SpO₂ 92% or more, up to 4 L/min", "Paul Sorensen", 1060],
+			["nursing", "Droplet isolation", "Influenza A", "Paul Sorensen", 1140],
+			["nursing", "Code status", "DNR · do not resuscitate", "Paul Sorensen", 1080],
+			["diet", "Regular diet", "Encourage fluids", "Paul Sorensen", 1060],
+		],
+	}),
+
+	// Rehab in a swing bed after a knee replacement.
+	p27: patientOrders("p27", {
+		hospital: "bridgeport",
+		checks: [noVentilator("Room air"), nothingToRecommend("Potassium 4.3 and creatinine 0.9 are in range.")],
+		active: [
+			["medication", "Acetaminophen", "1,000 mg by mouth every 8 h", "Paul Sorensen", 4150],
+			["medication", "Oxycodone", "5 mg by mouth every 4 h as needed · before therapy", "Paul Sorensen", 4150],
+			["medication", "Aspirin", "81 mg by mouth twice a day · 4 weeks after surgery", "Paul Sorensen", 4150],
+			["lab", "Complete blood count", "Twice a week", "Paul Sorensen", 4150, "Scheduled"],
+			["nursing", "Physical therapy", "Twice a day · weight bearing as tolerated", "Paul Sorensen", 4150],
+			["nursing", "Occupational therapy", "Daily", "Paul Sorensen", 4150],
+			["nursing", "Fall precautions", "Bed alarm on · walker", "Paul Sorensen", 4150],
+			["diet", "Carbohydrate-controlled diet", "", "Paul Sorensen", 4150],
+		],
+	}),
+
+	// Upper GI bleed under observation; hemoglobin holding, the endoscopy next.
+	p28: patientOrders("p28", {
+		hospital: "bridgeport",
+		checks: [noVentilator("Room air"), nothingToRecommend("Hemoglobin 10.6 is holding; creatinine 0.8 is in range.")],
+		active: [
+			["nursing", "Place in observation", "Bed 4", "Paul Sorensen", 955],
+			["medication", "Normal saline", "75 mL/h IV", "Paul Sorensen", 480],
+			["medication", "Pantoprazole", "40 mg IV every 12 h", "Paul Sorensen", 940],
+			["lab", "Hemoglobin and hematocrit", "Every 6 h", "Paul Sorensen", 940],
+			["lab", "Type and screen", "Once", "Ryan Mercer", 1000, "Resulted"],
+			["nursing", "Upper endoscopy", "Visiting general surgeon · consent signed", "Paul Sorensen", 900, "Scheduled"],
+			["nursing", "Hold NSAIDs and aspirin", "", "Paul Sorensen", 940],
+			["nursing", "Orthostatic vital signs", "Every 8 h", "Paul Sorensen", 940],
+			["diet", "Nothing by mouth", "For the endoscopy", "Paul Sorensen", 940],
+		],
+	}),
+
+	// Asthma in the ED, better after three nebulizers; potassium 3.6 after albuterol.
+	p29: patientOrders("p29", {
+		hospital: "bridgeport",
+		checks: [
+			noVentilator("Room air, SpO₂ 96%"),
+			nothingToRecommend("Potassium 3.6 is in range after albuterol and needs no replacement."),
+		],
+		active: [
+			["medication", "Ipratropium-albuterol", "3 mL nebulized every 20 min × 3", "Ryan Mercer", 172, "Completed"],
+			["medication", "Prednisone", "50 mg by mouth once", "Ryan Mercer", 165, "Completed"],
+			["medication", "Albuterol", "2.5 mg nebulized every 4 h", "Ryan Mercer", 100],
+			["lab", "Basic metabolic panel and CBC", "Once", "Ryan Mercer", 175, "Resulted"],
+			["imaging", "Chest X-ray, 2 views", "Once", "Ryan Mercer", 175, "Resulted"],
+			["nursing", "Peak flow", "Before and after each nebulizer", "Ryan Mercer", 172],
+			["nursing", "Continuous pulse oximetry", "Alarm for SpO₂ under 92%", "Ryan Mercer", 175],
+			["diet", "Regular diet", "", "Ryan Mercer", 100],
 		],
 	}),
 };

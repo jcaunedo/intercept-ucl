@@ -355,6 +355,9 @@ function AskInterceptPanel({
 		(message): message is Extract<ChatMessage, { role: "assistant" }> =>
 			message.role === "assistant" && (message.status === "thinking" || message.status === "streaming"),
 	);
+	// An answer to a question being written: what Stop is for. The greeting streams too, but it's the panel's welcome, not
+	// an answer, so the composer shows no Stop for it (Nov 6, 2026, user's report: Stop flashed as the chat opened).
+	const answering = active?.id === "greeting" ? undefined : active;
 	const asked = messages.some((message) => message.role === "user");
 	const greetingMessage = messages.find((message) => message.id === "greeting");
 	const greeted = greetingMessage?.role === "assistant" && greetingMessage.status === "done";
@@ -455,7 +458,11 @@ function AskInterceptPanel({
 			clearConversation();
 			return;
 		}
-		if (active && !fresh) return;
+		if (answering && !fresh) return;
+		// A question sent while the greeting is still writing itself: the greeting finishes at once and the question goes
+		// on (it was dropped, and the field cleared, until Nov 6, 2026).
+		if (active?.id === "greeting")
+			updateAssistant("greeting", (message) => ({ ...message, shown: message.text.length, status: "done" }));
 		const answer = respond ? respond(question, context) : noAnswer;
 		setFollowingAlerts(Boolean(answer.followAlerts));
 		const id = String(nextId.current++);
@@ -535,8 +542,8 @@ function AskInterceptPanel({
 
 	// Stopping keeps what has streamed so far.
 	const stop = () => {
-		if (!active) return;
-		updateAssistant(active.id, (message) => ({ ...message, text: message.text.slice(0, message.shown), status: "stopped" }));
+		if (!answering) return;
+		updateAssistant(answering.id, (message) => ({ ...message, text: message.text.slice(0, message.shown), status: "stopped" }));
 	};
 
 	// Follow the newest text while the user is at the bottom; scrolling up stops following until they come back down.
@@ -693,9 +700,11 @@ function AskInterceptPanel({
 					label='Ask Intercept Live'
 					onSubmit={ask}
 					onAttach={() => {}}
-					onDictate={() => {}}
-					onVoice={() => {}}
-					generating={Boolean(active)}
+					dictation
+					// Hands-free while the chat is open (Nov 6, 2026, user's calls): "Hey Intercept", or just "Hey", starts dictating.
+					wakePhrase={open ? wakePhrases : undefined}
+					wakePlaceholder='Ask, search, or say "Hey Intercept"'
+					generating={Boolean(answering)}
 					onStop={stop}
 					commands={chatCommands}
 				/>
@@ -703,6 +712,9 @@ function AskInterceptPanel({
 		</SidePanel>
 	);
 }
+
+// The phrases that start dictation hands-free; "Hey" alone is enough (Nov 6, 2026, user's call).
+const wakePhrases = ["Hey Intercept", "Hey"] as const;
 
 export {
 	AskInterceptPanel,

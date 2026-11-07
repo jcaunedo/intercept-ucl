@@ -33,6 +33,7 @@ export {
   liveDotVariants,
   liveHaloVariants,
   liveGlowVariants,
+  listeningFillVariants,
   urgencyRingVariants,
   arriveVariants,
   unreadFlashVariants,

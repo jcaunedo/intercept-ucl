@@ -19,6 +19,9 @@ const sampleAllergiesByPatient: Partial<Record<string, PatientAllergy[]>> = {
 	p17: [{ substance: "Sulfa drugs", reaction: "Hives", severity: "moderate", verified: true, recordedAt: hoursAgo(60) }],
 	p19: [{ substance: "Penicillin (rash)", reaction: "Rash", severity: "mild", verified: false, recordedAt: hoursAgo(26) }],
 	p22: [{ substance: "Codeine", reaction: "Confusion", severity: "moderate", kind: "intolerance", verified: true, recordedAt: hoursAgo(50) }],
+	p26: [{ substance: "Sulfa drugs", reaction: "Rash", severity: "mild", verified: false, recordedAt: hoursAgo(18) }],
+	p27: [{ substance: "Morphine", reaction: "Itching", severity: "mild", kind: "intolerance", verified: true, recordedAt: hoursAgo(70) }],
+	p28: [{ substance: "Latex", reaction: "Hives from gloves", severity: "moderate", verified: true, recordedAt: hoursAgo(16) }],
 };
 
 export { sampleAllergiesByPatient };

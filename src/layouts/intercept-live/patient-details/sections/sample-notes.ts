@@ -29,7 +29,7 @@ const sarahNotes: PatientNote[] = [
 		sections: [
 			{
 				heading: "Assessment",
-				text: "39-year-old woman, ICU day 3, septic shock from right lower lobe pneumonia with moderate ARDS and AKI stage 2. Worse over the last 6 hours: MAP 58 on norepinephrine 0.22 (from 0.08 this morning), lactate 4.1 from 2.2, SpO₂ 89% on FiO₂ 60% and PEEP 10. Flagged as a sepsis candidate by Sepsis Sniffer.",
+				text: "59-year-old woman, ICU day 3, septic shock from right lower lobe pneumonia with moderate ARDS and AKI stage 2. Worse over the last 6 hours: MAP 58 on norepinephrine 0.22 (from 0.08 this morning), lactate 4.1 from 2.2, SpO₂ 89% on FiO₂ 60% and PEEP 10. Flagged as a sepsis candidate by Sepsis Sniffer.",
 			},
 			{
 				heading: "Plan",
@@ -152,7 +152,7 @@ const sarahNotes: PatientNote[] = [
 		sections: [
 			{
 				heading: "History",
-				text: "39-year-old woman with type 2 diabetes and hypertension, 4 days of cough, fever and shortness of breath. In the ED: SpO₂ 82% on room air, BP 84/50, lactate 3.4. Chest X-ray with right lower lobe consolidation. Intubated in the ED for hypoxic respiratory failure.",
+				text: "59-year-old woman with type 2 diabetes and hypertension, 4 days of cough, fever and shortness of breath. In the ED: SpO₂ 82% on room air, BP 84/50, lactate 3.4. Chest X-ray with right lower lobe consolidation. Intubated in the ED for hypoxic respiratory failure.",
 			},
 			{
 				heading: "Plan",
@@ -337,7 +337,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		plan: "Discuss with Dr. Reyes whether to add milrinone, within the DNR goals agreed yesterday. Diuretics on hold while norepinephrine is going up.",
 	},
 	p5: {
-		history: "29-year-old woman with severe persistent asthma, two prior ICU stays, 3 days of wheeze after a cold. Peak flow 30% of her best, PaCO₂ 61 in the ED. BiPAP, continuous albuterol, steroids and magnesium.",
+		history: "62-year-old woman with severe persistent asthma, two prior ICU stays, 3 days of wheeze after a cold. Peak flow 30% of her best, PaCO₂ 61 in the ED. BiPAP, continuous albuterol, steroids and magnesium.",
 		admitPlan: "Admit to MICU on BiPAP. Continuous albuterol, methylprednisolone 60 mg every 6 hours, low threshold to intubate.",
 		nursing: ["SpO₂ probe off her finger and not reading since 14 min ago; replaced on the earlobe. Speaking in short sentences. On continuous albuterol. Anxious, reassured.", 12],
 		rt: "BiPAP 14/6, FiO₂ 45%. Tolerating the mask. Continuous albuterol 10 mg/h. Wheeze less than at midnight. Peak flow 41% of her best.",
@@ -355,7 +355,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		plan: "Bedside sitter or camera watch for the bed exits. Transfuse if hemoglobin is under 8 this afternoon. Ask Dr. Grant about a hip X-ray after the bed exit.",
 	},
 	p7: {
-		history: "45-year-old woman with hypothyroidism, 2 days of left lower abdominal pain and fever. CT showed perforated sigmoid diverticulitis. Hartmann's procedure in the operating room.",
+		history: "65-year-old woman with hypothyroidism, 2 days of left lower abdominal pain and fever. CT showed perforated sigmoid diverticulitis. Hartmann's procedure in the operating room.",
 		admitPlan: "Admit to SICU after surgery. Piperacillin-tazobactam, fluids, pain control without codeine (allergy).",
 		nursing: ["Off oxygen since 07:00, SpO₂ 96% on room air. Colostomy pink, small output. Walked to the chair twice. Contact isolation for MRSA in the wound.", 60],
 		yesterday: "Post-op day 2, improving. WBC 14.0. Wound swab grew MRSA: contact isolation, add vancomycin. Advance diet as tolerated.",
@@ -364,7 +364,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		plan: "Ready for the floor tomorrow if WBC keeps falling. Ask Dr. Grant's surgical team about vancomycin's end date.",
 	},
 	p8: {
-		history: "54-year-old man with alcohol use disorder, vomited blood twice at home. Hemoglobin 7.2 and BP 92/58 in the ED. 2 units of blood, pantoprazole, endoscopy.",
+		history: "60-year-old man with alcohol use disorder, vomited blood twice at home. Hemoglobin 7.2 and BP 92/58 in the ED. 2 units of blood, pantoprazole, endoscopy.",
 		admitPlan: "Admit to PCU after endoscopy. Pantoprazole drip, alcohol withdrawal watch, thiamine, hemoglobin every 6 hours.",
 		nursing: ["No bleeding charted overnight. Hemoglobin 8.4 holding. Withdrawal score 6, no medication needed. Tolerating clear liquids.", 70],
 		yesterday: "Duodenal ulcer, clipped. One more unit given, hemoglobin 8.4. Start H. pylori treatment when the biopsy is back.",
@@ -390,15 +390,15 @@ const notesSpecs: Record<string, NotesSpec> = {
 		plan: "Confirm the OR time with Dr. Brooks's team. Group A Strep in the tissue: keep clindamycin. Sepsis bundle elements are done; keep MAP over 65.",
 	},
 	p11: {
-		history: "34-year-old woman at 35 weeks with severe preeclampsia and influenza B. BP 178/110, platelets 131. Emergency cesarean delivery, then the OB-ICU for blood pressure and magnesium.",
-		admitPlan: "Admit to OB-ICU. Magnesium 2 g/h for 24 hours, nicardipine for BP over 160/110, oseltamivir, droplet isolation.",
-		nursing: ["BP 162/96, nicardipine up to 7.5 per order. Reflexes 2+, no clonus. Magnesium level 6.1. Breastmilk pumping. Husband visiting.", 30],
+		history: "69-year-old woman with hypertension and type 2 diabetes, out of her blood pressure pills for a week, with 2 days of headache and blurred vision, and influenza B. One seizure at home. BP 178/110, platelets 131. MRI shows PRES. To the ICU for blood pressure control.",
+		admitPlan: "Admit to MICU. Nicardipine for BP over 160/110, no more than 25% lower in the first hours. Levetiracetam, oseltamivir, droplet isolation.",
+		nursing: ["BP 162/96, nicardipine up to 7.5 per order. Neuro checks unchanged, no seizures since admission. Headache 3/10. Husband visiting.", 30],
 		events: "BP 148/88 an hour ago, now 162/96. Platelets 98 from 131, AST 142.",
-		apPlan: "Labs every 6 hours for HELLP. Magnesium until 24 hours after delivery. Nicardipine to BP under 160/110.",
-		plan: "Ask OB about adding oral labetalol. Repeat platelets and AST at 18:00. Stop magnesium at 24 hours if she stays well.",
+		apPlan: "Labs every 6 hours: platelets, LDH and AST. Levetiracetam while the PRES settles. Nicardipine to BP under 160/110.",
+		plan: "Ask about raising oral labetalol so nicardipine can come down. Repeat platelets and AST at 18:00, with a smear.",
 	},
 	p12: {
-		history: "88-year-old woman with atrial fibrillation not on anticoagulation, sudden left-sided weakness and neglect. Right M1 occlusion; thrombectomy restored flow. DNR per her advance directive.",
+		history: "83-year-old woman with atrial fibrillation not on anticoagulation, sudden left-sided weakness and neglect. Right M1 occlusion; thrombectomy restored flow. DNR per her advance directive.",
 		admitPlan: "Admit to Neuro ICU. Neuro checks every hour, BP under 180/105, swallow screen before food, start aspirin at 24 hours.",
 		nursing: ["Neuro checks unchanged overnight. RR probe disconnected 27 min ago and replaced. Failed the swallow screen; nothing by mouth. Daughter at the bedside.", 25],
 		yesterday: "Day 1 after thrombectomy. CT head without hemorrhage. Aspirin started. Failed the swallow screen. Speech therapy tomorrow.",
@@ -417,7 +417,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		plan: "Repeat lactate pending. If it's over 3, ask the perfusionist to return flow to 4.2 L/min. Call Dr. Reyes about the night's flow change.",
 	},
 	p14: {
-		history: "50-year-old woman with hypertension and sleep apnea, 6 hours of palpitations. Atrial fibrillation at 150 in the ED. Diltiazem bolus, then infusion. No chest pain.",
+		history: "63-year-old woman with hypertension and sleep apnea, 6 hours of palpitations. Atrial fibrillation at 150 in the ED. Diltiazem bolus, then infusion. No chest pain.",
 		admitPlan: "Admit to CCU. Diltiazem infusion to HR under 110, magnesium and potassium replacement, TSH, echo, anticoagulation decision with the team. Code status to discuss.",
 		nursing: ["HR 88 on diltiazem 10. BP 118/72. Magnesium replacement running. Asked about code status; she'd like to talk with her partner first.", 20],
 		events: "Rate down to 88 on diltiazem, now 10 from 15. Magnesium 1.7. TSH pending.",
@@ -433,7 +433,7 @@ const notesSpecs: Record<string, NotesSpec> = {
 		plan: "Recheck her in an hour after the PCA change. If RR stays over 20, ask Dr. Reed about a chest exam and a CBC.",
 	},
 	p18: {
-		history: "54-year-old man with type 1 diabetes, out of insulin for 3 days. Vomiting and abdominal pain. Glucose 512, bicarbonate 9, anion gap 28, beta-hydroxybutyrate 6.4.",
+		history: "58-year-old man with type 1 diabetes, out of insulin for 3 days. Vomiting and abdominal pain. Glucose 512, bicarbonate 9, anion gap 28, beta-hydroxybutyrate 6.4.",
 		admitPlan: "Admit to med-surg with tele-ICU coverage. DKA protocol: fluids, insulin infusion at 0.1 units/kg/h, potassium replacement, hourly glucose, BMP every 4 h. Social work for insulin access.",
 		nursing: ["Gap closed at 12. Glucose 168 on insulin 3 units/h with dextrose. Ate half his breakfast without nausea. Asked about getting his insulin pump back.", 25],
 		events: "Anion gap 12 from 28, bicarbonate 20. Insulin down to 3 units/h, dextrose running.",
@@ -592,12 +592,204 @@ const hansenNotes: PatientNote[] = [
 	},
 ];
 
+// Bridgeport's patients (Nov 6, 2026, user's call): only the hospital's notes, in its record (TruBridge). No one from
+// Intercept has written on them, and Bridgeport doesn't take Intercept notes back. The inpatient side's one night RN and
+// its family physician; the ED's nurse and physician for Sofia Ramirez.
+const bridgeport = "Bridgeport Valley";
+const sorensen = { name: "Paul Sorensen", role: "MD, Family medicine", organization: bridgeport };
+const brittanyCole = { name: "Brittany Cole", role: "RN", organization: bridgeport };
+
+const petersonNotes: PatientNote[] = [
+	{
+		id: "p25-n1",
+		type: "Nursing note",
+		author: brittanyCole,
+		at: minutesAgo(120),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Resting. Pain 3/10 in the left lower abdomen, down from 7 on admission. Afebrile since yesterday afternoon. Tolerating clear liquids, no nausea. Passing gas, one soft stool. Walks to the bathroom on his own.",
+			},
+		],
+	},
+	{
+		id: "p25-n2",
+		type: "Progress note",
+		author: sorensen,
+		at: hoursAgo(18),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{ heading: "Assessment", text: "Acute uncomplicated sigmoid diverticulitis, day 2, improving. WBC 11.2 from 15.6, afebrile since yesterday afternoon." },
+			{
+				heading: "Plan",
+				text: "Continue ceftriaxone and metronidazole. Low-residue diet if he's comfortable on liquids tonight. Switch to oral amoxicillin-clavulanate and send him home tomorrow if he eats without pain. No ibuprofen. Colonoscopy in 6 to 8 weeks.",
+			},
+		],
+	},
+];
+
+const lambertNotes: PatientNote[] = [
+	{
+		id: "p26-n1",
+		type: "Nursing note",
+		author: brittanyCole,
+		at: minutesAgo(60),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Droplet isolation. Coughing, sputum white. SpO₂ 94% on 2 L, RR 21. Temp 37.6 °C; the fever broke overnight with acetaminophen. Drank 500 mL this evening with encouragement, ate a few bites. Daughter called and was updated.",
+			},
+		],
+	},
+	{
+		id: "p26-n2",
+		type: "History and physical",
+		author: sorensen,
+		at: hoursAgo(17),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				heading: "History",
+				text: "83-year-old woman with hypothyroidism, 3 days of fever, cough, body aches and poor appetite. Lives alone; her daughter found her weak. Influenza A PCR positive. SpO₂ 89% on room air in the ED, 94% on 2 L, temp 38.4 °C. Chest X-ray: patchy opacities in both lower lobes.",
+			},
+			{
+				heading: "Plan",
+				text: "Admit to med-surg. Oseltamivir 30 mg twice a day (renal dose), ceftriaxone until the sputum culture is back, oxygen to SpO₂ 92% or more, droplet isolation. DNR, confirmed with her and her daughter; POLST on file.",
+			},
+		],
+	},
+];
+
+const jacobsNotes: PatientNote[] = [
+	{
+		id: "p27-n1",
+		type: "Nursing note",
+		author: brittanyCole,
+		at: minutesAgo(180),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Up to the bathroom with his walker and one assist. Pain 3/10 after oxycodone before evening therapy. Incision dry, staples intact. Bed alarm on. Fall risk reassessed this shift: Morse 45, down from 55.",
+			},
+		],
+	},
+	{
+		id: "p27-n2",
+		type: "Swing bed progress note",
+		author: sorensen,
+		at: hoursAgo(20),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				heading: "Assessment",
+				text: "Rehab day 3 after a left total knee replacement at Sidney Regional. Walking 120 feet with a walker; knee flexion 85°. Hemoglobin 11.2, up from 10.6 after surgery.",
+			},
+			{
+				heading: "Plan",
+				text: "Physical therapy twice a day, occupational therapy daily; practice the three steps at home. Aspirin 81 mg twice a day for 4 weeks. Home with his wife in 2 to 3 days with home health PT. Staples out at 2 weeks with orthopedics at Sidney.",
+			},
+		],
+	},
+];
+
+const hughesNotes: PatientNote[] = [
+	{
+		id: "p28-n1",
+		type: "Nursing note",
+		author: brittanyCole,
+		at: minutesAgo(90),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "No black stools since she arrived. Lightheaded standing earlier, better sitting first; orthostatics negative on recheck. Bed alarm on. Nothing by mouth for the endoscopy, saline at 75 mL/h. Husband at the bedside.",
+			},
+		],
+	},
+	{
+		id: "p28-n2",
+		type: "History and physical",
+		author: sorensen,
+		at: hoursAgo(15),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				heading: "History",
+				text: "58-year-old woman with hypertension and chronic low back pain, taking ibuprofen 800 mg three times a day for a week. Two days of black stools and lightheadedness, no vomiting of blood. In the ED: HR 104, BP 104/62, hemoglobin 10.9 (13.2 a year ago), BUN 38, INR 1.0.",
+			},
+			{
+				heading: "Plan",
+				text: "Observation. Two large IVs, saline, pantoprazole 40 mg IV every 12 h, hemoglobin every 6 h, transfuse under 7. Stop NSAIDs. Upper endoscopy with the visiting general surgeon. Transfer to Sidney Regional if she bleeds again or hemoglobin falls under 8.",
+			},
+		],
+	},
+];
+
+const ramirezNotes: PatientNote[] = [
+	{
+		id: "p29-n1",
+		type: "Nursing note",
+		author: { name: "Kelsey Morgan", role: "RN", organization: bridgeport },
+		at: minutesAgo(10),
+		origin: "hospital",
+		status: "signed",
+		sections: [{ text: "Peak flow 62% of her best, up from 55% an hour ago. Mild end-expiratory wheeze. SpO₂ 96% on room air, RR 20, HR 104. Talking in full sentences. Husband on his way to drive her home if she's discharged." }],
+	},
+	{
+		id: "p29-n2",
+		type: "ED provider note",
+		author: { name: "Ryan Mercer", role: "MD, Emergency medicine", organization: bridgeport },
+		at: minutesAgo(150),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				heading: "History",
+				text: "59-year-old woman with moderate persistent asthma on budesonide-formoterol. A cold for 4 days, then worse wheeze and shortness of breath since last night despite her albuterol inhaler every 2 hours. One ED visit last year, never intubated.",
+			},
+			{
+				heading: "Assessment",
+				text: "Moderate asthma exacerbation. RR 24, SpO₂ 93% on room air, HR 108, speaking in phrases, peak flow 38% of her best. Chest X-ray: hyperinflation only.",
+			},
+			{
+				heading: "Plan",
+				text: "Ipratropium-albuterol nebulizers ×3, prednisone 50 mg. Reassess after an hour of observation; home on a 5-day prednisone burst if peak flow stays over 60% and SpO₂ 94% or more.",
+			},
+		],
+	},
+	{
+		id: "p29-n3",
+		type: "ED triage note",
+		author: { name: "Kelsey Morgan", role: "RN", organization: bridgeport },
+		at: minutesAgo(178),
+		origin: "hospital",
+		status: "signed",
+		sections: [
+			{
+				text: "Walk-in. Wheezing, short of breath, speaking in phrases. RR 24, SpO₂ 93% on room air, HR 108, BP 128/74, temp 36.9 °C. Peak flow 38% of her best. ESI 3.",
+			},
+		],
+	},
+];
+
 const sampleNotesByPatient: Record<string, PatientNotes> = {
 	p1: { emr: sampleEhrFor("p1"), notes: sarahNotes },
 	p15: { emr: sampleEhrFor("p15"), notes: hayesNotes },
 	p16: { emr: sampleEhrFor("p16"), notes: ericksonNotes },
 	p19: { emr: sampleEhrFor("p19"), notes: carlsonNotes },
 	p20: { emr: sampleEhrFor("p20"), notes: hansenNotes },
+	p25: { emr: sampleEhrFor("p25"), notes: petersonNotes },
+	p26: { emr: sampleEhrFor("p26"), notes: lambertNotes },
+	p27: { emr: sampleEhrFor("p27"), notes: jacobsNotes },
+	p28: { emr: sampleEhrFor("p28"), notes: hughesNotes },
+	p29: { emr: sampleEhrFor("p29"), notes: ramirezNotes },
 	...Object.fromEntries(
 		samplePatientBaseRecords
 			.filter((record) => notesSpecs[record.id])
@@ -678,7 +870,7 @@ const sampleScenario3Notes = (): PatientNote[] => {
 			sections: [
 				{
 					heading: "History",
-					text: "51-year-old woman with type 2 diabetes on insulin (A1c 10.8%) and CKD stage 4 (baseline creatinine 2.4). Three days of dysuria and left flank pain, fevers and rigors since last night, vomiting this morning. Walked in with her daughter. Prefers Spanish; history taken with a medical interpreter. Sulfonamide allergy (rash).",
+					text: "58-year-old woman with type 2 diabetes on insulin (A1c 10.8%) and CKD stage 4 (baseline creatinine 2.4). Three days of dysuria and left flank pain, fevers and rigors since last night, vomiting this morning. Walked in with her daughter. Prefers Spanish; history taken with a medical interpreter. Sulfonamide allergy (rash).",
 				},
 				{
 					heading: "Assessment",
@@ -765,7 +957,7 @@ const sampleScenario4Notes = (stage: "admission" | "noted" = "admission"): Patie
 			sections: [
 				{
 					heading: "History",
-					text: "24-year-old man with type 1 diabetes since age 11. Out of his glargine for 2 days; says he's been making his insulin last since he lost his insurance. Vomiting since yesterday, belly pain, very thirsty. Walked in at 22:20. Triage: HR 116, BP 104/62, RR 24, SpO₂ 99% on room air, T 37.0 °C; meter glucose reads HI.",
+					text: "60-year-old man with type 1 diabetes since age 11. Out of his glargine for 2 days; says he's been making his insulin last since he lost his insurance. Vomiting since yesterday, belly pain, very thirsty. Walked in at 22:20. Triage: HR 116, BP 104/62, RR 24, SpO₂ 99% on room air, T 37.0 °C; meter glucose reads HI.",
 				},
 				{
 					heading: "Assessment",
@@ -790,7 +982,7 @@ const sampleScenario4Notes = (stage: "admission" | "noted" = "admission"): Patie
 			sections: [
 				{
 					heading: "History of present illness",
-					text: "24-year-old man with type 1 diabetes since age 11, on glargine 22 units at bedtime and lispro 4–8 units with meals. Works at a grain elevator. He lost Medicaid at redetermination in August, and since then he has been rationing his insulin because of the cost: skipping meal doses and cutting his glargine to make each pen last. He ran out of glargine 2 days ago, started vomiting yesterday and came to our ED last night. Last DKA admission 6 years ago. A1c 9.6% in April.",
+					text: "60-year-old man with type 1 diabetes since age 11, on glargine 22 units at bedtime and lispro 4–8 units with meals. Works at a grain elevator. He lost Medicaid at redetermination in August, and since then he has been rationing his insulin because of the cost: skipping meal doses and cutting his glargine to make each pen last. He ran out of glargine 2 days ago, started vomiting yesterday and came to our ED last night. Last DKA admission 6 years ago. A1c 9.6% in April.",
 				},
 				{
 					heading: "Hospital course",

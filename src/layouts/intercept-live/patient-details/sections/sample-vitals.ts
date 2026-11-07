@@ -399,7 +399,7 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		temps: [38.8, 38.6, 38.9, 38.5, 38.7, 38.4],
 		lastTemp: 65,
 	}),
-	// Clark: severe preeclampsia, pressure climbing on nicardipine.
+	// Clark: hypertensive emergency with PRES, pressure climbing on nicardipine.
 	p11: buildVitals({
 		seed: 11,
 		hr: [88, 92],
@@ -548,6 +548,81 @@ const sampleVitalsByPatient: Record<string, PatientVitals> = {
 		nurse: "Ashley Bell",
 		temps: [37.4, 37.6, 37.5, 37.3, 37.2, 37.1],
 		lastTemp: 50,
+	}),
+	// Peterson: diverticulitis, day 2. Yesterday's fever (38.4 °C) and HR 96 made NEWS2 2; now 0 on room air.
+	p25: buildVitals({
+		seed: 25,
+		hr: [96, 84],
+		systolic: [128, 134],
+		diastolic: [74, 76],
+		spo2: [96, 97],
+		rr: [18, 16],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Brittany Cole",
+		temps: [38.4, 38.1, 37.6, 37.4, 37.2, 37.2],
+		lastTemp: 120,
+	}),
+	// Lambert: influenza pneumonia, admitted 18 h ago on 2 L with RR 22, SpO₂ 94% and 38.4 °C, NEWS2 6; now 5, the
+	// fever gone and RR 21.
+	p26: buildVitals({
+		seed: 26,
+		hours: 18,
+		hr: [90, 88],
+		systolic: [114, 120],
+		diastolic: [62, 66],
+		spo2: [94, 94],
+		rr: [22, 21],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Brittany Cole",
+		temps: [38.4, 38.2, 37.6, 37.3, 37.6],
+		lastTemp: 60,
+	}),
+	// Jacobs: in a swing bed for rehab after a knee replacement, steady at NEWS2 0.
+	p27: buildVitals({
+		seed: 27,
+		hr: [76, 72],
+		systolic: [132, 136],
+		diastolic: [74, 76],
+		spo2: [96, 96],
+		rr: [16, 16],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Brittany Cole",
+		temps: [36.8, 36.9, 36.7, 36.8, 36.8, 36.7],
+		lastTemp: 180,
+	}),
+	// Hughes: GI bleed under observation, admitted 16 h ago with HR 104 and SBP 104, NEWS2 2; now 1 (HR 94).
+	p28: buildVitals({
+		seed: 28,
+		hours: 16,
+		hr: [104, 94],
+		systolic: [104, 114],
+		diastolic: [62, 66],
+		spo2: [98, 98],
+		rr: [16, 16],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Brittany Cole",
+		temps: [36.7, 36.6, 36.8, 36.7],
+		lastTemp: 90,
+	}),
+	// Ramirez: in the ED 3 h with asthma. Triage RR 24, SpO₂ 93% and HR 108, NEWS2 5; after three nebulizers RR 20,
+	// SpO₂ 96% on room air and HR 104 (albuterol), NEWS2 1.
+	p29: buildVitals({
+		seed: 29,
+		hours: 3,
+		hr: [108, 104],
+		systolic: [128, 124],
+		diastolic: [74, 70],
+		spo2: [93, 96],
+		rr: [24, 20],
+		arterialLine: false,
+		ventilated: false,
+		nurse: "Kelsey Morgan",
+		temps: [36.9],
+		lastTemp: 30,
 	}),
 };
 

@@ -346,7 +346,8 @@ function Sidebar({
 				// Expanded only: the 1px right stroke, drawn over the edge rather than as a border so it doesn't narrow the
 				// rows to 247px. The collapsed rail has none; its subtle fill separates it from the page.
 				!collapsed && "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-input",
-				collapsed ? "items-center px-2 py-4" : "items-start p-4",
+				// 8px over the logo, 16px under the footer (DESIGN.md "Sidebar", Nov 6, 2026).
+				collapsed ? "items-center px-2 pt-2 pb-4" : "items-start px-4 pt-2 pb-4",
 				className,
 			)}
 			{...props}
@@ -365,7 +366,8 @@ function Sidebar({
 
 			<div
 				data-slot='sidebar-header'
-				className={cn("relative z-10 flex flex-col gap-4", collapsed ? "w-9 items-center" : "w-full items-start")}
+				// 10px from the logo row to the nav, the nav's own gap (DESIGN.md "Sidebar", Nov 6, 2026).
+				className={cn("relative z-10 flex flex-col gap-2.5", collapsed ? "w-9 items-center" : "w-full items-start")}
 			>
 				{collapsed ? (
 					<div className='flex h-12 items-center'>

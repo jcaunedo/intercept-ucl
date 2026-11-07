@@ -264,7 +264,7 @@ function CensusPanel({
 			: hospitalCount === 1
 				? hospitals.find((hospital) => hospital.id === visible[0].hospitalId)
 				: undefined;
-	// A hospital tab with no patients at all (Bridgeport until Scenario 4's patient arrives) says so, rather than
+	// A hospital tab with no patients at all (a hospital whose patients have all left, say) says so, rather than
 	// blaming the filters.
 	const emptyHospital = hospitalId !== "all" && !patients.some((patient) => patient.hospitalId === hospitalId) ? singleHospital : undefined;
 

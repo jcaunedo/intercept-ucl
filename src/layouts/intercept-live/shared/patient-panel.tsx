@@ -828,18 +828,22 @@ function MyPatientsChip({
 /**
  * The quick-view chips: toggle buttons, at most one pressed; pressing the pressed one turns it off (`null`). Every chip
  * shows how many patients it matches among `patients`, so the counts follow the hospital tab, the unit and My patients.
+ * `counts` overrides a chip's count, e.g. one held while a chip is pressed.
  */
 function QuickViewChips<Patient>({
 	views,
 	value,
 	onValueChange,
 	patients,
+	counts,
 }: {
 	views: readonly QuickView<Patient>[];
 	value: string | null;
 	onValueChange: (value: string | null) => void;
 	/** The patients a chip's count counts: the page's patients in the current hospital, unit and scope. */
 	patients: Patient[];
+	/** Counts by chip id, in place of counting `patients`. */
+	counts?: Partial<Record<string, number>>;
 }) {
 	return (
 		// `contents`: the chips flow with the search and My patients in the filter bar's own row, wrapping one at a time
@@ -848,7 +852,7 @@ function QuickViewChips<Patient>({
 			{views.map(({ id, icon: Icon, label, matches }) => (
 				<FilterBarChip
 					key={id}
-					count={patients.filter(matches).length}
+					count={counts?.[id] ?? patients.filter(matches).length}
 					pressed={value === id}
 					onPressedChange={(pressed) => onValueChange(pressed ? id : null)}
 				>

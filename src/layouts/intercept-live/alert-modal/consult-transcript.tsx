@@ -2,6 +2,7 @@ import * as React from "react";
 import { MicOffIcon, PauseIcon, PencilLineIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
+import { speechRecognitionConstructor } from "@/lib/hooks/use-dictation";
 import { fadeVariants } from "@/lib/motion";
 import { useSessionState } from "./consult-session";
 import { cn } from "@/lib/utils";
@@ -82,27 +83,6 @@ function stamp(ms: number) {
 /* The clinician's microphone                                                 */
 /* -------------------------------------------------------------------------- */
 
-// The Web Speech API isn't in TypeScript's DOM types; only what this file uses.
-type RecognitionResultList = ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
-type RecognitionEvent = { resultIndex: number; results: RecognitionResultList };
-type Recognition = {
-	continuous: boolean;
-	interimResults: boolean;
-	lang: string;
-	onresult: ((event: RecognitionEvent) => void) | null;
-	onerror: ((event: { error: string }) => void) | null;
-	onend: (() => void) | null;
-	start: () => void;
-	abort: () => void;
-};
-type RecognitionConstructor = new () => Recognition;
-
-function recognitionConstructor(): RecognitionConstructor | undefined {
-	if (typeof window === "undefined") return undefined;
-	const speech = window as unknown as { SpeechRecognition?: RecognitionConstructor; webkitSpeechRecognition?: RecognitionConstructor };
-	return speech.SpeechRecognition ?? speech.webkitSpeechRecognition;
-}
-
 type MicStatus = "listening" | "muted" | "unsupported" | "denied" | "off";
 
 /**
@@ -113,13 +93,13 @@ type MicStatus = "listening" | "muted" | "unsupported" | "denied" | "off";
 function useMicTranscript(active: boolean, muted: boolean, onFinal: (text: string) => void) {
 	const [interim, setInterim] = React.useState("");
 	const [failure, setFailure] = React.useState<"denied" | "unavailable" | null>(null);
-	const supported = recognitionConstructor() !== undefined;
+	const supported = speechRecognitionConstructor() !== undefined;
 	const finalRef = React.useRef(onFinal);
 	finalRef.current = onFinal;
 	const listening = active && !muted && supported && !failure;
 
 	React.useEffect(() => {
-		const Constructor = recognitionConstructor();
+		const Constructor = speechRecognitionConstructor();
 		if (!listening || !Constructor) return;
 		let stopped = false;
 		let pending = "";

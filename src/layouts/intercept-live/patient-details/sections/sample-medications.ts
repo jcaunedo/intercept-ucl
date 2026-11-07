@@ -203,7 +203,6 @@ const drips: Record<string, { concentration?: string; orderedRate?: string; titr
 	"Normal saline": { titration: "Maintenance fluid" },
 	Pantoprazole: { concentration: "80 mg in 100 mL NS", titration: "For 72 h after endoscopy" },
 	"CRRT citrate": { concentration: "ACD-A", orderedRate: "Per CRRT protocol", titration: "Adjust to post-filter ionized calcium" },
-	"Magnesium sulfate": { concentration: "40 g in 1,000 mL", titration: "Seizure prophylaxis, 24 h after delivery" },
 	Nicardipine: { concentration: "40 mg in 200 mL NS", orderedRate: "5–15 mg/h", titration: "Titrate to BP under 160/110" },
 	Diltiazem: { concentration: "125 mg in 125 mL D5W", orderedRate: "5–15 mg/h", titration: "Titrate to HR under 110" },
 };
@@ -435,14 +434,15 @@ const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 			prn("Acetaminophen", "650 mg", "PO", "Every 6 h as needed", "Fever over 38.5 °C", 300, 2),
 		],
 	),
-	// Clark: postpartum day 1 with severe preeclampsia and influenza B.
+	// Clark: hypertensive emergency with PRES after a seizure at home, and influenza B.
 	p11: medicationsFor(
 		"p11",
 		[
 			scheduled("Oseltamivir", "75 mg", "PO", every(12), 380, "Influenza B"),
 			scheduled("Labetalol", "200 mg", "PO", every(12), 650, "Blood pressure"),
-			scheduled("Enoxaparin", "40 mg", "SC", daily, 700, "DVT prophylaxis after cesarean"),
-			scheduled("Acetaminophen", "1,000 mg", "PO", every(6), 330, "Post-op pain"),
+			scheduled("Levetiracetam", "500 mg", "IV", every(12), 420, "Seizure, PRES"),
+			scheduled("Enoxaparin", "40 mg", "SC", daily, 700, "DVT prophylaxis"),
+			scheduled("Acetaminophen", "1,000 mg", "PO", every(6), 330, "Headache"),
 			scheduled("Docusate", "100 mg", "PO", every(12), 400),
 		],
 		[
@@ -591,6 +591,67 @@ const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 			prn("Oxycodone", "2.5 mg", "PO", "Every 4 h as needed", "Moderate pain", 300, 2),
 			prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea"),
 		],
+	),
+	// Peterson: diverticulitis, day 2 of IV antibiotics; ibuprofen held.
+	p25: medicationsFor(
+		"p25",
+		[
+			scheduled("Ceftriaxone", "2 g", "IV", daily, 1260, "Diverticulitis"),
+			scheduled("Metronidazole", "500 mg", "IV", every(8), 300, "Diverticulitis"),
+			scheduled("Lisinopril", "10 mg", "PO", daily, 600, "Hypertension"),
+			scheduled("Atorvastatin", "20 mg", "PO", nightly, 280),
+			scheduled("Enoxaparin", "40 mg", "SC", daily, 600, "VTE prophylaxis"),
+		],
+		[
+			prn("Acetaminophen", "650 mg", "PO", "Every 6 h as needed", "Pain or fever", 900, 2),
+			prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea"),
+		],
+	),
+	// Lambert: influenza A, oseltamivir at her kidney function's dose; ceftriaxone until the sputum culture is back.
+	p26: medicationsFor(
+		"p26",
+		[
+			scheduled("Oseltamivir", "30 mg", "PO", every(12), 420, "Influenza A · renal dose"),
+			scheduled("Ceftriaxone", "1 g", "IV", daily, 1000, "Pneumonia, until the sputum culture is back"),
+			scheduled("Levothyroxine", "50 mcg", "PO", daily, 600, "Hypothyroidism"),
+			scheduled("Heparin", "5,000 units", "SC", every(8), 200, "VTE prophylaxis"),
+		],
+		[
+			prn("Acetaminophen", "650 mg", "PO", "Every 6 h as needed", "Fever or pain", 780, 2),
+			prn("Benzonatate", "100 mg", "PO", "Every 8 h as needed", "Cough", 500, 1),
+		],
+	),
+	// Jacobs: rehab after a knee replacement; morphine intolerance, so oxycodone before therapy.
+	p27: medicationsFor(
+		"p27",
+		[
+			scheduled("Acetaminophen", "1,000 mg", "PO", every(8), 200, "Pain"),
+			scheduled("Aspirin", "81 mg", "PO", every(12), 300, "VTE prophylaxis, 4 weeks after knee replacement"),
+			scheduled("Losartan", "50 mg", "PO", daily, 600, "Hypertension"),
+			scheduled("Docusate", "100 mg", "PO", every(12), 300, "With oxycodone"),
+		],
+		[
+			prn("Oxycodone", "5 mg", "PO", "Every 4 h as needed", "Moderate pain, before therapy", 600, 2),
+			prn("Ondansetron", "4 mg", "PO", "Every 6 h as needed", "Nausea"),
+		],
+	),
+	// Hughes: upper GI bleed under observation; NSAIDs and amlodipine held, nothing by mouth for the endoscopy.
+	p28: medicationsFor(
+		"p28",
+		[scheduled("Pantoprazole", "40 mg", "IV", every(12), 220, "Upper GI bleed")],
+		[
+			prn("Acetaminophen", "1,000 mg", "IV", "Every 6 h as needed", "Back pain · no NSAIDs", 500, 1),
+			prn("Ondansetron", "4 mg", "IV", "Every 6 h as needed", "Nausea", 700, 1),
+		],
+	),
+	// Ramirez: asthma in the ED, after three back-to-back nebulizers and prednisone.
+	p29: medicationsFor(
+		"p29",
+		[
+			scheduled("Prednisone", "50 mg", "PO", daily, 160, "Asthma exacerbation, 5-day burst"),
+			scheduled("Albuterol", "2.5 mg", "Nebulized", every(4), { firstDueIn: 110, ordered: 100 }, "Asthma, after the three nebulizers"),
+		],
+		[prn("Ipratropium-albuterol", "3 mL", "Nebulized", "Every 20 min as needed, up to 3", "Wheeze or shortness of breath", 130, 3)],
 	),
 };
 

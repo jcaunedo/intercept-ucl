@@ -1452,9 +1452,16 @@ function ConsultNotetaker({
 	noteSlot,
 	muted = false,
 	autoStart = true,
+	startable = true,
 }: {
 	data: ConsultData;
 	live: boolean;
+	/**
+	 * Offers Start notetaker while it hasn't started (or a request was cancelled). The Alert Expanded modal leaves it out
+	 * (Nov 6, 2026, user's call): the notetaker starts on its own as the call connects, so the state line says "Getting
+	 * ready…" alone. The patient page's Video consult panel keeps it, in its header.
+	 */
+	startable?: boolean;
 	/**
 	 * Starts on its own once the call connects (Nov 5, 2026, user's call: "notetaker by default"): the approval request
 	 * goes out as the call goes live, and recording starts once it's approved, as Start notetaker does. Once per call: a
@@ -1526,16 +1533,18 @@ function ConsultNotetaker({
 	// The one thing to do next, by state.
 	const action =
 		state === "idle" ? (
-			<Button
-				variant='outline'
-				size='md'
-				disabled={!live}
-				onClick={() => setState(asked.length ? "consent" : "recording")}
-			>
-				{/* Intercept-Live `222:18365`: lucide `pencil-line` (Nov 5, 2026, user's call). */}
-				<PencilLineIcon aria-hidden='true' />
-				Start notetaker
-			</Button>
+			startable ? (
+				<Button
+					variant='outline'
+					size='md'
+					disabled={!live}
+					onClick={() => setState(asked.length ? "consent" : "recording")}
+				>
+					{/* Intercept-Live `222:18365`: lucide `pencil-line` (Nov 5, 2026, user's call). */}
+					<PencilLineIcon aria-hidden='true' />
+					Start notetaker
+				</Button>
+			) : null
 		) : state === "consent" ? (
 			<Button variant='ghost' size='md' onClick={() => setState("idle")}>
 				Cancel request
@@ -1912,6 +1921,7 @@ function AlertPanelContent({
 												live={consult === "live"}
 												muted={micMuted}
 												onApprove={onConsultNote}
+												startable={false}
 											/>
 										}
 									/>
@@ -2156,6 +2166,7 @@ function PatientConsultDialogContent({
 											live={consult === "live"}
 											muted={micMuted}
 											onApprove={onConsultNote}
+											startable={false}
 										/>
 									}
 								/>

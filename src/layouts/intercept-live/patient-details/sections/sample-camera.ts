@@ -192,6 +192,17 @@ const sampleCameraByPatient: Record<string, PatientCamera> = {
 	p22: camera("p22", "alliance", "Bed 3", { "Ashley Bell": "With another patient", "Marcus Reed": "Viewing the chart" }, [
 		["look-in", "James Turner", 300, 3],
 	]),
+	// Bridgeport's floor: one nurse for all four rooms, the physician off shift. Peterson and Jacobs are asleep.
+	p25: camera("p25", "bridgeport", "Bed 1", { "Brittany Cole": "With another patient" }, []),
+	// Lambert: in droplet isolation; her nurse gowned at the bedside.
+	p26: camera("p26", "bridgeport", "Bed 2", { "Brittany Cole": "At the bedside" }, [["look-in", "Maria Ruiz", 240, 3]]),
+	p27: camera("p27", "bridgeport", "Bed 6", { "Brittany Cole": "With another patient" }, []),
+	// Hughes: her husband at the bedside.
+	p28: camera("p28", "bridgeport", "Bed 4", { "Brittany Cole": "With another patient" }, [], [
+		visitor("Dennis Hughes", "Husband", "DH", 3, "At the bedside"),
+	]),
+	// Ramirez: in the ED, her nurse checking her peak flow.
+	p29: camera("p29", "bridgeport", "Bay 1", { "Kelsey Morgan": "At the bedside", "Ryan Mercer": "With another patient" }, []),
 };
 
 /** Dale Reynolds (Scenario 2): ED Bay 3, his nurse, the ED physician and the respiratory therapist at the BiPAP. */

@@ -9,8 +9,9 @@ import type { PanelHospital } from "../shared/patient-panel";
 
 const sampleHospitals: PanelHospital[] = [
 	// A critical access hospital about 40 miles from the hub, with no ICU: one RN on the inpatient side at night, an APP
-	// on call from home, the hub's tele-RN and intensivist covering remotely (Demo Use Cases, Scenario 4). Starts with no
-	// patients. Was Harbor Point General until Nov 6, 2026 (user's call); its patients moved to Sidney.
+	// on call from home, the hub's tele-RN and intensivist covering remotely (Demo Use Cases, Scenario 4). Five patients
+	// on Med-Surg, a swing bed, observation and the ED (Nov 6, 2026, user's call). Was Harbor Point General until Nov 6,
+	// 2026 (user's call); its ICU patients moved to Sidney.
 	{ id: "bridgeport", name: "Bridgeport Valley" },
 	// A critical access hospital: an ED with an ED physician and two nurses at night, a small med-surg floor under
 	// tele-ICU coverage (Demo Use Cases, Scenario 2). Was Mercy West Hospital until Nov 4, 2026 (user's call).

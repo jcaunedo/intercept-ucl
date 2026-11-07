@@ -747,8 +747,8 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		],
 	}),
 
-	// Clark: postpartum day 1 after cesarean for severe preeclampsia. Pressure climbed from 148/88 an hour ago to 162/96;
-	// nicardipine went up to 7.5. Magnesium level in range at 6.1; platelets 98, AST 142.
+	// Clark: day 2 of a hypertensive emergency with PRES. Pressure climbed from 148/88 an hour ago to 162/96; nicardipine
+	// went up to 7.5. Magnesium in range at 2.0; platelets 98, AST 142.
 	p11: timeline({
 		seed: 101,
 		hr: [[1440, 98], [0, 92]],
@@ -759,18 +759,17 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 		rr: [[1440, 18], [0, 20]],
 		temp: [[1320, 37.3], [1080, 37.1], [840, 37.2], [600, 37.0], [360, 37.1], [45, 37.2]],
 		lanes: [
-			pump("Magnesium sulfate", "g/h", [[1440, 2]], "other"),
 			pump("Nicardipine", "mg/h", [[1440, 5], [35, 7.5]]),
 			labLane("Platelets", "K/µL", [[900, 131], [120, 98]], { low: 150 }),
-			labLane("Magnesium", "mg/dL", [[300, 5.2], [60, 6.1]], { low: 4.8, high: 8.4 }, "lab-2"),
+			labLane("Magnesium", "mg/dL", [[300, 1.9], [60, 2.0]], { low: 1.8, high: 2.4 }, "lab-2"),
 		],
 		events: [
-			[1200, "note", "Obstetrics progress note signed"],
+			[1200, "note", "Neurology consult note signed"],
 			[900, "lab", "Platelets 131 K/µL, AST 88 U/L resulted"],
-			[300, "lab", "Magnesium 5.2 mg/dL resulted"],
-			[180, "care", "Reflexes 2+, no clonus"],
+			[300, "lab", "Magnesium 1.9 mg/dL resulted"],
+			[180, "care", "Neuro checks unchanged, no seizures"],
 			[120, "lab", "Platelets 98 K/µL, AST 142 U/L, LDH 610 U/L resulted"],
-			[60, "lab", "Magnesium 6.1 mg/dL resulted"],
+			[60, "lab", "Magnesium 2.0 mg/dL resulted"],
 			[35, "drip", "Nicardipine 5 → 7.5 mg/h"],
 		],
 	}),
@@ -1023,6 +1022,118 @@ const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 			[480, "drip", "Lactated Ringer's 100 → 75 mL/h"],
 			[240, "lab", "Hemoglobin 9.4 g/dL resulted"],
 			[90, "care", "Stood at the bedside with physical therapy"],
+		],
+	}),
+
+	// Peterson: diverticulitis, day 2. Last fever (38.4 °C) yesterday afternoon; fluids 125 → 75 mL/h; WBC 15.6 → 11.2.
+	p25: timeline({
+		seed: 201,
+		hr: [[1440, 96], [800, 88], [0, 84]],
+		map: [[1440, 92], [0, 95]],
+		bp: [134, 76],
+		spo2: [[1440, 96], [0, 97]],
+		rr: [[1440, 18], [0, 16]],
+		temp: [[1320, 38.4], [1080, 38.1], [840, 37.6], [600, 37.4], [360, 37.2], [120, 37.2]],
+		lanes: [
+			pump("Lactated Ringer's", "mL/h", [[1440, 125], [720, 75]], "fluid"),
+			labLane("WBC", "K/µL", [[1700, 15.6], [280, 11.2]], { high: 11 }),
+		],
+		events: [
+			[1260, "care", "Ceftriaxone 2 g IV and metronidazole 500 mg IV"],
+			[1080, "note", "Progress note signed"],
+			[720, "drip", "Lactated Ringer's 125 → 75 mL/h"],
+			[540, "care", "Clear liquids, no nausea"],
+			[280, "lab", "WBC 11.2 K/µL resulted"],
+		],
+	}),
+
+	// Lambert: influenza A pneumonia, admitted 18 h ago on 2 L. The fever (38.4 °C) broke overnight; SpO₂ holds at 94%
+	// and RR 22 → 21. NEWS2 6 → 5 (`sample-vitals.ts`).
+	p26: timeline({
+		span: 1080,
+		seed: 211,
+		hr: [[1080, 90], [540, 92], [0, 88]],
+		map: [[1080, 79], [0, 84]],
+		bp: [120, 66],
+		spo2: [[1080, 94], [600, 93], [0, 94]],
+		rr: [[1080, 22], [0, 21]],
+		temp: [[1020, 38.4], [780, 38.2], [540, 37.6], [300, 37.3], [60, 37.6]],
+		lanes: [oxygenFlow([[1080, 2]]), labLane("Sodium", "mmol/L", [[1100, 131], [300, 133]], { low: 135 })],
+		events: [
+			[1075, "care", "Arrived from the ED on 2 L, droplet isolation"],
+			[1060, "care", "Oseltamivir 30 mg by mouth, renal dose"],
+			[1000, "note", "History and physical signed"],
+			[780, "care", "Temp 38.2 °C, acetaminophen 650 mg"],
+			[300, "lab", "Sodium 133 mmol/L, procalcitonin 0.18 ng/mL resulted"],
+		],
+	}),
+
+	// Jacobs: in a swing bed for rehab after a left knee replacement, steady. Hemoglobin 10.6 → 11.2 since surgery.
+	p27: timeline({
+		seed: 221,
+		hr: [[1440, 76], [0, 72]],
+		map: [[1440, 93], [0, 96]],
+		bp: [136, 76],
+		spo2: [[1440, 96], [0, 96]],
+		rr: [[1440, 16], [0, 16]],
+		temp: [[1380, 36.8], [1140, 36.9], [900, 36.7], [660, 36.8], [420, 36.8], [180, 36.7]],
+		lanes: [labLane("Hemoglobin", "g/dL", [[4300, 10.6], [1500, 11.2]], { low: 12 })],
+		events: [
+			[1320, "care", "Physical therapy: walked 90 feet with a walker"],
+			[1200, "note", "Swing bed progress note signed"],
+			[840, "care", "Occupational therapy: dressing and bathroom transfers"],
+			[600, "care", "Physical therapy: walked 120 feet, knee bent to 85°"],
+			[540, "care", "Fall risk reassessed: Morse 55 → 45"],
+		],
+	}),
+
+	// Hughes: upper GI bleed under observation, 16 h. HR 104 → 94 and MAP 76 → 82 on saline; hemoglobin 10.9 → 10.4 →
+	// 10.6. NEWS2 2 → 1 (`sample-vitals.ts`).
+	p28: timeline({
+		span: 960,
+		seed: 231,
+		hr: [[960, 104], [480, 98], [0, 94]],
+		map: [[960, 76], [0, 82]],
+		bp: [114, 66],
+		spo2: [[960, 98], [0, 98]],
+		rr: [[960, 16], [0, 16]],
+		temp: [[810, 36.7], [570, 36.6], [330, 36.8], [90, 36.7]],
+		lanes: [
+			pump("Normal saline", "mL/h", [[960, 150], [480, 75]], "fluid"),
+			labLane("Hemoglobin", "g/dL", [[960, 10.9], [600, 10.4], [120, 10.6]], { low: 12 }),
+		],
+		events: [
+			[950, "care", "Arrived from the ED for observation"],
+			[940, "care", "Pantoprazole 40 mg IV"],
+			[900, "note", "History and physical signed"],
+			[600, "lab", "Hemoglobin 10.4 g/dL resulted"],
+			[480, "drip", "Normal saline 150 → 75 mL/h"],
+			[240, "care", "Fall risk assessed: Morse 45, lightheaded standing"],
+			[120, "lab", "Hemoglobin 10.6 g/dL, BUN 34 mg/dL resulted"],
+		],
+	}),
+
+	// Ramirez: in the ED 3 h with an asthma attack. Three nebulizers and prednisone: RR 24 → 20, SpO₂ 93 → 96% on room
+	// air, HR up to 110 with the albuterol, now 104. NEWS2 5 → 1 (`sample-vitals.ts`).
+	p29: timeline({
+		span: 180,
+		seed: 241,
+		hr: [[180, 108], [110, 110], [0, 104]],
+		map: [[180, 92], [0, 88]],
+		bp: [124, 70],
+		spo2: [[180, 93], [120, 95], [0, 96]],
+		rr: [[180, 24], [60, 21], [0, 20]],
+		temp: [[30, 36.9]],
+		lanes: [labLane("Potassium", "mmol/L", [[150, 3.6]], { low: 3.5 })],
+		events: [
+			[178, "care", "Triage: wheezing, speaking in phrases, peak flow 38% of her best"],
+			[170, "care", "Ipratropium-albuterol nebulizer"],
+			[160, "care", "Prednisone 50 mg by mouth"],
+			[150, "lab", "Potassium 3.6 mmol/L, glucose 142 mg/dL resulted"],
+			[150, "care", "Ipratropium-albuterol nebulizer, second"],
+			[130, "care", "Ipratropium-albuterol nebulizer, third"],
+			[60, "care", "Peak flow 55% of her best"],
+			[10, "care", "Peak flow 62% of her best"],
 		],
 	}),
 };

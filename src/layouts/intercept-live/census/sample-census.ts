@@ -1,19 +1,20 @@
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { CensusPatient } from "./census";
 
-// Synthetic data (PRD PC-180). The first eight patients are Figma's; thirteen more fill the hospital counts (Sidney 14,
-// Alliance 3, Chadron 4, Bridgeport none). Eight of Sidney's were at Harbor Point General until Nov 6, 2026, when it
-// became Bridgeport, a critical access hospital with no ICU (user's call). Scenario 2's Dale Reynolds joins Alliance when
-// it plays, and Scenario 4's Tyler Kessler is Bridgeport's first. My patients (`mine`) are Chadron's three and Alliance's, Dale included, plus Johnson and Harris: 8, then 9
-// with Dale (DESIGN.md "My patients").
+// Synthetic data (PRD PC-180). The first eight patients are Figma's; eighteen more fill the hospital counts (Sidney 14,
+// Chadron 4, Alliance 3, Bridgeport 5: 26). Eight of Sidney's were at Harbor Point General until Nov 6, 2026, when it
+// became Bridgeport, a critical access hospital with no ICU (user's call). Bridgeport's five (Med-Surg, a swing bed, an
+// observation bed and its ED) joined it the same day (user's call). Scenario 2's Dale Reynolds joins Alliance when it
+// plays, and Scenario 4's Tyler Kessler joins Bridgeport's five (Med-Surg Bed 3). My patients (`mine`) are Chadron's
+// three and Alliance's, Dale included, plus Johnson and Harris: 8, then 9 with Dale (DESIGN.md "My patients").
 // Acuity is the NEWS2-style score, the same as on Monitoring (`sample-monitoring.ts` says how it's worked out).
 
 const news2 = "NEWS2";
 const change = "Change in last 24 h";
 // When the clinician last opened a patient, or a patient's last alert resolved (the Recently viewed and Recently
 // resolved sorts): Thompson, Davis, Miller and Clark were viewed; Wilson, Bennett, Harris and Taylor had one resolve.
-// When each arrived on their unit, as their record says (ICU admission, else hospital admission): seven in the last
-// 24 h for New patients, Carter, Harris, Moore, Bennett, Hayes, Ortega and Norman.
+// When each arrived on their unit, as their record says (ICU admission, else hospital admission): ten in the last
+// 24 h for New patients, Carter, Harris, Moore, Bennett, Hayes, Ortega, Norman, Lambert, Hughes and Ramirez.
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
 
 const samplePatients: CensusPatient[] = [
@@ -25,7 +26,7 @@ const samplePatients: CensusPatient[] = [
 		firstName: "Sarah",
 		mrn: "01033876",
 		sex: "F",
-		age: 39,
+		age: 59,
 		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 11",
@@ -127,7 +128,7 @@ const samplePatients: CensusPatient[] = [
 		firstName: "Emily",
 		mrn: "00956113",
 		sex: "F",
-		age: 29,
+		age: 62,
 		hospital: "Sidney Regional",
 		unit: "MICU",
 		bed: "Bed 6",
@@ -173,7 +174,7 @@ const samplePatients: CensusPatient[] = [
 		firstName: "Susan",
 		mrn: "00377208",
 		sex: "F",
-		age: 45,
+		age: 65,
 		hospital: "Sidney Regional",
 		unit: "SICU",
 		bed: "Bed 12",
@@ -197,7 +198,7 @@ const samplePatients: CensusPatient[] = [
 		firstName: "Michael",
 		mrn: "00841290",
 		sex: "M",
-		age: 54,
+		age: 60,
 		hospital: "Sidney Regional",
 		unit: "PCU",
 		bed: "Bed 14",
@@ -271,9 +272,9 @@ const samplePatients: CensusPatient[] = [
 		firstName: "Jennifer",
 		mrn: "00908135",
 		sex: "F",
-		age: 34,
+		age: 69,
 		hospital: "Sidney Regional",
-		unit: "OB-ICU",
+		unit: "MICU",
 		bed: "Bed 1",
 		arrivedAt: hoursAgo(26),
 		acuity: { label: news2, score: 1, level: "low" },
@@ -295,7 +296,7 @@ const samplePatients: CensusPatient[] = [
 		firstName: "Grace",
 		mrn: "00257719",
 		sex: "F",
-		age: 88,
+		age: 83,
 		hospital: "Sidney Regional",
 		unit: "Neuro ICU",
 		bed: "Bed 2",
@@ -341,7 +342,7 @@ const samplePatients: CensusPatient[] = [
 		unreadMessages: 1,
 		mrn: "00499320",
 		sex: "F",
-		age: 50,
+		age: 63,
 		hospital: "Sidney Regional",
 		unit: "CCU",
 		bed: "Bed 9",
@@ -484,7 +485,7 @@ const samplePatients: CensusPatient[] = [
 		firstName: "Keith",
 		mrn: "00914370",
 		sex: "M",
-		age: 54,
+		age: 58,
 		hospital: "Alliance Community",
 		unit: "Med-Surg",
 		bed: "Bed 5",
@@ -523,6 +524,122 @@ const samplePatients: CensusPatient[] = [
 			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
 		],
 		tags: [{ label: "Fall risk" }],
+	},
+	// Bridgeport's inpatient side (Nov 6, 2026, user's call): Med-Surg, a swing bed and an observation bed, with one RN
+	// at night, and a patient in its ED. Mostly stable, inside the limits, no alerts; Bridgeport isn't one of "my"
+	// hospitals, so none is `mine`. Med-Surg Bed 3 is left for Scenario 4's Tyler Kessler.
+	{
+		id: "p25",
+		hospitalId: "bridgeport",
+		lastName: "Peterson",
+		firstName: "Gary",
+		mrn: "01183420",
+		sex: "M",
+		age: 66,
+		hospital: "Bridgeport Valley",
+		unit: "Med-Surg",
+		bed: "Bed 1",
+		arrivedAt: hoursAgo(44),
+		acuity: { label: news2, score: 0, level: "low" },
+		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 84 },
+			{ label: "MAP", value: 95 },
+			{ label: "SpO₂", value: "97%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+	},
+	{
+		id: "p26",
+		hospitalId: "bridgeport",
+		lastName: "Lambert",
+		firstName: "Dorothy",
+		mrn: "01219567",
+		sex: "F",
+		age: 83,
+		hospital: "Bridgeport Valley",
+		unit: "Med-Surg",
+		bed: "Bed 2",
+		arrivedAt: hoursAgo(18),
+		acuity: { label: news2, score: 5, level: "medium" },
+		trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 88 },
+			{ label: "MAP", value: 84 },
+			{ label: "SpO₂", value: "94%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 21 },
+		],
+		tags: [{ label: "Droplet isolation" }, { label: "DNR" }],
+	},
+	{
+		id: "p27",
+		hospitalId: "bridgeport",
+		lastName: "Jacobs",
+		firstName: "Harold",
+		mrn: "01164093",
+		sex: "M",
+		age: 78,
+		hospital: "Bridgeport Valley",
+		unit: "Swing bed",
+		bed: "Bed 6",
+		arrivedAt: hoursAgo(70),
+		acuity: { label: news2, score: 0, level: "low" },
+		trajectory: { label: change, value: "0" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 72 },
+			{ label: "MAP", value: 96 },
+			{ label: "SpO₂", value: "96%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+		tags: [{ label: "Fall risk" }],
+	},
+	{
+		id: "p28",
+		hospitalId: "bridgeport",
+		lastName: "Hughes",
+		firstName: "Brenda",
+		mrn: "01197715",
+		sex: "F",
+		age: 58,
+		hospital: "Bridgeport Valley",
+		unit: "Observation",
+		bed: "Bed 4",
+		arrivedAt: hoursAgo(16),
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 94 },
+			{ label: "MAP", value: 82 },
+			{ label: "SpO₂", value: "98%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+		tags: [{ label: "Fall risk" }],
+	},
+	{
+		id: "p29",
+		hospitalId: "bridgeport",
+		lastName: "Ramirez",
+		firstName: "Sofia",
+		mrn: "01231148",
+		sex: "F",
+		age: 59,
+		hospital: "Bridgeport Valley",
+		unit: "ED",
+		bed: "Bay 1",
+		arrivedAt: hoursAgo(3),
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "−4", trend: "down", trendVariant: "success" },
+		scoreChange4h: -4,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 104 },
+			{ label: "MAP", value: 88 },
+			{ label: "SpO₂", value: "96%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 20 },
+		],
 	},
 ];
 
@@ -650,7 +767,7 @@ const sampleScenario3Census = (): CensusPatient => ({
 	firstName: "Rosa",
 	mrn: "01147382",
 	sex: "F",
-	age: 51,
+	age: 58,
 	hospital: "Sidney Regional",
 	unit: "ED",
 	bed: "Bay 2",
@@ -787,7 +904,7 @@ const sampleScenario4Census = (): CensusPatient => ({
 	firstName: "Tyler",
 	mrn: "01208854",
 	sex: "M",
-	age: 24,
+	age: 60,
 	hospital: "Bridgeport Valley",
 	unit: "Med-Surg",
 	bed: "Bed 3",

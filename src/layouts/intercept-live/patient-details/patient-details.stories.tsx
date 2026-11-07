@@ -112,6 +112,22 @@ export const BriefOpensAsk: Story = {
 };
 
 /**
+ * The Sidebar's Ask Intercept Live on a patient's page opens the chat about that patient (Nov 6, 2026, user's call): the
+ * "About Miller, Sarah" chip over the message box, without asking anything for the user.
+ */
+export const SidebarAskInPatientContext: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
+		const sidebar = within(canvas.getByRole("navigation", { name: "Main" }));
+		await userEvent.click(sidebar.getByRole("button", { name: "Ask Intercept Live" }));
+		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		await expect(await chat.findByRole("button", { name: "Remove Miller, Sarah from the chat" })).toBeInTheDocument();
+		await expect(chat.queryByText("Quick overview")).toBeNull();
+	},
+};
+
+/**
  * Video consult and Messages (Intercept-Live `219:16129`): the app header's Video consult opens the call in a panel right
  * of the page and rings the bedside (Start notetaker in the panel's header), and turns into a pressed icon that ends the
  * call and closes it. Messages opens the thread with her nurse to its right, the three unread messages in it; its count
@@ -211,7 +227,7 @@ export const BackToCensus: Story = {
 		const breadcrumb = within(canvas.getByRole("navigation", { name: "Breadcrumb" }));
 		await userEvent.click(breadcrumb.getByRole("button", { name: "Census" }));
 		// The Census glides back in.
-		const title = await canvas.findByRole("heading", { level: 1, name: /21 patients/ });
+		const title = await canvas.findByRole("heading", { level: 1, name: new RegExp(`${samplePatients.length} patients`) });
 		await waitFor(() => expect(title).toBeVisible());
 	},
 };

@@ -178,14 +178,14 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		<div>
 			<ol>
 				<li>Open the prototype on <strong>Monitoring</strong>. If you've already played it, use <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span> first.</li>
-				<li>Tyler isn't on the page yet, and Bridgeport's tab reads 0. He arrives with the scenario, when his labs come back.</li>
+				<li>Tyler isn't on the page yet: Bridgeport's tab reads 5, the nurse's other patients, all stable. He arrives with the scenario, when his labs come back.</li>
 				<li>New to the page? The <a href="../scenario-1/index.html#prep">Scenario 1 storyboard</a> walks through the hospital tabs, the quick filters, the monitoring cards and the alert notifications.</li>
 				<li>Once you accept his DKA pathway (beat 1), the rest of the night plays on its own over about 100 seconds. Keep his alert open with <strong>Pathway</strong> out, and scroll the column to follow the checklist.</li>
 			</ol>
 		</div>
 	</div>
 	<div class="frames one">
-		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Tyler Kessler arrives." loading="lazy"><figcaption>Monitoring before the scenario starts. Bridgeport has no patients yet.</figcaption></figure>
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Tyler Kessler arrives." loading="lazy"><figcaption>Monitoring before the scenario starts. Bridgeport has 5 patients, all stable.</figcaption></figure>
 	</div>
 	<div class="callout note"><strong>The checklist shows the night's times; the screen's clock shows today's.</strong> The protocol's checks read 11:00 PM to 1:00 PM, as the night happened, while 14 hours pass in under two minutes on the real clock. Ask the audience to picture the night going by.</div>
 </section>
@@ -194,7 +194,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 	<div class="beat-head"><h2>1. Protocol launch</h2><span class="time">23:00</span></div>
 	<div class="script">
 		<div>
-			<p class="say">Tyler Kessler, 24. Type 1 diabetes since he was 11; he works at a grain elevator. He lost Medicaid at redetermination three months ago and has been stretching his insulin. His pH is 7.08, bicarbonate 6, anion gap 28, glucose 520, potassium 5.6. That's severe DKA, a 14-hour insulin drip with checks every hour, and Bridgeport has one nurse tonight. The intensivist starts the DKA pathway from the hub, and the nurse's screen becomes an hourly checklist.</p>
+			<p class="say">Tyler Kessler, 60. Type 1 diabetes since he was 11; he works at a grain elevator. He lost Medicaid at redetermination three months ago and has been stretching his insulin. His pH is 7.08, bicarbonate 6, anion gap 28, glucose 520, potassium 5.6. That's severe DKA, a 14-hour insulin drip with checks every hour, and Bridgeport has one nurse tonight. The intensivist starts the DKA pathway from the hub, and the nurse's screen becomes an hourly checklist.</p>
 		</div>
 		<div>
 			<p class="label steps">Steps</p>
@@ -284,7 +284,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 	<div class="beat-head"><h2>5. The cause, captured</h2><span class="time">07:30</span></div>
 	<div class="script">
 		<div>
-			<p class="say">Why did a 24-year-old end up in DKA? Because insulin costs more than he could pay after losing his coverage. The APP's admission note records that as a structured social-needs field, "cost-related insulin rationing", not a line buried in free text, so the discharge workflow and the reports can act on it.</p>
+			<p class="say">Why did a 60-year-old end up in DKA? Because insulin costs more than he could pay after losing his coverage, five years short of Medicare. The APP's admission note records that as a structured social-needs field, "cost-related insulin rationing", not a line buried in free text, so the discharge workflow and the reports can act on it.</p>
 		</div>
 		<div>
 			<p class="label steps">Steps</p>
@@ -334,7 +334,6 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 				<tr><td>"Same checklist on Bridgeport's screen" is a line of text; the hub's view stands in for the nurse's</td><td>The RN's screen becomes an hourly checklist</td><td>The nurse's own view (DU-25) isn't built yet</td></tr>
 				<tr><td>"Signed … on their phone" is a line in the checklist</td><td>The intensivist signs off rate changes from a phone</td><td>Mock, as the scenario marks it; the phone isn't built, and the hub can't sign in the panel yet</td></tr>
 				<tr><td>The overdue nudge shows at the hub (the check, and a toast)</td><td>The RN and the hub tele-RN both get an alert</td><td>The nurse's side isn't built</td></tr>
-				<tr><td>Bridgeport has no other patients</td><td>One RN on the inpatient side</td><td>Bridgeport replaced Harbor Point General (Nov 6, 2026); its patients moved to Sidney</td></tr>
 				<tr><td>If you open his page before accepting the pathway, his medications already show the drip</td><td>—</td><td>His medications are built for the night, not rebuilt at each check</td></tr>
 				<tr><td>Referrals stay in the prototype</td><td>Referrals go out</td><td>Delivery to clinics and programs is funded work</td></tr>
 				<tr><td>Every threshold, the starting rate and the 1 h overlap</td><td>—</td><td>Typical DKA protocol values; replace them with Intercept's protocol before the demo (the scenario's clinical review)</td></tr>

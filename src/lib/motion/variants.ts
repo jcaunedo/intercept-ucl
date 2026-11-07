@@ -231,6 +231,19 @@ const liveGlowVariants: Variants = {
   },
 };
 
+/**
+ * Listening: a control taking input right now (ChatComposer's microphone while it dictates), on the Live beat. A darker
+ * fill over the control's own breathes in and out (`listening`), so it reads as active at a glance; `idle` takes it away.
+ * Under reduced motion, leave it at `idle`: the control's color already says it.
+ */
+const listeningFillVariants: Variants = {
+  idle: { opacity: 0, transition: standardTransition },
+  listening: {
+    opacity: [0, 1, 1, 0],
+    transition: { ...liveLoop, times: liveBeatTimes, ease: liveBeatEase },
+  },
+};
+
 const liveHaloVariants: Variants = {
   live: {
     scale: [1, 1, 1, motionScale.liveHalo],
@@ -316,6 +329,7 @@ export {
   liveDotVariants,
   liveHaloVariants,
   liveGlowVariants,
+  listeningFillVariants,
   urgencyRingVariants,
   arriveVariants,
 };

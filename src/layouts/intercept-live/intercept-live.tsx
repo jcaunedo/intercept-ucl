@@ -451,12 +451,14 @@ function InterceptLive({
 		() => ({ ...(unreadMessages > 0 ? { Messages: "unread" as const } : {}), ...navAlerts }),
 		[navAlerts, unreadMessages],
 	);
+	// The Sidebar's Ask Intercept Live: set below, once the chat's patient is known (it opens about the patient on screen).
+	const sidebarChatRef = React.useRef(() => toggleLeftPanel("chat"));
 	const groups = React.useMemo(
 		() =>
 			navGroups.map((group) =>
 				group.map((item) =>
 					item.label === askInterceptLabel
-						? { ...item, onClick: () => toggleLeftPanel("chat") }
+						? { ...item, onClick: () => sidebarChatRef.current() }
 						: item.navigateTo && shownNavAlerts[item.navigateTo as InterceptLivePage]
 							? { ...item, alert: shownNavAlerts[item.navigateTo as InterceptLivePage] }
 							: item,
@@ -547,8 +549,13 @@ function InterceptLive({
 	// Who the chat is about. From the app header's Ask Intercept button (Oct 31, 2026, user's call) it's the patient on
 	// screen, with no name of its own: it holds while their details are open, and it asks for their Quick overview. From Ask in an alert toast (Nov 2, 2026,
 	// user's call) it carries the name, so it holds on any page. Removing the patient (the chip over the message box),
-	// closing the chat or opening another patient's details ends it. From the Sidebar, the chat is general.
+	// closing the chat or opening another patient's details ends it. From the Sidebar, it's the patient on screen too, when
+	// there is one (Nov 6, 2026, user's call; it was always general), without asking anything; elsewhere it's general.
 	const [chatPatient, setChatPatient] = React.useState<{ id: string; name?: string; tags?: string[] } | null>(null);
+	sidebarChatRef.current = () => {
+		if (leftPanel !== "chat" && openPatientId !== null) setChatPatient({ id: openPatientId });
+		toggleLeftPanel("chat");
+	};
 	// The question asked for the user when Ask in a toast opens the chat (AskInterceptPanel's `opener`).
 	const [chatOpener, setChatOpener] = React.useState<{ id: string; question: string } | undefined>(undefined);
 	const openerCount = React.useRef(0);

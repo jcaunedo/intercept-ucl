@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 4, 2026
+Last updated: Nov 6, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 4, 2026
+**Last updated:** November 6, 2026
 
 ---
 
@@ -156,7 +156,7 @@ The panel shows the patients the clinician is responsible for on this shift: by 
 | Census filter | On Monitoring |
 |---|---|
 | Active alerts ("With alerts" until Oct 31, 2026; "Needs attention" and the Alerts only switch until Oct 27, 2026) | The triage queue (§5) lists exactly these, with the actions. ✅ **Decision (Oct 31, 2026, product):** also an **Active alerts** chip after My patients, so the panel itself can narrow to them. ✅ **Decision (Nov 2, 2026, user's call):** it matches live, as on the Census: a patient joins when their alert fires and leaves when it resolves (after showing Resolved), so the panel, its count, the summary and the alert toasts agree. It kept the patients who matched when pressed until then. Outside limits, Rising score and Not reporting still hold their patients (MON-013). While it's on, the cards rank by who to see first: severity, then acuity band, then the NEWS2 rise over 4 h, then how long the alert has waited, then the score (the work list's order, DU-09) |
-| Outside limits | A ▲ / ▼ mark on the value itself (MON-014), so drift shows in place. Also, since Oct 27, 2026, a Monitoring status filter, **Outside limits**: it keeps the patients who were outside their alarm limits when it was pressed, so cards never come and go as readings move (MON-013); its count stays live |
+| Outside limits | A ▲ / ▼ mark on the value itself (MON-014), so drift shows in place. Also, since Oct 27, 2026, a Monitoring status filter, **Outside limits**: it keeps the patients who were outside their alarm limits when it was pressed, so cards never come and go as readings move (MON-013). ✅ **Decision (Nov 6, 2026, user's call):** while a held chip (Outside limits, Rising score, Not reporting) is pressed, every held chip's count holds too, at the patients each matched when it was pressed (still narrowed by the hospital tab, unit and My patients); they go live again once it's off. Active alerts stays live |
 | Data gap | A System alert in the queue ("SpO₂ not reporting", MON-051) |
 | Rising score, Organ support, score sorts | Not on Monitoring: the monitoring card didn't show acuity or tags. They stay on the Census. ℹ️ Since Oct 30, 2026 the card shows both (always, since Card details was removed on Oct 31, 2026), and Organ support is in the Filters panel; the quick views and score sorts are still Census-only. ✅ **Decision (Nov 1, 2026, product):** **Rising score** is a Monitoring status chip too (deterioration, which the card's score row shows), held when pressed. Organ support stays in the Filters panel (context, not live status). Sepsis watch stays Census-only until Monitoring's patients carry sepsis status |
 

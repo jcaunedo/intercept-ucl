@@ -296,6 +296,7 @@ const sidneyIcu = "Alan Reyes, MD, Radiology";
 const alliance = radiologists["Alliance Community"];
 const sidney = radiologists.Sidney;
 const chadron = radiologists["Chadron Memorial"];
+const bridgeport = radiologists["Bridgeport Valley"];
 const day = 1520;
 
 const chartSpecs: Record<string, ChartSpec> = {
@@ -303,10 +304,10 @@ const chartSpecs: Record<string, ChartSpec> = {
 	p1: {
 		onsets: [30, 26, "2019"],
 		moreProblems: [["Community-acquired pneumonia, right lower lobe", 55], ["Hypokalemia", 2]],
-		resolved: [["Gestational diabetes", "2014"]],
+		resolved: [["Gestational diabetes", "1998"]],
 		medical: ["Type 2 diabetes · A1c 8.1% in August", "Hypertension", "Mild intermittent asthma · childhood"],
-		surgical: ["Laparoscopic cholecystectomy · 2016", "Cesarean section · 2014"],
-		social: ["Never smoker", "Alcohol socially", "Lives with husband and two children", "Teacher"],
+		surgical: ["Laparoscopic cholecystectomy · 2016", "Cesarean section · 1998"],
+		social: ["Never smoker", "Alcohol socially", "Lives with her husband; two grown children", "Teacher"],
 		home: [
 			["Metformin", "1,000 mg by mouth twice a day", "held"],
 			["Lisinopril", "10 mg by mouth daily", "held"],
@@ -428,8 +429,8 @@ const chartSpecs: Record<string, ChartSpec> = {
 	p5: {
 		onsets: ["2005", "2018"],
 		medical: ["Severe persistent asthma · two ICU stays, intubated once in 2019", "Anxiety disorder", "Eczema"],
-		surgical: ["Tonsillectomy · 2003"],
-		social: ["Never smoker", "Vaped occasionally, stopped in June", "Lives with a roommate", "Graduate student"],
+		surgical: ["Tonsillectomy · 1971"],
+		social: ["Never smoker", "Vaped occasionally, stopped in June", "Lives with her sister", "Librarian"],
 		home: [
 			["Budesonide-formoterol", "160/4.5, 2 puffs twice a day", "changed"],
 			["Albuterol inhaler", "2 puffs as needed", "changed"],
@@ -528,14 +529,13 @@ const chartSpecs: Record<string, ChartSpec> = {
 		imaging: [report("CT left thigh, without contrast", 30, "Gas along the fascia of the left thigh, consistent with necrotizing infection.", "Soft tissue gas tracking along the fascial planes of the anterior left thigh with surrounding edema. No drainable collection.", sidneyIcu)],
 	},
 	p11: {
-		onsets: [31, "July"],
-		ranges: { Magnesium: "4.8–8.4 on infusion" },
-		medical: ["Gestational diabetes · this pregnancy", "Migraine"],
-		surgical: ["Cesarean delivery · post-op day 1"],
-		social: ["Never smoker", "No alcohol in pregnancy", "Married", "Her son is in the well-baby nursery"],
+		onsets: [31, "2014"],
+		medical: ["Type 2 diabetes · A1c 7.4% in August", "Hypertension · out of her pills for a week", "Migraine"],
+		surgical: [],
+		social: ["Never smoker", "Alcohol rarely", "Married; her husband is visiting", "Retired bank teller"],
 		home: [
-			["Prenatal vitamin", "1 tablet by mouth daily", "continued"],
-			["Insulin aspart", "Sliding scale with meals", "held"],
+			["Amlodipine", "10 mg by mouth daily", "held"],
+			["Metformin", "500 mg by mouth twice a day", "held"],
 		],
 		extras: [["Sodium", "137"], ["Bicarbonate", "22"], ["Glucose", "124"], ["ALT", "98"], ["Fibrinogen", "410"], ["INR", "1.0"]],
 		cultures: [culture("Respiratory viral PCR", 30, "final", "Influenza B detected.", { updatedHours: 27 })],
@@ -728,6 +728,95 @@ const chartSpecs: Record<string, ChartSpec> = {
 			report("X-ray, right hip, after surgery", 23, "Hemiarthroplasty in good position.", "Right hip hemiarthroplasty in expected position. No fracture around the implant. Skin staples in place.", alliance),
 		],
 	},
+	// Peterson: diverticulitis on ceftriaxone and metronidazole; ibuprofen held.
+	p25: {
+		onsets: ["2014", "2016"],
+		medical: ["Hypertension", "Hyperlipidemia", "Diverticulosis · seen on colonoscopy, 2021"],
+		surgical: ["Appendectomy · 1976"],
+		social: ["Never smoker", "A beer or two on weekends", "Married, lives with his wife in town", "Retired; ran the hardware store"],
+		home: [
+			["Lisinopril", "10 mg by mouth daily", "continued"],
+			["Atorvastatin", "20 mg by mouth at bedtime", "continued"],
+			["Ibuprofen", "400 mg by mouth as needed", "held"],
+		],
+		extras: [["Hemoglobin", "13.9"], ["Platelets", "286"], ["Glucose", "108"], ["Bicarbonate", "25"]],
+		cultures: [],
+		imaging: [
+			report("CT abdomen and pelvis, with contrast", 45, "Acute sigmoid diverticulitis without abscess or free air.", "Wall thickening of the sigmoid colon with surrounding fat stranding and scattered diverticula. No abscess, free air or obstruction.", bridgeport),
+		],
+	},
+	// Lambert: influenza A; ceftriaxone until her sputum culture is back. Sulfa allergy.
+	p26: {
+		onsets: ["2009", "2012"],
+		medical: ["Hypothyroidism", "Osteoarthritis, knees and hands"],
+		surgical: ["Left carpal tunnel release · 2004"],
+		social: ["Never smoker", "No alcohol", "Widowed, lives alone in town; her daughter checks on her daily", "Retired schoolteacher"],
+		home: [
+			["Levothyroxine", "50 mcg by mouth daily", "continued"],
+			["Acetaminophen", "500 mg by mouth as needed", "changed"],
+			["Vitamin D3", "1,000 units by mouth daily", "held"],
+		],
+		extras: [
+			["Influenza A/B PCR", "Influenza A positive", { minutes: 1140 }],
+			["Hemoglobin", "12.4"],
+			["Platelets", "164"],
+			["Glucose", "118"],
+			["Bicarbonate", "24"],
+		],
+		cultures: [
+			culture("Sputum culture", 17, "preliminary", "Normal respiratory flora so far.", { updatedHours: 4 }),
+			culture("Blood cultures ×2 (admission)", 19, "preliminary", "No growth at 18 h.", { updatedHours: 3 }),
+		],
+		imaging: [
+			report("Chest X-ray, 2 views", 19, "Patchy opacities in both lower lobes, likely viral pneumonia.", "Patchy interstitial opacities in both lower lobes. No effusion. Heart size normal for age. Degenerative change in the spine.", bridgeport),
+		],
+	},
+	// Jacobs: rehab after a left knee replacement at Sidney Regional; meloxicam held while he's on aspirin.
+	p27: {
+		onsets: ["2015", "2012", "2019"],
+		medical: ["Osteoarthritis, both knees · the right one next", "Hypertension", "Type 2 diabetes · diet-controlled, A1c 6.4%"],
+		surgical: ["Left total knee replacement · 6 days ago, Sidney Regional", "Right rotator cuff repair · 2011"],
+		social: ["Former smoker, quit 1990", "A beer now and then", "Lives with his wife on a farm outside town; three steps to the door", "Retired farmer"],
+		home: [
+			["Losartan", "50 mg by mouth daily", "continued"],
+			["Acetaminophen", "1,000 mg by mouth three times a day", "continued"],
+			["Meloxicam", "7.5 mg by mouth daily", "held"],
+		],
+		extras: [["Platelets", "244"], ["Glucose", "126"], ["Bicarbonate", "26"]],
+		cultures: [],
+		imaging: [
+			report("X-ray, left knee, after surgery", 144, "Total knee replacement in good position.", "Left total knee arthroplasty components in expected position. No fracture around the implant. Skin staples in place.", radiologists["Sidney Regional"]),
+		],
+	},
+	// Hughes: a week of ibuprofen for back pain, then black stools; both NSAIDs and amlodipine held.
+	p28: {
+		onsets: ["2018", "2015"],
+		medical: ["Chronic low back pain · ibuprofen 800 mg three times a day for the last week", "Hypertension"],
+		surgical: ["Cesarean section · 1994"],
+		social: ["Never smoker", "A glass of wine on weekends", "Married, lives with her husband in town", "Works at the county clerk's office"],
+		home: [
+			["Amlodipine", "5 mg by mouth daily", "held"],
+			["Ibuprofen", "800 mg by mouth three times a day", "held"],
+		],
+		extras: [["Platelets", "248"], ["Sodium", "138"], ["Potassium", "4.1"], ["Glucose", "112"]],
+		cultures: [],
+		imaging: [],
+	},
+	// Ramirez: asthma since childhood; a cold set this one off.
+	p29: {
+		onsets: ["1998", "2005"],
+		medical: ["Asthma, moderate persistent · one ED visit last year, never intubated", "Allergic rhinitis"],
+		surgical: [],
+		social: ["Never smoker", "No alcohol", "Married, two children; lives in town", "Works at the school district office"],
+		home: [
+			["Budesonide-formoterol", "160/4.5 mcg, 2 puffs twice a day"],
+			["Albuterol inhaler", "2 puffs every 4 h as needed"],
+			["Cetirizine", "10 mg by mouth daily"],
+		],
+		extras: [["Sodium", "139"], ["Bicarbonate", "23"], ["Creatinine", "0.7"], ["Hemoglobin", "13.4"]],
+		cultures: [],
+		imaging: [report("Chest X-ray, 2 views", 2.6, "Hyperinflation. No pneumonia or pneumothorax.", "Hyperinflated lungs. No consolidation, effusion or pneumothorax. Normal heart size.", bridgeport)],
+	},
 };
 
 const sampleChartByPatient: Record<string, PatientChart> = Object.fromEntries(
@@ -843,7 +932,7 @@ const kesslerChart: ChartSpec = {
 	sex: "M",
 	hospital: "Bridgeport Valley",
 	notedBy: "Derek Lawson, PA-C",
-	onsets: ["2013", 0.5],
+	onsets: ["1977", 0.5],
 	medical: ["Type 1 diabetes · since age 11; A1c 9.6% in April", "Diabetic ketoacidosis · last admitted 6 years ago"],
 	surgical: [],
 	social: [

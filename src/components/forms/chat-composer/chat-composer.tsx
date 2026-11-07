@@ -1,13 +1,26 @@
 import * as React from "react";
-import { ArrowUpIcon, AudioLinesIcon, MicIcon, PlusIcon, SlashIcon, SquareIcon } from "lucide-react";
+import { ArrowUpIcon, AudioLinesIcon, MicIcon, MicOffIcon, PlusIcon, SlashIcon, SquareIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
 import {
+	useDictation,
+	useMicLevel,
+	useWakePhrase,
+	applySpokenDeletes,
+	endSpokenQuestion,
+	writeSpokenPunctuation,
+	type DictationError,
+} from "@/lib/hooks/use-dictation";
+import {
 	enterTransition,
+	exitTransition,
+	expandVariants,
+	listeningFillVariants,
 	motionDistance,
 	motionScale,
 	standardTransition,
+	useExpandClip,
 	useMotionPreference,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -32,9 +45,29 @@ type ChatComposerProps = Omit<React.ComponentProps<"form">, "onSubmit" | "childr
 	label?: string;
 	/** Adds an attachment. Without it, there's no + button. */
 	onAttach?: () => void;
-	/** Dictates the message. Without it, there's no microphone button. */
+	/**
+	 * Built-in dictation: the microphone button listens and writes what's heard into the field as it's said, for the
+	 * user to read, edit and send. It listens until the user presses it again or says "stop listening"; sending (the
+	 * button, or saying "send") and typing don't stop it. Uses the browser's speech recognition; where there's none
+	 * (Firefox), the button falls back to `onDictate`, or isn't shown.
+	 */
+	dictation?: boolean;
+	/** Dictation's language, a BCP 47 tag. */
+	dictationLang?: string;
+	/**
+	 * With `dictation`: a phrase ("Hey Intercept"), or several (any of them), that starts dictation hands-free, as the
+	 * microphone button does. While the composer is mounted, enabled and not dictating, it listens for the phrase only;
+	 * nothing else it hears is shown or kept. Mount the composer (or pass the phrase) only while its panel is open.
+	 */
+	wakePhrase?: string | readonly string[];
+	/** The placeholder while listening for `wakePhrase`, to say it can be said (e.g. 'Ask, search, or say "Hey Intercept"'). */
+	wakePlaceholder?: string;
+	/** Dictates the message, the app's own way. Without it (and without `dictation`), there's no microphone button. */
 	onDictate?: () => void;
-	/** Starts a voice conversation. Shown while the message is empty; Send takes its place once there's text. */
+	/**
+	 * Starts a voice conversation. Shown while the message is empty; Send takes its place once there's text. Without it,
+	 * nothing shows there while the message is empty, and Send slides in with the first character.
+	 */
 	onVoice?: () => void;
 	/** An answer is being written: Stop replaces Send and voice, and Enter doesn't send. The field stays editable. */
 	generating?: boolean;
@@ -64,6 +97,10 @@ function ChatComposer({
 	placeholder = "Message",
 	label,
 	onAttach,
+	dictation = false,
+	dictationLang = "en-US",
+	wakePhrase,
+	wakePlaceholder,
 	onDictate,
 	onVoice,
 	generating = false,
@@ -123,15 +160,106 @@ function ChatComposer({
 		fieldRef.current?.focus();
 	};
 
+	// Dictation writes after the text that was in the field when it started; what's being said now is shown too, and
+	// replaced as recognition settles on it.
+	const dictationBase = React.useRef("");
+	// Woken by the phrase: "Hey" can wake it before "Intercept" is said, so a leading "Intercept" is the phrase's, not the
+	// message's (Nov 6, 2026).
+	const wokeRef = React.useRef(false);
+	const dictate = useDictation({
+		lang: dictationLang,
+		onHeard: (heard) => {
+			const { final, interim } = wokeRef.current ? withoutWakeRest(heard) : heard;
+			// Spoken commands, as the last words said, once recognition has settled on them (never on a guess).
+			// "Stop listening": ends dictation, as the microphone does, without the words.
+			const stopCommand = interim ? null : stopCommandPattern.exec(final);
+			if (stopCommand) {
+				const text = appendDictated(dictationBase.current, [stopCommand[1]]);
+				dictate.stop();
+				return setValue(text.trim() ? endSpokenQuestion(text.trimEnd()) : text);
+			}
+			// "Send" or "Submit": sends, as the Send button does, without the word, and goes on listening for the next
+			// message. With nothing to send (or an answer still being written) the word is dropped and the text stays.
+			const sendCommand = interim ? null : sendCommandPattern.exec(final);
+			// A command still being guessed never shows: the field leaves out a trailing "send", "submit" or "stop listening"
+			// until recognition settles (and acts) or more words follow it (Nov 6, 2026, user's call).
+			if (!sendCommand) {
+				const said = [final, interim].filter(Boolean).join(" ").replace(trailingCommandPattern, "");
+				const text = appendDictated(dictationBase.current, [said]);
+				// Settled, with nothing more being said: a question shows its "?" now (Nov 6, 2026, user's call). It goes again
+				// if the sentence carries on, since the field is rebuilt from what's heard each time.
+				return setValue(!interim && said.trim() ? endSpokenQuestion(text) : text);
+			}
+			const text = appendDictated(dictationBase.current, [sendCommand[1]]);
+			dictate.reset();
+			if (!text.trim() || disabled || generating) {
+				dictationBase.current = text;
+				return setValue(text);
+			}
+			dictate.clearError();
+			onSubmit?.(endSpokenQuestion(text.trim()));
+			dictationBase.current = "";
+			setValue("");
+		},
+	});
+	const builtInDictation = dictation && dictate.supported;
+	const listening = builtInDictation && dictate.listening;
+	// Dictation runs until the clinician ends it: the microphone, or saying "stop listening" (Nov 6, 2026, user's call).
+	// Sending and typing don't end it. Ending it gives a spoken question its "?".
+	const finishDictation = () => {
+		dictate.stop();
+		if (value.trim()) setValue(endSpokenQuestion(value.trimEnd()));
+	};
+	const toggleDictation = () => {
+		if (listening) return finishDictation();
+		wokeRef.current = false;
+		dictationBase.current = value;
+		dictate.start();
+	};
+	const dictationClip = useExpandClip<HTMLParagraphElement>();
+	// Hands-free: the wake phrase starts dictation, as the button would, after whatever is in the field.
+	const waitingForWake = useWakePhrase({
+		phrase: wakePhrase,
+		enabled: builtInDictation && !listening && !disabled && dictate.error !== "denied",
+		lang: dictationLang,
+		onWake: () => {
+			dictationBase.current = value;
+			wokeRef.current = true;
+			dictate.start();
+		},
+	});
+	// The voice meter: a halo behind the microphone that swells with the voice from the first syllable, so it's plain that
+	// it's listening before any words come back. Written straight to the halo's style each frame; still under reduced
+	// motion.
+	const haloRef = React.useRef<HTMLSpanElement>(null);
+	// Invisible in silence: the flat fill is translucent, so a resting halo would darken the button.
+	useMicLevel(listening && !prefersReducedMotion, (level) => {
+		if (!haloRef.current) return;
+		haloRef.current.style.transform = `scale(${1 + level * 0.45})`;
+		haloRef.current.style.opacity = String(Math.min(1, level * 2));
+	});
+	// The button at the right end: Stop while generating, Send with text, voice without; nothing while empty and there's no
+	// voice, so Send arrives with the first character (opening its own width, which pushes the microphone left).
+	const trailing = generating ? "stop" : message ? "send" : onVoice ? "voice" : null;
+
+	React.useEffect(() => {
+		if (disabled) dictate.stop();
+	}, [disabled, dictate.stop]);
+
 	const send = () => {
 		if (!message || disabled || generating) return;
-		onSubmit?.(message);
+		dictate.clearError();
+		// Sent while dictating: a spoken question gets its "?", and dictation goes on for the next message, from scratch.
+		onSubmit?.(listening ? endSpokenQuestion(message) : message);
+		dictationBase.current = "";
+		dictate.reset();
 		setValue("");
 	};
 
 	return (
 		<form
 			data-slot='chat-composer'
+			data-dictating={listening || undefined}
 			onSubmit={(event) => {
 				event.preventDefault();
 				send();
@@ -211,7 +339,15 @@ function ChatComposer({
 				<textarea
 					ref={fieldRef}
 					value={value}
-					onChange={(event) => setValue(event.target.value)}
+					onChange={(event) => {
+						// Typing while dictating doesn't stop it: what's said next goes after what's typed.
+						if (listening) {
+							dictationBase.current = event.target.value;
+							dictate.reset();
+						}
+						dictate.clearError();
+						setValue(event.target.value);
+					}}
 					onBlur={() => setMenuForced(false)}
 					onKeyDown={(event) => {
 						if (menuOpen) {
@@ -242,7 +378,7 @@ function ChatComposer({
 						}
 					}}
 					rows={1}
-					placeholder={placeholder}
+					placeholder={listening ? "Listening…" : waitingForWake && wakePlaceholder ? wakePlaceholder : placeholder}
 					aria-label={label ?? placeholder}
 					role={commands.length ? "combobox" : undefined}
 					aria-autocomplete={commands.length ? "list" : undefined}
@@ -251,9 +387,33 @@ function ChatComposer({
 					aria-activedescendant={menuOpen && active ? `${menuId}-${active.name}` : undefined}
 					aria-describedby={hint ? hintId : undefined}
 					disabled={disabled}
-					className='col-start-1 row-start-1 field-sizing-content max-h-40 min-h-5 w-full resize-none bg-transparent text-sm text-foreground outline-none placeholder:text-foreground-subtle disabled:cursor-not-allowed'
+					className={cn(
+						"col-start-1 row-start-1 field-sizing-content max-h-40 min-h-5 w-full resize-none bg-transparent text-sm text-foreground outline-none placeholder:text-foreground-subtle disabled:cursor-not-allowed",
+						// "Listening…" is a state, not a hint: `foreground`, like the text it's waiting for (Nov 6, 2026, user's call).
+						listening && "placeholder:text-foreground",
+					)}
 				/>
 			</div>
+			{/* Why dictation stopped on its own, under the field (Expand), until the user tries again, types or sends. */}
+			<AnimatePresence initial={false}>
+				{builtInDictation && dictate.error ? (
+					<motion.p
+						key='dictation-error'
+						{...dictationClip}
+						variants={prefersReducedMotion ? undefined : expandVariants}
+						initial='initial'
+						animate='animate'
+						exit='exit'
+						className='-mt-1 text-xs text-muted-foreground'
+					>
+						{dictationErrors[dictate.error]}
+					</motion.p>
+				) : null}
+			</AnimatePresence>
+			{/* Announces dictation starting and stopping; the button's pressed state says it too. */}
+			<span role='status' className='sr-only'>
+				{listening ? "Listening" : ""}
+			</span>
 			<div className='flex items-center justify-between gap-2'>
 				<div className='flex items-center gap-2'>
 					{onAttach ? (
@@ -287,8 +447,40 @@ function ChatComposer({
 						</Button>
 					) : null}
 				</div>
-				<div className='flex items-center gap-2'>
-					{onDictate ? (
+				<div className='flex items-center'>
+					{builtInDictation ? (
+						<span className='relative flex'>
+							<span
+								ref={haloRef}
+								aria-hidden='true'
+								className='pointer-events-none absolute inset-0 rounded-button-md bg-destructive/25 opacity-0'
+							/>
+							<Button
+								type='button'
+								// While listening: Flat · Destructive, the red of a recording, with `mic-off` (archielabs.ds `6346:10225`,
+								// lucide's glyph), what a press does now.
+								variant={listening ? "destructive-secondary" : "outline"}
+								size='icon-sm'
+								aria-label={listening ? "Stop dictating" : "Dictate"}
+								aria-pressed={listening}
+								onClick={toggleDictation}
+								disabled={disabled}
+								// `isolate`: the breathing fill sits over the button's own fill, under the icon.
+								className='relative isolate rounded-button-md'
+							>
+								{/* Listening, the darker `destructive-muted` fill breathes over the pale one on the Live beat (MOTION.md
+								    "Listening"), so it reads as active. Still under reduced motion. */}
+								<motion.span
+									aria-hidden='true'
+									variants={listeningFillVariants}
+									initial={false}
+									animate={listening && !prefersReducedMotion ? "listening" : "idle"}
+									className='pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-destructive-muted'
+								/>
+								{listening ? <MicOffIcon aria-hidden='true' /> : <MicIcon aria-hidden='true' />}
+							</Button>
+						</span>
+					) : onDictate ? (
 						<Button
 							type='button'
 							variant='outline'
@@ -301,46 +493,106 @@ function ChatComposer({
 							<MicIcon aria-hidden='true' />
 						</Button>
 					) : null}
-					{generating ? (
-						<Button
-							type='button'
-							variant='neutral'
-							size='icon-sm'
-							aria-label='Stop generating'
-							onClick={onStop}
-							disabled={disabled}
-							className='rounded-button-md'
-						>
-							<SquareIcon aria-hidden='true' className='size-3 fill-current' />
-						</Button>
-					) : message || !onVoice ? (
-						<Button
-							type='submit'
-							variant='neutral'
-							size='icon-sm'
-							aria-label='Send'
-							disabled={disabled || !message}
-							className='rounded-button-md'
-						>
-							<ArrowUpIcon aria-hidden='true' />
-						</Button>
-					) : (
-						<Button
-							type='button'
-							variant='neutral'
-							size='icon-sm'
-							aria-label='Start voice conversation'
-							onClick={onVoice}
-							disabled={disabled}
-							className='rounded-button-md'
-						>
-							<AudioLinesIcon aria-hidden='true' />
-						</Button>
-					)}
+					<AnimatePresence initial={false}>
+						{trailing ? (
+							<motion.div
+								key='trailing'
+								// The slot opens its width and the 8px gap before it while the button grows from its center, all on one
+								// curve: at every frame the button is exactly as wide as its slot (32px × scale), so it never covers the
+								// microphone, which glides left as the slot opens. Closing runs the same way back. A fade under reduced
+								// motion.
+								initial={
+									prefersReducedMotion
+										? { width: 32, marginLeft: 8, opacity: 0 }
+										: { width: 0, marginLeft: 0, scale: 0 }
+								}
+								animate={{ width: 32, marginLeft: 8, scale: 1, opacity: 1, transition: resolve(standardTransition) }}
+								exit={
+									prefersReducedMotion
+										? { opacity: 0, transition: resolve(exitTransition) }
+										: { width: 0, marginLeft: 0, scale: 0, transition: resolve(exitTransition) }
+								}
+								className='flex shrink-0 justify-center'
+							>
+								{trailing === "stop" ? (
+									<Button
+										type='button'
+										variant='neutral'
+										size='icon-sm'
+										aria-label='Stop generating'
+										onClick={onStop}
+										disabled={disabled}
+										className='rounded-button-md'
+									>
+										<SquareIcon aria-hidden='true' className='size-3 fill-current' />
+									</Button>
+								) : trailing === "send" ? (
+									<Button
+										type='submit'
+										variant='neutral'
+										size='icon-sm'
+										aria-label='Send'
+										disabled={disabled}
+										className='rounded-button-md'
+									>
+										<ArrowUpIcon aria-hidden='true' />
+									</Button>
+								) : (
+									<Button
+										type='button'
+										variant='neutral'
+										size='icon-sm'
+										aria-label='Start voice conversation'
+										onClick={onVoice}
+										disabled={disabled}
+										className='rounded-button-md'
+									>
+										<AudioLinesIcon aria-hidden='true' />
+									</Button>
+								)}
+							</motion.div>
+						) : null}
+					</AnimatePresence>
 				</div>
 			</div>
 		</form>
 	);
+}
+
+// A spoken "send" or "submit" ending what's been said (Nov 6, 2026, user's call), with the text before it; recognition
+// may add a period or a comma. The same for "stop listening".
+const sendCommandPattern = /^(.*?)[\s,.]*\b(?:send|submit)[.!?]*\s*$/i;
+const stopCommandPattern = /^(.*?)[\s,.]*\bstop\s+listening[.!?]*\s*$/i;
+/** What a woken dictation heard, without the wake phrase's rest at its start ("Intercept, can you…" → "can you…"). */
+function withoutWakeRest({ final, interim }: { final: string; interim: string }) {
+	const rest = /^\s*intercept\b[\s,.!]*/i;
+	return final ? { final: final.replace(rest, ""), interim } : { final, interim: interim.replace(rest, "") };
+}
+
+// Any of them ending what's being said, to keep out of the field while it's still a guess.
+const trailingCommandPattern = /[\s,.]*\b(?:send|submit|stop(?:\s+listening)?)[.!?]*\s*$/i;
+
+const dictationErrors: Record<DictationError, string> = {
+	denied: "Allow the microphone to dictate.",
+	unavailable: "Dictation isn't working right now. Try again.",
+};
+
+/**
+ * The field's text with dictation after it, its spoken deletes applied and its spoken punctuation written ("comma" → ", ", "period" → ". ", "question
+ * mark" → "? "): a space
+ * between them unless the text already ends in one or the dictation starts with a mark, and the first word capitalized
+ * when the field was empty or ends a sentence.
+ */
+function appendDictated(base: string, parts: string[]) {
+	// "delete" removes the word before it; past what was dictated, the field's own words, one by one.
+	const { text: spoken, extra } = applySpokenDeletes(parts.filter(Boolean).join(" "));
+	for (let left = extra; left > 0 && base.trim(); left--) base = base.replace(/\s*\S+\s*$/, "");
+	const heard = writeSpokenPunctuation(spoken).trimStart();
+	if (!heard) return base;
+	const capitalized = heard.charAt(0).toUpperCase() + heard.slice(1);
+	if (!base.trim()) return capitalized;
+	if (/^[,.?]/.test(heard)) return `${base.trimEnd()}${heard}`;
+	return `${base}${/\s$/.test(base) ? "" : " "}${/[.!?]\s*$/.test(base) ? capitalized : heard}`;
 }
 
 export { ChatComposer, type ChatCommand, type ChatComposerProps };

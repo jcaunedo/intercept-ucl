@@ -369,14 +369,16 @@ function MonitoringPanel({
 	const activeAlertsRequest = navigation?.activeAlertsRequest ?? null;
 	const [hospitalId, setHospitalId] = React.useState(() => activeAlertsRequest?.hospitalId ?? "all");
 	const [scope, setScope] = usePatientScope("monitoring");
-	// A status chip keeps the patients who matched when it was pressed: readings move every second and alerts come and go,
-	// and a live filter would add and drop cards under the clinician's eyes (PRD MON-013). Its count stays live; pressing
-	// it again clears it.
-	// The pressed status chip. A held chip keeps the patients who matched when it was pressed (`ids`; readings move every
-	// second, MON-013); Active alerts has none and matches live.
-	const [statusFilter, setStatusFilter] = React.useState<{ id: string; ids?: ReadonlySet<string> } | null>(() =>
-		activeAlertsRequest ? { id: "alerts" } : null,
-	);
+	// The pressed status chip. A held chip keeps the patients who matched when it was pressed (`ids`): readings move every
+	// second and a live filter would add and drop cards under the clinician's eyes (PRD MON-013). Active alerts has none
+	// and matches live. While a held chip is pressed, every held chip's count holds too (`counted`, each chip's patients
+	// when it was pressed; Nov 6, 2026, user's call): numbers ticking beside a view that stands still read as noise.
+	// Pressing it again clears it, and the counts go live again.
+	const [statusFilter, setStatusFilter] = React.useState<{
+		id: string;
+		ids?: ReadonlySet<string>;
+		counted?: Record<string, ReadonlySet<string>>;
+	} | null>(() => (activeAlertsRequest ? { id: "alerts" } : null));
 	const inStatusFilter = (patient: PanelMonitoringPatient) =>
 		!statusFilter ||
 		(statusFilter.ids
@@ -541,7 +543,7 @@ function MonitoringPanel({
 			: hospitalCount === 1
 				? hospitals.find((hospital) => hospital.id === visible[0].hospitalId)
 				: undefined;
-	// A hospital tab with no patients at all (Bridgeport until Scenario 4's patient arrives) says so, rather than
+	// A hospital tab with no patients at all (a hospital whose patients have all left, say) says so, rather than
 	// blaming the filters.
 	const emptyHospital = hospitalId !== "all" && !patients.some((patient) => patient.hospitalId === hospitalId) ? singleHospital : undefined;
 
@@ -550,14 +552,32 @@ function MonitoringPanel({
 	const pressStatusFilter = (id: string | null) => {
 		if (id === "alerts" || statusFilter?.id === "alerts") snapNextOrder();
 		const filter = statusFilters.find((view) => view.id === id);
+		const matching = (matches: (patient: PanelMonitoringPatient) => boolean) =>
+			new Set(patients.filter(matches).map((patient) => patient.id));
 		setStatusFilter(
 			!filter
 				? null
 				: filter.id === "alerts"
 					? { id: filter.id }
-					: { id: filter.id, ids: new Set(patients.filter(filter.matches).map((patient) => patient.id)) },
+					: {
+							id: filter.id,
+							ids: matching(filter.matches),
+							counted: Object.fromEntries(
+								statusFilters.filter((view) => view.id !== "alerts").map((view) => [view.id, matching(view.matches)]),
+							),
+						},
 		);
 	};
+	// The held chips' counts while one is pressed: the patients each matched then, still narrowed by the hospital tab, the
+	// unit and My patients as they change.
+	const heldStatusCounts = statusFilter?.counted
+		? Object.fromEntries(
+				Object.entries(statusFilter.counted).map(([id, ids]) => [
+					id,
+					located(assigned).filter((patient) => ids.has(patient.id)).length,
+				]),
+			)
+		: undefined;
 	// A hospital tab's alert count: that tab, with Active alerts on and nothing else narrowing it, so the cards are the
 	// alerts the count counted (Nov 5, 2026, user's call).
 	const showActiveAlerts = (id: string) => {
@@ -695,6 +715,7 @@ function MonitoringPanel({
 									value={statusFilter?.id ?? null}
 									onValueChange={pressStatusFilter}
 									patients={located(assigned)}
+									counts={heldStatusCounts}
 								/>
 							</FilterBarFilters>
 							{/* View controls (PRD MON-015): card monitor, monitor view, then density, the switches of one view, and the

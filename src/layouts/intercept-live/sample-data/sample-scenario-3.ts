@@ -23,7 +23,7 @@ import { sampleEhrByHospital } from "./sample-ehr";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
 
 // Story-only: Scenario 3 of the Demo Use Cases, "Sepsis in a patient with diabetes and kidney disease", as beats the
-// Prototype menu plays. Rosa Medina (`p23`), 51, type 2 diabetes and CKD stage 4, on Medicaid, prefers Spanish. In
+// Prototype menu plays. Rosa Medina (`p23`), 58, type 2 diabetes and CKD stage 4, on Medicaid, prefers Spanish. In
 // Sidney's ED, boarding because the inpatient unit is full, with a hospitalist APP (Jenna Collins, NP) and two nurses.
 // CVMC was renamed Sidney for it (Nov 6, 2026, user's call).
 //

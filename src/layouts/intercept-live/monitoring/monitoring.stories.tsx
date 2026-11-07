@@ -393,11 +393,30 @@ export const Empty: Story = {
 	args: { patients: [] },
 };
 
-/** Filters that match nobody (OB-ICU and ECMO): an empty state with Clear filters, which brings every patient back. */
+/**
+ * A hospital with no patients at all (here Bridgeport, its five left out of the roster): its tab says so, "No patients
+ * at Bridgeport Valley", rather than blaming the filters, and Show all hospitals goes back to everyone.
+ */
+export const EmptyHospital: Story = {
+	args: {
+		patients: sampleMonitoringPatients.filter((patient) => patient.hospitalId !== "bridgeport"),
+		censusPatients: samplePatients.filter((patient) => patient.hospitalId !== "bridgeport"),
+	},
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("tab", { name: /^Bridgeport/ }));
+		await waitFor(() => expect(canvas.getByText("No patients at Bridgeport Valley")).toBeVisible());
+		await expect(canvas.queryByText("No patients match these filters")).not.toBeInTheDocument();
+		await userEvent.click(canvas.getByRole("button", { name: "Show all hospitals" }));
+		await waitFor(() => expect(canvas.getByRole("tab", { name: /^All hospitals/ })).toHaveAttribute("aria-selected", "true"));
+		await expect(canvas.queryByText("No patients at Bridgeport Valley")).not.toBeInTheDocument();
+	},
+};
+
+/** Filters that match nobody (CCU and ECMO): an empty state with Clear filters, which brings every patient back. */
 export const NoMatches: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
-		await userEvent.click(await screen.findByRole("checkbox", { name: "OB-ICU" }));
+		await userEvent.click(await screen.findByRole("checkbox", { name: "CCU" }));
 		await userEvent.click(screen.getByRole("checkbox", { name: "ECMO" }));
 		await userEvent.click(screen.getByRole("button", { name: "Done" }));
 		// The empty state Reveals in (opacity 0 → 1), so wait for it to finish appearing.

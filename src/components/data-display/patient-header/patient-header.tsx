@@ -136,7 +136,7 @@ function PatientHeader({
 	className,
 	...props
 }: PatientHeaderProps) {
-	// "MRN 01033876 - F, 39": the identifiers first, then sex and age, as intercept.ds writes them.
+	// "MRN 01033876 - F, 59": the identifiers first, then sex and age, as intercept.ds writes them.
 	const demographics = [sex, age].filter((part) => part !== undefined && part !== "").join(", ");
 	const identity = [mrn ? `MRN ${mrn}` : undefined, demographics].filter(Boolean).join(" - ");
 	const facts = [identity, hospital, unit, room, bed, ...details].filter(Boolean);

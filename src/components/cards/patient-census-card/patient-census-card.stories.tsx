@@ -17,7 +17,7 @@ const patient = {
 	firstName: "Sarah",
 	mrn: "01033876",
 	sex: "F",
-	age: 39,
+	age: 59,
 	hospital: "Sidney Regional",
 	unit: "MICU",
 	room: "4",

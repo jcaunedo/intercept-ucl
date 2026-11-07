@@ -22,10 +22,10 @@ import { sampleEhrByHospital } from "./sample-ehr";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
 
 // Story-only: Scenario 4 of the Demo Use Cases, "DKA caused by insulin rationing, managed by one night nurse", as beats
-// the Prototype menu plays. Tyler Kessler (`p24`), 24, type 1 diabetes since 11, works at a grain elevator, lost
-// Medicaid at redetermination three months ago and has been stretching his insulin. Bridgeport at 23:00: one RN on the
-// inpatient side (Brittany Cole), an APP on call from home (Derek Lawson, PA-C), the hub's tele-RN (Ava Brooks) and
-// intensivist covering remotely. Harbor Point General was renamed Bridgeport for it (Nov 6, 2026, user's call).
+// the Prototype menu plays. Tyler Kessler (`p24`), 60, type 1 diabetes since 11, works at a grain elevator, lost
+// Medicaid at redetermination three months ago (five years short of Medicare) and has been stretching his insulin.
+// Bridgeport at 23:00: one RN on the inpatient side (Brittany Cole), an APP on call from home (Derek Lawson, PA-C), the
+// hub's tele-RN (Ava Brooks) and intensivist covering remotely. Harbor Point General was renamed Bridgeport for it (Nov 6, 2026, user's call).
 //
 // 1. Protocol launch (the clinician's): he arrives on every page with his Critical alert and the DKA pathway suggested.
 //    Accepting it starts the protocol: the nurse's screen becomes an hourly checklist, and the hub sees the same one.

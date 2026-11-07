@@ -77,7 +77,7 @@ export const Static: Story = {};
 
 /**
  * My patients: a chip like the quick views, off by default, so the grid starts with everyone. Pressed, it narrows the
- * grid to the user's own and the title reads "8 of 21 patients"; pressed again, everyone is back.
+ * grid to the user's own and the title reads "8 of 26 patients"; pressed again, everyone is back.
  */
 export const MyPatients: Story = {
 	play: async ({ canvas, userEvent }) => {
@@ -96,27 +96,33 @@ export const MyPatients: Story = {
 	},
 };
 
-/** New patients, right after My patients: the seven who arrived on their unit in the last 24 h. */
+/** New patients, right after My patients: the ten who arrived on their unit in the last 24 h. */
 export const NewPatients: Story = {
 	play: async ({ canvas, userEvent }) => {
 		const chip = canvas.getByRole("button", { name: /^New patients/ });
-		await expect(chip).toHaveTextContent(/·\s*7$/);
+		await expect(chip).toHaveTextContent(/·\s*10$/);
 		await userEvent.click(chip);
 		await waitFor(() =>
-			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^7 patients/),
+			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^10 patients/),
 		);
 	},
 };
 
 /**
  * The Sidebar's Ask Intercept Live opens the chat panel from the left, on any page: the page narrows beside it. Its
- * close button, Escape or Ask Intercept Live again closes it.
+ * close button, Escape or Ask Intercept Live again closes it. The greeting writes itself without a Stop button, and a
+ * question sent meanwhile is asked, the greeting finishing at once.
  */
 export const AskIntercept: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
 		const panel = await canvas.findByRole("complementary", { name: "Ask Intercept Live" });
 		await waitFor(() => expect(panel).toHaveStyle({ width: "400px" }));
+		const chat = within(panel);
+		await waitFor(() => expect(chat.getByRole("log", { name: "Conversation" })).toHaveAttribute("aria-busy", "true"));
+		await expect(chat.queryByRole("button", { name: "Stop generating" })).toBeNull();
+		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), "What changed?{Enter}");
+		await expect(await chat.findByText("What changed?")).toBeVisible();
 		await userEvent.click(canvas.getByRole("button", { name: "Close Ask Intercept Live" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Ask Intercept Live" })).not.toBeInTheDocument());
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
@@ -194,7 +200,7 @@ export const Search: Story = {
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^1 patient at /));
 		await expect(canvas.getByRole("button", { name: /^My patients/ })).toHaveTextContent(/1$/);
 		await userEvent.click(canvas.getByRole("button", { name: "Clear search" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^21 patients/));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(new RegExp(`^${samplePatients.length} patients`)));
 		// Anything the card shows: Miller's score, "NEWS2 17".
 		await userEvent.type(search, "17");
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^2 patients/));
@@ -211,7 +217,7 @@ export const Filters: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
 		const ventilated = await screen.findByRole("checkbox", { name: "Ventilated" });
 		await userEvent.click(ventilated);
-		await expect(screen.getByText("5 of 21 patients in this view")).toBeInTheDocument();
+		await expect(screen.getByText(`5 of ${samplePatients.length} patients in this view`)).toBeInTheDocument();
 		// A modal: the page behind is hidden from assistive tech until Done closes the sheet.
 		await userEvent.click(screen.getByRole("button", { name: "Done" }));
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
@@ -223,7 +229,7 @@ export const Filters: Story = {
 		// With nothing picked, the footer (Clear all, Done) leaves; the close button closes the sheet.
 		await waitFor(() => expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument());
 		await userEvent.click(screen.getByRole("button", { name: "Close Filters" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^21 patients/));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(new RegExp(`^${samplePatients.length} patients`)));
 	},
 };
 
@@ -238,10 +244,10 @@ export const FiltersSearch: Story = {
 		await waitFor(() => expect(search).toHaveFocus());
 		await userEvent.type(search, "vent");
 		await expect(screen.getByRole("checkbox", { name: "Ventilated" })).toBeInTheDocument();
-		await expect(screen.queryByRole("checkbox", { name: "OB-ICU" })).not.toBeInTheDocument();
+		await expect(screen.queryByRole("checkbox", { name: "CCU" })).not.toBeInTheDocument();
 		await userEvent.clear(search);
 		await userEvent.type(search, "unit");
-		await expect(screen.getByRole("checkbox", { name: "OB-ICU" })).toBeInTheDocument();
+		await expect(screen.getByRole("checkbox", { name: "CCU" })).toBeInTheDocument();
 		await expect(screen.queryByRole("checkbox", { name: "Ventilated" })).not.toBeInTheDocument();
 		await userEvent.clear(search);
 		await userEvent.type(search, "zzz");
@@ -318,12 +324,31 @@ export const Empty: Story = {
 	args: { patients: [] },
 };
 
-/** Filters that match nobody (Rising score in OB-ICU): an empty state with Clear filters, which brings every patient back. */
+/**
+ * A hospital with no patients at all (here Bridgeport, its five left out of the roster): its tab says so, "No patients
+ * at Bridgeport Valley", rather than blaming the filters, and Show all hospitals goes back to everyone.
+ */
+export const EmptyHospital: Story = {
+	args: {
+		patients: samplePatients.filter((patient) => patient.hospitalId !== "bridgeport"),
+		monitoringPatients: sampleMonitoringPatients.filter((patient) => patient.hospitalId !== "bridgeport"),
+	},
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("tab", { name: /^Bridgeport/ }));
+		await waitFor(() => expect(canvas.getByText("No patients at Bridgeport Valley")).toBeVisible());
+		await expect(canvas.queryByText("No patients match these filters")).not.toBeInTheDocument();
+		await userEvent.click(canvas.getByRole("button", { name: "Show all hospitals" }));
+		await waitFor(() => expect(canvas.getByRole("tab", { name: /^All hospitals/ })).toHaveAttribute("aria-selected", "true"));
+		await expect(canvas.queryByText("No patients at Bridgeport Valley")).not.toBeInTheDocument();
+	},
+};
+
+/** Filters that match nobody (Rising score in CCU): an empty state with Clear filters, which brings every patient back. */
 export const NoMatches: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: /Rising score/ }));
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
-		await userEvent.click(await screen.findByRole("checkbox", { name: "OB-ICU" }));
+		await userEvent.click(await screen.findByRole("checkbox", { name: "CCU" }));
 		// The empty state Reveals in (opacity 0 → 1), so wait for it to finish appearing.
 		await waitFor(() => expect(canvas.getByText("No patients match these filters")).toBeVisible());
 	},
