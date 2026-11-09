@@ -52,6 +52,13 @@ type LabTileProps = Omit<React.ComponentProps<"div">, "children"> &
 		previous?: { value: string; at: string };
 		/** When a pending lab was collected, ISO 8601: "Collected 7:23 AM". */
 		collectedAt?: string;
+		/**
+		 * The top right in place of the result's age, e.g. a vital's context: "Nitro stops < 110", "Since 8:03 AM", or a stale
+		 * "2 h old" in red. Lets the tile show a finding that isn't a lab.
+		 */
+		meta?: React.ReactNode;
+		/** The bottom line when there's no previous result, e.g. "Charted · Normal", "IPAP/EPAP · FiO₂". */
+		note?: React.ReactNode;
 	};
 
 /**
@@ -61,7 +68,19 @@ type LabTileProps = Omit<React.ComponentProps<"div">, "children"> &
  *
  * Figma: [intercept.ds › lab-tile](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1405-43)
  */
-function LabTile({ className, flag = "none", name, value, unit, resultedAt, previous, collectedAt, ...props }: LabTileProps) {
+function LabTile({
+	className,
+	flag = "none",
+	name,
+	value,
+	unit,
+	resultedAt,
+	previous,
+	collectedAt,
+	meta,
+	note,
+	...props
+}: LabTileProps) {
 	const now = useCurrentMinute();
 	const pending = value === undefined;
 	const tone = !pending && flag && flag !== "none" ? flags[flag] : undefined;
@@ -79,7 +98,9 @@ function LabTile({ className, flag = "none", name, value, unit, resultedAt, prev
 			<div className='flex flex-col'>
 				<div className='flex items-baseline gap-2'>
 					<span className='min-w-0 flex-1 truncate text-sm font-semibold text-foreground'>{name}</span>
-					{resulted ? (
+					{meta ? (
+						<span className='shrink-0 text-xs text-muted-foreground'>{meta}</span>
+					) : resulted ? (
 						<time dateTime={resultedAt} title={resulted.title} className='shrink-0 text-xs text-muted-foreground'>
 							{resulted.label}
 						</time>
@@ -128,6 +149,8 @@ function LabTile({ className, flag = "none", name, value, unit, resultedAt, prev
 					</span>{" "}
 					at {formatTime(previous.at)}
 				</span>
+			) : note ? (
+				<span className='text-xs text-foreground'>{note}</span>
 			) : null}
 		</div>
 	);

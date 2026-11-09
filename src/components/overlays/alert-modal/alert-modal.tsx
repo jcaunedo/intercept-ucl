@@ -90,8 +90,13 @@ type AlertModalProps = Omit<React.ComponentProps<"div">, "title"> &
 		titleAs?: React.ElementType;
 		/** The description's element. Inside a Dialog, pass `DialogDescription`. */
 		descriptionAs?: React.ElementType;
-		/** The buttons under the alert (Button `outline` `md`), one row at equal widths, e.g. Video consult and Pathway. */
+		/** The buttons under the alert (Button `outline` `md`), one row at equal widths. */
 		actions?: React.ReactNode;
+		/**
+		 * Buttons right of the patient's name, before the × (Button `neutral` `icon-md`, 8px apart), sticking with the name,
+		 * e.g. Intercept Live's Video consult and Messages.
+		 */
+		headerActions?: React.ReactNode;
 		/** The patient's live bedside monitor, the full four lanes. */
 		monitor?: PatientMonitorProps;
 		/**
@@ -198,7 +203,7 @@ function AlertModalClose({
 
 /**
  * One patient's alert, expanded: who they are (the name opens them), the alert as its bar over a panel in its severity's
- * tones with its heading, source, state and lifecycle actions, then the actions under it, the patient's score, live
+ * tones with its heading, source, state and lifecycle actions (with `headerActions` right of the name), the patient's score, live
  * monitor and tags. The panel the alert modal opens with, and a standalone card where one alert needs the room.
  *
  * Figma: [intercept.ds › alert-modal](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1355-14776)
@@ -231,6 +236,7 @@ function AlertModal({
 	titleAs: Title = "h2",
 	descriptionAs: Description = "p",
 	actions,
+	headerActions,
 	acuity,
 	trajectory,
 	monitor,
@@ -314,7 +320,14 @@ function AlertModal({
 			    `overflow-y-auto`) it stays in the corner and the content passes under it; it takes no room in the column. Sticky offsets count from
 			    inside the column's 24px padding, and its 1px border, so `-top-[5px]` is 20px from its outer edge, as in Figma. */}
 				{corner ? (
-					<div className='pointer-events-none sticky -top-[5px] z-10 -mt-[5px] -mr-1 -mb-12 flex h-8 justify-end *:pointer-events-auto'>
+					<div
+						className={cn(
+							"pointer-events-none sticky z-10 -mr-1 flex h-8 justify-end *:pointer-events-auto",
+							// With buttons right of the name, centered on them (and the avatar), 29px down, as Figma's row
+							// (Nov 9, 2026); the bottom margin keeps the same 21px taken back, so the name doesn't move.
+							headerActions ? "top-[4px] mt-[4px] -mb-[57px]" : "-top-[5px] -mt-[5px] -mb-12",
+						)}
+					>
 						{corner}
 					</div>
 				) : null}
@@ -329,7 +342,8 @@ function AlertModal({
 					data-stuck={scrolled || undefined}
 					className={cn(
 						"sticky -top-6 z-[5] -mx-6 -mt-[19px] flex items-center gap-1.5 border-b border-transparent bg-background px-6 pt-[19px] pb-2 transition-[border-color] duration-300 ease-out motion-reduce:transition-none data-stuck:border-border",
-						corner && "pr-16",
+						// Room for the ×: 10px between it and the header's buttons, 16px between it and the name without them.
+						corner && (headerActions ? "pr-[62px]" : "pr-16"),
 					)}
 				>
 					<Avatar aria-hidden='true' className='size-12'>
@@ -350,6 +364,7 @@ function AlertModal({
 						)}
 						{details ? <p className='truncate text-sm text-muted-foreground'>{details}</p> : null}
 					</div>
+					{headerActions ? <div className='ml-auto flex shrink-0 items-center gap-2 pl-2'>{headerActions}</div> : null}
 				</div>
 				{/* Under the name: its 8px padding and 1px rule, the column's 16px gap taken back. Never pulled up into the
 				    sticky patient, whose background would mask the pin's top (Nov 9, 2026, user's report). */}

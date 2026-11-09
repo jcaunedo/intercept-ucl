@@ -115,13 +115,17 @@ export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display
 export { Counter, counterVariants, type CounterProps } from "@/components/data-display/counter";
 export { LabTile, labTileVariants, type LabTileFlag, type LabTileProps } from "@/components/data-display/lab-tile";
 export { HospitalSectionHeader, type HospitalSectionHeaderProps } from "@/components/data-display/hospital-section-header";
-export { PatientHeader, type PatientHeaderProps } from "@/components/data-display/patient-header";
+export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderProps } from "@/components/data-display/patient-header";
 export { Logo, LogoSymbol, type LogoProps, type LogoSymbolProps } from "@/components/data-display/logo";
 
 /* -------------------------------------------------------------------------- */
 /* Feedback                                                                   */
 /* -------------------------------------------------------------------------- */
 
+export {
+	AiClinicalSummaryBanner,
+	type AiClinicalSummaryBannerProps,
+} from "@/components/feedback/ai-clinical-summary-banner";
 export {
 	AlertToast,
 	toastAlert,

@@ -97,14 +97,14 @@ export const VideoConsultWithoutAlert: Story = {
 		await expect(await consult.findByText("Calling Grace Holloway…")).toBeInTheDocument();
 		await expect(consult.queryByRole("region", { name: "Alert" })).toBeNull();
 		await expect(consult.getByRole("button", { name: "2 pressors" })).toBeInTheDocument();
-		// The actions row, as on an alert: the call's button (Calling… while it rings), Messages and Pathway.
-		await expect(consult.getByRole("button", { name: /End call|Calling…/ })).toBeInTheDocument();
-		// Messages, in the row only (the Video consult panel's header has none since Nov 5, 2026), with the messages his
-		// nurse sent before the call (his record counts them unread).
+		// Right of the name (Nov 9, 2026): the call's button (End call while it rings or is on), Messages and Pathway.
+		await expect(consult.getByRole("button", { name: "End call" })).toBeInTheDocument();
+		// Messages, in the header only (the Video consult panel's header has none since Nov 5, 2026), with the messages
+		// his nurse sent before the call (his record counts them unread).
 		await expect(consult.getAllByRole("button", { name: /^Messages(, \d+ new)?$/ })).toHaveLength(1);
 		await userEvent.click(consult.getByRole("button", { name: "Pathway" }));
 		await expect(await consult.findByText("No care pathway")).toBeInTheDocument();
-		await userEvent.click(consult.getByRole("button", { name: "Hide pathway" }));
+		await userEvent.click(consult.getByRole("button", { name: "Close pathway" }));
 		// Live: the calling screen (which names the nurse too) has gone, and the nurse's label is on the video.
 		await waitFor(
 			() => {
@@ -187,7 +187,7 @@ export const Scenario1HeartFailure: Story = {
 		await expect(await consult.findByText("Waiting for approval")).toBeInTheDocument();
 		// Messages open too, so her page picks them up.
 		await userEvent.click(consult.getByRole("button", { name: "Messages" }));
-		await expect(await consult.findByRole("button", { name: "Hide messages" })).toBeInTheDocument();
+		await expect(await consult.findByRole("button", { name: "Close messages" })).toBeInTheDocument();
 		// Her name leaves the modal for her page; the toasts stay hidden there too.
 		await userEvent.click(consult.getByRole("button", { name: "Hayes, Margaret, open patient" }));
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -199,17 +199,19 @@ export const Scenario1HeartFailure: Story = {
 		await expect(pageCall.queryByText(/^Calling /)).not.toBeInTheDocument();
 		await expect(pageCall.queryByText("AI Notetaker")).not.toBeInTheDocument();
 		await expect(await canvas.findByRole("complementary", { name: "Messages" })).toBeInTheDocument();
-		// Her log has the call, and not as ended: the alert closing behind her page didn't end it.
-		const log = within(canvas.getByRole("region", { name: "Log" }));
-		await expect(await log.findByText("Video consult with Kayla Brandt, RN")).toBeInTheDocument();
-		await expect(log.queryByText("Video consult ended")).toBeNull();
+		// Her Timeline has the call, and not as ended: the alert closing behind her page didn't end it.
+		await userEvent.click(canvas.getByRole("tab", { name: "Timeline" }));
+		await userEvent.click(await canvas.findByRole("switch", { name: "Show as table" }));
+		const events = () => within(canvas.getByRole("table", { name: "Events, newest first." }));
+		await expect(await events().findByText(/^Video consult with Kayla Brandt, RN/)).toBeInTheDocument();
+		await expect(events().queryByText(/^Video consult ended/)).toBeNull();
 		// Opened from the alert, her page still has the patient list: Monitoring's, as it shows now.
 		await userEvent.click(canvas.getByRole("button", { name: "Patient list" }));
 		const list = within(await canvas.findByRole("complementary", { name: "Patients" }));
 		await expect(list.getByText(/^From the Monitoring, in its order · \d+ of \d+$/)).toBeInTheDocument();
-		// Ended on her page, the call is logged as ended, against her alert.
-		await userEvent.click(canvas.getByRole("button", { name: "Close video consult" }));
-		await expect(await log.findByText("Video consult ended")).toBeInTheDocument();
+		// Ended on her page (the panel's ×, as the header's), the call is logged as ended, against her alert.
+		await userEvent.click(pageCall.getByRole("button", { name: "Close video consult" }));
+		await expect(await events().findByText(/^Video consult ended/)).toBeInTheDocument();
 	},
 };
 
@@ -255,13 +257,11 @@ export const Scenario1Resolution: Story = {
 		const reopened = within(await screen.findByRole("dialog"));
 		await expect(await reopened.findByText(/Keeping at Chadron/)).toBeInTheDocument();
 		await expect(reopened.getByText("Transfer avoided")).toBeInTheDocument();
-		// Her page tracks it all: the care plan, and the log with who did what.
+		// Her page tracks it all in the care plan.
 		await userEvent.click(reopened.getByRole("button", { name: "Hayes, Margaret, open patient" }));
 		const plan = within(await screen.findByRole("region", { name: "Care plan" }));
 		await expect(plan.getByText("Keeping at Chadron")).toBeInTheDocument();
 		await expect(plan.getByText("Transfer avoided")).toBeInTheDocument();
-		const log = within(screen.getByRole("region", { name: "Log" }));
-		await expect(log.getByText("Alert resolved")).toBeInTheDocument();
 	},
 };
 

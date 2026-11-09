@@ -37,8 +37,15 @@ import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import { usePatientNavigation } from "../patient-navigation";
 import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
-import { PatientConsultPanels, useOpenPathwayPanel, type PatientPathways } from "./consult-panels";
-import { overviewSectionIds, PatientOverview } from "./patient-overview";
+import {
+	PatientAlertsPanel,
+	PatientConsultPanels,
+	useAlertPathwayPanel,
+	useOpenAlertsPanel,
+	useOpenPathwayPanel,
+	type PatientPathways,
+} from "./consult-panels";
+import { AlertsSection, PatientOverview } from "./patient-overview";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { ChartSection, type PatientChart } from "./sections/chart-section";
 import { EpicSection, type PatientEmr } from "./sections/epic-section";
@@ -51,7 +58,7 @@ import { VitalsSection, type PatientVitals } from "./sections/vitals-section";
 
 // Patient details (PRD Patient details): one patient's page, opened over the Census or Monitoring. Follows
 // Intercept-Live › Patient Details (`149:4464`, Oct 28, 2026): the app header's patient actions, the Patient Header, Line
-// tabs, and the Overview's AI brief. The Overview's other blocks and the other sections (`sections/`) are from the PRD
+// tabs, and the Overview (rebuilt from the screen Nov 9, 2026). The other sections (`sections/`) are from the PRD
 // (§5–§12) until Figma draws them. A section the record has no data for shows an empty state saying what it will hold.
 
 /* -------------------------------------------------------------------------- */
@@ -192,6 +199,8 @@ type CareTeamMember = {
 
 /** An AI-written brief of what matters now (PRD PD-024), by the Conversational Clinical Data Agent. */
 type PatientBrief = {
+	/** Its headline, e.g. "Worsening hemodynamic and respiratory status". */
+	title?: string;
 	text: string;
 	/** How many sources it was written from. */
 	sourceCount: number;
@@ -237,6 +246,29 @@ type PatientFluids = {
 	chartedBy?: string;
 };
 
+/**
+ * A finding that matters for this patient's situation, shown after the key labs (Intercept-Live `242:11805`, Nov 9, 2026:
+ * "contextual clinical findings"): a vital watched against a rule, or the breathing support and since when.
+ */
+type PatientFinding = {
+	/** "Temp", "SBP", "BiPAP". */
+	name: string;
+	/** As charted, e.g. "36.8", "10/5 · 40%". */
+	value: string;
+	unit?: string;
+	/** Why it's watched, at the top right: "Nitro stops < 110". */
+	context?: string;
+	/** When the current support started, ISO 8601: "Since 8:03 AM" at the top right, in place of `context`. */
+	since?: string;
+	/** When it was charted, ISO 8601. Older than `staleAfterMinutes`, "2 h old" in red takes the top right. */
+	chartedAt?: string;
+	staleAfterMinutes?: number;
+	/** The line under the value when there's no previous: "Charted · Normal", "IPAP/EPAP · FiO₂". */
+	note?: string;
+	/** The value before this one: "▲ Was 117 at 2:43 AM". */
+	previous?: { value: string; at: string };
+};
+
 type PatientRecord = {
 	id: string;
 	/** Photo URL, for the Patient Header's avatar. */
@@ -262,6 +294,8 @@ type PatientRecord = {
 	ventilator?: PatientVentilator;
 	infusions?: PatientInfusion[];
 	labs?: PatientLab[];
+	/** What matters for this patient's situation beyond the labs, after them on the Overview. */
+	findings?: PatientFinding[];
 	careTeam?: CareTeamMember[];
 	/** Each section's data. A section without it shows its empty state. */
 	vitals?: PatientVitals;
@@ -480,6 +514,13 @@ function alertPill(alerts: TriageAlert[]): PatientHeaderProps["alert"] {
 	return open.length ? { variant: open[0].severity, count: open.length } : undefined;
 }
 
+/** The header's alert box breakdown: the patient's open alerts by severity ("1 critical · 1 low"). */
+function alertCountsBySeverity(alerts: TriageAlert[]): NonNullable<PatientHeaderProps["alertCounts"]> {
+	const counts: NonNullable<PatientHeaderProps["alertCounts"]> = {};
+	for (const alert of alerts.filter(isOpenAlert)) counts[alert.severity] = (counts[alert.severity] ?? 0) + 1;
+	return counts;
+}
+
 /** The Create menu, the header's "+" (PRD PD-014; Nov 9, 2026, user's call: out of "…"). */
 const createActions: { label: string; icon: LucideIcon; action: PatientAction }[] = [
 	{ label: "New note", icon: FilePenLineIcon, action: "new-note" },
@@ -589,6 +630,8 @@ function PatientDetailsContent({
 	// it, or the app's), and the way to it: the page's Pathway panel, or the alert without one.
 	const navigation = usePatientNavigation();
 	const openPathwayPanel = useOpenPathwayPanel();
+	const openAlertsPanel = useOpenAlertsPanel();
+	const alertPathway = useAlertPathwayPanel();
 	const pathwayDetail = pathways?.details[0];
 	const [pathwayStatus] = useSessionState<CarePathwayStatus>(
 		pathwaySessionKey(pathwayDetail?.alert.id ?? "", "status"),
@@ -658,6 +701,21 @@ function PatientDetailsContent({
 					onOpenMessages={() => onAction?.("messages")}
 				/>
 			) : null}
+			{/* The header's View alerts opens every alert here, the unresolved at the top (Nov 9, 2026, user's call). */}
+			<PatientAlertsPanel>
+				<AlertsSection
+					id='patient-alerts-list'
+					patientId={patient.id}
+					alerts={alerts}
+					escalationTargets={escalationTargets}
+					onAlertAction={onAlertAction}
+					allResolved
+					// Each alert that comes with a pathway opens it right of the panel, Alerts staying open.
+					pathwayAlertIds={pathways?.details.map((detail) => detail.alert.id)}
+					pathwayShownId={alertPathway.shownAlertId}
+					onTogglePathway={alertPathway.toggle}
+				/>
+			</PatientAlertsPanel>
 			{/* 16px below the app header and above the tabs: the header's own padding (intercept.ds `1191:3147`). */}
 			<PatientHeader
 				lastName={patient.lastName}
@@ -677,8 +735,8 @@ function PatientDetailsContent({
 				acuity={patient.acuity}
 				trajectory={patient.trajectory}
 				alert={alertPill(alerts)}
-				onViewScore={patient.acuity ? () => showOverviewCard(overviewSectionIds.earlyWarning) : undefined}
-				onViewAlerts={() => showOverviewCard(overviewSectionIds.alerts)}
+				alertCounts={alertCountsBySeverity(alerts)}
+				onViewAlerts={openAlertsPanel}
 			/>
 
 			<Tabs
@@ -701,9 +759,6 @@ function PatientDetailsContent({
 						patient={patient}
 						record={record}
 						monitor={monitor}
-						alerts={alerts}
-						escalationTargets={escalationTargets}
-						onAlertAction={onAlertAction}
 						onShowSection={setSection}
 						pathway={overviewPathway}
 					/>
@@ -919,6 +974,7 @@ export {
 	type PatientBrief,
 	type PatientMonitorData,
 	type PatientEarlyWarning,
+	type PatientFinding,
 	type PatientFluids,
 	type PatientRecord,
 	type PatientVentilator,

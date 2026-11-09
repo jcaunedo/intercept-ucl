@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowUpFromLineIcon, CheckCheckIcon, GitForkIcon, ScanEyeIcon, VideoIcon, VideoOffIcon } from "lucide-react";
+import { ArrowUpFromLineIcon, GitForkIcon, MessageCircleMoreIcon, ScanEyeIcon, VideoIcon, VideoOffIcon } from "lucide-react";
 import { expect, fn, screen } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
@@ -49,32 +49,36 @@ const hayes = {
 	],
 } satisfies AlertModalProps;
 
-// The lifecycle buttons and the actions under the alert, as the alert modal passes them.
+// The lifecycle buttons (Pathway last, where Resolve was), the Resolve link under them, and the buttons right of the
+// name, as Intercept Live passes them (Nov 9, 2026; intercept.ds `alert-modal` `1353:14304`).
 const lifecycle = (
 	<>
-		<Button variant='neutral' size='sm' className='flex-1 font-semibold'>
+		<Button variant='outline' size='sm' className='flex-1 font-semibold'>
 			<ScanEyeIcon />
 			Acknowledge
 		</Button>
-		<Button variant='neutral' size='sm' className='flex-1 font-semibold'>
+		<Button variant='outline' size='sm' className='flex-1 font-semibold'>
 			<ArrowUpFromLineIcon />
 			Escalate
 		</Button>
-		<Button variant='neutral' size='sm' className='flex-1 font-semibold'>
-			<CheckCheckIcon />
-			Resolve
+		<Button variant='outline' size='sm' className='flex-1 font-semibold'>
+			<GitForkIcon />
+			Pathway
 		</Button>
 	</>
 );
-const consult = (
+const resolveLink = (
+	<Button variant='link' size='sm' className='w-full font-medium text-badge-green-foreground underline-offset-2 last:-mb-2'>
+		Mark this alert as resolved
+	</Button>
+);
+const header = (
 	<>
-		<Button variant='outline'>
+		<Button variant='neutral' size='icon-md' aria-label='Video consult'>
 			<VideoIcon />
-			Video consult
 		</Button>
-		<Button variant='outline'>
-			<GitForkIcon />
-			Pathway
+		<Button variant='neutral' size='icon-md' aria-label='Messages'>
+			<MessageCircleMoreIcon />
 		</Button>
 	</>
 );
@@ -86,13 +90,16 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
-	args: { ...hayes, alertActions: lifecycle, actions: consult, onOpenPatient: fn(), onClose: fn() },
+	args: { ...hayes, alertActions: lifecycle, children: resolveLink, headerActions: header, onOpenPatient: fn(), onClose: fn() },
 } satisfies Meta<typeof AlertModal>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** As in Figma: Hayes's Critical alert, its lifecycle actions, Video consult and Pathway, her score, monitor and tags. */
+/**
+ * As in Figma: Hayes's Critical alert, Video consult and Messages right of her name, the lifecycle buttons with Pathway
+ * and the Resolve link under them, her score, monitor and tags.
+ */
 export const Default: Story = {
 	play: async ({ args, canvas, userEvent }) => {
 		// The name opens the patient; the × closes the panel.
@@ -145,6 +152,7 @@ export const Resolved: Story = {
 		alert: { variant: "resolved", inLast24h: 3, since: new Date(Date.now() - 15 * 3_600_000).toISOString() },
 		status: <p className='text-sm text-foreground'>Resolved by Kayla Brandt, RN · 6:00 AM · Treated</p>,
 		alertActions: undefined,
+		children: undefined,
 	},
 };
 
@@ -159,12 +167,7 @@ export const NoAlert: Story = {
 		description: undefined,
 		source: undefined,
 		alertActions: undefined,
-		actions: (
-			<Button variant='outline'>
-				<VideoIcon />
-				Video consult
-			</Button>
-		),
+		children: undefined,
 	},
 	play: async ({ canvas }) => {
 		await expect(canvas.queryByRole("region", { name: "Alert" })).toBeNull();
@@ -176,7 +179,8 @@ export const NoAlert: Story = {
 export const Minimal: Story = {
 	args: {
 		alertActions: undefined,
-		actions: undefined,
+		children: undefined,
+		headerActions: undefined,
 		acuity: undefined,
 		trajectory: undefined,
 		monitor: undefined,
@@ -194,16 +198,14 @@ export const Minimal: Story = {
  */
 export const WithConsult: Story = {
 	args: {
-		// While the call is on, the consult button ends it: flat destructive.
-		actions: (
+		// While the call is on, its button is pressed: the outline on `accent`, the "off" icon.
+		headerActions: (
 			<>
-				<Button variant='destructive-secondary'>
+				<Button variant='outline' size='icon-md' aria-label='Close video consult' className='bg-accent'>
 					<VideoOffIcon />
-					End call
 				</Button>
-				<Button variant='outline'>
-					<GitForkIcon />
-					Pathway
+				<Button variant='neutral' size='icon-md' aria-label='Messages'>
+					<MessageCircleMoreIcon />
 				</Button>
 			</>
 		),

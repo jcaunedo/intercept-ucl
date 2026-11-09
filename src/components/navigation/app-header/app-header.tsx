@@ -109,8 +109,8 @@ type AppHeaderDefaultProps = AppHeaderCommonProps & {
 type AppHeaderPatientProps = AppHeaderCommonProps & {
 	/**
 	 * `patient`: on a patient's page, Back, the patient list and Ask Intercept (when the app handles them), then a
-	 * breadcrumb back to where the user came from, on the left; Video consult, Messages, Pathway, a "…" menu, a Create
-	 * menu ("+", `createActions`) and the care team on the right, the "…" menu holding the patient's actions (Raise
+	 * breadcrumb back to where the user came from, on the left; the care team, Video consult, Messages, Pathway, a Create
+	 * menu ("+", `createActions`) and a "…" menu on the right, the "…" menu holding the patient's actions (Raise
 	 * concern, Huddle team, Escalate) and `moreActions`.
 	 */
 	variant: "patient";
@@ -170,7 +170,7 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	moreActions?: AppHeaderMenuAction[];
 	/**
 	 * What can be created for the patient (Nov 9, 2026, intercept.ds `1169:319`; user's call: a Create menu), e.g. New
-	 * note, Prepare handoff: a dark "+" button after "…" opens them. Without any, there's no button.
+	 * note, Prepare handoff: a dark "+" button before "…" opens them. Without any, there's no button.
 	 */
 	createActions?: AppHeaderMenuAction[];
 	/** The "+" button's accessible name, "Create" by default. */
@@ -457,7 +457,7 @@ function AccountMenu({ user, onOpenUserMenu }: Pick<AppHeaderDefaultProps, "user
 }
 
 /**
- * Default: Theme, then the team and the user's menu, 16px apart. No Messages button since Nov 6, 2026: unread messages
+ * Default: the team, Theme and the user's menu, 16px apart. No Messages button since Nov 6, 2026: unread messages
  * show on the Sidebar's Messages item.
  */
 function DefaultActions({
@@ -468,17 +468,18 @@ function DefaultActions({
 	themeButton,
 }: AppHeaderDefaultProps & { themeButton: React.ReactNode }) {
 	return (
+		// The team, Theme, then the user, 16px apart (Nov 9, 2026 resync: Theme moved between the menus).
 		<div className='flex items-center gap-4'>
-			{themeButton}
 			<TeamMenu team={team} onOpenTeam={onOpenTeam} />
+			{themeButton}
 			<AccountMenu user={user} onOpenUserMenu={onOpenUserMenu} />
 		</div>
 	);
 }
 
 /**
- * Patient: Video consult, Messages and Pathway (each with its handler) and the "…" menu, 8px apart (no Theme since Nov 5, 2026),
- * then 16px to the care team. The menu opens with
+ * Patient: the care team, then 16px to Video consult, Messages and Pathway (each with its handler), "+" and the "…"
+ * menu, 8px apart (no Theme since Nov 5, 2026). The menu opens with
  * the patient's actions (Raise concern, Huddle team, Escalate, each with its handler), then a rule, then `moreActions`
  * (Nov 5, 2026: the actions left the bar, and Video consult and Messages came up from the Patient Header). While its
  * panel is open, Video consult or Messages is an icon button, pressed (the `accent` fill), that closes it.
@@ -508,15 +509,17 @@ function PatientActions({
 	].filter((action) => action.onSelect);
 	const groups = [patientActions, moreActions].filter((group) => group.length);
 
-	// The buttons 8px apart, then 16px to the care team, as the default variant's menus.
+	// The care team first, then 16px to the buttons, 8px apart (Nov 9, 2026 resync: the team moved before them).
 	return (
 		<div className='flex items-center gap-4'>
+			{team.length ? <TeamMenu team={team} onOpenTeam={onOpenTeam} label='Care team' max={3} /> : null}
 			<div role='group' aria-label='Patient actions' className='flex items-center gap-2'>
 				{onVideoConsult ? (
-					// One button, open or closed: `video-off` and the hover fill while its panel is open, "Close video consult".
+					// Solid (`neutral`) while closed; while its panel is open, the outline on `accent` with `video-off`, "Close video
+					// consult", as the alert panel's actions (Nov 9, 2026).
 					// `aria-expanded` only when the app runs a panel for it; without, the button only reports the click.
 					<Button
-						variant='outline'
+						variant={videoConsultOpen ? "outline" : "neutral"}
 						aria-expanded={videoConsultOpen}
 						aria-label={videoConsultOpen ? "Close video consult" : undefined}
 						onClick={onVideoConsult}
@@ -529,7 +532,7 @@ function PatientActions({
 				{onOpenMessages ? (
 					// The unread count is a Counter, code ahead of Figma; the name starts with the visible label.
 					<Button
-						variant='outline'
+						variant={messagesOpen ? "outline" : "neutral"}
 						aria-expanded={messagesOpen}
 						aria-label={
 							messagesOpen ? "Close messages" : unreadMessages ? `Messages, ${unreadMessages} unread` : undefined
@@ -562,7 +565,7 @@ function PatientActions({
 					// After Messages, as on the alert panel's actions row (Nov 6, 2026). No "off" icon for a fork: pressed, the
 					// hover fill and its name say it closes.
 					<Button
-						variant='outline'
+						variant={pathwayOpen ? "outline" : "neutral"}
 						aria-expanded={pathwayOpen}
 						aria-label={pathwayOpen ? "Close pathway" : undefined}
 						onClick={onOpenPathway}
@@ -572,10 +575,29 @@ function PatientActions({
 						<span className={collapsibleLabelClassName}>Pathway</span>
 					</Button>
 				) : null}
+				{createActions.length ? (
+					// The Create menu, before "…", on the dark neutral fill (Figma Solid · Brand `icon-md`, 18px `plus`; Nov 9, 2026).
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant='neutral' size='icon-md' aria-label={createLabel}>
+								<PlusIcon aria-hidden='true' className='size-[18px]' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align='end'>
+							{createActions.map(({ label, icon: Icon, onSelect }) => (
+								<DropdownMenuItem key={label} onSelect={onSelect}>
+									{Icon ? <Icon aria-hidden='true' /> : null}
+									{label}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				) : null}
 				{groups.length ? (
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant='outline' size='icon-md' aria-label='More actions'>
+							{/* Dark, as "+" (Figma Solid · Brand, Nov 9, 2026). */}
+							<Button variant='neutral' size='icon-md' aria-label='More actions'>
 								<EllipsisIcon aria-hidden='true' />
 							</Button>
 						</DropdownMenuTrigger>
@@ -594,35 +616,16 @@ function PatientActions({
 						</DropdownMenuContent>
 					</DropdownMenu>
 				) : null}
-				{createActions.length ? (
-					// The Create menu, last in the row, on the dark neutral fill (Figma Solid · Neutral `icon-md`, 18px `plus`).
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button variant='neutral' size='icon-md' aria-label={createLabel}>
-								<PlusIcon aria-hidden='true' className='size-[18px]' />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align='end'>
-							{createActions.map(({ label, icon: Icon, onSelect }) => (
-								<DropdownMenuItem key={label} onSelect={onSelect}>
-									{Icon ? <Icon aria-hidden='true' /> : null}
-									{label}
-								</DropdownMenuItem>
-							))}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				) : null}
 			</div>
-			{team.length ? <TeamMenu team={team} onOpenTeam={onOpenTeam} label='Care team' max={3} /> : null}
 		</div>
 	);
 }
 
 /**
- * Intercept Live's top bar. `default`: connection status and clock on the left; theme, the team on shift and
- * the user's menu on the right. `patient`: Back, the patient list, Ask Intercept and a breadcrumb back from a patient's
- * page on the left; Video consult, Messages, Pathway, a "…" menu with the patient's actions, a Create menu ("+") and
- * the care team on the right. Each button calls its own handler; the header holds no state.
+ * Intercept Live's top bar. `default`: connection status and clock on the left; the team on shift, theme and the
+ * user's menu on the right. `patient`: Back, the patient list, Ask Intercept and a breadcrumb back from a patient's
+ * page on the left; the care team, Video consult, Messages, Pathway, a Create menu ("+") and a "…" menu with the
+ * patient's actions on the right. Each button calls its own handler; the header holds no state.
  *
  * Figma: [intercept.ds › app-header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1169-318)
  */

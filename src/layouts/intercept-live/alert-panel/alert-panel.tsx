@@ -9,6 +9,7 @@ import {
 	LoaderCircleIcon,
 	type LucideIcon,
 	MessageCircleMoreIcon,
+	MessageCircleOffIcon,
 	MicIcon,
 	MicOffIcon,
 	PencilLineIcon,
@@ -24,6 +25,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
+import { Counter } from "@/components/data-display/counter";
 import type { PatientCardTag, PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import type { PatientMonitorProps } from "@/components/cards/patient-monitoring-card";
 import {
@@ -37,6 +39,7 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { Textarea } from "@/components/forms/textarea";
 import { AlertModal, AlertModalClose } from "@/components/overlays/alert-modal";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/overlays/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
 import {
@@ -48,6 +51,7 @@ import {
 	motionDuration,
 	revealVariants,
 	scrollIntoViewSmoothly,
+	unreadFlashVariants,
 	useMotionPreference,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -84,7 +88,6 @@ import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "
 import {
 	ConsultField,
 	ConsultMessages,
-	ConsultMessagesButton,
 	useConsultMessages,
 	useNewIncoming,
 	useUnreadMessages,
@@ -342,8 +345,9 @@ const presenceLabels = { online: "Online", away: "Away", offline: "Offline" } as
 const actions: Record<AlertDetailAction, { label: string; icon: LucideIcon }> = {
 	acknowledge: { label: "Acknowledge", icon: ScanEyeIcon },
 	escalate: { label: "Escalate", icon: ArrowUpFromLineIcon },
-	// Resolve, the triage queue's word; its form sends with Mark as resolved (Nov 3, 2026, user's call).
-	resolve: { label: "Resolve", icon: CheckCheckIcon },
+	// Resolve: a link under the buttons since Nov 9, 2026 (user's call), "Mark this alert as resolved"; its form sends
+	// with Mark as resolved (Nov 3, 2026, user's call).
+	resolve: { label: "Mark this alert as resolved", icon: CheckCheckIcon },
 	// An AI recommendation can also be marked wrong (the decline outcome BR-07 records): the clinician's verdict, said
 	// plainly, so it reads as feedback on the AI rather than turning the alert down.
 	decline: { label: "Feedback", icon: Undo2Icon },
@@ -849,37 +853,85 @@ function useConsult(defaultConsult: AlertConsultState, onConsultChange?: (state:
 }
 
 /**
- * The consult's button: Video consult calls the bedside nurse ("Video consult" everywhere in the app; the call names who
- * picks up), Calling… while it rings, then End call while it's on (the call's own End ends it too).
+ * One of the buttons right of the patient's name (Nov 9, 2026, user's call: Video consult and Messages moved there from
+ * the row under the alert; intercept.ds `alert-modal` `1353:14304`): an icon alone, its name in a tooltip. Dark
+ * (`neutral`) while its panel is closed; open, the outline on `accent` with the "off" icon, named Close…, as the app
+ * header's Video consult and Messages.
  */
-function ConsultButton({
+function HeaderPanelButton({
+	open,
+	label,
+	openLabel,
+	icon: Icon,
+	openIcon: OpenIcon,
+	onClick,
+	unread = 0,
+}: {
+	open: boolean;
+	label: string;
+	openLabel: string;
+	icon: React.ComponentType<{ "aria-hidden"?: boolean }>;
+	openIcon: React.ComponentType<{ "aria-hidden"?: boolean }>;
+	onClick: () => void;
+	/** Unread messages: a brand Counter on the button's corner, flashing every 2 s (MOTION.md's Unread). */
+	unread?: number;
+}) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const name = open ? openLabel : label;
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<Button
+					variant={open ? "outline" : "neutral"}
+					size='icon-md'
+					aria-label={unread && !open ? `${label}, ${unread} new` : name}
+					aria-expanded={open}
+					onClick={onClick}
+					className='relative aria-expanded:bg-accent'
+				>
+					{open ? <OpenIcon aria-hidden /> : <Icon aria-hidden />}
+					{unread && !open ? (
+						<motion.span
+							aria-hidden='true'
+							variants={unreadFlashVariants}
+							initial='rest'
+							animate={prefersReducedMotion ? "rest" : "flash"}
+							className='absolute -top-1.5 -right-1.5 inline-flex'
+						>
+							<Counter count={unread} max={99} />
+						</motion.span>
+					) : null}
+				</Button>
+			</TooltipTrigger>
+			<TooltipContent side='bottom'>{name}</TooltipContent>
+		</Tooltip>
+	);
+}
+
+/**
+ * The header's Video consult: calls the bedside nurse, and opens the Video consult panel with the call. While the call
+ * rings or is on, Close video consult ends it and closes the panel (the call's own Cancel and End do too).
+ */
+function ConsultHeaderButton({
 	consult,
 	onConsultChange,
+	openLabel = "Close video consult",
 }: {
 	consult: AlertConsultState;
 	onConsultChange: (state: AlertConsultState) => void;
+	/** Its name while the call rings or is on; End call where the panel stays after it (the patient consult). */
+	openLabel?: string;
 }) {
-	// Solid, as the actions row's other buttons (Nov 5, 2026, user's call: swapped with the lifecycle buttons' outline).
-	if (consult === "idle")
-		return (
-			<Button variant='neutral' onClick={() => onConsultChange("connecting")}>
-				<VideoIcon />
-				Video consult
-			</Button>
-		);
-	if (consult === "connecting")
-		return (
-			<Button variant='neutral' disabled>
-				<LoaderCircleIcon className='animate-spin motion-reduce:animate-none' />
-				Calling…
-			</Button>
-		);
-	// Ending the call reads as stopping something: the destructive tone, flat.
+	const on = consult !== "idle";
 	return (
-		<Button variant='destructive-secondary' onClick={() => onConsultChange("idle")}>
-			<VideoOffIcon />
-			End call
-		</Button>
+		<HeaderPanelButton
+			open={on}
+			label='Video consult'
+			openLabel={openLabel}
+			icon={VideoIcon}
+			openIcon={VideoOffIcon}
+			onClick={() => onConsultChange(on ? "idle" : "connecting")}
+		/>
 	);
 }
 
@@ -893,11 +945,14 @@ function useAlertLifecycle({
 	actions: actionsProp,
 	escalationTargets,
 	onAction,
+	pathway,
 }: {
 	alert: TriageAlert;
 	actions?: AlertDetailAction[];
 	escalationTargets: EscalationTarget[];
 	onAction?: (action: TriageAlertAction) => void;
+	/** The alert's pathway: a Pathway button last in the row, in Resolve's old place (Nov 9, 2026, user's call). */
+	pathway?: { open: boolean; onToggle: () => void; controls?: string };
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const status = alert.status ?? "active";
@@ -914,13 +969,14 @@ function useAlertLifecycle({
 				].filter(Boolean) as AlertDetailAction[])
 			: []);
 	// Feedback on an AI recommendation isn't a step in the alert's lifecycle, so it's a link on the source line, not a
-	// button in the row (Nov 3, 2026, user's call).
-	const alertActions = (onAction ? shown : []).filter((action) => action !== "decline");
+	// button in the row (Nov 3, 2026, user's call). Resolve is a link under the row (Nov 9, 2026, user's call).
+	const alertActions = (onAction ? shown : []).filter((action) => action !== "decline" && action !== "resolve");
 	const feedback = Boolean(onAction) && shown.includes("decline");
+	const resolvable = Boolean(onAction) && shown.includes("resolve");
 	// Escalate, Resolve and Feedback open their form under the buttons, one at a time; sending it closes it.
 	const [form, setForm] = React.useState<"escalate" | "resolve" | "decline" | null>(null);
 	// Four buttons don't fit at equal widths: each takes its label's width and they share what's left.
-	const crowded = alertActions.length > 3;
+	const crowded = alertActions.length + (pathway ? 1 : 0) > 3;
 	const act = (action: TriageAlertAction) => {
 		setForm(null);
 		onAction?.(action);
@@ -951,9 +1007,12 @@ function useAlertLifecycle({
 						exit='exit'
 						className='text-sm text-foreground'
 					>
-						<p className='flex items-center gap-1.5'>
-							<state.icon aria-hidden='true' className='size-3 shrink-0' />
-							{state.text}
+						{/* When the line wraps, the icon stays centered on the first line (a box one line tall), as the source's. */}
+						<p className='flex items-start gap-1.5'>
+							<span className='flex h-[1lh] shrink-0 items-center'>
+								<state.icon aria-hidden='true' className='size-3' />
+							</span>
+							<span>{state.text}</span>
 						</p>
 						{/* The note left with the action, under the line and aligned with its words. */}
 						{alert.addressed?.note ? (
@@ -966,8 +1025,10 @@ function useAlertLifecycle({
 				) : null}
 			</AnimatePresence>
 		),
-		alertActionsNode: alertActions.length
-			? alertActions.map((action) => {
+		alertActionsNode:
+			alertActions.length || pathway
+				? [
+						...alertActions.map((action) => {
 					const { icon: Icon } = actions[action];
 					const { label } = actions[action];
 					const opensForm = action !== "acknowledge";
@@ -988,7 +1049,11 @@ function useAlertLifecycle({
 									? setForm((current) => (current === action ? null : action))
 									: act({ type: done ? "unacknowledge" : "acknowledge" })
 							}
-							className={cn(crowded ? "flex-auto" : "flex-1", "font-semibold aria-expanded:bg-accent")}
+							className={cn(
+								// At equal widths each button is its own size container, so Acknowledge can shorten when it's tight.
+								crowded ? "flex-auto" : "@container/alert-action flex-1",
+								"font-semibold aria-expanded:bg-accent",
+							)}
 						>
 							<AnimatePresence mode='popLayout' initial={false}>
 								<motion.span
@@ -1003,12 +1068,63 @@ function useAlertLifecycle({
 								</motion.span>
 							</AnimatePresence>
 							<motion.span key={done ? "done" : "label"} {...(done && !prefersReducedMotion ? confirmPattern : {})}>
-								{done ? "Acknowledged" : label}
+								{action === "acknowledge" && !crowded ? (
+									// Too tight for the word (Nov 9, 2026, user's call; e.g. the patient page's Alerts panel): "Ack" for the
+									// action and "Ack'd" once done. Each swaps in when the button's inside is narrower than its icon, gap
+									// and full word need, plus 8px; screen readers always hear the full word.
+									<>
+										<span className={done ? "@max-[136px]/alert-action:sr-only" : "@max-[126px]/alert-action:sr-only"}>
+											{done ? "Acknowledged" : label}
+										</span>
+										<span
+											aria-hidden='true'
+											className={cn("hidden", done ? "@max-[136px]/alert-action:inline" : "@max-[126px]/alert-action:inline")}
+										>
+											{done ? "Ack'd" : "Ack"}
+										</span>
+									</>
+								) : done ? (
+									"Acknowledged"
+								) : (
+									label
+								)}
 							</motion.span>
 						</Button>
 					);
-				})
-			: undefined,
+						}),
+						pathway ? (
+							// The alert's pathway, last in the row (Nov 9, 2026, user's call: where Resolve was), as its neighbors:
+							// outline, on `accent` while open, Hide pathway.
+							<Button
+								key='pathway'
+								variant='outline'
+								size='sm'
+								aria-expanded={pathway.open}
+								aria-controls={pathway.open ? pathway.controls : undefined}
+								onClick={pathway.onToggle}
+								className={cn(crowded ? "flex-auto" : "flex-1", "font-semibold aria-expanded:bg-accent")}
+							>
+								<GitForkIcon />
+								{pathway.open ? "Hide pathway" : "Pathway"}
+							</Button>
+						) : null,
+					]
+				: undefined,
+		resolveNode: resolvable ? (
+			// Under the buttons, a link in Resolved's green (Nov 9, 2026, user's call; intercept.ds `alert-modal`
+			// `1353:14304`), underlined on hover and while its form is open. It opens the Resolve form, as the button did.
+			// Last in the panel, it takes 8px of the panel's bottom padding, so its words sit as far from the bottom as from
+			// the buttons above (14px; Nov 9, 2026, user's call) while it keeps its 32px target.
+			<Button
+				variant='link'
+				size='sm'
+				aria-expanded={form === "resolve"}
+				onClick={() => setForm((current) => (current === "resolve" ? null : "resolve"))}
+				className='w-full font-medium text-badge-green-foreground underline-offset-2 last:-mb-2 aria-expanded:underline'
+			>
+				{actions.resolve.label}
+			</Button>
+		) : undefined,
 		feedbackNode: feedback ? (
 			<Button
 				variant='link'
@@ -1683,7 +1799,6 @@ function AlertPanelContent({
 		return () => window.clearTimeout(timer);
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the modal opens.
 	}, []);
-	const lifecycle = useAlertLifecycle({ alert: data.alert, actions: actionsProp, escalationTargets, onAction });
 	const consultOn = consult !== "idle";
 	// The third column (Nov 5, 2026, user's call): the pathway, or the messages with the bedside nurse, one at a time.
 	// The messages open from the actions row, with or without a call, and stay when the call ends (Nov 5, 2026, user's
@@ -1705,6 +1820,17 @@ function AlertPanelContent({
 		setFocusMessages(panel === "messages");
 		setSidePanel((current) => (current === panel ? null : panel));
 	};
+	// Pathway is the alert's, so it's last in the lifecycle row, where Resolve was (Nov 9, 2026, user's call).
+	const lifecycle = useAlertLifecycle({
+		alert: data.alert,
+		actions: actionsProp,
+		escalationTargets,
+		onAction,
+		pathway:
+			data.pathway || data.bundle
+				? { open: pathwayOpen, onToggle: () => togglePanel("pathway") }
+				: undefined,
+	});
 	const [messages, sendMessage, nurseTyping] = useConsultMessages(
 		data.messages,
 		data.connection?.photos,
@@ -1740,33 +1866,20 @@ function AlertPanelContent({
 			sourceAction={lifecycle.feedbackNode}
 			status={lifecycle.statusNode}
 			alertActions={lifecycle.alertActionsNode}
-			actions={
-				<>
-					<ConsultButton consult={consult} onConsultChange={setConsult} />
-					{/* Messages with the bedside nurse, between the call and Pathway, always shown (Nov 5, 2026, user's calls);
-					    the only Messages button (the Video consult panel's header had one too until the same day). */}
-					<ConsultMessagesButton
-						size='md'
-						solid
-						icon={MessageCircleMoreIcon}
+			// Video consult and Messages right of the name (Nov 9, 2026, user's call; the row under the alert is gone).
+			headerActions={
+				<TooltipProvider>
+					<ConsultHeaderButton consult={consult} onConsultChange={setConsult} />
+					<HeaderPanelButton
 						open={messagesOpen}
+						label='Messages'
+						openLabel='Close messages'
+						icon={MessageCircleMoreIcon}
+						openIcon={MessageCircleOffIcon}
 						unread={unread}
-						onToggle={() => togglePanel("messages")}
+						onClick={() => togglePanel("messages")}
 					/>
-					{data.pathway || data.bundle ? (
-						<Button
-							// Solid while closed; open, the outline on `accent`, as before (Nov 5, 2026, user's call).
-							variant={pathwayOpen ? "outline" : "neutral"}
-							aria-expanded={pathwayOpen}
-							onClick={() => togglePanel("pathway")}
-							className='aria-expanded:bg-accent'
-						>
-							<GitForkIcon />
-							{/* "Pathway" (Nov 5, 2026, user's call; it was View pathway), Hide pathway while it's open. */}
-							{pathwayOpen ? "Hide pathway" : "Pathway"}
-						</Button>
-					) : null}
-				</>
+				</TooltipProvider>
 			}
 			panels={[
 				...(consultOn
@@ -1850,6 +1963,7 @@ function AlertPanelContent({
 			onClose={onClose}
 			className={className}
 		>
+			{lifecycle.resolveNode}
 			{lifecycle.formNode}
 		</AlertModal>
 	);
@@ -1991,27 +2105,30 @@ function PatientConsultDialogContent({
 					hospital={patient.hospital}
 					unit={patient.unit}
 					bed={patient.bed}
-					actions={
-						<>
-							<ConsultButton consult={consult} onConsultChange={setConsult} />
-							<ConsultMessagesButton
-								size='md'
-								solid
-								icon={MessageCircleMoreIcon}
+					// In the header, as on the alert panel (Nov 9, 2026, user's call). No alert, so no lifecycle row for Pathway
+					// to join: it stays with Video consult and Messages. The Video consult panel stays open here, so the call's
+					// button reads End call.
+					headerActions={
+						<TooltipProvider>
+							<ConsultHeaderButton consult={consult} onConsultChange={setConsult} openLabel='End call' />
+							<HeaderPanelButton
 								open={messagesOpen}
+								label='Messages'
+								openLabel='Close messages'
+								icon={MessageCircleMoreIcon}
+								openIcon={MessageCircleOffIcon}
 								unread={unread}
-								onToggle={() => togglePanel("messages")}
+								onClick={() => togglePanel("messages")}
 							/>
-							<Button
-								variant={pathwayOpen ? "outline" : "neutral"}
-								aria-expanded={pathwayOpen}
+							<HeaderPanelButton
+								open={pathwayOpen}
+								label='Pathway'
+								openLabel='Close pathway'
+								icon={GitForkIcon}
+								openIcon={GitForkIcon}
 								onClick={() => togglePanel("pathway")}
-								className='aria-expanded:bg-accent'
-							>
-								<GitForkIcon />
-								{pathwayOpen ? "Hide pathway" : "Pathway"}
-							</Button>
-						</>
+							/>
+						</TooltipProvider>
 					}
 					acuity={data.acuity}
 					trajectory={data.trajectory}

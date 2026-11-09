@@ -84,12 +84,12 @@ const patientArgs = {
 	onHuddleTeam: fn(),
 	onEscalate: fn(),
 	moreActions: [{ label: "Copy link", icon: LinkIcon, onSelect: fn() }],
-	// The Create menu, the dark "+" after "…".
+	// The Create menu, the dark "+" before "…".
 	createActions: [
 		{ label: "New note", icon: FilePenLineIcon, onSelect: fn() },
 		{ label: "Prepare handoff", icon: ArrowRightLeftIcon, onSelect: fn() },
 	],
-	// The patient's care team, after "…"; the first three show.
+	// The patient's care team, before the buttons; the first three show.
 	team: [
 		{ name: "Kayla Brandt", initials: "KB", src: samplePhoto3, tone: 1 },
 		{ name: "Daniel Reyes", initials: "DR", src: samplePhoto1, tone: 6 },
@@ -101,8 +101,8 @@ const patientArgs = {
 
 /**
  * On a patient's page: Back, the patient list and Ask Intercept (shown when the app handles them), then a breadcrumb
- * back to where the user came from; Video consult, Messages (with its unread count), Pathway, "…" and "+", then 16px
- * to the patient's care team (its first three). "…" holds Raise concern, Huddle team and Escalate, then a rule, then
+ * back to where the user came from; the patient's care team (its first three), then 16px to Video consult, Messages
+ * (with its unread count) and Pathway, dark until their panel opens, then "+" and "…", all dark. "…" holds Raise concern, Huddle team and Escalate, then a rule, then
  * Copy link; "+" (Create) holds New note and Prepare handoff.
  */
 export const PatientContext: Story = {
@@ -117,15 +117,16 @@ export const PatientContext: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		await expect(canvas.queryByRole("button", { name: "Escalate" })).toBeNull();
-		// Video consult, then Messages, then Pathway, then "…", then Create (no Theme on a patient's page).
+		// Video consult, then Messages, then Pathway, then Create, then "…" (no Theme on a patient's page).
 		const buttons = within(canvas.getByRole("group", { name: "Patient actions" })).getAllByRole("button");
 		await expect(buttons.map((button) => button.getAttribute("aria-label") ?? button.textContent)).toEqual([
 			"Video consult",
 			"Messages, 3 unread",
 			"Pathway",
-			"More actions",
 			"Create",
+			"More actions",
 		]);
+		await expect(canvas.getByRole("button", { name: "Video consult" })).toHaveAttribute("data-variant", "neutral");
 		await userEvent.click(canvas.getByRole("button", { name: "More actions" }));
 		const menu = within(await within(document.body).findByRole("menu"));
 		const items = menu.getAllByRole("menuitem").map((item) => item.textContent);
@@ -136,10 +137,14 @@ export const PatientContext: Story = {
 		const create = within(await within(document.body).findByRole("menu"));
 		await expect(create.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["New note", "Prepare handoff"]);
 		await userEvent.keyboard("{Escape}");
-		// The care team: three avatars, everyone in its name.
+		// The care team: three avatars, everyone in its name, before the buttons.
+		const careTeam = canvas.getByRole("button", { name: "Care team: Kayla Brandt, Daniel Reyes, Megan Hart, Ryan Cole" });
+		await expect(careTeam).toBeVisible();
 		await expect(
-			canvas.getByRole("button", { name: "Care team: Kayla Brandt, Daniel Reyes, Megan Hart, Ryan Cole" }),
-		).toBeVisible();
+			careTeam.compareDocumentPosition(canvas.getByRole("group", { name: "Patient actions" })) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy();
+		await expect(canvas.getByRole("button", { name: "More actions" })).toHaveAttribute("data-variant", "neutral");
 	},
 };
 

@@ -98,7 +98,7 @@ function Demo(props: AlertPanelProps) {
  * rings Kayla Brandt, RN and slides a panel out with the call and the AI Notetaker under it (Scenario 1, step 3): once
  * the others on the call approve, it captures the consultation, prepares the notes and offers the draft for review and
  * approval. Pathway slides a second one out to its right with the CHF pathway, then keep or transfer once its orders
- * are sent (steps 4 and 5). End call and Hide pathway each slide theirs back.
+ * are sent (steps 4 and 5). Close video consult and Hide pathway each slide theirs back.
  */
 export const Default: Story = {
 	play: async ({ args, canvas, userEvent }) => {
@@ -160,7 +160,8 @@ export const Default: Story = {
 		await expect(await pathway.findByRole("button", { name: "Accept" })).toBeInTheDocument();
 		const panels = canvas.getAllByRole("complementary").map((panel) => panel.getAttribute("aria-label"));
 		await expect(panels).toEqual(["Video consult", "Pathway"]);
-		await userEvent.click(canvas.getByRole("button", { name: "End call" }));
+		// The header's Video consult, pressed while the call is on, ends it and closes its panel.
+		await userEvent.click(canvas.getByRole("button", { name: "Close video consult" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Video consult" })).not.toBeInTheDocument());
 		await userEvent.click(canvas.getByRole("button", { name: "Hide pathway" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).not.toBeInTheDocument());
@@ -168,7 +169,7 @@ export const Default: Story = {
 };
 
 /**
- * Escalate and Resolve open the triage queue's forms under the buttons: who to send it to and a note, or the
+ * Escalate and Mark this alert as resolved open the triage queue's forms under the buttons: who to send it to and a note, or the
  * resolution and a note. Escape closes an open form.
  */
 export const EscalateAndResolve: Story = {
@@ -178,7 +179,8 @@ export const EscalateAndResolve: Story = {
 		await expect(escalate).toHaveAttribute("aria-expanded", "true");
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(escalate).toHaveAttribute("aria-expanded", "false"));
-		await userEvent.click(canvas.getByRole("button", { name: "Resolve" }));
+		// Resolve is a link under the buttons (Nov 9, 2026).
+		await userEvent.click(canvas.getByRole("button", { name: "Mark this alert as resolved" }));
 		await userEvent.click(await canvas.findByRole("radio", { name: "Treated" }));
 		await userEvent.click(canvas.getByRole("button", { name: "Mark as resolved" }));
 		await expect(args.onAction).toHaveBeenLastCalledWith({ type: "resolve", reason: "Treated", note: "" });
@@ -213,7 +215,7 @@ export const SepsisAlert: Story = {
 		// An AI recommendation can be resolved (it was right, and it's handled) or get feedback (it was wrong), a link on its
 		// source line.
 		const panel = within(canvas.getByRole("region", { name: "Alert" }));
-		await userEvent.click(panel.getByRole("button", { name: "Resolve" }));
+		await userEvent.click(panel.getByRole("button", { name: "Mark this alert as resolved" }));
 		await expect(await panel.findByRole("button", { name: "Mark as resolved" })).toBeInTheDocument();
 		await userEvent.click(panel.getByRole("button", { name: "Feedback" }));
 		await expect(await panel.findByRole("button", { name: "Send feedback" })).toBeInTheDocument();

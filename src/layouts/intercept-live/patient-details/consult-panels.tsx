@@ -46,7 +46,7 @@ import {
 	useUnreadMessages,
 	type ConsultMessage,
 } from "../alert-panel/consult-messages";
-import { PagePanel, usePatientHeaderActions } from "../side-panel";
+import { PagePanel, useHideToasts, usePatientHeaderActions } from "../side-panel";
 
 // The patient page's Video consult and Messages (Nov 5, 2026, Intercept-Live "Video and Messages Interations",
 // `219:16129`): the app header's two buttons open them as panels right of the page, full height, Video consult first.
@@ -73,10 +73,45 @@ type PatientPathways = {
 function useOpenPathwayPanel() {
 	const [, setPathwayOpen] = useSessionState("pathwayOpen", false);
 	const [, setMessagesOpen] = useSessionState("messagesOpen", false);
+	const [, setAlertsOpen] = useSessionState("alertsOpen", false);
 	return React.useCallback(() => {
 		setMessagesOpen(false);
 		setPathwayOpen(true);
 	}, [setMessagesOpen, setPathwayOpen]);
+}
+
+/**
+ * Opens the page's Alerts panel from the patient header's View alerts (Nov 9, 2026, user's call): an open call, Messages
+ * or Pathway stays beside it (three panels at once). Kept in the patient's consult session, as the other panels.
+ */
+function useOpenAlertsPanel() {
+	const [, setAlertsOpen] = useSessionState("alertsOpen", false);
+	return React.useCallback(() => setAlertsOpen(true), [setAlertsOpen]);
+}
+
+/**
+ * An alert's own way to its pathway, from its card in the Alerts panel (Nov 9, 2026, user's call: "without opening the
+ * modal"): `toggle(alertId)` opens that alert's pathway in the Pathway panel, right of Alerts, which stays open (Messages
+ * closes), or closes it when it's the one shown. `shownAlertId` is the alert whose pathway is showing.
+ */
+function useAlertPathwayPanel() {
+	const [pathwayOpen, setPathwayOpen] = useSessionState("pathwayOpen", false);
+	const [messagesOpen, setMessagesOpen] = useSessionState("messagesOpen", false);
+	const [pathwayAlertId, setPathwayAlertId] = useSessionState<string | undefined>("pathwayAlert", undefined);
+	const shownAlertId = pathwayOpen && !messagesOpen ? pathwayAlertId : undefined;
+	const toggle = React.useCallback(
+		(alertId: string) => {
+			if (shownAlertId === alertId) {
+				setPathwayOpen(false);
+				return;
+			}
+			setPathwayAlertId(alertId);
+			setMessagesOpen(false);
+			setPathwayOpen(true);
+		},
+		[shownAlertId, setPathwayOpen, setPathwayAlertId, setMessagesOpen],
+	);
+	return { shownAlertId, toggle };
 }
 
 /** Each panel's width, Figma's. Fixed: the call keeps its 352 × 248 shape at any width, and nothing needs resizing. */
@@ -294,6 +329,8 @@ function PatientConsultPanels({
 	const [messagesOpen, setMessagesOpen] = useSessionState("messagesOpen", false);
 	// Pathway shares Messages' place: one at a time.
 	const [pathwayOpen, setPathwayOpen] = useSessionState("pathwayOpen", false);
+	// Alerts (`PatientAlertsPanel`) stays open beside either (Nov 9, 2026, user's call: three panels at once: the call,
+	// Alerts, and Messages or Pathway).
 	const pathwayDetails = pathways?.details ?? [];
 	const [pathwayAlertId, setPathwayAlertId] = useSessionState<string | undefined>("pathwayAlert", undefined);
 	const pathwayDetail = pathwayDetails.find((detail) => detail.alert.id === pathwayAlertId) ?? pathwayDetails[0];
@@ -349,19 +386,9 @@ function PatientConsultPanels({
 			setMessagesOpen(true);
 			onOpenMessages?.();
 		},
-		...(pathwayDetail
-			? {
-					pathwayOpen: pathwayShown,
-					onOpenPathway: () => {
-						if (pathwayShown) {
-							setPathwayOpen(false);
-							return;
-						}
-						setMessagesOpen(false);
-						setPathwayOpen(true);
-					},
-				}
-			: {}),
+		// No Pathway in the header (Nov 9, 2026, user's call: a pathway belongs to the alert that suggests it, not to the
+		// patient): the panel opens from the alert, through the Overview's Care plan (Review / Open pathway), and closes
+		// with its own ×.
 	});
 
 	return (
@@ -371,12 +398,17 @@ function PatientConsultPanels({
 				title='Video consult'
 				open={consultOpen}
 				action={
-					// The notetaker's button only. No Close here (Nov 6, 2026, user's call): the app header's Video consult,
-					// pressed while the panel is open ("Close video consult"), closes it.
-					<div ref={setNotetakerSlot} className='flex shrink-0 items-center' />
+					// The notetaker's button, then × (Nov 9, 2026, user's call; none since Nov 6), 8px apart, as Messages'. × does
+					// what the app header's "Close video consult" does: closes the panel, which ends the call.
+					<div className='flex shrink-0 items-center gap-2'>
+						<div ref={setNotetakerSlot} className='flex shrink-0 items-center empty:hidden' />
+						<Button variant='ghost' size='icon-md' aria-label='Close video consult' onClick={closeConsult}>
+							<XIcon aria-hidden='true' />
+						</Button>
+					</div>
 				}
 				onOpened={(heading) => heading?.focus({ preventScroll: true })}
-				className={panelShadow}
+				className={cn(panelShadow, "order-1")}
 			>
 				<div className='flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pt-6 pb-4'>
 					<ConsultPanelContent
@@ -427,7 +459,7 @@ function PatientConsultPanels({
 					// Escape in the filter's menu (a portal, outside the panel's DOM) closes only the menu.
 					if (event.key === "Escape" && event.currentTarget.contains(event.target as Node)) setMessagesOpen(false);
 				}}
-				className={panelShadow}
+				className={cn(panelShadow, "order-3")}
 			>
 				{/* 24px bottom: the thread pulls its field 8px down, to Figma's 16px. */}
 				<div className='flex min-h-0 flex-1 flex-col px-6 pt-6 pb-6'>
@@ -462,7 +494,7 @@ function PatientConsultPanels({
 					if (event.key !== "Escape" || !event.currentTarget.contains(event.target as Node)) return;
 					if (!pathwayEscape.current?.()) setPathwayOpen(false);
 				}}
-				className={panelShadow}
+				className={cn(panelShadow, "order-3")}
 			>
 				{pathwayDetail ? (
 					// The alert panel's Pathway column: 24px in, its parts 16px apart, its decision stuck to the bottom.
@@ -507,4 +539,46 @@ function PatientConsultPanels({
 	);
 }
 
-export { PatientConsultPanels, useOpenPathwayPanel, type PatientPathways };
+/**
+ * The page's Alerts panel (Nov 9, 2026, user's call): every alert of the patient, the unresolved at the top, opened by
+ * the patient header's View alerts. It stays open beside the call and Messages or Pathway (three panels at once; an
+ * alert's Pathway opens right of it), and the panels keep their order with CSS `order`: the call, Alerts, then
+ * Messages or Pathway. × or Escape closes it.
+ * It lists the alerts itself, so the shell's alert toasts hide while it's open, as with the live feed.
+ */
+function PatientAlertsPanel({ children }: { children: React.ReactNode }) {
+	const [alertsOpen, setAlertsOpen] = useSessionState("alertsOpen", false);
+	useHideToasts(alertsOpen);
+	return (
+		<PagePanel>
+			<PatientPanel
+				id='patient-alerts'
+				title='Alerts'
+				open={alertsOpen}
+				action={
+					<Button variant='ghost' size='icon-md' aria-label='Close alerts' onClick={() => setAlertsOpen(false)}>
+						<XIcon aria-hidden='true' />
+					</Button>
+				}
+				onOpened={(heading) => heading?.focus({ preventScroll: true })}
+				onKeyDown={(event) => {
+					// Not from an alert's menus or forms in a portal, outside the panel's DOM.
+					if (event.key === "Escape" && event.currentTarget.contains(event.target as Node)) setAlertsOpen(false);
+				}}
+				// Between the call and Messages / Pathway, whichever opened first, so an alert's pathway opens on its right.
+				className={cn(panelShadow, "order-2")}
+			>
+				<div className='flex min-h-0 flex-1 flex-col overflow-y-auto p-6'>{children}</div>
+			</PatientPanel>
+		</PagePanel>
+	);
+}
+
+export {
+	PatientAlertsPanel,
+	PatientConsultPanels,
+	useAlertPathwayPanel,
+	useOpenAlertsPanel,
+	useOpenPathwayPanel,
+	type PatientPathways,
+};

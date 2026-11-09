@@ -37,7 +37,7 @@ const meta = {
 		acuity: { label: "NEWS2", score: 10, level: "high" },
 		trajectory: { label: "Change in last 24 h", value: "+1", trend: "up" },
 		alert: { variant: "critical", count: 2 },
-		onViewScore: fn(),
+		alertCounts: { critical: 1, low: 1 },
 		onViewAlerts: fn(),
 	},
 } satisfies Meta<typeof PatientHeader>;
@@ -47,16 +47,13 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * As in Figma: the 56px photo beside the name and the line under it (MRN, sex and age, and location), then the tags (all
- * outline) from the left edge, 12px below. On the right half: NEWS2 and its level, the change in the last 24 h with the
- * previous score, and the open alerts in the worst one's color, each after a rule.
+ * outline) from the left edge, 12px below. On the right half, in three equal columns after rules: NEWS2 and its level,
+ * the change in the last 24 h, and the open alerts in the worst one's color, with View alerts after the count.
  */
 export const Default: Story = {
 	play: async ({ canvas, args }) => {
-		await expect(canvas.getByText("Previous:")).toHaveTextContent("Previous: 9");
 		await expect(canvas.getByText("2")).toHaveClass("text-severity-critical");
-		canvas.getByRole("button", { name: "View breakdown" }).click();
 		canvas.getByRole("button", { name: "View alerts" }).click();
-		await expect(args.onViewScore).toHaveBeenCalled();
 		await expect(args.onViewAlerts).toHaveBeenCalled();
 	},
 };
@@ -67,12 +64,32 @@ export const NoAlerts: Story = {
 		acuity: { label: "NEWS2", score: 3, level: "low" },
 		trajectory: { label: "Change in last 24 h", value: "−2", trend: "down" },
 		alert: undefined,
+		alertCounts: {},
 	},
+	play: async ({ canvas }) => {
+		await expect(canvas.getByText("0")).toHaveClass("text-foreground");
+	},
+};
+
+/** The count takes the worst open alert's color: High, Medium and Low. */
+export const AlertSeverities: Story = {
+	render: (args) => (
+		<div className='flex flex-col gap-6 py-6'>
+			<PatientHeader {...args} alert={{ variant: "high", count: 3 }} alertCounts={{ high: 1, medium: 2 }} />
+			<PatientHeader {...args} alert={{ variant: "medium", count: 1 }} alertCounts={{ medium: 1 }} />
+			<PatientHeader {...args} alert={{ variant: "low", count: 2 }} alertCounts={{ low: 2 }} />
+		</div>
+	),
+};
+
+/** Without `alertCounts`, `alert` gives the count and its color; without `onViewAlerts`, no View alerts. */
+export const TotalOnly: Story = {
+	args: { alertCounts: undefined, onViewAlerts: undefined },
 };
 
 /** No score, change or alert to show, and no View alerts: the patient's side alone, as before Nov 6, 2026. */
 export const WithoutStats: Story = {
-	args: { acuity: undefined, trajectory: undefined, alert: undefined, onViewAlerts: undefined },
+	args: { acuity: undefined, trajectory: undefined, alert: undefined, alertCounts: undefined, onViewAlerts: undefined },
 };
 
 /**
@@ -132,6 +149,8 @@ export const AllVariants: Story = {
 			<PatientHeader {...args} />
 			<PatientHeader {...args} photo={undefined} />
 			<PatientHeader {...args} {...NoAlerts.args} />
+			<PatientHeader {...args} alert={{ variant: "high", count: 3 }} alertCounts={{ high: 1, medium: 2 }} />
+			<PatientHeader {...args} {...TotalOnly.args} />
 			<PatientHeader {...args} {...WithoutStats.args} />
 			<PatientHeader {...args} {...WithActions.args} />
 		</div>

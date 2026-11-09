@@ -1,12 +1,12 @@
 import * as React from "react";
-import { BellIcon, ChevronDownIcon, ChevronRightIcon, GitBranchIcon } from "lucide-react";
+import { ArrowUpRightIcon, BellIcon, ChevronDownIcon, CircleAlertIcon, GitBranchIcon, InfoIcon } from "lucide-react";
 import { AnimatePresence, motion, type Variants } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
-import { patientCardAcuityLevels } from "@/components/cards/patient-census-card";
 import { AlertBar, PatientMonitor } from "@/components/cards/patient-monitoring-card";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { LabTile } from "@/components/data-display/lab-tile";
+import { AiClinicalSummaryBanner } from "@/components/feedback/ai-clinical-summary-banner";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { formatRelativeDate } from "@/lib/relative-date";
 import {
@@ -31,40 +31,35 @@ import {
 import { usePatientNavigation } from "../patient-navigation";
 import { SourceLabel } from "../shared/source-label";
 import {
-	activityTimelineKinds,
-	CarePlanCard,
-	type PatientActivity,
+	pathwayLine,
+	pathwayStatuses,
+	type PatientCarePlan,
 	type PatientPathwayRunning,
 	type PatientPathwaySuggestion,
 } from "./activity";
-import aiBriefIcon from "./images/ai-brief.svg";
-import type { PatientBrief, PatientDetailsProps, PatientEarlyWarning, PatientRecord } from "./patient-details";
-import { Detail, formatElapsed, formatTime, freshness, NoData, SectionCard } from "./section-parts";
-import { timelineEventKinds, type TimelineEventKind } from "./sections/timeline-section";
+import type { PatientBrief, PatientDetailsProps, PatientRecord } from "./patient-details";
+import { Detail, formatElapsed, formatTime, freshness, NoData } from "./section-parts";
 
-// The Overview (PRD Patient details §5; Intercept-Live `149:4464`, Nov 6, 2026): what matters about the patient now, and
-// what's being done about it. The brief across the top. The main column reads down a time line: the open alerts with
-// their actions, the care plan in force, what's due next, a Now line, then what happened, newest first, shaded since the
-// clinician last looked. The rail holds the patient's state: the live monitor, the early warning score, key labs, oxygen
-// and infusions with intake and output, medications, recent orders and the encounter. Data that's missing says it's
-// missing, and only an empty list says there's none.
+// The Overview (PRD Patient details §5; Intercept-Live `149:4464`, rebuilt Nov 9, 2026): what matters about the patient
+// now, and what's being done about it. The AI clinical summary across the top, the clinical findings (key labs and what
+// matters for this patient) under it, then a grid of cards: live monitoring, the care plan, Up next; medications, oxygen
+// and infusions, recent orders; the encounter and referrals. The alerts live in the page's Alerts panel (`AlertsSection`,
+// exported from here), which the patient header opens. Data that's missing says it's missing, and only an empty list
+// says there's none.
 
-/** The Overview's parts the patient header's "View breakdown" and "View alerts" bring into view. */
-const overviewSectionIds = { earlyWarning: "patient-overview-early-warning", alerts: "patient-overview-alerts" } as const;
+/** The alert list's default id. */
+const overviewSectionIds = { alerts: "patient-overview-alerts" } as const;
 
 /** The tabs the Overview links to. */
-type OverviewLinkedSection = "timeline" | "medications" | "orders";
+type OverviewLinkedSection = "medications" | "orders";
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 
-/** How far ahead Up next looks, and how far back the log goes before "Show earlier". */
+/** How far ahead Up next looks. */
 const UP_NEXT_HOURS = 12;
-const LOG_HOURS = 24;
-/** Up next's items before "Show all". */
+/** Up next's items before "View all". */
 const UP_NEXT_ITEMS = 5;
-/** The log's entries before "Show earlier". */
-const LOG_ENTRIES = 12;
 
 /** The latest of the timestamps, for a section's freshness. */
 const latest = (times: (string | undefined)[]) =>
@@ -95,53 +90,31 @@ function dueChip(at: string, now: number): { label: string; variant: BadgeProps[
 const briefQuestion = "Summarize what's behind the brief";
 
 /**
- * The AI brief (PRD PD-024; Intercept-Live `149:4464`): what matters now in a sentence or two, across the top. Marked as
- * Intercept's by its icon and for screen readers, with how many sources it read and how fresh it is. With `onAsk` the
- * whole banner is a button (Nov 6, 2026, user's call): it opens Ask Intercept Live about the patient and asks what's
- * behind the brief, which answers with the details and what changed since the clinician last looked.
+ * The AI brief (PRD PD-024): UCL's AiClinicalSummaryBanner (intercept.ds `1467:13678`, Nov 9, 2026), what matters now
+ * under a headline, across the top, with how many sources it read and how fresh it is. With `onAsk` the whole banner
+ * is a button (Nov 6, 2026, user's call): it opens Ask Intercept Live about the patient and asks what's behind the brief,
+ * which answers with the details and what changed since the clinician last looked. × hides it until a newer brief.
  */
-function BriefBanner({ brief, now, onAsk }: { brief: PatientBrief; now: number | null; onAsk?: () => void }) {
-	const content = (
-		<>
-			<img src={aiBriefIcon} alt='' className='size-4 shrink-0' />
-			{/* One line, cut off with an ellipsis (Nov 6, 2026, user's call); the whole brief is in the hover title and
-			    for screen readers, and the banner opens it in Ask Intercept Live. */}
-			<span title={brief.text} className='min-w-0 flex-1 truncate text-base text-foreground'>
-				<span className='sr-only'>Written by Intercept: </span>
-				{brief.text}
-			</span>
-			<SourceLabel className='shrink-0 text-xs text-muted-foreground'>
-				{brief.sourceCount} sources{now === null ? null : ` · ${formatElapsed(brief.updatedAt, now)}`}
-			</SourceLabel>
-			{onAsk ? (
-				<ChevronRightIcon
-					aria-hidden='true'
-					className='size-4 shrink-0 text-tone-accent transition-transform duration-160 ease-out group-hover/brief:translate-x-0.5 motion-reduce:transition-none'
-				/>
-			) : null}
-		</>
-	);
-	const surface = "flex w-full items-center gap-3 rounded-lg border border-tone-accent-defined bg-tone-accent-subtle px-4 py-2 text-left";
-
+function BriefBanner({
+	brief,
+	now,
+	onAsk,
+	onClose,
+}: {
+	brief: PatientBrief;
+	now: number | null;
+	onAsk?: () => void;
+	onClose?: () => void;
+}) {
 	return (
-		<section aria-label='Brief'>
-			{onAsk ? (
-				<button
-					type='button'
-					onClick={onAsk}
-					title='Ask Intercept Live for more'
-					className={cn(
-						surface,
-						"group/brief outline-none transition-colors duration-160 ease-out hover:border-tone-accent hover:bg-tone-accent-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
-					)}
-				>
-					{content}
-					<span className='sr-only'>. Ask Intercept Live for more.</span>
-				</button>
-			) : (
-				<p className={surface}>{content}</p>
-			)}
-		</section>
+		<AiClinicalSummaryBanner
+			title={brief.title}
+			source={`${brief.sourceCount} sources${now === null ? "" : ` · ${formatElapsed(brief.updatedAt, now)}`}`}
+			onOpen={onAsk}
+			onClose={onClose}
+		>
+			{brief.text}
+		</AiClinicalSummaryBanner>
 	);
 }
 
@@ -177,19 +150,33 @@ function OverviewAlertCard({
 	escalationTargets,
 	onAlertAction,
 	onOpen,
+	onTogglePathway,
+	pathwayShown = false,
 }: {
 	alert: TriageAlert;
 	inLast24h: number;
 	escalationTargets: NonNullable<PatientDetailsProps["escalationTargets"]>;
 	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
 	onOpen?: () => void;
+	/** The alert comes with a pathway: a Pathway button opens it (or closes it) in the page's Pathway panel. */
+	onTogglePathway?: () => void;
+	/** Its pathway is the one the Pathway panel shows. */
+	pathwayShown?: boolean;
 }) {
+	const resolved = !isOpenAlert(alert);
+	// Pathway is last in the lifecycle row, where Resolve was, and Resolve a link under it, as on the alert panel
+	// (Nov 9, 2026, user's call). A resolved alert has no Pathway button: the whole card opens its pathway instead
+	// (Nov 9, 2026, user's call), so there's nothing left to act on but the pathway's record.
+	const opensPathway = resolved && onTogglePathway !== undefined;
 	const lifecycle = useAlertLifecycle({
 		alert,
 		escalationTargets,
 		onAction: onAlertAction ? (action) => onAlertAction(alert.id, action) : undefined,
+		pathway:
+			onTogglePathway && !resolved
+				? { open: Boolean(pathwayShown), onToggle: onTogglePathway, controls: "patient-pathway" }
+				: undefined,
 	});
-	const resolved = !isOpenAlert(alert);
 	const tones = alertTones[resolved ? "resolved" : alert.severity];
 	const headingId = React.useId();
 
@@ -197,8 +184,26 @@ function OverviewAlertCard({
 		<div
 			role='group'
 			aria-labelledby={headingId}
-			className={cn("flex flex-col gap-2 overflow-hidden rounded-xl pb-1.5", tones.panel)}
+			className={cn(
+				"relative flex flex-col gap-2 overflow-hidden rounded-xl pb-1.5",
+				tones.panel,
+			)}
 		>
+			{opensPathway ? (
+				// The whole card's click target, under its own controls (Feedback, a form).
+				<button
+					type='button'
+					aria-expanded={pathwayShown}
+					aria-controls={pathwayShown ? "patient-pathway" : undefined}
+					aria-label={`${pathwayShown ? "Hide" : "Show"} pathway: ${alert.reason ?? alert.title}`}
+					onClick={onTogglePathway}
+					// On hover, and while its pathway is open, the whole card darkens (Nov 9, 2026, user's call: no outline).
+					className={cn(
+						"absolute inset-0 z-[1] cursor-pointer rounded-xl outline-none transition-colors duration-160 hover:bg-foreground/5 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset motion-reduce:transition-none",
+						pathwayShown && "bg-foreground/5",
+					)}
+				/>
+			) : null}
 			<AlertBar
 				alert={{
 					variant: resolved ? "resolved" : alert.severity,
@@ -206,12 +211,14 @@ function OverviewAlertCard({
 					since: resolved ? (alert.addressed?.at ?? alert.firedAt) : alert.firedAt,
 				}}
 				size='md'
-				onOpen={onOpen}
+				// A card that opens its pathway is one click target: its bar no longer opens the alert, so no maximize icon
+				// (Nov 9, 2026, user's call).
+				onOpen={opensPathway ? undefined : onOpen}
 				className='rounded-none'
 			/>
 			<div className='flex flex-col gap-2 px-4 pb-2.5'>
 				{/* The reason leads; the alert's own title follows it, as in the alert panel. */}
-				<div>
+				<div className='min-w-0'>
 					<h3 id={headingId} className={cn("text-lg font-bold", tones.title)}>
 						{alert.reason ?? alert.title}
 					</h3>
@@ -227,12 +234,16 @@ function OverviewAlertCard({
 								Source: {alertSourceLabels[alert.source.kind]} · {alert.source.name}
 							</span>
 						</p>
-						{lifecycle.feedbackNode ? <div className='flex h-[1lh] shrink-0 items-center'>{lifecycle.feedbackNode}</div> : null}
+						{lifecycle.feedbackNode ? (
+							<div className='relative z-[2] flex h-[1lh] shrink-0 items-center'>{lifecycle.feedbackNode}</div>
+						) : null}
 					</div>
 					{lifecycle.statusNode}
 				</div>
-				{lifecycle.alertActionsNode ? <div className='flex gap-2'>{lifecycle.alertActionsNode}</div> : null}
-				{lifecycle.formNode}
+				{/* Over the card's click target, so its own controls stay theirs. */}
+				{lifecycle.alertActionsNode ? <div className='relative z-[2] flex gap-2'>{lifecycle.alertActionsNode}</div> : null}
+				{lifecycle.resolveNode ? <div className='relative z-[2]'>{lifecycle.resolveNode}</div> : null}
+				{lifecycle.formNode ? <div className='relative z-[2]'>{lifecycle.formNode}</div> : null}
 			</div>
 		</div>
 	);
@@ -243,19 +254,36 @@ function OverviewAlertCard({
  * this shift behind "Show resolved". With none open: "No active alerts · Last alert 2:14 PM" (MON-051).
  */
 function AlertsSection({
+	id = overviewSectionIds.alerts,
 	patientId,
 	alerts,
 	escalationTargets,
 	onAlertAction,
+	allResolved = false,
+	pathwayAlertIds = [],
+	pathwayShownId,
+	onTogglePathway,
 }: {
+	id?: string;
 	patientId: string;
 	alerts: TriageAlert[];
 	escalationTargets: NonNullable<PatientDetailsProps["escalationTargets"]>;
 	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
+	/**
+	 * Every alert at once, the unresolved first and the resolved under them, with no Show resolved (the page's Alerts
+	 * panel, Nov 9, 2026, user's call: "unresolved at the top").
+	 */
+	allResolved?: boolean;
+	/** Alerts that come with a pathway: their cards get Pathway, which calls `onTogglePathway` with the alert's id. */
+	pathwayAlertIds?: string[];
+	/** The alert whose pathway the Pathway panel shows. */
+	pathwayShownId?: string;
+	onTogglePathway?: (alertId: string) => void;
 }) {
 	const navigation = usePatientNavigation();
 	const { prefersReducedMotion, resolve } = useMotionPreference();
-	const [showResolved, setShowResolved] = React.useState(false);
+	const [resolvedToggled, setShowResolved] = React.useState(false);
+	const showResolved = allResolved || resolvedToggled;
 	const now = useCurrentMinute();
 	const active = alerts.filter(isOpenAlert).sort(compareTriageAlerts);
 	const resolved = sortAddressedAlerts(alerts.filter((alert) => !isOpenAlert(alert)));
@@ -266,7 +294,7 @@ function AlertsSection({
 
 	return (
 		<section
-			id={overviewSectionIds.alerts}
+			id={id}
 			aria-label='Alerts'
 			tabIndex={-1}
 			className='flex scroll-mt-20 flex-col gap-3 outline-none'
@@ -295,11 +323,15 @@ function AlertsSection({
 							escalationTargets={escalationTargets}
 							onAlertAction={onAlertAction}
 							onOpen={navigation ? () => navigation.openAlert(patientId, alert.id) : undefined}
+							onTogglePathway={
+								onTogglePathway && pathwayAlertIds.includes(alert.id) ? () => onTogglePathway(alert.id) : undefined
+							}
+							pathwayShown={pathwayShownId === alert.id}
 						/>
 					</motion.div>
 				))}
 			</AnimatePresence>
-			{resolved.length ? (
+			{resolved.length && !allResolved ? (
 				<Button
 					variant='ghost'
 					size='xs'
@@ -483,488 +515,437 @@ function upNextItems(record: PatientRecord | undefined, now: number, pathway?: O
 	return items.filter((item) => Date.parse(item.at) <= until).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
 }
 
-/** What's due next (Intercept-Live `149:4464`), soonest first, each with its time and how soon. */
-function UpNextCard({ record, now, pathway }: { record?: PatientRecord; now: number | null; pathway?: OverviewPathway }) {
-	const [showAll, setShowAll] = React.useState(false);
-	const items = now === null ? [] : upNextItems(record, now, pathway);
-	const shown = showAll ? items : items.slice(0, UP_NEXT_ITEMS);
+/* -------------------------------------------------------------------------- */
+/* Card parts                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * One of the Overview's cards (Intercept-Live `149:4464`, Nov 9, 2026): the title with the card's links at the right, its
+ * content, and a footer at the bottom (where the data comes from, or a note). Cards in a row of the grid share its
+ * height, so their footers line up.
+ */
+function OverviewCard({
+	title,
+	leading,
+	meta,
+	actions,
+	footer,
+	className,
+	children,
+}: {
+	title: string;
+	/** Before the title, e.g. Live monitoring's live dot. */
+	leading?: React.ReactNode;
+	/** Right of the title, muted, e.g. "3/3 devices connected". */
+	meta?: React.ReactNode;
+	/** The card's links, at the right of the title. */
+	actions?: React.ReactNode;
+	footer?: React.ReactNode;
+	className?: string;
+	children: React.ReactNode;
+}) {
+	const headingId = React.useId();
 	return (
-		<SectionCard title='Up next' meta={`Next ${UP_NEXT_HOURS} h`}>
-			{items.length ? (
-				<ol className='flex flex-col gap-1'>
-					{shown.map((item) => {
-						const chip = now === null ? undefined : dueChip(item.at, now);
-						return (
-							<li
-								key={item.id}
-								className='grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-start gap-x-3 rounded-lg bg-background-subtle px-3 py-2'
-							>
-								<time dateTime={item.at} className='pt-px text-sm text-muted-foreground tabular-nums'>
-									{formatTime(item.at)}
-								</time>
-								<div className='flex min-w-0 flex-col'>
-									<span className='text-sm font-medium text-foreground'>{item.title}</span>
-									{item.detail ? <span className='text-xs text-muted-foreground'>{item.detail}</span> : null}
-								</div>
-								{chip ? (
-									<Badge variant={chip.variant} size='xs'>
-										{chip.label}
-									</Badge>
-								) : null}
-							</li>
-						);
-					})}
-				</ol>
-			) : (
-				<NoData>Nothing scheduled in the next {UP_NEXT_HOURS} hours.</NoData>
+		<section
+			aria-labelledby={headingId}
+			className={cn(
+				"flex min-w-0 flex-col justify-between gap-4 rounded-xl border border-border bg-card px-5 py-4 shadow-sm",
+				className,
 			)}
-			{items.length > UP_NEXT_ITEMS ? (
-				<Button
-					variant='ghost'
-					size='xs'
-					aria-expanded={showAll}
-					onClick={() => setShowAll(!showAll)}
-					className='-mt-1 self-start text-link'
-				>
-					<ChevronDownIcon
-						aria-hidden='true'
-						className={cn("transition-transform duration-160 motion-reduce:transition-none", showAll && "rotate-180")}
-					/>
-					{showAll ? "Show fewer" : `Show all ${items.length}`}
-				</Button>
-			) : null}
-		</SectionCard>
+		>
+			<div className='flex min-h-0 flex-1 flex-col gap-2'>
+				<div className='flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1'>
+					{leading}
+					<h2 id={headingId} className='min-w-0 flex-1 text-lg font-semibold text-foreground'>
+						{title}
+					</h2>
+					{meta ? <p className='text-sm text-muted-foreground'>{meta}</p> : null}
+					{actions ? <div className='-mr-1 flex items-center'>{actions}</div> : null}
+				</div>
+				{children}
+			</div>
+			{footer ? <div className='flex flex-col gap-1'>{footer}</div> : null}
+		</section>
 	);
 }
 
-type LogEntry = {
-	id: string;
-	at: string;
-	/** For the dot's color, as on the Timeline's events lane. */
-	kind: TimelineEventKind;
-	/** The kind in words, e.g. "Pump", "Decision". */
-	label: string;
-	title: string;
-	detail?: string;
-	by?: string;
-};
-
-const activityLabels: Record<PatientActivity["kind"], string> = {
-	alert: "Alert",
-	consult: "Video consult",
-	order: "Order",
-	decision: "Decision",
-	note: "Note",
-	outcome: "Outcome",
-};
-
-const eventLabels: Record<TimelineEventKind, string> = {
-	care: "Care",
-	drip: "Pump",
-	ventilator: "Ventilator",
-	lab: "Lab",
-	note: "Note",
-	alert: "Alert",
-};
-
-/** A Timeline event's label ends with who, after " · ", when a person did it ("Turned and repositioned · Kelly Ortiz"). */
-function splitWho(label: string) {
-	const at = label.lastIndexOf(" · ");
-	if (at < 0) return { title: label };
-	const who = label.slice(at + 3);
-	return /\d/.test(who) ? { title: label } : { title: label.slice(0, at), by: who };
-}
-
-/** The decisions and actions (the activity log) and the Timeline's events, newest first. */
-function logEntries(record: PatientRecord | undefined): LogEntry[] {
-	return [
-		...(record?.activity ?? []).map((entry) => ({
-			id: `activity-${entry.id}`,
-			at: entry.at,
-			kind: activityTimelineKinds[entry.kind],
-			label: activityLabels[entry.kind],
-			title: entry.title,
-			detail: entry.detail,
-			by: entry.by,
-		})),
-		...(record?.timeline?.events ?? []).map((event) => ({
-			id: `event-${event.id}`,
-			at: event.at,
-			kind: event.kind,
-			label: eventLabels[event.kind],
-			...splitWho(event.label),
-		})),
-	].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
-}
-
-/** One line of the log: its time, a dot in the event's color on the time line, the kind, what happened and who. */
-function LogRow({ entry, fresh }: { entry: LogEntry; fresh: boolean }) {
+/** A card's source line: the source icon, then where the data comes from and how old it is. */
+function CardSource({ children }: { children: React.ReactNode }) {
 	return (
-		<li
-			className={cn(
-				"grid grid-cols-[4.5rem_1rem_minmax(0,1fr)] gap-x-2 rounded-lg px-2 py-2",
-				fresh && "bg-info-subtle",
-			)}
-		>
-			<time dateTime={entry.at} className='pt-px text-right text-xs text-muted-foreground tabular-nums'>
-				{formatTime(entry.at)}
-			</time>
-			<span aria-hidden='true' className='flex justify-center pt-1.5'>
-				<span className={cn("size-2 rounded-full", timelineEventKinds[entry.kind].className)} />
-			</span>
-			<div className='flex min-w-0 flex-col'>
-				<p className='text-sm text-foreground'>
-					<span
-						className={cn(
-							"mr-1.5 text-xs font-semibold tracking-wide uppercase",
-							entry.kind === "alert" ? "text-severity-critical-prominent" : "text-muted-foreground",
-						)}
-					>
-						{entry.label}
-					</span>
-					<span className='font-medium'>{entry.title}</span>
-				</p>
-				{entry.detail ? <p className='text-sm text-foreground'>{entry.detail}</p> : null}
-				{entry.by ? <p className='text-xs text-muted-foreground'>{entry.by}</p> : null}
-			</div>
-		</li>
+		<p className='text-xs text-muted-foreground'>
+			<SourceLabel>{children}</SourceLabel>
+		</p>
+	);
+}
+
+/** A card's link to where its whole list lives (another tab, the Pathway panel), with the ↗ that says it goes there. */
+function CardLink({ children, ...props }: Omit<React.ComponentProps<typeof Button>, "variant" | "size">) {
+	return (
+		<Button variant='ghost' size='sm' className='text-link hover:text-link' {...props}>
+			{children}
+			<ArrowUpRightIcon aria-hidden='true' />
+		</Button>
+	);
+}
+
+/** A card's "View all" that shows the rest of the list in place, then "Show fewer". */
+function CardToggle({ expanded, total, onToggle }: { expanded: boolean; total: number; onToggle: () => void }) {
+	return (
+		<Button variant='ghost' size='sm' aria-expanded={expanded} onClick={onToggle} className='text-link hover:text-link'>
+			{expanded ? "Show fewer" : `View all · ${total}`}
+			<ChevronDownIcon
+				aria-hidden='true'
+				className={cn("transition-transform duration-160 motion-reduce:transition-none", expanded && "rotate-180")}
+			/>
+		</Button>
+	);
+}
+
+/** A card's list: rows between rules, the first with one above it too. */
+function CardList({ children, ...props }: React.ComponentProps<"ul">) {
+	return (
+		<ul className='flex flex-col' {...props}>
+			{children}
+		</ul>
 	);
 }
 
 /**
- * The Now line and, under it, what happened (PRD PD-023 What changed; the activity log, PD-133): the decisions and
- * actions with who, and the pump, ventilator, lab, care and note events, newest first, over the last day. What's new
- * since the clinician last looked is shaded, as on the Timeline, above a "You last looked at" rule.
+ * One row of a card's list: what it is (base semibold), then a line with its particulars (`detail` in `foreground`,
+ * `extra` muted after it), and at the right a status Badge or a time (`aside`). `children` add lines under them.
  */
-function PatientLog({
-	record,
-	now,
-	onShowTimeline,
+function CardRow({
+	title,
+	detail,
+	extra,
+	join = " · ",
+	aside,
+	children,
 }: {
-	record?: PatientRecord;
-	now: number | null;
-	onShowTimeline?: () => void;
+	title: React.ReactNode;
+	detail?: React.ReactNode;
+	extra?: React.ReactNode;
+	/** What goes between `detail` and `extra`. */
+	join?: string;
+	aside?: React.ReactNode;
+	children?: React.ReactNode;
 }) {
-	const [showAll, setShowAll] = React.useState(false);
-	const lastViewedAt = record?.brief?.lastViewedAt;
-	const lastViewed = lastViewedAt ? Date.parse(lastViewedAt) : undefined;
-	const entries = logEntries(record).filter((entry) => now === null || now - Date.parse(entry.at) <= LOG_HOURS * HOUR);
-	const shown = showAll ? entries : entries.slice(0, LOG_ENTRIES);
-	const isFresh = (entry: LogEntry) => lastViewed !== undefined && Date.parse(entry.at) > lastViewed;
-	const freshCount = entries.filter(isFresh).length;
-
 	return (
-		<section aria-label='Log' className='flex flex-col gap-2'>
-			<div className='flex items-center gap-3'>
-				<h2 className='text-xs font-semibold tracking-wide text-tone-accent uppercase'>
-					Now{now === null ? null : ` · ${formatTime(new Date(now).toISOString())}`}
-				</h2>
-				<span aria-hidden='true' className='h-px flex-1 bg-tone-accent' />
-				{onShowTimeline ? (
-					<Button variant='link' size='xs' onClick={onShowTimeline} className='h-auto p-0'>
-						Open Timeline
-					</Button>
-				) : null}
+		<li className='flex items-center justify-between gap-3 border-b border-border px-2 py-3 first:border-t'>
+			<div className='flex min-w-0 flex-col gap-1'>
+				<div className='flex flex-col'>
+					<span className='text-base font-semibold text-foreground'>{title}</span>
+					{detail || extra ? (
+						<span className='text-sm text-muted-foreground'>
+							{detail ? <span className='text-foreground'>{detail}</span> : null}
+							{detail && extra ? join : null}
+							{extra}
+						</span>
+					) : null}
+				</div>
+				{children}
 			</div>
+			{aside ? <div className='shrink-0'>{aside}</div> : null}
+		</li>
+	);
+}
 
-			{lastViewedAt && entries.length && !freshCount ? (
-				<p className='px-2 text-xs text-muted-foreground'>Nothing new since you last looked at {formatTime(lastViewedAt)}.</p>
-			) : null}
+/** A time at the right of a row: "Given 2:53 PM", "Just now". */
+function RowTime({ children }: { children: React.ReactNode }) {
+	return <span className='text-xs text-muted-foreground'>{children}</span>;
+}
 
-			{shown.length ? (
-				<ol aria-label={`Last ${LOG_HOURS} hours, newest first`} className='flex flex-col gap-1'>
-					{shown.map((entry, index) => (
-						<React.Fragment key={entry.id}>
-							<LogRow entry={entry} fresh={isFresh(entry)} />
-							{/* The rule under the last new entry, where the clinician left off. */}
-							{freshCount && lastViewedAt && index === freshCount - 1 && index < shown.length - 1 ? (
-								<li className='flex items-center gap-3 px-2 py-1 text-xs text-muted-foreground'>
-									<span aria-hidden='true' className='h-px flex-1 bg-border' />
-									You last looked at {formatTime(lastViewedAt)}
-									<span aria-hidden='true' className='h-px flex-1 bg-border' />
-								</li>
-							) : null}
-						</React.Fragment>
-					))}
-				</ol>
-			) : (
-				<NoData>Nothing recorded in the last {LOG_HOURS} hours.</NoData>
-			)}
+/* -------------------------------------------------------------------------- */
+/* Clinical findings                                                          */
+/* -------------------------------------------------------------------------- */
 
-			{entries.length > LOG_ENTRIES ? (
-				<Button
-					variant='ghost'
-					size='xs'
-					aria-expanded={showAll}
-					onClick={() => setShowAll(!showAll)}
-					className='self-start text-link'
-				>
-					<ChevronDownIcon
-						aria-hidden='true'
-						className={cn("transition-transform duration-160 motion-reduce:transition-none", showAll && "rotate-180")}
-					/>
-					{showAll ? "Show fewer" : `Show earlier (${entries.length - LOG_ENTRIES})`}
-				</Button>
-			) : null}
+/** "2 h old", "45 min old": how stale a charted value is. */
+function formatAge(at: string, now: number) {
+	const minutes = Math.max(0, Math.round((now - Date.parse(at)) / MINUTE));
+	return minutes < 60 ? `${minutes} min old` : `${Math.floor(minutes / 60)} h old`;
+}
+
+/**
+ * The clinical findings across the top (PRD PD-025; Intercept-Live `242:11805`, Nov 9, 2026: "primarily reserved for
+ * contextual clinical findings"): the key labs as UCL LabTiles, then what matters for this patient's situation (a vital
+ * with the rule it's watched against, the breathing support since it started), so the clinician reads the numbers the
+ * plan turns on first. A finding charted too long ago says how old it is, in red, instead of its context.
+ */
+function ClinicalFindings({ record, now }: { record?: PatientRecord; now: number | null }) {
+	const labs = record?.labs ?? [];
+	const findings = record?.findings ?? [];
+	if (!labs.length && !findings.length)
+		return <NoData>{record?.labs ? "No labs resulted in the last 72 hours." : "No lab data for this patient."}</NoData>;
+	return (
+		<section aria-label='Clinical findings'>
+			<ul className='grid grid-cols-2 gap-2 @min-[36rem]:grid-cols-3 @min-[60rem]:grid-cols-4 @min-[80rem]:grid-cols-6'>
+				{labs.map((lab) => (
+					<li key={`lab-${lab.name}`} className='flex'>
+						<LabTile
+							className='flex-1'
+							name={lab.name}
+							value={lab.value}
+							unit={lab.unit}
+							flag={lab.flag}
+							resultedAt={lab.resultedAt}
+							previous={lab.previous}
+							collectedAt={lab.collectedAt}
+						/>
+					</li>
+				))}
+				{findings.map((finding) => {
+					const stale =
+						finding.chartedAt && finding.staleAfterMinutes !== undefined && now !== null
+							? now - Date.parse(finding.chartedAt) > finding.staleAfterMinutes * MINUTE
+							: false;
+					const context = finding.since ? `Since ${formatTime(finding.since)}` : finding.context;
+					return (
+						<li key={`finding-${finding.name}`} className='flex'>
+							<LabTile
+								className='flex-1'
+								name={finding.name}
+								value={finding.value}
+								unit={finding.unit}
+								previous={finding.previous}
+								meta={
+									stale && finding.chartedAt && now !== null ? (
+										<span className='text-severity-critical-prominent'>{formatAge(finding.chartedAt, now)}</span>
+									) : (
+										context
+									)
+								}
+								note={finding.note}
+							/>
+						</li>
+					);
+				})}
+			</ul>
 		</section>
 	);
 }
 
 /* -------------------------------------------------------------------------- */
-/* Rail                                                                       */
+/* Cards                                                                      */
 /* -------------------------------------------------------------------------- */
 
 /**
- * The score's trend as a line, oldest to newest, over a dashed line at the alert threshold. Decorative: the values and
- * times are the list under it.
+ * The patient's live bedside monitor (PRD PD-021) under "Live monitoring", with how many of the patient's devices are
+ * reporting: the monitor, and the ventilator and the pumps when the record has them.
  */
-function ScoreTrendLine({ trend, threshold }: Pick<PatientEarlyWarning, "trend" | "threshold">) {
-	const times = trend.map((point) => Date.parse(point.at));
-	const start = times[0];
-	const span = Math.max(1, times[times.length - 1] - start);
-	const top = Math.max(threshold + 3, ...trend.map((point) => point.value + 1));
-	const y = (value: number) => 40 - (value / top) * 40;
-	const points = trend.map((point, index) => `${((times[index] - start) / span) * 100},${y(point.value)}`).join(" ");
-
-	return (
-		<svg aria-hidden='true' viewBox='0 0 100 40' preserveAspectRatio='none' className='h-10 w-full overflow-visible'>
-			<line
-				x1='0'
-				x2='100'
-				y1={y(threshold)}
-				y2={y(threshold)}
-				className='stroke-severity-high'
-				strokeWidth='1'
-				strokeDasharray='4 3'
-				vectorEffect='non-scaling-stroke'
-			/>
-			<polyline
-				points={points}
-				fill='none'
-				className='stroke-foreground'
-				strokeWidth='2'
-				strokeLinejoin='round'
-				vectorEffect='non-scaling-stroke'
-			/>
-		</svg>
-	);
-}
-
-/**
- * The deterioration score (PRD PC-030, DU-14): its value and band, whether it has crossed into the alert band, its
- * trend and the inputs that make it up, each with its points. The patient header's "View breakdown" brings it into view.
- * A current-state score: it says where the patient is now, never where they're going.
- */
-function EarlyWarningCard({
-	warning,
-	acuity,
-	now,
+function LiveMonitoringCard({
+	record,
+	monitor,
+	name,
 }: {
-	warning?: PatientEarlyWarning;
-	/** The score as the patient header shows it, for a record without the breakdown. */
-	acuity?: PatientDetailsProps["patient"]["acuity"];
-	now: number | null;
+	record?: PatientRecord;
+	monitor: PatientDetailsProps["monitor"];
+	name: string;
 }) {
-	const crossed = warning?.crossedAt !== undefined;
+	const devices = [Boolean(monitor?.vitals), ...(record?.ventilator ? [true] : []), ...(record?.infusions?.length ? [true] : [])];
+	const connected = devices.filter(Boolean).length;
 	return (
-		<SectionCard
-			id={overviewSectionIds.earlyWarning}
-			title={warning ? `${warning.score} breakdown` : acuity?.score !== undefined ? `${acuity.label} breakdown` : "Early warning score"}
-			meta={warning ? <SourceLabel>{freshness("Vitals", warning.updatedAt, now)}</SourceLabel> : undefined}
+		<OverviewCard
+			title='Live monitoring'
+			leading={
+				monitor?.vitals ? <span aria-hidden='true' className='size-2.5 shrink-0 rounded-full bg-success' /> : undefined
+			}
+			meta={`${connected}/${devices.length} ${devices.length === 1 ? "device" : "devices"} connected`}
 		>
-			{warning ? (
-				<>
-					<div className='flex flex-col'>
-						<p className='flex items-baseline gap-2'>
-							<span className='text-3xl font-semibold text-foreground tabular-nums'>{warning.value}</span>
-							<span className='text-sm font-medium text-foreground'>{warning.band}</span>
-						</p>
-						<p className={cn("text-xs", crossed ? "font-medium text-severity-high-prominent" : "text-muted-foreground")}>
-							{warning.crossedAt
-								? `Crossed into ${warning.alertBand} (${warning.threshold} or more) at ${formatTime(warning.crossedAt)}`
-								: `Below ${warning.alertBand} (${warning.threshold} or more)`}
-						</p>
-					</div>
-
-					{warning.trend.length > 1 ? (
-						<div className='flex flex-col gap-1.5'>
-							<ScoreTrendLine trend={warning.trend} threshold={warning.threshold} />
-							<ol aria-label='Trend' className='flex justify-between gap-2 text-xs text-muted-foreground'>
-								{warning.trend.map((point, index) => (
-									<li key={point.at} className='flex flex-col last:items-end'>
-										<span className='font-semibold text-foreground tabular-nums'>{point.value}</span>
-										{index === warning.trend.length - 1 ? "Now" : formatTime(point.at)}
-									</li>
-								))}
-							</ol>
-						</div>
-					) : null}
-
-					<table className='w-full text-sm'>
-						<caption className='sr-only'>What makes up the score</caption>
-						<thead className='sr-only'>
-							<tr>
-								<th scope='col'>Input</th>
-								<th scope='col'>Value</th>
-								<th scope='col'>Points</th>
-							</tr>
-						</thead>
-						<tbody className='divide-y divide-border-muted'>
-							{warning.inputs.map((input) => (
-								<tr key={input.label} className={input.points ? "text-foreground" : "text-muted-foreground"}>
-									<th scope='row' className='py-1 text-left font-normal'>
-										{input.label}
-									</th>
-									<td className='py-1 text-right tabular-nums'>{input.value}</td>
-									<td className={cn("w-16 py-1 text-right tabular-nums", input.points ? "font-semibold" : undefined)}>
-										{input.points} {input.points === 1 ? "pt" : "pts"}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</>
-			) : acuity?.score !== undefined ? (
-				// The header's score with "View breakdown" lands here: show the score, and say the inputs are missing.
-				<>
-					<p className='flex items-baseline gap-2'>
-						<span className='text-3xl font-semibold text-foreground tabular-nums'>{acuity.score}</span>
-						<span className='text-sm font-medium text-foreground'>
-							{patientCardAcuityLevels[acuity.level ?? "unknown"].label}
-						</span>
-					</p>
-					<NoData>The inputs behind this score aren't in the record yet.</NoData>
-				</>
+			{monitor?.vitals ? (
+				<PatientMonitor
+					aria-label={`Bedside monitor, ${name}`}
+					vitals={monitor.vitals}
+					limits={monitor.limits}
+					alarmPriorities={monitor.alarmPriorities}
+					acknowledgedAlarms={monitor.acknowledgedAlarms}
+					trends={monitor.trends}
+					className='min-h-60 flex-1'
+				/>
 			) : (
-				<NoData>No early warning score for this patient.</NoData>
+				<NoData>No live monitor data for this patient.</NoData>
 			)}
-		</SectionCard>
+		</OverviewCard>
 	);
 }
 
-/** Key labs (PRD PD-025) as tiles, two to a row; a pending lab says when it was collected. */
-function KeyLabsCard({ record, now }: { record?: PatientRecord; now: number | null }) {
-	const labs = record?.labs;
-	const latestLab = latest(labs?.map((lab) => lab.resultedAt) ?? []);
+/** A thing the pathway runs, under its row: the info icon, or the alert icon in red when it's overdue. */
+function RunningLine({ item }: { item: PatientPathwayRunning }) {
+	const Icon = item.overdue ? CircleAlertIcon : InfoIcon;
 	return (
-		<SectionCard title='Key labs' meta={latestLab ? <SourceLabel>{freshness("Lab", latestLab, now)}</SourceLabel> : undefined}>
-			{labs?.length ? (
-				<ul className='grid grid-cols-2 gap-2'>
-					{labs.map((lab) => (
-						<li key={lab.name} className='flex'>
-							<LabTile
-								className='flex-1'
-								name={lab.name}
-								value={lab.value}
-								unit={lab.unit}
-								flag={lab.flag}
-								resultedAt={lab.resultedAt}
-								previous={lab.previous}
-								collectedAt={lab.collectedAt}
-							/>
-						</li>
-					))}
-				</ul>
-			) : labs ? (
-				<NoData>No labs resulted in the last 72 hours.</NoData>
-			) : (
-				<NoData>No lab data for this patient.</NoData>
+		<p
+			className={cn(
+				"flex items-start gap-1.5 text-sm font-medium",
+				item.overdue ? "text-severity-critical-prominent" : "text-info",
 			)}
-		</SectionCard>
+		>
+			<span className='flex h-[1lh] shrink-0 items-center'>
+				<Icon aria-hidden='true' className='size-4' />
+			</span>
+			<span>
+				{item.label}
+				{item.detail ? ` · ${item.detail}` : null}
+				{item.overdue ? <span className='sr-only'> (overdue)</span> : null}
+			</span>
+		</p>
 	);
 }
 
 /**
- * Organ support (PRD PD-022) and fluids (DU-18) in one card: the respiratory support and its settings with the last ABG,
- * each infusion's rate and last change, then the net fluid balance and weight change.
+ * The care plan (Intercept-Live `242:12310`, Nov 9, 2026, user's call: Figma's rows): a row each for the pathway (the
+ * suggestion waiting for review, or the one sent with where co-signature is) with what it runs now under it, and the
+ * decision to keep or transfer with how its checkpoints went. The orders, doses and checkpoint details are behind
+ * **View full plan**, the page's Pathway panel.
  */
-function OxygenAndInfusionsCard({ record, now }: { record?: PatientRecord; now: number | null }) {
-	const ventilator = record?.ventilator;
-	const infusions = record?.infusions;
-	const fluids = record?.fluids;
-	const updated = latest([ventilator?.updatedAt, ...(infusions?.map((infusion) => infusion.updatedAt) ?? [])]);
-	const source = [ventilator?.source, infusions?.length ? "Pump" : undefined].filter(Boolean).join(", ");
+function CarePlanCard({
+	plan,
+	suggestion,
+	running,
+	now,
+	onOpenPathway,
+}: {
+	plan?: PatientCarePlan;
+	suggestion?: PatientPathwaySuggestion;
+	running: PatientPathwayRunning[];
+	now: number | null;
+	onOpenPathway?: () => void;
+}) {
+	const pathway = plan?.pathway;
+	const transfer = plan?.transfer;
+	const passed = transfer?.checkpoints.filter((checkpoint) => checkpoint.result?.status === "passed").length ?? 0;
+	const missed = transfer?.checkpoints.some((checkpoint) => checkpoint.result?.status === "missed");
+	const updated = latest([pathway?.at, pathway?.cosignedAt, transfer?.at]);
+	const hasPathwayRow = Boolean(pathway || suggestion);
 
 	return (
-		<SectionCard
-			title='Oxygen and infusions'
-			meta={updated && source ? <SourceLabel>{freshness(source, updated, now)}</SourceLabel> : undefined}
+		<OverviewCard
+			title='Care plan'
+			actions={onOpenPathway ? <CardLink onClick={onOpenPathway}>View full plan</CardLink> : undefined}
+			footer={updated ? <CardSource>{freshness("Intercept", updated, now)}</CardSource> : undefined}
 		>
-			<div className='flex flex-col gap-3 divide-y divide-border-muted *:pb-3 *:last:pb-0'>
-				{ventilator ? (
-					<div className='flex flex-col gap-2'>
-						<p className='text-sm font-semibold text-foreground'>{[ventilator.support, ventilator.mode].filter(Boolean).join(" · ")}</p>
-						<dl className='grid grid-cols-2 gap-x-4 gap-y-2'>
-							{ventilator.settings.map((setting) => (
-								<Detail key={setting.label} label={setting.label}>
-									<span className='font-semibold tabular-nums'>{setting.value}</span>
-									{setting.unit ? <span className='text-muted-foreground'> {setting.unit}</span> : null}
-									{setting.set ? <span className='text-muted-foreground'> · set {setting.set}</span> : null}
-								</Detail>
+			{hasPathwayRow || running.length || transfer ? (
+				<CardList>
+					{pathway ? (
+						<CardRow
+							title={pathway.title}
+							detail={`${pathway.orders.length} ${pathway.orders.length === 1 ? "order" : "orders"}`}
+							extra={pathwayLine(pathway)}
+							aside={
+								<Badge variant={pathwayStatuses[pathway.status].variant} size='xs'>
+									{pathwayStatuses[pathway.status].label}
+								</Badge>
+							}
+						>
+							{running.map((item) => (
+								<RunningLine key={item.label} item={item} />
 							))}
-						</dl>
-						{ventilator.abg ? (
-							<p className='text-xs text-muted-foreground'>
-								<span className='font-medium text-foreground'>Last ABG</span> {formatTime(ventilator.abg.collectedAt)} ·{" "}
-								{ventilator.abg.values}
-							</p>
-						) : null}
-					</div>
-				) : (
-					<NoData>No ventilator or oxygen data for this patient.</NoData>
-				)}
+						</CardRow>
+					) : suggestion ? (
+						<CardRow
+							title={suggestion.title}
+							detail={`${suggestion.orders === 1 ? "1 order" : `${suggestion.orders} orders`} waiting for your review`}
+							aside={
+								<Badge variant='yellow' size='xs'>
+									Needs review
+								</Badge>
+							}
+						>
+							{running.map((item) => (
+								<RunningLine key={item.label} item={item} />
+							))}
+						</CardRow>
+					) : (
+						running.map((item) => (
+							<CardRow
+								key={item.label}
+								title={item.label}
+								detail={item.detail}
+								aside={
+									<Badge variant={item.overdue ? "red" : "blue"} size='xs'>
+										{item.overdue ? "Overdue" : "In progress"}
+									</Badge>
+								}
+							/>
+						))
+					)}
+					{transfer ? (
+						<CardRow
+							title={transfer.label}
+							detail={
+								transfer.checkpoints.length
+									? `${passed} of ${transfer.checkpoints.length} checkpoints passed`
+									: transfer.rationale
+							}
+							extra={[transfer.by, formatTime(transfer.at)].filter(Boolean).join(" · ")}
+							aside={
+								transfer.outcome ? (
+									<Badge variant='green' size='xs'>
+										{transfer.outcome.label}
+									</Badge>
+								) : missed ? (
+									<Badge variant='red' size='xs'>
+										Checkpoint missed
+									</Badge>
+								) : transfer.checkpoints.length > passed ? (
+									<Badge variant='secondary' size='xs'>
+										Checkpoints due
+									</Badge>
+								) : undefined
+							}
+						/>
+					) : null}
+				</CardList>
+			) : (
+				<NoData>No care plan recorded for this patient.</NoData>
+			)}
+		</OverviewCard>
+	);
+}
 
-				{infusions?.length ? (
-					<ul className='flex flex-col gap-2'>
-						{infusions.map((infusion) => (
-							<li key={infusion.drug} className='flex items-start justify-between gap-3'>
-								<span className='text-sm font-medium text-foreground'>{infusion.drug}</span>
-								<span className='flex flex-col items-end text-right'>
-									<span className='text-sm font-semibold text-foreground tabular-nums'>
-										{infusion.rate ?? <span className='font-normal text-muted-foreground'>Rate unavailable</span>}
-									</span>
-									{infusion.change ? (
-										<span className='text-xs text-muted-foreground'>
-											<span aria-hidden='true'>{infusion.change.direction === "up" ? "▲" : "▼"} </span>
-											{infusion.change.direction === "up" ? "Up" : "Down"} from {infusion.change.from} at{" "}
-											{formatTime(infusion.change.at)}
-										</span>
-									) : null}
-								</span>
-							</li>
-						))}
-					</ul>
-				) : infusions ? (
-					<NoData>No infusions running.</NoData>
-				) : (
-					<NoData>No pump data for this patient.</NoData>
-				)}
-
-				{fluids ? (
-					<div className='flex flex-col gap-1'>
-						<dl className='grid grid-cols-2 gap-x-4'>
-							<Detail label={`Net balance · ${fluids.window}`}>
-								<span className='font-semibold tabular-nums'>{fluids.netBalance}</span>
-							</Detail>
-							<Detail label={`Weight · ${fluids.window}`}>
-								<span className='font-semibold tabular-nums'>{fluids.weightChange}</span>
-							</Detail>
-						</dl>
-						<p className='text-xs text-muted-foreground'>
-							Charted{fluids.chartedBy ? ` by ${fluids.chartedBy}` : null} at {formatTime(fluids.chartedAt)}
-						</p>
-					</div>
-				) : (
-					<NoData>No intake and output charted for this patient.</NoData>
-				)}
-			</div>
-		</SectionCard>
+/** What's due next, soonest first (Intercept-Live `239:11497`): each with its time and how soon. */
+function UpNextCard({ record, now, pathway }: { record?: PatientRecord; now: number | null; pathway?: OverviewPathway }) {
+	const [showAll, setShowAll] = React.useState(false);
+	const items = now === null ? [] : upNextItems(record, now, pathway);
+	const shown = showAll ? items : items.slice(0, UP_NEXT_ITEMS);
+	return (
+		<OverviewCard
+			title='Up next'
+			actions={
+				items.length > UP_NEXT_ITEMS ? (
+					<CardToggle expanded={showAll} total={items.length} onToggle={() => setShowAll(!showAll)} />
+				) : undefined
+			}
+		>
+			{items.length ? (
+				<CardList>
+					{shown.map((item) => {
+						const chip = now === null ? undefined : dueChip(item.at, now);
+						return (
+							<CardRow
+								key={item.id}
+								title={item.title}
+								detail={<time dateTime={item.at}>{formatTime(item.at)}</time>}
+								extra={item.detail}
+								aside={
+									chip ? (
+										<Badge variant={chip.variant} size='xs'>
+											{chip.label}
+										</Badge>
+									) : undefined
+								}
+							/>
+						);
+					})}
+				</CardList>
+			) : (
+				<NoData>Nothing scheduled in the next {UP_NEXT_HOURS} hours.</NoData>
+			)}
+		</OverviewCard>
 	);
 }
 
 /**
  * What the patient is on: the scheduled medications, each with when it was last given (when it's next due is Up
- * next's), and the infusions and as-needed ones counted under them. "All n active" opens Medications.
+ * next's), and the infusions and as-needed ones counted under them. **View all** opens Medications.
  */
 function MedicationsCard({ record, now, onShowAll }: { record?: PatientRecord; now: number | null; onShowAll?: () => void }) {
 	const medications = record?.medications;
@@ -981,54 +962,144 @@ function MedicationsCard({ record, now, onShowAll }: { record?: PatientRecord; n
 	].filter(Boolean);
 
 	return (
-		<SectionCard
+		<OverviewCard
 			title='Medications'
-			action={
+			actions={
 				onShowAll && total ? (
-					<Button variant='link' size='xs' onClick={onShowAll} className='h-auto p-0'>
-						All {total} active
-					</Button>
+					<CardLink onClick={onShowAll} aria-label={`View all ${total} medications`}>
+						View all · {total}
+					</CardLink>
 				) : undefined
 			}
+			footer={others.length ? <p className='text-sm text-muted-foreground'>Plus {others.join(" and ")}.</p> : undefined}
 		>
 			{medications ? (
-				<>
-					{scheduled.length ? (
-						<ul className='flex flex-col divide-y divide-border-muted'>
-							{scheduled.map((med) => (
-								<li key={med.drug} className='flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0'>
-									<div className='flex min-w-0 flex-col'>
-										<span className='text-sm font-medium text-foreground'>
-											{med.drug} {med.dose === "Per scale" ? null : med.dose} {med.route}
-										</span>
-										<span className='text-xs text-muted-foreground'>{med.frequency}</span>
-									</div>
-									<span className='shrink-0 pt-px text-xs text-muted-foreground'>
+				scheduled.length ? (
+					<CardList>
+						{scheduled.map((med) => (
+							<CardRow
+								key={med.drug}
+								title={`${med.drug} ${med.dose === "Per scale" ? "" : `${med.dose} `}${med.route}`.replace(/\s+/g, " ")}
+								detail={med.frequency}
+								extra={med.indication}
+								aside={
+									<RowTime>
 										{med.lastGivenAt
 											? now !== null && Date.parse(med.lastGivenAt) < now - 12 * HOUR
 												? `Given ${formatRelativeDate(med.lastGivenAt, now).label.toLowerCase()}`
 												: `Given ${formatTime(med.lastGivenAt)}`
 											: "Not given yet"}
-									</span>
-								</li>
-							))}
-						</ul>
-					) : (
-						<NoData>No scheduled medications.</NoData>
-					)}
-					{others.length ? <p className='text-xs text-muted-foreground'>Plus {others.join(" and ")}.</p> : null}
-				</>
+									</RowTime>
+								}
+							/>
+						))}
+					</CardList>
+				) : (
+					<NoData>No scheduled medications.</NoData>
+				)
 			) : (
 				<NoData>No medication data for this patient.</NoData>
 			)}
-		</SectionCard>
+		</OverviewCard>
 	);
 }
 
-// Orders' status colors.
+/** "0.22 mcg/kg/min": the number medium, the unit regular. */
+function Rate({ rate }: { rate?: string }) {
+	if (!rate) return <span className='text-base text-muted-foreground'>Rate unavailable</span>;
+	const space = rate.indexOf(" ");
+	return (
+		<span className='text-base text-foreground tabular-nums'>
+			<span className='font-medium'>{space < 0 ? rate : rate.slice(0, space)}</span>
+			{space < 0 ? null : rate.slice(space)}
+		</span>
+	);
+}
+
+/**
+ * Organ support (PRD PD-022) and fluids (DU-18) in one card (Intercept-Live `252:10474`): the breathing support and its
+ * main settings with the last ABG, each infusion's rate and last change, then intake and output (✅ user's call, kept
+ * here) and where it all comes from.
+ */
+function OxygenAndInfusionsCard({ record, now, onShowAll }: { record?: PatientRecord; now: number | null; onShowAll?: () => void }) {
+	const ventilator = record?.ventilator;
+	const infusions = record?.infusions;
+	const fluids = record?.fluids;
+	const updated = latest([ventilator?.updatedAt, ...(infusions?.map((infusion) => infusion.updatedAt) ?? [])]);
+	const source = [ventilator?.source, infusions?.length ? "Pump" : undefined].filter(Boolean).join(", ");
+
+	return (
+		<OverviewCard
+			title='Oxygen and infusions'
+			actions={
+				onShowAll && infusions?.length ? (
+					<CardLink onClick={onShowAll} aria-label={`View all ${infusions.length} infusions`}>
+						View all · {infusions.length}
+					</CardLink>
+				) : undefined
+			}
+			footer={
+				<>
+					{fluids ? (
+						<p className='text-sm text-muted-foreground'>
+							<span className='text-foreground'>Net balance {fluids.netBalance}</span> · weight {fluids.weightChange} over{" "}
+							{fluids.window} · charted{fluids.chartedBy ? ` by ${fluids.chartedBy}` : null} at {formatTime(fluids.chartedAt)}
+						</p>
+					) : (
+						<NoData>No intake and output charted for this patient.</NoData>
+					)}
+					{updated && source ? <CardSource>{freshness(source, updated, now)}</CardSource> : null}
+				</>
+			}
+		>
+			{ventilator || infusions?.length ? (
+				<CardList>
+					{ventilator ? (
+						<CardRow
+							title={ventilator.support === "Invasive" ? "Ventilator" : ventilator.support}
+							detail={ventilator.mode}
+							extra={ventilator.abg ? `Last ABG ${formatTime(ventilator.abg.collectedAt)}` : undefined}
+							aside={
+								<span className='text-base text-foreground tabular-nums'>
+									{ventilator.settings.slice(0, 2).map((setting, index) => (
+										<React.Fragment key={setting.label}>
+											{index ? " · " : null}
+											{setting.label} <span className='font-medium'>{setting.value}</span>
+										</React.Fragment>
+									))}
+								</span>
+							}
+						/>
+					) : null}
+					{infusions?.map((infusion) => (
+						<CardRow
+							key={infusion.drug}
+							title={infusion.drug}
+							detail={
+								infusion.change ? (
+									<>
+										<span aria-hidden='true'>{infusion.change.direction === "up" ? "▲" : "▼"} </span>
+										{infusion.change.direction === "up" ? "Up" : "Down"} from {infusion.change.from}
+									</>
+								) : undefined
+							}
+							extra={infusion.change ? `at ${formatTime(infusion.change.at)}` : undefined}
+							join=' '
+							aside={<Rate rate={infusion.rate} />}
+						/>
+					))}
+				</CardList>
+			) : null}
+			{ventilator ? null : <NoData>No ventilator or oxygen data for this patient.</NoData>}
+			{infusions ? (infusions.length ? null : <NoData>No infusions running.</NoData>) : <NoData>No pump data for this patient.</NoData>}
+		</OverviewCard>
+	);
+}
+
+// Orders' status colors (Intercept-Live `252:10517`: Active green, Collected sky).
 const orderStatusVariants: Record<string, BadgeProps["variant"]> = {
 	Active: "green",
-	Collected: "blue",
+	Collected: "sky",
 	Scheduled: "secondary",
 	Pending: "yellow",
 };
@@ -1036,66 +1107,63 @@ const orderStatusVariants: Record<string, BadgeProps["variant"]> = {
 /** How many recent orders the Overview lists; Orders has them all. */
 const RECENT_ORDERS = 4;
 
-/** The newest active orders, and order recommendations waiting for a decision. "All orders" opens Orders. */
+/**
+ * The newest active orders with their status, and the order recommendations waiting for a decision as a link. Both
+ * links open Orders.
+ */
 function RecentOrdersCard({ record, now, onShowAll }: { record?: PatientRecord; now: number | null; onShowAll?: () => void }) {
 	const orders = record?.orders;
 	const recent = [...(orders?.active ?? [])].sort((a, b) => Date.parse(b.orderedAt) - Date.parse(a.orderedAt)).slice(0, RECENT_ORDERS);
 	const waiting = orders?.recommendations.filter((recommendation) => !recommendation.outcome).length ?? 0;
 
 	return (
-		<SectionCard
+		<OverviewCard
 			title='Recent orders'
-			action={
+			actions={
 				onShowAll && orders ? (
-					<Button variant='link' size='xs' onClick={onShowAll} className='h-auto p-0'>
-						All orders
-					</Button>
+					<>
+						{waiting ? (
+							<CardLink onClick={onShowAll}>
+								{waiting} {waiting === 1 ? "recommendation" : "recommendations"}
+							</CardLink>
+						) : null}
+						<CardLink onClick={onShowAll}>All orders</CardLink>
+					</>
 				) : undefined
 			}
+			footer={orders ? <CardSource>{freshness(orders.source, orders.updatedAt, now)}</CardSource> : undefined}
 		>
 			{orders ? (
-				<>
-					{waiting ? (
-						<p className='rounded-lg bg-severity-medium-subtle px-3 py-2 text-sm text-severity-medium-strong'>
-							{waiting} order {waiting === 1 ? "recommendation" : "recommendations"} to review
-						</p>
-					) : null}
-					{recent.length ? (
-						<ul className='flex flex-col divide-y divide-border-muted'>
-							{recent.map((order) => (
-								<li key={order.id} className='flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0'>
-									<div className='flex min-w-0 flex-col'>
-										<span className='text-sm font-medium text-foreground'>{order.name}</span>
-										<span className='text-xs text-muted-foreground'>
-											{[order.details, order.orderedBy].filter(Boolean).join(" · ")}
-										</span>
-									</div>
-									<div className='flex shrink-0 flex-col items-end gap-1'>
-										<Badge variant={orderStatusVariants[order.status] ?? "secondary"} size='xs'>
-											{order.status}
-										</Badge>
-										{now !== null ? (
-											<span className='text-xs text-muted-foreground'>{formatRelativeDate(order.orderedAt, now).label}</span>
-										) : null}
-									</div>
-								</li>
-							))}
-						</ul>
-					) : (
-						<NoData>No active orders.</NoData>
-					)}
-				</>
+				recent.length ? (
+					<CardList>
+						{recent.map((order) => (
+							<CardRow
+								key={order.id}
+								title={order.name}
+								detail={order.details}
+								extra={order.orderedBy}
+								aside={
+									<Badge variant={orderStatusVariants[order.status] ?? "secondary"} size='xs'>
+										{order.status}
+									</Badge>
+								}
+							/>
+						))}
+					</CardList>
+				) : (
+					<NoData>No active orders.</NoData>
+				)
 			) : (
 				<NoData>No order data for this patient.</NoData>
 			)}
-		</SectionCard>
+		</OverviewCard>
 	);
 }
 
 /** Why the patient is here (PRD PD-026): the admitting diagnosis, the problem list and when and where from. */
 function EncounterCard({ record }: { record?: PatientRecord }) {
 	return (
-		<SectionCard title='Encounter'>
+		<OverviewCard title='Encounter'>
 			{record?.diagnosis || record?.admittedAt || record?.problems?.length ? (
 				<dl className='flex flex-col gap-3'>
 					{record.diagnosis ? <Detail label='Diagnosis'>{record.diagnosis}</Detail> : null}
@@ -1119,7 +1187,53 @@ function EncounterCard({ record }: { record?: PatientRecord }) {
 			) : (
 				<NoData>No diagnosis or encounter details yet.</NoData>
 			)}
-		</SectionCard>
+		</OverviewCard>
+	);
+}
+
+/**
+ * The patient's referrals (Intercept-Live `242:11802`, Nov 9, 2026, user's call: built with an empty state, as Figma
+ * draws only the title): the discharge workflow's, each with who receives it and whether it was sent, skipped or is
+ * still to send. None says so.
+ */
+function ReferralsCard({ record }: { record?: PatientRecord }) {
+	const referrals = record?.discharge?.referrals ?? [];
+	const decided = record?.discharge?.decided ?? {};
+	return (
+		<OverviewCard title='Referrals'>
+			{referrals.length ? (
+				<CardList>
+					{referrals.map((referral) => {
+						const outcome = decided[referral.id];
+						return (
+							<CardRow
+								key={referral.id}
+								title={referral.title}
+								detail={referral.to}
+								extra={referral.detail}
+								aside={
+									outcome?.type === "sent" ? (
+										<Badge variant='green' size='xs'>
+											Sent
+										</Badge>
+									) : outcome?.type === "skipped" ? (
+										<Badge variant='secondary' size='xs'>
+											Skipped
+										</Badge>
+									) : (
+										<Badge variant='yellow' size='xs'>
+											To send
+										</Badge>
+									)
+								}
+							/>
+						);
+					})}
+				</CardList>
+			) : (
+				<NoData>No referrals for this patient.</NoData>
+			)}
+		</OverviewCard>
 	);
 }
 
@@ -1128,24 +1242,22 @@ function EncounterCard({ record }: { record?: PatientRecord }) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * The Overview: the AI brief (PD-024); alerts and concerns (PD-020), the care plan, Up next and the log (PD-023, PD-133)
- * in the main column; the live monitor (PD-021), the early warning score (PC-030, DU-14), key labs (PD-025), organ
- * support and fluids (PD-022, DU-18), medications, orders and the encounter (PD-026) in the rail.
+ * The Overview (Intercept-Live `149:4464`, Nov 9, 2026): the AI clinical summary (PD-024) across the top, then the
+ * clinical findings (key labs, PD-025, and what matters for this patient), then a grid of cards: live monitoring
+ * (PD-021), the care plan, Up next; medications, oxygen and infusions (PD-022, DU-18), recent orders; the encounter
+ * (PD-026) and referrals. Three to a row from 80rem of room, two from 50rem, one under that.
  *
- * From 60rem of room, a main column and a 26rem rail; narrower, one column: the brief, the alerts (mandatory, PRD §3.4,
- * so they never sink below the physiology), the rail, then Up next and the log.
+ * The alerts aren't here (Nov 9, 2026, user's call): the patient header shows their count and opens them in the Alerts
+ * panel. The log moved to the Timeline, and the score breakdown left with the header's View breakdown.
  */
 function PatientOverview({
 	patient,
 	record,
 	monitor,
-	alerts = [],
-	escalationTargets = [],
-	onAlertAction,
 	onShowSection,
 	pathway,
-}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "alerts" | "escalationTargets" | "onAlertAction"> & {
-	/** Opens another tab: the Timeline (the whole log), Medications or Orders. */
+}: Pick<PatientDetailsProps, "patient" | "record" | "monitor"> & {
+	/** Opens another tab: Medications or Orders. */
 	onShowSection?: (section: OverviewLinkedSection) => void;
 	/** The pathway an open alert brought: the Care plan shows it (suggested, or what it runs) and Up next what it has due. */
 	pathway?: OverviewPathway;
@@ -1154,89 +1266,49 @@ function PatientOverview({
 	const navigation = usePatientNavigation();
 	const name = `${patient.lastName}, ${patient.firstName}`;
 	const { suggestion, running } = pathway ? pathwaySummary(pathway, now) : { suggestion: undefined, running: [] };
+	// × hides the brief until a newer one (its own time) or another patient; the brief is optional (PRD §3.4).
+	const briefKey = record?.brief ? `${patient.id}:${record.brief.updatedAt}` : undefined;
+	const [dismissedBrief, setDismissedBrief] = React.useState<string>();
+	const showMedications = onShowSection && (() => onShowSection("medications"));
 
 	return (
 		// A size container, so the layout follows the room the side panels leave.
 		<div className='@container'>
-			<div
-				className={cn(
-					"grid gap-6",
-					"@min-[60rem]:grid-cols-[minmax(0,1fr)_26rem] @min-[60rem]:grid-rows-[auto_auto_1fr]",
-					"@min-[60rem]:[grid-template-areas:'brief_brief'_'alerts_rail'_'log_rail']",
-				)}
-			>
-				{record?.brief ? (
-					<div className='min-w-0 @min-[60rem]:[grid-area:brief]'>
-						<BriefBanner
-							brief={record.brief}
-							now={now}
-							onAsk={
-								navigation
-									? () => navigation.askAboutPatient(patient.id, name, patient.tags?.map((tag) => tag.label), briefQuestion)
-									: undefined
-							}
-						/>
-					</div>
+			<div className='flex flex-col gap-6'>
+				{record?.brief && briefKey !== dismissedBrief ? (
+					<BriefBanner
+						brief={record.brief}
+						now={now}
+						onClose={() => setDismissedBrief(briefKey)}
+						onAsk={
+							navigation
+								? () => navigation.askAboutPatient(patient.id, name, patient.tags?.map((tag) => tag.label), briefQuestion)
+								: undefined
+						}
+					/>
 				) : null}
 
-				<div className='flex min-w-0 flex-col gap-6 @min-[60rem]:[grid-area:alerts]'>
-					<AlertsSection
-						patientId={patient.id}
-						alerts={alerts}
-						escalationTargets={escalationTargets}
-						onAlertAction={onAlertAction}
-					/>
-					{record?.carePlan || suggestion || running.length ? (
-						<CarePlanCard
-							plan={record?.carePlan}
-							suggestion={suggestion}
-							running={running}
-							onOpenPathway={pathway?.onOpen}
-						/>
-					) : null}
-				</div>
+				<ClinicalFindings record={record} now={now} />
 
-				<div className='flex min-w-0 flex-col gap-4 self-start @min-[60rem]:[grid-area:rail]'>
-					<SectionCard
-						title='Monitor'
-						meta={
-							monitor?.vitals ? (
-								<>
-									<span aria-hidden='true' className='size-2 rounded-full bg-success' />
-									Live · Monitor
-								</>
-							) : undefined
-						}
-					>
-						{monitor?.vitals ? (
-							<PatientMonitor
-								aria-label={`Bedside monitor, ${name}`}
-								vitals={monitor.vitals}
-								limits={monitor.limits}
-								alarmPriorities={monitor.alarmPriorities}
-								acknowledgedAlarms={monitor.acknowledgedAlarms}
-								trends={monitor.trends}
-								className='h-64'
-							/>
-						) : (
-							<NoData>No live monitor data for this patient.</NoData>
-						)}
-					</SectionCard>
-					<EarlyWarningCard warning={record?.earlyWarning} acuity={patient.acuity} now={now} />
-					<KeyLabsCard record={record} now={now} />
-					<OxygenAndInfusionsCard record={record} now={now} />
-					<MedicationsCard record={record} now={now} onShowAll={onShowSection && (() => onShowSection("medications"))} />
+				<div className='grid gap-4 @min-[50rem]:grid-cols-2 @min-[80rem]:grid-cols-3'>
+					<LiveMonitoringCard record={record} monitor={monitor} name={name} />
+					<CarePlanCard
+						plan={record?.carePlan}
+						suggestion={suggestion}
+						running={running}
+						now={now}
+						onOpenPathway={pathway?.onOpen}
+					/>
+					<UpNextCard record={record} now={now} pathway={pathway} />
+					<MedicationsCard record={record} now={now} onShowAll={showMedications} />
+					<OxygenAndInfusionsCard record={record} now={now} onShowAll={showMedications} />
 					<RecentOrdersCard record={record} now={now} onShowAll={onShowSection && (() => onShowSection("orders"))} />
 					<EncounterCard record={record} />
-				</div>
-
-				<div className='flex min-w-0 flex-col gap-4 self-start @min-[60rem]:[grid-area:log]'>
-					<UpNextCard record={record} now={now} pathway={pathway} />
-					<PatientLog record={record} now={now} onShowTimeline={onShowSection && (() => onShowSection("timeline"))} />
+					<ReferralsCard record={record} />
 				</div>
 			</div>
 		</div>
 	);
 }
 
-export { PatientOverview, overviewSectionIds, type OverviewLinkedSection, type OverviewPathway };
+export { AlertsSection, PatientOverview, type OverviewLinkedSection, type OverviewPathway };

@@ -67,9 +67,9 @@ type Story = StoryObj<typeof meta>;
  * ("← Census › Miller, Sarah") with Video consult, Messages (3 unread), "…" (Raise concern, Huddle team,
  * Escalate, then Copy link) and "+" (Create: New note, Prepare handoff), then her care team. The Patient Header shows her photo and name,
  * then MRN, sex and age, and location, then her flags (organ support, code status only when it limits care, allergy
- * and isolation, all outline). Line tabs: Overview (the AI brief across the top; her alerts with their actions, Up next and
- * the log in the main column; the live monitor, score, key labs, oxygen and infusions, medications, orders and encounter
- * in the rail), then
+ * and isolation, all outline). Line tabs: Overview (the AI clinical summary across the top, then her clinical findings:
+ * key labs, temperature, MAP and the ventilator; then cards: live monitoring, care plan, Up next, medications, oxygen and
+ * infusions, recent orders, encounter and referrals; her alerts are in the Alerts panel, from View alerts), then
  * Vitals, Chart, Timeline, Medications, Orders, Epic, Notes, Sepsis and Camera view. Every Census patient has the same
  * depth of data: go back and open another. Back returns to the Census as it was.
  */
@@ -96,6 +96,23 @@ export const Default: Story = {
 };
 
 /**
+ * The header's View alerts opens the Alerts panel (Nov 9, 2026, user's call): every alert of the patient, the unresolved
+ * at the top, then the resolved; × closes it.
+ */
+export const ViewAlertsOpensPanel: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
+		await userEvent.click(canvas.getByRole("button", { name: "View alerts" }));
+		const panel = within(await canvas.findByRole("complementary", { name: "Alerts" }));
+		await expect(panel.getByRole("region", { name: "Alerts" })).toBeInTheDocument();
+		await expect(panel.queryByRole("button", { name: /Show resolved/ })).toBeNull();
+		await userEvent.click(panel.getByRole("button", { name: "Close alerts" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Alerts" })).toBeNull());
+	},
+};
+
+/**
  * The brief opens Ask Intercept Live (Nov 6, 2026): clicking it opens the chat about Sarah ("About Miller, Sarah") and
  * asks what's behind the brief. The answer leads with the brief, then her diagnosis, score, alerts, vitals, organ
  * support and flagged labs, then what changed since she was last looked at.
@@ -104,7 +121,7 @@ export const BriefOpensAsk: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
-		await userEvent.click(within(canvas.getByRole("region", { name: "Brief" })).getByRole("button"));
+		await userEvent.click(within(canvas.getByRole("region", { name: "AI clinical summary" })).getByRole("button", { name: /Ask Intercept Live for more/ }));
 		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
 		await expect(await chat.findByText("Summarize what's behind the brief")).toBeInTheDocument();
 		await expect(await chat.findByText(/since you last looked/, {}, { timeout: 10000 })).toBeInTheDocument();
@@ -174,9 +191,9 @@ export const VideoConsultAndMessages: Story = {
 
 /**
  * The pathway on the patient's page (Nov 6, 2026): Sarah's open alert suggests a pathway, so her Care plan shows it
- * dashed, "Suggested", with Review pathway, and the app header has Pathway after Messages. Review pathway opens the alert
- * panel's Pathway column as a panel right of the page, in Messages' place (Messages takes it back, Pathway again), where
- * she can edit a dose, accept or decline as on the alert. Accepting sends the orders for co-signature. × closes it.
+ * dashed, "Suggested", with Review pathway (the app header has no Pathway since Nov 9, 2026: it belongs to the alert).
+ * Review pathway opens the alert panel's Pathway column as a panel right of the page, in Messages' place (Messages takes
+ * it back, the Care plan brings it again), where she can edit a dose, accept or decline as on the alert. Accepting sends the orders for co-signature. × closes it.
  */
 export const Pathway: Story = {
 	args: {
@@ -192,18 +209,18 @@ export const Pathway: Story = {
 		const canvas = within(canvasElement);
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		const plan = within(canvas.getByRole("region", { name: "Care plan" }));
-		await expect(plan.getByText("Suggested")).toBeVisible();
+		await expect(plan.getByText("Needs review")).toBeVisible();
 
-		// The Care plan's way in opens the panel, and the header's Pathway is pressed.
-		await userEvent.click(plan.getByRole("button", { name: "Review pathway" }));
+		// The Care plan's way in opens the panel. The header has no Pathway: it belongs to the alert (Nov 9, 2026).
+		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
 		await canvas.findByRole("complementary", { name: "Pathway" });
 		const actions = within(canvas.getByRole("group", { name: "Patient actions" }));
-		await expect(actions.getByRole("button", { name: "Close pathway" })).toHaveAttribute("aria-expanded", "true");
+		await expect(actions.queryByRole("button", { name: /pathway/i })).toBeNull();
 
-		// Messages takes its place, and Pathway takes it back.
+		// Messages takes its place, and the Care plan brings Pathway back.
 		await userEvent.click(actions.getByRole("button", { name: "Messages, 3 unread" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).toBeNull());
-		await userEvent.click(actions.getByRole("button", { name: "Pathway" }));
+		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Messages" })).toBeNull());
 
 		// Accept, as on the alert: the orders go for co-signature.
@@ -216,6 +233,51 @@ export const Pathway: Story = {
 
 		await userEvent.click(reopened.getByRole("button", { name: "Close pathway" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).toBeNull());
+	},
+};
+
+/**
+ * An alert's pathway from the Alerts panel, without opening the alert (Nov 9, 2026, user's call): View alerts, then the
+ * alert's Pathway opens its pathway right of Alerts, both open. Pressed again ("Hide pathway"), it closes the pathway.
+ */
+export const AlertPathwayBesideAlerts: Story = {
+	args: Pathway.args,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
+		await userEvent.click(canvas.getByRole("button", { name: "View alerts" }));
+		const alertsPanel = await canvas.findByRole("complementary", { name: "Alerts" });
+		await userEvent.click(within(alertsPanel).getByRole("button", { name: "Pathway" }));
+		const pathwayPanel = await canvas.findByRole("complementary", { name: "Pathway" });
+		// Both open, Alerts on the left.
+		await expect(canvas.getByRole("complementary", { name: "Alerts" })).toBeInTheDocument();
+		await waitFor(() =>
+			expect(alertsPanel.getBoundingClientRect().left).toBeLessThan(pathwayPanel.getBoundingClientRect().left),
+		);
+		await userEvent.click(within(alertsPanel).getByRole("button", { name: "Hide pathway" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).toBeNull());
+		await expect(canvas.getByRole("complementary", { name: "Alerts" })).toBeInTheDocument();
+	},
+};
+
+/**
+ * Three panels at once (Nov 9, 2026, user's call): the video consult, Alerts and Messages, in that order left to right.
+ */
+export const ThreePanels: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
+		const actions = within(canvas.getByRole("group", { name: "Patient actions" }));
+		await userEvent.click(actions.getByRole("button", { name: "Video consult" }));
+		await userEvent.click(actions.getByRole("button", { name: "Messages, 3 unread" }));
+		await userEvent.click(canvas.getByRole("button", { name: "View alerts" }));
+		const consult = await canvas.findByRole("complementary", { name: "Video consult" });
+		const alerts = await canvas.findByRole("complementary", { name: "Alerts" });
+		const messages = await canvas.findByRole("complementary", { name: "Messages" });
+		await waitFor(() => {
+			expect(consult.getBoundingClientRect().left).toBeLessThan(alerts.getBoundingClientRect().left);
+			expect(alerts.getBoundingClientRect().left).toBeLessThan(messages.getBoundingClientRect().left);
+		});
 	},
 };
 
@@ -280,11 +342,11 @@ export const FromMonitoring: Story = {
 };
 
 /**
- * Margaret Hayes after Scenario 1 (06:00): her page tracks what was done and decided. Under her alerts (none open), the
- * Care plan: the CHF exacerbation pathway, co-signed, with the edited furosemide dose; Keeping at Chadron, both
- * checkpoints passed, Transfer avoided. Up next lists her scheduled medications, and under the Now line the log has
- * every action and decision with who and when, newest first, beside the pump, lab and care events; Open Timeline shows
- * it all on the Timeline's events lane, beside her vitals. Her brief, score and vitals are at 06:00.
+ * Margaret Hayes after Scenario 1 (06:00): her page tracks what was done and decided. Her findings show SBP 128 against
+ * "Nitro stops < 110" and a temperature charted 2 h ago. The Care plan: the CHF exacerbation pathway, co-signed; Keeping
+ * at Chadron, 2 of 2 checkpoints passed, Transfer avoided (the orders and checkpoints are in its full plan). Up next
+ * lists her scheduled medications. Every action and decision, with who and when, is on the Timeline's events lane,
+ * beside her vitals. Her brief and vitals are at 06:00.
  */
 export const CarePlanAndActivity: Story = {
 	args: {
@@ -307,16 +369,13 @@ export const CarePlanAndActivity: Story = {
 		const canvas = within(canvasElement);
 		await canvas.findByRole("heading", { level: 1, name: "Hayes, Margaret" });
 		const plan = within(canvas.getByRole("region", { name: "Care plan" }));
-		await expect(plan.getByText("Edited")).toBeVisible();
 		await expect(plan.getByText("Keeping at Chadron")).toBeVisible();
-		await expect(plan.getAllByText(/Passed/)).toHaveLength(2);
+		await expect(plan.getByText("2 of 2 checkpoints passed")).toBeVisible();
 		await expect(plan.getByText("Transfer avoided")).toBeVisible();
-		// The newest first: the resolution, then back through the night, with who did what.
-		const log = within(canvas.getByRole("region", { name: "Log" }));
-		await expect(log.getByText("Alert resolved")).toBeVisible();
-		await expect(log.getByText("Keeping at Chadron")).toBeInTheDocument();
+		// Her findings: SBP against the nitro rule, and the charted temperature gone stale.
+		const findings = within(canvas.getByRole("region", { name: "Clinical findings" }));
+		await expect(findings.getByText("Nitro stops < 110")).toBeVisible();
+		await expect(findings.getByText("2 h old")).toBeVisible();
 		await expect(within(canvas.getByRole("region", { name: "Up next" })).getAllByRole("listitem").length).toBeGreaterThan(0);
-		await userEvent.click(log.getByRole("button", { name: "Open Timeline" }));
-		await expect(canvas.getByRole("tab", { name: "Timeline" })).toHaveAttribute("aria-selected", "true");
 	},
 };

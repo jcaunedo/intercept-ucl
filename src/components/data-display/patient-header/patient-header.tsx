@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { Button } from "@/components/buttons/button";
 import {
 	PatientCardTags,
 	patientCardAcuityLevels,
@@ -27,8 +28,7 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 		/** The early-warning score with its level, e.g. NEWS2 10 High: the first column on the right. */
 		acuity?: PatientCensusCardProps["acuity"];
 		/**
-		 * The score's change in the last 24 h, e.g. ▲ +1 (`trend`, `value`): the second column, with "Previous: 9" when
-		 * both the score and the change are numbers.
+		 * The score's change in the last 24 h, e.g. ▲ +1 (`trend`, `value`): the second column.
 		 */
 		trajectory?: PatientCensusCardProps["trajectory"];
 		/**
@@ -36,9 +36,14 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 		 * the alert's severity color. Without one, or `resolved`, it reads 0.
 		 */
 		alert?: PatientCensusCardProps["alert"];
-		/** Shows "View breakdown" under the score, e.g. to go to the score's inputs. */
+		/**
+		 * The open alerts by severity, e.g. `{ critical: 1, low: 1 }`: when given, the count is their total, in the worst
+		 * one's color. Without it, `alert` sets both.
+		 */
+		alertCounts?: PatientHeaderAlertCounts;
+		/** @deprecated Ignored since Nov 9, 2026: the header no longer has "View breakdown". */
 		onViewScore?: () => void;
-		/** Shows "View alerts" under the count, e.g. to go to the patient's alerts. */
+		/** Shows "View alerts" after the count, e.g. to open a panel with the patient's alerts. */
 		onViewAlerts?: () => void;
 		/** Photo URL. Without it, the avatar shows `initials`. */
 		photo?: string;
@@ -53,61 +58,43 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 		actions?: React.ReactNode;
 	};
 
-const alertCountClassNames = {
+type PatientHeaderAlertSeverity = "critical" | "high" | "medium" | "low";
+
+/** Open alerts by severity. */
+type PatientHeaderAlertCounts = Partial<Record<PatientHeaderAlertSeverity, number>>;
+
+// Worst first: the count's color comes from the first with any.
+const alertSeverities: PatientHeaderAlertSeverity[] = ["critical", "high", "medium", "low"];
+
+const alertCountClassNames: Record<PatientHeaderAlertSeverity, string> = {
 	critical: "text-severity-critical",
 	high: "text-severity-high",
 	medium: "text-severity-medium",
 	low: "text-severity-low",
-} as const;
-
-// The score's change arrives preformatted ("+1", "−2"); an API would send the number.
-const toNumber = (value: React.ReactNode) => {
-	if (typeof value === "number") return value;
-	if (typeof value !== "string" || value.trim() === "") return undefined;
-	const number = Number(value.replace(/[−–]/g, "-"));
-	return Number.isFinite(number) ? number : undefined;
 };
 
-/**
- * One column on the header's right: a muted label over a large value at the top, a line at the bottom. A rule on its
- * left separates it from what comes before.
- */
-function PatientHeaderStat({ label, value, footer }: { label: string; value: React.ReactNode; footer?: React.ReactNode }) {
+/** The 1px rule before each of the header's right-hand columns, full height. */
+function PatientHeaderRule() {
+	return <span aria-hidden='true' className='w-px shrink-0 self-stretch bg-border' />;
+}
+
+/** One column on the header's right: a label over a large value, centered in the column's height. */
+function PatientHeaderStat({ label, value }: { label: string; value: React.ReactNode }) {
 	return (
-		<div className='flex min-w-0 flex-1 items-stretch gap-4'>
-			<span aria-hidden='true' className='w-px shrink-0 bg-border' />
-			<div className='flex min-w-0 flex-1 flex-col justify-between gap-2 px-2 py-1'>
-				<div className='flex flex-col gap-1.5'>
-					<span className='truncate text-base font-medium text-muted-foreground'>{label}</span>
-					<span className='flex items-center whitespace-nowrap'>{value}</span>
-				</div>
-				{footer ? <div className='text-sm'>{footer}</div> : null}
+		<div className='flex min-w-0 flex-1 flex-col justify-center px-2 py-1'>
+			<div className='flex min-w-0 flex-col gap-3'>
+				<span className='truncate text-lg/7 text-foreground'>{label}</span>
+				<span className='flex items-center whitespace-nowrap'>{value}</span>
 			</div>
 		</div>
 	);
 }
 
 /**
- * "View breakdown" and "View alerts": text links in the line's own size and color, always underlined so they read as
- * links among the plain lines ("Previous: 9"); hover thickens the underline.
- */
-function PatientHeaderLink({ children, ...props }: React.ComponentProps<"button">) {
-	return (
-		<button
-			type='button'
-			className='rounded-sm text-foreground underline underline-offset-4 outline-none hover:decoration-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-			{...props}
-		>
-			{children}
-		</button>
-	);
-}
-
-/**
  * Heads a patient's page: photo (a circle) beside the name and one line with MRN, sex and age, and location; under them
  * the tags, from the left edge (one line that scrolls sideways). On the right half, with a score, change or alert: the
- * early-warning score, its change in the last 24 h and the open alerts, in columns. An optional slot at the end takes
- * actions.
+ * early-warning score, its change in the last 24 h and the open alerts (in the worst one's severity color, with View
+ * alerts after it), in three equal columns. An optional slot at the end takes actions.
  *
  * Figma: [intercept.ds › Patient Header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1191-3147)
  */
@@ -122,9 +109,10 @@ function PatientHeader({
 	room,
 	bed,
 	alert,
+	alertCounts,
 	acuity,
 	trajectory,
-	onViewScore,
+	onViewScore: _onViewScore,
 	onViewAlerts,
 	tags = [],
 	photo,
@@ -142,12 +130,18 @@ function PatientHeader({
 	const facts = [identity, hospital, unit, room, bed, ...details].filter(Boolean);
 
 	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
-	const change = toNumber(trajectory?.value);
-	const score = toNumber(acuity?.score);
-	const previous = score !== undefined && change !== undefined ? score - change : undefined;
-	const openAlert = alert && alert.variant !== "resolved" && alert.variant !== "message" ? alert.variant : undefined;
-	const alertCount = openAlert ? (alert?.count ?? 1) : 0;
-	const hasStats = Boolean(acuity || trajectory || alert || onViewAlerts);
+	// From the counts by severity when given; otherwise the worst alert and its count.
+	const severityCounts = alertSeverities
+		.map((severity) => ({ severity, count: alertCounts?.[severity] ?? 0 }))
+		.filter(({ count }) => count > 0);
+	const pillSeverity = alert && alert.variant !== "resolved" && alert.variant !== "message" ? alert.variant : undefined;
+	const worstSeverity = severityCounts[0]?.severity ?? pillSeverity;
+	const alertCount = severityCounts.length
+		? severityCounts.reduce((total, { count }) => total + count, 0)
+		: pillSeverity
+			? (alert?.count ?? 1)
+			: 0;
+	const hasStats = Boolean(acuity || trajectory || alert || alertCounts || onViewAlerts);
 
 	return (
 		<div data-slot='patient-header' className={cn("flex items-center gap-4 px-6 py-4", className)} {...props}>
@@ -175,62 +169,69 @@ function PatientHeader({
 			</div>
 
 			{hasStats ? (
-				// The right half, as wide as the patient's side, 12px from it: one column per number, each after a rule.
+				// The right half, as wide as the patient's side, 12px from it: the score, its change and the open alerts in
+				// equal columns, each after a rule, 16px apart.
 				<div data-slot='patient-header-stats' className='-ml-1 flex min-w-0 flex-1 basis-0 gap-4 self-stretch'>
 					{acuity ? (
-						<PatientHeaderStat
-							label={acuity.label}
-							value={
-								<span className='flex items-baseline gap-2'>
-									<span className='text-[28px]/[30px] font-semibold text-foreground tabular-nums'>{acuity.score ?? "--"}</span>
-									{acuityLevel ? (
-										<span className={cn("text-2xl/[30px]", patientCardAcuityLevels[acuityLevel].className)}>
-											{patientCardAcuityLevels[acuityLevel].label}
-										</span>
-									) : null}
-								</span>
-							}
-							footer={onViewScore ? <PatientHeaderLink onClick={onViewScore}>View breakdown</PatientHeaderLink> : null}
-						/>
+						<>
+							<PatientHeaderRule />
+							<PatientHeaderStat
+								label={acuity.label}
+								value={
+									<span className='flex items-baseline gap-2'>
+										<span className='text-[32px]/[30px] font-semibold text-foreground tabular-nums'>{acuity.score ?? "--"}</span>
+										{acuityLevel ? (
+											<span className={cn("text-2xl/[30px]", patientCardAcuityLevels[acuityLevel].className)}>
+												{patientCardAcuityLevels[acuityLevel].label}
+											</span>
+										) : null}
+									</span>
+								}
+							/>
+						</>
 					) : null}
 					{trajectory ? (
-						<PatientHeaderStat
-							label={trajectory.label ?? "Change in last 24 h"}
-							value={
-								<span className='flex items-center gap-0.5'>
-									{trajectory.trend ? (
-										<span aria-hidden='true' className={cn("text-[22px]/6 font-semibold", scoreTrendClassName(trajectory))}>
-											{trajectory.trend === "up" ? "▲" : "▼"}
+						<>
+							<PatientHeaderRule />
+							<PatientHeaderStat
+								label={trajectory.label ?? "Change in last 24 h"}
+								value={
+									<span className='flex items-center gap-0.5'>
+										{trajectory.trend ? (
+											<span aria-hidden='true' className={cn("text-[32px]/6 font-semibold", scoreTrendClassName(trajectory))}>
+												{trajectory.trend === "up" ? "▲" : "▼"}
+											</span>
+										) : null}
+										<span className='text-[32px]/[30px] font-medium text-foreground tabular-nums'>
+											{trajectory.trend ? <span className='sr-only'>{trajectory.trend === "up" ? "Up " : "Down "}</span> : null}
+											{trajectory.value ?? "--"}
 										</span>
-									) : null}
-									<span className='text-[28px]/[30px] font-semibold text-foreground tabular-nums'>
-										{trajectory.trend ? <span className='sr-only'>{trajectory.trend === "up" ? "Up " : "Down "}</span> : null}
-										{trajectory.value ?? "--"}
 									</span>
-								</span>
-							}
-							footer={
-								previous !== undefined ? (
-									<span className='text-muted-foreground'>
-										Previous: <span className='text-foreground tabular-nums'>{previous}</span>
-									</span>
-								) : null
-							}
-						/>
+								}
+							/>
+						</>
 					) : null}
+					<PatientHeaderRule />
 					<PatientHeaderStat
 						label='Active alerts'
 						value={
-							<span
-								className={cn(
-									"text-[28px]/[30px] font-semibold tabular-nums",
-									openAlert ? alertCountClassNames[openAlert] : "text-foreground",
-								)}
-							>
-								{alertCount}
+							// The count, then 12px to View alerts (Button `outline` `sm`), centered on each other.
+							<span className='flex items-center gap-3'>
+								<span
+									className={cn(
+										"text-[32px]/[30px] font-semibold tabular-nums",
+										worstSeverity && alertCount ? alertCountClassNames[worstSeverity] : "text-foreground",
+									)}
+								>
+									{alertCount}
+								</span>
+								{onViewAlerts ? (
+									<Button variant='outline' size='sm' onClick={onViewAlerts}>
+										View alerts
+									</Button>
+								) : null}
 							</span>
 						}
-						footer={onViewAlerts ? <PatientHeaderLink onClick={onViewAlerts}>View alerts</PatientHeaderLink> : null}
 					/>
 				</div>
 			) : null}
@@ -240,4 +241,4 @@ function PatientHeader({
 	);
 }
 
-export { PatientHeader, type PatientHeaderProps };
+export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderProps };

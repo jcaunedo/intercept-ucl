@@ -340,6 +340,8 @@ function withActivityEvents(timeline: PatientTimeline, activity?: PatientActivit
 
 export {
 	CarePlanCard,
+	pathwayLine,
+	pathwayStatuses,
 	timelineKinds as activityTimelineKinds,
 	withActivityEvents,
 	type PatientActivity,

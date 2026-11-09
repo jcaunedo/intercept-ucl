@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 6, 2026
+Last updated: Nov 9, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -228,6 +228,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 
 | Term | Definition | Source |
 | --- | --- | --- |
+| **Ack, Ack'd** | Short labels for **Acknowledge** (the action) and **Acknowledged** (the status after it), used only where a button is too narrow for the full word, e.g. the patient page's Alerts panel. Screen readers hear the full word. | PRD AMM-005 |
 | **Acuity score** | A number for patient severity or care needs from an approved scoring method, with its scoring system, timestamp and source. *Proposed* categories: Low, Moderate, High, Critical, Unknown. High acuity is not the same as an active critical alert. | PRD PC-030 |
 | **Acuity change** | The difference between the current acuity score and the score 24 hours earlier (the default comparison window), shown as e.g. `▲ +3 in 24 h`. Shown instead of a status word like "Stable". | PRD PC-030 |
 | **Acuity level** | The patient's measured severity at the last calculation, on one named score (e.g. `NEWS2 10 · High`), with the time it was calculated. A measurement, not an overall condition. Placeholder `{acuity-level}`. | PRD PC-030 |
@@ -411,9 +412,10 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 
 | Term | Definition | Source |
 | --- | --- | --- |
-| **Activity (activity log)** | *Proposed* on Patient details, everything done and decided about the patient with who and when: alerts and their actions, video consults, consult notes, pathways sent and co-signed, keep or transfer, checkpoints, Transfer avoided. The last 24 h in the Overview's log, all of it on the Timeline. A synthetic audit trail, a design element, not a compliance system (CC-09). | PRD Patient details, Care plan and activity |
+| **Activity (activity log)** | *Proposed* on Patient details, everything done and decided about the patient with who and when: alerts and their actions, video consults, consult notes, pathways sent and co-signed, keep or transfer, checkpoints, Transfer avoided. On the Timeline (the Overview's log was removed Nov 9, 2026). A synthetic audit trail, a design element, not a compliance system (CC-09). | PRD Patient details, Care plan and activity |
 | **Ask Intercept Live** | *Proposed* name of the Provider Desktop's chat panel, where a clinician asks the Conversational Clinical Data Agent about their patients. Opened from the Sidebar or the patient-context app header. | PRD Chat composer §1, PRD PD-100 |
 | **Bedside tasks** | *Proposed* The bedside nurses' tasks an accepted order set generates (e.g. a peripheral norepinephrine's IV site check every hour), shared between the hub and the bedside: the nurses check them off, the hub sees the status. Open, done or cancelled; overdue 10 min past due. | Demo Use Cases Scenario 3, step 5; Requirements CC-06; DU-25 |
+| **Clinical findings** | *Proposed* on the Patient details Overview, the row of tiles under the AI summary: the key labs, then the vitals or support settings that matter for this patient's situation, each with its context ("Nitro stops < 110", "Since 8:03 AM"); a charted value past its limit says how old it is. | PRD PD-025 |
 | **Chat composer** | The message box at the bottom of Ask Intercept Live: a field, attachments, slash commands, dictation, and Send or Stop. UCL `ChatComposer`. | PRD CC-010 |
 | **Wake phrase** | "Hey Intercept", or just "Hey": said while Ask Intercept Live is open, it starts dictation without a click. Only the phrase is listened for; nothing else heard is shown or kept. UCL `ChatComposer` `wakePhrase`. | PRD CC-031 |
 | **Data-completeness signal** | The Provider Desktop tells the clinician explicitly how deep the data is (Integrated versus Overlay). | Spec §8.7 |
@@ -455,7 +457,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Low-bandwidth mode** | *Proposed* a video consult whose connection dropped: audio only, the monitor's numbers held and refreshed every 30 s, and the bedside sending still photos. | PRD Bedside camera CAM-014; PRD Video consult VID-007; Scenario 2 |
 | **Messages** | *Proposed* the clinician's thread with a patient's bedside nurse (and others at the bedside, with their photos), bridged through the hospital's own messaging: the nurse has no Intercept screen. The same thread wherever the patient is shown. Not Ask Intercept Live (the AI chat) and not family messaging. | PRD Messages MSG-001, MSG-013; Spec §5.3, §6.11 |
 | **Bridge-and-collate** | The platform connects to each hospital's messaging tool behind the scenes and shows every message in one place in the Provider Desktop, sending replies back through the same channel. | Spec §5.3; CC-01, CC-02 |
-| **Pathway panel** | *Proposed* the alert's Pathway column on the patient page, opened from the app header's Pathway or the Care plan's Review / Open pathway, in Messages' place: the same pathway to review, accept or decline, and what it runs. | PRD Patient details, Care plan and activity; DESIGN.md "Pathway panel" |
+| **Pathway panel** | *Proposed* the alert's Pathway column on the patient page, opened from the Care plan's Review / Open pathway (no app header Pathway since Nov 9, 2026: it belongs to the alert), in Messages' place: the same pathway to review, accept or decline, and what it runs. | PRD Patient details, Care plan and activity; DESIGN.md "Pathway panel" |
 | **What changed** | *Proposed* Patient details list of everything that changed since this clinician last viewed the patient. ⚠️ **Decision needed:** how "last viewed" is recorded (PD-OD-06). | PRD PD-023 |
 
 ---

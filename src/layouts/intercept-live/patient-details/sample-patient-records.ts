@@ -63,6 +63,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		unreadMessages: 3,
 		// The brief Intercept-Live draws (`157:9660`), in step with her alerts and values.
 		brief: {
+			title: "Worsening hemodynamic and respiratory status",
 			text: "MAP has fallen from 70 to 58 mmHg as norepinephrine went up to 0.22, lactate has nearly doubled to 4.1, and Sepsis Sniffer flagged her as a sepsis candidate 2 min ago. SpO₂ is 89% on FiO₂ 60%.",
 			sourceCount: 23,
 			updatedAt: minutesAgo(141),
@@ -150,6 +151,13 @@ const samplePatientBaseRecords: PatientRecord[] = [
 			},
 			{ name: "Procalcitonin", collectedAt: minutesAgo(50) },
 		],
+		// What her septic shock turns on: the fever (charted, so it goes stale), MAP against its target, and the ventilator
+		// since the respiratory therapist's change.
+		findings: [
+			{ name: "Temp", value: "38.9", unit: "°C", chartedAt: minutesAgo(130), staleAfterMinutes: 60, note: "Charted · Fever" },
+			{ name: "MAP", value: "58", unit: "mmHg", context: "Target 65 or more", previous: { value: "70", at: minutesAgo(180) } },
+			{ name: "Ventilator", value: "60% · 10", since: minutesAgo(118), note: "FiO₂ · PEEP" },
+		],
 		careTeam: [
 			{ role: "Bedside nurse", name: "Kelly Ortiz", initials: "KO", tone: 4, organization: "Sidney Regional", presence: "online" },
 			{ role: "Attending of record", name: "Laura Mitchell", initials: "LM", tone: 8, organization: "Sidney Regional", presence: "away" },
@@ -164,6 +172,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		weight: "92 kg",
 		unreadMessages: 1,
 		brief: {
+			title: "Persistent hypoxemia on high ventilator support",
 			text: "SpO₂ has sat between 82 and 86% for the last 20 min on FiO₂ 80% and PEEP 14, and the oxygenation rule flagged it 9 min ago. P/F ratio is 78. Hemodynamics are steady without pressors.",
 			sourceCount: 17,
 			updatedAt: minutesAgo(9),
@@ -213,6 +222,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p3",
 		weight: "71 kg",
 		brief: {
+			title: "Improving on day 3 of treatment",
 			text: "Steady overnight. Norepinephrine is down to 0.08 from 0.10, lactate cleared to 1.6, and WBC fell from 18 to 14.1 on day 3 of ceftriaxone. Creatinine is 2.4, slightly better.",
 			sourceCount: 21,
 			updatedAt: minutesAgo(70),
@@ -262,6 +272,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		weight: "84 kg",
 		unreadMessages: 2,
 		brief: {
+			title: "Rising pressor needs",
 			text: "Norepinephrine went up two steps in the last hour, from 0.06 to 0.12, with MAP holding at 66. Dobutamine is unchanged at 5. NT-proBNP is 6,820 and lactate 2.3. DNR, with goals of care documented yesterday.",
 			sourceCount: 19,
 			updatedAt: minutesAgo(24),
@@ -300,6 +311,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		photo: samplePatientPhotos.p5,
 		weight: "61 kg",
 		brief: {
+			title: "SpO₂ not reporting",
 			text: "SpO₂ stopped reporting 14 min ago, so oxygenation is unknown right now. On BiPAP since last night. Last ABG showed PaCO₂ 52, and potassium is low at 3.2 on continuous albuterol.",
 			sourceCount: 12,
 			updatedAt: minutesAgo(14),
@@ -343,6 +355,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p6",
 		weight: "70 kg",
 		brief: {
+			title: "Confused after hip surgery, hemoglobin falling",
 			text: "Post-op day 2 after a left hip hemiarthroplasty. The bed exit alarm went off 41 min ago; he's been confused overnight. Hemoglobin dropped from 10.4 to 8.9, and sodium is 131.",
 			sourceCount: 14,
 			updatedAt: minutesAgo(41),
@@ -382,6 +395,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p7",
 		weight: "66 kg",
 		brief: {
+			title: "Improving after surgery",
 			text: "Improving. Post-op day 3 after a Hartmann's procedure. WBC is down from 16.8 to 12.1, lactate is normal, and she's off oxygen since this morning. MRSA in the wound swab, so she's on contact isolation.",
 			sourceCount: 16,
 			updatedAt: minutesAgo(180),
@@ -415,6 +429,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p8",
 		weight: "88 kg",
 		brief: {
+			title: "Stable after a bleeding ulcer was clipped",
 			text: "Stable since the endoscopy yesterday clipped a bleeding duodenal ulcer. Hemoglobin rose to 8.4 after one unit and has held. No new bleeding charted. On a pantoprazole drip.",
 			sourceCount: 13,
 			updatedAt: minutesAgo(150),
@@ -447,6 +462,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		weight: "78 kg",
 		unreadMessages: 2,
 		brief: {
+			title: "Ventilator settings don't match the order",
 			text: "Ventilator PEEP is 8, but the active order is 10, and Vent-Order Mismatch flagged it 18 min ago. SpO₂ is 91% on FiO₂ 50%. Lactate rose from 1.9 to 2.6 and Sepsis Sniffer is tracking him.",
 			sourceCount: 20,
 			updatedAt: minutesAgo(18),
@@ -494,6 +510,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p10",
 		weight: "74 kg",
 		brief: {
+			title: "Low blood pressure on rising pressors",
 			text: "MAP is 61 on norepinephrine 0.06, doubled from 0.03 since debridement. Lactate is 3.0 and WBC 21.4. CRRT is running for her end-stage kidney disease; potassium is 5.4. Sepsis Sniffer is tracking her.",
 			sourceCount: 22,
 			updatedAt: minutesAgo(60),
@@ -529,6 +546,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		weight: "79 kg",
 		unreadMessages: 1,
 		brief: {
+			title: "Blood pressure rising on nicardipine",
 			text: "Blood pressure is 162/96 on a nicardipine drip, up from 148/88 an hour ago. Day 2 of a hypertensive emergency with PRES, after a seizure at home. Platelets are 98 and AST 142. No seizures since on levetiracetam.",
 			sourceCount: 15,
 			updatedAt: minutesAgo(30),
@@ -564,6 +582,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p12",
 		weight: "52 kg",
 		brief: {
+			title: "Respiratory rate not reporting",
 			text: "Respiratory rate stopped reporting 27 min ago. Day 2 after thrombectomy for a right MCA stroke, with early swelling on last night's CT: 3% saline is running and sodium is 141, aiming for 145 to 155. Neuro checks unchanged overnight. Glucose is 182. DNR, per her advance directive.",
 			sourceCount: 11,
 			updatedAt: minutesAgo(27),
@@ -608,6 +627,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		weight: "95 kg",
 		unreadMessages: 4,
 		brief: {
+			title: "Shock on two pressors, ECMO flow cut",
 			text: "MAP is 55 on epinephrine and norepinephrine, with HR 134. Maria Ruiz carried over a concern from the night shift: ECMO flow was cut to 3.8 L/min at 05:30 and lactate went from 2.6 to 3.1. A repeat lactate is pending.",
 			sourceCount: 26,
 			updatedAt: minutesAgo(20),
@@ -669,6 +689,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p14",
 		weight: "68 kg",
 		brief: {
+			title: "New atrial fibrillation, rate controlled",
 			text: "Admitted 6 h ago with new atrial fibrillation with a fast ventricular rate. Rate is down to 88 on diltiazem. Magnesium is low at 1.7; TSH is pending. Code status isn't documented yet.",
 			sourceCount: 8,
 			updatedAt: minutesAgo(40),
@@ -701,6 +722,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p15",
 		weight: "78 kg",
 		brief: {
+			title: "Needing more oxygen overnight",
 			text: "Holding overnight, but on more oxygen: SpO₂ 92% on 4 L, up from 2 L on admission, with RR 20 and HR 106, creeping up. NEWS2 is 5 (Medium), up from 4 on admission. Net fluid balance is +1.8 L and weight is up 2.1 kg over 48 h on IV furosemide. BNP is 2,400, up from 1,850 on admission, and creatinine 1.9 from 1.6.",
 			sourceCount: 12,
 			updatedAt: minutesAgo(20),
@@ -764,6 +786,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p16",
 		weight: "71 kg",
 		brief: {
+			title: "Pneumonia improving",
 			text: "Improving on day 3 of community-acquired pneumonia. Fever is gone since yesterday afternoon, oxygen is down from 3 to 2 L with SpO₂ 96%, and WBC fell from 15.2 to 10.4. NEWS2 is 2 (Low), down from 5.",
 			sourceCount: 9,
 			updatedAt: minutesAgo(95),
@@ -799,6 +822,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p19",
 		weight: "84 kg",
 		brief: {
+			title: "Cellulitis improving",
 			text: "Cellulitis of the left lower leg, day 2 of IV cefazolin and improving. The redness is inside the marked border, she's had no fever since yesterday morning, and WBC fell from 13.8 to 9.6. Glucose 140 to 180 on her home insulin. NEWS2 is 1 (Low), SpO₂ 95% on room air.",
 			sourceCount: 7,
 			updatedAt: minutesAgo(130),
@@ -826,6 +850,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p20",
 		weight: "88 kg",
 		brief: {
+			title: "Kidney injury improving",
 			text: "Acute kidney injury from dehydration after three days of gastroenteritis, improving. Creatinine 1.4, down from 2.3, on IV fluids; urine output 70 mL/h. Eating and drinking since last evening, no vomiting. Lisinopril and metformin are on hold. NEWS2 is 0 (Low).",
 			sourceCount: 8,
 			updatedAt: minutesAgo(150),
@@ -856,6 +881,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		photo: samplePatientPhotos.p17,
 		weight: "62 kg",
 		brief: {
+			title: "Score rising after bowel surgery",
 			text: "Post-op day 1 after a small bowel resection for an adhesive obstruction. NEWS2 is 6 (Medium), up from 4: RR 21, HR 104 and SpO₂ 95% on 2 L. She's splinting with pain; the PCA was increased 1 h ago. Urine output 40 mL/h, lactate 1.4.",
 			sourceCount: 11,
 			updatedAt: minutesAgo(30),
@@ -890,6 +916,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		photo: samplePatientPhotos.p18,
 		weight: "74 kg",
 		brief: {
+			title: "Ketoacidosis resolving",
 			text: "Diabetic ketoacidosis, resolving. The anion gap is 12, down from 28, and bicarbonate 20 from 9. Glucose 168 on insulin at 3 units/h with dextrose. Eating breakfast, so the plan is subcutaneous insulin and the drip off 2 h later. NEWS2 is 1 (Low), down from 5.",
 			sourceCount: 14,
 			updatedAt: minutesAgo(50),
@@ -923,6 +950,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p22",
 		weight: "61 kg",
 		brief: {
+			title: "Recovering after hip surgery",
 			text: "Post-op day 1 after a right hip hemiarthroplasty for a femoral neck fracture; she slipped on ice outside her home. NEWS2 is 3 (Low), down from 5 after surgery: HR 86, BP 126/70, SpO₂ 95% on 2 L. Hemoglobin 9.4, down from 11.8, with no bleeding at the wound. Stood at the bedside with physical therapy this morning.",
 			sourceCount: 10,
 			updatedAt: minutesAgo(40),
@@ -963,6 +991,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p25",
 		weight: "92 kg",
 		brief: {
+			title: "Diverticulitis improving",
 			text: "Acute sigmoid diverticulitis without an abscess on CT, day 2 of IV ceftriaxone and metronidazole. Pain is down from 7/10 to 3/10, no fever since yesterday afternoon, and WBC fell from 15.6 to 11.2. Tolerating clear liquids. NEWS2 is 0 (Low), down from 2.",
 			sourceCount: 8,
 			updatedAt: minutesAgo(120),
@@ -991,6 +1020,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p26",
 		weight: "58 kg",
 		brief: {
+			title: "Influenza pneumonia, slightly better",
 			text: "Influenza A with viral pneumonia, day 1 of oseltamivir. NEWS2 is 5 (Medium), down from 6 on arrival: RR 21 and SpO₂ 94% on 2 L, HR 88. The fever broke overnight with acetaminophen. Procalcitonin 0.18, so ceftriaxone stops if her sputum culture stays negative. Drinking with encouragement, eating little.",
 			sourceCount: 9,
 			updatedAt: minutesAgo(60),
@@ -1022,6 +1052,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p27",
 		weight: "86 kg",
 		brief: {
+			title: "Rehab after knee replacement, on track",
 			text: "In a swing bed for rehab, day 3, after a left total knee replacement at Sidney Regional 6 days ago. Walking 120 feet with a walker, the knee bending to 85°. Pain 2–4/10 on scheduled acetaminophen, with oxycodone before therapy. Incision dry. NEWS2 is 0 (Low). Home in 2 to 3 days if he manages the three steps at his door.",
 			sourceCount: 6,
 			updatedAt: minutesAgo(180),
@@ -1057,6 +1088,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p28",
 		weight: "70 kg",
 		brief: {
+			title: "GI bleed, hemoglobin holding",
 			text: "Observation for an upper GI bleed: two days of black stools after a week of ibuprofen for back pain. Hemoglobin 10.6 and holding (10.9 on arrival, 10.4 at 6 h), no more black stools since she arrived, BUN 34. Pantoprazole IV every 12 h, nothing by mouth for an upper endoscopy by the visiting general surgeon. NEWS2 is 1 (Low): HR 94, BP 114/66.",
 			sourceCount: 7,
 			updatedAt: minutesAgo(90),
@@ -1092,6 +1124,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		id: "p29",
 		weight: "66 kg",
 		brief: {
+			title: "Asthma attack improving",
 			text: "Asthma exacerbation after a cold, improving in the ED. After three ipratropium-albuterol nebulizers and prednisone 50 mg, peak flow is 62% of her best, up from 38%, with SpO₂ 96% on room air and RR 20. HR 104 from the albuterol. NEWS2 is 1 (Low), down from 5. Observing 1 more hour; home on a prednisone burst if she holds.",
 			sourceCount: 5,
 			updatedAt: minutesAgo(15),
@@ -1123,10 +1156,16 @@ const samplePatientBaseRecords: PatientRecord[] = [
  */
 const sampleScenario1Record = (): Partial<PatientRecord> => ({
 	brief: {
+		title: "Breathing harder in the last hour",
 		text: "Breathing harder in the last hour: RR up from 20 to 26 and SpO₂ down to 89% on 4 L, with HR 112, so NEWS2 is 10 (High), up from 5. Overnight her oxygen went from 2 to 4 L to hold SpO₂ at 92%. Net fluid balance is +1.8 L and weight is up 2.1 kg over 48 h on IV furosemide. BNP is 2,400, up from 1,850 on admission, and creatinine 1.9 from 1.6.",
 		sourceCount: 12,
 		updatedAt: minutesAgo(0),
 	},
+	findings: [
+		{ name: "Temp", value: "36.8", unit: "°C", chartedAt: minutesAgo(125), staleAfterMinutes: 60, note: "Charted · Normal" },
+		{ name: "Oxygen", value: "4 L/min", since: minutesAgo(150), note: "Nasal cannula · up from 2 L" },
+		{ name: "SBP", value: "148", unit: "mmHg", previous: { value: "132", at: hoursAgo(4) } },
+	],
 	earlyWarning: {
 		score: "NEWS2",
 		value: 10,
@@ -1157,10 +1196,17 @@ const sampleScenario1Record = (): Partial<PatientRecord> => ({
 // Chadron. Her plan, the decisions and who made them come from the app's record of them (the feed's activity).
 const sampleScenario1ResolvedRecord = (): Partial<PatientRecord> => ({
 	brief: {
+		title: "Stable on 2 L by morning",
 		text: "Stable on 2 L by morning: RR 20 and SpO₂ 95%, with HR 88, so NEWS2 is 3 (Low), down from 10 at the alert. The CHF exacerbation pathway is running, with urine output above its target on the furosemide infusion. Both checkpoints passed, so she stays at Chadron: the transfer was avoided.",
 		sourceCount: 14,
 		updatedAt: minutesAgo(0),
 	},
+	// The tiles Intercept-Live draws (`242:11805`): the charted temperature gone stale, and SBP against the nitro rule.
+	findings: [
+		{ name: "Temp", value: "36.8", unit: "°C", chartedAt: minutesAgo(130), staleAfterMinutes: 60, note: "Charted · Normal" },
+		{ name: "Oxygen", value: "2 L/min", since: minutesAgo(40), note: "Nasal cannula" },
+		{ name: "SBP", value: "128", unit: "mmHg", context: "Nitro stops < 110", previous: { value: "148", at: hoursAgo(4) } },
+	],
 	earlyWarning: {
 		score: "NEWS2",
 		value: 3,
@@ -1240,6 +1286,7 @@ const sampleScenario2BaseRecord = (): PatientRecord => ({
 	id: "p21",
 	weight: "82 kg",
 	brief: {
+		title: "COPD exacerbation, out of home oxygen",
 		text: "Severe COPD on home oxygen, brought in by ambulance through the storm after three days of worsening breathlessness. He ran out of oxygen 4 days ago. Blood gas on arrival: pH 7.24, PaCO₂ 78, so acute on chronic hypercapnic respiratory failure. On BiPAP for 20 min: SpO₂ 88%, inside his 88–92% target, but RR 30 and HR 112. Alert, talking in short phrases. NEWS2 7 (High, SpO₂ scale 2), up from 6 on arrival.",
 		sourceCount: 9,
 		updatedAt: minutesAgo(0),
@@ -1302,6 +1349,7 @@ const sampleScenario2BaseRecord = (): PatientRecord => ({
  */
 const sampleScenario2ResolvedRecord = (): Partial<PatientRecord> => ({
 	brief: {
+		title: "NIV is working",
 		text: "NIV is working: at 2 h the repeat gas is pH 7.31 and PaCO₂ 64, from 7.24 and 78 on arrival. RR 21, HR 96 and SpO₂ 91% on BiPAP, more alert and speaking in full sentences. NEWS2 5 (Medium), down from 7. Both checkpoints passed, so he stays at Alliance in a monitored bed, with no intubation and no transfer.",
 		sourceCount: 12,
 		updatedAt: minutesAgo(0),
@@ -1434,6 +1482,7 @@ const sampleScenario3BaseRecord = (): PatientRecord => ({
 	id: "p23",
 	weight: "68 kg",
 	brief: {
+		title: "Possible urosepsis, blood pressure falling",
 		text: "Walked in 50 min ago with her daughter after 3 days of dysuria and left flank pain, with fevers and rigors since last night and vomiting this morning. Her pressure has fallen to 84/48 (MAP 60) with HR 124, T 39.4 °C and RR 24, SpO₂ 95% on room air, still alert. Lactate 3.8, WBC 18.6, and the urinalysis is positive for nitrite and leukocytes: probable septic shock from left pyelonephritis. No fluids or antibiotics yet. Type 2 diabetes with glucose 390, and CKD stage 4 (creatinine 2.6, eGFR 22), so every drug needs renal dosing and no CT contrast. Prefers Spanish. NEWS2 10 (High), up from 7 at triage.",
 		sourceCount: 11,
 		updatedAt: minutesAgo(0),
@@ -1510,6 +1559,7 @@ function sampleScenario3RecordAt(stage: Scenario3RecordStage): Partial<PatientRe
 		case "pressor":
 			return {
 				brief: {
+					title: "Responding to the sepsis bundle",
 					text: "Responding to the sepsis bundle. Blood cultures ×2 were drawn, then piperacillin-tazobactam 4.5 g IV, a full first dose, then 2.25 g every 6 h for CrCl about 27 mL/min. She had 2,000 mL of lactated Ringer's in four 500 mL boluses with her lungs clear at each reassessment, but MAP stayed at 62, so peripheral norepinephrine was started and is at 0.08 mcg/kg/min: BP 104/49 (MAP 67), HR 104, T 38.6 °C. Repeat lactate 2.6, from 3.8. Glucose 312, from 390, on an insulin infusion at 3 units/h. NEWS2 3 (Low), down from 10, but it doesn't count the norepinephrine holding her pressure.",
 					sourceCount: 16,
 					updatedAt: minutesAgo(0),
@@ -1525,6 +1575,7 @@ function sampleScenario3RecordAt(stage: Scenario3RecordStage): Partial<PatientRe
 		case "6h":
 			return {
 				brief: {
+					title: "Bundle done, lactate cleared",
 					text: "At 6 h the bundle is done and lactate has cleared to 1.6. BP 112/60 (MAP 77) on norepinephrine weaned to 0.04 mcg/kg/min, HR 96, RR 18, SpO₂ 97% on room air, T 37.8 °C. Glucose 172 on the insulin infusion, down to 2 units/h. Piperacillin-tazobactam continues at the renal dose. Still boarding in the ED. NEWS2 1 (Low).",
 					sourceCount: 19,
 					updatedAt: minutesAgo(0),
@@ -1539,6 +1590,7 @@ function sampleScenario3RecordAt(stage: Scenario3RecordStage): Partial<PatientRe
 		case "resolved":
 			return {
 				brief: {
+					title: "Out of shock by morning",
 					text: "Out of shock by morning: off norepinephrine for 1 h with BP 118/66 (MAP 83), HR 88, RR 16, SpO₂ 97% on room air, T 37.4 °C. Blood cultures grew gram-negative rods in 2 of 2 sets, E. coli, sensitivities pending; piperacillin-tazobactam continues at the renal dose. Creatinine 2.5, from 2.6, near her baseline of 2.4. Glucose 158 on the insulin infusion, with a move to basal-bolus insulin planned this morning. A bed opened, so she's admitted to Sidney's inpatient unit under hub co-management. NEWS2 0 (Low).",
 					sourceCount: 23,
 					updatedAt: minutesAgo(0),
@@ -1655,6 +1707,7 @@ const sampleScenario4BaseRecord = (): PatientRecord => ({
 	id: "p24",
 	weight: "70 kg",
 	brief: {
+		title: "Ketoacidosis after rationing insulin",
 		text: "Type 1 diabetes since age 11. He lost Medicaid in August and has been stretching his insulin; out of his glargine for 2 days and vomiting since yesterday. Came into the ED at 22:20 and was admitted to Med-Surg. Venous pH 7.08, bicarbonate 6, anion gap 28, beta-hydroxybutyrate 7.2 and glucose 520: severe DKA. Potassium 5.6 before any insulin, so it will fall once the drip starts. Breathing deep and fast at 30 (Kussmaul), HR 122, BP 98/58, SpO₂ 99% on room air, alert. Creatinine 1.4 from a baseline of 0.9. Second liter of saline running; no insulin yet, with the DKA pathway suggested. One RN on the inpatient side tonight. NEWS2 7 (High), up from 5 at triage.",
 		sourceCount: 10,
 		updatedAt: minutesAgo(0),
@@ -1707,6 +1760,7 @@ function sampleScenario4RecordAt(stage: Scenario4RecordStage): Partial<PatientRe
 		case "dextrose":
 			return {
 				brief: {
+					title: "DKA protocol, 6 hours in",
 					text: "Six hours into the DKA protocol. Glucose 238, from 520, so dextrose is in (D5 0.45% saline with KCl 20 mEq/L at 150 mL/h) and insulin came down to 3.5 units/h (0.05 units/kg/h), signed on the intensivist's phone. Anion gap 17 and bicarbonate 14, closing. Potassium fell to 3.1 at 03:00, so insulin was held for an hour while KCl 20 mEq/h ran; it's 3.9 now. HR 96, BP 116/70, RR 20, SpO₂ 99% on room air, alert. Every hourly check on time so far, with one RN on the floor. NEWS2 1 (Low).",
 					sourceCount: 17,
 					updatedAt: minutesAgo(0),
@@ -1721,6 +1775,7 @@ function sampleScenario4RecordAt(stage: Scenario4RecordStage): Partial<PatientRe
 		case "closed":
 			return {
 				brief: {
+					title: "Anion gap closed, back on home insulin",
 					text: "The anion gap closed at hour 13 (12:00): gap 11, bicarbonate 19, pH 7.34, glucose 164. He ate lunch. Glargine 22 units SC, his home dose, at 12:12 and lispro 6 units with the meal; the drip ran 1 h more and stopped at 13:00, after 14 h. One low potassium (3.1 at 03:00), caught by the protocol with insulin held; no hypoglycemia. Creatinine 0.9, back to his baseline. HR 82, BP 122/76, RR 16, SpO₂ 99% on room air. The APP's admission note records cost-related insulin rationing after he lost Medicaid in August. Staying at Bridgeport, with referrals to send at discharge. NEWS2 0 (Low).",
 					sourceCount: 26,
 					updatedAt: minutesAgo(0),
