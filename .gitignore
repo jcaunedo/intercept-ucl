@@ -8,3 +8,5 @@ storybook-static/
 *.log
 coverage/
 explorations/
+# Local Claude Code files: synced between machines by claude-sync (~/.claude/README.md), not shared
+.claude/

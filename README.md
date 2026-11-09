@@ -166,7 +166,7 @@ The tokens are Intercept's light mode. Add the `dark` class to a parent element,
 ## Project structure
 
 ```text
-.claude/
+.claude/                    # Gitignored; synced between machines by claude-sync (links)
   skills/                   # ucl-setup, ucl-ds-sync, ucl-generate-component,
                             # ucl-generate-layout, intercept-copywriter, …
 .github/workflows/
