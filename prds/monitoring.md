@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 6, 2026
+Last updated: Nov 9, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 6, 2026
+**Last updated:** November 9, 2026
 
 ---
 
@@ -187,6 +187,8 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 | **List** | One row per patient | Large panels; vitals as columns |
 
 ✅ **Resolved (Oct 30, 2026, user's call):** both densities show 3 / 4 / 5 / 6 cards per row in the 1280 / 1536 / 1728 / 1920 frames, and above 1920 one more per 296px of window up to 13 (8 at 2560, 12 at 3840), with the Sidebar collapsed and no panel open; an open panel drops columns. The densities differ in card size (Comfortable keeps the larger monitor and type) and below 1025px. Replaces 3 Comfortable / 4 Compact at 1728 (DESIGN.md "Card grids: cards a row per breakpoint"). ✅ **Resolved (later on Oct 30, 2026, user's call):** Compact now shows one more card a row than Comfortable at every width (4 / 5 / 6 / 7 in those frames, up to 14), so the two densities differ in how many patients fit, not only in card size. ✅ **Resolved (Nov 2, 2026, user's call):** the 2048 frame shows 5 a row too (Compact 6); 6 starts above 2048. The Census keeps 6 there. The 2560 frame shows 7 (Compact 8); 8 starts above 2560. The Census keeps 8 there.
+
+✅ **Decision (Nov 9, 2026, user's call):** above 2048 Monitoring adds columns more slowly than one per 296px, so its larger cards keep their monitor readable: 6 per row through the 2560 frame, 7 from 2561px, 8 from 2760px through 3647px, 9 from 3648px and 10 (the most) from 3944px; Compact one more at each, up to 11. Replaces 7 at 2560 and up to 13. The Census keeps its steps (DESIGN.md "Card grids: cards a row per breakpoint").
 
 ⚠️ **Decision needed:** which densities ship in v1 (MON-OD-04). Spec §9.1 Principle 3: density is not clutter; every added value must earn its place.
 

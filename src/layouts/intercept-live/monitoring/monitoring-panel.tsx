@@ -325,10 +325,10 @@ const statusFilters: QuickView<PanelMonitoringPatient>[] = [
 // Comfortable shows 3 cards a row above lg (1024), 4 above xl (1280), still 4 at 2.5xl (Nov 4, 2026, user's call), 5
 // above 2.5xl (1728), still 5 at 3xl and 3.5xl
 // (Oct 30 and Nov 2, 2026, user's calls) and 6 above 3.5xl (2048), with the rail collapsed and no panel open: the page is
-// the window less the 64px rail. From there a column joins every 296px (a ~280px card and its gap), 7 from a 2168px
-// window up to 13 from 3944px, the same windows as the Census, which shows 6 from 1921px; except 8, which waits until
-// above 4xl (2560; Nov 2, 2026, user's call), so the 4xl frame shows 7 (the Census shows 8 from 2464px).
-// Compact (`sm` cards) shows one more a row at every width (Oct 30, 2026), from 2 at 608px. All in px: Tailwind can't order container queries in mixed units, and a px one placed
+// the window less the 64px rail. Wider windows add fewer columns (Nov 9, 2026, user's call), so cards stay ~320–430px:
+// still 6 through 4xl (2560), 7 from a 2561px window, 8 from 2760px through 3647px, 9 from 3648px and 10 (the most)
+// from 3944px. The Census adds one every 296px instead.
+// Compact (`sm` cards) shows one more a row at every width (Oct 30, 2026), from 2 at 608px, up to 11. All in px: Tailwind can't order container queries in mixed units, and a px one placed
 // before a rem one loses to it. `items-start`: a card showing the full monitor grows on its own, without stretching its
 // row.
 // The Kanban board's columns share the width, at least one card wide each (Compact's small card is narrower).
@@ -339,9 +339,9 @@ const boardClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 
 const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 	comfortable:
-		"items-start @min-[744px]:grid-cols-2 @min-[961px]:grid-cols-3 @min-[1217px]:grid-cols-4 @min-[1665px]:grid-cols-5 @min-[1985px]:grid-cols-6 @min-[2104px]:grid-cols-7 @min-[2497px]:grid-cols-8 @min-[2696px]:grid-cols-9 @min-[2992px]:grid-cols-10 @min-[3288px]:grid-cols-11 @min-[3584px]:grid-cols-12 @min-[3880px]:grid-cols-13",
+		"items-start @min-[744px]:grid-cols-2 @min-[961px]:grid-cols-3 @min-[1217px]:grid-cols-4 @min-[1665px]:grid-cols-5 @min-[1985px]:grid-cols-6 @min-[2497px]:grid-cols-7 @min-[2696px]:grid-cols-8 @min-[3584px]:grid-cols-9 @min-[3880px]:grid-cols-10",
 	compact:
-		"items-start gap-3 @min-[608px]:grid-cols-2 @min-[744px]:grid-cols-3 @min-[961px]:grid-cols-4 @min-[1217px]:grid-cols-5 @min-[1665px]:grid-cols-6 @min-[1985px]:grid-cols-7 @min-[2104px]:grid-cols-8 @min-[2497px]:grid-cols-9 @min-[2696px]:grid-cols-10 @min-[2992px]:grid-cols-11 @min-[3288px]:grid-cols-12 @min-[3584px]:grid-cols-13 @min-[3880px]:grid-cols-14",
+		"items-start gap-3 @min-[608px]:grid-cols-2 @min-[744px]:grid-cols-3 @min-[961px]:grid-cols-4 @min-[1217px]:grid-cols-5 @min-[1665px]:grid-cols-6 @min-[1985px]:grid-cols-7 @min-[2497px]:grid-cols-8 @min-[2696px]:grid-cols-9 @min-[3584px]:grid-cols-10 @min-[3880px]:grid-cols-11",
 };
 
 /* -------------------------------------------------------------------------- */

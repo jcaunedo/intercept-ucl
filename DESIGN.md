@@ -139,15 +139,18 @@ So the lg frame at exactly 1024px gets the "lg and below" layout, and the next l
 
 | Window width              | Frame   | Census | Monitoring Comfortable | Monitoring Compact |
 | ------------------------- | ------- | ------ | ---------------------- | ------------------ |
-| 1025–1280                 | `xl`    | 3      | 3                      | 3                  |
-| 1281–1536                 | `2xl`   | 4      | 4                      | 4                  |
+| 1025–1280                 | `xl`    | 3      | 3                      | 4                  |
+| 1281–1536                 | `2xl`   | 4      | 4                      | 5                  |
 | 1537–1728                 | `2.5xl` | 4      | 4                      | 5                  |
 | 1729–1920                 | `3xl`   | 5      | 5                      | 6                  |
 | 1921–2048                 | `3.5xl` | 6      | 5                      | 6                  |
 | 2049–2167                 | above `3.5xl` | 6 | 6                     | 7                  |
-| 2168–2463                 | part of `4xl` | 7 | 7                     | 8                  |
-| 2464–2560                 | part of `4xl` | 8 | 7                     | 8                  |
-| 2561 and up               | `5xl`–`8xl` and above | 8–13 | 8–13         | 9–14               |
+| 2168–2463                 | part of `4xl` | 7 | 6                     | 7                  |
+| 2464–2560                 | part of `4xl` | 8 | 6                     | 7                  |
+| 2561–2759                 | part of `5xl` | 8 | 7                     | 8                  |
+| 2760–3647                 | `5xl`–`7xl`, part of `8xl` | 9–11 | 8         | 9                  |
+| 3648–3943                 | part of `8xl` | 12 | 9                    | 10                 |
+| 3944 and up               | above `8xl` | 13 | 10                     | 11                 |
 
 ✅ **5 at `3xl` (Oct 30, 2026, user's call):** the `3xl` frame (1729–1920) shows 5 a row; 6 starts above 1920 (it started above 1728). Compact keeps one more than Comfortable at every width.
 
@@ -155,17 +158,19 @@ So the lg frame at exactly 1024px gets the "lg and below" layout, and the next l
 
 ✅ **Monitoring: 5 at `3.5xl` (Nov 2, 2026, user's call):** Monitoring's `3.5xl` frame (1921–2048) shows 5 a row too (Compact 6); 6 starts above 2048 (`@min-[1985px]`). The Census keeps 6 there. Comfortable monitoring cards are ~370–384px wide at 5 a row in that frame.
 
-✅ **Monitoring: 7 at `4xl` (Nov 2, 2026, user's call):** Monitoring's `4xl` frame (2560) shows 7 a row (Compact 8); 8 starts above 2560 (`@min-[2497px]`) instead of at 2464. 6 still covers 2049–2167 and 7 starts at 2168. The Census keeps 8 from 2464. Comfortable monitoring cards are ~343px wide at 7 a row at 2560.
+✅ **Monitoring: fewer columns above 2048 (Nov 9, 2026, user's call):** Monitoring stops adding a column every 296px. Comfortable shows 6 a row from 2049 through `4xl` (2560), 7 from 2561, 8 from 2760 through 3647, 9 from 3648 and 10 (the most) from 3944; Compact one more at each (up to 11). Steps: Comfortable `@min-[1985px]:grid-cols-6 @min-[2497px]:grid-cols-7 @min-[2696px]:grid-cols-8 @min-[3584px]:grid-cols-9 @min-[3880px]:grid-cols-10`, Compact the same widths with one more column. Comfortable cards are ~320–430px wide above 2048 (~395px at 2560, ~428px at 3647). Replaces the two notes below for Monitoring above 2048; the Census keeps its steps.
+
+✅ **Monitoring: 7 at `4xl` (Nov 2, 2026, user's call; replaced Nov 9, 2026):** Monitoring's `4xl` frame (2560) shows 7 a row (Compact 8); 8 starts above 2560 (`@min-[2497px]`) instead of at 2464. 6 still covers 2049–2167 and 7 starts at 2168. The Census keeps 8 from 2464. Comfortable monitoring cards are ~343px wide at 7 a row at 2560.
 
 At `lg` (1024) and below they keep their earlier steps (Census 2 above 768, 1 below; Monitoring by card width).
 
-**Large screens (Oct 30, 2026, user's call):** above 1920 the count follows the card's width, not the frames: one more card a row every 296px of window (a ~280px card and its 16px gap), so cards stay ~280–330px. The large frames are too wide to hold one count each (`4xl` alone spans 2049–2560).
+**Large screens (Oct 30, 2026, user's call; the Census only since Nov 9, 2026, Monitoring's steps are above):** above 1920 the count follows the card's width, not the frames: one more card a row every 296px of window (a ~280px card and its 16px gap), so cards stay ~280–330px. The large frames are too wide to hold one count each (`4xl` alone spans 2049–2560).
 
 | Window from | 2168 | 2464 | 2760 | 3056 | 3352 | 3648 | 3944 |
 | ----------- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
 | Cards a row | 7    | 8    | 9    | 10   | 11   | 12   | 13   |
 
-So the frames show 6 at `3.5xl` (2048; 5 on Monitoring), 8 at `4xl` (2560; 7 on Monitoring), 9 at `5xl` (2880), 10 at `6xl` (3200), 11 at `7xl` (3440) and 12 at `8xl` (3840). 13 is the most; a wider window makes the cards wider.
+So the Census's frames show 6 at `3.5xl` (2048), 8 at `4xl` (2560), 9 at `5xl` (2880), 10 at `6xl` (3200), 11 at `7xl` (3440) and 12 at `8xl` (3840). 13 is the most; a wider window makes the cards wider.
 
 **Why:** a clinician watches as many patients as fit on a wide screen. Each frame shows the count designed for it (see "Breakpoints include their own width").
 
