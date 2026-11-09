@@ -29,12 +29,12 @@ import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import { flagDetails } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
-import type { AlertDetailData, PatientConsultData } from "../alert-modal/alert-modal";
-import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-modal/care-pathway";
-import { ConsultSessionScope, useSessionState } from "../alert-modal/consult-session";
-import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "../alert-modal/discharge-plan";
-import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
-import type { BundleDecision } from "../alert-modal/sepsis-bundle";
+import type { AlertConsultState, AlertDetailData, PatientConsultData } from "../alert-panel/alert-panel";
+import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-panel/care-pathway";
+import { ConsultSessionScope, useSessionState } from "../alert-panel/consult-session";
+import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "../alert-panel/discharge-plan";
+import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
+import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import { usePatientNavigation } from "../patient-navigation";
 import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
 import { PatientConsultPanels, useOpenPathwayPanel, type PatientPathways } from "./consult-panels";
@@ -320,6 +320,11 @@ type PatientDetailsProps = {
 	 */
 	consult?: PatientConsultData;
 	/**
+	 * The call's state as the page opens: `live` when it opens answering a consult request (the toast's answer on the
+	 * patient's page, Nov 9, 2026), with the Video consult panel open. Idle by default.
+	 */
+	defaultConsult?: AlertConsultState;
+	/**
 	 * The patient's alerts that come with a pathway (or a sepsis bundle, or a protocol), the one to show first leading:
 	 * the app header's Pathway opens it in a panel right of the page, as on the alert (Nov 6, 2026), and the Overview's
 	 * Care plan shows it (suggested, or what it runs) with the way to it. The panel needs `consult` (it's one of the
@@ -475,10 +480,14 @@ function alertPill(alerts: TriageAlert[]): PatientHeaderProps["alert"] {
 	return open.length ? { variant: open[0].severity, count: open.length } : undefined;
 }
 
-/** The "…" menu (PRD PD-014 More). */
-const moreActions: { label: string; icon: LucideIcon; action: PatientAction }[] = [
+/** The Create menu, the header's "+" (PRD PD-014; Nov 9, 2026, user's call: out of "…"). */
+const createActions: { label: string; icon: LucideIcon; action: PatientAction }[] = [
 	{ label: "New note", icon: FilePenLineIcon, action: "new-note" },
 	{ label: "Prepare handoff", icon: ArrowRightLeftIcon, action: "handoff" },
+];
+
+/** The "…" menu's own items, after the patient's actions (PRD PD-014 More). */
+const moreActions: { label: string; icon: LucideIcon; action: PatientAction }[] = [
 	{ label: "Copy link", icon: LinkIcon, action: "copy-link" },
 ];
 
@@ -572,6 +581,7 @@ function PatientDetailsContent({
 	onAction,
 	onDischargeDecision,
 	consult,
+	defaultConsult,
 	pathways,
 }: PatientDetailsProps) {
 	const [section, setSection] = React.useState<SectionId>("overview");
@@ -642,6 +652,7 @@ function PatientDetailsContent({
 				<PatientConsultPanels
 					key={patient.id}
 					data={consult}
+					defaultConsult={defaultConsult}
 					pathways={pathways}
 					onOpenConsult={() => onAction?.("video-consult")}
 					onOpenMessages={() => onAction?.("messages")}
@@ -844,6 +855,7 @@ function patientDetailsView(
 			onHuddleTeam: act("huddle-team"),
 			onEscalate: act("escalate"),
 			moreActions: moreActions.map(({ label, icon, action }) => ({ label, icon, onSelect: act(action) })),
+			createActions: createActions.map(({ label, icon, action }) => ({ label, icon, onSelect: act(action) })),
 			// The patient's care team, after "…" (intercept.ds `1169:319`, Nov 5, 2026, user's call).
 			team: records
 				.find((item) => item.id === patientId)
@@ -872,6 +884,7 @@ function patientDetailsView(
 				onAction={onAction ? (action) => onAction(patientId, action) : undefined}
 				onDischargeDecision={onDischargeDecision ? (decision) => onDischargeDecision(patientId, decision) : undefined}
 				consult={consults.find((item) => item.patientId === patientId)}
+				defaultConsult={stepper.consult === "answered" ? "live" : undefined}
 				pathways={
 					pathwayDetails.length
 						? {

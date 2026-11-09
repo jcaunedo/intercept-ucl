@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { useSessionState } from "./consult-session";
 import { BedsidePhotoImage, type BedsidePhoto } from "./low-bandwidth";
 
-// The video consult's messages with the bedside nurse (Nov 5, 2026, user's call; intercept.ds `alert-expanded` ›
+// The video consult's messages with the bedside nurse (Nov 5, 2026, user's call; intercept.ds `alert-modal` ›
 // Messages `1375:8218`): the thread the nurse sees in their hospital's messaging (Epic Secure Chat, Cerner Secure
 // Messaging, TigerConnect; Spec §6.11), in the alert panel's third column, where the pathway shows. Opened from the
 // actions row's Messages, and on its own when a message from the bedside arrives.

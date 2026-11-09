@@ -10,6 +10,7 @@ import {
 	MessageCircleMoreIcon,
 	MessageCircleOffIcon,
 	MoonIcon,
+	PlusIcon,
 	SunIcon,
 	VideoIcon,
 	VideoOffIcon,
@@ -108,8 +109,9 @@ type AppHeaderDefaultProps = AppHeaderCommonProps & {
 type AppHeaderPatientProps = AppHeaderCommonProps & {
 	/**
 	 * `patient`: on a patient's page, Back, the patient list and Ask Intercept (when the app handles them), then a
-	 * breadcrumb back to where the user came from, on the left; Video consult, Messages, Pathway, a "…" menu and the care
-	 * team on the right, the menu holding the patient's actions (Raise concern, Huddle team, Escalate) and `moreActions`.
+	 * breadcrumb back to where the user came from, on the left; Video consult, Messages, Pathway, a "…" menu, a Create
+	 * menu ("+", `createActions`) and the care team on the right, the "…" menu holding the patient's actions (Raise
+	 * concern, Huddle team, Escalate) and `moreActions`.
 	 */
 	variant: "patient";
 	/** The page the user came from, e.g. "Census". The breadcrumb's back link. */
@@ -166,6 +168,13 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	onEscalate?: () => void;
 	/** The "…" menu's other items, after a rule. Without them or a patient action, there's no "…" button. */
 	moreActions?: AppHeaderMenuAction[];
+	/**
+	 * What can be created for the patient (Nov 9, 2026, intercept.ds `1169:319`; user's call: a Create menu), e.g. New
+	 * note, Prepare handoff: a dark "+" button after "…" opens them. Without any, there's no button.
+	 */
+	createActions?: AppHeaderMenuAction[];
+	/** The "+" button's accessible name, "Create" by default. */
+	createLabel?: string;
 	/**
 	 * The patient's care team (Nov 5, 2026, intercept.ds `1169:319`; user's call: the patient's, not the team on shift):
 	 * the first three overlap 16px after "…", opening `onOpenTeam`; the button's name lists everyone. Without it, no
@@ -486,6 +495,8 @@ function PatientActions({
 	onHuddleTeam,
 	onEscalate,
 	moreActions = [],
+	createActions = [],
+	createLabel = "Create",
 	team = [],
 	onOpenTeam,
 }: AppHeaderPatientProps) {
@@ -583,6 +594,24 @@ function PatientActions({
 						</DropdownMenuContent>
 					</DropdownMenu>
 				) : null}
+				{createActions.length ? (
+					// The Create menu, last in the row, on the dark neutral fill (Figma Solid · Neutral `icon-md`, 18px `plus`).
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button variant='neutral' size='icon-md' aria-label={createLabel}>
+								<PlusIcon aria-hidden='true' className='size-[18px]' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align='end'>
+							{createActions.map(({ label, icon: Icon, onSelect }) => (
+								<DropdownMenuItem key={label} onSelect={onSelect}>
+									{Icon ? <Icon aria-hidden='true' /> : null}
+									{label}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				) : null}
 			</div>
 			{team.length ? <TeamMenu team={team} onOpenTeam={onOpenTeam} label='Care team' max={3} /> : null}
 		</div>
@@ -592,8 +621,8 @@ function PatientActions({
 /**
  * Intercept Live's top bar. `default`: connection status and clock on the left; theme, the team on shift and
  * the user's menu on the right. `patient`: Back, the patient list, Ask Intercept and a breadcrumb back from a patient's
- * page on the left; Video consult, Messages, Pathway, a "…" menu with the patient's actions and the care team on the right. Each button calls its own handler; the
- * header holds no state.
+ * page on the left; Video consult, Messages, Pathway, a "…" menu with the patient's actions, a Create menu ("+") and
+ * the care team on the right. Each button calls its own handler; the header holds no state.
  *
  * Figma: [intercept.ds › app-header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1169-318)
  */
@@ -628,6 +657,8 @@ function AppHeader(props: AppHeaderProps) {
 		onHuddleTeam: _onHuddleTeam,
 		onEscalate: _onEscalate,
 		moreActions: _moreActions,
+		createActions: _createActions,
+		createLabel: _createLabel,
 		onToggleTheme,
 		theme = "light",
 		compact = false,

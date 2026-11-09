@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { SourceLabel } from "../shared/source-label";
 import { Expand } from "./care-pathway";
 
-// Exploration (DESIGN.md "Alert modal" › "Keep or transfer"): Scenario 1, step 5. Once the pathway's orders are sent,
+// Exploration (DESIGN.md "Alert panel" › "Keep or transfer"): Scenario 1, step 5. Once the pathway's orders are sent,
 // the panel sets what the plan needs against what the hospital has tonight, and the transfer it would take (receiving
 // bed, transport and its time). The intensivist decides, with a reason: keep, with checkpoints at 1 h and 4 h (a missed
 // one raises a High alert and brings transfer back), or transfer. The platform lays out the facts and doesn't pick one

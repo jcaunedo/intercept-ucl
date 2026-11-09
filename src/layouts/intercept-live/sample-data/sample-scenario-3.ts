@@ -1,11 +1,11 @@
-import type { AlertDetailData } from "../alert-modal/alert-modal";
-import type { BedsideTask } from "../alert-modal/bedside-tasks";
+import type { AlertDetailData } from "../alert-panel/alert-panel";
+import type { BedsideTask } from "../alert-panel/bedside-tasks";
 import {
 	sampleScenario3AlertDetail,
 	sampleScenario3Pathway,
 	sampleScenario3Tasks,
-} from "../alert-modal/sample-alert-modal";
-import type { BundleElement, FluidBolus } from "../alert-modal/sepsis-bundle";
+} from "../alert-panel/sample-alert-panel";
+import type { BundleElement, FluidBolus } from "../alert-panel/sepsis-bundle";
 import { sampleScenario3Census, sampleScenario3CensusAt } from "../census/sample-census";
 import { sampleScenario3Monitoring, sampleScenario3MonitoringAt } from "../monitoring/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";

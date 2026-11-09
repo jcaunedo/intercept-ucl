@@ -35,7 +35,7 @@ import {
 } from "@/components/data-display/avatar";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { Textarea } from "@/components/forms/textarea";
-import { AlertExpanded, AlertExpandedClose } from "@/components/overlays/alert-expanded";
+import { AlertModal, AlertModalClose } from "@/components/overlays/alert-modal";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/overlays/dialog";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
@@ -103,14 +103,14 @@ import {
 import { DkaProtocolPanel, type DkaProtocol } from "./dka-protocol";
 import { SepsisBundlePanel, type BundleDecision, type SepsisBundle } from "./sepsis-bundle";
 
-// The alert modal that a Monitoring card's alert bar and an alert toast's maximize button open (DESIGN.md "Alert
-// modal"). Scenario 1, steps 2 to 4. Left, what's happening: the alert, the patient's score, monitor and score inputs,
-// the key clinical findings behind the alert and the history and labs the intensivist needs. Right, what to do about it:
-// a one-click video consult to the bedside, step 4's care pathway (`care-pathway.tsx`) and, once its orders are sent,
-// step 5's keep or transfer (`keep-or-transfer.tsx`), both explorations. Scenario 3 adds the hour-1 sepsis bundle
-// (`sepsis-bundle.tsx`) before the pathway, the bedside tasks its orders generate (`bedside-tasks.tsx`) and the interpreter
-// prompt in the call (`interpreter.tsx`). Scenario 4 adds the DKA protocol's hourly checklist (`dka-protocol.tsx`) under
-// the pathway that starts it.
+// The alert panel that a Monitoring card's alert bar and an alert toast open, in a Dialog (DESIGN.md "Alert panel").
+// Scenario 1, steps 2 to 4: UCL's AlertModal shows what's happening (the alert, the patient's score, monitor and
+// flags, the key findings first among them); its side panels hold what to do about it: a one-click video consult to the
+// bedside with the AI Notetaker, the messages with the bedside nurse, and step 4's care pathway (`care-pathway.tsx`)
+// with, once its orders are sent, step 5's keep or transfer (`keep-or-transfer.tsx`), both explorations. Scenario 3
+// adds the hour-1 sepsis bundle (`sepsis-bundle.tsx`) before the pathway, the bedside tasks its orders generate
+// (`bedside-tasks.tsx`) and the interpreter prompt in the call (`interpreter.tsx`). Scenario 4 adds the DKA protocol's
+// hourly checklist (`dka-protocol.tsx`) under the pathway that starts it.
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -286,7 +286,7 @@ type AlertConsultState = "idle" | "connecting" | "live";
 
 type AlertDetailAction = "acknowledge" | "escalate" | "resolve" | "decline";
 
-type AlertDetailModalProps = {
+type AlertPanelDialogProps = {
 	open?: boolean;
 	defaultOpen?: boolean;
 	onOpenChange?: (open: boolean) => void;
@@ -349,12 +349,6 @@ const actions: Record<AlertDetailAction, { label: string; icon: LucideIcon }> = 
 	decline: { label: "Feedback", icon: Undo2Icon },
 };
 
-// The low step is the strong one: the base low blue is too light for text on white.
-const factSeverityClassNames: Record<NonNullable<AlertDetailFact["severity"]>, string> = {
-	critical: "text-severity-critical",
-	low: "text-severity-low-strong",
-};
-
 /* -------------------------------------------------------------------------- */
 /* Parts                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -362,31 +356,6 @@ const factSeverityClassNames: Record<NonNullable<AlertDetailFact["severity"]>, s
 function formatElapsed(seconds: number) {
 	const minutes = Math.floor(seconds / 60);
 	return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
-}
-
-/** A column's label, e.g. "Clinical info": what the column holds, over its sections. */
-function ColumnLabel({ id, children }: { id: string; children: React.ReactNode }) {
-	// Sticks to the top of its column as the column scrolls, on the column's background. It takes over the column's top
-	// padding (24px) and the 16px gap under it, so the label keeps its space above and below, at rest and stuck. Sticky
-	// offsets count from inside the column's padding, hence `-top-6`.
-	return (
-		<h2
-			id={id}
-			className='sticky -top-6 z-10 -mx-6 -mt-6 -mb-4 bg-background px-6 pt-6 pb-4 text-xs font-medium tracking-[0.04em] text-muted-foreground uppercase'
-		>
-			{children}
-		</h2>
-	);
-}
-
-/** A section's heading in a column, e.g. "Key clinical findings". */
-function SectionHeading({ children }: { children: React.ReactNode }) {
-	return <h3 className='text-base font-bold text-foreground'>{children}</h3>;
-}
-
-/** A section's line when it has nothing to show, so the section stays in place from alert to alert. */
-function SectionEmpty({ children }: { children: React.ReactNode }) {
-	return <p className='text-sm text-muted-foreground'>{children}</p>;
 }
 
 /**
@@ -448,86 +417,6 @@ function withAlertFlags<Patient extends { id: string; tags?: PatientCardTag[] }>
 			.filter((flag, index, all) => all.findIndex((other) => other.label === flag.label) === index);
 		return flags.length ? { ...patient, tags: [...flags, ...(patient.tags ?? [])] } : patient;
 	});
-}
-
-/**
- * The key clinical findings: each phrase of the reason line with its numbers. An alert without them shows its own
- * evidence and recommendation instead; one with neither says so.
- */
-function KeyFindings({ data }: { data: AlertDetailData }) {
-	const { reasons, alert } = data;
-	const evidence = alert.evidence ?? [];
-	return (
-		<section aria-label='Key clinical findings' className='flex flex-col gap-3'>
-			<SectionHeading>Key clinical findings</SectionHeading>
-			{reasons.length ? (
-				<dl className='flex flex-col gap-3 text-sm'>
-					{reasons.map((reason) => (
-						<div key={reason.label}>
-							<dt className='text-muted-foreground'>{reason.label}</dt>
-							<dd className='font-medium text-foreground'>
-								{reason.lead ? <span className='font-semibold'>{reason.lead}, </span> : null}
-								{reason.detail}
-							</dd>
-						</div>
-					))}
-				</dl>
-			) : !evidence.length && !alert.recommendation ? (
-				<SectionEmpty>No key findings for this alert.</SectionEmpty>
-			) : (
-				<>
-					{evidence.length ? (
-						<ul className='flex list-disc flex-col gap-1.5 pl-5 text-sm font-medium text-foreground'>
-							{evidence.map((item) => (
-								<li key={item}>{item}</li>
-							))}
-						</ul>
-					) : null}
-					{alert.recommendation ? <p className='text-sm font-medium text-foreground'>{alert.recommendation}</p> : null}
-				</>
-			)}
-		</section>
-	);
-}
-
-/**
- * History and labs for the consult: the value in its severity's color, its detail under it. Without any, it says so.
- */
-function HistoryAndLabs({ data }: { data: AlertDetailData }) {
-	return (
-		<section aria-label='History and labs' className='flex flex-col gap-3'>
-			<SectionHeading>History and labs</SectionHeading>
-			{data.history.length ? (
-				<dl className='flex flex-col gap-3 text-sm'>
-					{data.history.map((fact) => (
-						<div key={fact.label}>
-							<dt className='font-bold text-foreground'>{fact.label}</dt>
-							<dd className='font-medium text-foreground'>
-								{fact.items ? (
-									<ul className='list-disc pl-5'>
-										{fact.items.map((item) => (
-											<li key={item.name}>
-												<span className='font-semibold'>{item.name}</span>
-												{item.detail ? ` ${item.detail}` : null}
-											</li>
-										))}
-									</ul>
-								) : null}
-								{fact.value ? (
-									<span className={cn("block font-semibold", fact.severity && factSeverityClassNames[fact.severity])}>
-										{fact.value}
-									</span>
-								) : null}
-								{fact.detail ? <span className='block'>{fact.detail}</span> : null}
-							</dd>
-						</div>
-					))}
-				</dl>
-			) : (
-				<SectionEmpty>No history or labs on file for this patient.</SectionEmpty>
-			)}
-		</section>
-	);
 }
 
 /** The call's Live dot (MOTION.md Live): it breathes while the call is on, still under reduced motion. */
@@ -756,7 +645,7 @@ function ConsultTile({
 	return (
 		<section
 			aria-label='Video consult'
-			// Figma's 352 × 248 at any width: 248px tall in the modal's 352px, 270px in AlertExpanded's 384px panel.
+			// Figma's 352 × 248 at any width: 248px tall in the modal's 352px, 270px in AlertModal's 384px panel.
 			className='relative aspect-[352/248] w-full shrink-0 overflow-hidden rounded-card bg-(--gray-900)'
 		>
 			<AnimatePresence initial={false}>
@@ -887,27 +776,8 @@ function ConsultTile({
 	);
 }
 
-/**
- * The call, floating over the bottom of the Clinical info column while it's on: it fades in and rises (Reveal), so the
- * findings stay in place under it; a fade under reduced motion.
- */
-function ConsultReveal({ children }: { children: React.ReactNode }) {
-	const { prefersReducedMotion } = useMotionPreference();
-	return (
-		<motion.div
-			variants={prefersReducedMotion ? fadeVariants : revealVariants}
-			initial='initial'
-			animate='animate'
-			exit='exit'
-			className='absolute inset-x-6 bottom-4'
-		>
-			{children}
-		</motion.div>
-	);
-}
-
 /* -------------------------------------------------------------------------- */
-/* Shared by the alert panel and the alert modal                               */
+/* Shared by the alert panel and the patient consult                           */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -1015,7 +885,7 @@ function ConsultButton({
 
 /**
  * The alert's lifecycle, as the triage queue runs it (DU-13): which buttons show, the form an action opens, and who did
- * what. Returns AlertExpanded's `status`, `alertActions` and `children` (the open form), and `escape`, which closes an
+ * what. Returns AlertModal's `status`, `alertActions` and `children` (the open form), and `escape`, which closes an
  * open form and says whether it did, so Escape takes the form first.
  */
 function useAlertLifecycle({
@@ -1163,7 +1033,7 @@ function useAlertLifecycle({
 	};
 }
 
-/** What AlertExpanded shows of the patient and the alert, from the alert's detail. */
+/** What AlertModal shows of the patient and the alert, from the alert's detail. */
 function expandedContent(data: AlertDetailData, status: string) {
 	const { alert, patient } = data;
 	return {
@@ -1345,7 +1215,7 @@ function PathwayContent({
 				<AnimatePresence initial={false}>
 					{pathwayPanel ? (
 						<Expand key='pathway'>
-							<div ref={arrivedRef} className='flex scroll-mt-6 flex-col gap-4 pt-4'>
+							<div ref={arrivedRef} className='flex scroll-mt-8 flex-col gap-4 pt-4'>
 								<hr className='border-border' />
 								{pathwayPanel}
 							</div>
@@ -1358,7 +1228,7 @@ function PathwayContent({
 			<AnimatePresence initial={false}>
 				{data.protocol ? (
 					<Expand key='protocol'>
-						<div ref={protocolRef} className='flex scroll-mt-6 flex-col gap-4 pt-4'>
+						<div ref={protocolRef} className='flex scroll-mt-8 flex-col gap-4 pt-4'>
 							<hr className='border-border' />
 							<DkaProtocolPanel protocol={data.protocol} />
 						</div>
@@ -1382,7 +1252,7 @@ function PathwayContent({
 				) : null}
 				{data.discharge ? (
 					<Expand key='discharge'>
-						<div ref={dischargeRef} className='flex scroll-mt-6 flex-col gap-4 pt-4'>
+						<div ref={dischargeRef} className='flex scroll-mt-8 flex-col gap-4 pt-4'>
 							<hr className='border-border' />
 							<DischargePlanPanel plan={data.discharge} onDecision={onDischargeDecision} />
 						</div>
@@ -1432,7 +1302,7 @@ function draftConsultNote(data: ConsultData, notes: readonly ConsultNote[] = [])
 }
 
 /**
- * The AI Notetaker under the call (intercept.ds `alert-expanded` Video; Nov 3, 2026, user's calls): Start notetaker
+ * The AI Notetaker under the call (intercept.ds `alert-modal` Video; Nov 3, 2026, user's calls): Start notetaker
  * sends an approval request to everyone on the call who doesn't approve on their own, and recording starts once they
  * have (consent before capture, PD-073); with no one to ask, it starts at once. It then prepares the notes and offers
  * the draft for review: the draft says it's AI-written and needs the clinician's approval (Spec §5.4, §8.6). Ending the
@@ -1457,7 +1327,7 @@ function ConsultNotetaker({
 	data: ConsultData;
 	live: boolean;
 	/**
-	 * Offers Start notetaker while it hasn't started (or a request was cancelled). The Alert Expanded modal leaves it out
+	 * Offers Start notetaker while it hasn't started (or a request was cancelled). AlertModal leaves it out
 	 * (Nov 6, 2026, user's call): the notetaker starts on its own as the call connects, so the state line says "Getting
 	 * ready…" alone. The patient page's Video consult panel keeps it, in its header.
 	 */
@@ -1479,9 +1349,10 @@ function ConsultNotetaker({
 	 */
 	actionSlot?: HTMLElement | null;
 	/**
-	 * Where Add a note goes (Intercept-Live `230:6415`, Nov 6, 2026): the patient page's Video consult panel pins it to
-	 * the panel's bottom. Without a slot there's no field (the alert panel). Shown while the call is live or the
-	 * transcript shows; each note joins the transcript at its time into the consult and goes into the draft.
+	 * Where Add a note goes (Intercept-Live `230:6415`, Nov 6, 2026): the Video consult panel pins it to the panel's
+	 * bottom, on the patient page and in the alert panel and patient consult (intercept.ds `alert-modal` › Messages
+	 * `1375:8218`, Nov 9, 2026). Without a slot there's no field. Shown while the call is live or the transcript shows;
+	 * each note joins the transcript at its time into the consult and goes into the draft.
 	 */
 	noteSlot?: HTMLElement | null;
 }) {
@@ -1724,7 +1595,7 @@ function joinNames(names: string[]) {
 /* Alert panel                                                                */
 /* -------------------------------------------------------------------------- */
 
-type AlertPanelProps = Omit<AlertDetailModalProps, "open" | "defaultOpen" | "onOpenChange"> & {
+type AlertPanelProps = Omit<AlertPanelDialogProps, "open" | "defaultOpen" | "onOpenChange"> & {
 	/**
 	 * Shows the pathway in the side panel when it opens. By default, when it has been acted on (its orders sent, or keep or
 	 * transfer decided), so a reopened alert shows where it was left.
@@ -1736,7 +1607,7 @@ type AlertPanelProps = Omit<AlertDetailModalProps, "open" | "defaultOpen" | "onO
 	titleAs?: React.ElementType;
 	/** The description's element; inside a Dialog, `DialogDescription`. */
 	descriptionAs?: React.ElementType;
-	/** The × (AlertExpanded's `close`), e.g. a DialogClose around AlertExpandedClose. */
+	/** The × (AlertModal's `close`), e.g. a DialogClose around AlertModalClose. */
 	close?: React.ReactNode;
 	onClose?: () => void;
 	/** Set to what Escape should close first: an open form, dose edit or decision. Returns whether it closed one. */
@@ -1750,13 +1621,13 @@ type AlertPanelProps = Omit<AlertDetailModalProps, "open" | "defaultOpen" | "onO
 const threadWith = (bedside?: AlertDetailBedside) => (bedside ? `${bedside.name}, ${bedside.role}` : "the bedside nurse");
 
 /**
- * One alert, expanded, with everything the alert modal did (it replaces the modal, Nov 3, 2026, user's call): UCL's
- * AlertExpanded with the alert's lifecycle (Acknowledge, Escalate and Resolve, each form under the buttons),
+ * One alert, expanded, with everything the alert modal did (it replaced the modal, Nov 3, 2026, user's call): UCL's
+ * AlertModal with the alert's lifecycle (Acknowledge, Escalate and Resolve, each form under the buttons),
  * Video consult and Pathway. Each opens a side panel that slides out on the right, the pathway's to the right of
  * the call's when both are open: the call, with the AI Notetaker under it (Scenario 1, step 3), and the care pathway
  * with keep or transfer (steps 4 and 5). The alert's key findings are a flag, first in its tag row.
  *
- * Figma: [intercept.ds › alert-expanded](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1355-14776)
+ * Figma: [intercept.ds › alert-modal](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1355-14776)
  */
 function AlertPanel(props: AlertPanelProps) {
 	return (
@@ -1803,6 +1674,8 @@ function AlertPanelContent({
 	const [consult, setConsult] = useConsult(callOnOpen ? "idle" : defaultConsult, onConsultChange);
 	// The call's microphone, so the notetaker stops transcribing the clinician while they're muted.
 	const [micMuted, setMicMuted] = React.useState(false);
+	// Where the notetaker puts Add a note: pinned to the Video consult panel's bottom (`footer`), as on the patient page.
+	const [noteSlot, setNoteSlot] = React.useState<HTMLDivElement | null>(null);
 	React.useEffect(() => {
 		// A call already on (picked up from the patient's page) isn't called again.
 		if (!callOnOpen || consult !== "idle") return;
@@ -1856,7 +1729,7 @@ function AlertPanelContent({
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
 
 	return (
-		<AlertExpanded
+		<AlertModal
 			{...expandedContent(data, lifecycle.status)}
 			monitor={connectionMonitor.monitor}
 			monitorStatus={connectionMonitor.monitorStatus}
@@ -1922,14 +1795,16 @@ function AlertPanelContent({
 												muted={micMuted}
 												onApprove={onConsultNote}
 												startable={false}
+												noteSlot={noteSlot}
 											/>
 										}
 									/>
 								),
+								footer: <div ref={setNoteSlot} />,
 							},
 						]
 					: []),
-				// The third column, in the pathway's place (intercept.ds `alert-expanded` › Messages `1375:8218`).
+				// The third column, in the pathway's place (intercept.ds `alert-modal` › Messages `1375:8218`).
 				...(messagesOpen
 					? [
 							{
@@ -1976,7 +1851,7 @@ function AlertPanelContent({
 			className={className}
 		>
 			{lifecycle.formNode}
-		</AlertExpanded>
+		</AlertModal>
 	);
 }
 
@@ -1990,7 +1865,7 @@ function AlertPanelDialog({
 	defaultOpen,
 	onOpenChange,
 	...props
-}: AlertDetailModalProps & { defaultPathwayOpen?: boolean; focusDischarge?: boolean }) {
+}: AlertPanelDialogProps & { defaultPathwayOpen?: boolean; focusDischarge?: boolean }) {
 	const escapeRef = React.useRef<(() => boolean) | null>(null);
 	return (
 		<Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
@@ -2010,7 +1885,7 @@ function AlertPanelDialog({
 					descriptionAs={DialogDescription}
 					close={
 						<DialogClose asChild>
-							<AlertExpandedClose />
+							<AlertModalClose />
 						</DialogClose>
 					}
 					escapeRef={escapeRef}
@@ -2067,6 +1942,8 @@ function PatientConsultDialogContent({
 }) {
 	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
 	const [micMuted, setMicMuted] = React.useState(false);
+	// Where the notetaker puts Add a note: pinned to the Video consult panel's bottom (`footer`), as on the patient page.
+	const [noteSlot, setNoteSlot] = React.useState<HTMLDivElement | null>(null);
 	// The third column, as on the alert panel: the messages with the bedside nurse, or the pathway, one at a time. Messages
 	// open or closed goes with the consult session.
 	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
@@ -2102,7 +1979,7 @@ function PatientConsultDialogContent({
 				aria-describedby={undefined}
 				className='max-h-[calc(100dvh-160px)] w-fit'
 			>
-				<AlertExpanded
+				<AlertModal
 					lastName={patient.lastName}
 					firstName={patient.firstName}
 					photo={patient.photo}
@@ -2167,10 +2044,12 @@ function PatientConsultDialogContent({
 											muted={micMuted}
 											onApprove={onConsultNote}
 											startable={false}
+											noteSlot={noteSlot}
 										/>
 									}
 								/>
 							),
+							footer: <div ref={setNoteSlot} />,
 						},
 						...(messagesOpen
 							? [
@@ -2213,143 +2092,11 @@ function PatientConsultDialogContent({
 					]}
 					close={
 						<DialogClose asChild>
-							<AlertExpandedClose />
+							<AlertModalClose />
 						</DialogClose>
 					}
 					className='max-h-full min-h-0 rounded-none border-0 shadow-none'
 				/>
-			</DialogContent>
-		</Dialog>
-	);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Alert modal (three columns, replaced by the alert panel)                    */
-/* -------------------------------------------------------------------------- */
-
-/**
- * An alert, opened, 1400px wide in three columns. The patient: who they are, the alert (its bar, title, source and
- * lifecycle actions), their score, monitor and tags, then Video consult and Pathway. Clinical info: the key
- * clinical findings and the history and labs, with the video consult floating over its bottom once it's on. Pathway,
- * for acting on it: the suggested care pathway with its decision at the bottom, then keep or transfer once the orders
- * are sent. Each column scrolls on its own. Replaced in the app by the alert panel (AlertPanelDialog, Nov 3, 2026).
- *
- * Figma: [intercept.ds › alert-modal](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1321-10102)
- */
-function AlertDetailModal({
-	open,
-	defaultOpen,
-	onOpenChange,
-	data,
-	defaultConsult = "idle",
-	onConsultChange,
-	onAction,
-	actions: actionsProp,
-	escalationTargets = [],
-	onOpenPatient,
-	onPathwayDecision,
-	onTransferDecision,
-	onDischargeDecision,
-}: AlertDetailModalProps) {
-	const [consult, setConsult] = useConsult(defaultConsult, onConsultChange);
-	const lifecycle = useAlertLifecycle({ alert: data.alert, actions: actionsProp, escalationTargets, onAction });
-	const { prefersReducedMotion } = useMotionPreference();
-	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
-	// Pathway: the Pathway column back at its top, with focus, so the keyboard lands there too.
-	const pathwayRef = React.useRef<HTMLElement>(null);
-	const viewPathway = () => {
-		const column = pathwayRef.current;
-		if (!column) return;
-		column.scrollTo({ top: 0, behavior: prefersReducedMotion ? "auto" : "smooth" });
-		column.focus({ preventScroll: true });
-	};
-
-	return (
-		<Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
-			<DialogContent
-				showCloseButton={false}
-				onEscapeKeyDown={(event) => {
-					// An open form takes Escape first: it closes, the modal stays.
-					if (lifecycle.escape() || pathwayEscape.current?.()) event.preventDefault();
-				}}
-				// When it grows tall it keeps 80px from the viewport's top and bottom edges (user's call, Nov 2, 2026).
-				className='max-h-[calc(100dvh-160px)] w-[1400px] flex-row'
-			>
-				{/* The patient and the alert (UCL AlertExpanded), raised over the column to its right so its shadow falls on it.
-				    It scrolls on its own; its × stays in the corner. */}
-				<AlertExpanded
-					{...expandedContent(data, lifecycle.status)}
-					onOpenPatient={onOpenPatient}
-					titleAs={DialogTitle}
-					descriptionAs={DialogDescription}
-					sourceAction={lifecycle.feedbackNode}
-					status={lifecycle.statusNode}
-					alertActions={lifecycle.alertActionsNode}
-					actions={
-						<>
-							<ConsultButton consult={consult} onConsultChange={setConsult} />
-							{/* Takes the clinician (and focus) to the Pathway column, back at its top. */}
-							{data.pathway ? (
-								<Button variant='outline' onClick={viewPathway}>
-									<GitForkIcon />
-									Pathway
-								</Button>
-							) : null}
-						</>
-					}
-					close={
-						<DialogClose asChild>
-							<AlertExpandedClose />
-						</DialogClose>
-					}
-					// In the modal: no corners, and only its right border shows, the rule before Clinical info (the others stay,
-					// transparent, so the × keeps its 20px).
-					className='z-20 w-auto min-w-0 flex-1 rounded-none border-transparent border-r-border shadow-[0_0_50px_-12px_var(--shadow-color-lg)]'
-				>
-					{lifecycle.formNode}
-				</AlertExpanded>
-
-				<div className='relative z-10 flex w-[400px] shrink-0 flex-col bg-background shadow-2xl'>
-					<section
-						aria-labelledby='alert-modal-clinical-info'
-						className={cn(
-							"flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-6",
-							// While the call is on, room under the last line so it can scroll clear of the call (248px, 16px from the
-							// bottom, 16px above it).
-							consult !== "idle" && "pb-70",
-						)}
-					>
-						<ColumnLabel id='alert-modal-clinical-info'>Clinical info</ColumnLabel>
-						<KeyFindings data={data} />
-						<hr className='border-border' />
-						<HistoryAndLabs data={data} />
-					</section>
-					<AnimatePresence initial={false}>
-						{consult !== "idle" ? (
-							<ConsultReveal key='consult'>
-								<ConsultTile data={data} state={consult} onEnd={() => setConsult("idle")} />
-							</ConsultReveal>
-						) : null}
-					</AnimatePresence>
-				</div>
-
-				{/* Its own layer, under the other columns, so its sticky label stays under the shadow Clinical info casts on it. */}
-				<section
-					ref={pathwayRef}
-					tabIndex={-1}
-					aria-labelledby='alert-modal-pathway'
-					className='relative z-0 flex w-[400px] shrink-0 flex-col gap-4 overflow-y-auto bg-background p-6 outline-none'
-				>
-					<ColumnLabel id='alert-modal-pathway'>Pathway</ColumnLabel>
-					<PathwayContent
-						data={data}
-						onPathwayDecision={onPathwayDecision}
-						onTransferDecision={onTransferDecision}
-						onDischargeDecision={onDischargeDecision}
-						escapeRef={pathwayEscape}
-						fill
-					/>
-				</section>
 			</DialogContent>
 		</Dialog>
 	);
@@ -2386,7 +2133,7 @@ function pickAlertDetail(details: AlertDetailData[], alerts: TriageAlert[], { pa
  * closes the modal after; Escalate and Resolve need the queue's reason and note, not built here yet. An alert without a
  * detail renders nothing, and the shell opens the patient instead.
  */
-function alertModalRenderer({
+function alertPanelRenderer({
 	details,
 	consults = [],
 	alerts,
@@ -2492,12 +2239,11 @@ function alertModalRenderer({
 }
 
 export {
-	AlertDetailModal,
 	AlertPanel,
 	AlertPanelDialog,
 	PatientConsultDialog,
 	PathwayContent,
-	alertModalRenderer,
+	alertPanelRenderer,
 	withAlertFlags,
 	ConsultNotetaker,
 	ConsultPanelContent,
@@ -2514,7 +2260,7 @@ export {
 	type ConsultMessage,
 	type AlertDetailData,
 	type AlertDetailFact,
-	type AlertDetailModalProps,
+	type AlertPanelDialogProps,
 	type AlertPanelProps,
 	type AlertDetailPatient,
 	type AlertDetailReason,

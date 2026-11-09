@@ -1,16 +1,16 @@
 import * as React from "react";
 
 import {
-	alertModalRenderer,
+	alertPanelRenderer,
 	withAlertFlags,
 	type AlertConsultState,
 	type AlertDetailData,
 	type PatientConsultData,
-} from "../alert-modal/alert-modal";
-import type { CarePathwayDecision } from "../alert-modal/care-pathway";
-import type { DischargeDecision } from "../alert-modal/discharge-plan";
-import type { BundleDecision } from "../alert-modal/sepsis-bundle";
-import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
+} from "../alert-panel/alert-panel";
+import type { CarePathwayDecision } from "../alert-panel/care-pathway";
+import type { DischargeDecision } from "../alert-panel/discharge-plan";
+import type { BundleDecision } from "../alert-panel/sepsis-bundle";
+import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { MonitoringPanel, type MonitoringPatient } from "../monitoring/monitoring-panel";
 import { worstOpenSeverity } from "../monitoring/triage-queue";
@@ -129,7 +129,7 @@ function Census({
 			defaultPatient={defaultPatient}
 			renderAlert={
 				alertDetails
-					? alertModalRenderer({
+					? alertPanelRenderer({
 							details: alertDetails,
 							consults: patientConsults,
 							records: patientRecords,

@@ -4,7 +4,7 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
-import { sampleAlertDetails, samplePatientConsults } from "../alert-modal/sample-alert-modal";
+import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
 import { Census } from "../census/census";
 import { samplePatients, sampleScenario1ResolvedCensus } from "../census/sample-census";
 import { Monitoring } from "../monitoring/monitoring";
@@ -64,8 +64,8 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * Sarah Miller, opened from the Census (Intercept-Live › Patient Details). The app header turns to its patient variant
- * ("← Census › Miller, Sarah") with Video consult, Messages (3 unread) and "…" (Raise concern, Huddle team,
- * Escalate, then New note, Prepare handoff, Copy link), then her care team. The Patient Header shows her photo and name,
+ * ("← Census › Miller, Sarah") with Video consult, Messages (3 unread), "…" (Raise concern, Huddle team,
+ * Escalate, then Copy link) and "+" (Create: New note, Prepare handoff), then her care team. The Patient Header shows her photo and name,
  * then MRN, sex and age, and location, then her flags (organ support, code status only when it limits care, allergy
  * and isolation, all outline). Line tabs: Overview (the AI brief across the top; her alerts with their actions, Up next and
  * the log in the main column; the live monitor, score, key labs, oxygen and infusions, medications, orders and encounter

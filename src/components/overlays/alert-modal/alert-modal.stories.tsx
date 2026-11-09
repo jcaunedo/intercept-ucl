@@ -4,7 +4,7 @@ import { expect, fn, screen } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
 
-import { AlertExpanded, type AlertExpandedProps } from "./alert-expanded";
+import { AlertModal, type AlertModalProps } from "./alert-modal";
 
 // Synthetic patient (PRD PC-180): Scenario 1's Margaret Hayes, as Figma draws her.
 const hayes = {
@@ -47,7 +47,7 @@ const hayes = {
 		},
 		{ label: "Fall risk" },
 	],
-} satisfies AlertExpandedProps;
+} satisfies AlertModalProps;
 
 // The lifecycle buttons and the actions under the alert, as the alert modal passes them.
 const lifecycle = (
@@ -80,14 +80,14 @@ const consult = (
 );
 
 const meta = {
-	title: "Overlays/Alert Expanded",
-	component: AlertExpanded,
+	title: "Overlays/Alert Modal",
+	component: AlertModal,
 	parameters: {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
 	args: { ...hayes, alertActions: lifecycle, actions: consult, onOpenPatient: fn(), onClose: fn() },
-} satisfies Meta<typeof AlertExpanded>;
+} satisfies Meta<typeof AlertModal>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -189,8 +189,8 @@ export const Minimal: Story = {
 
 /**
  * With `panels`: each slides out on the right as its own column, here Video consult and Pathway. UCL has no call tile
- * or pathway, so this story stands them in; Intercept Live passes its own (Layouts › Intercept Live › Alert modal ›
- * Panel).
+ * or pathway, so this story stands them in; Intercept Live passes its own (Layouts › Intercept Live › Alert panel ›
+ * Default).
  */
 export const WithConsult: Story = {
 	args: {
@@ -235,7 +235,7 @@ export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex flex-col gap-6'>
 			{(["critical", "high", "medium", "low", "resolved"] as const).map((variant) => (
-				<AlertExpanded
+				<AlertModal
 					key={variant}
 					{...args}
 					alert={{ ...args.alert, variant }}

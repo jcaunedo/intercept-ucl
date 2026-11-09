@@ -6,8 +6,8 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 3, 2026
 Created by: Julio Caunedo
-Last updated: Nov 6, 2026
-Scope: The bedside camera of Intercept Live: one camera session in the patient's room, opened to look in (Live Camera), to call the bedside nurse into it (Video consult) or to huddle with the AI Scribe; where each opens, its states, data and acceptance criteria. Governs `patient-details/sections/camera-section.tsx` and the alert modal's consult (`alert-modal/alert-modal.tsx`).
+Last updated: Nov 9, 2026
+Scope: The bedside camera of Intercept Live: one camera session in the patient's room, opened to look in (Live Camera), to call the bedside nurse into it (Video consult) or to huddle with the AI Scribe; where each opens, its states, data and acceptance criteria. Governs `patient-details/sections/camera-section.tsx` and the alert modal's consult (`alert-panel/alert-panel.tsx`).
 Purpose: The specs describe one camera; the prototype built it twice, under three names. This PRD sets the one model the screens follow and lists what's still open.
 -->
 
@@ -19,7 +19,7 @@ Purpose: The specs describe one camera; the prototype built it twice, under thre
 **Surface:** Patient details › Camera view; the alert modal; a patient card's "…" menu  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 6, 2026
+**Last updated:** November 9, 2026
 
 ---
 
@@ -85,7 +85,7 @@ The specs have conference-style video too, for other people. They're separate ex
 | Patient details › header › **Live Camera** | The Camera view section, session starting | ⚠️ **Gap:** the button only reports the action to the app; it doesn't open the Camera view yet |
 | Patient details › Camera view › **Look in** (on the feed, while off) | The session, in place | The only way in today |
 | Patient details › Camera view › **Start huddle** | The session with the AI Scribe | Starts the session first if it's off |
-| Alert modal › footer › **Video consult** | The consult in the modal: calling the nurse, then the room | AMM-013 |
+| Alert panel › footer › **Video consult** | The consult in the modal: calling the nurse, then the room | AMM-013 |
 | A patient card's "…" › **Video consult** (Census and Monitoring, every card) | The alert modal with the call already ringing | ✅ **Resolved (Nov 4, 2026, user's call; CAM-012):** with no active alert, the same modal opens without an alert on it, the call already ringing |
 | A camera session › **Request specialist** | The specialist consult (SC-01) | Out of scope (§1.1); not built |
 
@@ -112,7 +112,7 @@ The specs have conference-style video too, for other people. They're separate ex
 | CAM-014 | **Low bandwidth** | When the connection drops, the session falls back to audio only and says so, keeping the numerics (Scenario 2). ✅ **Built in the prototype (Nov 4, 2026), simulated:** in Scenario 2 the Alliance link drops 6 s after Dale Reynolds's consult goes live. The picture freezes, greyed, with "Connection weak · switching to audio only…" for 2.5 s, then the call goes on as audio (the nurse, "Audio only · time", Mute and End). A **Low-bandwidth mode** banner tops the Video consult panel (what dropped; audio only, vitals every 30 s, photos as they're taken; how long). The alert's monitor shows the last hour's trends instead of a streaming waveform, its numbers held and refreshed every 30 s, with "Low bandwidth: vitals every 30 s · updated 12 s ago" over it. Still photos the bedside sends (the BiPAP screen, then the blood gases) list under the call, newest first, with who took them, when and their readings. ⚠️ **Not built:** the network coming back, and the same held state on the patient's Monitoring card and page |
 | CAM-015 | **Accessibility** | Every state change is announced ("In camera, Bed 11", "Talking into the room", "Muted", "The AI Scribe is listening", "The camera is off"). Toggle buttons say their state (`aria-pressed`). Presets are a named group. The overlay's values are text, not only picture. |
 | CAM-016 | **Motion** | The feed and the call fade and rise in; the live view fades in over the ringing one; fades only under reduced motion; the clip holds its first frame (MOTION.md). |
-| CAM-017 | **Incoming consult request** | A hospital can call the hub for a video consult (Scenario 2, step 1: Alliance's ED physician about Dale Reynolds). It rings as a toast over any page, 4 s after the patient's alert reaches their card in the prototype, until the intensivist answers or declines, whatever the toast rules (muted, Close all, hidden under a modal), showing who's calling, the patient, the reason in their words, the latest values and how long it has rung. **Answer** opens the patient's alert with the call already on; **Decline** ends it. It **rings** with a ringtone whose cadence says how urgent the caller says it is (CAM-018). ✅ **Built in the prototype (Nov 4, 2026):** AlertToast `consult-request` (intercept.ds `alert-toast` › Consult request, `1362:1607`). ⚠️ **Gap:** Decline only ends the call; handing the request to another intensivist, or telling the ED when someone will call back, isn't built. ⚠️ **Gap:** the answered call shows the bedside nurse, not the ED physician who called. |
+| CAM-017 | **Incoming consult request** | A hospital can call the hub for a video consult (Scenario 2, step 1: Alliance's ED physician about Dale Reynolds). It rings as a toast over any page, 4 s after the patient's alert reaches their card in the prototype, until the intensivist answers or declines, whatever the toast rules (muted, Close all, hidden under a modal), showing who's calling, the patient, the reason in their words, the latest values and how long it has rung. **Answer** opens the patient's alert with the call already on; the green video button by the patient answers on the patient's page instead (✅ **Decision (Nov 9, 2026, user's call)**); **Decline** ends it. It **rings** with a ringtone whose cadence says how urgent the caller says it is (CAM-018). ✅ **Built in the prototype (Nov 4, 2026):** AlertToast `consult-request` (intercept.ds `alert-toast` › Consult request, `1362:1607`). ⚠️ **Gap:** Decline only ends the call; handing the request to another intensivist, or telling the ED when someone will call back, isn't built. ⚠️ **Gap:** the answered call shows the bedside nurse, not the ED physician who called. |
 | CAM-018 | **Ring cadence by urgency** | The request carries the caller's **urgency**: **High**, **Medium** or **Low**. Its ringtone (two soft notes, E5 then G♯5, the same notes and volume at every urgency) repeats faster the more urgent it is, so the urgency is heard before it's read: **High** every 0.55 s, its notes at double tempo (twice as fast as first built, user's call), **Medium** every 1.7 s, **Low** every 2.5 s. Low by default. It rings from the moment the request appears until it's answered or declined, over any page; browsers hold sound until the user has clicked or typed on the page, and the ring then starts at the next click or key. The ringtone adds to the toast's pulsing ring and its `alert` announcement, never replaces them. ✅ **Built in the prototype (Nov 4, 2026, user's call):** `useRingtone` (Web Audio, no sound file); Scenario 2's "Urgent video consult request" is High. |
 | CAM-019 | **Call sound** | The video consult sounds like a call: a ringback while it calls the bedside, a chime when the nurse joins, the room while it's on (the bedside monitor beeping at the patient's live heart rate, its pitch falling with SpO₂, and the BiPAP breathing at their respiratory rate), a crackle and a falling tone when the connection drops, the room band-limited like a phone line while audio only (CAM-014), and a falling tone when the call ends. Mute silences it. ✅ **Built in the prototype (Nov 4, 2026, user's call):** synthesized (`call-audio.ts`), since the bedside clip has no sound. ⚠️ **Gap:** no voices. |
 
@@ -201,12 +201,12 @@ The specs have conference-style video too, for other people. They're separate ex
 | What | Where |
 |---|---|
 | Camera view | `src/layouts/intercept-live/patient-details/sections/camera-section.tsx` (`CameraSection`, `RoomScene`, `RoomVideo`) |
-| Video consult | `src/layouts/intercept-live/alert-modal/alert-modal.tsx` (the consult tile and the footer) |
+| Video consult | `src/layouts/intercept-live/alert-panel/alert-panel.tsx` (the consult tile and the footer) |
 | Card menu | `src/layouts/intercept-live/shared/patient-panel.tsx` (`patientCardActions`) |
-| Call sound | `src/layouts/intercept-live/alert-modal/call-audio.ts` (`useCallAudio`) |
+| Call sound | `src/layouts/intercept-live/alert-panel/call-audio.ts` (`useCallAudio`) |
 | Incoming request | `src/components/feedback/alert-toast/alert-toast.tsx` (`severity="consult-request"`, `urgency`, `ringtone`); `src/lib/hooks/use-ringtone.ts` (`useRingtone`, `ringCadence`); `src/layouts/intercept-live/shared/alert-toasts.tsx` |
 | Opening with the call ringing | `src/layouts/intercept-live/patient-navigation.tsx` (`openAlert(id, alertId, { consult: true })`) |
 | Sample data | `src/layouts/intercept-live/patient-details/sections/sample-camera.ts` (each hospital's presets, two-way audio and consent profile); `src/layouts/intercept-live/sample-data/sample-camera-video.ts` (the clip) |
 | Figma | intercept.ds › Alert Modal page: `alert-modal-video` (State = Idle, Calling, Live). ⚠️ **Pending (Figma):** the Camera view isn't drawn |
-| Decisions | DESIGN.md › "Alert modal" (Video consult); PRD Patient details §12; PRD Monitoring MON-031 |
-| Stories | Layouts/Intercept Live/Alert modal (Default, In consult); Patient details; Monitoring › Scenario 1: Heart failure |
+| Decisions | DESIGN.md › "Alert panel" (Video consult); PRD Patient details §12; PRD Monitoring MON-031 |
+| Stories | Layouts/Intercept Live/Alert panel (Default, In consult); Patient details; Monitoring › Scenario 1: Heart failure |

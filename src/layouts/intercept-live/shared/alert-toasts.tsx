@@ -276,6 +276,14 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 									toast.dismiss(alert.id);
 								}
 							: undefined,
+						// The green button by the patient: the call on the patient's page instead of the alert (Nov 9, 2026,
+						// user's call: "will answer all in Patient page instead of in alert modal").
+						onAnswerOnPatientPage: openPatient
+							? () => {
+									openPatient(caller.id, undefined, { consult: "answered" });
+									toast.dismiss(alert.id);
+								}
+							: undefined,
 						// Declined, the alert stays in the queue and on the card; handing it to another intensivist isn't built yet.
 						onDecline: () => {},
 					});

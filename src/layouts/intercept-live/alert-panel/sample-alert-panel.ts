@@ -10,7 +10,7 @@ import {
 import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleCameraVideo } from "../sample-data/sample-camera-video";
 import { avatarTones, patientInitials } from "../shared/patient-avatar";
-import type { AlertDetailData, PatientConsultData } from "./alert-modal";
+import type { AlertDetailData, PatientConsultData } from "./alert-panel";
 import type { BedsideTasks } from "./bedside-tasks";
 import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
 import type { DischargePlan } from "./discharge-plan";

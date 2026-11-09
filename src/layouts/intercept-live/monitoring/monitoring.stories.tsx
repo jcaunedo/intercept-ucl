@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
-import { sampleAlertDetails, samplePatientConsults } from "../alert-modal/sample-alert-modal";
+import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
 import { samplePatients } from "../census/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";

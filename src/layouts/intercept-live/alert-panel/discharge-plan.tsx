@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { SourceLabel } from "../shared/source-label";
 import { Expand } from "./care-pathway";
 
-// Exploration (DESIGN.md "Alert modal" › "Social needs at discharge"): Scenario 2, step 6. The discharge workflow reads
+// Exploration (DESIGN.md "Alert panel" › "Social needs at discharge"): Scenario 2, step 6. The discharge workflow reads
 // the chart's social history, flags the needs it finds ("Uninsured", "Can't afford home oxygen") and drafts a referral
 // for each. As with the care pathway, nothing goes out on its own (PRD PD-061): the clinician sends each referral, or
 // skips it with a reason. A referral records who agreed to it: the patient, a family member, or consent already on

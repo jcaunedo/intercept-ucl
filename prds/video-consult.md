@@ -6,8 +6,8 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 6, 2026
 Created by: Julio Caunedo
-Last updated: Nov 6, 2026
-Scope: The video consult of Intercept Live as an experience: where it opens, the call in its tile, the AI Notetaker and its live transcript, the interpreter prompt, and the consult as one session across the alert panel and the patient's page. Governs the consult parts of `alert-modal/alert-modal.tsx` (`ConsultTile`, `useConsult`, `ConsultPanelContent`, `ConsultNotetaker`, `PatientConsultDialog`), `alert-modal/consult-transcript.tsx`, `consult-session.tsx`, `interpreter.tsx` and `patient-details/consult-panels.tsx`.
+Last updated: Nov 9, 2026
+Scope: The video consult of Intercept Live as an experience: where it opens, the call in its tile, the AI Notetaker and its live transcript, the interpreter prompt, and the consult as one session across the alert panel and the patient's page. Governs the consult parts of `alert-panel/alert-panel.tsx` (`ConsultTile`, `useConsult`, `ConsultPanelContent`, `ConsultNotetaker`, `PatientConsultDialog`), `alert-panel/consult-transcript.tsx`, `consult-session.tsx`, `interpreter.tsx` and `patient-details/consult-panels.tsx`.
 Purpose: PRD Bedside camera sets the camera session model; the video consult grew on top of it (notetaker, transcript, carry-over between places) without a spec of its own. This PRD writes down what the prototype does, the decisions behind it and what's still open.
 -->
 
@@ -19,7 +19,7 @@ Purpose: PRD Bedside camera sets the camera session model; the video consult gre
 **Surface:** the alert panel's Video consult panel; the video consult without an alert (a dialog); the patient page's Video consult panel  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 6, 2026
+**Last updated:** November 9, 2026
 
 ---
 
@@ -71,7 +71,7 @@ This PRD builds on PRD Bedside camera and doesn't redefine what it owns:
 3. Design update spec snapshot (`documents/specs/design-update-spec.md`): DU-24 (note statuses and provenance), DU-28 (capture state; a live session marks the clinician busy), DU-32 (degraded network).
 4. InterceptLIVE Demo Use Cases (`documents/scenarios/`), as the storyboards play them (`storyboards/`): Scenario 1 step 3 (one-click consult), Scenario 2 steps 1–2 (a consult request answered; the connection drops), Scenario 3 step 2 (interpreter in the room).
 5. PRD Bedside camera (CAM-001–CAM-019), PRD Alert maximized modal (AMM-013, AMM-AC-08, AMM-AC-09), PRD Patient details (PD-014, PD-073, PD-090; Notes, Activity, Pathway panel).
-6. DESIGN.md › "Intercept Live › Alert modal" (Video consult, AI Notetaker, Live transcript, Call sound, Low-bandwidth mode, Interpreter prompt, the clinician's own camera) and "Intercept Live › Patient details" (Video consult and Messages panels; the consult goes with the patient).
+6. DESIGN.md › "Intercept Live › Alert panel" (Video consult, AI Notetaker, Live transcript, Call sound, Low-bandwidth mode, Interpreter prompt, the clinician's own camera) and "Intercept Live › Patient details" (Video consult and Messages panels; the consult goes with the patient).
 
 ---
 
@@ -94,6 +94,7 @@ This PRD builds on PRD Bedside camera and doesn't redefine what it owns:
 | A card's "…" › **Video consult**, patient with an active alert (Census and Monitoring, every card) | The alert panel, then its Video consult panel | Idle as the dialog comes in, ringing once it has (one `normal` motion beat), so the panel slides out as it does from the button | ✅ **Resolved (Nov 5, 2026, user's call).** Same from the Prototype menu's **Alert with video consult** and `?consult=1` |
 | A card's "…" › **Video consult**, no active alert | The video consult without an alert (VID-042) | Ringing | CAM-012 |
 | A consult request's **Answer** (toast) | The patient's alert panel with the Video consult panel open | Live at once, no ringing | CAM-017. ⚠️ **Gap:** the answered call shows the bedside nurse, not the ED physician who called (CAM-017) |
+| A consult request's green video button, by the patient (toast) | The patient's page with its Video consult panel open | Live at once, no ringing | ✅ **Decision (Nov 9, 2026, user's call: "will answer all in Patient page instead of in alert modal"; intercept.ds `alert-toast` › Consult request `1458:11280`):** a second way to answer, "Answer on the patient's page"; the bottom Answer still opens the alert panel. CAM-017 |
 | Patient page › app header › **Video consult** | The page's **Video consult** panel, right of the page (416px, full height) | Ringing at once | ✅ **Built (Nov 5, 2026, Intercept-Live `219:16129`).** While open the button is icon-only and pressed ("Close video consult", `video-off`); pressing it ends the call and closes the panel |
 | Alert panel › the patient's name | The patient's page, the Video consult panel open | As it was (VID-040) | ✅ **Resolved (Nov 5, 2026, user's call)** |
 | Patient page › Live Camera / Look in | The Camera view | — | Not a video consult: PRD Bedside camera |
@@ -139,7 +140,7 @@ This PRD builds on PRD Bedside camera and doesn't redefine what it owns:
 | VID-022 | **Each microphone phrase is its own entry** | ✅ **Resolved (Nov 6, 2026, user's call):** what the clinician says into their microphone appears as **its own entry** from You in the transcript, with its own time, never appended to the transcript's previous line even when that line is also theirs; consecutive microphone phrases group into one entry until someone else speaks, a note is added or the notetaker is stopped. Check against `consult-transcript.tsx` (`Line.live`, the turn grouping). |
 | VID-023 | **Muted or unavailable microphone** | Muted, the clinician isn't transcribed, and a line under the transcript says "You're muted. What you say isn't captured." Microphone blocked: "Allow the microphone to add what you say." No speech recognition: "Your microphone can't be transcribed in this browser." The rest of the call is still captured. |
 | VID-024 | **Gaps are marked** | Stop cuts the sentence in progress with "…" and marks the gap between two rules: "Stopped at 01:12", then "Not captured · 01:12–01:40" once resumed. |
-| VID-025 | **Add a note** | On the patient page, an **Add a note** field is pinned to the Video consult panel's bottom (Intercept-Live `230:6415`), shown while the call is live or the transcript shows, not while reviewing the draft; **Add** appears once there's text. A note joins the transcript at its time as **Your note** (lucide `pencil-line`), apart from what was said, and goes into the draft (VID-015). ⚠️ **Gap:** the alert panel has no Add a note field. |
+| VID-025 | **Add a note** | An **Add a note** field is pinned to the Video consult panel's bottom (Intercept-Live `230:6415`; intercept.ds `alert-modal` › Messages `1375:8218`), on the patient page, in the alert panel and in the consult without an alert, shown while the call is live or the transcript shows, not while reviewing the draft; **Add** appears once there's text. A note joins the transcript at its time as **Your note** (lucide `pencil-line`), apart from what was said, and goes into the draft (VID-015). ✅ **Decision (Nov 9, 2026, user's call):** the alert panel and the consult without an alert have the field too, the same as the patient page (it was a ⚠️ gap). |
 | VID-026 | **Nothing yet** | While capturing with nothing heard, "Listening…"; stopped with nothing captured, "Nothing was captured." |
 
 ### 4.4 Interpreter
@@ -185,7 +186,7 @@ This PRD builds on PRD Bedside camera and doesn't redefine what it owns:
 
 | State | Title and text | Action | Transcript |
 |---|---|---|---|
-| **Getting ready** (idle) | `pencil-line`, "Getting ready…" | None in the Alert Expanded modal (the alert panel and the consult without an alert; Nov 6, 2026, user's call: it starts on its own as the call connects). On the patient page: Start notetaker (disabled until live), in the panel's header | — |
+| **Getting ready** (idle) | `pencil-line`, "Getting ready…" | None in AlertModal (the alert panel and the consult without an alert; Nov 6, 2026, user's call: it starts on its own as the call connects). On the patient page: Start notetaker (disabled until live), in the panel's header | — |
 | **Waiting for approval** | "Waiting for approval", "Recording starts once Kayla Brandt, RN approves." (medium weight) | Cancel request | — |
 | **Capturing** | Live dot, "Capturing consultation", "Listening and organizing your notes in real time." | Stop | Streaming |
 | **Stopped** | "Notetaker stopped", "Nothing is captured until you resume.", Prepare notes | Resume | Held, "Stopped at 01:12" |
@@ -221,7 +222,7 @@ This PRD builds on PRD Bedside camera and doesn't redefine what it owns:
 |---|---|---|---|
 | VID-AC-01 | Hayes's alert panel | The clinician clicks Video consult | The Video consult panel slides out; "Calling Kayla Brandt…" with the ringback; about 4.5 s later the room, "Live · 0:00" counting and "Kayla Brandt, RN"; the actions row reads End call (AMM-AC-08) |
 | VID-AC-02 | The call goes live | — | The notetaker reads "Waiting for approval", "Recording starts once Kayla Brandt, RN approves.", then "Capturing consultation", and the transcript starts streaming |
-| VID-AC-03 | The notetaker is waiting for approval | The clinician clicks Cancel request | It returns to idle and doesn't ask again during this call; on the patient page Start notetaker shows, in the Alert Expanded modal no button does |
+| VID-AC-03 | The notetaker is waiting for approval | The clinician clicks Cancel request | It returns to idle and doesn't ask again during this call; on the patient page Start notetaker shows, in AlertModal no button does |
 | VID-AC-04 | The notetaker is capturing | The clinician says two sentences into the microphone, after a line of their own from the transcription | Their words show as a new You entry with its own time, not appended to the line before; both sentences sit in that one entry until the nurse speaks |
 | VID-AC-05 | The notetaker is capturing | The clinician clicks Mute and speaks | Nothing they say is added; "You're muted. What you say isn't captured." shows under the transcript; the call's sound is silent |
 | VID-AC-06 | The notetaker is capturing | The clinician clicks Stop, waits, then Resume | The sentence in progress ends with "…"; "Stopped at 01:12" while stopped; "Not captured · 01:12–01:40" once resumed, and capture goes on |
@@ -263,18 +264,18 @@ This PRD builds on PRD Bedside camera and doesn't redefine what it owns:
 
 | What | Where |
 |---|---|
-| The call | `src/layouts/intercept-live/alert-modal/alert-modal.tsx` (`ConsultTile`, `SelfView`, `useConsult`, `ConsultButton`, `CONNECT_DELAY_MS`, `FREEZE_MS`) |
-| Video consult panel | `alert-modal.tsx` (`ConsultPanelContent`; `AlertPanelContent`'s `panels`) |
-| AI Notetaker | `alert-modal.tsx` (`ConsultNotetaker`, `notetakerCopy`, `draftConsultNote`, `NOTES_DELAY_MS`, `CONSENT_DELAY_MS`) |
-| Live transcript | `src/layouts/intercept-live/alert-modal/consult-transcript.tsx` (`ConsultTranscriptView`, `useMicTranscript`, the turn grouping) |
-| Interpreter | `src/layouts/intercept-live/alert-modal/interpreter.tsx` (`InterpreterPrompt`) |
-| Low bandwidth, call sound | `alert-modal/low-bandwidth.tsx`; `alert-modal/call-audio.ts` (`useCallAudio`) |
-| Consult session | `src/layouts/intercept-live/alert-modal/consult-session.tsx` |
-| Consult without an alert | `alert-modal.tsx` (`PatientConsultDialog`; `alertModalRenderer`'s `consults`) |
+| The call | `src/layouts/intercept-live/alert-panel/alert-panel.tsx` (`ConsultTile`, `SelfView`, `useConsult`, `ConsultButton`, `CONNECT_DELAY_MS`, `FREEZE_MS`) |
+| Video consult panel | `alert-panel.tsx` (`ConsultPanelContent`; `AlertPanelContent`'s `panels`) |
+| AI Notetaker | `alert-panel.tsx` (`ConsultNotetaker`, `notetakerCopy`, `draftConsultNote`, `NOTES_DELAY_MS`, `CONSENT_DELAY_MS`) |
+| Live transcript | `src/layouts/intercept-live/alert-panel/consult-transcript.tsx` (`ConsultTranscriptView`, `useMicTranscript`, the turn grouping) |
+| Interpreter | `src/layouts/intercept-live/alert-panel/interpreter.tsx` (`InterpreterPrompt`) |
+| Low bandwidth, call sound | `alert-panel/low-bandwidth.tsx`; `alert-panel/call-audio.ts` (`useCallAudio`) |
+| Consult session | `src/layouts/intercept-live/alert-panel/consult-session.tsx` |
+| Consult without an alert | `alert-panel.tsx` (`PatientConsultDialog`; `alertPanelRenderer`'s `consults`) |
 | Patient page | `src/layouts/intercept-live/patient-details/consult-panels.tsx` (`PatientConsultPanels`); the app header's Video consult, `src/components/navigation/app-header/app-header.tsx` (`onVideoConsult`, `videoConsultOpen`) |
 | Opening it | `src/layouts/intercept-live/patient-navigation.tsx` (`openAlert(id, alertId, { consult })`); `shared/patient-panel.tsx` (`patientCardActions`); `shared/alert-toasts.tsx` (Answer) |
 | The record | `src/layouts/intercept-live/sample-data/use-sample-live-feed.ts` (`onConsultChange`, `onConsultNote`: Activity and Notes) |
-| Sample data | `alert-modal/sample-consult-transcript.ts` (a script per patient, Scenarios 1–4 and Sarah Miller); `alert-modal/sample-alert-modal.ts` (bedside, interpreter, patient consults) |
-| Figma | intercept.ds › `alert-expanded` Video (`1355:14797`); `alert-modal-video` (`1316:89`, State = Idle, Calling, Live). Intercept-Live "Video and Messages Interations" (`219:16129`): Start notetaker (`222:18365`), Add a note (`230:6415`), the notetaker's empty state (`230:6416`). ⚠️ **Pending (Figma):** the transcript, the stopped state, the draft review, the clinician's own camera, the interpreter prompt and the consult without an alert aren't drawn; remove the × from `222:18365` |
-| Decisions | DESIGN.md › "Intercept Live › Alert modal" (AlertExpanded's replacement entry, Video consult, Live transcript, Low-bandwidth mode, the clinician's own camera, Call sound, Interpreter prompt) and "Intercept Live › Patient details" (Video consult and Messages panels) |
-| Stories | Layouts/Intercept Live/Alert modal (In consult, Panel, Interpreter); Patient details (Video consult and messages); the Prototype menu's Scenarios 1–3 and Alert with video consult |
+| Sample data | `alert-panel/sample-consult-transcript.ts` (a script per patient, Scenarios 1–4 and Sarah Miller); `alert-panel/sample-alert-panel.ts` (bedside, interpreter, patient consults) |
+| Figma | intercept.ds › `alert-modal` Video (`1355:14797`); `alert-modal-video` (`1316:89`, State = Idle, Calling, Live). Intercept-Live "Video and Messages Interations" (`219:16129`): Start notetaker (`222:18365`), Add a note (`230:6415`), the notetaker's empty state (`230:6416`). ⚠️ **Pending (Figma):** the transcript, the stopped state, the draft review, the clinician's own camera, the interpreter prompt and the consult without an alert aren't drawn; remove the × from `222:18365` |
+| Decisions | DESIGN.md › "Intercept Live › Alert panel" (AlertModal's replacement entry, Video consult, Live transcript, Low-bandwidth mode, the clinician's own camera, Call sound, Interpreter prompt) and "Intercept Live › Patient details" (Video consult and Messages panels) |
+| Stories | Layouts/Intercept Live/Alert panel (Default, In consult, Interpreter); Patient details (Video consult and messages); the Prototype menu's Scenarios 1–3 and Alert with video consult |

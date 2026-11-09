@@ -5,7 +5,7 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
 
-import { sampleAlertDetails, samplePatientConsults } from "../alert-modal/sample-alert-modal";
+import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";

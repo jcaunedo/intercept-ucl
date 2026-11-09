@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { SourceLabel } from "../shared/source-label";
 import { Expand } from "./care-pathway";
 
-// Exploration (DESIGN.md "Alert modal" › "DKA protocol"): Scenario 4, steps 1 to 4. The intensivist starts the DKA
+// Exploration (DESIGN.md "Alert panel" › "DKA protocol"): Scenario 4, steps 1 to 4. The intensivist starts the DKA
 // pathway from the hub, and the bedside nurse's screen becomes an hourly checklist: glucose, potassium, anion gap, fluids
 // and the insulin rate. The platform does the arithmetic: each glucose entry sets the next rate, a potassium under 3.3
 // holds insulin and prompts replacement (a hard stop), a glucose under 250 prompts dextrose. A check left open 10 min

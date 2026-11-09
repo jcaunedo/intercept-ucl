@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 import { SourceLabel } from "../shared/source-label";
 
-// Exploration (DESIGN.md "Alert modal" › "Bedside task list"): Scenario 3, step 5. The intensivist's accepted orders
+// Exploration (DESIGN.md "Alert panel" › "Bedside task list"): Scenario 3, step 5. The intensivist's accepted orders
 // become the bedside nurses' tasks, e.g. the peripheral norepinephrine's IV site check every hour. One list, shared: the
 // nurses check tasks off at the bedside and the hub sees the same status (Requirements CC-06; design update spec DU-25).
 // The hub doesn't check bedside tasks off. A task left open 10 min past its due time is overdue (DU-25).

@@ -6,20 +6,20 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 2, 2026
 Created by: Julio Caunedo
-Last updated: Nov 6, 2026
+Last updated: Nov 9, 2026
 Scope: The alert maximized modal of Intercept Live: one alert opened in full from a Monitoring card, an alert toast or a card's "…" menu, with its evidence, a one-click video consult to the bedside and a suggested care pathway.
-Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-modal/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
+Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-panel/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
 -->
 
 # PRD — Alert maximized modal
 
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Clinical Alerting & Events (Spec §5.6), opened from Tele-Critical Care Clinical Surveillance (Spec §5.2)  
-**Name:** the **alert maximized modal**, "the alert modal" for short. Code: `AlertDetailModal`. Figma: intercept.ds › `alert-modal`  
+**Name:** the **alert maximized modal**, "the alert modal" for short. Code: `AlertPanel` / `AlertPanelDialog` (the alert panel; the three-column `AlertDetailModal` was removed Nov 9, 2026). Figma: intercept.ds › `alert-modal`  
 **Surface:** a modal over the Monitoring and Census pages, and over a patient's details  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 6, 2026
+**Last updated:** November 9, 2026
 
 ---
 
@@ -27,7 +27,9 @@ Purpose: Defines the modal's structure, behavior, states, data and acceptance cr
 
 An alert is first seen small: a card's alert bar, a toast, a row in the triage queue. The alert maximized modal opens one alert in full, over the page the clinician is on, so they can understand it and act on it without leaving that page.
 
-✅ **Replaced (Nov 3, 2026, user's call):** the modal now opens as the **alert panel** (intercept.ds `alert-expanded`, UCL AlertExpanded): the Patient column alone, 600px, with **Video consult**, **Messages** and **Pathway** under the alert (✅ Nov 5, 2026: Messages added, View pathway renamed Pathway; Messages and Pathway share the third column, one at a time, PRD Messages). Each opens a 432px panel that slides out on the right, the pathway's to the right of the call's: the call with the **AI Notetaker** under it (step 3: once the others on the call approve its request, it captures the consultation, prepares the notes and offers an AI draft for the clinician to review, edit and approve), and the care pathway with keep or transfer (steps 4 and 5). The pathway's decision sticks to the bottom of its panel. ✅ **Resolved (Nov 3, 2026, user's calls):** the history and labs aren't in the panel, so step 3's home meds, echo, creatinine and BNP come from Ask Intercept Live's answer about the patient (AMM-012), and the key clinical findings are the alert's flag, first in the panel's tag row (AMM-011). On a screen too narrow for both panels, the panels and then the alert column narrow, so the patient's name never runs off the screen. The three columns below describe the modal it replaced; AMM-011, AMM-012, AMM-013 and AMM-AC-08 say what changed.
+✅ **Replaced (Nov 3, 2026, user's call):** the modal now opens as the **alert panel** (intercept.ds `alert-modal`, UCL AlertModal): the Patient column alone, 600px, with **Video consult**, **Messages** and **Pathway** under the alert (✅ Nov 5, 2026: Messages added, View pathway renamed Pathway; Messages and Pathway share the third column, one at a time, PRD Messages). Each opens a 432px panel that slides out on the right, the pathway's to the right of the call's: the call with the **AI Notetaker** under it (step 3: once the others on the call approve its request, it captures the consultation, prepares the notes and offers an AI draft for the clinician to review, edit and approve), and the care pathway with keep or transfer (steps 4 and 5). The pathway's decision sticks to the bottom of its panel. ✅ **Resolved (Nov 3, 2026, user's calls):** the history and labs aren't in the panel, so step 3's home meds, echo, creatinine and BNP come from Ask Intercept Live's answer about the patient (AMM-012), and the key clinical findings are the alert's flag, first in the panel's tag row (AMM-011). On a screen too narrow for both panels, the panels and then the alert column narrow, so the patient's name never runs off the screen. The three columns below describe the modal it replaced; AMM-011, AMM-012, AMM-013 and AMM-AC-08 say what changed.
+
+✅ **Decision (Nov 9, 2026, user's call):** the three-column modal is gone from the code too. `AlertDetailModal` and its stories were removed, and its folder is now `src/layouts/intercept-live/alert-panel/` (Storybook: Layouts › Intercept Live › Alert panel). Nothing changes for the user: the app has opened the alert panel since Nov 3. Where this PRD still describes three columns (§4 Frame and Column labels, the Clinical info column, the call floating over it), it describes the replaced modal; the panel's behavior is in the ✅ notes.
 
 It answers three questions, one column each:
 
@@ -59,7 +61,7 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 4. InterceptLIVE Demo Use Cases, Scenario 1 (`documents/scenarios/`).
 5. PRD — Monitoring (`prds/monitoring.md`) and PRD — Patient card (`prds/patient-card.md`): the alert bar, the triage queue and its forms.
 6. Figma: intercept.ds › Alert Modal page, `alert-modal` (`1321:10102`), the video reference (`1337:12288`), `alert-modal-video`, `care-pathway`.
-7. Exploration: Alert modal in Storybook (`Layouts/Intercept Live/Alert modal`), listed in `explorations/index.md`.
+7. Exploration: Alert modal in Storybook (`Layouts/Intercept Live/Alert panel`), listed in `explorations/index.md`.
 
 ---
 
@@ -96,7 +98,7 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 | **Frame** | UCL's Dialog: 1400px wide, three columns (Patient flexible at 600px; Clinical info 400px; Pathway 400px), each scrolling on its own. Below about 1432px of screen the Patient column narrows. When it grows tall it keeps 80px from the viewport's top and bottom edges. |
 | **Close** | A ghost × at the Patient column's top right; Escape; a click on the scrim. Escape first closes an open form or dose edit, then the modal. |
 | **Column labels** | "Clinical info" and "Pathway", small uppercase labels that name each column's region for screen readers. |
-| **Footer** | ✅ **Gone (Nov 3, 2026, user's call; intercept.ds `alert-expanded`):** the patient's **name** opens their page (underlined, with ↗; it replaced Open patient), and **Video consult** and **View pathway** sit under the alert, equal widths. View pathway takes the clinician, and focus, to the Pathway column. While the call is on, Video consult reads **End call**. The lifecycle buttons are filled (Button `neutral`). ⚠️ **Decision needed:** Figma reads **End video consult**. |
+| **Footer** | ✅ **Gone (Nov 3, 2026, user's call; intercept.ds `alert-modal`):** the patient's **name** opens their page (underlined, with ↗; it replaced Open patient), and **Video consult** and **View pathway** sit under the alert, equal widths. View pathway takes the clinician, and focus, to the Pathway column. While the call is on, Video consult reads **End call**. The lifecycle buttons are filled (Button `neutral`). ⚠️ **Decision needed:** Figma reads **End video consult**. |
 | **Toasts** | Hidden while the modal is open, back when it closes; new ones wait. |
 
 ---
@@ -226,7 +228,7 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | ⚠️ **Missed checkpoint** | The panel says a High alert was raised; the prototype doesn't raise it yet. Whether a missed checkpoint reopens the decision on its own or waits for Change decision. |
 | ⚠️ **Social needs: who sends** | The prototype has the hub clinician send the referrals, as the scenario's discharge workflow "generates" them. Whether Alliance's case manager or social worker sends them instead, with the hub only seeing them. |
 | ⚠️ **Social needs: data** | The needs, programs and wording are illustrative ("Alliance financial counseling", "Alliance outpatient pulmonary rehab"); a case manager should review them. Whether a sent referral shows the receiver accepting it. |
-| ⚠️ **Component or layout** | The modal is a layout (exploration); promote it to `overlays/alert-modal` once these decisions settle. |
+| ⚠️ **Component or layout** | The alert panel is a layout (`AlertPanel`) wrapping UCL's AlertModal; the interactions it adds (lifecycle, consult, pathway) stay in the layout until these decisions settle. ✅ **Resolved (Nov 9, 2026):** the three-column modal won't be promoted; its code was removed. |
 | ⚠️ **Scenario data** | Hayes's creatinine trend has two points. ✅ **Resolved (Nov 3, 2026):** Chadron's records say Meditech, as the scenario does. |
 | ⚠️ **ID prefix** | `AMM-` and `AMM-AC-` are new repo-local IDs, to confirm with the team. |
 
@@ -237,11 +239,11 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | What | Where |
 |---|---|
 | Figma | intercept.ds › Alert Modal page: `alert-modal` (`1321:10102`), the video reference (`1337:12288`), `alert-modal-video`, `care-pathway` |
-| Modal | `src/layouts/intercept-live/alert-modal/alert-modal.tsx` (`AlertDetailModal`, `alertModalRenderer`) |
-| Pathway | `src/layouts/intercept-live/alert-modal/care-pathway.tsx` |
-| Keep or transfer | `src/layouts/intercept-live/alert-modal/keep-or-transfer.tsx` (`KeepOrTransferPanel`) |
-| Social needs at discharge | `src/layouts/intercept-live/alert-modal/discharge-plan.tsx` (`DischargePlanPanel`); Reynolds's in `sample-data/sample-scenario-2.ts` |
-| Sample data | `src/layouts/intercept-live/alert-modal/sample-alert-modal.ts` (Hayes's Scenario 1 detail; a detail and a pathway for every feed alert) |
+| Alert panel | `src/layouts/intercept-live/alert-panel/alert-panel.tsx` (`AlertPanel`, `AlertPanelDialog`, `alertPanelRenderer`); UCL `overlays/alert-modal` |
+| Pathway | `src/layouts/intercept-live/alert-panel/care-pathway.tsx` |
+| Keep or transfer | `src/layouts/intercept-live/alert-panel/keep-or-transfer.tsx` (`KeepOrTransferPanel`) |
+| Social needs at discharge | `src/layouts/intercept-live/alert-panel/discharge-plan.tsx` (`DischargePlanPanel`); Reynolds's in `sample-data/sample-scenario-2.ts` |
+| Sample data | `src/layouts/intercept-live/alert-panel/sample-alert-panel.ts` (Hayes's Scenario 1 detail; a detail and a pathway for every feed alert) |
 | Forms | `src/layouts/intercept-live/monitoring/triage-queue.tsx` (`EscalateForm`, `ResolveForm`, `stateLine`) |
-| Decisions | DESIGN.md › "Alert modal" |
-| Stories | Storybook › Layouts/Intercept Live/Alert modal (Social Needs At Discharge too); Monitoring › Scenario 1: Heart failure |
+| Decisions | DESIGN.md › "Alert panel" |
+| Stories | Storybook › Layouts/Intercept Live/Alert panel (Social Needs At Discharge too); Monitoring › Scenario 1: Heart failure |

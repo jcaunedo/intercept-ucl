@@ -1,16 +1,16 @@
 import * as React from "react";
 
 import {
-	alertModalRenderer,
+	alertPanelRenderer,
 	withAlertFlags,
 	type AlertConsultState,
 	type AlertDetailData,
 	type PatientConsultData,
-} from "../alert-modal/alert-modal";
-import type { CarePathwayDecision } from "../alert-modal/care-pathway";
-import type { DischargeDecision } from "../alert-modal/discharge-plan";
-import type { BundleDecision } from "../alert-modal/sepsis-bundle";
-import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
+} from "../alert-panel/alert-panel";
+import type { CarePathwayDecision } from "../alert-panel/care-pathway";
+import type { DischargeDecision } from "../alert-panel/discharge-plan";
+import type { BundleDecision } from "../alert-panel/sepsis-bundle";
+import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import { CensusPanel, type CensusPatient } from "../census/census-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
@@ -128,7 +128,7 @@ function Monitoring({
 			defaultPatient={defaultPatient}
 			renderAlert={
 				alertDetails
-					? alertModalRenderer({
+					? alertPanelRenderer({
 							details: alertDetails,
 							consults: patientConsults,
 							records: patientRecords,

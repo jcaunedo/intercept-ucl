@@ -30,26 +30,27 @@ import {
 	PathwayContent,
 	threadWith,
 	useConsult,
+	type AlertConsultState,
 	type AlertDetailData,
 	type PatientConsultData,
-} from "../alert-modal/alert-modal";
-import type { CarePathwayDecision } from "../alert-modal/care-pathway";
-import { useSessionState } from "../alert-modal/consult-session";
-import type { DischargeDecision } from "../alert-modal/discharge-plan";
-import type { KeepOrTransferDecision } from "../alert-modal/keep-or-transfer";
-import type { BundleDecision } from "../alert-modal/sepsis-bundle";
+} from "../alert-panel/alert-panel";
+import type { CarePathwayDecision } from "../alert-panel/care-pathway";
+import { useSessionState } from "../alert-panel/consult-session";
+import type { DischargeDecision } from "../alert-panel/discharge-plan";
+import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
+import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import {
 	ConsultMessages,
 	useConsultMessages,
 	useNewIncoming,
 	useUnreadMessages,
 	type ConsultMessage,
-} from "../alert-modal/consult-messages";
+} from "../alert-panel/consult-messages";
 import { PagePanel, usePatientHeaderActions } from "../side-panel";
 
 // The patient page's Video consult and Messages (Nov 5, 2026, Intercept-Live "Video and Messages Interations",
 // `219:16129`): the app header's two buttons open them as panels right of the page, full height, Video consult first.
-// The call, its AI Notetaker and the thread with the bedside nurse are the alert panel's (`alert-modal.tsx`,
+// The call, its AI Notetaker and the thread with the bedside nurse are the alert panel's (`alert-panel.tsx`,
 // `consult-messages.tsx`). Pathway (Nov 6, 2026, user's call: a side panel, as on the alert) shares the Messages panel's
 // place, one at a time as on the alert panel, and shows the alert panel's own Pathway column (`PathwayContent`).
 
@@ -268,12 +269,15 @@ function MessagesFilter({
 function PatientConsultPanels({
 	data,
 	pathways,
+	defaultConsult = "idle",
 	onOpenConsult,
 	onOpenMessages,
 	onConsultNote,
 	onSendMessage,
 }: {
 	data: PatientConsultData;
+	/** The call as the panels open: `live` for a consult request answered on the patient's page, its panel open. */
+	defaultConsult?: AlertConsultState;
 	pathways?: PatientPathways;
 	/** The call's panel opened (the call rings). */
 	onOpenConsult?: () => void;
@@ -284,7 +288,7 @@ function PatientConsultPanels({
 	/** A message the clinician sent the bedside nurse. */
 	onSendMessage?: (text: string) => void;
 }) {
-	const [consult, setConsult] = useConsult("idle");
+	const [consult, setConsult] = useConsult(defaultConsult);
 	// A call picked up from the alert panel opens with its panel; Messages as they were there.
 	const [consultOpen, setConsultOpen] = React.useState(consult !== "idle");
 	const [messagesOpen, setMessagesOpen] = useSessionState("messagesOpen", false);

@@ -14,11 +14,11 @@ import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@
 import { fadeVariants, revealVariants, standardTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-type AlertExpandedSeverity = "critical" | "high" | "medium" | "low";
+type AlertModalSeverity = "critical" | "high" | "medium" | "low";
 
 // The alert's panel in its severity's tones: a pale fill, the title in the darkest step, the source a step lighter.
 // Resolved takes the Resolved bar's green, so bar and panel read as one, and its words drop the severity's tones.
-const alertTones: Record<AlertExpandedSeverity | "resolved", { panel: string; title: string; source: string }> = {
+const alertTones: Record<AlertModalSeverity | "resolved", { panel: string; title: string; source: string }> = {
 	critical: {
 		panel: "bg-severity-critical-subtle",
 		title: "text-severity-critical-strong",
@@ -46,7 +46,7 @@ const alertTones: Record<AlertExpandedSeverity | "resolved", { panel: string; ti
 	},
 };
 
-type AlertExpandedProps = Omit<React.ComponentProps<"div">, "title"> &
+type AlertModalProps = Omit<React.ComponentProps<"div">, "title"> &
 	Pick<
 		PatientCensusCardProps,
 		"lastName" | "mrn" | "sex" | "age" | "hospital" | "unit" | "room" | "bed" | "acuity" | "trajectory"
@@ -68,7 +68,7 @@ type AlertExpandedProps = Omit<React.ComponentProps<"div">, "title"> &
 		 * patient alone, e.g. a video consult with no alert open: no alert panel, and the name is the heading (`titleAs`).
 		 */
 		alert?: {
-			variant: AlertExpandedSeverity | "resolved";
+			variant: AlertModalSeverity | "resolved";
 			inLast24h?: number;
 			since?: string;
 		};
@@ -105,7 +105,7 @@ type AlertExpandedProps = Omit<React.ComponentProps<"div">, "title"> &
 		onClose?: () => void;
 		/** The ×'s accessible name. */
 		closeLabel?: string;
-		/** A × of its own in the corner, in place of `onClose`'s, e.g. `<DialogClose asChild><AlertExpandedClose /></DialogClose>`. */
+		/** A × of its own in the corner, in place of `onClose`'s, e.g. `<DialogClose asChild><AlertModalClose /></DialogClose>`. */
 		close?: React.ReactNode;
 		/**
 		 * The side panels, left to right (e.g. the video consult while it's on, then the pathway): each a 432px column that
@@ -113,11 +113,11 @@ type AlertExpandedProps = Omit<React.ComponentProps<"div">, "title"> &
 		 * on its own, so a long one never makes the alert taller, with the shadow of the column on its left in its gutter.
 		 * On a screen too narrow for them, the panels narrow to 360px and then the alert column to 480px, so the card fits.
 		 */
-		panels?: AlertExpandedPanel[];
+		panels?: AlertModalPanel[];
 	};
 
 /** One side panel: its label (also its accessible name) and its content. */
-type AlertExpandedPanel = {
+type AlertModalPanel = {
 	/** Stable across renders, so the panel slides in and out on its own. */
 	id: string;
 	label: string;
@@ -126,9 +126,14 @@ type AlertExpandedPanel = {
 	ref?: React.Ref<HTMLDivElement>;
 	/**
 	 * A control at the right of the label, sticking with it, e.g. a Button `outline` `xs` that opens another panel. Up to
-	 * 24px tall: it overlaps the padding around the label, so the header keeps its height.
+	 * 24px tall, the label's line, so the header keeps its height.
 	 */
 	action?: React.ReactNode;
+	/**
+	 * Pinned under the scrolling content, 16px from the panel's bottom, e.g. the video consult's Add a note field. An
+	 * empty element (a portal target that's empty for now) takes no room.
+	 */
+	footer?: React.ReactNode;
 };
 
 /** Each side panel's width, which it opens to when there's room. */
@@ -172,14 +177,14 @@ const columnShadow =
  * The panel's ×: a ghost icon button on the panel's background, so content scrolling under it stays hidden. Pass it to
  * `close` wrapped in the closing element (a DialogClose, a PopoverClose).
  */
-function AlertExpandedClose({
+function AlertModalClose({
 	className,
 	"aria-label": ariaLabel = "Close",
 	...props
 }: React.ComponentProps<typeof Button>) {
 	return (
 		<Button
-			data-slot='alert-expanded-close'
+			data-slot='alert-modal-close'
 			variant='ghost'
 			size='icon-sm'
 			aria-label={ariaLabel}
@@ -196,9 +201,9 @@ function AlertExpandedClose({
  * tones with its heading, source, state and lifecycle actions, then the actions under it, the patient's score, live
  * monitor and tags. The panel the alert modal opens with, and a standalone card where one alert needs the room.
  *
- * Figma: [intercept.ds › alert-expanded](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1355-14776)
+ * Figma: [intercept.ds › alert-modal](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1355-14776)
  */
-function AlertExpanded({
+function AlertModal({
 	className,
 	lastName,
 	firstName,
@@ -236,7 +241,7 @@ function AlertExpanded({
 	close,
 	panels = [],
 	...props
-}: AlertExpandedProps) {
+}: AlertModalProps) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const width = usePanelWidth(panels.length);
 	const name = [lastName, firstName].filter(Boolean).join(", ");
@@ -251,7 +256,7 @@ function AlertExpanded({
 		.join(" · ");
 	const location = [hospital, unit, roomAndBed].filter(Boolean).join(" · ");
 	const tones = alert ? alertTones[alert.variant] : undefined;
-	const corner = close ?? (onClose ? <AlertExpandedClose aria-label={closeLabel} onClick={onClose} /> : null);
+	const corner = close ?? (onClose ? <AlertModalClose aria-label={closeLabel} onClick={onClose} /> : null);
 	// Whether the column has scrolled, for the rule under the sticky patient.
 	const [scrolled, setScrolled] = React.useState(false);
 
@@ -286,7 +291,7 @@ function AlertExpanded({
 
 	return (
 		<div
-			data-slot='alert-expanded'
+			data-slot='alert-modal'
 			data-variant={alert?.variant}
 			data-panels={panels.length || undefined}
 			// No wider than its container, so on a narrow screen the alert column gives way (`usePanelWidth`).
@@ -320,10 +325,10 @@ function AlertExpanded({
 				    room, so the name sat 19px down), so nothing shows above it; `-top-6` sticks it there, the padding counted.
 				    Under the ×, which stays in the corner. */}
 				<div
-					data-slot='alert-expanded-patient'
+					data-slot='alert-modal-patient'
 					data-stuck={scrolled || undefined}
 					className={cn(
-						"sticky -top-6 z-[5] -mx-6 -mt-[19px] flex items-center gap-1.5 border-b border-transparent bg-background px-6 pt-[19px] pb-3 transition-[border-color] duration-300 ease-out motion-reduce:transition-none data-stuck:border-border",
+						"sticky -top-6 z-[5] -mx-6 -mt-[19px] flex items-center gap-1.5 border-b border-transparent bg-background px-6 pt-[19px] pb-2 transition-[border-color] duration-300 ease-out motion-reduce:transition-none data-stuck:border-border",
 						corner && "pr-16",
 					)}
 				>
@@ -346,9 +351,10 @@ function AlertExpanded({
 						{details ? <p className='truncate text-sm text-muted-foreground'>{details}</p> : null}
 					</div>
 				</div>
-				{/* 8px under the name: its 12px padding, the column's 16px gap, less 20px. */}
+				{/* Under the name: its 8px padding and 1px rule, the column's 16px gap taken back. Never pulled up into the
+				    sticky patient, whose background would mask the pin's top (Nov 9, 2026, user's report). */}
 				{location ? (
-					<p className='-mt-5 flex items-center gap-1 text-sm font-medium text-foreground'>
+					<p className='-mt-4 flex items-center gap-1 text-sm font-medium text-foreground'>
 						<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
 						<span className='truncate'>{location}</span>
 					</p>
@@ -436,22 +442,28 @@ function AlertExpanded({
 							className={cn("relative shrink-0 overflow-hidden bg-background", columnShadow, !last && "border-r border-border")}
 						>
 							<motion.div
-								ref={item.ref}
-								tabIndex={item.ref ? -1 : undefined}
 								variants={prefersReducedMotion ? fadeVariants : revealVariants}
 								initial='initial'
 								animate='animate'
 								exit='exit'
-								className='absolute inset-y-0 left-0 flex flex-col gap-4 overflow-y-auto p-6 outline-none'
+								className='absolute inset-y-0 left-0 flex flex-col'
 								style={{ width }}
 							>
-								{/* The label sticks to the top of its column as it scrolls (Nov 3, 2026, user's call), on the column's
-								    background, taking over the 24px padding above it and the 16px gap under it. */}
-								<div className='sticky -top-6 z-10 -mx-6 -mt-6 -mb-4 flex items-center justify-between gap-2 bg-background px-6 pt-6 pb-4'>
-									<h3 className='text-xs font-medium tracking-[0.04em] text-muted-foreground uppercase'>{item.label}</h3>
-									{item.action ? <div className='-my-[3px] shrink-0'>{item.action}</div> : null}
+								<div
+									ref={item.ref}
+									tabIndex={item.ref ? -1 : undefined}
+									className='flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pt-4 pb-6 outline-none'
+								>
+									{/* The label sticks to the top of its column as it scrolls (Nov 3, 2026, user's call), on the column's
+									    background, taking over the 16px padding above it and the 16px gap under it: 16px over and under the
+									    label (Nov 9, 2026, user's call). */}
+									<div className='sticky -top-4 z-10 -mx-6 -mt-4 -mb-4 flex items-center justify-between gap-2 bg-background px-6 pt-4 pb-4'>
+										<h3 className='text-base font-semibold text-foreground'>{item.label}</h3>
+										{item.action ? <div className='shrink-0'>{item.action}</div> : null}
+									</div>
+									{item.content}
 								</div>
-								{item.content}
+								{item.footer ? <div className='shrink-0 px-6 pb-4 has-[>:empty]:hidden'>{item.footer}</div> : null}
 							</motion.div>
 						</motion.aside>
 					);
@@ -461,7 +473,23 @@ function AlertExpanded({
 	);
 }
 
+/** @deprecated Renamed `AlertModal` (Nov 9, 2026). */
+const AlertExpanded = AlertModal;
+/** @deprecated Renamed `AlertModalClose` (Nov 9, 2026). */
+const AlertExpandedClose = AlertModalClose;
+/** @deprecated Renamed `AlertModalPanel` (Nov 9, 2026). */
+type AlertExpandedPanel = AlertModalPanel;
+/** @deprecated Renamed `AlertModalProps` (Nov 9, 2026). */
+type AlertExpandedProps = AlertModalProps;
+/** @deprecated Renamed `AlertModalSeverity` (Nov 9, 2026). */
+type AlertExpandedSeverity = AlertModalSeverity;
+
 export {
+	AlertModal,
+	AlertModalClose,
+	type AlertModalPanel,
+	type AlertModalProps,
+	type AlertModalSeverity,
 	AlertExpanded,
 	AlertExpandedClose,
 	type AlertExpandedPanel,

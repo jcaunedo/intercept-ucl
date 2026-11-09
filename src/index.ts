@@ -219,6 +219,8 @@ export { Textarea, textareaVariants, type TextareaProps } from "@/components/for
 /* Icons: solid icons for the SidebarMenuButton Active state                  */
 /* -------------------------------------------------------------------------- */
 
+// Intercept's AI mark, in its gradient (Ask Intercept Live).
+export { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
 export { BoxSolidIcon } from "@/components/icons/box-solid-icon";
 export { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
 export { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
@@ -293,12 +295,17 @@ export {
 /* -------------------------------------------------------------------------- */
 
 export {
+	AlertModal,
+	AlertModalClose,
+	type AlertModalPanel,
+	type AlertModalProps,
+	type AlertModalSeverity,
 	AlertExpanded,
 	AlertExpandedClose,
 	type AlertExpandedPanel,
 	type AlertExpandedProps,
 	type AlertExpandedSeverity,
-} from "@/components/overlays/alert-expanded";
+} from "@/components/overlays/alert-modal";
 export {
 	Popover,
 	PopoverAnchor,

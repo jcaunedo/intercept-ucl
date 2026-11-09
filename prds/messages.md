@@ -7,7 +7,7 @@ status: proposed — confirm with Carlos
 Created: Nov 6, 2026
 Created by: Julio Caunedo
 Last updated: Nov 6, 2026
-Scope: Messages in Intercept Live: the clinician's thread with a patient's bedside nurse, bridged through the hospital's messaging. Covers where it opens (the alert panel, the patient consult, the patient page), the thread, the composer, unread counts, the filter, bedside photos, and the Sidebar's Messages page (not built). Governs `alert-modal/consult-messages.tsx`, the Messages column in `alert-modal/alert-modal.tsx` and the Messages panel in `patient-details/consult-panels.tsx`.
+Scope: Messages in Intercept Live: the clinician's thread with a patient's bedside nurse, bridged through the hospital's messaging. Covers where it opens (the alert panel, the patient consult, the patient page), the thread, the composer, unread counts, the filter, bedside photos, and the Sidebar's Messages page (not built). Governs `alert-panel/consult-messages.tsx`, the Messages column in `alert-panel/alert-panel.tsx` and the Messages panel in `patient-details/consult-panels.tsx`.
 Purpose: Messages was built on Nov 5–6, 2026 from decisions recorded only in DESIGN.md and code comments. This PRD sets the product rules in one place and lists what's still open.
 -->
 
@@ -46,7 +46,7 @@ Messages is how the Intercept clinician writes to a patient's bedside nurse and 
 | **Team chat** (Microsoft Teams) | Talking with other Intercept clinicians | The spec names Teams only as a presence target (Spec §5.3, §6.12) and as today's handoff tool (Spec §3.3), not as a feature. Huddle team has no spec source (PRD Bedside camera §8) |
 | **Group threads** | Threads with the hospitalist, residents and APCs, created by Support Coordinators (Spec §5.3 "Group-chat orchestration"); PD-091's care team threads | The Messages page (MSG-018), later |
 | **The video consult** | The call to the bedside nurse through the room's camera | PRD Video consult (`prds/video-consult.md`, being written) and PRD Bedside camera |
-| **Bedside tasks and the nurse's phone view** | Tasks shared by the bedside and the hub; a phone-style view of a task or nudge | CC-06, CC-07, DU-25; the Scenario 3 exploration (`alert-modal/bedside-tasks.tsx`) |
+| **Bedside tasks and the nurse's phone view** | Tasks shared by the bedside and the hub; a phone-style view of a task or nudge | CC-06, CC-07, DU-25; the Scenario 3 exploration (`alert-panel/bedside-tasks.tsx`) |
 | **Voice and calls** | VOIP and call queues | Spec §5.3, §6.13 |
 
 ### 1.2 Product objectives
@@ -67,7 +67,7 @@ Messages is how the Intercept clinician writes to a patient's bedside nurse and 
 4. Simulator specification snapshot (`documents/specs/simulator-specification.md`): §5 Hospital messaging (Should); E7 US7.2 (scripted bedside messages and replies routed per hospital channel). `simulator-requirements.md` SQ-10 (bedside message types and volume).
 5. InterceptLIVE Demo Use Cases (`documents/scenarios/`): Scenario 2 step 2 (still photos of the BiPAP screen and the next ABG, sent as they're taken).
 6. PRD — Patient details (PD-091, PD-OD-11), PRD — Bedside camera (CAM-014), PRD — Monitoring (escalation to the bedside charge nurse "through Messages", MON-OD-08), PRD — Chat composer (CC-OD-06).
-7. DESIGN.md: "Alert modal" › Messages; "AppHeader" (Messages on the patient header; no Messages on Default); "Sidebar" › Unread dot; Patient details › "Video consult and Messages panels". MOTION.md: Unread.
+7. DESIGN.md: "Alert panel" › Messages; "AppHeader" (Messages on the patient header; no Messages on Default); "Sidebar" › Unread dot; Patient details › "Video consult and Messages panels". MOTION.md: Unread.
 
 ---
 
@@ -210,14 +210,14 @@ Messages is how the Intercept clinician writes to a patient's bedside nurse and 
 
 | What | Where |
 |---|---|
-| Thread, composer, Messages button, unread | `src/layouts/intercept-live/alert-modal/consult-messages.tsx` (`ConsultMessages`, `ConsultField`, `ConsultMessagesButton`, `useConsultMessages`, `useNewIncoming`, `useUnreadMessages`) |
-| Alert panel and patient consult | `src/layouts/intercept-live/alert-modal/alert-modal.tsx` (`AlertPanelContent`'s third column; `PatientConsultDialog`; `threadWith`) |
+| Thread, composer, Messages button, unread | `src/layouts/intercept-live/alert-panel/consult-messages.tsx` (`ConsultMessages`, `ConsultField`, `ConsultMessagesButton`, `useConsultMessages`, `useNewIncoming`, `useUnreadMessages`) |
+| Alert panel and patient consult | `src/layouts/intercept-live/alert-panel/alert-panel.tsx` (`AlertPanelContent`'s third column; `PatientConsultDialog`; `threadWith`) |
 | Patient page panel and filter | `src/layouts/intercept-live/patient-details/consult-panels.tsx` (`PatientConsultPanels`, `MessagesFilter`) |
-| Consult session | `src/layouts/intercept-live/alert-modal/consult-session.tsx` (`ConsultSessionScope`, `useSessionState`) |
-| Photos | `src/layouts/intercept-live/alert-modal/low-bandwidth.tsx` (`BedsidePhoto`, `BedsidePhotoImage`) |
+| Consult session | `src/layouts/intercept-live/alert-panel/consult-session.tsx` (`ConsultSessionScope`, `useSessionState`) |
+| Photos | `src/layouts/intercept-live/alert-panel/low-bandwidth.tsx` (`BedsidePhoto`, `BedsidePhotoImage`) |
 | App header Messages | `src/components/navigation/app-header/app-header.tsx` (`patient` variant: `onOpenMessages`, `messagesOpen`, `unreadMessages`); set by the page through `usePatientHeaderActions` (`side-panel.tsx`) |
 | Sidebar dot and Messages page | `src/components/navigation/sidebar/sidebar.tsx` (`alert: "unread"`); `src/layouts/intercept-live/intercept-live.tsx` (`unreadMessages`, `emptyPages.Messages`) |
-| Sample data | `alert-modal/sample-bedside-messages.ts` (`sampleBedsideThread`), `alert-modal/sample-bedside-replies.ts` (`sampleBedsideReplier`), `sample-data/sample-scenario-2.ts` (the ED's messages and photos), `sample-data/images/sample-photo-*.jpg` |
-| Figma | intercept.ds `alert-expanded` › Messages (`1375:8218`); Intercept-Live "Video and Messages Interations" (`219:16129`), the filter button (`222:18380`), the empty state (`222:18375`), the field (`221:17539`, `230:6395`). ⚠️ **Pending (Figma):** the actions row's Messages button and the messages themselves, the filter menu, the unread count on the header's Messages, the Sidebar's brand dot; Figma rounds the page panel's right corners and code doesn't |
-| Decisions | DESIGN.md › "Alert modal" (Messages), "AppHeader", "Sidebar" (Unread dot), Patient details (Video consult and Messages panels); MOTION.md › Unread |
+| Sample data | `alert-panel/sample-bedside-messages.ts` (`sampleBedsideThread`), `alert-panel/sample-bedside-replies.ts` (`sampleBedsideReplier`), `sample-data/sample-scenario-2.ts` (the ED's messages and photos), `sample-data/images/sample-photo-*.jpg` |
+| Figma | intercept.ds `alert-modal` › Messages (`1375:8218`); Intercept-Live "Video and Messages Interations" (`219:16129`), the filter button (`222:18380`), the empty state (`222:18375`), the field (`221:17539`, `230:6395`). ⚠️ **Pending (Figma):** the actions row's Messages button and the messages themselves, the filter menu, the unread count on the header's Messages, the Sidebar's brand dot; Figma rounds the page panel's right corners and code doesn't |
+| Decisions | DESIGN.md › "Alert panel" (Messages), "AppHeader", "Sidebar" (Unread dot), Patient details (Video consult and Messages panels); MOTION.md › Unread |
 | Stories | Layouts/Intercept Live/Patient details › Video Consult And Messages; Monitoring › Video Consult Without Alert, Scenario 1 Heart Failure (the thread carrying over), Scenario 2 Copd; Navigation/AppHeader › Patient Panels Open; Navigation/Sidebar › Item Alerts (the unread dot) |

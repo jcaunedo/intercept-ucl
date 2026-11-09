@@ -2,16 +2,16 @@ import * as React from "react";
 
 import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
 
-import type { AlertConsultState, AlertDetailData } from "../alert-modal/alert-modal";
+import type { AlertConsultState, AlertDetailData } from "../alert-panel/alert-panel";
 import {
 	COSIGN_DELAY_MS,
 	type CarePathwayDecision,
 	type CarePathwayOrder,
 	type CarePathwayStatus,
-} from "../alert-modal/care-pathway";
-import { consentText, type DischargeDecision, type DischargePlan, type ReferralOutcome } from "../alert-modal/discharge-plan";
-import type { KeepOrTransferDecision, TransferChoice } from "../alert-modal/keep-or-transfer";
-import type { BundleDecision } from "../alert-modal/sepsis-bundle";
+} from "../alert-panel/care-pathway";
+import { consentText, type DischargeDecision, type DischargePlan, type ReferralOutcome } from "../alert-panel/discharge-plan";
+import type { KeepOrTransferDecision, TransferChoice } from "../alert-panel/keep-or-transfer";
+import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import type { CensusPatient } from "../census/census-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleLiveScenario } from "../monitoring/sample-live-scenario";

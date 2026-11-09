@@ -17,6 +17,7 @@ import {
 import { BoxSolidIcon } from "./box-solid-icon";
 import { ChartColumnSolidIcon } from "./chart-column-solid-icon";
 import { CircleUserSolidIcon } from "./circle-user-solid-icon";
+import { AiSparkleIcon } from "./ai-sparkle-icon";
 import { EyeSolidIcon } from "./eye-solid-icon";
 import { HeartCrackSolidIcon } from "./heart-crack-solid-icon";
 import { HomeSolidIcon } from "./home-solid-icon";
@@ -80,6 +81,17 @@ export const AllVariants: Story = {
 					<Solid className='size-6 text-icon' />
 				</div>
 			))}
+		</div>
+	),
+};
+
+/** Intercept's AI mark (intercept.ds, custom): its own gradient, not `currentColor`, at 16px (in buttons) and 24px. */
+export const AiSparkle: Story = {
+	render: () => (
+		<div className='flex items-center gap-4 text-sm text-foreground'>
+			<span>ai-sparkle</span>
+			<AiSparkleIcon className='size-4' />
+			<AiSparkleIcon className='size-6' />
 		</div>
 	),
 };

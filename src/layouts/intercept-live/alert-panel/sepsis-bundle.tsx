@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { SourceLabel } from "../shared/source-label";
 import { Expand } from "./care-pathway";
 
-// Exploration (DESIGN.md "Alert modal" › "Hour-1 bundle"): Scenario 3, steps 1, 3 and 4. The sepsis screen starts an
+// Exploration (DESIGN.md "Alert panel" › "Hour-1 bundle"): Scenario 3, steps 1, 3 and 4. The sepsis screen starts an
 // hour-1 bundle timer at time zero, on the hub's screen and the hospital's. Each element turns green as the bedside
 // documents it: lactate, blood cultures before antibiotics, broad-spectrum antibiotics, fluids, repeat lactate. Checks
 // driven by the patient's chronic conditions sit on the element they guard: a renal dose review on the antibiotic, a

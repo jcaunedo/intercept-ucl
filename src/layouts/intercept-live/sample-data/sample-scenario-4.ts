@@ -1,11 +1,11 @@
-import type { AlertDetailData } from "../alert-modal/alert-modal";
-import { dkaCalculate, type DkaCheck, type DkaProtocol, type DkaReadings } from "../alert-modal/dka-protocol";
+import type { AlertDetailData } from "../alert-panel/alert-panel";
+import { dkaCalculate, type DkaCheck, type DkaProtocol, type DkaReadings } from "../alert-panel/dka-protocol";
 import {
 	sampleScenario4AlertDetail,
 	sampleScenario4Discharge,
 	sampleScenario4Overlap,
 	sampleScenario4Protocol,
-} from "../alert-modal/sample-alert-modal";
+} from "../alert-panel/sample-alert-panel";
 import { sampleScenario4Census, sampleScenario4CensusAt, sampleScenario4Flags } from "../census/sample-census";
 import { sampleScenario4Monitoring, sampleScenario4MonitoringAt } from "../monitoring/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";

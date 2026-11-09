@@ -1,5 +1,5 @@
-import type { AlertDetailData } from "../alert-modal/alert-modal";
-import { sampleScenario1ResolvedDetail } from "../alert-modal/sample-alert-modal";
+import type { AlertDetailData } from "../alert-panel/alert-panel";
+import { sampleScenario1ResolvedDetail } from "../alert-panel/sample-alert-panel";
 import type { CensusPatient } from "../census/census-panel";
 import { sampleScenario1Census, sampleScenario1ResolvedCensus } from "../census/sample-census";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";

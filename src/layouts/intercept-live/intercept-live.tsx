@@ -56,7 +56,7 @@ import {
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import { ConsultSessionProvider } from "./alert-modal/consult-session";
+import { ConsultSessionProvider } from "./alert-panel/consult-session";
 import { AskInterceptPanel, type AskInterceptNotice, type AskInterceptResponder } from "./ask-intercept-panel";
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
@@ -223,6 +223,7 @@ type PatientDetailsView = {
 		| "onHuddleTeam"
 		| "onEscalate"
 		| "moreActions"
+		| "createActions"
 		| "team"
 		| "onOpenTeam"
 	>;
@@ -241,10 +242,12 @@ type PatientStepper = {
 	/** The ids of the list the patient was opened from, in its order; the page's own list when opened from elsewhere. */
 	list?: string[];
 	onSelectPatient: (patientId: string) => void;
+	/** Opened answering a consult request (`openPatient`'s `consult`): the page opens with the video consult on. */
+	consult?: "answered";
 };
 
 /** The patient whose details are open, and the list they were opened from. */
-type OpenPatient = { id: string; list?: string[] };
+type OpenPatient = { id: string; list?: string[]; consult?: "answered" };
 
 type InterceptLiveProps = {
 	/**
@@ -615,9 +618,9 @@ function InterceptLive({
 				: undefined,
 			activeAlertsRequest,
 			clearActiveAlertsRequest: () => setActiveAlertsRequest(null),
-			openPatient: (patientId, list) => {
+			openPatient: (patientId, list, options) => {
 				if (!renderPatientDetails) return;
-				setOpenPatient({ id: patientId, list });
+				setOpenPatient({ id: patientId, list, consult: options?.consult });
 			},
 			// The alert modal (`renderAlert`); without one, the patient's details.
 			openAlert: (patientId, alertId, options) => {
@@ -677,9 +680,10 @@ function InterceptLive({
 	}, [alertMissing, openAlert, renderPatientDetails]);
 	const patientView = (() => {
 		if (!openPatient || !renderPatientDetails) return null;
-		const { id, list } = openPatient;
+		const { id, list, consult } = openPatient;
 		const index = list ? list.indexOf(id) : -1;
 		return renderPatientDetails(id, {
+			consult,
 			previousId: index > 0 ? list?.[index - 1] : undefined,
 			nextId: index >= 0 ? list?.[index + 1] : undefined,
 			position: list && index >= 0 ? { index: index + 1, count: list.length } : undefined,

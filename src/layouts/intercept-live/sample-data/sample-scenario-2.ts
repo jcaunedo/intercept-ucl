@@ -4,7 +4,7 @@ import bloodGas2hPhoto from "./images/sample-photo-blood-gas-2h.jpg";
 import {
   sampleScenario2AlertDetail,
   sampleScenario2ResolvedDetail,
-} from "../alert-modal/sample-alert-modal";
+} from "../alert-panel/sample-alert-panel";
 import {
   sampleScenario2Census,
   sampleScenario2ResolvedCensus,
@@ -13,10 +13,10 @@ import {
   sampleScenario2Monitoring,
   sampleScenario2ResolvedMonitoring,
 } from "../monitoring/sample-monitoring";
-import type { AlertDetailData } from "../alert-modal/alert-modal";
-import type { DischargePlan } from "../alert-modal/discharge-plan";
-import type { ConsultMessage } from "../alert-modal/consult-messages";
-import type { BedsidePhoto } from "../alert-modal/low-bandwidth";
+import type { AlertDetailData } from "../alert-panel/alert-panel";
+import type { DischargePlan } from "../alert-panel/discharge-plan";
+import type { ConsultMessage } from "../alert-panel/consult-messages";
+import type { BedsidePhoto } from "../alert-panel/low-bandwidth";
 import type { PatientRecord } from "../patient-details/patient-details";
 import {
   sampleScenario2BaseRecord,

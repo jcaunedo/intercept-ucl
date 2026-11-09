@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import { motion } from "motion/react";
-import { SparklesIcon, VideoIcon, VideoOffIcon, XIcon } from "lucide-react";
+import { VideoIcon, VideoOffIcon, XIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
+import { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
 import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { setToastCloseHandler, setToastKept, toast, toastsMuted, useToastsMuted } from "@/components/feedback/sonner";
@@ -105,6 +106,13 @@ type AlertToastOwnProps = {
 	/** A consult request: answers the call. */
 	onAnswer?: () => void;
 	answerLabel?: string;
+	/**
+	 * A consult request: answers the call on the patient's page instead (Nov 9, 2026, user's call; intercept.ds
+	 * `alert-toast` › Consult request `1458:11280`): a green video button at the end of the patient's row. Without it,
+	 * no button.
+	 */
+	onAnswerOnPatientPage?: () => void;
+	answerOnPatientPageLabel?: string;
 	/** A consult request: declines the call. */
 	onDecline?: () => void;
 	declineLabel?: string;
@@ -147,12 +155,15 @@ function CallPerson({
 	photo,
 	initials,
 	tone,
+	action,
 }: {
 	name: string;
 	detail?: string;
 	photo?: string;
 	initials?: string;
 	tone?: AvatarFallbackProps["tone"];
+	/** A button at the end of the row, 8px after the name. */
+	action?: React.ReactNode;
 }) {
 	return (
 		<div className='flex min-w-0 items-center gap-2'>
@@ -167,6 +178,7 @@ function CallPerson({
 				{/* 2px into the name's line, as Figma draws it. */}
 				{detail ? <p className='-mt-0.5 truncate text-sm'>{detail}</p> : null}
 			</div>
+			{action ? <div className='ml-auto flex shrink-0'>{action}</div> : null}
 		</div>
 	);
 }
@@ -210,6 +222,8 @@ function AlertToast({
 	latest,
 	onAnswer,
 	answerLabel = "Answer",
+	onAnswerOnPatientPage,
+	answerOnPatientPageLabel = "Answer on the patient's page",
 	onDecline,
 	declineLabel = "Decline",
 	ringtone = true,
@@ -297,7 +311,26 @@ function AlertToast({
 					<div className='flex min-w-0 flex-col gap-0.5'>
 						<dt className='text-foreground-subtle'>{patientLabel}</dt>
 						<dd className='min-w-0'>
-							<CallPerson name={patientName} detail={location} photo={photo} initials={initials} tone={tone} />
+							<CallPerson
+								name={patientName}
+								detail={location}
+								photo={photo}
+								initials={initials}
+								tone={tone}
+								action={
+									onAnswerOnPatientPage ? (
+										<Button
+											variant='success'
+											size='icon-sm'
+											aria-label={answerOnPatientPageLabel}
+											title={answerOnPatientPageLabel}
+											onClick={onAnswerOnPatientPage}
+										>
+											<VideoIcon aria-hidden='true' />
+										</Button>
+									) : null
+								}
+							/>
 						</dd>
 					</div>
 					{details.map((item) => (
@@ -406,7 +439,7 @@ function AlertToast({
 					) : null}
 					{onAsk ? (
 						<Button size='sm' variant='outline' onClick={onAsk}>
-							<SparklesIcon aria-hidden='true' />
+							<AiSparkleIcon />
 							{askLabel}
 						</Button>
 					) : null}
@@ -505,6 +538,7 @@ function toastAlert({
 	onOpenAlert,
 	onClose,
 	onAnswer,
+	onAnswerOnPatientPage,
 	onDecline,
 	...props
 }: ToastAlertOptions) {
@@ -554,6 +588,13 @@ function toastAlert({
 						onAnswer &&
 						(() => {
 							onAnswer();
+							toast.dismiss(toastId);
+						})
+					}
+					onAnswerOnPatientPage={
+						onAnswerOnPatientPage &&
+						(() => {
+							onAnswerOnPatientPage();
 							toast.dismiss(toastId);
 						})
 					}

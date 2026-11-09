@@ -286,11 +286,12 @@ export const TallStackScrolls: Story = {
 /**
  * A consult request: a hospital calling the hub for a video consult, on the `neutral` surface with Critical's ring, which
  * rings until it's answered or declined. Who's calling, the patient, the reason in their words and the latest values,
- * how long it has rung, then Decline and Answer. No ×: a call is answered or declined.
+ * how long it has rung, then Decline and Answer. No ×: a call is answered or declined. The green video button by the
+ * patient answers on the patient's page instead (`onAnswerOnPatientPage`).
  */
 export const ConsultRequest: Story = {
 	// Silent on the docs page, which shows every story at once; turn it on in Controls to hear it.
-	args: { ...reynoldsConsult, onAnswer: fn(), onDecline: fn(), ringtone: false },
+	args: { ...reynoldsConsult, onAnswer: fn(), onAnswerOnPatientPage: fn(), onDecline: fn(), ringtone: false },
 	play: async ({ canvas, args }) => {
 		await expect(canvas.getByText("Incoming call from")).toBeInTheDocument();
 		await expect(canvas.getByRole("alert")).toHaveTextContent("Dr. Brian Keller, ED physician");
@@ -298,6 +299,8 @@ export const ConsultRequest: Story = {
 		await expect(canvas.getByText("64 M · ED Bay 3")).toBeInTheDocument();
 		await expect(canvas.queryByRole("button", { name: "Dismiss alert" })).not.toBeInTheDocument();
 		await expect(canvas.queryByRole("button", { name: "Open patient" })).not.toBeInTheDocument();
+		await userEvent.click(canvas.getByRole("button", { name: "Answer on the patient's page" }));
+		await expect(args.onAnswerOnPatientPage).toHaveBeenCalled();
 		await userEvent.click(canvas.getByRole("button", { name: "Answer" }));
 		await expect(args.onAnswer).toHaveBeenCalled();
 	},

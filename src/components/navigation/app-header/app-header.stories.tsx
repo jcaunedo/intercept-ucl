@@ -83,10 +83,11 @@ const patientArgs = {
 	onRaiseConcern: fn(),
 	onHuddleTeam: fn(),
 	onEscalate: fn(),
-	moreActions: [
+	moreActions: [{ label: "Copy link", icon: LinkIcon, onSelect: fn() }],
+	// The Create menu, the dark "+" after "…".
+	createActions: [
 		{ label: "New note", icon: FilePenLineIcon, onSelect: fn() },
 		{ label: "Prepare handoff", icon: ArrowRightLeftIcon, onSelect: fn() },
-		{ label: "Copy link", icon: LinkIcon, onSelect: fn() },
 	],
 	// The patient's care team, after "…"; the first three show.
 	team: [
@@ -100,9 +101,9 @@ const patientArgs = {
 
 /**
  * On a patient's page: Back, the patient list and Ask Intercept (shown when the app handles them), then a breadcrumb
- * back to where the user came from; Video consult, Messages (with its unread count), Pathway and "…", then 16px to the
- * patient's care team (its first three). The menu holds Raise concern, Huddle team and Escalate, then a rule, then New
- * note, Prepare handoff and Copy link.
+ * back to where the user came from; Video consult, Messages (with its unread count), Pathway, "…" and "+", then 16px
+ * to the patient's care team (its first three). "…" holds Raise concern, Huddle team and Escalate, then a rule, then
+ * Copy link; "+" (Create) holds New note and Prepare handoff.
  */
 export const PatientContext: Story = {
 	render: (args) => (
@@ -116,19 +117,24 @@ export const PatientContext: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		await expect(canvas.queryByRole("button", { name: "Escalate" })).toBeNull();
-		// Video consult, then Messages, then Pathway, then "…" (no Theme on a patient's page).
+		// Video consult, then Messages, then Pathway, then "…", then Create (no Theme on a patient's page).
 		const buttons = within(canvas.getByRole("group", { name: "Patient actions" })).getAllByRole("button");
 		await expect(buttons.map((button) => button.getAttribute("aria-label") ?? button.textContent)).toEqual([
 			"Video consult",
 			"Messages, 3 unread",
 			"Pathway",
 			"More actions",
+			"Create",
 		]);
 		await userEvent.click(canvas.getByRole("button", { name: "More actions" }));
 		const menu = within(await within(document.body).findByRole("menu"));
 		const items = menu.getAllByRole("menuitem").map((item) => item.textContent);
-		await expect(items).toEqual(["Raise concern", "Huddle team", "Escalate", "New note", "Prepare handoff", "Copy link"]);
+		await expect(items).toEqual(["Raise concern", "Huddle team", "Escalate", "Copy link"]);
 		await expect(menu.getByRole("separator")).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		await userEvent.click(canvas.getByRole("button", { name: "Create" }));
+		const create = within(await within(document.body).findByRole("menu"));
+		await expect(create.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["New note", "Prepare handoff"]);
 		await userEvent.keyboard("{Escape}");
 		// The care team: three avatars, everyone in its name.
 		await expect(

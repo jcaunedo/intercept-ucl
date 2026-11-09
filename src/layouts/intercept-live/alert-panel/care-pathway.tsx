@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { SourceLabel } from "../shared/source-label";
 import { useSessionState } from "./consult-session";
 
-// Exploration (DESIGN.md "Alert modal" › "Care pathway"): Scenario 1, step 4. The platform suggests a pathway's order
+// Exploration (DESIGN.md "Alert panel" › "Care pathway"): Scenario 1, step 4. The platform suggests a pathway's order
 // set; the intensivist reviews it, edits a dose if needed, and accepts it, which sends the orders to the local physician
 // for co-signature. Once co-signed the orders are active and the bedside team carries them out. Or the intensivist
 // declines it, with a reason, and can then write their own pathway (Nov 3, 2026, user's call), which goes to the same
@@ -478,7 +478,7 @@ function CarePathwayPanel({
 	}, [status]);
 
 	// Sent (Accept, or the clinician's own pathway): the column scrolls the status line to its top, under the
-	// sticky label (`scroll-mt-13`: the label's height plus the banner's 12px top margin, or the sticky footer's background
+	// sticky label (`scroll-mt-15`: the label's height plus the banner's 12px top margin, or the sticky footer's background
 	// covers the label), and again when it's co-signed, as Keep or transfer opens under it (Nov 5, 2026, user's call), unless
 	// the clinician has scrolled, clicked or typed since: then they've moved on (e.g. to keep or transfer) and the column
 	// stays where they are. Not when the panel opens on a pathway already sent.
@@ -820,7 +820,7 @@ function CarePathwayPanel({
 							<div
 								ref={pendingRef}
 								role='status'
-								className='mt-3 flex scroll-mt-13 gap-3 rounded-xl border border-neutral-muted bg-neutral-subtle p-3 text-sm text-foreground'
+								className='mt-3 flex scroll-mt-15 gap-3 rounded-xl border border-neutral-muted bg-neutral-subtle p-3 text-sm text-foreground'
 							>
 								<LoaderCircleIcon
 									aria-hidden='true'
@@ -850,7 +850,7 @@ function CarePathwayPanel({
 							<div
 								ref={activeRef}
 								role='status'
-								className='mt-3 flex scroll-mt-13 gap-3 rounded-xl border border-success-muted bg-success-subtle p-3 text-sm text-foreground'
+								className='mt-3 flex scroll-mt-15 gap-3 rounded-xl border border-success-muted bg-success-subtle p-3 text-sm text-foreground'
 							>
 								<CircleCheckIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-success' />
 								<div className='flex min-w-0 flex-col gap-0.5'>

@@ -18,8 +18,8 @@ import {
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import { alertSourceLabels, useAlertLifecycle, type AlertDetailData } from "../alert-modal/alert-modal";
-import type { CarePathwayStatus } from "../alert-modal/care-pathway";
+import { alertSourceLabels, useAlertLifecycle, type AlertDetailData } from "../alert-panel/alert-panel";
+import type { CarePathwayStatus } from "../alert-panel/care-pathway";
 import {
 	compareTriageAlerts,
 	isOpenAlert,
@@ -149,7 +149,7 @@ function BriefBanner({ brief, now, onAsk }: { brief: PatientBrief; now: number |
 /* Alerts                                                                     */
 /* -------------------------------------------------------------------------- */
 
-// The alert panel's tones (UCL AlertExpanded): a pale fill, the title in the darkest step, the source a step lighter.
+// The alert panel's tones (UCL AlertModal): a pale fill, the title in the darkest step, the source a step lighter.
 const alertTones = {
 	critical: { panel: "bg-severity-critical-subtle", title: "text-severity-critical-strong", source: "text-severity-critical-prominent" },
 	high: { panel: "bg-severity-high-subtle", title: "text-severity-high-strong", source: "text-severity-high-prominent" },
