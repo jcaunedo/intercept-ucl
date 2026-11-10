@@ -8,7 +8,7 @@ import { BellRingIcon, MapPinIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
-import { TagsPopover, type TagsPopoverDetails } from "@/components/overlays/tags-popover";
+import { TagsPopover, TagsPopoverGroup, type TagsPopoverDetails } from "@/components/overlays/tags-popover";
 import {
 	dismissVariants,
 	liftPattern,
@@ -592,21 +592,24 @@ function PatientCardTags({
 				dragging && "cursor-grabbing [&_*]:cursor-grabbing",
 			)}
 		>
-			{tags.map((tag) =>
-				tag.details ? (
-					<TagsPopover
-						key={tag.label}
-						label={tag.label}
-						variant={tag.variant}
-						details={tag.details}
-						size={small ? "xs" : "sm"}
-					/>
-				) : (
-					<Badge key={tag.label} variant={tag.variant ?? "outline"} size={small ? "xs" : "sm"} className='shrink-0'>
-						{tag.label}
-					</Badge>
-				),
-			)}
+			{/* One popover open at a time, and once one is open the mouse swaps between them (TagsPopoverGroup). */}
+			<TagsPopoverGroup>
+				{tags.map((tag) =>
+					tag.details ? (
+						<TagsPopover
+							key={tag.label}
+							label={tag.label}
+							variant={tag.variant}
+							details={tag.details}
+							size={small ? "xs" : "sm"}
+						/>
+					) : (
+						<Badge key={tag.label} variant={tag.variant ?? "outline"} size={small ? "xs" : "sm"} className='shrink-0'>
+							{tag.label}
+						</Badge>
+					),
+				)}
+			</TagsPopoverGroup>
 		</div>
 	);
 }

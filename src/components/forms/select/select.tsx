@@ -119,7 +119,7 @@ function SelectContent({
 				position={position}
 				align={align}
 				className={cn(
-					"relative z-50 max-h-(--radix-select-content-available-height) min-w-[200px] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-input border border-border bg-popover text-popover-foreground shadow-xl",
+					"relative z-(--z-floating) max-h-(--radix-select-content-available-height) min-w-[200px] origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-input border border-border bg-popover text-popover-foreground shadow-xl",
 					position === "popper" &&
 						"data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
 					className,

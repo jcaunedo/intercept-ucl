@@ -17,6 +17,7 @@ export {
 
 export {
   fadeVariants,
+  quickFadeVariants,
   rowRemoveVariants,
   revealVariants,
   expandVariants,

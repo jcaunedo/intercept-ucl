@@ -454,6 +454,15 @@
 
 }
 
+/* ---------- Stacking order (Nov 10, 2026) ----------
+   What the user is interacting with comes first: the floating layers they open (Popover, DropdownMenu, Select's list,
+   Tooltip) sit above the toasts, and the toasts above modal layers (Dialog, Sheet: z-50), so an incoming call still
+   shows over an open dialog. Use as `z-(--z-floating)`. See DESIGN.md → "Stacking order". */
+:root {
+	--z-toast: 60;
+	--z-floating: 70;
+}
+
 /* ---------- Semantic: intercept mode ----------
    Declared on `.dark` too, so aliases such as `--primary: var(--brand)`
    re-resolve wherever `.dark` is applied, including on a wrapper below <html>.

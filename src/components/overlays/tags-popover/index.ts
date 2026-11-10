@@ -1,1 +1,1 @@
-export { TagsPopover, type TagsPopoverDetails, type TagsPopoverProps } from "./tags-popover";
+export { TagsPopover, TagsPopoverGroup, type TagsPopoverDetails, type TagsPopoverProps } from "./tags-popover";

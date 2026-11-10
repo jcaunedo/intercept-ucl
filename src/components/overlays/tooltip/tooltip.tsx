@@ -9,7 +9,7 @@ import { enterTransition, motionDistance, useMotionPreference } from "@/lib/moti
 import { cn } from "@/lib/utils";
 
 // Inverted colors (`foreground` surface, `background` text) and no arrow.
-const tooltipContentVariants = cva("z-50 w-fit rounded-menu bg-foreground text-balance text-background", {
+const tooltipContentVariants = cva("z-(--z-floating) w-fit rounded-menu bg-foreground text-balance text-background", {
 	variants: {
 		size: {
 			default: "px-3.5 py-1.5 text-sm",

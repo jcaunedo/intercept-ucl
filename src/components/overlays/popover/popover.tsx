@@ -4,30 +4,8 @@ import * as React from "react";
 import * as PopoverPrimitive from "@radix-ui/react-popover";
 import { motion } from "motion/react";
 
-import { enterTransition, motionDistance, motionScale, useMotionPreference } from "@/lib/motion";
+import { quickFadeVariants } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-
-type PopoverSide = "top" | "bottom" | "left" | "right";
-
-// The surface Radix positions. It moves as DropdownMenu's does: it fades in and grows from `motionScale.popIn`, moving
-// `motionDistance.subtle` in from the trigger's side (MOTION.md "Menus/dropdowns"). Reduced motion keeps the fade only.
-// Radix unmounts it on close, so the exit is instant.
-function PopoverSurface(props: React.ComponentProps<typeof motion.div> & { "data-side"?: PopoverSide }) {
-	const { prefersReducedMotion, resolve } = useMotionPreference();
-	const side = props["data-side"];
-	const distance = motionDistance.subtle;
-	const from = side
-		? { top: { y: distance }, bottom: { y: -distance }, left: { x: distance }, right: { x: -distance } }[side]
-		: {};
-
-	return (
-		<motion.div
-			initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: motionScale.popIn, ...from }}
-			animate={{ opacity: 1, scale: 1, x: 0, y: 0, transition: resolve(enterTransition) }}
-			{...props}
-		/>
-	);
-}
 
 /**
  * shadcn's Popover on Radix: a trigger that opens a small panel of information or controls next to it. Unlike Tooltip
@@ -50,7 +28,10 @@ function PopoverAnchor(props: React.ComponentProps<typeof PopoverPrimitive.Ancho
 	return <PopoverPrimitive.Anchor data-slot='popover-anchor' {...props} />;
 }
 
-/** The panel: 300px wide by default (a width in `className`), 24px in, above everything in a portal. */
+/**
+ * The panel: 300px wide by default (a width in `className`), 24px in, above everything in a portal. It fades in when it
+ * opens, no movement (`quickFadeVariants`), and closes at once: Radix unmounts it (Nov 10, 2026, user's call).
+ */
 function PopoverContent({
 	className,
 	align = "center",
@@ -66,12 +47,14 @@ function PopoverContent({
 				align={align}
 				sideOffset={sideOffset}
 				className={cn(
-					"z-50 flex w-75 origin-(--radix-popover-content-transform-origin) flex-col gap-3 rounded-menu border border-border-defined bg-popover p-6 text-sm text-popover-foreground shadow-2xl outline-hidden",
+					"z-(--z-floating) flex w-75 flex-col gap-3 rounded-menu border border-border-defined bg-popover p-6 text-sm text-popover-foreground shadow-2xl outline-hidden",
 					className,
 				)}
 				{...props}
 			>
-				<PopoverSurface>{children}</PopoverSurface>
+				<motion.div variants={quickFadeVariants} initial='initial' animate='animate'>
+					{children}
+				</motion.div>
 			</PopoverPrimitive.Content>
 		</PopoverPrimitive.Portal>
 	);

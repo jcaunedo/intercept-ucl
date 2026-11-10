@@ -95,7 +95,7 @@ function SidebarTooltip({
 									animate={{ opacity: 1, x: 0, y: 0, transition: resolve(enterTransition) }}
 									exit={{ opacity: 0, ...offset, transition: resolve(exitTransition) }}
 									className={cn(
-										"pointer-events-none z-50 inline-flex items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-base/5 font-medium whitespace-nowrap text-foreground shadow-xl",
+										"pointer-events-none z-(--z-floating) inline-flex items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-base/5 font-medium whitespace-nowrap text-foreground shadow-xl",
 										className,
 									)}
 								>

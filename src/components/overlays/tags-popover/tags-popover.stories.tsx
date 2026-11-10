@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, screen, userEvent, waitFor, within } from "storybook/test";
 
-import { TagsPopover } from "./tags-popover";
+import { TagsPopover, TagsPopoverGroup } from "./tags-popover";
 
 // Times relative to when the story loads, so "1 min ago" reads the same in every session.
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -43,9 +43,12 @@ export const Default: Story = {
 	play: async ({ canvas }) => {
 		const tag = canvas.getByRole("button", { name: "2 pressors" });
 		await userEvent.click(tag);
-		const popover = within(await screen.findByRole("dialog", { name: "2 pressors" }));
+		const dialog = await screen.findByRole("dialog", { name: "2 pressors" });
+		const popover = within(dialog);
 		await expect(popover.getByText("Epinephrine drip increased by 75% in the last 3 hours")).toBeInTheDocument();
 		await expect(popover.getByText("0.07 mcg/kg/min")).toBeInTheDocument();
+		// Above the toasts (`--z-toast`, 60): what the user opens comes first (theme.css "Stacking order").
+		await expect(getComputedStyle(dialog).zIndex).toBe("70");
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(tag).toHaveFocus();
@@ -136,4 +139,55 @@ export const AllVariants: Story = {
 			))}
 		</div>
 	),
+};
+
+/**
+ * A row of flags in a TagsPopoverGroup (Nov 10, 2026, user's call): open one with a click, then move the mouse along the
+ * row and each flag's popover opens in place of the last, no click needed. It stays open off the row; a click outside
+ * closes it.
+ */
+export const Row: Story = {
+	render: (args) => (
+		<div className='flex gap-1.5'>
+			<TagsPopoverGroup>
+				<TagsPopover {...args} />
+				<TagsPopover
+					label='DNR'
+					details={{ items: [{ label: "Code status", value: "DNR, ordered by Dr. Ellis" }], source: "Orders", updatedAt: minutesAgo(90) }}
+				/>
+				<TagsPopover
+					label='Allergy: Iodinated contrast'
+					details={{
+						changes: ["Iodinated contrast added to the allergy list 6 hours ago"],
+						items: [{ label: "Iodinated contrast", value: "Hives and itching during the cardiac cath, moderate · confirmed" }],
+						source: "Allergy list",
+						updatedAt: minutesAgo(360),
+					}}
+				/>
+			</TagsPopoverGroup>
+		</div>
+	),
+	play: async ({ canvas }) => {
+		const pressors = canvas.getByRole("button", { name: "2 pressors" });
+		const dnr = canvas.getByRole("button", { name: "DNR" });
+		// Hover alone opens nothing.
+		await userEvent.hover(dnr);
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		await expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+		// Once one is open, hovering another swaps to it.
+		await userEvent.click(pressors);
+		await screen.findByRole("dialog", { name: "2 pressors" });
+		await userEvent.hover(dnr);
+		await screen.findByRole("dialog", { name: "DNR" });
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "2 pressors" })).not.toBeInTheDocument());
+		await userEvent.hover(canvas.getByRole("button", { name: "Allergy: Iodinated contrast" }));
+		await screen.findByRole("dialog", { name: "Allergy: Iodinated contrast" });
+		await expect(screen.getAllByRole("dialog")).toHaveLength(1);
+		// Leaving the row keeps it open; a click outside closes it.
+		await userEvent.unhover(canvas.getByRole("button", { name: "Allergy: Iodinated contrast" }));
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		await expect(screen.getByRole("dialog", { name: "Allergy: Iodinated contrast" })).toBeInTheDocument();
+		await userEvent.click(document.body);
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+	},
 };

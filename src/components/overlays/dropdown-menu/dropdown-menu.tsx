@@ -32,7 +32,7 @@ function MenuSurface(props: React.ComponentProps<typeof motion.div> & { "data-si
 
 // The list surface, shared with the submenu: Select's 10px radius, border, 4px padding, 2px between rows and `shadow-xl`.
 const menuSurfaceClassName =
-	"z-50 min-w-[200px] origin-(--radix-dropdown-menu-content-transform-origin) flex flex-col gap-0.5 overflow-x-hidden overflow-y-auto rounded-input border border-border bg-popover p-1 text-popover-foreground shadow-xl";
+	"z-(--z-floating) min-w-[200px] origin-(--radix-dropdown-menu-content-transform-origin) flex flex-col gap-0.5 overflow-x-hidden overflow-y-auto rounded-input border border-border bg-popover p-1 text-popover-foreground shadow-xl";
 
 // Items sit 4px inside the 10px list, so their 6px radius stays concentric with it, and icons are 16px, as in Select.
 // No `cursor-default` (shadcn's): items are clickable, so they take the global pointer.

@@ -35,6 +35,8 @@ export const Default: Story = {
 	play: async ({ canvasElement }) => {
 		await userEvent.click(within(canvasElement).getByRole("button", { name: "Show toast" }));
 		await expect(await screen.findByText("Handoff note saved")).toBeInTheDocument();
+		// Under the popovers, menus and tooltips the user opens (70), over dialogs (50): theme.css "Stacking order".
+		await expect(getComputedStyle(document.querySelector("[data-sonner-toaster]") as Element).zIndex).toBe("60");
 	},
 };
 

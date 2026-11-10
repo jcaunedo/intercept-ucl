@@ -499,8 +499,8 @@ function ToasterActions({
 					initial='initial'
 					animate='animate'
 					exit='exit'
-					// Above the toasts (Sonner's own z-index).
-					className='fixed z-[999999999] flex items-center gap-2'
+					// With the toasts, under what the user opens (theme.css "Stacking order").
+					className='fixed z-(--z-toast) flex items-center gap-2'
 					style={{ right, bottom }}
 					// Keyboard focus only: focus left by a click would hold the toasts after the pointer has gone.
 					onFocus={(event) => setFocusIn(event.target.matches(":focus-visible"))}
@@ -528,7 +528,7 @@ function ToasterActions({
 											<PlayIcon aria-hidden='true' />
 										</Button>
 									</TooltipTrigger>
-									<TooltipContent side='top' className='z-[1000000000]'>
+									<TooltipContent side='top' className='z-(--z-floating)'>
 										Resume
 									</TooltipContent>
 								</Tooltip>
@@ -544,7 +544,7 @@ function ToasterActions({
 											<XIcon aria-hidden='true' />
 										</Button>
 									</TooltipTrigger>
-									<TooltipContent side='top' className='z-[1000000000]'>
+									<TooltipContent side='top' className='z-(--z-floating)'>
 										Hide
 									</TooltipContent>
 								</Tooltip>
@@ -559,7 +559,7 @@ function ToasterActions({
 								</Button>
 							</DropdownMenuTrigger>
 							{/* Over the toasts, like the row. */}
-							<DropdownMenuContent align='end' data-toaster-menu='' className='z-[1000000000]'>
+							<DropdownMenuContent align='end' data-toaster-menu='' className='z-(--z-floating)'>
 								{muteOptions.map(({ label, until }) => {
 									const time = until(now);
 									return time ? (
@@ -696,6 +696,9 @@ function Toaster({
 						"--width": "400px",
 						// Sonner reads `gap` for the expanded stack and this variable for the collapsed one's peek.
 						"--gap": `${peek}px`,
+						// Under the popovers, menus and tooltips the user opens, over dialogs (theme.css "Stacking order"); Sonner's
+						// own is 999999999, above everything.
+						zIndex: "var(--z-toast)",
 						...style,
 					} as React.CSSProperties
 				}

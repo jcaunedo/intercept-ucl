@@ -25,6 +25,16 @@ const fadeVariants: Variants = {
   exit: { opacity: 0, transition: exitTransition },
 };
 
+/**
+ * A quick opacity fade in on `motionDuration.normal` (300ms), no movement, and no exit: small surfaces that open on a
+ * click and close at once, e.g. Popover (Nov 10, 2026, user's calls: a fast fade in and out, then 300ms, then on opening
+ * only). The same under reduced motion, which keeps fades.
+ */
+const quickFadeVariants: Variants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { ...enterTransition, duration: motionDuration.normal } },
+};
+
 /** Content appearing in context: fade + small upward move (Reveal). */
 const revealVariants: Variants = {
   initial: { opacity: 0, y: motionDistance.subtle },
@@ -313,6 +323,7 @@ const unreadFlashVariants: Variants = {
 export {
   unreadFlashVariants,
   fadeVariants,
+  quickFadeVariants,
   rowRemoveVariants,
   revealVariants,
   expandVariants,

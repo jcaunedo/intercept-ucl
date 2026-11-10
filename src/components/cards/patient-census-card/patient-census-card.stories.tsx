@@ -191,8 +191,8 @@ export const Small: Story = {
 
 /**
  * A tag with `details` is a button: a click opens what the bedside team changed lately and what's behind it now in a
- * popover, and doesn't open the patient. Escape closes it and focus returns to the tag; so does moving the mouse off
- * the tag.
+ * popover, and doesn't open the patient. Escape closes it and focus returns to the tag. Moving the mouse away keeps it
+ * open; a click outside only closes it (the card doesn't open), and meanwhile the page shows the plain arrow.
  */
 export const TagDetails: Story = {
 	args: {
@@ -236,11 +236,29 @@ export const TagDetails: Story = {
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(tag).toHaveFocus();
-		// Opened again, it closes as soon as the mouse leaves the tag.
+		// Opened again, it stays open wherever the mouse goes, so its text can be copied; a click on the tag closes it.
+		await userEvent.click(tag);
+		const reopened = await screen.findByRole("dialog", { name: "2 pressors" });
+		await userEvent.unhover(tag);
+		await userEvent.hover(reopened);
+		await userEvent.unhover(reopened);
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		await expect(screen.getByRole("dialog", { name: "2 pressors" })).toBeInTheDocument();
+		await userEvent.click(tag);
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		// A click outside only closes it: on the card, it doesn't open the patient.
 		await userEvent.click(tag);
 		await screen.findByRole("dialog", { name: "2 pressors" });
-		await userEvent.unhover(tag);
+		const open = within(canvas.getByRole("heading")).getByRole("button");
+		// Meanwhile the page shows the plain arrow: a click there does nothing but close.
+		await expect(getComputedStyle(open).cursor).toBe("default");
+		await userEvent.click(open);
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		await expect(args.onOpen).not.toHaveBeenCalled();
+		await expect(getComputedStyle(open).cursor).not.toBe("default");
+		// The next click acts as usual.
+		await userEvent.click(open);
+		await expect(args.onOpen).toHaveBeenCalledTimes(1);
 	},
 };
 

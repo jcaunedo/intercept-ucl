@@ -89,23 +89,146 @@ function DetailsItem({ item }: { item: TagsPopoverItem }) {
 	);
 }
 
+/** Eats the click that ends the current press, and nothing later: a press that ends in a drag, not a click, lets go. */
+function swallowNextClick() {
+	const swallow = (event: MouseEvent) => {
+		event.stopPropagation();
+		event.preventDefault();
+	};
+	document.addEventListener("click", swallow, { capture: true, once: true });
+	document.addEventListener(
+		"pointerup",
+		() => window.setTimeout(() => document.removeEventListener("click", swallow, { capture: true })),
+		{ capture: true, once: true },
+	);
+}
+
+// While a tag popover is open, the page outside it and its tag shows the plain arrow, since a click there only closes the
+// popover (Nov 10, 2026, user's call). Injected once; on while `<html>` has `data-tags-popover-open`.
+const outsideCursorCss =
+	"html[data-tags-popover-open] body *:not([data-tags-popover-inside], [data-tags-popover-inside] *) { cursor: default !important; }";
+
+function useOutsideArrowCursor(open: boolean) {
+	React.useEffect(() => {
+		if (!open) return;
+		if (!document.getElementById("tags-popover-outside-cursor")) {
+			const style = document.createElement("style");
+			style.id = "tags-popover-outside-cursor";
+			style.textContent = outsideCursorCss;
+			document.head.append(style);
+		}
+		const root = document.documentElement;
+		root.setAttribute("data-tags-popover-open", "");
+		return () => root.removeAttribute("data-tags-popover-open");
+	}, [open]);
+}
+
 /**
- * A patient's tag (a flag) with details: a Badge button that opens them in a popover, and a mouse leaving the tag closes
- * it, so it's there only while the clinician points at it. Touch and keyboard close it with Escape or a click outside (a
- * tap also sends a leave). Its clicks, and the popover's, stop at the tag, so on a card they never reach the card's open
- * target. Used by the patient cards' tag rows and PatientHeader; built on Popover.
+ * A press outside the open popover (and outside its tag) only closes it (Nov 10, 2026, user's call: "the click should be
+ * to close the Popover and nothing else"): caught before anything under it sees the press, then its click is eaten, so
+ * a card under it doesn't open, a button doesn't act and a menu doesn't open. Radix alone lets that click through.
+ */
+function useOutsidePressOnlyCloses(
+	open: boolean,
+	close: () => void,
+	inside: readonly React.RefObject<HTMLElement | null>[],
+) {
+	React.useEffect(() => {
+		if (!open) return;
+		const onPointerDown = (event: PointerEvent) => {
+			const target = event.target as Node | null;
+			if (target && inside.some((ref) => ref.current?.contains(target))) return;
+			event.stopPropagation();
+			event.preventDefault();
+			close();
+			swallowNextClick();
+		};
+		document.addEventListener("pointerdown", onPointerDown, true);
+		return () => document.removeEventListener("pointerdown", onPointerDown, true);
+	}, [open, close, inside]);
+}
+
+type TagsPopoverGroupState = {
+	/** The open popover in the row, by its id. */
+	openId: string | null;
+	/** Whether it opened on hover (a swap), so it doesn't take focus from the page. */
+	viaHover: boolean;
+};
+
+type TagsPopoverGroupValue = {
+	state: React.RefObject<TagsPopoverGroupState>;
+	openId: string | null;
+	open: (id: string, viaHover: boolean) => void;
+	close: (id: string) => void;
+};
+
+const TagsPopoverGroupContext = React.createContext<TagsPopoverGroupValue | null>(null);
+
+/**
+ * A row of tags whose popovers work as one (Nov 10, 2026, user's call): one open at a time, and once one is open (a
+ * click), moving the mouse onto another tag in the row opens its popover in place of the first, without another click.
+ * Wrap the row's TagsPopovers in it; PatientCardTags does.
+ */
+function TagsPopoverGroup({ children }: { children: React.ReactNode }) {
+	const [openState, setOpenState] = React.useState<TagsPopoverGroupState>({ openId: null, viaHover: false });
+	// The latest state, for Radix's focus callbacks, which run between renders.
+	const state = React.useRef(openState);
+	state.current = openState;
+	const open = React.useCallback((id: string, viaHover: boolean) => {
+		state.current = { openId: id, viaHover };
+		setOpenState(state.current);
+	}, []);
+	const close = React.useCallback((id: string) => {
+		if (state.current.openId !== id) return;
+		state.current = { openId: null, viaHover: false };
+		setOpenState(state.current);
+	}, []);
+	const value = React.useMemo(
+		() => ({ state, openId: openState.openId, open, close }),
+		[openState.openId, open, close],
+	);
+	return <TagsPopoverGroupContext.Provider value={value}>{children}</TagsPopoverGroupContext.Provider>;
+}
+
+/**
+ * A patient's tag (a flag) with details: a Badge button that opens them in a popover. The popover stays open wherever
+ * the mouse goes, so its text can be selected and copied; a click outside it (the tag included) or Escape closes it
+ * (Nov 10, 2026, user's call). In a TagsPopoverGroup, once one is open, hovering another tag of the row opens that one
+ * instead. Its clicks, and the popover's, stop at the tag, so on a card they never
+ * reach the card's open target. Used by the patient cards' tag rows and PatientHeader; built on Popover.
  */
 function TagsPopover({ label, details, variant = "outline", size = "sm" }: TagsPopoverProps) {
-	const [open, setOpen] = React.useState(false);
+	const id = React.useId();
+	const group = React.useContext(TagsPopoverGroupContext);
+	const [ownOpen, setOwnOpen] = React.useState(false);
+	const open = group ? group.openId === id : ownOpen;
+	const setOpen = React.useCallback(
+		(next: boolean) => {
+			if (!group) return setOwnOpen(next);
+			if (next) group.open(id, false);
+			else group.close(id);
+		},
+		[group, id],
+	);
 	const stop = (event: React.SyntheticEvent) => event.stopPropagation();
+	const triggerRef = React.useRef<HTMLButtonElement>(null);
+	const contentRef = React.useRef<HTMLDivElement>(null);
+	const inside = React.useMemo(() => [triggerRef, contentRef], []);
+	const close = React.useCallback(() => setOpen(false), [setOpen]);
+	useOutsidePressOnlyCloses(open, close, inside);
+	useOutsideArrowCursor(open);
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
+			{/* A click on the tag toggles it; a click anywhere else only closes it (useOutsidePressOnlyCloses); moving the
+			    mouse away doesn't. With another of the row's popovers open, the mouse coming onto this tag swaps to it. */}
 			<PopoverTrigger
+				ref={triggerRef}
+				data-tags-popover-inside=''
 				asChild
 				onClick={stop}
-				onPointerLeave={(event) => {
-					if (event.pointerType === "mouse") setOpen(false);
+				onPointerEnter={(event) => {
+					if (event.pointerType === "mouse" && group?.openId && group.openId !== id) group.open(id, true);
 				}}
 			>
 				{/* On hover, and while its popover is open: the hover fill and a `foreground` border. */}
@@ -119,7 +242,21 @@ function TagsPopover({ label, details, variant = "outline", size = "sm" }: TagsP
 				</Badge>
 			</PopoverTrigger>
 			{/* React sends a portal's events up its component tree, so the popover's clicks stop here too. */}
-			<PopoverContent align='start' aria-label={label} onClick={stop}>
+			<PopoverContent
+				ref={contentRef}
+				data-tags-popover-inside=''
+				align='start'
+				aria-label={label}
+				onClick={stop}
+				// Opened by a hover swap, it leaves focus where it was; closed by one, it doesn't pull focus back to its tag.
+				onOpenAutoFocus={(event) => {
+					if (group?.state.current.viaHover) event.preventDefault();
+				}}
+				onCloseAutoFocus={(event) => {
+					const openId = group?.state.current.openId;
+					if (openId && openId !== id) event.preventDefault();
+				}}
+			>
 				{/* What changed, in `foreground`, then what's behind it now. No rule between them (Nov 4, 2026, user's call). */}
 				<PopoverHeader>
 					<PopoverTitle>{label}</PopoverTitle>
@@ -150,4 +287,4 @@ function TagsPopover({ label, details, variant = "outline", size = "sm" }: TagsP
 	);
 }
 
-export { TagsPopover, type TagsPopoverDetails, type TagsPopoverProps };
+export { TagsPopover, TagsPopoverGroup, type TagsPopoverDetails, type TagsPopoverProps };
