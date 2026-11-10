@@ -403,8 +403,8 @@ const trailingIcon = "has-[>svg]:pl-[11px] has-[>svg]:pr-[7px]";
 /**
  * The row over the stack, right-aligned with it. With any toast, Don't show (a menu of how long: closes every toast on
  * screen and holds every new one back, Critical too); with two or more, Close all too (closes every toast
- * as its × would, running its close handler, and holds new ones back until Resume: "Toasts paused"; Nov 6, 2026, user's
- * call). While muted, "Muted until 4:42 PM" (or "Toasts paused"), there even without toasts, with Play to show toasts again and × to close the notice and keep them muted until the app reloads
+ * as its × would, running its close handler, and holds new ones back until Resume: "Alert notifications paused", "Toasts paused" until Nov 10, 2026; Nov 6, 2026, user's
+ * call). While muted, "Muted until 4:42 PM" (or "Alert notifications paused"), there even without toasts, with Play to show toasts again and × to close the notice and keep them muted until the app reloads
  * (Nov 3, 2026; the × showed them again before). Over it the stack stays as it was: expanded when the pointer comes from
  * it, collapsed when it comes from elsewhere, so the buttons never move away from the pointer. While the clinician is on
  * the row (pointer over it, keyboard focus in it, or its menu open), the toasts' timers hold (Nov 3, 2026, user's call),
@@ -512,7 +512,7 @@ function ToasterActions({
 						<span className='inline-flex h-8 items-center gap-1 rounded-button-md bg-neutral/80 pr-1 pl-3 text-sm text-neutral-foreground shadow-xs'>
 							<BellOffIcon aria-hidden='true' className='size-4' />
 							<span className='px-1'>
-								{mutedUntilTime !== null ? `Muted until ${muteTimeFormat.format(mutedUntilTime)}` : "Toasts paused"}
+								{mutedUntilTime !== null ? `Muted until ${muteTimeFormat.format(mutedUntilTime)}` : "Alert notifications paused"}
 							</span>
 							{/* Each named in a tooltip, over the toasts like the row (Nov 3, 2026, user's call). */}
 							<TooltipProvider>
@@ -521,7 +521,7 @@ function ToasterActions({
 										<Button
 											variant='ghost'
 											size='icon-xs'
-											aria-label='Resume toasts'
+											aria-label='Resume alert notifications'
 											className='hover:bg-neutral-foreground/15 hover:text-neutral-foreground'
 											onClick={() => muteToasts(null)}
 										>
@@ -537,7 +537,7 @@ function ToasterActions({
 										<Button
 											variant='ghost'
 											size='icon-xs'
-											aria-label='Hide, and keep toasts muted until reload'
+											aria-label='Hide, and keep alert notifications muted until reload'
 											className='hover:bg-neutral-foreground/15 hover:text-neutral-foreground'
 											onClick={() => muteToasts("reload")}
 										>

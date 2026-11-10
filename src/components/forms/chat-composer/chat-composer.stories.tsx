@@ -303,7 +303,8 @@ export const LongText: Story = {
 };
 
 /**
- * Hands-free (`wakePhrase`, Ask Intercept Live while its panel is open): the composer listens for "Hey Intercept" only,
+ * Hands-free (`wakePhrase`; Ask Intercept Live used it until Nov 10, 2026, when the microphone became click-only because
+ * it opens the microphone on mount): the composer listens for "Hey Intercept" only,
  * saying so in its placeholder; hearing it starts dictation, as the microphone would. Once dictation ends (the microphone,
  * or "stop listening"), it listens for the phrase again.
  */

@@ -416,6 +416,8 @@ function InterceptLive({
 	const [groupByHospital, setGroupByHospital] = React.useState(false);
 	const [sortBy, setSortBy] = React.useState<PagePreferences["sortBy"]>({});
 	const [scope, setScope] = React.useState<PagePreferences["scope"]>({});
+	// Monitoring's Active alerts chip, for the alert toasts' ping.
+	const [activeAlerts, setActiveAlerts] = React.useState(false);
 	// Closed alert toasts stay closed across pages, until a reload.
 	const [closedAlertToasts, setClosedAlertToasts] = React.useState<PagePreferences["closedAlertToasts"]>({});
 	const currentPage = page === "Census" ? "census" : page === "Monitoring" ? "monitoring" : undefined;
@@ -427,12 +429,14 @@ function InterceptLive({
 			onSortByChange: (page, next) => setSortBy((current) => ({ ...current, [page]: next })),
 			scope,
 			onScopeChange: (page, next) => setScope((current) => ({ ...current, [page]: next })),
+			activeAlerts,
+			onActiveAlertsChange: setActiveAlerts,
 			currentPage,
 			closedAlertToasts,
 			onCloseAlertToast: (alertId, severity) =>
 				setClosedAlertToasts((current) => ({ ...current, [alertId]: severity })),
 		}),
-		[groupByHospital, sortBy, scope, currentPage, closedAlertToasts],
+		[groupByHospital, sortBy, scope, activeAlerts, currentPage, closedAlertToasts],
 	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);

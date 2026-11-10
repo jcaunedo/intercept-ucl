@@ -90,11 +90,11 @@ export const Muted: Story = {
 		const canvas = within(canvasElement);
 		await userEvent.click(canvas.getByRole("button", { name: "Mute for 30 mins" }));
 		await expect(await screen.findByText(/^Muted until/)).toBeInTheDocument();
-		await userEvent.click(screen.getByRole("button", { name: "Resume toasts" }));
+		await userEvent.click(screen.getByRole("button", { name: "Resume alert notifications" }));
 		await waitFor(() => expect(screen.queryByText(/^Muted until/)).not.toBeInTheDocument());
 		await expect(toastsMuted()).toBe(false);
 		await userEvent.click(canvas.getByRole("button", { name: "Mute for 30 mins" }));
-		await userEvent.click(await screen.findByRole("button", { name: "Hide, and keep toasts muted until reload" }));
+		await userEvent.click(await screen.findByRole("button", { name: "Hide, and keep alert notifications muted until reload" }));
 		await waitFor(() => expect(screen.queryByText(/^Muted until/)).not.toBeInTheDocument());
 		await expect(toastsMuted()).toBe(true);
 		// Other stories share the page's mute.

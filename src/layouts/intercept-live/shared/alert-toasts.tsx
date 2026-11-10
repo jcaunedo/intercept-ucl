@@ -27,7 +27,8 @@ import { avatarTone, avatarTones, patientInitials } from "./patient-avatar";
 // about (`consultRequest`, Scenario 2) toasts as any new alert, then `ringAfter` seconds later rings a second toast, the
 // consult request, whatever the scope or what was closed (Nov 5, 2026, user's call: two toasts, the alert then the call;
 // it was the call alone). The call rings until answered or declined (Nov 4, 2026, user's call); Answer opens the alert with
-// the call on and closes the alert's own toast, as opening it from that toast does. A toast that appears or moves to the front pings once (`playAlertPing`, Nov 4, 2026, user's calls).
+// the call on and closes the alert's own toast, as opening it from that toast does. A toast that appears or moves to the front pings once (`playAlertPing`, Nov 4, 2026, user's calls), only while
+// Monitoring's Active alerts chip is on (Nov 10, 2026, user's call): the toasts show either way.
 
 const severityWords: Record<TriageAlertSeverity, string> = { critical: "Critical", high: "High", medium: "Medium", low: "Low" };
 
@@ -154,10 +155,11 @@ function NoticeToast({
 // A consult request's toast id: the alert's own id is its alert toast.
 const consultToastId = (alertId: string) => `${alertId}:consult`;
 
-// The ping, on the timeout right after Sonner places the toast; skipped if toasts were muted in between.
-const pingUnlessMuted = () =>
+// The ping, on the timeout right after Sonner places the toast; skipped if toasts were muted, or the ping turned off
+// (`allowed`), in between.
+const pingUnlessMuted = (allowed: () => boolean) =>
 	window.setTimeout(() => {
-		if (!toastsMuted()) playAlertPing();
+		if (!toastsMuted() && allowed()) playAlertPing();
 	});
 
 /**
@@ -185,6 +187,10 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 	const openAlert = navigation?.openAlert;
 	const preferences = usePagePreferences();
 	const mineOnly = Boolean(preferences?.currentPage && preferences.scope[preferences.currentPage] === "mine");
+	// The ping sounds only while Monitoring's Active alerts chip is on; read when it would play.
+	const pingOn = React.useRef(false);
+	pingOn.current = Boolean(preferences?.activeAlerts);
+	const pingAllowed = React.useCallback(() => pingOn.current, []);
 	const tones = React.useMemo(() => avatarTones(patients), [patients]);
 	const previous = React.useRef(alerts);
 	// The patient behind each toast shown, by alert id (the toast's id), so My patients can close the others' toasts.
@@ -197,7 +203,7 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 		if (!onScreen || !unheard.current.size) return;
 		const waiting = unheard.current;
 		unheard.current = new Set();
-		if (toast.getToasts().some((item) => waiting.has(String(item.id)))) pingUnlessMuted();
+		if (toast.getToasts().some((item) => waiting.has(String(item.id)))) pingUnlessMuted(pingAllowed);
 	}, [onScreen]);
 	// Don't show stops alert sounds (Nov 4, 2026, user's call): a ping still sounding, and the ones held for hidden toasts.
 	const muted = useToastsMuted();
@@ -348,7 +354,7 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 		// Only while the toasts are on screen (Nov 4, 2026, user's call: "I hear a ping and nothing happened"): with the
 		// Toaster hidden (the alert modal, a patient's page, the live feed panel) or not mounted, the ping waits for them.
 		if (!pinged.length) return;
-		if (toastsOnScreen()) pingUnlessMuted();
+		if (toastsOnScreen()) pingUnlessMuted(pingAllowed);
 		else for (const id of pinged) unheard.current.add(id);
 	}, [alerts, patients, mineOnly, tones, openPatient, openAlert, askAboutPatient, onCloseResolved, closed, closeToast]);
 
@@ -392,7 +398,7 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 				// It waits until acted on or closed, in front with the alerts.
 				{ id: notice.id, duration: Number.POSITIVE_INFINITY, priority: 1 },
 			);
-			if (toastsOnScreen()) pingUnlessMuted();
+			if (toastsOnScreen()) pingUnlessMuted(pingAllowed);
 		}
 	}, [notices, patients, tones, openAlert, openAlertPatient]);
 	React.useEffect(() => {

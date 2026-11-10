@@ -57,7 +57,8 @@ type ChatComposerProps = Omit<React.ComponentProps<"form">, "onSubmit" | "childr
 	/**
 	 * With `dictation`: a phrase ("Hey Intercept"), or several (any of them), that starts dictation hands-free, as the
 	 * microphone button does. While the composer is mounted, enabled and not dictating, it listens for the phrase only;
-	 * nothing else it hears is shown or kept. Mount the composer (or pass the phrase) only while its panel is open.
+	 * nothing else it hears is shown or kept. Mount the composer (or pass the phrase) only while its panel is open. It opens
+	 * the microphone without a click, so the browser asks for it as the composer mounts.
 	 */
 	wakePhrase?: string | readonly string[];
 	/** The placeholder while listening for `wakePhrase`, to say it can be said (e.g. 'Ask, search, or say "Hey Intercept"'). */

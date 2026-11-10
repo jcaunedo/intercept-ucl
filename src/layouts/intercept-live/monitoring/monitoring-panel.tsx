@@ -60,6 +60,7 @@ import {
 	type QuickView,
 	type SortOrderId,
 } from "../shared/patient-panel";
+import { usePagePreferences } from "../page-preferences";
 import { usePatientNavigation } from "../patient-navigation";
 import {
 	compareTriageAlerts,
@@ -229,10 +230,9 @@ function useFeedResolutions(alerts: TriageAlert[]) {
 // what needs attention is the triage queue's job, so the Census's other quick views stay there. Acuity sorts are left out too (the score can be hidden from the cards); Group
 // by location is a switch, as on the Census. The Filters panel (Oct 30, 2026, user's call) adds Unit, Highest alert, alarm
 // limits per parameter and the tags.
-// Alerts first in the menu (Oct 31, 2026, user's call; labeled "Recent alerts" until Nov 2, 2026): patients with an open alert first,
-// the newest alert first (the Active alerts chip orders by severity). The default since Nov 2, 2026 (user's call; was
-// Patient name).
-const sortOrderIds: readonly SortOrderId[] = ["alert", "name", "viewed", "resolved", "messages"];
+// Patient name (the default) and Recently viewed only (Nov 10, 2026, user's call; Alerts, the default since Nov 2, 2026,
+// Recently resolved and Family messages went). Who to see first is the Active alerts chip's order.
+const sortOrderIds: readonly SortOrderId[] = ["name", "viewed"];
 
 /** The primary numerics with alarm limits, by the card's labels. */
 const limitParameters = [
@@ -379,6 +379,14 @@ function MonitoringPanel({
 		ids?: ReadonlySet<string>;
 		counted?: Record<string, ReadonlySet<string>>;
 	} | null>(() => (activeAlertsRequest ? { id: "alerts" } : null));
+	// The shell hears whether Active alerts is on, for the alert toasts' ping, and that it's off once Monitoring closes.
+	const activeAlertsOn = statusFilter?.id === "alerts";
+	const onActiveAlertsChange = usePagePreferences()?.onActiveAlertsChange;
+	React.useEffect(() => {
+		if (!onActiveAlertsChange) return;
+		onActiveAlertsChange(activeAlertsOn);
+		return () => onActiveAlertsChange(false);
+	}, [activeAlertsOn, onActiveAlertsChange]);
 	const inStatusFilter = (patient: PanelMonitoringPatient) =>
 		!statusFilter ||
 		(statusFilter.ids
@@ -389,7 +397,7 @@ function MonitoringPanel({
 	// The filter bar's search: name, MRN, unit, room or bed.
 	const [query, setQuery] = React.useState("");
 	// Remembered across pages and patient details (`useSortBy`).
-	const [sortBy, setSortBy] = useSortBy("monitoring", "alert");
+	const [sortBy, setSortBy] = useSortBy("monitoring", "name");
 	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
 	// Where the board's header row sticks: under the sticky filter bar, which reports it as its height changes.
 	const [boardTop, setBoardTop] = React.useState(0);
@@ -511,8 +519,8 @@ function MonitoringPanel({
 		searched(scoped).filter((patient) => passesFilters(patient, filterGroups, filters));
 	const filtered = (scoped: PanelMonitoringPatient[]) =>
 		located(scoped).filter(inStatusFilter);
-	// The Recently viewed and Recently resolved sorts count what happened in this session too: the patients opened, and the
-	// alerts resolved in the live feed.
+	// The Recently viewed sort counts the patients opened in this session too. The resolved times are merged as well,
+	// though no Monitoring sort reads them since Recently resolved went (Nov 10, 2026).
 	const recent = useRecentActivity(patients, resolvedTimes(alerts));
 	const assigned = scope === "mine" ? recent.filter((patient) => patient.mine) : recent;
 	const inStatus = (scoped: PanelMonitoringPatient[]) =>

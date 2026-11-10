@@ -29,8 +29,7 @@ import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitor
 const news2 = "NEWS2";
 const change = "Change in last 24 h";
 // When the clinician last opened a patient (the Recently viewed sort): Thompson, Davis, Miller and Clark. Unread family
-// messages (the card's message icon, the Family messages sort): Davis 2, Bennett and Moore 1. Recently resolved comes
-// from the resolved alerts at the end.
+// messages (the card's message icon): Davis 2, Bennett and Moore 1.
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
 
 const monitoringPatients: MonitoringPatient[] = [
@@ -533,8 +532,8 @@ const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).
 
 // Three open alerts on three patients, as the Census's pills (Oct 29, 2026, user request: 1 Critical and 2 Low to start):
 // Miller's Sepsis candidate (Critical), Johnson's SpO₂ and Anderson's bed exit (Low). Their times run against their
-// severity (Anderson's Low is the newest, Miller's Critical the oldest; Oct 31, 2026), so the Alerts sort (newest
-// first) and the Active alerts chip (most severe first) visibly differ. The live feed adds and changes the
+// severity (Anderson's Low is the newest, Miller's Critical the oldest; Oct 31, 2026), so their ages and the
+// Active alerts chip's order (most severe first) visibly differ. The live feed adds and changes the
 // rest (`sample-live-scenario.ts`). Then alerts resolved earlier in the last 24 h (Oct 31, 2026, user request), so cards
 // show the Resolved bar: Wilson 24 min ago, Bennett (3 in 24 h) 1.5 h ago, Harris 6 h ago, Taylor 20 h ago.
 const resolved = (minutes: number, reason: string) => ({

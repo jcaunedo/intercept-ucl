@@ -232,15 +232,15 @@ export const NewestFirst: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Moore up to High" }));
 		await waitFor(() => expect(stackOrder()).toEqual([moore.title, anderson.title, hayes.title]));
 		// Open alerts don't leave on their own: Close all clears them and pauses new ones until Resume (Nov 6, 2026, user's
-		// call): "Toasts paused" takes Don't show's place, and a new alert waits.
+		// call): "Alert notifications paused" takes Don't show's place, and a new alert waits.
 		await userEvent.click(screen.getByRole("button", { name: "Close all" }));
 		await waitFor(() => expect(stackOrder()).toEqual([]));
-		await expect(await screen.findByText("Toasts paused")).toBeVisible();
+		await expect(await screen.findByText("Alert notifications paused")).toBeVisible();
 		await userEvent.click(canvas.getByRole("button", { name: "Moore up to High" }));
 		await expect(stackOrder()).toEqual([]);
 		// Resume shows them again.
-		await userEvent.click(screen.getByRole("button", { name: "Resume toasts" }));
-		await waitFor(() => expect(screen.queryByText("Toasts paused")).toBeNull());
+		await userEvent.click(screen.getByRole("button", { name: "Resume alert notifications" }));
+		await waitFor(() => expect(screen.queryByText("Alert notifications paused")).toBeNull());
 	},
 };
 

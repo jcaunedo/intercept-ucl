@@ -336,16 +336,19 @@ export const Static: Story = {
 };
 
 /**
- * Sort by Alerts (the default): patients with an open alert first, the newest alert on top, so Anderson's Low bed exit (1 min ago)
- * leads, then Johnson's Low SpO₂ (9 min), then Miller's Critical sepsis alert (16 min); everyone else follows by name.
- * The Active alerts chip orders them by who to see first instead: Miller (Critical), then Johnson, then Anderson.
+ * Sort by offers Patient name (the default) and Recently viewed, nothing else (Nov 10, 2026, user's call). The Active
+ * alerts chip orders the patients by who to see first instead: Miller (Critical), then Johnson, then Anderson.
  */
-export const SortByAlerts: Story = {
+export const SortOrders: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await expect(canvas.getByRole("combobox", { name: "Sort by" })).toHaveTextContent("Alerts");
+		const sort = canvas.getByRole("combobox", { name: "Sort by" });
+		await expect(sort).toHaveTextContent("Patient name");
+		await userEvent.click(sort);
+		const options = await within(document.body).findAllByRole("option");
+		await expect(options.map((option) => option.textContent)).toEqual(["Patient name", "Recently viewed"]);
+		await userEvent.keyboard("{Escape}");
 		const names = () =>
 			canvas.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent?.split(",")[0]);
-		await waitFor(() => expect(names().slice(0, 3)).toEqual(["Anderson", "Johnson", "Miller"]));
 		// Active alerts orders by who to see first instead: Miller (Critical), then the two Lows by acuity band, Johnson
 		// (NEWS2 15, High) above Anderson (3, Low).
 		await userEvent.click(canvas.getByRole("button", { name: /Active alerts/ }));

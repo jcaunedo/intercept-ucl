@@ -17,6 +17,12 @@ type PagePreferences = {
 	/** Each page's My patients chip (Nov 2, 2026), by page, so the alert toasts follow the page on screen. */
 	scope: Partial<Record<SortPage, PatientScope>>;
 	onScopeChange: (page: SortPage, scope: PatientScope) => void;
+	/**
+	 * Whether Monitoring's Active alerts chip is on (Nov 10, 2026): the alert toasts ping only then. Monitoring reports it
+	 * while it's open, and turns it off when it closes.
+	 */
+	activeAlerts: boolean;
+	onActiveAlertsChange: (on: boolean) => void;
 	/** The page on screen, when it's one of these (under a patient's details too); another page has no scope. */
 	currentPage?: SortPage;
 	/**

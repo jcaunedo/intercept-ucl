@@ -1281,7 +1281,7 @@ const ruleSections = {
 		// PRD Monitoring MON-014, DESIGN.md (PatientMonitoringCard).
 	},
 	recent: {
-		text: "**Sort by Alerts** (Monitoring) puts patients with an open alert first, the one whose newest alert fired most recently on top; everyone else follows by name. It answers \"what just happened\"; with Active alerts on, the chip's ranking by who to see first applies instead.",
+		text: "Monitoring sorts by **Patient name** (the default) or **Recently viewed** (the patients you opened most recently first). To see who needs you first, turn on **Active alerts**: it ranks patients with an open alert by severity, acuity band and score rise, whatever the sort.",
 		// PRD Monitoring (Sort by), DESIGN.md.
 	},
 	arrows: {

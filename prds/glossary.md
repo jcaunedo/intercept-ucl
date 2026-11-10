@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 9, 2026
+Last updated: Nov 10, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -417,7 +417,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Bedside tasks** | *Proposed* The bedside nurses' tasks an accepted order set generates (e.g. a peripheral norepinephrine's IV site check every hour), shared between the hub and the bedside: the nurses check them off, the hub sees the status. Open, done or cancelled; overdue 10 min past due. | Demo Use Cases Scenario 3, step 5; Requirements CC-06; DU-25 |
 | **Clinical findings** | *Proposed* on the Patient details Overview, the row of tiles under the AI summary: the key labs, then the vitals or support settings that matter for this patient's situation, each with its context ("Nitro stops < 110", "Since 8:03 AM"); a charted value past its limit says how old it is. | PRD PD-025 |
 | **Chat composer** | The message box at the bottom of Ask Intercept Live: a field, attachments, slash commands, dictation, and Send or Stop. UCL `ChatComposer`. | PRD CC-010 |
-| **Wake phrase** | "Hey Intercept", or just "Hey": said while Ask Intercept Live is open, it starts dictation without a click. Only the phrase is listened for; nothing else heard is shown or kept. UCL `ChatComposer` `wakePhrase`. | PRD CC-031 |
+| **Wake phrase** | Not used since Nov 10, 2026 (dictation starts only from the microphone button). Was: "Hey Intercept", or just "Hey": said while Ask Intercept Live is open, it starts dictation without a click. Only the phrase is listened for; nothing else heard is shown or kept. UCL `ChatComposer` `wakePhrase`. | PRD CC-031 |
 | **Data-completeness signal** | The Provider Desktop tells the clinician explicitly how deep the data is (Integrated versus Overlay). | Spec §8.7 |
 | **Data-depth notice** | *Proposed* plain-language note in a Patient details section saying what this hospital's data doesn't include ("Orders from this hospital are read-only"). Names what's available, never the integration mechanism. | Spec §9.1 Principle 1, PRD PD-121 |
 | **Density model** | How much information a surface shows per area. Part of the design system deliverable. Surveillance and Credentialing have very different density needs. | Brief, Spec §9.2 |

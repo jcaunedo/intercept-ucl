@@ -1,7 +1,7 @@
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 6, 2026
+Last updated: Nov 10, 2026
 Scope: The chat composer (UCL ChatComposer) and the Ask Intercept Live conversation it drives in the Provider Desktop: the message field, its buttons, slash commands, suggested questions, and how answers arrive.
 Purpose: Defines the composer's behavior, states, rules for answers and acceptance criteria, pending clinical and product validation, so design, engineering and the Conversational Clinical Data Agent team build the same thing.
 -->
@@ -13,7 +13,7 @@ Purpose: Defines the composer's behavior, states, rules for answers and acceptan
 **Surface:** Ask Intercept Live, the chat panel; its message box is the **chat composer** (UCL `ChatComposer`)  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 6, 2026
+**Last updated:** November 10, 2026
 
 ---
 
@@ -186,7 +186,7 @@ A draft handoff in I-PASS (PRD PD-110), built from the chart:
 | Rule | Behavior |
 |---|---|
 | **Start** | The microphone button starts listening. The field reads "Listening…" while empty, in the text color (not the hint gray). |
-| **"Hey Intercept"** | ✅ **Decision (Nov 6, 2026, user's call):** while Ask Intercept Live is open and nothing is being dictated, the composer listens for "Hey Intercept", or just "Hey" (added the same day, user's call), and the placeholder says so ('Ask, search, or say "Hey Intercept"'). Hearing either starts dictation, as the button does; when dictation stops, it listens for the phrase again. Not while the panel is closed. Nothing else it hears is shown or kept. ⚠️ **Risk:** "Hey" alone is common in conversation at the hub, so it will start dictation by accident now and then (the microphone turns red; the microphone or "stop listening" ends it). ⚠️ **Risk:** browser recognition sends the room's audio to the browser's speech service the whole time the panel is open; production needs on-device wake-word detection or a hospital-approved service (CC-OD-05). ⚠️ **Decision needed:** whether hospitals allow an always-listening microphone at the hub, and an off switch. |
+| **"Hey Intercept"** | ✅ **Decision (Nov 10, 2026, user's call): removed.** The microphone starts only when the clinician presses its button; nothing listens for a phrase. Listening for it opened the microphone as the chat opened, and the browser asked for it with no click. This also closes the always-listening risks below. ~~✅ **Decision (Nov 6, 2026, user's call):** while Ask Intercept Live is open and nothing is being dictated, the composer listens for "Hey Intercept", or just "Hey" (added the same day, user's call), and the placeholder says so ('Ask, search, or say "Hey Intercept"'). Hearing either starts dictation, as the button does; when dictation stops, it listens for the phrase again. Not while the panel is closed. Nothing else it hears is shown or kept. ⚠️ **Risk:** "Hey" alone is common in conversation at the hub, so it will start dictation by accident now and then (the microphone turns red; the microphone or "stop listening" ends it). ⚠️ **Risk:** browser recognition sends the room's audio to the browser's speech service the whole time the panel is open; production needs on-device wake-word detection or a hospital-approved service (CC-OD-05). ⚠️ **Decision needed:** whether hospitals allow an always-listening microphone at the hub, and an off switch.~~ |
 | **Words as they're said** | Recognition's guess shows at once and is replaced as it settles. Dictation goes after any text already in the field, with a space between; the first word is capitalized when the field was empty or ended a sentence. |
 | **Spoken punctuation** | ✅ **Decision (Nov 6, 2026, user's call):** saying "comma" writes ", ", "period" writes ". " and "question mark" writes "? " (the mark against the word before it, a space after), and the word after a period or question mark starts with a capital. Any word "period" is taken as the mark, as dictation software does. ✅ **Smart question mark (Nov 6, 2026, user's call):** a sentence that starts with a question word (what, why, how, when, where, who, which) or a verb that opens a yes/no question (is, are, do, does, did, can, could, should, would, will, has, have…) is a question: its "period" becomes "?", and an unfinished question gets "?" as soon as recognition settles with nothing more being said (it goes again if the sentence carries on), and when it's sent or dictation ends. A request ("Show me her labs") doesn't. ✅ **By structure (same day, user's call):** lead-in words are skipped to find where the question starts ("Okay so…", "Intercept, can you tell me how is Emily doing" → "Can you tell me how is Emily doing?"), and a statement with a question tag at its end is a question too ("…her lactate is down, right?", "…isn't it?"). After "Hey" wakes it, a leading "Intercept" is the wake phrase's and is left out. Typing ends dictation without adding one. ℹ️ Other marks ("exclamation point", "new line") aren't recognized yet. |
 | **Listening state** | ✅ **Decision (Nov 6, 2026, user's call):** the button turns Flat · Destructive (pale red fill, red icon) with the `mic-off` icon (archielabs.ds `6346:10225`), pressed, named "Stop dictating"; a darker red breathes in and out over its fill once a second, so it plainly reads as listening (still under reduced motion). |
@@ -307,7 +307,7 @@ Per MOTION.md "AI answers": thinking is a soft opacity pulse; streaming arrives 
 | CC-AC-15 | With the microphone blocked, dictation stops and "Allow the microphone to dictate." shows under the field. |
 | CC-AC-16 | As the chat opens, the greeting writes itself with no Stop button; a question sent meanwhile is asked, not dropped. |
 | CC-AC-17 | With an empty field there's no Send; it grows in with the first character and shrinks away when the field empties, never covering the microphone. |
-| CC-AC-18 | With Ask Intercept Live open, saying "Hey Intercept", or just "Hey", starts dictation (the microphone pressed, "Listening…") without a click; anything else said before it shows nothing; with the panel closed, it isn't listened for. |
+| CC-AC-18 | ~~With Ask Intercept Live open, saying "Hey Intercept", or just "Hey", starts dictation (the microphone pressed, "Listening…") without a click; anything else said before it shows nothing; with the panel closed, it isn't listened for.~~ Since Nov 10, 2026: opening Ask Intercept Live never asks for or opens the microphone; only pressing the microphone button does. |
 | CC-AC-19 | Dictating "what is pending" then "send" sends "What is pending?" (no "send", a question's "?"), clears the field and keeps listening; "send" while recognition is still guessing sends nothing yet. |
 | CC-AC-20 | Dictating "labs for Sarah Miller" then "delete delete" leaves "Labs for"; with "Labs for Sarah" typed and "Miller delete delete" said, the field reads "Labs for". |
 | CC-AC-21 | Saying "does she have a fever stop listening" leaves "Does she have a fever?" and ends dictation. |

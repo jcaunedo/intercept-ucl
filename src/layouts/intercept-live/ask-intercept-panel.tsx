@@ -700,10 +700,9 @@ function AskInterceptPanel({
 					label='Ask Intercept Live'
 					onSubmit={ask}
 					onAttach={() => {}}
+					// The microphone starts only when the clinician presses it (Nov 10, 2026, user's call). No `wakePhrase`: listening
+					// for it opens the microphone as the chat opens, and the browser asks for it without a click.
 					dictation
-					// Hands-free while the chat is open (Nov 6, 2026, user's calls): "Hey Intercept", or just "Hey", starts dictating.
-					wakePhrase={open ? wakePhrases : undefined}
-					wakePlaceholder='Ask, search, or say "Hey Intercept"'
 					generating={Boolean(answering)}
 					onStop={stop}
 					commands={chatCommands}
@@ -712,9 +711,6 @@ function AskInterceptPanel({
 		</SidePanel>
 	);
 }
-
-// The phrases that start dictation hands-free; "Hey" alone is enough (Nov 6, 2026, user's call).
-const wakePhrases = ["Hey Intercept", "Hey"] as const;
 
 export {
 	AskInterceptPanel,
