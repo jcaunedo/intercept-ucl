@@ -1988,8 +1988,9 @@ function AlertPanelDialog({
 					if (escapeRef.current?.()) event.preventDefault();
 				}}
 				// It sizes to the panel, which grows as its side panel slides out, and keeps 80px from the viewport's top and
-				// bottom (as the modal did).
-				className='max-h-[calc(100dvh-160px)] w-fit'
+				// bottom (as the modal did). At least 720px tall where that fits (intercept.ds `alert-modal` `1355:14776`); the
+				// panel fills it and its monitor takes the extra height.
+				className='max-h-[calc(100dvh-160px)] min-h-[min(720px,calc(100dvh-160px))] w-fit'
 			>
 				<AlertPanel
 					{...props}
@@ -2002,7 +2003,7 @@ function AlertPanelDialog({
 					}
 					escapeRef={escapeRef}
 					// The dialog is the surface: its corners, shadow and background.
-					className='max-h-full min-h-0 rounded-none border-0 shadow-none'
+					className='max-h-full min-h-0 flex-1 rounded-none border-0 shadow-none'
 				/>
 			</DialogContent>
 		</Dialog>
@@ -2083,7 +2084,7 @@ function PatientConsultDialogContent({
 				onOpenAutoFocus={focusDialog}
 				// No alert to describe: the patient's name names the dialog.
 				aria-describedby={undefined}
-				className='max-h-[calc(100dvh-160px)] w-fit'
+				className='max-h-[calc(100dvh-160px)] min-h-[min(720px,calc(100dvh-160px))] w-fit'
 			>
 				<AlertModal
 					lastName={patient.lastName}
@@ -2175,7 +2176,7 @@ function PatientConsultDialogContent({
 							<AlertModalClose />
 						</DialogClose>
 					}
-					className='max-h-full min-h-0 rounded-none border-0 shadow-none'
+					className='max-h-full min-h-0 flex-1 rounded-none border-0 shadow-none'
 				/>
 			</DialogContent>
 		</Dialog>

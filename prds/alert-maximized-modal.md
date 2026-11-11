@@ -99,7 +99,7 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 
 | Part | Behavior |
 |---|---|
-| **Frame** | UCL's Dialog: 1400px wide, three columns (Patient flexible at 600px; Clinical info 400px; Pathway 400px), each scrolling on its own. Below about 1432px of screen the Patient column narrows. When it grows tall it keeps 80px from the viewport's top and bottom edges. |
+| **Frame** | UCL's Dialog: 1400px wide, three columns (Patient flexible at 600px; Clinical info 400px; Pathway 400px), each scrolling on its own. Below about 1432px of screen the Patient column narrows. When it grows tall it keeps 80px from the viewport's top and bottom edges. ✅ **Decision (Nov 11, 2026, user's call):** the alert panel that replaced it is at least 720px tall wherever that fits between those margins (intercept.ds `alert-modal` `1355:14776`); on a shorter screen it's the screen less the margins. The bedside monitor takes the extra height. |
 | **Close** | A ghost × at the Patient column's top right; Escape; a click on the scrim. Escape first closes an open form or dose edit, then the modal. |
 | **Column labels** | "Clinical info" and "Pathway", small uppercase labels that name each column's region for screen readers. |
 | **Footer** | ✅ **Gone (Nov 3, 2026, user's call; intercept.ds `alert-modal`):** the patient's **name** opens their page (underlined, with ↗; it replaced Open patient), and **Video consult** and **View pathway** sit under the alert, equal widths. View pathway takes the clinician, and focus, to the Pathway column. While the call is on, Video consult reads **End call**. The lifecycle buttons are filled (Button `neutral`). ⚠️ **Decision needed:** Figma reads **End video consult**. |
@@ -211,6 +211,7 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | AMM-AC-21 | Reynolds was kept and step 6 played | The modal's Pathway panel opens | Social needs at discharge sits under keep or transfer, "2 to send", with Uninsured, Can't afford home oxygen, "Payer on record: Uninsured" and the two referrals, each with Send referral disabled until who agreed is picked |
 | AMM-AC-22 | A referral is open | The clinician picks Family, names "his daughter, Amy Reynolds" and sends it | "Sent to Alliance financial counseling · time", "Consent: family (his daughter, Amy Reynolds)"; his activity log and his page's Discharge section show it sent |
 | AMM-AC-23 | A referral is open | The clinician skips it with a reason, then undoes the skip | "Skipped: reason" with Undo skip; undone, it's back to send and the badge counts it again |
+| AMM-AC-24 | A viewport at least 880px tall | The alert panel opens | It's at least 720px tall, 80px or more from the top and bottom, the monitor filling the room the alert leaves (Nov 11, 2026) |
 
 ---
 

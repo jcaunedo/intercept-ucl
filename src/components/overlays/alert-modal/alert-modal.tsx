@@ -435,15 +435,17 @@ function AlertModal({
 
 				{actions ? <div className='flex gap-2 *:flex-1'>{actions}</div> : null}
 
+				{/* The monitor takes the room the column has left, so a taller modal (Intercept Live's dialog is at least 720px)
+				    gets taller lanes; never under its 240px, past which the column scrolls instead. */}
 				{monitor ? (
 					monitorStatus ? (
 						// The status sits with the monitor it's about, closer than the card's gap.
-						<div className='flex shrink-0 flex-col gap-2'>
+						<div className='flex flex-1 flex-col gap-2'>
 							{monitorStatus}
-							<PatientMonitor aria-label={`${name}'s monitor`} {...monitor} />
+							<PatientMonitor aria-label={`${name}'s monitor`} className='h-auto min-h-60 flex-1' {...monitor} />
 						</div>
 					) : (
-						<PatientMonitor aria-label={`${name}'s monitor`} className='shrink-0' {...monitor} />
+						<PatientMonitor aria-label={`${name}'s monitor`} className='h-auto min-h-60 flex-1' {...monitor} />
 					)
 				) : null}
 				{tags ? (

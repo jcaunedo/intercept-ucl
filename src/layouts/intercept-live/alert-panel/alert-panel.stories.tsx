@@ -90,7 +90,7 @@ function Demo(props: AlertPanelProps) {
 					if (action.type === "unacknowledge")
 						setAlert((current) => ({ ...current, status: "active", addressed: undefined }));
 				}}
-				className='max-h-[calc(100dvh-32px)]'
+				className='max-h-[calc(100dvh-32px)] min-h-[min(720px,calc(100dvh-32px))]'
 			/>
 		</div>
 	);
