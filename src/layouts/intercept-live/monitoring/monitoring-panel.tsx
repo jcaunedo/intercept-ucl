@@ -62,6 +62,7 @@ import {
 } from "../shared/patient-panel";
 import { usePagePreferences } from "../page-preferences";
 import { usePatientNavigation } from "../patient-navigation";
+import { withFallPathwayLink } from "../shared/flag-details";
 import {
 	compareTriageAlerts,
 	isOpenAlert,
@@ -312,7 +313,7 @@ const statusFilters: QuickView<PanelMonitoringPatient>[] = [
 	// Live (Nov 2, 2026, user's call), as on the Census: a patient whose alert fires joins at once, as its toast says, and
 	// one whose alert resolves shows "Resolved" in place, then leaves. The view, the count and the summary always agree.
 	{ id: "alerts", label: "Active alerts", icon: BellRingIcon, matches: hasActiveAlert },
-	// Deterioration, as the card's score row shows it (Nov 1, 2026, user's call; the Census's chip of the same name).
+	// Deterioration, as the card's score line shows it (Nov 1, 2026, user's call; the Census's chip of the same name).
 	// Held when pressed, like the others, since scores change.
 	{ id: "rising", label: "Rising score", icon: TriangleIcon, matches: hasRisingAcuity },
 	{ id: "limits", label: "Outside limits", icon: GaugeIcon, matches: isOutsideLimits },
@@ -628,7 +629,17 @@ function MonitoringPanel({
 			// monitor alone; a patient without tags says "No tags", so the cards line up.
 			acuity={monitorView === "minimal" ? undefined : acuity}
 			trajectory={monitorView === "minimal" ? undefined : trajectory}
-			tags={monitorView === "minimal" ? undefined : (tags ?? [])}
+			// Fall risk links to the patient's fall prevention pathway, on their page (Nov 10, 2026, user's call).
+			tags={
+				monitorView === "minimal"
+					? undefined
+					: (withFallPathwayLink(
+							tags,
+							id,
+							alerts,
+							navigation && ((alertId) => navigation.openPatient(id, undefined, { pathway: { alertId } })),
+						) ?? [])
+			}
 			alert={cardAlert(id)}
 			size={density === "compact" ? "sm" : "md"}
 			plot={plot}

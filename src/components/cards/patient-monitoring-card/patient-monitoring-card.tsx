@@ -181,6 +181,9 @@ const sectionVariants = (gap: number): Variants => ({
 	exit: { height: 0, opacity: 0, marginTop: -gap, transition: { ...standardTransition, opacity: exitTransition } },
 });
 
+// The score line under the location, 4px below it.
+const scoreLineVariants = sectionVariants(4);
+
 // The condensed monitor's height per size; the full monitor is 240px at both.
 const condensedHeight: Record<PatientMonitoringCardSize, number> = { md: 120, sm: 104 };
 
@@ -438,6 +441,8 @@ function MonitorTrendLane({ parameter, values }: { parameter: ParameterKey; valu
 
 // The alert bar, by state: a severity's fill with white text (PatientCardAlert's colors), green when the last alert
 // resolved, and a quiet grey without one. Stacked in one grid cell, so a change cross-fades without moving anything.
+// As an alert panel's header (`header`), it's square, and a resolved one is green-100, a step darker than the panel's
+// green-50, so it reads as the panel's header wherever a resolved alert is shown (Nov 10, 2026, user's call).
 const alertBarVariants = cva("col-start-1 row-start-1 flex min-w-0 items-center gap-[7px] rounded-card [&_svg]:shrink-0", {
 	variants: {
 		variant: {
@@ -461,8 +466,13 @@ const alertBarVariants = cva("col-start-1 row-start-1 flex min-w-0 items-center 
 			true: "relative z-10 w-full cursor-pointer text-left outline-none before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-card before:bg-(--gray-700)/32 before:opacity-0 before:transition-opacity hover:before:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
 			false: "",
 		},
+		header: {
+			true: "rounded-none before:rounded-none",
+			false: "",
+		},
 	},
-	defaultVariants: { interactive: false },
+	compoundVariants: [{ variant: "resolved", header: true, class: "bg-badge-green-muted" }],
+	defaultVariants: { interactive: false, header: false },
 });
 
 const alertBarLabels: Record<Exclude<PatientCardAlertVariant, "message">, string> = {
@@ -508,17 +518,20 @@ function AlertAge({ since, whole = false }: { since: string; whole?: boolean }) 
  * The patient's alert as a full-width bar: the top severity with how many alerts the patient had in the last 24 h, and
  * how long ago it started; "No active alerts" without one. With `onOpen`, an alert's whole bar (any severity, Resolved or
  * a message) is a button that opens it, raised above the card's open target, with a maximize icon at its end. The alert
- * modal (Intercept Live) shows the same bar at the top of its alert.
+ * modal (Intercept Live) shows the same bar at the top of its alert; `header` styles it as that panel's header.
  */
 function AlertBar({
 	alert,
 	size,
 	onOpen,
+	header = false,
 	className,
 }: {
 	alert: PatientMonitoringCardProps["alert"];
 	size: PatientMonitoringCardSize;
 	onOpen?: () => void;
+	/** The bar heads an alert panel: square corners, and Resolved in green-100 over the panel's green-50. */
+	header?: boolean;
 	className?: string;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
@@ -553,13 +566,13 @@ function AlertBar({
 		<motion.button
 			type='button'
 			onClick={onOpen}
-			className={cn(alertBarVariants({ variant, size, interactive: true }), className)}
+			className={cn(alertBarVariants({ variant, size, interactive: true, header }), className)}
 			{...(prefersReducedMotion ? {} : pressPattern)}
 		>
 			{content}
 		</motion.button>
 	) : (
-		<div className={cn(alertBarVariants({ variant, size }), className)}>{content}</div>
+		<div className={cn(alertBarVariants({ variant, size, header }), className)}>{content}</div>
 	);
 }
 
@@ -611,8 +624,8 @@ function PatientMonitor({
 }
 
 /**
- * A patient's identity and location, their alert as a bar (or "No active alerts"), optionally their acuity score and its
- * change, over a live bedside monitor, with their tags below it when passed. Right of the name: a family message icon
+ * A patient's identity and location, with their acuity score and its change as a line under it when passed, their alert as
+ * a bar (or "No active alerts"), over a live bedside monitor, with their tags below it when passed. Right of the name: a family message icon
  * (`unreadMessages`) and a "…" menu (`moreActions`) that shows on hover; left of it, an avatar with `photo` or `initials`. Condensed by default (an ECG strip and HR, SpO₂, BP and
  * RR, or 1-hour sparklines with `plot="trends"`); with `expanded`, the full monitor, one lane per parameter (its waveform, or
  * its last hour with `plot="trends"`) with its numbers and alarm limits. `size="sm"` is the compact card. An alert behaves
@@ -784,25 +797,43 @@ function PatientMonitoringCard({
 					) : null}
 				</div>
 
-				<p
-					className={cn(
-						"flex min-w-0 items-center gap-1 font-medium text-foreground",
-						cardSize === "sm" ? "text-xs" : "text-sm",
-					)}
-				>
-					<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
-					{/* Only the hospital truncates; unit, room and bed always stay visible. */}
-					<span className='flex min-w-0 flex-1'>
-						{hospital ? (
-							<span title={hospital} className='min-w-0 truncate'>
-								{hospital}
-							</span>
+				{/* The location, then the score and its change, 4px apart. */}
+				<div className='flex flex-col gap-1'>
+					<p
+						className={cn(
+							"flex min-w-0 items-center gap-1 font-medium text-foreground",
+							cardSize === "sm" ? "text-xs" : "text-sm",
+						)}
+					>
+						<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
+						{/* Only the hospital truncates; unit, room and bed always stay visible. */}
+						<span className='flex min-w-0 flex-1'>
+							{hospital ? (
+								<span title={hospital} className='min-w-0 truncate'>
+									{hospital}
+								</span>
+							) : null}
+							{placeInHospital ? (
+								<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
+							) : null}
+						</span>
+					</p>
+					{/* A line the page can show or hide: it opens and closes in place, with its 4px gap. */}
+					<AnimatePresence initial={false}>
+						{acuity || trajectory ? (
+							<motion.div
+								key='score'
+								{...scoreClip}
+								variants={prefersReducedMotion ? fadeVariants : scoreLineVariants}
+								initial='initial'
+								animate='animate'
+								exit='exit'
+							>
+								<PatientCardScore acuity={acuity} trajectory={trajectory} size={cardSize} />
+							</motion.div>
 						) : null}
-						{placeInHospital ? (
-							<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
-						) : null}
-					</span>
-				</p>
+					</AnimatePresence>
+				</div>
 			</div>
 
 			{/* The alert bar. A new state cross-fades in; a "Resolved" bar fades out slowly (`resolvedFadeTransition`), so it's
@@ -828,23 +859,6 @@ function PatientMonitoringCard({
 					</motion.div>
 				</AnimatePresence>
 			</div>
-
-			{/* The acuity score and its change, as on PatientCensusCard's compact card. */}
-			<AnimatePresence initial={false}>
-				{acuity || trajectory ? (
-					<motion.div
-						key='score'
-						{...scoreClip}
-						variants={sectionMotion}
-						initial='initial'
-						animate='animate'
-						exit='exit'
-						className='flex flex-col'
-					>
-						<PatientCardScore acuity={acuity} trajectory={trajectory} size={cardSize} />
-					</motion.div>
-				) : null}
-			</AnimatePresence>
 
 			{/* Light in light mode, a dark screen in dark mode. The height animates between the two views (Expand pattern). */}
 			<motion.section

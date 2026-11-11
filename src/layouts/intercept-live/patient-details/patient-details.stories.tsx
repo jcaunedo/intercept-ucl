@@ -237,8 +237,8 @@ export const Pathway: Story = {
 };
 
 /**
- * An alert's pathway from the Alerts panel, without opening the alert (Nov 9, 2026, user's call): View alerts, then the
- * alert's Pathway opens its pathway right of Alerts, both open. Pressed again ("Hide pathway"), it closes the pathway.
+ * The Alerts panel has no View pathway under an open alert's buttons (Nov 10, 2026, user's call, as on the alert
+ * panel): the Care plan opens the pathway.
  */
 export const AlertPathwayBesideAlerts: Story = {
 	args: Pathway.args,
@@ -247,16 +247,7 @@ export const AlertPathwayBesideAlerts: Story = {
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		await userEvent.click(canvas.getByRole("button", { name: "View alerts" }));
 		const alertsPanel = await canvas.findByRole("complementary", { name: "Alerts" });
-		await userEvent.click(within(alertsPanel).getByRole("button", { name: "Pathway" }));
-		const pathwayPanel = await canvas.findByRole("complementary", { name: "Pathway" });
-		// Both open, Alerts on the left.
-		await expect(canvas.getByRole("complementary", { name: "Alerts" })).toBeInTheDocument();
-		await waitFor(() =>
-			expect(alertsPanel.getBoundingClientRect().left).toBeLessThan(pathwayPanel.getBoundingClientRect().left),
-		);
-		await userEvent.click(within(alertsPanel).getByRole("button", { name: "Hide pathway" }));
-		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).toBeNull());
-		await expect(canvas.getByRole("complementary", { name: "Alerts" })).toBeInTheDocument();
+		await expect(within(alertsPanel).queryByRole("button", { name: /pathway/i })).toBeNull();
 	},
 };
 

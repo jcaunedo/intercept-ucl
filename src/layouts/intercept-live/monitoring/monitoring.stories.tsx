@@ -83,7 +83,7 @@ export const Default: Story = {
  * Video consult in the "…" menu of a patient with no active alert (Thomas Walker) still opens the modal, without an
  * alert on it: his name heads it, the actions row (Video consult, Messages, Pathway, as on an alert; Nov 5, 2026), his
  * score, monitor and flags under it, and the Video consult panel open with the call to his bedside nurse already ringing.
- * End, then Video consult to call again. Pathway says there's none: pathways come with an alert.
+ * End, then Video consult to call again. No Pathway (Nov 10, 2026, user's call): pathways are on the patient's page.
  */
 export const VideoConsultWithoutAlert: Story = {
 	render: (args) => <LiveMonitoring {...args} />,
@@ -97,14 +97,12 @@ export const VideoConsultWithoutAlert: Story = {
 		await expect(await consult.findByText("Calling Grace Holloway…")).toBeInTheDocument();
 		await expect(consult.queryByRole("region", { name: "Alert" })).toBeNull();
 		await expect(consult.getByRole("button", { name: "2 pressors" })).toBeInTheDocument();
-		// Right of the name (Nov 9, 2026): the call's button (End call while it rings or is on), Messages and Pathway.
+		// Right of the name (Nov 9, 2026): the call's button (End call while it rings or is on) and Messages; no Pathway.
 		await expect(consult.getByRole("button", { name: "End call" })).toBeInTheDocument();
 		// Messages, in the header only (the Video consult panel's header has none since Nov 5, 2026), with the messages
 		// his nurse sent before the call (his record counts them unread).
 		await expect(consult.getAllByRole("button", { name: /^Messages(, \d+ new)?$/ })).toHaveLength(1);
-		await userEvent.click(consult.getByRole("button", { name: "Pathway" }));
-		await expect(await consult.findByText("No care pathway")).toBeInTheDocument();
-		await userEvent.click(consult.getByRole("button", { name: "Close pathway" }));
+		await expect(consult.queryByRole("button", { name: /pathway/i })).toBeNull();
 		// Live: the calling screen (which names the nurse too) has gone, and the nurse's label is on the video.
 		await waitFor(
 			() => {
@@ -216,9 +214,38 @@ export const Scenario1HeartFailure: Story = {
 };
 
 /**
- * Scenario 1, steps 4 to 6: in Hayes's alert modal the intensivist accepts the CHF pathway and keeps her at Chadron. A
- * few seconds later it's 06:00: both checkpoints pass, the panel logs Transfer avoided, her alert resolves (by her
- * bedside nurse) and her card settles at NEWS2 3, Low. Reopened, the modal keeps the decision.
+ * Fall risk's popover links to the patient's fall prevention pathway (Nov 10, 2026, user's call): on Anderson's card
+ * (his bed exit alarm suggested it), View fall prevention pathway opens his page with the pathway out, its reason, the
+ * hospital's protocol and the event behind it.
+ */
+export const FallPreventionPathway: Story = {
+	// Starts on Monitoring, whatever page, patient or alert an earlier story left in the prototype's address.
+	beforeEach: () => {
+		const url = new URL(window.location.href);
+		for (const name of ["page", "patient", "alert", "consult"]) url.searchParams.delete(name);
+		window.history.replaceState(window.history.state, "", url);
+	},
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		const anderson = await waitFor(
+			() => canvas.getAllByRole("article").find((article) => within(article).queryByText("Anderson, James")) as HTMLElement,
+			{ timeout: 10000 },
+		);
+		await userEvent.click(within(anderson).getByRole("button", { name: "Fall risk" }));
+		const popover = within(await screen.findByRole("dialog", { name: "Fall risk" }));
+		await userEvent.click(popover.getByRole("button", { name: "View fall prevention pathway" }));
+		const pathway = within(await screen.findByRole("complementary", { name: "Pathway" }, { timeout: 5000 }));
+		const section = within(await pathway.findByRole("region", { name: "Fall prevention pathway" }));
+		await expect(section.getByText("Patient identified as at risk for falls")).toBeInTheDocument();
+		await expect(section.getByText(/Hospital fall prevention protocol/)).toBeInTheDocument();
+		await expect(section.getByText("Related event: Bed exit alarm")).toBeInTheDocument();
+	},
+};
+
+/**
+ * Scenario 1, steps 4 to 6: from Hayes's alert the intensivist opens her page (the alert has no pathway since Nov 10,
+ * 2026), accepts the CHF pathway from the Care plan and keeps her at Chadron. A few seconds later it's 06:00: both
+ * checkpoints pass, the panel logs Transfer avoided and the Care plan tracks it.
  */
 export const Scenario1Resolution: Story = {
 	render: (args) => <LiveMonitoring {...args} />,
@@ -231,36 +258,24 @@ export const Scenario1Resolution: Story = {
 		});
 		await userEvent.click(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ }));
 		const modal = within(await screen.findByRole("dialog"));
-		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
-		await userEvent.click(await modal.findByRole("button", { name: "Accept" }));
-		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
+		await expect(modal.queryByRole("button", { name: /pathway/i })).toBeNull();
+		// Her page: the Care plan opens the pathway in the Pathway panel.
+		await userEvent.click(modal.getByRole("button", { name: "Hayes, Margaret, open patient" }));
+		const plan = within(await screen.findByRole("region", { name: "Care plan" }, { timeout: 5000 }));
+		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
+		const pathway = within(await screen.findByRole("complementary", { name: "Pathway" }));
+		await userEvent.click(await pathway.findByRole("button", { name: "Accept" }));
+		const panel = within(await pathway.findByRole("region", { name: "Keep or transfer" }));
 		await userEvent.click(panel.getByRole("button", { name: "Keep at Chadron" }));
 		// The form's own button: the one that opened it may still be fading out.
 		const form = within(await panel.findByRole("form", { name: "Keep at Chadron" }));
 		await userEvent.type(form.getByRole("textbox", { name: "Why keep at Chadron?" }), "BiPAP and RT are here");
 		await userEvent.click(form.getByRole("button", { name: "Keep at Chadron" }));
-		// 06:00, while the modal is open: the checkpoints pass and the transfer is avoided.
+		// 06:00: the checkpoints pass and the transfer is avoided.
 		await expect(await panel.findByText("Transfer avoided", {}, { timeout: 10000 })).toBeInTheDocument();
 		await expect(panel.getAllByText(/Passed/)).toHaveLength(2);
-		// The Pathway column scrolls to its end, so the result is in view.
-		const column = (await panel.findByText("Transfer avoided")).closest(".overflow-y-auto") as HTMLElement;
-		await waitFor(() => expect(column.scrollHeight - column.clientHeight - column.scrollTop).toBeLessThan(2));
-		await expect(await modal.findByText(/Resolved by Kayla Brandt, RN/)).toBeInTheDocument();
-		// Closed and reopened, the decision and the outcome stay.
-		await userEvent.keyboard("{Escape}");
-		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-		const card = within(hayes() as HTMLElement);
-		await waitFor(() => expect(card.getByText("3")).toBeInTheDocument());
-		// Once the Critical bar has faded out, only the Resolved one is left.
-		await waitFor(() => expect(card.getAllByRole("button", { name: /Open alert/ })).toHaveLength(1));
-		await userEvent.click(card.getByRole("button", { name: /Open alert/ }));
-		const reopened = within(await screen.findByRole("dialog"));
-		await expect(await reopened.findByText(/Keeping at Chadron/)).toBeInTheDocument();
-		await expect(reopened.getByText("Transfer avoided")).toBeInTheDocument();
-		// Her page tracks it all in the care plan.
-		await userEvent.click(reopened.getByRole("button", { name: "Hayes, Margaret, open patient" }));
-		const plan = within(await screen.findByRole("region", { name: "Care plan" }));
-		await expect(plan.getByText("Keeping at Chadron")).toBeInTheDocument();
+		// Her Care plan tracks it all.
+		await waitFor(() => expect(plan.getByText("Keeping at Chadron")).toBeInTheDocument());
 		await expect(plan.getByText("Transfer avoided")).toBeInTheDocument();
 	},
 };
@@ -268,9 +283,9 @@ export const Scenario1Resolution: Story = {
 /**
  * The Prototype menu's "Scenario 2: COPD": Dale Reynolds isn't on Monitoring until it's picked; 1.5 s later Alliance's
  * ED requests the hub's consult and he joins with his Critical alert. On the video consult, Alliance's connection drops:
- * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist accepts the COPD
- * pathway and keeps him at Alliance: air is grounded and the road closed, so there's no transfer to pick. A few seconds
- * later it's 2 h on NIV: both checkpoints pass, his alert resolves (by his nurse) and his card settles at NEWS2 5.
+ * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist opens his page (the
+ * call goes with him), accepts the COPD pathway from the Care plan and keeps him at Alliance: air is grounded and the
+ * road closed, so there's no transfer to pick. A few seconds later it's 2 h on NIV: both checkpoints pass.
  */
 export const Scenario2Copd: Story = {
 	render: (args) => <LiveMonitoring {...args} />,
@@ -299,28 +314,27 @@ export const Scenario2Copd: Story = {
 		await expect(modal.getByText("Low bandwidth:")).toBeInTheDocument();
 		await expect(await modal.findByText("Video paused for low bandwidth", {}, { timeout: 5000 })).toBeInTheDocument();
 		await expect(await modal.findByText("BiPAP screen", {}, { timeout: 12000 })).toBeInTheDocument();
-		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
-		await expect(await modal.findByText("COPD exacerbation pathway")).toBeInTheDocument();
-		await userEvent.click(await modal.findByRole("button", { name: "Accept" }));
-		const panel = within(await modal.findByRole("region", { name: "Keep or transfer" }));
+		// The pathway is on his page (Nov 10, 2026): the name opens it, the call going with him.
+		await userEvent.click(modal.getByRole("button", { name: "Reynolds, Dale, open patient" }));
+		const plan = within(await screen.findByRole("region", { name: "Care plan" }, { timeout: 5000 }));
+		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
+		const pathway = within(await screen.findByRole("complementary", { name: "Pathway" }));
+		await expect(await pathway.findByText("COPD exacerbation pathway")).toBeInTheDocument();
+		await userEvent.click(await pathway.findByRole("button", { name: "Accept" }));
+		const panel = within(await pathway.findByRole("region", { name: "Keep or transfer" }));
 		await expect(panel.getByText(/Grounded by the storm/)).toBeInTheDocument();
 		await expect(panel.getByText(/Highway to Scottsbluff closed/)).toBeInTheDocument();
 		await userEvent.click(panel.getByRole("button", { name: "Keep at Alliance" }));
 		const form = within(await panel.findByRole("form", { name: "Keep at Alliance" }));
 		await userEvent.type(form.getByRole("textbox", { name: "Why keep at Alliance?" }), "No way out tonight; NIV with checkpoints");
 		await userEvent.click(form.getByRole("button", { name: "Keep at Alliance" }));
-		// 2 h on NIV, while the modal is open: the blood gases' photos and Megan's note arrive, and Messages opens on its own
-		// in Pathway's place.
-		await expect(await modal.findByText("Blood gas, 2 h on BiPAP", {}, { timeout: 10000 })).toBeInTheDocument();
-		await expect(await modal.findByText(/Resolved by Megan Foster, RN/)).toBeInTheDocument();
+		// 2 h on NIV: the blood gases' photos and Megan's note arrive, and Messages opens on its own in Pathway's place.
+		await expect(await screen.findByText("Blood gas, 2 h on BiPAP", {}, { timeout: 10000 })).toBeInTheDocument();
 		// Back to Pathway: both checkpoints passed and no transfer was needed.
-		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
-		const resolved = within(await modal.findByRole("region", { name: "Keep or transfer" }));
+		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
+		const resolved = within(await screen.findByRole("region", { name: "Keep or transfer" }));
 		await expect(await resolved.findByText("Transfer avoided")).toBeInTheDocument();
 		await expect(resolved.getAllByText(/Passed/)).toHaveLength(2);
-		await userEvent.keyboard("{Escape}");
-		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-		await waitFor(() => expect(within(reynolds() as HTMLElement).getByText("5")).toBeInTheDocument());
 	},
 };
 
@@ -377,7 +391,7 @@ export const OutsideLimits: Story = {
 export const MonitorViews: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
 		const expandedCards = () => canvasElement.querySelectorAll("[data-slot='patient-monitoring-card'][data-expanded]");
-		const scores = () => canvas.queryAllByText("NEWS2");
+		const scores = () => canvas.queryAllByText(/^NEWS2: /);
 		await expect(expandedCards()).toHaveLength(sampleMonitoringPatients.length);
 		await userEvent.click(canvas.getByRole("button", { name: "Condensed view" }));
 		await waitFor(() => expect(expandedCards()).toHaveLength(0));
@@ -655,3 +669,27 @@ function LiveMonitoring(props: MonitoringProps) {
 		/>
 	);
 }
+
+/**
+ * Scenario 2's consult request answered from its toast, then the patient's name in the alert panel: the call goes on on
+ * his page, live, with the same nurse (Nov 10, 2026, user's report: the answered call was lost on the way, because a
+ * call that opens already live wasn't in the patient's consult session until its next change).
+ */
+export const AnsweredCallGoesToPatientPage: Story = {
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		const reynolds = () => canvas.queryAllByRole("article").find((article) => within(article).queryByText("Reynolds, Dale"));
+		await userEvent.click(canvas.getByRole("button", { name: "Prototype" }));
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Scenario 2: COPD" }));
+		await waitFor(() => expect(within(reynolds() as HTMLElement).getByRole("button", { name: /Open alert/ })).toBeInTheDocument(), { timeout: 4000 });
+		const call = await screen.findByRole("button", { name: "Answer" }, { timeout: 10000 });
+		await userEvent.click(call);
+		const modal = within(await screen.findByRole("dialog", { name: "pH 7.24 and PaCO₂ 78 on arrival, severe COPD, on BiPAP" }));
+		await waitFor(() => expect(modal.getByText("Megan Foster, RN")).toBeInTheDocument(), { timeout: 7000 });
+		await userEvent.click(modal.getByRole("button", { name: "Reynolds, Dale, open patient" }));
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		const pageCall = within(await canvas.findByRole("complementary", { name: "Video consult" }, { timeout: 5000 }));
+		await expect(pageCall.getByText("Megan Foster, RN")).toBeInTheDocument();
+		await expect(pageCall.queryByText(/^Calling /)).not.toBeInTheDocument();
+	},
+};

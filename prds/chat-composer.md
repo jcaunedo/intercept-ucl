@@ -205,14 +205,15 @@ A draft handoff in I-PASS (PRD PD-110), built from the chart:
 
 ### CC-040 — Suggested questions
 
-Shown under the greeting until the first question, as pills; picking one sends it.
+Shown under the greeting until the first question, as pills; picking one sends it. ✅ **Decision (Nov 10, 2026, user's call): they keep going.** After an answer with no follow-ups of its own (the shift brief, for example), up to 4 of the suggestions not asked yet show under it, as follow-ups, in the same order.
 
 | Where | Suggestions |
 |---|---|
-| **Census and other pages** | "Brief me for the start of my shift", "What happened overnight?", "Who needs attention first?", "What changed in the last hour?", "Which patients are sepsis candidates?" |
+| **Census and other pages, starting the shift** | (its first 2 hours; a shift is 12 hours, from the end time in the app header) "Brief me for the start of my shift", "What happened overnight?", "Who needs attention first?", "What's overdue?", "Which patients are sepsis candidates?", "What changed in the last hour?" |
+| **Census and other pages, on shift a while** | (✅ Nov 10, 2026, user's call) "What changed in the last hour?", "Who needs attention first?", "Which alerts are still open?", "What's overdue?", "Any results still pending?", "Which patients are sepsis candidates?" |
 | **A patient's page** | By the patient's first name: "Summarize Sarah's last 24 hours", "What changed for Sarah since I last looked?", "Show Sarah's latest labs", "What meds is Sarah on?", "Show Sarah's sepsis criteria" (labs and meds added Nov 2, 2026, user's call) (✅ Nov 2, 2026, user's call: the chat opened about a patient talks about them) |
 
-⚠️ **Decision needed:** whether suggestions adapt to time of shift, role or what's open on the census (CC-OD-01).
+✅ **Resolved in part (Nov 10, 2026, user's call):** suggestions adapt to the time of shift (starting it, or on it a while). ℹ️ The 12-hour shift and the 2-hour start are the prototype's; the real shift comes from staffing. ⚠️ **Decision needed:** whether they also adapt to role or what's open on the census (CC-OD-01).
 
 ### CC-041 — How answers arrive
 
@@ -235,8 +236,10 @@ Shown under the greeting until the first question, as pills; picking one sends i
 | **Cites its sources** | Every answer names where its facts come from ("Sources: Monitor · Lab · MAR"); times are relative ("35 min ago"). ⚠️ **Gap:** sources are named, not linked; a citation should open its source and its place on the Timeline (PD-100, CC-OD-08). |
 | **Retrieves, never advises** | A request for a diagnosis, a treatment or a dose gets: "I can't recommend a treatment or make a diagnosis. I can bring up the data behind the decision, like a trend, the latest results or the sepsis criteria." (Spec §8.7) |
 | **Honest about thin data** | A question the chart can't answer gets "I don't have enough information…" with what it can answer (Spec §9.1, Principle 12). Missing values say they're missing, never zero. |
-| **Patient names stand out** | A patient's name is always bold, full ("**Miller, Sarah**") or first ("**Sarah**"). |
-| **Readable** | Short paragraphs and lists; long lists stop at 8 with "…and 3 more". |
+| **Patient names stand out** | A patient's name is always bold, full ("**Miller, Sarah**") or first ("**Sarah**"). ✅ **Decision (Nov 10, 2026, user's call):** a list whose lines start with a patient (Breathing support, infusions, safety…) shows each patient's avatar before their line, as on their card, in place of the bullet, formatted as the rows of a count's patient list: the name (semibold) and, in grey under it, where they are (hospital, unit and bed), with the avatar centered beside both; then what the answer says about them below, lined up with the name. |
+| **Readable** | Short paragraphs and lists; long lists stop at 8 with "…and 3 more". ✅ **Decision (Nov 10, 2026, user's calls):** that line ends with **Show all**, which expands the same list in place with only the patients it hadn't shown (no new question); the line goes once they're shown. |
+| **Follow-ups on recent activity** | ✅ **Decision (Nov 10, 2026, user's call):** an answer about what happened (the last hour, the last 12 hours, overnight) offers what a physician reviewing it asks next: "Who needs attention first?", "Which alerts are still open?", "What's overdue?", "Any results still pending?", then the other window ("What changed in the last hour?" after the 12 hours, "What happened overnight?" after the hour), each in the same scope (a hospital, a unit, my patients). |
+| **Counts open their patients** | ✅ **Decision (Nov 10, 2026, user's call):** a count of patients in an answer ("5 ventilated", "1 on NIV", "5 on pressors", "2 with open alerts", "8 assigned to you") is a link once the answer is written: a click lists those patients under its line (their avatar as on their card, then the name, then hospital, unit and bed; avatars Nov 10, 2026, user's call), another hides them, and a patient opens their details. A count of none stays plain text. Today the census overview's counts link; ℹ️ other answers' counts can link the same way. |
 | **One tenant** | Answers only about patients the clinician has access to, in this tenant (PRD PD-AC-15). |
 
 ### CC-050 — Context
@@ -312,6 +315,7 @@ Per MOTION.md "AI answers": thinking is a soft opacity pulse; streaming arrives 
 | CC-AC-20 | Dictating "labs for Sarah Miller" then "delete delete" leaves "Labs for"; with "Labs for Sarah" typed and "Miller delete delete" said, the field reads "Labs for". |
 | CC-AC-21 | Saying "does she have a fever stop listening" leaves "Does she have a fever?" and ends dictation. |
 | CC-AC-22 | Woken by "Hey", "Intercept can you tell me how is Emily doing" shows "Can you tell me how is Emily doing?" once recognition settles; "okay so her lactate is down comma right" shows "Okay so her lactate is down, right?". |
+| CC-AC-23 | In the census overview, clicking "5 on pressors" lists those 5 patients under the line with where they are; clicking one opens their Patient details; clicking the count again hides the list. Copy copies the counts as plain words. |
 
 ---
 

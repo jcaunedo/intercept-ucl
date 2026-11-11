@@ -8,7 +8,7 @@ import { Button } from "@/components/buttons/button";
 import { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
 import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
-import { setToastCloseHandler, setToastKept, toast, toastsMuted, useToastsMuted } from "@/components/feedback/sonner";
+import { setToastCloseHandler, setToastKept, toast, toastsMuted } from "@/components/feedback/sonner";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
 import { useRingtone, type RingUrgency } from "@/lib/hooks/use-ringtone";
@@ -118,7 +118,8 @@ type AlertToastOwnProps = {
 	declineLabel?: string;
 	/**
 	 * A consult request: plays a ringtone while it rings (two soft notes every 2.5 s), until it's answered, declined or
-	 * addressed. On by default; browsers hold it until the user has clicked or typed on the page.
+	 * addressed, whether toasts are muted or not. On by default; browsers hold it until the user has clicked or typed on
+	 * the page.
 	 */
 	ringtone?: boolean;
 	/**
@@ -236,10 +237,10 @@ function AlertToast({
 }: AlertToastProps) {
 	const consult = severity === "consult-request";
 	const addressed = addressedProp || severity === "resolved";
-	// A consult request rings until it's answered or declined, unless its ringtone is turned off or toasts are muted (Don't
-	// show; Nov 4, 2026, user's call): the call stays on screen, silent.
-	const muted = useToastsMuted();
-	useRingtone(consult && ringtone && !addressed && !muted, urgency);
+	// A consult request always rings until it's answered or declined (Nov 10, 2026, user's call: "incoming call should
+	// always ring"), muted toasts included (Don't show, or paused by Close all; it was silent then from Nov 4, 2026). Only
+	// `ringtone={false}` silences it, and the browser holds any sound until the user's first click or key on the page.
+	useRingtone(consult && ringtone && !addressed, urgency);
 	const firedTime = firedAt === undefined ? undefined : new Date(firedAt);
 	const hasTime = firedTime !== undefined && !Number.isNaN(firedTime.getTime());
 	// Re-renders on each minute boundary, so "Just now" becomes "1 min ago" while the toast is open. Null on the server.

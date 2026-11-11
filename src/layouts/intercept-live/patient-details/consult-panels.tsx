@@ -305,6 +305,7 @@ function PatientConsultPanels({
 	data,
 	pathways,
 	defaultConsult = "idle",
+	defaultPathway,
 	onOpenConsult,
 	onOpenMessages,
 	onConsultNote,
@@ -313,6 +314,8 @@ function PatientConsultPanels({
 	data: PatientConsultData;
 	/** The call as the panels open: `live` for a consult request answered on the patient's page, its panel open. */
 	defaultConsult?: AlertConsultState;
+	/** Opens with this alert's pathway out, scrolled to `focus` (a notice's Review referrals). */
+	defaultPathway?: { alertId?: string; focus?: "discharge" };
 	pathways?: PatientPathways;
 	/** The call's panel opened (the call rings). */
 	onOpenConsult?: () => void;
@@ -335,6 +338,14 @@ function PatientConsultPanels({
 	const [pathwayAlertId, setPathwayAlertId] = useSessionState<string | undefined>("pathwayAlert", undefined);
 	const pathwayDetail = pathwayDetails.find((detail) => detail.alert.id === pathwayAlertId) ?? pathwayDetails[0];
 	const pathwayShown = pathwayOpen && !messagesOpen && Boolean(pathwayDetail);
+	// Opened at an alert's pathway (a notice's Review referrals): its pathway out, in Messages' place.
+	React.useEffect(() => {
+		if (!defaultPathway) return;
+		if (defaultPathway.alertId) setPathwayAlertId(defaultPathway.alertId);
+		setMessagesOpen(false);
+		setPathwayOpen(true);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the page opens.
+	}, []);
 	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
 	// The field takes focus when the clinician opens the thread, not when a new message opens it.
 	const [focusMessages, setFocusMessages] = React.useState(false);
@@ -531,6 +542,7 @@ function PatientConsultPanels({
 							onDischargeDecision={pathways?.onDischargeDecision}
 							escapeRef={pathwayEscape}
 							fill
+							focusDischarge={defaultPathway?.focus === "discharge"}
 						/>
 					</div>
 				) : null}

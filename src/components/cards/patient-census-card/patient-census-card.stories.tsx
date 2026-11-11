@@ -226,6 +226,15 @@ export const TagDetails: Story = {
 	},
 	play: async ({ args, canvas }) => {
 		const tag = canvas.getByRole("button", { name: "2 pressors" });
+		// The row clips past its edges, so it leaves 4px around every tag for its whole focus ring (2px, 2px out).
+		const row = tag.parentElement as HTMLElement;
+		const box = row.getBoundingClientRect();
+		for (const button of row.querySelectorAll("button")) {
+			const edge = button.getBoundingClientRect();
+			await expect(edge.top - box.top).toBeGreaterThanOrEqual(4);
+			await expect(box.bottom - edge.bottom).toBeGreaterThanOrEqual(4);
+		}
+		await expect(row.querySelector("button")!.getBoundingClientRect().left - box.left).toBeGreaterThanOrEqual(4);
 		await userEvent.click(tag);
 		const popover = within(await screen.findByRole("dialog", { name: "2 pressors" }));
 		await expect(popover.getByText("Epinephrine drip increased by 75% in the last 3 hours")).toBeInTheDocument();

@@ -131,6 +131,118 @@ export const AskIntercept: Story = {
 };
 
 /**
+ * An answer's counts are links to their patients (Nov 10, 2026, user's call): "5 on pressors" lists them under its line,
+ * each with where they are, and a patient opens their details.
+ */
+export const AskInterceptPatientLists: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), "fall risk patients?{Enter}");
+		const pressors = await chat.findByRole("button", { name: /on pressors/ }, { timeout: 15_000 });
+		await expect(pressors).toHaveAttribute("aria-expanded", "false");
+		await userEvent.click(pressors);
+		await expect(pressors).toHaveAttribute("aria-expanded", "true");
+		const list = within(await chat.findByRole("list", { name: "Patients on pressors" }));
+		const rows = list.getAllByRole("button", { name: /^Open patient details:/ });
+		await expect(rows).toHaveLength(Number(pressors.textContent?.match(/\d+/)?.[0]));
+		// Each with their avatar, as on their card.
+		for (const row of rows) await expect(row.querySelector("[data-slot='avatar']")).not.toBeNull();
+		const name = rows[0].textContent?.replace("Open patient details: ", "").split(",")[0] ?? "";
+		await userEvent.click(rows[0]);
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(name));
+	},
+};
+
+/**
+ * An answer that lists patients line by line shows each one's avatar before their line, as on their card, in place of
+ * the bullet (Nov 10, 2026, user's call).
+ */
+export const AskInterceptPatientAvatars: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), "Who is on oxygen?{Enter}");
+		const intro = await chat.findByText(/^Breathing support.*:$/, {}, { timeout: 15_000 });
+		const answer = intro.closest("div")?.parentElement as HTMLElement;
+		await waitFor(
+			() => {
+				const lines = [...answer.querySelectorAll("li")];
+				expect(lines.length).toBeGreaterThan(1);
+				for (const line of lines) expect(line.querySelector("[data-slot='avatar']")).not.toBeNull();
+			},
+			{ timeout: 20_000 },
+		);
+		// As a count's patient list shows them: the avatar centered on the name and where they are in grey ("Sidney
+		// Regional · MICU Bed 11"); then the answer's details below.
+		await waitFor(() => expect(chat.getByRole("log", { name: "Conversation" })).toHaveAttribute("aria-busy", "false"), {
+			timeout: 30_000,
+		});
+		for (const line of answer.querySelectorAll("li")) {
+			const [name, place, details] = line.querySelectorAll("p");
+			await expect(name.textContent).toMatch(/^[^(:]+, [^(:]+$/);
+			await expect(place.textContent).toMatch(/^[^(]+ · [^(]+$/);
+			await expect(details.textContent).not.toMatch(/^[(:]/);
+			const avatar = line.querySelector("[data-slot='avatar']")!.getBoundingClientRect();
+			const middle = (name.getBoundingClientRect().top + place.getBoundingClientRect().bottom) / 2;
+			await expect(Math.abs(avatar.top + avatar.height / 2 - middle)).toBeLessThanOrEqual(1);
+		}
+	},
+};
+
+/**
+ * The latest activity (Nov 10, 2026, user's calls): what a physician reviewing it asks next, as follow-ups. A list cut
+ * at 8 patients ends "…and 18 more." with Show all on that line, which expands the same list with only the patients it
+ * hadn't shown.
+ */
+export const AskInterceptActivityFollowUps: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), "What happened overnight?{Enter}");
+		const followUps = within(await chat.findByRole("list", { name: "Follow-up actions" }, { timeout: 30_000 }));
+		await expect(followUps.getAllByRole("button").map((button) => button.textContent)).toEqual([
+			"Who needs attention first?",
+			"Which alerts are still open?",
+			"What's overdue?",
+			"Any results still pending?",
+			"What changed in the last hour?",
+		]);
+		const showAll = chat.getByRole("button", { name: "Show all" });
+		const cut = showAll.closest("p") as HTMLElement;
+		await expect(cut).toHaveTextContent(/^…and \d+ more\. Show all$/);
+		const hidden = Number(cut.textContent?.match(/\d+/)?.[0]);
+		const answer = cut.parentElement as HTMLElement;
+		const shown = answer.querySelectorAll("li").length;
+		await userEvent.click(showAll);
+		// The same answer's list expands in place with only the ones it hadn't shown: no new question, no "…and n more".
+		await waitFor(() => expect(answer.querySelectorAll("li")).toHaveLength(shown + hidden));
+		await expect(chat.queryByText(/^…and \d+ more/)).toBeNull();
+		await expect(chat.queryByRole("button", { name: "Show all" })).toBeNull();
+		await expect(chat.getAllByText("What happened overnight?")).toHaveLength(1);
+	},
+};
+
+/**
+ * An answer with no follow-ups of its own, the shift brief, ends with suggested questions not asked yet (Nov 10, 2026,
+ * user's call): up to 4, for where the clinician is in their shift (starting it, or on it a while).
+ */
+export const AskInterceptSuggestedFollowUps: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		const suggestions = within(await chat.findByRole("list", { name: "Suggested questions" }, { timeout: 15_000 }));
+		const offered = suggestions.getAllByRole("button").map((button) => button.textContent ?? "");
+		const brief = "Brief me for the start of my shift";
+		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), `${brief}{Enter}`);
+		const followUps = within(await chat.findByRole("list", { name: "Follow-up actions" }, { timeout: 30_000 }));
+		const next = followUps.getAllByRole("button").map((button) => button.textContent ?? "");
+		// The set the chat started with for this point of the shift, in its order, less the one asked, up to 4.
+		await expect(next).toEqual(offered.filter((question) => question !== brief).slice(0, 4));
+	},
+};
+
+/**
  * The hospital bar's Live feed opens the live feed panel right of the canvas, as on Monitoring: the triage queue of the
  * census's alerts, highest priority first. The grid drops a column for the room it takes; Live feed again closes it.
  */

@@ -116,6 +116,7 @@
 	--color-badge-blue-foreground: var(--badge-blue-foreground);
 	--color-badge-green: var(--badge-green);
 	--color-badge-green-foreground: var(--badge-green-foreground);
+	--color-badge-green-muted: var(--badge-green-muted);
 	--color-badge-sky: var(--badge-sky);
 	--color-badge-sky-foreground: var(--badge-sky-foreground);
 	--color-badge-purple: var(--badge-purple);
@@ -396,8 +397,10 @@
 	--blue-950: oklch(0.282 0.087 267.94); /* #172554 */
 
 	--green-50: oklch(0.982 0.018 155.83); /* #f0fdf4 */
+	--green-100: oklch(0.962 0.044 156.743); /* #dcfce7 */
 	--green-300: oklch(0.871 0.136 154.45); /* #86efac */
 	--green-700: oklch(0.527 0.137 150.07); /* #15803d */
+	--green-900: oklch(0.393 0.095 152.535); /* #14532d */
 	--green-950: oklch(0.266 0.063 152.93); /* #052e16 */
 
 	--sky-50: oklch(0.963 0.020 238.66); /* #e7f5ff */
@@ -456,11 +459,13 @@
 
 /* ---------- Stacking order (Nov 10, 2026) ----------
    What the user is interacting with comes first: the floating layers they open (Popover, DropdownMenu, Select's list,
-   Tooltip) sit above the toasts, and the toasts above modal layers (Dialog, Sheet: z-50), so an incoming call still
-   shows over an open dialog. Use as `z-(--z-floating)`. See DESIGN.md → "Stacking order". */
+   Tooltip) sit above the toasts, and the toasts above modal layers (Dialog, Sheet: z-50). An incoming call is the
+   exception: while one rings, the toasts go above everything (`--z-call`). Use as `z-(--z-floating)`. See DESIGN.md →
+   "Stacking order". */
 :root {
 	--z-toast: 60;
 	--z-floating: 70;
+	--z-call: 80;
 }
 
 /* ---------- Semantic: intercept mode ----------
@@ -587,6 +592,8 @@
 	--badge-blue-foreground: var(--blue-700);
 	--badge-green: var(--green-50);
 	--badge-green-foreground: var(--green-700);
+	/* A step darker than the green fill, e.g. a resolved alert's header in the alert modal (Nov 10, 2026). */
+	--badge-green-muted: var(--green-100);
 	--badge-sky: var(--sky-50);
 	--badge-sky-foreground: var(--sky-700);
 	--badge-purple: var(--purple-50);
@@ -802,6 +809,7 @@
 	--badge-blue-foreground: var(--blue-300);
 	--badge-green: var(--green-950);
 	--badge-green-foreground: var(--green-300);
+	--badge-green-muted: var(--green-900);
 	--badge-sky: var(--sky-950);
 	--badge-sky-foreground: var(--sky-300);
 	--badge-purple: var(--purple-950);

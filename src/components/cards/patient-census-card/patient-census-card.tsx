@@ -3,7 +3,7 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { BellRingIcon, MapPinIcon } from "lucide-react";
+import { BellRingIcon, MapPinIcon, MinusIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
@@ -362,7 +362,10 @@ type PatientCensusCardProps = Omit<
 		score?: React.ReactNode;
 		level?: PatientCardAcuityLevel;
 	};
-	/** Change beside the acuity score, e.g. "Change in last 24 h", ▲ +1. */
+	/**
+	 * The score's change over the last 24 h, after the score: `value` "+1" with `trend` "up" reads "· 1 point up in 24 h"
+	 * after a rising arrow, "0" reads "· No change in 24 h". The line doesn't show `label` ("Change in last 24 h").
+	 */
 	trajectory?: PatientCardVital;
 	/** Shown on the `expanded` card only; `compact` doesn't show vitals. */
 	vitals?: PatientCardVital[];
@@ -401,50 +404,70 @@ type PatientCensusCardProps = Omit<
 	onMoreActions?: React.MouseEventHandler<HTMLButtonElement>;
 };
 
+/** A score's change as a number: "+1" is 1, "−2" is -2, "0" is 0. None when the value isn't a number ("First score 06:00"). */
+function scoreChange(value: unknown) {
+	if (typeof value !== "string" && typeof value !== "number") return undefined;
+	const text = String(value).trim().replace(/[−–]/g, "-");
+	const change = Number(text);
+	return text !== "" && Number.isFinite(change) ? change : undefined;
+}
+
 /**
- * The acuity score and its change, side by side between two rules: "NEWS2 7 High" and "Change in last 24 h ▲ +1".
- * Shared by PatientCensusCard and PatientMonitoringCard. 6px above and below on both variants.
+ * The acuity score and its change as one line, for under a patient's location: a trend arrow, then "NEWS2: 7 High · 1
+ * point up in 24 h" (the score medium, the dot and the change muted, the change regular). The change says how many
+ * points and which way over `period`; the arrow points the same way, in `scoreTrendClassName`'s color. No change reads
+ * "No change in 24 h" after a muted dash; a change that isn't a number shows as given, and one with no value isn't
+ * shown. A line too long for its card wraps under itself, after the arrow. Shared by PatientCensusCard,
+ * PatientMonitoringCard and AlertModal.
  */
 function PatientCardScore({
 	acuity,
 	trajectory,
 	size = "md",
-}: Pick<PatientCensusCardProps, "acuity" | "trajectory"> & { size?: "md" | "sm" }) {
-	const small = size === "sm";
+	period = "24 h",
+	className,
+}: Pick<PatientCensusCardProps, "acuity" | "trajectory"> & {
+	size?: "md" | "sm";
+	/** The window the change is measured over, as the line writes it. */
+	period?: string;
+	className?: string;
+}) {
 	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
+	const change = scoreChange(trajectory?.value);
+	// The data's direction, else the change's sign. No direction for no change, or a change with neither.
+	const direction = change === 0 ? undefined : (trajectory?.trend ?? (change === undefined ? undefined : change > 0 ? "up" : "down"));
+	const points = Math.abs(change ?? 0);
+	const hasChange = Boolean(trajectory) && (change !== undefined || (trajectory?.value != null && trajectory.value !== ""));
+	const TrendIcon = direction === "up" ? TrendingUpIcon : direction === "down" ? TrendingDownIcon : MinusIcon;
 
 	return (
-		// 16px between the score and its change, so a long level ("Moderate") never runs into the change column.
-		<div
-			className={cn(
-				"flex border-b border-border-muted px-2 py-1.5 first:border-t",
-				small ? "gap-3" : "gap-4",
-			)}
-		>
-			{acuity ? (
-				<div className='flex min-w-0 flex-1 flex-col whitespace-nowrap'>
-					<span className='text-xs font-medium text-muted-foreground'>{acuity.label}</span>
-					<span className='flex items-center gap-2'>
-						<span className={cn("font-semibold text-foreground", small ? "text-base" : "text-xl")}>
-							{acuity.score ?? "--"}
-						</span>
-						{acuityLevel ? (
-							<span className={cn("font-normal", small ? "text-base" : "text-xl", acuityLevels[acuityLevel].className)}>
-								{acuityLevels[acuityLevel].label}
-							</span>
-						) : null}
-					</span>
-				</div>
-			) : null}
-			{trajectory ? (
-				<PatientCardMetric
-					{...toMetric(trajectory)}
-					trendVariant={scoreTrendVariant(trajectory)}
-					size={size}
-					className='flex-1'
+		<p className={cn("flex min-w-0 gap-1 text-foreground", size === "sm" ? "text-xs" : "text-sm", className)}>
+			{/* As tall as one line, so the arrow stays on the first line when the text wraps. */}
+			<span className='flex h-[1lh] shrink-0 items-center'>
+				<TrendIcon
+					aria-hidden='true'
+					className={cn("size-4", direction ? scoreTrendClassName({ ...trajectory, trend: direction }) : "text-icon-muted")}
 				/>
-			) : null}
-		</div>
+			</span>
+			<span className='min-w-0'>
+				{acuity ? (
+					<span className='font-medium'>
+						{acuity.label}: {acuity.score ?? "--"}
+						{acuityLevel ? <span className={acuityLevels[acuityLevel].className}> {acuityLevels[acuityLevel].label}</span> : null}
+					</span>
+				) : null}
+				{hasChange ? (
+					<span className='text-muted-foreground'>
+						{acuity ? <span className='font-medium'> · </span> : null}
+						{change === undefined
+							? trajectory?.value
+							: direction
+								? `${points} ${points === 1 ? "point" : "points"} ${direction} in ${period}`
+								: `No change in ${period}`}
+					</span>
+				) : null}
+			</span>
+		</p>
 	);
 }
 
@@ -582,12 +605,16 @@ function PatientCardTags({
 			}
 			className={cn(
 				"relative z-10 flex gap-1.5 overflow-x-auto rounded-md scrollbar-soft outline-none focus-visible:ring-2 focus-visible:ring-ring",
+				// The row scrolls sideways, so it clips whatever passes its edges: 4px of room on every side for a tag's focus
+				// ring (2px, 2px out), taken back by the margin so nothing moves (Nov 10, 2026, user's call: the outline was
+				// cut on keyboard focus). DESIGN.md "Flag details".
+				"-m-1 p-1",
 				openRef && "cursor-pointer",
 				// More to see: the row can be slid with the mouse. It keeps the pointer on hover (Nov 5, 2026, user's call); the
 				// grabbing hand shows only while sliding.
 				overflowing && "select-none",
 				// The scrollbar sits under the tags, not over them (Nov 5, 2026, user's call): 8px of room below them, taken back
-				// from the space under the row so the card keeps its height.
+				// from the space under the row so the card keeps its height. It holds the focus ring's 4px too.
 				overflowing && "-mb-2 pb-2",
 				dragging && "cursor-grabbing [&_*]:cursor-grabbing",
 			)}
@@ -804,36 +831,35 @@ function PatientCensusCard({
 					) : null}
 				</div>
 
-				{hospital || placeInHospital ? (
-					<p className={cn("flex items-center gap-1 font-medium text-foreground", small ? "text-xs" : "text-sm")}>
-						<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
-						{/* Only the hospital truncates; unit, room and bed always stay visible. The full name is in `title`. */}
-						<span className='flex min-w-0 flex-1'>
-							{hospital ? (
-								<span title={hospital} className='min-w-0 truncate'>
-									{hospital}
+				{/* The location, then the score and its change, 4px apart. */}
+				{hospital || placeInHospital || acuity || trajectory ? (
+					<div className='flex flex-col gap-1'>
+						{hospital || placeInHospital ? (
+							<p className={cn("flex items-center gap-1 font-medium text-foreground", small ? "text-xs" : "text-sm")}>
+								<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
+								{/* Only the hospital truncates; unit, room and bed always stay visible. The full name is in `title`. */}
+								<span className='flex min-w-0 flex-1'>
+									{hospital ? (
+										<span title={hospital} className='min-w-0 truncate'>
+											{hospital}
+										</span>
+									) : null}
+									{placeInHospital ? (
+										<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
+									) : null}
 								</span>
-							) : null}
-							{placeInHospital ? (
-								<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
-							) : null}
-						</span>
-					</p>
+							</p>
+						) : null}
+						{acuity || trajectory ? <PatientCardScore acuity={acuity} trajectory={trajectory} size={size} /> : null}
+					</div>
 				) : null}
 			</div>
 
-			{acuity || trajectory || (!compact && vitals.length > 0) ? (
-				<div className='flex flex-col'>
-					{acuity || trajectory ? (
-						<PatientCardScore acuity={acuity} trajectory={trajectory} size={size} />
-					) : null}
-					{!compact && vitals.length > 0 ? (
-						<div className='flex gap-2 border-b border-border-muted px-2 py-1.5 first:border-t'>
-							{vitals.map((vital) => (
-								<PatientCardMetric key={vital.label} {...toMetric(vital)} size={size} className='flex-1' />
-							))}
-						</div>
-					) : null}
+			{!compact && vitals.length > 0 ? (
+				<div className='flex gap-2 border-y border-border-muted px-2 py-1.5'>
+					{vitals.map((vital) => (
+						<PatientCardMetric key={vital.label} {...toMetric(vital)} size={size} className='flex-1' />
+					))}
 				</div>
 			) : null}
 

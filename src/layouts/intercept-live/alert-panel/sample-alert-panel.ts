@@ -842,6 +842,13 @@ function samplePathway(alert: TriageAlert, vitals: SampleVitals | undefined, cos
 		orders,
 		cosigner,
 	});
+	const fallPreventionPathway = (orders: CarePathwayOrder[]): CarePathway => ({
+		title: "Fall prevention pathway",
+		reason: "Patient identified as at risk for falls",
+		source: "Hospital fall prevention protocol",
+		orders,
+		cosigner,
+	});
 	const title = alert.title.toLowerCase();
 	const evidence = alert.evidence?.[0];
 
@@ -924,12 +931,16 @@ function samplePathway(alert: TriageAlert, vitals: SampleVitals | undefined, cos
 				{ id: "abg", name: "Arterial blood gas", dose: "30 min after the change", evidence: reading("SpO₂", v.spo2, "%") },
 			]);
 		case "Bed sensor":
-			return pathway("Fall prevention pathway", "fall prevention", [
-				{ id: "bed", name: "Bed low and locked, exit alarm on", dose: "Now and at every handoff", evidence: alert.title },
-				{ id: "rounding", name: "Hourly rounding", dose: "Toileting, pain and position every hour" },
-				{ id: "delirium", name: "Delirium screen (CAM-ICU)", dose: "Now, then every shift", detail: "Restlessness can be the first sign" },
-				{ id: "pt", name: "Physical therapy consult", dose: "Mobility and transfer assessment" },
-			]);
+			// Why this patient, the hospital's own protocol and the event behind it (Nov 10, 2026, user's call).
+			return {
+				...fallPreventionPathway([
+					{ id: "bed", name: "Bed low and locked, exit alarm on", dose: "Now and at every handoff", evidence: alert.title },
+					{ id: "rounding", name: "Hourly rounding", dose: "Toileting, pain and position every hour" },
+					{ id: "delirium", name: "Delirium screen (CAM-ICU)", dose: "Now, then every shift", detail: "Restlessness can be the first sign" },
+					{ id: "pt", name: "Physical therapy consult", dose: "Mobility and transfer assessment" },
+				]),
+				relatedEvent: alert.title,
+			};
 		case "Pulse oximeter":
 			return pathway("Monitoring check", "continuous monitoring", [
 				{ id: "probe", name: "Reapply SpO₂ probe", dose: "Now, another site if the waveform stays poor" },
@@ -1096,7 +1107,7 @@ function sampleAlertDetails({
 	return alerts.flatMap((alert): AlertDetailData[] => {
 		const monitored = monitoringPatients.find((item) => item.id === alert.patientId);
 		const patient = censusPatients.find((item) => item.id === alert.patientId) ?? monitored;
-		// The score row, the monitor and the tags as the patient's cards show them now.
+		// The score line, the monitor and the tags as the patient's cards show them now.
 		const live: Partial<AlertDetailData> = {
 			tags: monitored?.tags ?? patient?.tags,
 			acuity: monitored?.acuity ?? patient?.acuity,

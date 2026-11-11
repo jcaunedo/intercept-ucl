@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowUpFromLineIcon, GitForkIcon, MessageCircleMoreIcon, ScanEyeIcon, VideoIcon, VideoOffIcon } from "lucide-react";
+import { ArrowUpFromLineIcon, CheckCheckIcon, MessageCircleMoreIcon, ScanEyeIcon, VideoIcon, VideoOffIcon } from "lucide-react";
 import { expect, fn, screen } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
@@ -49,8 +49,8 @@ const hayes = {
 	],
 } satisfies AlertModalProps;
 
-// The lifecycle buttons (Pathway last, where Resolve was), the Resolve link under them, and the buttons right of the
-// name, as Intercept Live passes them (Nov 9, 2026; intercept.ds `alert-modal` `1353:14304`).
+// The lifecycle buttons and the buttons right of the name, as Intercept Live passes them (Nov 10, 2026; intercept.ds
+// `alert-modal` `1353:14304`: no View pathway link under the buttons).
 const lifecycle = (
 	<>
 		<Button variant='outline' size='sm' className='flex-1 font-semibold'>
@@ -62,15 +62,10 @@ const lifecycle = (
 			Escalate
 		</Button>
 		<Button variant='outline' size='sm' className='flex-1 font-semibold'>
-			<GitForkIcon />
-			Pathway
+			<CheckCheckIcon />
+			Resolve
 		</Button>
 	</>
-);
-const resolveLink = (
-	<Button variant='link' size='sm' className='w-full font-medium text-badge-green-foreground underline-offset-2 last:-mb-2'>
-		Mark this alert as resolved
-	</Button>
 );
 const header = (
 	<>
@@ -90,7 +85,7 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
-	args: { ...hayes, alertActions: lifecycle, children: resolveLink, headerActions: header, onOpenPatient: fn(), onClose: fn() },
+	args: { ...hayes, alertActions: lifecycle, headerActions: header, onOpenPatient: fn(), onClose: fn() },
 } satisfies Meta<typeof AlertModal>;
 
 export default meta;
@@ -146,13 +141,20 @@ export const WithMonitorStatus: Story = {
 	},
 };
 
-/** A resolved alert: the Resolved bar's green, neutral words, no lifecycle actions. */
+/** A resolved alert: a green-100 header over the Resolved green panel, neutral words, no lifecycle actions. */
 export const Resolved: Story = {
 	args: {
 		alert: { variant: "resolved", inLast24h: 3, since: new Date(Date.now() - 15 * 3_600_000).toISOString() },
 		status: <p className='text-sm text-foreground'>Resolved by Kayla Brandt, RN · 6:00 AM · Treated</p>,
 		alertActions: undefined,
 		children: undefined,
+	},
+	play: async ({ canvas }) => {
+		// The header is a step darker than the panel (green-100 on green-50; Nov 10, 2026).
+		const header = canvas.getByText("Resolved").closest("div");
+		const panel = canvas.getByRole("region", { name: "Alert" });
+		await expect(header).toHaveClass("bg-badge-green-muted");
+		await expect(getComputedStyle(header as Element).backgroundColor).not.toBe(getComputedStyle(panel).backgroundColor);
 	},
 };
 
@@ -192,9 +194,9 @@ export const Minimal: Story = {
 };
 
 /**
- * With `panels`: each slides out on the right as its own column, here Video consult and Pathway. UCL has no call tile
- * or pathway, so this story stands them in; Intercept Live passes its own (Layouts › Intercept Live › Alert panel ›
- * Default).
+ * With `panels`: each slides out on the right as its own column, here Video consult and Messages (intercept.ds
+ * `alert-modal` › Messages `1375:8218`). UCL has no call tile or thread, so this story stands them in; Intercept Live
+ * passes its own (Layouts › Intercept Live › Alert panel › Default).
  */
 export const WithConsult: Story = {
 	args: {
@@ -204,7 +206,7 @@ export const WithConsult: Story = {
 				<Button variant='outline' size='icon-md' aria-label='Close video consult' className='bg-accent'>
 					<VideoOffIcon />
 				</Button>
-				<Button variant='neutral' size='icon-md' aria-label='Messages'>
+				<Button variant='outline' size='icon-md' aria-label='Close messages' className='bg-accent'>
 					<MessageCircleMoreIcon />
 				</Button>
 			</>
@@ -220,15 +222,15 @@ export const WithConsult: Story = {
 				),
 			},
 			{
-				id: "pathway",
-				label: "Pathway",
-				content: <p className='text-sm text-muted-foreground'>The pathway goes here.</p>,
+				id: "messages",
+				label: "Messages",
+				content: <p className='text-sm text-muted-foreground'>The messages go here.</p>,
 			},
 		],
 	},
 	play: async ({ canvas }) => {
 		await expect(await canvas.findByRole("complementary", { name: "Video consult" })).toBeInTheDocument();
-		await expect(canvas.getByRole("complementary", { name: "Pathway" })).toBeInTheDocument();
+		await expect(canvas.getByRole("complementary", { name: "Messages" })).toBeInTheDocument();
 	},
 };
 

@@ -49,8 +49,15 @@ type CarePathwayCosigner = { name: string; role: string };
 type CarePathway = {
 	/** E.g. "CHF exacerbation pathway". */
 	title: string;
+	/**
+	 * Why this patient needs it, in clinical words, e.g. "Patient identified as at risk for falls" (Nov 10, 2026, user's
+	 * call: the source names the protocol, not why it applies). Shown first, as "Reason: …".
+	 */
+	reason?: string;
 	/** Where the pathway comes from, e.g. "Reference protocol, CHF exacerbation (configurable per hospital)". */
 	source: string;
+	/** The event that suggested it, e.g. "Bed exit alarm". Shown last, as "Related event: …". */
+	relatedEvent?: string;
 	orders: CarePathwayOrder[];
 	cosigner: CarePathwayCosigner;
 };
@@ -438,6 +445,8 @@ function CarePathwayPanel({
 	const [rationale, setRationale] = useSessionState(key("rationale"), record?.rationale ?? "");
 	const decisionRef = React.useRef<HTMLDivElement>(null);
 	const decisionStuck = useStuckToBottom(decisionRef);
+	// Pinned to the panel's bottom only while there's a decision to make; a sent or co-signed banner follows the orders.
+	const pinned = status === "suggested" || status === "declined";
 	const [declinedWith, setDeclinedWith] = useSessionState(key("declinedWith"), record?.rationale ?? "");
 	const [noting, setNoting] = useSessionState(key("noting"), false);
 	const [note, setNote] = useSessionState(key("note"), "");
@@ -627,7 +636,17 @@ function CarePathwayPanel({
 						</motion.span>
 					</AnimatePresence>
 				</div>
+				{/* Why this patient, then the protocol, then what set it off (Nov 10, 2026, user's call; AHRQ's fall prevention
+				    model: the patient's own risk first, the protocol tailored to it). */}
+				{"reason" in shown && shown.reason ? (
+					<p className='text-sm text-foreground'>
+						<span className='font-medium'>Reason:</span> {shown.reason}
+					</p>
+				) : null}
 				<SourceLabel className='text-xs text-muted-foreground'>Source: {shown.source}</SourceLabel>
+				{"relatedEvent" in shown && shown.relatedEvent ? (
+					<p className='text-xs text-muted-foreground'>Related event: {shown.relatedEvent}</p>
+				) : null}
 			</div>
 
 			{/* The order set: dashed while it's a suggestion, solid once accepted or the intensivist's own. After a decline,
@@ -711,15 +730,21 @@ function CarePathwayPanel({
 				) : null}
 			</AnimatePresence>
 
-			{/* The decision and what follows it sit at the bottom of the panel, which fills its column, and stick to the
-			    column's bottom while the orders scroll under them (Nov 3, 2026, user's call), on the column's background.
-			    Sticky offsets count from inside the column's 24px padding, which this takes over. */}
-			{/* While the orders run on under it, a rule on its top edge (Nov 3, 2026, user's call); gone once the column is
-			    scrolled to its end. Transparent otherwise, so it never moves the layout. */}
+			{/* While there's a decision to make (Accept or Decline, or what follows a decline), it sits at the bottom of the
+			    panel, which fills its column, and sticks to the column's bottom while the orders scroll under them (Nov 3,
+			    2026, user's call), on the column's background. Sticky offsets count from inside the column's 24px padding,
+			    which this takes over. Once sent or co-signed, the banner follows the orders instead, at the end of the
+			    content (Nov 10, 2026, user's call): there's nothing left to press. DESIGN.md "Pathway decision". */}
+			{/* While pinned and the orders run on under it, a rule on its top edge (Nov 3, 2026, user's call); gone once the
+			    column is scrolled to its end. Transparent otherwise, so it never moves the layout. */}
 			<div
 				ref={decisionRef}
-				data-stuck={decisionStuck || undefined}
-				className='sticky -bottom-6 z-10 -mx-6 mt-auto -mb-6 border-t border-transparent bg-background px-6 pb-6 data-stuck:border-border'
+				data-stuck={(pinned && decisionStuck) || undefined}
+				// Unpinned, 16px under the last order, the section's gap (Nov 10, 2026, user's call; it was 28px).
+				className={cn(
+					pinned &&
+						"sticky -bottom-6 z-10 -mx-6 mt-auto -mb-6 border-t border-transparent bg-background px-6 pb-6 data-stuck:border-border",
+				)}
 			>
 				<AnimatePresence initial={false}>
 					{status === "suggested" && !declining ? (
@@ -820,7 +845,7 @@ function CarePathwayPanel({
 							<div
 								ref={pendingRef}
 								role='status'
-								className='mt-3 flex scroll-mt-15 gap-3 rounded-xl border border-neutral-muted bg-neutral-subtle p-3 text-sm text-foreground'
+								className='flex scroll-mt-15 gap-3 rounded-xl border border-neutral-muted bg-neutral-subtle p-3 text-sm text-foreground'
 							>
 								<LoaderCircleIcon
 									aria-hidden='true'
@@ -850,7 +875,7 @@ function CarePathwayPanel({
 							<div
 								ref={activeRef}
 								role='status'
-								className='mt-3 flex scroll-mt-15 gap-3 rounded-xl border border-success-muted bg-success-subtle p-3 text-sm text-foreground'
+								className='flex scroll-mt-15 gap-3 rounded-xl border border-success-muted bg-success-subtle p-3 text-sm text-foreground'
 							>
 								<CircleCheckIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-success' />
 								<div className='flex min-w-0 flex-col gap-0.5'>

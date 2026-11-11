@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils";
 type AlertModalSeverity = "critical" | "high" | "medium" | "low";
 
 // The alert's panel in its severity's tones: a pale fill, the title in the darkest step, the source a step lighter.
-// Resolved takes the Resolved bar's green, so bar and panel read as one, and its words drop the severity's tones.
+// Resolved takes the Resolved bar's green, and its words drop the severity's tones. Its header (the alert bar) is a step
+// darker, green-100, set by AlertBar's `header` (Nov 10, 2026, user's call), so it reads as the panel's header.
 const alertTones: Record<AlertModalSeverity | "resolved", { panel: string; title: string; source: string }> = {
 	critical: {
 		panel: "bg-severity-critical-subtle",
@@ -113,7 +114,7 @@ type AlertModalProps = Omit<React.ComponentProps<"div">, "title"> &
 		/** A × of its own in the corner, in place of `onClose`'s, e.g. `<DialogClose asChild><AlertModalClose /></DialogClose>`. */
 		close?: React.ReactNode;
 		/**
-		 * The side panels, left to right (e.g. the video consult while it's on, then the pathway): each a 432px column that
+		 * The side panels, left to right (e.g. the video consult while it's on, then the messages): each a 432px column that
 		 * slides out on the right with its label over its content, and slides back when it's taken away. Each column scrolls
 		 * on its own, so a long one never makes the alert taller, with the shadow of the column on its left in its gutter.
 		 * On a screen too narrow for them, the panels narrow to 360px and then the alert column to 480px, so the card fits.
@@ -368,11 +369,17 @@ function AlertModal({
 				</div>
 				{/* Under the name: its 8px padding and 1px rule, the column's 16px gap taken back. Never pulled up into the
 				    sticky patient, whose background would mask the pin's top (Nov 9, 2026, user's report). */}
-				{location ? (
-					<p className='-mt-4 flex items-center gap-1 text-sm font-medium text-foreground'>
-						<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
-						<span className='truncate'>{location}</span>
-					</p>
+				{location || acuity || trajectory ? (
+					// The location, then the score and its change, 4px apart, as on the patient's card.
+					<div className='-mt-4 flex flex-col gap-1'>
+						{location ? (
+							<p className='flex items-center gap-1 text-sm font-medium text-foreground'>
+								<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
+								<span className='truncate'>{location}</span>
+							</p>
+						) : null}
+						{acuity || trajectory ? <PatientCardScore acuity={acuity} trajectory={trajectory} /> : null}
+					</div>
 				) : null}
 
 				{alert && tones ? (
@@ -380,7 +387,7 @@ function AlertModal({
 						aria-label='Alert'
 						className={cn("flex shrink-0 flex-col gap-2 overflow-hidden rounded-xl pb-1.5", tones.panel)}
 					>
-						<AlertBar alert={alert} size='md' className='rounded-none' />
+						<AlertBar alert={alert} size='md' header />
 						<div className='flex flex-col gap-2 px-4 pb-2.5'>
 							<div>
 								<Title className={cn("text-xl font-bold", tones.title)}>{title}</Title>
@@ -411,12 +418,6 @@ function AlertModal({
 
 				{actions ? <div className='flex gap-2 *:flex-1'>{actions}</div> : null}
 
-				{/* Its own block, as in the card, so the score sits between two rules. */}
-				{acuity || trajectory ? (
-					<div className='flex flex-col'>
-						<PatientCardScore acuity={acuity} trajectory={trajectory} />
-					</div>
-				) : null}
 				{monitor ? (
 					monitorStatus ? (
 						// The status sits with the monitor it's about, closer than the card's gap.

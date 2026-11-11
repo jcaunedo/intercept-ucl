@@ -2,7 +2,8 @@ import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
-import { AlertPanel, type AlertPanelProps } from "./alert-panel";
+import { AlertPanel, PathwayContent, type AlertPanelProps } from "./alert-panel";
+import { ConsultSessionScope } from "./consult-session";
 import { dkaCalculate, type DkaCheck, type DkaReadings } from "./dka-protocol";
 import {
 	sampleEscalationTargets,
@@ -29,8 +30,9 @@ import {
  * The alert panel (UCL AlertModal with the alert's interactions), opened from a Monitoring card's alert bar or an
  * alert toast; in the app it opens in a Dialog (`AlertPanelDialog`). Margaret Hayes's Critical alert at 01:40 in
  * Scenario 1: the alert with her NEWS2, monitor and tags (step 2), the one-click video consult to her bedside nurse
- * (step 3) and, as an exploration, step 4's CHF exacerbation pathway, each in a side panel. In the Monitoring and Census
- * prototypes, Open alert shows it. It replaced the three-column alert modal (Nov 3, 2026, user's call; the modal's code
+ * (step 3) and the messages with the bedside, each in a side panel. In the Monitoring and Census prototypes, Open alert
+ * shows it. No pathway since Nov 10, 2026 (user's call): the Pathway stories below show the patient page's Pathway panel
+ * (`PathwayContent`), where step 4's CHF exacerbation pathway is decided now. It replaced the three-column alert modal (Nov 3, 2026, user's call; the modal's code
  * was removed on Nov 9, 2026).
  */
 const meta = {
@@ -94,11 +96,40 @@ function Demo(props: AlertPanelProps) {
 }
 
 /**
+ * The patient page's Pathway panel (`PathwayContent`, as `PatientConsultPanels` shows it): the alert panel has no
+ * pathway since Nov 10, 2026 (user's call), so the pathway's stories render it on its own, in the patient's consult
+ * session.
+ */
+function PathwayDemo(props: AlertPanelProps) {
+	// Escape closes an open dose edit or decision first, as the patient page's panel does.
+	const escapeRef = React.useRef<(() => boolean) | null>(null);
+	return (
+		<ConsultSessionScope patientId={props.data.alert.patientId}>
+			<div className='flex min-h-screen justify-center bg-background-subtle p-4'>
+				<aside aria-label='Pathway' className='flex w-[416px] flex-col gap-4 overflow-y-auto rounded-card bg-card p-6'>
+					<PathwayContent
+						data={props.data}
+						onPathwayDecision={props.onPathwayDecision}
+						onTransferDecision={props.onTransferDecision}
+						onDischargeDecision={props.onDischargeDecision}
+						onBundleDecision={props.onBundleDecision}
+						escapeRef={escapeRef}
+						fill
+					/>
+				</aside>
+			</div>
+		</ConsultSessionScope>
+	);
+}
+
+const pathwayRender = (args: AlertPanelProps) => <PathwayDemo {...args} />;
+
+/**
  * The patient's name opens their details. Acknowledge confirms in place, and a second click undoes it. Video consult
  * rings Kayla Brandt, RN and slides a panel out with the call and the AI Notetaker under it (Scenario 1, step 3): once
  * the others on the call approve, it captures the consultation, prepares the notes and offers the draft for review and
- * approval. Pathway slides a second one out to its right with the CHF pathway, then keep or transfer once its orders
- * are sent (steps 4 and 5). Close video consult and Hide pathway each slide theirs back.
+ * approval. Close video consult ends the call and slides its panel back. No View pathway under the buttons (Nov 10,
+ * 2026, user's call; intercept.ds `alert-modal`).
  */
 export const Default: Story = {
 	play: async ({ args, canvas, userEvent }) => {
@@ -154,22 +185,16 @@ export const Default: Story = {
 		await expect(note.value.startsWith("Video consult with Kayla Brandt, RN")).toBe(true);
 		await userEvent.click(call.getByRole("button", { name: "Approve notes" }));
 		await expect(await call.findByText(/Approved by you/)).toBeInTheDocument();
-		// The pathway opens in a second panel, to the right of the call's.
-		await userEvent.click(canvas.getByRole("button", { name: "Pathway" }));
-		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
-		await expect(await pathway.findByRole("button", { name: "Accept" })).toBeInTheDocument();
-		const panels = canvas.getAllByRole("complementary").map((panel) => panel.getAttribute("aria-label"));
-		await expect(panels).toEqual(["Video consult", "Pathway"]);
+		// No pathway in the alert panel (Nov 10, 2026): it's on the patient's page.
+		await expect(canvas.queryByRole("button", { name: /pathway/i })).not.toBeInTheDocument();
 		// The header's Video consult, pressed while the call is on, ends it and closes its panel.
 		await userEvent.click(canvas.getByRole("button", { name: "Close video consult" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Video consult" })).not.toBeInTheDocument());
-		await userEvent.click(canvas.getByRole("button", { name: "Hide pathway" }));
-		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).not.toBeInTheDocument());
 	},
 };
 
 /**
- * Escalate and Mark this alert as resolved open the triage queue's forms under the buttons: who to send it to and a note, or the
+ * Escalate and Resolve open the triage queue's forms under the buttons: who to send it to and a note, or the
  * resolution and a note. Escape closes an open form.
  */
 export const EscalateAndResolve: Story = {
@@ -179,8 +204,10 @@ export const EscalateAndResolve: Story = {
 		await expect(escalate).toHaveAttribute("aria-expanded", "true");
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(escalate).toHaveAttribute("aria-expanded", "false"));
-		// Resolve is a link under the buttons (Nov 9, 2026).
-		await userEvent.click(canvas.getByRole("button", { name: "Mark this alert as resolved" }));
+		// Resolve is back in the row (Nov 10, 2026), on `accent` while its form is open.
+		const resolve = canvas.getByRole("button", { name: "Resolve" });
+		await userEvent.click(resolve);
+		await expect(resolve).toHaveAttribute("aria-expanded", "true");
 		await userEvent.click(await canvas.findByRole("radio", { name: "Treated" }));
 		await userEvent.click(canvas.getByRole("button", { name: "Mark as resolved" }));
 		await expect(args.onAction).toHaveBeenLastCalledWith({ type: "resolve", reason: "Treated", note: "" });
@@ -208,14 +235,13 @@ const feedDetails = sampleAlertDetails({
  * bundle, to be co-signed by the patient's attending of record.
  */
 export const SepsisAlert: Story = {
-	args: { defaultPathwayOpen: true, data: feedDetails.find((detail) => detail.alert.id === "a1")! },
+	args: { data: feedDetails.find((detail) => detail.alert.id === "a1")! },
 	play: async ({ canvas }) => {
 		await expect(feedDetails.filter((detail) => !detail.pathway)).toEqual([]);
-		await expect(canvas.getByRole("region", { name: "Sepsis bundle, hour 1" })).toBeInTheDocument();
 		// An AI recommendation can be resolved (it was right, and it's handled) or get feedback (it was wrong), a link on its
 		// source line.
 		const panel = within(canvas.getByRole("region", { name: "Alert" }));
-		await userEvent.click(panel.getByRole("button", { name: "Mark this alert as resolved" }));
+		await userEvent.click(panel.getByRole("button", { name: "Resolve" }));
 		await expect(await panel.findByRole("button", { name: "Mark as resolved" })).toBeInTheDocument();
 		await userEvent.click(panel.getByRole("button", { name: "Feedback" }));
 		await expect(await panel.findByRole("button", { name: "Send feedback" })).toBeInTheDocument();
@@ -250,12 +276,12 @@ export const ResolvedWithNote: Story = {
 };
 
 /**
- * Exploration, Scenario 1 step 4: the CHF exacerbation pathway in the Pathway panel, open with the alert. The
+ * Exploration, Scenario 1 step 4: the CHF exacerbation pathway in the patient page's Pathway panel. The
  * intensivist edits the furosemide dose, accepts, and the orders go to Dr. Tom Weller, the family physician on call, for
  * co-signature; once he co-signs (about 4 s here) they're active. Decline asks why.
  */
 export const Pathway: Story = {
-	args: { defaultPathwayOpen: true },
+	render: pathwayRender,
 	play: async ({ args, canvas }) => {
 				const pathway = within(canvas.getByRole("region", { name: "CHF exacerbation pathway" }));
 		await userEvent.click(pathway.getByRole("button", { name: "Edit Furosemide IV dose" }));
@@ -283,7 +309,7 @@ export const Pathway: Story = {
 
 /** Exploration: while suggested, a click anywhere on an order opens its dose edit, as its pencil does. */
 export const PathwayClickToEdit: Story = {
-	args: { defaultPathwayOpen: true },
+	render: pathwayRender,
 	play: async ({ canvas }) => {
 				const pathway = within(canvas.getByRole("region", { name: "CHF exacerbation pathway" }));
 		await userEvent.click(pathway.getByText("Target urine output ≥ 100 mL/h over the next 2 h"));
@@ -293,7 +319,7 @@ export const PathwayClickToEdit: Story = {
 
 /** Exploration: declining the pathway needs a reason; Undo decline brings the suggestion back. */
 export const PathwayDeclined: Story = {
-	args: { defaultPathwayOpen: true },
+	render: pathwayRender,
 	play: async ({ args, canvas }) => {
 				const region = canvas.getByRole("region", { name: "CHF exacerbation pathway" });
 		const pathway = within(region);
@@ -319,7 +345,7 @@ export const PathwayDeclined: Story = {
  * then active.
  */
 export const OwnPathway: Story = {
-	args: { defaultPathwayOpen: true },
+	render: pathwayRender,
 	play: async ({ args, canvas }) => {
 				const region = canvas.getByRole("region", { name: "CHF exacerbation pathway" });
 		const pathway = within(region);
@@ -362,7 +388,7 @@ const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).
  * and 4 h checkpoints, then lists them with their due times.
  */
 export const KeepOrTransfer: Story = {
-	args: { defaultPathwayOpen: true },
+	render: pathwayRender,
 	play: async ({ args, canvas }) => {
 				// Not before the plan: it follows the pathway's orders.
 		await expect(canvas.queryByRole("region", { name: "Keep or transfer" })).not.toBeInTheDocument();
@@ -394,7 +420,7 @@ export const KeepOrTransfer: Story = {
 
 /** Exploration: Transfer picks the receiving hospital and the transport, and asks why. */
 export const TransferRequested: Story = {
-	args: { defaultPathwayOpen: true },
+	render: pathwayRender,
 	play: async ({ args, canvas }) => {
 				await userEvent.click(canvas.getByRole("button", { name: "Accept" }));
 		const region = await canvas.findByRole("region", {
@@ -418,11 +444,12 @@ export const TransferRequested: Story = {
 };
 
 /**
- * Exploration, Scenario 1 step 6 in the panel: kept at Chadron at 01:52, both checkpoints passed, and the platform logs
+ * Exploration, Scenario 1 step 6 in the Pathway panel: kept at Chadron at 01:52, both checkpoints passed, and the platform logs
  * **Transfer avoided** with the trip the family didn't make, the estimated cost avoided (a placeholder until sourced) and
  * the ICU-level care delivered locally.
  */
 export const TransferAvoided: Story = {
+	render: pathwayRender,
 	args: {
 		data: {
 			...scenario1,
@@ -465,6 +492,7 @@ export const TransferAvoided: Story = {
 
 /** Exploration: the 1 h checkpoint missed. A High alert was raised, and transfer is back on the table. */
 export const CheckpointMissed: Story = {
+	render: pathwayRender,
 	args: {
 		data: {
 			...scenario1,
@@ -502,6 +530,7 @@ const scenario2Resolved = sampleScenario2ResolvedDetail(sampleScenario2AlertDeta
  * with a reason. His page's Discharge section shows the same panel.
  */
 export const SocialNeedsAtDischarge: Story = {
+	render: pathwayRender,
 	args: {
 		data: {
 			...scenario2Resolved,
@@ -553,12 +582,13 @@ export const SocialNeedsAtDischarge: Story = {
 };
 
 /**
- * Rosa Medina's hour-1 sepsis bundle mid-way (Scenario 3, steps 3 to 5), in the alert panel: the timer from time zero 34
+ * Rosa Medina's hour-1 sepsis bundle mid-way (Scenario 3, steps 3 to 5), in the patient page's Pathway panel: the timer from time zero 34
  * min ago, lactate, cultures and the antibiotic green, two boluses in with their reassessments, and the renal dose review
  * to confirm. MAP stayed under 65, so the septic shock pathway is suggested under the bundle; accepting it shows the
  * bedside tasks its orders generate, the norepinephrine's IV site checks first.
  */
 export const SepsisBundle: Story = {
+	render: pathwayRender,
 	args: {
 		data: (() => {
 			const detail = sampleScenario3AlertDetail();
@@ -604,7 +634,7 @@ export const SepsisBundle: Story = {
 		})(),
 	},
 	play: async ({ canvas, args, userEvent }) => {
-		// The bundle opens with the alert, so its timer is in view.
+		// The bundle, its timer in view, in the patient page's Pathway panel.
 		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
 		const bundle = within(pathway.getByRole("region", { name: "Hour-1 bundle" }));
 		await expect(bundle.getByText("Left in hour 1")).toBeInTheDocument();
@@ -623,13 +653,14 @@ export const SepsisBundle: Story = {
 };
 
 /**
- * Tyler Kessler's DKA protocol 6 h in (Scenario 4, steps 1 to 3), in the alert panel: the pathway active, the hourly
+ * Tyler Kessler's DKA protocol 6 h in (Scenario 4, steps 1 to 3), in the patient page's Pathway panel: the pathway active, the hourly
  * checks from 7 units/h, the rate up at hour 3 (signed on the intensivist's phone), the potassium hard stop at hour 4
  * (insulin held, then replaced), and at hour 6 glucose under 250: dextrose prompted and the rate down to 3.5 units/h,
  * waiting for sign-off. The next check is due. Each rate is the calculator's (`dkaCalculate`), as in the scenario.
  */
 export const DkaProtocol: Story = {
 	name: "DKA Protocol",
+	render: pathwayRender,
 	args: {
 		data: (() => {
 			const detail = sampleScenario4AlertDetail();
@@ -683,7 +714,7 @@ export const DkaProtocol: Story = {
 		})(),
 	},
 	play: async ({ canvas }) => {
-		// A running protocol opens with the alert.
+		// The running protocol, in the patient page's Pathway panel.
 		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
 		const protocol = within(pathway.getByRole("region", { name: "DKA insulin protocol" }));
 		// The summary: the rate running (the change waits for sign-off) and the next check.

@@ -9,7 +9,6 @@ import {
 	LoaderCircleIcon,
 	type LucideIcon,
 	MessageCircleMoreIcon,
-	MessageCircleOffIcon,
 	MicIcon,
 	MicOffIcon,
 	PencilLineIcon,
@@ -314,13 +313,13 @@ type AlertPanelDialogProps = {
 	escalationTargets?: EscalationTarget[];
 	/** The patient's name opens their details. */
 	onOpenPatient?: () => void;
-	/** The intensivist accepted the pathway's orders (with any edited dose) or declined it. */
+	/** @deprecated Ignored since Nov 10, 2026: the alert panel has no pathway; the patient's page decides it. */
 	onPathwayDecision?: (decision: CarePathwayDecision) => void;
-	/** The intensivist decided to keep or transfer the patient, or took the decision back. */
+	/** @deprecated Ignored since Nov 10, 2026: keep or transfer is on the patient's page. */
 	onTransferDecision?: (decision: KeepOrTransferDecision) => void;
-	/** A discharge referral sent (with who agreed to it) or skipped, or a skip taken back. */
+	/** @deprecated Ignored since Nov 10, 2026: the discharge referrals are on the patient's page. */
 	onDischargeDecision?: (decision: DischargeDecision) => void;
-	/** A sepsis bundle element's check confirmed (a renal dose review), or taken back. */
+	/** @deprecated Ignored since Nov 10, 2026: the sepsis bundle is on the patient's page. */
 	onBundleDecision?: (decision: BundleDecision) => void;
 };
 
@@ -345,9 +344,9 @@ const presenceLabels = { online: "Online", away: "Away", offline: "Offline" } as
 const actions: Record<AlertDetailAction, { label: string; icon: LucideIcon }> = {
 	acknowledge: { label: "Acknowledge", icon: ScanEyeIcon },
 	escalate: { label: "Escalate", icon: ArrowUpFromLineIcon },
-	// Resolve: a link under the buttons since Nov 9, 2026 (user's call), "Mark this alert as resolved"; its form sends
-	// with Mark as resolved (Nov 3, 2026, user's call).
-	resolve: { label: "Mark this alert as resolved", icon: CheckCheckIcon },
+	// Back in the row as Resolve (Nov 10, 2026; intercept.ds `alert-modal` `1353:14304`); its form sends with Mark as
+	// resolved (Nov 3, 2026, user's call).
+	resolve: { label: "Resolve", icon: CheckCheckIcon },
 	// An AI recommendation can also be marked wrong (the decline outcome BR-07 records): the clinician's verdict, said
 	// plainly, so it reads as feedback on the AI rather than turning the alert down.
 	decline: { label: "Feedback", icon: Undo2Icon },
@@ -831,7 +830,13 @@ function useConsult(defaultConsult: AlertConsultState, onConsultChange?: (state:
 	React.useEffect(() => {
 		if (latest.current.onConsultChange)
 			setSessionReporter({ report: (state) => latest.current.onConsultChange?.(state) });
-		if (!inherited && latest.current.consult !== "idle") report(latest.current.consult);
+		// A call that opens already on (a consult request answered from its toast: live; a card's Video consult: ringing)
+		// goes into the session now, not only at its next change, so the patient's page picks it up if the clinician
+		// leaves for it before then (Nov 10, 2026, user's report: answered, then the name, and the call was gone).
+		if (!inherited && latest.current.consult !== "idle") {
+			setConsultState(latest.current.consult);
+			report(latest.current.consult);
+		}
 		return () => {
 			if (latest.current.consult === "idle") return;
 			// Leaving ends the call only if nothing else picked it up: once this place's scope has left (after this
@@ -855,8 +860,9 @@ function useConsult(defaultConsult: AlertConsultState, onConsultChange?: (state:
 /**
  * One of the buttons right of the patient's name (Nov 9, 2026, user's call: Video consult and Messages moved there from
  * the row under the alert; intercept.ds `alert-modal` `1353:14304`): an icon alone, its name in a tooltip. Dark
- * (`neutral`) while its panel is closed; open, the outline on `accent` with the "off" icon, named Close…, as the app
- * header's Video consult and Messages.
+ * (`neutral`) while its panel is closed; open, the outline on `accent`, named Close…, as the app header's Video consult
+ * and Messages. Video consult swaps to `video-off` while open (closing it ends the call); Messages keeps its icon
+ * (Nov 10, 2026, user's call).
  */
 function HeaderPanelButton({
 	open,
@@ -945,14 +951,11 @@ function useAlertLifecycle({
 	actions: actionsProp,
 	escalationTargets,
 	onAction,
-	pathway,
 }: {
 	alert: TriageAlert;
 	actions?: AlertDetailAction[];
 	escalationTargets: EscalationTarget[];
 	onAction?: (action: TriageAlertAction) => void;
-	/** The alert's pathway: a Pathway button last in the row, in Resolve's old place (Nov 9, 2026, user's call). */
-	pathway?: { open: boolean; onToggle: () => void; controls?: string };
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const status = alert.status ?? "active";
@@ -969,14 +972,13 @@ function useAlertLifecycle({
 				].filter(Boolean) as AlertDetailAction[])
 			: []);
 	// Feedback on an AI recommendation isn't a step in the alert's lifecycle, so it's a link on the source line, not a
-	// button in the row (Nov 3, 2026, user's call). Resolve is a link under the row (Nov 9, 2026, user's call).
-	const alertActions = (onAction ? shown : []).filter((action) => action !== "decline" && action !== "resolve");
+	// button in the row (Nov 3, 2026, user's call).
+	const alertActions = (onAction ? shown : []).filter((action) => action !== "decline");
 	const feedback = Boolean(onAction) && shown.includes("decline");
-	const resolvable = Boolean(onAction) && shown.includes("resolve");
 	// Escalate, Resolve and Feedback open their form under the buttons, one at a time; sending it closes it.
 	const [form, setForm] = React.useState<"escalate" | "resolve" | "decline" | null>(null);
 	// Four buttons don't fit at equal widths: each takes its label's width and they share what's left.
-	const crowded = alertActions.length + (pathway ? 1 : 0) > 3;
+	const crowded = alertActions.length > 3;
 	const act = (action: TriageAlertAction) => {
 		setForm(null);
 		onAction?.(action);
@@ -1025,10 +1027,8 @@ function useAlertLifecycle({
 				) : null}
 			</AnimatePresence>
 		),
-		alertActionsNode:
-			alertActions.length || pathway
-				? [
-						...alertActions.map((action) => {
+		alertActionsNode: alertActions.length
+			? alertActions.map((action) => {
 					const { icon: Icon } = actions[action];
 					const { label } = actions[action];
 					const opensForm = action !== "acknowledge";
@@ -1091,40 +1091,8 @@ function useAlertLifecycle({
 							</motion.span>
 						</Button>
 					);
-						}),
-						pathway ? (
-							// The alert's pathway, last in the row (Nov 9, 2026, user's call: where Resolve was), as its neighbors:
-							// outline, on `accent` while open, Hide pathway.
-							<Button
-								key='pathway'
-								variant='outline'
-								size='sm'
-								aria-expanded={pathway.open}
-								aria-controls={pathway.open ? pathway.controls : undefined}
-								onClick={pathway.onToggle}
-								className={cn(crowded ? "flex-auto" : "flex-1", "font-semibold aria-expanded:bg-accent")}
-							>
-								<GitForkIcon />
-								{pathway.open ? "Hide pathway" : "Pathway"}
-							</Button>
-						) : null,
-					]
-				: undefined,
-		resolveNode: resolvable ? (
-			// Under the buttons, a link in Resolved's green (Nov 9, 2026, user's call; intercept.ds `alert-modal`
-			// `1353:14304`), underlined on hover and while its form is open. It opens the Resolve form, as the button did.
-			// Last in the panel, it takes 8px of the panel's bottom padding, so its words sit as far from the bottom as from
-			// the buttons above (14px; Nov 9, 2026, user's call) while it keeps its 32px target.
-			<Button
-				variant='link'
-				size='sm'
-				aria-expanded={form === "resolve"}
-				onClick={() => setForm((current) => (current === "resolve" ? null : "resolve"))}
-				className='w-full font-medium text-badge-green-foreground underline-offset-2 last:-mb-2 aria-expanded:underline'
-			>
-				{actions.resolve.label}
-			</Button>
-		) : undefined,
+				})
+			: undefined,
 		feedbackNode: feedback ? (
 			<Button
 				variant='link'
@@ -1712,13 +1680,6 @@ function joinNames(names: string[]) {
 /* -------------------------------------------------------------------------- */
 
 type AlertPanelProps = Omit<AlertPanelDialogProps, "open" | "defaultOpen" | "onOpenChange"> & {
-	/**
-	 * Shows the pathway in the side panel when it opens. By default, when it has been acted on (its orders sent, or keep or
-	 * transfer decided), so a reopened alert shows where it was left.
-	 */
-	defaultPathwayOpen?: boolean;
-	/** Opened at the discharge referrals (a notice's Review referrals): Pathway open, scrolled to them. */
-	focusDischarge?: boolean;
 	/** The heading's element; inside a Dialog, `DialogTitle`. */
 	titleAs?: React.ElementType;
 	/** The description's element; inside a Dialog, `DialogDescription`. */
@@ -1738,10 +1699,12 @@ const threadWith = (bedside?: AlertDetailBedside) => (bedside ? `${bedside.name}
 
 /**
  * One alert, expanded, with everything the alert modal did (it replaced the modal, Nov 3, 2026, user's call): UCL's
- * AlertModal with the alert's lifecycle (Acknowledge, Escalate and Resolve, each form under the buttons),
- * Video consult and Pathway. Each opens a side panel that slides out on the right, the pathway's to the right of
- * the call's when both are open: the call, with the AI Notetaker under it (Scenario 1, step 3), and the care pathway
- * with keep or transfer (steps 4 and 5). The alert's key findings are a flag, first in its tag row.
+ * AlertModal with the alert's lifecycle (Acknowledge, Escalate and Resolve, each form under the buttons), Video consult
+ * and Messages. Each opens a side panel that slides out on the right, the thread's to the right of the call's: the
+ * call, with the AI Notetaker under it (Scenario 1, step 3), and the messages with the bedside nurse. No pathway (Nov 10,
+ * 2026, user's call; intercept.ds `alert-modal`): the care pathway, keep or transfer, the bundle, the protocol and the
+ * discharge referrals are on the patient's page (its Pathway panel). The alert's key findings are a flag, first in its
+ * tag row.
  *
  * Figma: [intercept.ds › alert-modal](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1355-14776)
  */
@@ -1763,18 +1726,6 @@ function AlertPanelContent({
 	actions: actionsProp,
 	escalationTargets = [],
 	onOpenPatient,
-	onPathwayDecision,
-	onTransferDecision,
-	onDischargeDecision,
-	onBundleDecision,
-	focusDischarge = false,
-	// A sepsis bundle opens with the alert, so its hour-1 timer is in view from the start (Scenario 3, step 1); so does a
-	// running protocol, so a nudge about an overdue check opens on the checklist (Scenario 4, step 3).
-	defaultPathwayOpen = focusDischarge ||
-		Boolean(data.bundle) ||
-		Boolean(data.protocol) ||
-		(data.pathwayStatus !== undefined && data.pathwayStatus !== "suggested") ||
-		Boolean(data.transfer?.decided),
 	titleAs,
 	descriptionAs,
 	close,
@@ -1800,36 +1751,25 @@ function AlertPanelContent({
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the modal opens.
 	}, []);
 	const consultOn = consult !== "idle";
-	// The third column (Nov 5, 2026, user's call): the pathway, or the messages with the bedside nurse, one at a time.
-	// The messages open from the actions row, with or without a call, and stay when the call ends (Nov 5, 2026, user's
-	// call); only there (the Video consult panel's header lost its own, user's call, same day).
-	// Messages open or closed goes with the consult session too, both ways between here and the patient's page.
-	// So is Pathway (Nov 6, 2026): open on the patient's page, the alert opens with it, and the other way round.
+	// The messages with the bedside nurse, right of the call (intercept.ds `alert-modal` › Messages `1375:8218`). They open
+	// from the header, with or without a call, and stay when the call ends (Nov 5, 2026, user's call). Open or closed goes
+	// with the consult session, both ways between here and the patient's page.
 	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
-	const [sharedPathwayOpen, setSharedPathwayOpen] = useSessionState("pathwayOpen", false);
-	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(
-		sharedMessagesOpen ? "messages" : defaultPathwayOpen || sharedPathwayOpen ? "pathway" : null,
-	);
-	const pathwayOpen = sidePanel === "pathway";
-	const messagesOpen = sidePanel === "messages";
+	const [messagesOpen, setMessagesOpen] = React.useState(sharedMessagesOpen);
 	React.useEffect(() => setSharedMessagesOpen(messagesOpen), [messagesOpen, setSharedMessagesOpen]);
-	React.useEffect(() => setSharedPathwayOpen(pathwayOpen), [pathwayOpen, setSharedPathwayOpen]);
 	// The message field takes focus when the clinician opens the column, not when it opens on its own (below).
 	const [focusMessages, setFocusMessages] = React.useState(false);
-	const togglePanel = (panel: "pathway" | "messages") => {
-		setFocusMessages(panel === "messages");
-		setSidePanel((current) => (current === panel ? null : panel));
+	const toggleMessages = () => {
+		setFocusMessages(true);
+		setMessagesOpen((current) => !current);
 	};
-	// Pathway is the alert's, so it's last in the lifecycle row, where Resolve was (Nov 9, 2026, user's call).
+	// No pathway here (Nov 10, 2026, user's call; intercept.ds `alert-modal` dropped View pathway): it's on the patient's
+	// page. DESIGN.md "Alert panel".
 	const lifecycle = useAlertLifecycle({
 		alert: data.alert,
 		actions: actionsProp,
 		escalationTargets,
 		onAction,
-		pathway:
-			data.pathway || data.bundle
-				? { open: pathwayOpen, onToggle: () => togglePanel("pathway") }
-				: undefined,
 	});
 	const [messages, sendMessage, nurseTyping] = useConsultMessages(
 		data.messages,
@@ -1837,20 +1777,14 @@ function AlertPanelContent({
 		onSendMessage,
 		data.scriptedReplies,
 	);
-	// Only a new message from the bedside opens the column on its own, in Pathway's place and without moving focus; the
-	// connection dropping doesn't (Nov 5, 2026, user's call). The Messages buttons count what came while the alert wasn't open.
-	if (useNewIncoming(messages) && sidePanel !== "messages") {
+	// Only a new message from the bedside opens the column on its own, without moving focus; the connection dropping
+	// doesn't (Nov 5, 2026, user's call). The Messages buttons count what came while the alert wasn't open.
+	if (useNewIncoming(messages) && !messagesOpen) {
 		setFocusMessages(false);
-		setSidePanel("messages");
+		setMessagesOpen(true);
 	}
 	const unread = useUnreadMessages(messages, messagesOpen);
-	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
-	if (escapeRef) escapeRef.current = () => lifecycle.escape() || Boolean(pathwayOpen && pathwayEscape.current?.());
-	// Pathway: the pathway section takes focus as it opens, so the keyboard lands there too.
-	const pathwayRef = React.useRef<HTMLDivElement>(null);
-	React.useEffect(() => {
-		if (pathwayOpen) pathwayRef.current?.focus({ preventScroll: true });
-	}, [pathwayOpen]);
+	if (escapeRef) escapeRef.current = () => lifecycle.escape();
 	const alertFlag = findingsFlag(data);
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
 
@@ -1875,9 +1809,9 @@ function AlertPanelContent({
 						label='Messages'
 						openLabel='Close messages'
 						icon={MessageCircleMoreIcon}
-						openIcon={MessageCircleOffIcon}
+						openIcon={MessageCircleMoreIcon}
 						unread={unread}
-						onClick={() => togglePanel("messages")}
+						onClick={toggleMessages}
 					/>
 				</TooltipProvider>
 			}
@@ -1917,7 +1851,7 @@ function AlertPanelContent({
 							},
 						]
 					: []),
-				// The third column, in the pathway's place (intercept.ds `alert-modal` › Messages `1375:8218`).
+				// Right of the call's (intercept.ds `alert-modal` › Messages `1375:8218`).
 				...(messagesOpen
 					? [
 							{
@@ -1935,35 +1869,11 @@ function AlertPanelContent({
 							},
 						]
 					: []),
-				// Its own column, to the right of the call's when both are open.
-				...(pathwayOpen
-					? [
-							{
-								id: "pathway",
-								label: "Pathway",
-								ref: pathwayRef,
-								content: (
-									// It fills the panel, so the decision sits at the bottom however short the pathway is.
-									<PathwayContent
-										data={data}
-										onPathwayDecision={onPathwayDecision}
-										onTransferDecision={onTransferDecision}
-										onDischargeDecision={onDischargeDecision}
-										onBundleDecision={onBundleDecision}
-										escapeRef={pathwayEscape}
-										fill
-										focusDischarge={focusDischarge}
-									/>
-								),
-							},
-						]
-					: []),
 			]}
 			close={close}
 			onClose={onClose}
 			className={className}
 		>
-			{lifecycle.resolveNode}
 			{lifecycle.formNode}
 		</AlertModal>
 	);
@@ -1979,7 +1889,7 @@ function AlertPanelDialog({
 	defaultOpen,
 	onOpenChange,
 	...props
-}: AlertPanelDialogProps & { defaultPathwayOpen?: boolean; focusDischarge?: boolean }) {
+}: AlertPanelDialogProps) {
 	const escapeRef = React.useRef<(() => boolean) | null>(null);
 	return (
 		<Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
@@ -2013,11 +1923,11 @@ function AlertPanelDialog({
 
 /**
  * A video consult with no alert open (Nov 4, 2026, user's calls): what a card's Video consult opens when the patient has
- * no active alert. The alert panel without its alert: the patient (the name, the heading, opens their details), the
- * actions row (Nov 5, 2026, user's call: Video consult, Messages and Pathway, as on the alert panel), their score, monitor
- * and tags, and the Video consult panel, always open, with the AI Notetaker under the call (already ringing; Cancel,
- * End, then Video consult to call again, in its tile or the row). Messages and Pathway share the third column, one at a
- * time; with no alert there's no pathway suggested, which its column says. No lifecycle buttons: no alert to act on.
+ * no active alert. The alert panel without its alert: the patient (the name, the heading, opens their details), Video
+ * consult and Messages in the header, as on the alert panel, their score, monitor and tags, and the Video consult panel,
+ * always open, with the AI Notetaker under the call (already ringing; Cancel, End, then Video consult to call again),
+ * and Messages right of it. No Pathway (Nov 10, 2026, user's call, as on the alert panel): the care plan is on the
+ * patient's page. No lifecycle buttons: no alert to act on.
  */
 function PatientConsultDialog(props: React.ComponentProps<typeof PatientConsultDialogContent>) {
 	// The dialog stays mounted once closed (to animate out); it's in the patient's consult session only while open.
@@ -2038,13 +1948,9 @@ function PatientConsultDialogContent({
 	onConsultNote,
 	onOpenPatient,
 	onSendMessage,
-	carePlan,
 }: {
 	data: PatientConsultData;
-	/**
-	 * The patient's care plan in force, from an earlier alert: the Pathway column shows it (read-only, as on their page)
-	 * instead of saying there's no pathway (Nov 6, 2026).
-	 */
+	/** @deprecated Ignored since Nov 10, 2026: no Pathway here; the care plan is on the patient's page. */
 	carePlan?: PatientCarePlan;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
@@ -2058,17 +1964,15 @@ function PatientConsultDialogContent({
 	const [micMuted, setMicMuted] = React.useState(false);
 	// Where the notetaker puts Add a note: pinned to the Video consult panel's bottom (`footer`), as on the patient page.
 	const [noteSlot, setNoteSlot] = React.useState<HTMLDivElement | null>(null);
-	// The third column, as on the alert panel: the messages with the bedside nurse, or the pathway, one at a time. Messages
-	// open or closed goes with the consult session.
+	// The messages with the bedside nurse, right of the call, as on the alert panel. Open or closed goes with the consult
+	// session.
 	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
-	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(sharedMessagesOpen ? "messages" : null);
-	const messagesOpen = sidePanel === "messages";
+	const [messagesOpen, setMessagesOpen] = React.useState(sharedMessagesOpen);
 	React.useEffect(() => setSharedMessagesOpen(messagesOpen), [messagesOpen, setSharedMessagesOpen]);
-	const pathwayOpen = sidePanel === "pathway";
 	const [focusMessages, setFocusMessages] = React.useState(false);
-	const togglePanel = (panel: "pathway" | "messages") => {
-		setFocusMessages(panel === "messages");
-		setSidePanel((current) => (current === panel ? null : panel));
+	const toggleMessages = () => {
+		setFocusMessages(true);
+		setMessagesOpen((current) => !current);
 	};
 	const [messages, sendMessage, nurseTyping] = useConsultMessages(
 		data.messages,
@@ -2077,9 +1981,9 @@ function PatientConsultDialogContent({
 		data.scriptedReplies,
 	);
 	// A new message from the bedside opens the column, and the buttons count the ones not yet seen, as on the alert panel.
-	if (useNewIncoming(messages) && sidePanel !== "messages") {
+	if (useNewIncoming(messages) && !messagesOpen) {
 		setFocusMessages(false);
-		setSidePanel("messages");
+		setMessagesOpen(true);
 	}
 	const unread = useUnreadMessages(messages, messagesOpen);
 	const { patient } = data;
@@ -2105,9 +2009,8 @@ function PatientConsultDialogContent({
 					hospital={patient.hospital}
 					unit={patient.unit}
 					bed={patient.bed}
-					// In the header, as on the alert panel (Nov 9, 2026, user's call). No alert, so no lifecycle row for Pathway
-					// to join: it stays with Video consult and Messages. The Video consult panel stays open here, so the call's
-					// button reads End call.
+					// In the header, as on the alert panel (Nov 9, 2026, user's call). The Video consult panel stays open here,
+					// so the call's button reads End call.
 					headerActions={
 						<TooltipProvider>
 							<ConsultHeaderButton consult={consult} onConsultChange={setConsult} openLabel='End call' />
@@ -2116,17 +2019,9 @@ function PatientConsultDialogContent({
 								label='Messages'
 								openLabel='Close messages'
 								icon={MessageCircleMoreIcon}
-								openIcon={MessageCircleOffIcon}
+								openIcon={MessageCircleMoreIcon}
 								unread={unread}
-								onClick={() => togglePanel("messages")}
-							/>
-							<HeaderPanelButton
-								open={pathwayOpen}
-								label='Pathway'
-								openLabel='Close pathway'
-								icon={GitForkIcon}
-								openIcon={GitForkIcon}
-								onClick={() => togglePanel("pathway")}
+								onClick={toggleMessages}
 							/>
 						</TooltipProvider>
 					}
@@ -2185,27 +2080,6 @@ function PatientConsultDialogContent({
 									},
 								]
 							: []),
-						...(pathwayOpen
-							? [
-									{
-										id: "pathway",
-										label: "Pathway",
-										content: carePlan?.pathway || carePlan?.transfer ? (
-											// The plan an earlier alert's pathway put in force; acting on it is the alert's.
-											<CarePlanCard plan={carePlan} headingLevel='h3' className='border-0 bg-transparent p-0' />
-										) : (
-											// No alert, so nothing suggested: pathways come with an alert's findings.
-											<EmptyState
-												icon={<GitForkIcon />}
-												title='No care pathway'
-												description={`Pathways are suggested with an alert. ${patient.firstName ?? "This patient"} has no active alert.`}
-												headingLevel='h3'
-												className='flex-1'
-											/>
-										),
-									},
-								]
-							: []),
 					]}
 					close={
 						<DialogClose asChild>
@@ -2246,9 +2120,8 @@ function pickAlertDetail(details: AlertDetailData[], alerts: TriageAlert[], { pa
 /**
  * The shell's `renderAlert` for a layout (Census, Monitoring): the alert panel (AlertPanelDialog, which replaced the
  * three-column modal on Nov 3, 2026) for the opened alert, with its live state
- * and the patient's alerts in the last 24 h from `alerts`. Acknowledge shows while the alert is open and unaddressed, and
- * closes the modal after; Escalate and Resolve need the queue's reason and note, not built here yet. An alert without a
- * detail renders nothing, and the shell opens the patient instead.
+ * and the patient's alerts in the last 24 h from `alerts`. Acknowledge, Escalate and Resolve keep the modal open
+ * (Nov 10, 2026). An alert without a detail renders nothing, and the shell opens the patient instead.
  */
 function alertPanelRenderer({
 	details,
@@ -2256,10 +2129,6 @@ function alertPanelRenderer({
 	alerts,
 	escalationTargets,
 	onAlertAction,
-	onPathwayDecision,
-	onTransferDecision,
-	onDischargeDecision,
-	onBundleDecision,
 	onConsultChange,
 	onConsultNote,
 	records,
@@ -2276,15 +2145,15 @@ function alertPanelRenderer({
 	escalationTargets?: EscalationTarget[];
 	onAlertAction: (alertId: string, action: TriageAlertAction) => void;
 	/**
-	 * The pathway decided in the modal, by alert, so the app keeps it after the modal closes. Each callback also gets the
-	 * alert's detail as opened (the patient, the pathway as suggested, keep or transfer), for the app's record of it.
+	 * @deprecated Ignored since Nov 10, 2026 (user's call): the alert panel has no pathway. The patient's page takes the
+	 * pathway, keep or transfer, discharge and bundle decisions (`patientDetailsRenderer`).
 	 */
 	onPathwayDecision?: (alertId: string, decision: CarePathwayDecision, detail: AlertDetailData) => void;
-	/** Keep or transfer decided in the modal, by alert. */
+	/** @deprecated Ignored since Nov 10, 2026: on the patient's page. */
 	onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
-	/** A discharge referral decided in the modal, by patient: the patient's page shows the same referrals. */
+	/** @deprecated Ignored since Nov 10, 2026: on the patient's page. */
 	onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
-	/** A sepsis bundle check confirmed or taken back in the modal (Scenario 3's renal dose review), by alert. */
+	/** @deprecated Ignored since Nov 10, 2026: on the patient's page. */
 	onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
 	/** The video consult rang, went live or ended (closing the modal ends it), by alert. */
 	onConsultChange?: (alertId: string, state: AlertConsultState, detail: AlertDetailData) => void;
@@ -2304,7 +2173,6 @@ function alertPanelRenderer({
 				return (
 					<PatientConsultDialog
 						data={{ ...consult, tags: consult.tags && flagged.tags }}
-						carePlan={records?.find((record) => record.id === consult.patientId)?.carePlan}
 						open={open}
 						onOpenChange={onOpenChange}
 						onOpenPatient={openPatient}
@@ -2332,24 +2200,15 @@ function alertPanelRenderer({
 				data={data}
 				// A consult request answered from its toast is on at once; Video consult from a card rings the bedside first.
 				defaultConsult={target.consult === "answered" ? "live" : target.consult ? "connecting" : "idle"}
-				// A notice's Review referrals opens it at the discharge referrals.
-				focusDischarge={target.focus === "discharge"}
 				open={open}
 				onOpenChange={onOpenChange}
 				onOpenPatient={openPatient}
 				escalationTargets={escalationTargets}
-				onPathwayDecision={onPathwayDecision && ((decision) => onPathwayDecision(alert.id, decision, data))}
-				onTransferDecision={onTransferDecision && ((decision) => onTransferDecision(alert.id, decision, data))}
-				onDischargeDecision={onDischargeDecision && ((decision) => onDischargeDecision(alert.patientId, decision))}
-				onBundleDecision={onBundleDecision && ((decision) => onBundleDecision(alert.id, decision))}
 				onConsultChange={onConsultChange && ((state) => onConsultChange(alert.id, state, data))}
 				onConsultNote={onConsultNote && ((note) => onConsultNote(alert.id, note, data))}
-				onAction={(action) => {
-					onAlertAction(alert.id, action);
-					// Acknowledging (or undoing it) keeps the modal open, confirmed in place: the clinician often goes on to the
-					// consult or the pathway. Escalating or resolving hands the alert on, so the modal closes.
-					if (action.type !== "acknowledge" && action.type !== "unacknowledge") onOpenChange(false);
-				}}
+				// Every action keeps the modal open, confirmed in place by the state line (Nov 10, 2026, user's call): the
+				// clinician often goes on to the consult, the messages or a note. Only the × or Escape closes it.
+				onAction={(action) => onAlertAction(alert.id, action)}
 			/>
 		);
 	};

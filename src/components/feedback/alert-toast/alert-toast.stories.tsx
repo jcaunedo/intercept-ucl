@@ -352,6 +352,13 @@ export const ConsultRequestInToaster: Story = {
 		// With only the call left, Don't show and Close all go: neither applies to a call.
 		await waitFor(() => expect(screen.queryByRole("button", { name: "Close all" })).not.toBeInTheDocument());
 		await waitFor(() => expect(screen.queryByRole("button", { name: /Don't show/ })).not.toBeInTheDocument());
+		// Paused by Close all, the notice sits above the call, never over it, and the ringing call is above everything
+		// (Nov 10, 2026, user's call).
+		const notice = await screen.findByText("Alert notifications paused");
+		await waitFor(() =>
+			expect(notice.getBoundingClientRect().bottom).toBeLessThanOrEqual(screen.getByRole("alert").getBoundingClientRect().top),
+		);
+		await expect(getComputedStyle(document.querySelector("[data-sonner-toaster]") as Element).zIndex).toBe("80");
 		// Hidden, the Toaster still shows while the call rings.
 		await userEvent.click(canvas.getByRole("button", { name: "Hide toasts" }));
 		await waitFor(() =>

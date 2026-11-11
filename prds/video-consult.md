@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 6, 2026
 Created by: Julio Caunedo
-Last updated: Nov 9, 2026
+Last updated: Nov 10, 2026
 Scope: The video consult of Intercept Live as an experience: where it opens, the call in its tile, the AI Notetaker and its live transcript, the interpreter prompt, and the consult as one session across the alert panel and the patient's page. Governs the consult parts of `alert-panel/alert-panel.tsx` (`ConsultTile`, `useConsult`, `ConsultPanelContent`, `ConsultNotetaker`, `PatientConsultDialog`), `alert-panel/consult-transcript.tsx`, `consult-session.tsx`, `interpreter.tsx` and `patient-details/consult-panels.tsx`.
 Purpose: PRD Bedside camera sets the camera session model; the video consult grew on top of it (notetaker, transcript, carry-over between places) without a spec of its own. This PRD writes down what the prototype does, the decisions behind it and what's still open.
 -->
@@ -19,7 +19,7 @@ Purpose: PRD Bedside camera sets the camera session model; the video consult gre
 **Surface:** the alert panel's Video consult panel; the video consult without an alert (a dialog); the patient page's Video consult panel  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 9, 2026
+**Last updated:** November 10, 2026
 
 ---
 
@@ -156,7 +156,7 @@ This PRD builds on PRD Bedside camera and doesn't redefine what it owns:
 |---|---|---|
 | VID-040 | **The consult session** | A patient's consult is one session across the places that show it: the alert panel, the consult without an alert and the patient page's panels. Whichever shows the patient next picks it up where it was: the call (state, running time, mute, camera), the notetaker (state, request, draft, approval, the clinician's notes, a note not yet added), the transcript, the interpreter, the thread (messages, what was read, Messages open or closed) and the pathway (open or closed, work in progress). Clicking the name in the alert panel opens the page with the Video consult panel open and the call still live, not ringing again, and Messages as they were; it works the other way too. The newest place owns the session, so the one fading out can't undo anything; the session ends when the last place showing it goes. ✅ **Resolved (Nov 5, 2026, user's call: "the call and chat, open or close, should pass over"; Pathway Nov 6, 2026).** ⚠️ **Constraint:** keep this state in the session (`useSessionState`), never in component state, or the handoff breaks silently (DESIGN.md). |
 | VID-041 | **The third column** | Right of the Video consult panel, **Messages** and **Pathway** share one column, one at a time, so the alert never grows to four columns. Both buttons sit in the actions row with Video consult (Video consult, Messages, Pathway), and Messages is there with or without a call and stays when the call ends. A new message from the bedside opens Messages on its own, in Pathway's place, without moving focus. On the patient page the same three are panels right of the page, opened from the app header. The thread itself is PRD Messages. |
-| VID-042 | **The consult without an alert** | What a card's Video consult opens when the patient has no active alert (CAM-012): the patient's name as the heading (it opens their page), the actions row (Video consult, Messages, Pathway), their score, monitor and flags, and the Video consult panel always open with the call ringing and the notetaker under it. Pathway says "No care pathway", "Pathways are suggested with an alert. Thomas has no active alert.", or shows the care plan an earlier alert put in force, read-only. No lifecycle buttons. ✅ **Resolved (Nov 4–6, 2026, user's calls).** |
+| VID-042 | **The consult without an alert** | What a card's Video consult opens when the patient has no active alert (CAM-012): the patient's name as the heading (it opens their page), the actions row (Video consult, Messages, Pathway), their score, monitor and flags, and the Video consult panel always open with the call ringing and the notetaker under it. ~~Pathway says "No care pathway", "Pathways are suggested with an alert. Thomas has no active alert.", or shows the care plan an earlier alert put in force, read-only.~~ ✅ **Decision (Nov 10, 2026, user's call):** no Pathway here, as on the alert panel (intercept.ds `alert-modal` `1355:14776`): Video consult and Messages right of the name; the care plan is on the patient's page. No lifecycle buttons. ✅ **Resolved (Nov 4–6, 2026, user's calls).** |
 
 ### 4.6 Accessibility and motion
 

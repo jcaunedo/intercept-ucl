@@ -27,7 +27,7 @@ import { useMotionPreference } from "@/lib/motion";
 
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
-import { flagDetails } from "../shared/flag-details";
+import { flagDetails, withFallPathwayLink } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
 import type { AlertConsultState, AlertDetailData, PatientConsultData } from "../alert-panel/alert-panel";
 import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-panel/care-pathway";
@@ -359,10 +359,15 @@ type PatientDetailsProps = {
 	 */
 	defaultConsult?: AlertConsultState;
 	/**
+	 * Opens the page with an alert's pathway out in the Pathway panel, at `focus` (a notice's Review referrals opens the
+	 * discharge referrals). Needs `consult`, as the panel does.
+	 */
+	defaultPathway?: { alertId?: string; focus?: "discharge" };
+	/**
 	 * The patient's alerts that come with a pathway (or a sepsis bundle, or a protocol), the one to show first leading:
-	 * the app header's Pathway opens it in a panel right of the page, as on the alert (Nov 6, 2026), and the Overview's
-	 * Care plan shows it (suggested, or what it runs) with the way to it. The panel needs `consult` (it's one of the
-	 * page's panels); without it, Open pathway opens the alert.
+	 * the Overview's Care plan shows it (suggested, or what it runs) and opens it in the Pathway panel right of the page.
+	 * The only place a pathway is decided since Nov 10, 2026 (user's call: the alert panel has none). The panel needs
+	 * `consult` (it's one of the page's panels); without it, the Care plan has no way to it.
 	 */
 	pathways?: PatientPathways;
 };
@@ -623,11 +628,12 @@ function PatientDetailsContent({
 	onDischargeDecision,
 	consult,
 	defaultConsult,
+	defaultPathway,
 	pathways,
 }: PatientDetailsProps) {
 	const [section, setSection] = React.useState<SectionId>("overview");
-	// The pathway the Overview shows: the first alert's, where it is now (the session's, as the panels and the alert have
-	// it, or the app's), and the way to it: the page's Pathway panel, or the alert without one.
+	// The pathway the Overview shows: the first alert's, where it is now (the session's, as the panels have it, or the
+	// app's), and the way to it: the page's Pathway panel (the alert has no pathway since Nov 10, 2026).
 	const navigation = usePatientNavigation();
 	const openPathwayPanel = useOpenPathwayPanel();
 	const openAlertsPanel = useOpenAlertsPanel();
@@ -641,11 +647,7 @@ function PatientDetailsContent({
 		? {
 				detail: pathwayDetail,
 				status: pathwayStatus,
-				onOpen: consult
-					? openPathwayPanel
-					: navigation
-						? () => navigation.openAlert(patient.id, pathwayDetail.alert.id)
-						: undefined,
+				onOpen: consult ? openPathwayPanel : undefined,
 			}
 		: undefined;
 	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080), Discharge only once the
@@ -696,6 +698,7 @@ function PatientDetailsContent({
 					key={patient.id}
 					data={consult}
 					defaultConsult={defaultConsult}
+					defaultPathway={defaultPathway}
 					pathways={pathways}
 					onOpenConsult={() => onAction?.("video-consult")}
 					onOpenMessages={() => onAction?.("messages")}
@@ -731,7 +734,17 @@ function PatientDetailsContent({
 				room={patient.room}
 				bed={patient.bed}
 				details={details}
-				tags={patientBadges(patient, record)}
+				// Fall risk's link opens the fall prevention pathway in the page's Pathway panel (Nov 10, 2026, user's call).
+				tags={withFallPathwayLink(
+					patientBadges(patient, record),
+					patient.id,
+					alerts,
+					consult && pathways
+						? (alertId) => {
+								if (alertPathway.shownAlertId !== alertId) alertPathway.toggle(alertId);
+							}
+						: undefined,
+				)}
 				acuity={patient.acuity}
 				trajectory={patient.trajectory}
 				alert={alertPill(alerts)}
@@ -826,6 +839,16 @@ type PatientDetailsSources = {
 	/** A sepsis bundle check confirmed or undone on a patient's page, by alert. */
 	onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
 };
+
+/**
+ * The patient's consult with the bedside connection their alert carries (its photos: the BiPAP screen, the blood gases;
+ * low-bandwidth mode), when the consult has none of its own. The pathway is decided on this page since Nov 10, 2026, so
+ * what the bedside sends with its beats (Scenario 2's resolution) has to reach this page's thread too.
+ */
+function withAlertConnection(consult: PatientConsultData | undefined, details: AlertDetailData[]) {
+	const connection = details.find((detail) => detail.connection)?.connection;
+	return consult && connection && !consult.connection ? { ...consult, connection } : consult;
+}
 
 /**
  * A patient's alerts that come with a pathway, a sepsis bundle or a protocol, with each alert as it stands now: the
@@ -938,8 +961,12 @@ function patientDetailsView(
 				onAlertAction={onAlertAction}
 				onAction={onAction ? (action) => onAction(patientId, action) : undefined}
 				onDischargeDecision={onDischargeDecision ? (decision) => onDischargeDecision(patientId, decision) : undefined}
-				consult={consults.find((item) => item.patientId === patientId)}
+				consult={withAlertConnection(
+					consults.find((item) => item.patientId === patientId),
+					pathwayDetails,
+				)}
 				defaultConsult={stepper.consult === "answered" ? "live" : undefined}
+				defaultPathway={stepper.pathway}
 				pathways={
 					pathwayDetails.length
 						? {

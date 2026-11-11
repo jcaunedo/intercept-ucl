@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, screen, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { TagsPopover, TagsPopoverGroup } from "./tags-popover";
 
@@ -52,6 +52,13 @@ export const Default: Story = {
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 		await expect(tag).toHaveFocus();
+		// Focus is back on the tag, but without its ring; the next key brings it back.
+		await expect(tag).toHaveAttribute("data-quiet-focus");
+		const quiet = getComputedStyle(tag).boxShadow;
+		await userEvent.keyboard("{Shift}");
+		await expect(tag).not.toHaveAttribute("data-quiet-focus");
+		// The ring animates in (the tag's box-shadow transition).
+		await waitFor(() => expect(getComputedStyle(tag).boxShadow).not.toBe(quiet));
 	},
 };
 
@@ -126,6 +133,34 @@ export const ParagraphValue: Story = {
 	},
 };
 
+/**
+ * With `action`: a full-width outline button at the bottom to what the flag leads to, here Fall risk's fall prevention
+ * pathway (Nov 10, 2026, user's call; intercept.ds `Popover` `1352:13395`). Selecting it closes the popover.
+ */
+export const WithAction: Story = {
+	args: {
+		label: "Fall risk",
+		details: {
+			changes: ["Morse Fall Scale score up from 45 to 55 in the last 5 hours"],
+			items: [
+				{ label: "Morse Fall Scale", value: "55, high risk" },
+				{ label: "Precautions", value: "Bed alarm on · Low bed, locked · Non-slip socks · Call light in reach" },
+				{ label: "Assessed by", value: "Lucy Hart, RN" },
+			],
+			source: "Nursing assessment",
+			updatedAt: minutesAgo(300),
+			action: { label: "View fall prevention pathway", onSelect: fn() },
+		},
+	},
+	play: async ({ args, canvas }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Fall risk" }));
+		const popover = within(await screen.findByRole("dialog", { name: "Fall risk" }));
+		await userEvent.click(popover.getByRole("button", { name: "View fall prevention pathway" }));
+		await expect(args.details.action?.onSelect).toHaveBeenCalled();
+		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Fall risk" })).not.toBeInTheDocument());
+	},
+};
+
 /** The tag at each Badge size the cards and the patient header use, and in their variants. */
 export const AllVariants: Story = {
 	render: (args) => (
@@ -181,6 +216,18 @@ export const Row: Story = {
 		await screen.findByRole("dialog", { name: "DNR" });
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "2 pressors" })).not.toBeInTheDocument());
 		await userEvent.hover(canvas.getByRole("button", { name: "Allergy: Iodinated contrast" }));
+		await screen.findByRole("dialog", { name: "Allergy: Iodinated contrast" });
+		await expect(screen.getAllByRole("dialog")).toHaveLength(1);
+		// Tab steps along the row from the keyboard, looping from the last back to the first; Shift+Tab goes back.
+		await userEvent.keyboard("{Tab}");
+		await screen.findByRole("dialog", { name: "2 pressors" });
+		await expect(pressors).toHaveFocus();
+		await userEvent.keyboard("{Tab}");
+		await screen.findByRole("dialog", { name: "DNR" });
+		await expect(dnr).toHaveFocus();
+		await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
+		await screen.findByRole("dialog", { name: "2 pressors" });
+		await userEvent.keyboard("{Shift>}{Tab}{/Shift}");
 		await screen.findByRole("dialog", { name: "Allergy: Iodinated contrast" });
 		await expect(screen.getAllByRole("dialog")).toHaveLength(1);
 		// Leaving the row keeps it open; a click outside closes it.

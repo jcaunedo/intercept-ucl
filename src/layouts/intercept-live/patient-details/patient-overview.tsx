@@ -158,24 +158,20 @@ function OverviewAlertCard({
 	escalationTargets: NonNullable<PatientDetailsProps["escalationTargets"]>;
 	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
 	onOpen?: () => void;
-	/** The alert comes with a pathway: a Pathway button opens it (or closes it) in the page's Pathway panel. */
+	/** The alert comes with a pathway: a resolved alert's card opens it (or closes it) in the page's Pathway panel. */
 	onTogglePathway?: () => void;
 	/** Its pathway is the one the Pathway panel shows. */
 	pathwayShown?: boolean;
 }) {
 	const resolved = !isOpenAlert(alert);
-	// Pathway is last in the lifecycle row, where Resolve was, and Resolve a link under it, as on the alert panel
-	// (Nov 9, 2026, user's call). A resolved alert has no Pathway button: the whole card opens its pathway instead
-	// (Nov 9, 2026, user's call), so there's nothing left to act on but the pathway's record.
+	// Acknowledge, Escalate and Resolve in the row, as on the alert panel; no View pathway link under it since Nov 10,
+	// 2026 (user's call; intercept.ds `alert-modal`): an open alert's pathway opens from the Overview's Care plan. A
+	// resolved alert's whole card opens its pathway (Nov 9, 2026, user's call): nothing left to act on but its record.
 	const opensPathway = resolved && onTogglePathway !== undefined;
 	const lifecycle = useAlertLifecycle({
 		alert,
 		escalationTargets,
 		onAction: onAlertAction ? (action) => onAlertAction(alert.id, action) : undefined,
-		pathway:
-			onTogglePathway && !resolved
-				? { open: Boolean(pathwayShown), onToggle: onTogglePathway, controls: "patient-pathway" }
-				: undefined,
 	});
 	const tones = alertTones[resolved ? "resolved" : alert.severity];
 	const headingId = React.useId();
@@ -214,7 +210,7 @@ function OverviewAlertCard({
 				// A card that opens its pathway is one click target: its bar no longer opens the alert, so no maximize icon
 				// (Nov 9, 2026, user's call).
 				onOpen={opensPathway ? undefined : onOpen}
-				className='rounded-none'
+				header
 			/>
 			<div className='flex flex-col gap-2 px-4 pb-2.5'>
 				{/* The reason leads; the alert's own title follows it, as in the alert panel. */}
@@ -242,7 +238,6 @@ function OverviewAlertCard({
 				</div>
 				{/* Over the card's click target, so its own controls stay theirs. */}
 				{lifecycle.alertActionsNode ? <div className='relative z-[2] flex gap-2'>{lifecycle.alertActionsNode}</div> : null}
-				{lifecycle.resolveNode ? <div className='relative z-[2]'>{lifecycle.resolveNode}</div> : null}
 				{lifecycle.formNode ? <div className='relative z-[2]'>{lifecycle.formNode}</div> : null}
 			</div>
 		</div>

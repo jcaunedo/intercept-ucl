@@ -9,9 +9,14 @@ type PatientNavigation = {
 	 * Opens the patient's details over the current page. `list` is the patients the page shows, in its current order and
 	 * filters, so the details page can step to the previous and next one; without it (e.g. from an alert) the patient gets
 	 * the page's list as `setPageList` last set it. `consult: "answered"` opens it with the video consult already on: a
-	 * consult request answered on the patient's page (Nov 9, 2026, user's call).
+	 * consult request answered on the patient's page (Nov 9, 2026, user's call). `pathway` opens it with an alert's
+	 * pathway out in its Pathway panel, at `focus` (e.g. the discharge referrals).
 	 */
-	openPatient: (patientId: string, list?: string[], options?: { consult?: "answered" }) => void;
+	openPatient: (
+		patientId: string,
+		list?: string[],
+		options?: { consult?: "answered"; pathway?: { alertId?: string; focus?: "discharge" } },
+	) => void;
 	/**
 	 * The patients the page shows now, in its order and filters. A patient opened without a list (an alert, a toast, the
 	 * live feed, the chat) gets this one, so the patient list is always there (Nov 3, 2026, user's call).
@@ -24,7 +29,8 @@ type PatientNavigation = {
 	 */
 	/**
 	 * `consult`: with the video consult ringing the bedside (`true`), or already on, a consult request answered
-	 * (`"answered"`). `focus`: opened at a part of it, e.g. the discharge referrals a notice is about.
+	 * (`"answered"`). `focus`: opened at a part of its pathway, e.g. the discharge referrals a notice is about: the
+	 * patient's page opens instead, its Pathway panel there, since the alert has no pathway (Nov 10, 2026, user's call).
 	 */
 	openAlert: (
 		patientId: string,

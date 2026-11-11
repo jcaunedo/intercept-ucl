@@ -244,10 +244,18 @@ type PatientStepper = {
 	onSelectPatient: (patientId: string) => void;
 	/** Opened answering a consult request (`openPatient`'s `consult`): the page opens with the video consult on. */
 	consult?: "answered";
+	/** Opened at an alert's pathway (`openPatient`'s `pathway`): the page opens with its Pathway panel out. */
+	pathway?: PatientPathwayTarget;
 };
 
+/**
+ * Where the patient's page opens its Pathway panel: an alert's pathway, and a part of it to scroll to, e.g. the
+ * discharge referrals a notice is about. The alert panel has no pathway since Nov 10, 2026 (user's call).
+ */
+type PatientPathwayTarget = { alertId?: string; focus?: "discharge" };
+
 /** The patient whose details are open, and the list they were opened from. */
-type OpenPatient = { id: string; list?: string[]; consult?: "answered" };
+type OpenPatient = { id: string; list?: string[]; consult?: "answered"; pathway?: PatientPathwayTarget };
 
 type InterceptLiveProps = {
 	/**
@@ -624,11 +632,16 @@ function InterceptLive({
 			clearActiveAlertsRequest: () => setActiveAlertsRequest(null),
 			openPatient: (patientId, list, options) => {
 				if (!renderPatientDetails) return;
-				setOpenPatient({ id: patientId, list, consult: options?.consult });
+				setOpenPatient({ id: patientId, list, consult: options?.consult, pathway: options?.pathway });
 			},
-			// The alert modal (`renderAlert`); without one, the patient's details.
+			// The alert modal (`renderAlert`); without one, the patient's details. Opened at a part of the pathway (a
+			// notice's Review referrals), the patient's page with its Pathway panel there: the alert has no pathway since
+			// Nov 10, 2026 (user's call).
 			openAlert: (patientId, alertId, options) => {
-				if (renderAlert)
+				if (options?.focus && renderPatientDetails) {
+					setOpenAlert((current) => (current ? { ...current, open: false } : current));
+					setOpenPatient({ id: patientId, pathway: { alertId, focus: options.focus } });
+				} else if (renderAlert)
 					setOpenAlert((current) => ({
 						patientId,
 						alertId,
@@ -684,10 +697,11 @@ function InterceptLive({
 	}, [alertMissing, openAlert, renderPatientDetails]);
 	const patientView = (() => {
 		if (!openPatient || !renderPatientDetails) return null;
-		const { id, list, consult } = openPatient;
+		const { id, list, consult, pathway } = openPatient;
 		const index = list ? list.indexOf(id) : -1;
 		return renderPatientDetails(id, {
 			consult,
+			pathway,
 			previousId: index > 0 ? list?.[index - 1] : undefined,
 			nextId: index >= 0 ? list?.[index + 1] : undefined,
 			position: list && index >= 0 ? { index: index + 1, count: list.length } : undefined,
@@ -770,6 +784,7 @@ function InterceptLive({
 										patientName: chatPatientName,
 										patientTags: chatPatientTags,
 										openPatientId: openPatientId ?? undefined,
+										shiftEndsAt,
 									}}
 									respond={askIntercept}
 									notice={askInterceptNotice}
@@ -934,6 +949,7 @@ export {
 	type OpenAlert,
 	type OpenPatient,
 	type PatientDetailsView,
+	type PatientPathwayTarget,
 	type PatientStepper,
 	type PrototypeShortcut,
 };

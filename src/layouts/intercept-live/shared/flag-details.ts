@@ -2,6 +2,7 @@ import type { PatientCardTag, PatientCardTagDetails } from "@/components/cards/p
 
 import type { PatientInfusion, PatientRecord, PatientVentilator } from "../patient-details/patient-details";
 import { isPressorFlag, pressorPattern } from "./pressors";
+import { isOpenAlert, type TriageAlert } from "../monitoring/triage-queue";
 
 // What a patient's flags say when clicked (client feedback, Nov 4, 2026; PRD Patient card §15.1 "Flag details"): what
 // the bedside team changed lately, then what's behind the flag now, and where that comes from. Nurses titrate drips and
@@ -289,4 +290,40 @@ function flagSummary(tags: PatientCardTag[] = [], record?: PatientRecord) {
 	};
 }
 
-export { bedsideChanges, flagDetails, flagSummary, withFlagDetails };
+/**
+ * The alert whose pathway is the patient's fall prevention pathway: their newest Bed sensor alert, open ones first (the
+ * fall prevention pathway is what a bed sensor alert suggests, `samplePathway`). Undefined when they have none.
+ */
+function fallPathwayAlert(patientId: string, alerts: TriageAlert[]) {
+	return alerts
+		.filter((alert) => alert.patientId === patientId && alert.source.name === "Bed sensor")
+		.sort((a, b) => Number(isOpenAlert(b)) - Number(isOpenAlert(a)) || b.firedAt.localeCompare(a.firedAt))[0];
+}
+
+/**
+ * The Fall risk flag's link to the patient's fall prevention pathway (Nov 10, 2026, user's call): "View fall prevention
+ * pathway", a button at the popover's bottom, when the patient has one (`fallPathwayAlert`). `openPathway` opens it, by its
+ * alert: the patient's page with its Pathway panel there, or the panel itself on that page. Other flags are unchanged.
+ */
+function withFallPathwayLink(
+	tags: PatientCardTag[] | undefined,
+	patientId: string,
+	alerts: TriageAlert[],
+	openPathway: ((alertId: string) => void) | null | undefined,
+): PatientCardTag[] | undefined {
+	const alert = openPathway && fallPathwayAlert(patientId, alerts);
+	if (!tags || !alert) return tags;
+	return tags.map((tag) =>
+		tag.label === "Fall risk" && tag.details
+			? {
+					...tag,
+					details: {
+						...tag.details,
+						action: { label: "View fall prevention pathway", onSelect: () => openPathway(alert.id) },
+					},
+				}
+			: tag,
+	);
+}
+
+export { bedsideChanges, fallPathwayAlert, flagDetails, flagSummary, withFallPathwayLink, withFlagDetails };

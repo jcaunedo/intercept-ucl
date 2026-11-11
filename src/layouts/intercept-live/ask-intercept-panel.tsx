@@ -1,8 +1,9 @@
 import * as React from "react";
-import { CheckIcon, CopyIcon, XIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, ChevronRightIcon, CopyIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
+import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { ChatComposer, type ChatCommand } from "@/components/forms/chat-composer";
 import {
 	expandVariants,
@@ -34,15 +35,67 @@ import { SidePanel } from "./side-panel";
  * Where the user is when they ask, so an answer can be about the patient on screen. `patientTags` are that patient's
  * tags ("Ventilated"…), for the questions to start with. `openPatientId` is the patient whose page is open, if any.
  */
-type AskInterceptContext = { page: string; patientName?: string; patientTags?: string[]; openPatientId?: string };
+type AskInterceptContext = {
+	page: string;
+	patientName?: string;
+	patientTags?: string[];
+	openPatientId?: string;
+	/** When the user's shift ends, ISO 8601: the questions offered follow where they are in it. */
+	shiftEndsAt?: string;
+};
+
+// A shift's length, and how long it counts as starting: the questions offered change after that (Nov 10, 2026, user's call).
+const SHIFT_HOURS = 12;
+const SHIFT_START_HOURS = 2;
 
 /**
- * An answer. `text` is plain text with two marks: a line starting "- " is a list item, and `**words**` are bold.
- * `sources` name where its facts come from ("Monitor", "Lab"…).
+ * Where the user is in their shift: `starting` in its first 2 hours (or before it, or without a shift end), `on`
+ * after, when they've been on it for a while.
+ */
+function shiftPhase({ shiftEndsAt }: AskInterceptContext, now = Date.now()): "starting" | "on" {
+	if (!shiftEndsAt) return "starting";
+	const elapsed = now - (Date.parse(shiftEndsAt) - SHIFT_HOURS * 3_600_000);
+	return elapsed >= SHIFT_START_HOURS * 3_600_000 && elapsed < SHIFT_HOURS * 3_600_000 ? "on" : "starting";
+}
+
+/**
+ * The patients behind a count in an answer ("5 on pressors"), listed under it when it's clicked (Nov 10, 2026, user's
+ * call). Each opens the patient's details. `detail` is the line after the name, e.g. where they are; `photo`, or
+ * `initials` in `tone`, is their avatar, as on their card (Nov 10, 2026, user's call).
+ */
+type AskInterceptPatientList = {
+	title: string;
+	patients: {
+		id: string;
+		name: string;
+		detail?: string;
+		photo?: string;
+		initials?: string;
+		tone?: AvatarFallbackProps["tone"];
+	}[];
+};
+
+/**
+ * A patient as an answer's list shows them: their avatar as on their card (`photo`, or `initials` in `tone`), and
+ * `detail`, where they are ("Sidney Regional · MICU Bed 11"), the grey line under the name.
+ */
+type AskInterceptAvatar = { photo?: string; initials?: string; tone?: AvatarFallbackProps["tone"]; detail?: string };
+
+/**
+ * An answer. `text` is plain text with three marks: a line starting "- " is a list item, `**words**` are bold, and
+ * `[words](list:id)` links the words to `lists[id]`, its patients. `sources` name where its facts come from ("Monitor",
+ * "Lab"…).
  */
 type AskInterceptAnswer = {
 	text: string;
 	sources?: string[];
+	/** The patient lists the text links to, by id. */
+	lists?: Record<string, AskInterceptPatientList>;
+	/**
+	 * Avatars by a patient's name as the text writes it in bold ("Miller, Sarah"): a list whose lines start with a patient
+	 * shows each one's avatar before the line (Nov 10, 2026, user's call).
+	 */
+	avatars?: Record<string, AskInterceptAvatar>;
 	/**
 	 * The question was about alerts: the chat posts alert updates (`notice`) from now on, until a question that isn't
 	 * (Oct 31, 2026, user's call).
@@ -50,6 +103,11 @@ type AskInterceptAnswer = {
 	followAlerts?: boolean;
 	/** What to do next, as buttons under the answer while it's the latest (Nov 3, 2026, user's call). */
 	actions?: AskInterceptAction[];
+	/**
+	 * The rest of a list the text cut with a line "…and 18 more.": its "- " lines, revealed in that line's place by the
+	 * line's own Show all (Nov 10, 2026, user's calls: Show all reveals only the ones not shown, on that line).
+	 */
+	more?: string;
 };
 
 /**
@@ -113,10 +171,22 @@ function commandHint(name: string, patientName?: string) {
 }
 
 /**
- * Questions to start with, about the page or the patient on screen. Shown until the first question. A ventilated
- * patient gets one about the ventilator too (Nov 3, 2026, user's call).
+ * Questions to ask, about the page or the patient on screen: the first ones before the first question, and after an
+ * answer with no follow-ups of its own, the ones not asked yet (Nov 10, 2026, user's call). A ventilated patient gets
+ * one about the ventilator too (Nov 3, 2026, user's call). About the census they follow the shift: starting it, the
+ * brief and the night first; on it a while, what's new, open and late.
  */
-function suggestionsFor({ patientName, patientTags = [] }: AskInterceptContext) {
+function suggestionsFor(context: AskInterceptContext) {
+	const { patientName, patientTags = [] } = context;
+	if (!patientName && shiftPhase(context) === "on")
+		return [
+			"What changed in the last hour?",
+			"Who needs attention first?",
+			"Which alerts are still open?",
+			"What's overdue?",
+			"Any results still pending?",
+			"Which patients are sepsis candidates?",
+		];
 	return patientName
 		? [
 				`Summarize ${firstName(patientName)}'s last 24 hours`,
@@ -131,8 +201,9 @@ function suggestionsFor({ patientName, patientTags = [] }: AskInterceptContext) 
 				"Brief me for the start of my shift",
 				"What happened overnight?",
 				"Who needs attention first?",
-				"What changed in the last hour?",
+				"What's overdue?",
 				"Which patients are sepsis candidates?",
+				"What changed in the last hour?",
 			];
 }
 
@@ -155,7 +226,13 @@ type ChatMessage =
 			text: string;
 			shown: number;
 			sources?: string[];
+			lists?: Record<string, AskInterceptPatientList>;
+			avatars?: Record<string, AskInterceptAvatar>;
 			actions?: AskInterceptAction[];
+			/** The rest of a cut list, until Show all reveals it (`AskInterceptAnswer.more`). */
+			more?: string;
+			/** The text's lines Show all revealed, which grow in (`from` is their first line's index). */
+			revealed?: { from: number; count: number };
 			status: "thinking" | "streaming" | "done" | "stopped";
 			/** Posted unasked (an alert update): shown in a grey box, without the copy button. */
 			notice?: boolean;
@@ -164,23 +241,248 @@ type ChatMessage =
 /** Whether a message is a notice (an alert update), for spacing a run of them. */
 const isNotice = (message?: ChatMessage) => message?.role === "assistant" && Boolean(message.notice);
 
-/** `**bold**` within a line. An unclosed `**` while streaming is bold up to the end, so the marks never flash. */
-function renderInline(line: string) {
-	return line.split("**").map((part, index) => (index % 2 ? <strong key={index}>{part}</strong> : part));
+/** `**bold**` within a run of text. An unclosed `**` while streaming is bold up to the end, so the marks never flash. */
+function renderBold(text: string, key: React.Key) {
+	return text.split("**").map((part, index) => (index % 2 ? <strong key={`${key}-${index}`}>{part}</strong> : part));
 }
 
-/** The answer's text: paragraphs, and consecutive "- " lines as one list. */
-function AnswerText({ text, caret }: { text: string; caret?: React.ReactNode }) {
-	const blocks: ({ type: "p"; line: string } | { type: "ul"; items: string[] })[] = [];
-	for (const line of text.split("\n")) {
+const listLinkPattern = /\[([^\]]+)\]\(list:([^)]+)\)/g;
+// A link still streaming in at the end of the line ("[5 on pre", "[5 on pressors](li"): only its words show.
+const partialListLinkPattern = /\[([^\]]*)(?:\]\([^)]*)?$/;
+
+// The line an answer ends a cut list with ("…and 18 more."), where Show all sits.
+const cutLinePattern = /^…and \d+ more\.$/;
+
+// A link-like button in an answer's text (a count's list, Show all): medium, a dotted underline, solid on hover.
+const inlineActionClassName =
+	"inline-flex items-baseline gap-0.5 rounded-sm font-medium text-foreground underline decoration-foreground-subtle decoration-dotted underline-offset-4 outline-none hover:decoration-foreground hover:decoration-solid focus-visible:ring-2 focus-visible:ring-ring";
+
+/** The list ids a line links to, in order. */
+const listLinksIn = (line: string) => [...line.matchAll(listLinkPattern)].map((match) => match[2]);
+
+/**
+ * Whether a list line starts with one of the answer's patients, its name in bold, or with the start of one while it
+ * streams in ("**Mill"), so a list of patients takes its avatars from its first words and never flips layout.
+ */
+function startsWithPatient(line: string | undefined, avatars?: Record<string, AskInterceptAvatar>) {
+	if (!line?.startsWith("**") || !avatars) return false;
+	const end = line.indexOf("**", 2);
+	const lead = end < 0 ? line.slice(2) : line.slice(2, end);
+	return Object.keys(avatars).some((name) => (end < 0 ? name.startsWith(lead) : name === lead));
+}
+
+/**
+ * A patient's line split for its avatar: the bold name, where they are when the line says so in brackets ("(MICU Bed
+ * 11): …"), and the rest, what the answer says about them. A name still streaming in leaves the line whole, in `rest`.
+ */
+function splitPatientLine(line: string) {
+	const lead = line.match(/^\*\*([^*]+)\*\*/);
+	if (!lead) return { name: undefined, location: undefined, rest: line };
+	const after = line.slice(lead[0].length);
+	const located = after.match(/^\s*\(([^)]*)\)\s*[:,]?\s*/);
+	return located
+		? { name: lead[1], location: located[1], rest: after.slice(located[0].length) }
+		: { name: lead[1], location: undefined, rest: after.replace(/^\s*[:,·–-]?\s*/, "") };
+}
+
+/** The text without its link marks, e.g. for copying. */
+const withoutListLinks = (text: string) => text.replace(listLinkPattern, "$1");
+
+/**
+ * A line's marks: bold, and `[words](list:id)` drawn by `link` (the words alone without it). A link still streaming in
+ * shows its words, never its brackets.
+ */
+function renderInline(line: string, link?: (words: string, id: string) => React.ReactNode) {
+	const partial = line.match(partialListLinkPattern);
+	const complete = partial ? line.slice(0, partial.index) : line;
+	const parts: React.ReactNode[] = [];
+	let from = 0;
+	for (const match of complete.matchAll(listLinkPattern)) {
+		parts.push(...renderBold(complete.slice(from, match.index), from));
+		parts.push(<React.Fragment key={`link-${match.index}`}>{link ? link(match[1], match[2]) : match[1]}</React.Fragment>);
+		from = (match.index ?? 0) + match[0].length;
+	}
+	parts.push(...renderBold(complete.slice(from), from));
+	if (partial) parts.push(partial[1]);
+	return parts;
+}
+
+/**
+ * The patients behind a linked count, under its line: one row each, the name then where they are, opening their details
+ * (without `onOpenPatient`, plain rows). It opens and closes with Expand.
+ */
+function AnswerPatientList({
+	id,
+	list,
+	onOpenPatient,
+}: {
+	id: string;
+	list: AskInterceptPatientList;
+	onOpenPatient?: (patientId: string) => void;
+}) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const clip = useExpandClip();
+	return (
+		<motion.div
+			{...clip}
+			id={id}
+			variants={prefersReducedMotion ? fadeVariants : expandVariants}
+			initial='initial'
+			animate='animate'
+			exit='exit'
+		>
+			<ul aria-label={list.title} className='mt-1.5 flex flex-col rounded-lg border border-border p-1'>
+				{list.patients.map((patient) => {
+					const row = (
+						<>
+							{/* Their avatar, as on their card, so the patient is found at a glance. */}
+							{patient.photo || patient.initials ? (
+								<Avatar size='sm' className='shrink-0'>
+									{patient.photo ? <AvatarImage src={patient.photo} alt='' /> : null}
+									<AvatarFallback tone={patient.tone}>{patient.initials}</AvatarFallback>
+								</Avatar>
+							) : null}
+							<span className='min-w-0 flex-1'>
+								<span className='font-semibold text-foreground'>{patient.name}</span>
+								{patient.detail ? <span className='block truncate text-xs text-muted-foreground'>{patient.detail}</span> : null}
+							</span>
+							{onOpenPatient ? <ChevronRightIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' /> : null}
+						</>
+					);
+					return (
+						<li key={patient.id}>
+							{onOpenPatient ? (
+								<button
+									type='button'
+									onClick={() => onOpenPatient(patient.id)}
+									className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring'
+								>
+									<span className='sr-only'>Open patient details: </span>
+									{row}
+								</button>
+							) : (
+								<div className='flex items-center gap-2 px-2 py-1.5'>{row}</div>
+							)}
+						</li>
+					);
+				})}
+			</ul>
+		</motion.div>
+	);
+}
+
+/** A list line Show all revealed: it grows in (Expand; a fade under reduced motion), the list opening in place. */
+function RevealedItem({ className, children }: { className?: string; children: React.ReactNode }) {
+	const { prefersReducedMotion } = useMotionPreference();
+	const clip = useExpandClip<HTMLLIElement>();
+	return (
+		<motion.li
+			{...clip}
+			className={className}
+			variants={prefersReducedMotion ? fadeVariants : expandVariants}
+			initial='initial'
+			animate='animate'
+		>
+			{children}
+		</motion.li>
+	);
+}
+
+/**
+ * The answer's text: paragraphs, and consecutive "- " lines as one list. A count linked to its patients (`lists`) is a
+ * button once the answer is written: a click lists them under its line, another hides them (Nov 10, 2026, user's call).
+ */
+function AnswerText({
+	text,
+	caret,
+	lists,
+	avatars,
+	revealed,
+	onShowMore,
+	linksOn = false,
+	onOpenPatient,
+	idPrefix = "answer",
+}: {
+	text: string;
+	caret?: React.ReactNode;
+	lists?: Record<string, AskInterceptPatientList>;
+	avatars?: Record<string, AskInterceptAvatar>;
+	/** Lines Show all just revealed (by index in `text`): they grow in. */
+	revealed?: { from: number; count: number };
+	/** Show all, at the end of the "…and 18 more." line, while the answer has more to show. */
+	onShowMore?: () => void;
+	/** Whether the links work: not while the answer is still streaming. */
+	linksOn?: boolean;
+	onOpenPatient?: (patientId: string) => void;
+	/** Makes the lists' element ids unique on the page. */
+	idPrefix?: string;
+}) {
+	const [expanded, setExpanded] = React.useState<ReadonlySet<string>>(new Set());
+	const toggle = (id: string) =>
+		setExpanded((current) => {
+			const next = new Set(current);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	const listId = (id: string) => `${idPrefix}-list-${id}`;
+	const link = (words: string, id: string) => {
+		const list = lists?.[id];
+		if (!linksOn || !list?.patients.length) return words;
+		const open = expanded.has(id);
+		return (
+			<button
+				type='button'
+				aria-expanded={open}
+				aria-controls={open ? listId(id) : undefined}
+				onClick={() => toggle(id)}
+				className={inlineActionClassName}
+			>
+				{words}
+				<ChevronDownIcon
+					aria-hidden='true'
+					className={cn("size-3.5 self-center text-icon-muted transition-transform", open && "rotate-180")}
+				/>
+			</button>
+		);
+	};
+	// The lists a line opened, under it, in the order of its links.
+	const openLists = (line: string) => (
+		<AnimatePresence initial={false}>
+			{listLinksIn(line)
+				.filter((id) => linksOn && expanded.has(id) && lists?.[id])
+				.map((id) => (
+					<AnswerPatientList key={id} id={listId(id)} list={lists![id]} onOpenPatient={onOpenPatient} />
+				))}
+		</AnimatePresence>
+	);
+
+	// Each list item keeps its line's index, so the ones Show all revealed can grow in.
+	const blocks: ({ type: "p"; line: string } | { type: "ul"; items: string[]; lines: number[] })[] = [];
+	text.split("\n").forEach((line, lineIndex) => {
 		if (line.startsWith("- ")) {
 			const last = blocks.at(-1);
-			if (last?.type === "ul") last.items.push(line.slice(2));
-			else blocks.push({ type: "ul", items: [line.slice(2)] });
+			if (last?.type === "ul") {
+				last.items.push(line.slice(2));
+				last.lines.push(lineIndex);
+			} else blocks.push({ type: "ul", items: [line.slice(2)], lines: [lineIndex] });
 		} else if (line.trim()) {
 			blocks.push({ type: "p", line });
 		}
-	}
+	});
+	const isRevealed = (lineIndex: number) =>
+		Boolean(revealed && lineIndex >= revealed.from && lineIndex < revealed.from + revealed.count);
+	// A list item, growing in when Show all revealed it.
+	const listItem = (lineIndex: number, key: React.Key, className: string | undefined, children: React.ReactNode) =>
+		isRevealed(lineIndex) ? (
+			<RevealedItem key={key} className={className}>
+				{children}
+			</RevealedItem>
+		) : (
+			<li key={key} className={className}>
+				{children}
+			</li>
+		);
 
 	return (
 		// Block flow, not flex: the message's sparkle floats beside the first line, and the rest wraps under it.
@@ -188,18 +490,88 @@ function AnswerText({ text, caret }: { text: string; caret?: React.ReactNode }) 
 			{blocks.map((block, index) => {
 				const last = index === blocks.length - 1;
 				return block.type === "p" ? (
-					<p key={index}>
-						{renderInline(block.line)}
-						{last ? caret : null}
-					</p>
+					<React.Fragment key={index}>
+						<p>
+							{renderInline(block.line, link)}
+							{onShowMore && cutLinePattern.test(block.line) ? (
+								<>
+									{" "}
+									<button type='button' onClick={onShowMore} className={inlineActionClassName}>
+										Show all
+										<ChevronDownIcon aria-hidden='true' className='size-3.5 self-center text-icon-muted' />
+									</button>
+								</>
+							) : null}
+							{last ? caret : null}
+						</p>
+						{openLists(block.line)}
+					</React.Fragment>
+				) : startsWithPatient(block.items[0], avatars) ? (
+					// A list of patients: each line after its patient's avatar, no bullets (Nov 10, 2026, user's call). A line
+					// whose name hasn't streamed in yet keeps the avatar's room, so the text doesn't shift when it appears.
+					<ul key={index} className='flex flex-col gap-3'>
+						{block.items.map((item, itemIndex) => {
+							const { name, location, rest } = splitPatientLine(item);
+							const avatar = name ? avatars?.[name] : undefined;
+							const where = avatar?.detail ?? location;
+							const caretHere = last && itemIndex === block.items.length - 1 ? caret : null;
+							return (
+								// As a row of a count's patient list (AnswerPatientList; Nov 10, 2026, user's calls): the avatar centered on
+								// the name and where they are (in grey); then what the answer says about them, under the name.
+								listItem(block.lines[itemIndex], itemIndex, 'flex flex-col', <>
+									<div className='flex items-center gap-2'>
+										{avatar ? (
+											<Avatar size='sm' className='shrink-0'>
+												{avatar.photo ? <AvatarImage src={avatar.photo} alt='' /> : null}
+												<AvatarFallback tone={avatar.tone}>{avatar.initials}</AvatarFallback>
+											</Avatar>
+										) : (
+											<span aria-hidden='true' className='size-8 shrink-0' />
+										)}
+										<div className='min-w-0 flex-1'>
+											{name ? (
+												<>
+													<p className='font-semibold text-foreground'>{name}</p>
+													{where ? <p className='text-xs text-muted-foreground'>{where}</p> : null}
+												</>
+											) : (
+												<p>
+													{renderInline(rest, link)}
+													{caretHere}
+												</p>
+											)}
+										</div>
+									</div>
+									{/* Under the name: the avatar's 32px and the 8px gap. */}
+									<div className='pl-10'>
+										{name && rest ? (
+											<p className='mt-1'>
+												{renderInline(rest, link)}
+												{caretHere}
+											</p>
+										) : name ? (
+											caretHere
+										) : null}
+										{openLists(item)}
+									</div>
+								</>)
+							);
+						})}
+					</ul>
 				) : (
 					<ul key={index} className='list-disc space-y-1.5 pl-4 marker:text-muted-foreground'>
-						{block.items.map((item, itemIndex) => (
-							<li key={itemIndex}>
-								{renderInline(item)}
-								{last && itemIndex === block.items.length - 1 ? caret : null}
-							</li>
-						))}
+						{block.items.map((item, itemIndex) =>
+							listItem(
+								block.lines[itemIndex],
+								itemIndex,
+								undefined,
+								<>
+									{renderInline(item, link)}
+									{last && itemIndex === block.items.length - 1 ? caret : null}
+									{openLists(item)}
+								</>,
+							),
+						)}
 					</ul>
 				);
 			})}
@@ -223,7 +595,7 @@ function CopyButton({ text }: { text: string }) {
 			size='icon-xs'
 			aria-label={copied ? "Copied" : "Copy answer"}
 			onClick={() => {
-				void navigator.clipboard?.writeText(text.replaceAll("**", "")).then(() => setCopied(true));
+				void navigator.clipboard?.writeText(withoutListLinks(text).replaceAll("**", "")).then(() => setCopied(true));
 			}}
 			className='text-muted-foreground'
 		>
@@ -232,7 +604,16 @@ function CopyButton({ text }: { text: string }) {
 	);
 }
 
-function AssistantMessage({ message }: { message: Extract<ChatMessage, { role: "assistant" }> }) {
+function AssistantMessage({
+	message,
+	onOpenPatient,
+	onShowMore,
+}: {
+	message: Extract<ChatMessage, { role: "assistant" }>;
+	onOpenPatient?: (patientId: string) => void;
+	/** Opens the rest of the answer's cut list (`more`), from its "…and 18 more." line. */
+	onShowMore?: () => void;
+}) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const streaming = message.status === "streaming";
 	// A soft blinking block at the end of the text while it streams (Pending); still under reduced motion.
@@ -260,7 +641,17 @@ function AssistantMessage({ message }: { message: Extract<ChatMessage, { role: "
 					Thinking…
 				</motion.p>
 			) : (
-				<AnswerText text={message.text.slice(0, message.shown)} caret={caret} />
+				<AnswerText
+					text={message.text.slice(0, message.shown)}
+					caret={caret}
+					lists={message.lists}
+					avatars={message.avatars}
+					revealed={message.revealed}
+					onShowMore={message.more && message.status === "done" ? onShowMore : undefined}
+					linksOn={message.status === "done"}
+					onOpenPatient={onOpenPatient}
+					idPrefix={`message-${message.id}`}
+				/>
 			)}
 			{message.status === "stopped" ? <p className='mt-2 text-xs text-muted-foreground'>Stopped</p> : null}
 			{message.status === "done" && (message.sources?.length || message.id !== "greeting") ? (
@@ -409,6 +800,8 @@ function AskInterceptPanel({
 				role: "assistant",
 				text: notice.text,
 				sources: notice.sources,
+				lists: notice.lists,
+				avatars: notice.avatars,
 				shown: notice.text.length,
 				status: "done",
 				notice: true,
@@ -473,7 +866,10 @@ function AskInterceptPanel({
 				role: "assistant",
 				text: answer.text,
 				sources: answer.sources,
+				lists: answer.lists,
+				avatars: answer.avatars,
 				actions: answer.actions,
+				more: answer.more,
 				shown: 0,
 				status: "thinking",
 			},
@@ -486,7 +882,7 @@ function AskInterceptPanel({
 	// The latest answer's follow-ups, once it's written, without those the panel can't do. "Open patient details" isn't
 	// offered for the patient whose page is already open (Nov 4, 2026, user's call); it's back once the page is left.
 	const lastMessage = messages.at(-1);
-	const followUps =
+	const ownFollowUps =
 		lastMessage?.role === "assistant" && lastMessage.status === "done" && !lastMessage.notice
 			? (lastMessage.actions ?? []).filter(
 					(action) =>
@@ -496,11 +892,40 @@ function AskInterceptPanel({
 							: Boolean(onOpenAlert)),
 				)
 			: [];
+	// An answer with none of its own keeps the conversation going with the suggested questions not asked yet, up to 4,
+	// for where the user is in their shift (Nov 10, 2026, user's call). Not under the greeting: the suggestions show there.
+	const askedQuestions = new Set(
+		messages.filter((message) => message.role === "user").map((message) => message.text.trim().toLowerCase()),
+	);
+	const followUps: AskInterceptAction[] =
+		ownFollowUps.length ||
+		lastMessage?.role !== "assistant" ||
+		lastMessage.status !== "done" ||
+		lastMessage.notice ||
+		lastMessage.id === "greeting"
+			? ownFollowUps
+			: suggestionsFor(context)
+					.filter((question) => !askedQuestions.has(question.toLowerCase()))
+					.slice(0, 4)
+					.map((question) => ({ type: "ask" as const, label: question, question }));
 	const runAction = (action: AskInterceptAction) => {
 		if (action.type === "ask") ask(action.question);
 		else if (action.type === "open-patient") onOpenPatient?.(action.patientId);
 		else onOpenAlert?.(action.patientId, action.alertId);
 	};
+	// Show all, on an answer's "…and 18 more." line: the rest of its cut list takes that line's place, the list expanding
+	// in place (Nov 10, 2026, user's calls: "only reveal the ones not showing", "like expanding that list"). No new question.
+	const showMore = (id: string) =>
+		updateAssistant(id, (message) => {
+			if (!message.more) return message;
+			const lines = message.text.split("\n");
+			const cut = lines.findIndex((line) => cutLinePattern.test(line));
+			if (cut < 0) return { ...message, more: undefined };
+			const added = message.more.split("\n");
+			lines.splice(cut, 1, ...added);
+			const text = lines.join("\n");
+			return { ...message, text, shown: text.length, more: undefined, revealed: { from: cut, count: added.length } };
+		});
 
 	// The app's opening question, asked once per id with the context it came with (Nov 2, 2026, user's call). A
 	// conversation about this patient goes on: the question follows it, after any answer being written, and scrolls to the
@@ -607,7 +1032,7 @@ function AskInterceptPanel({
 										</p>
 									</div>
 								) : (
-									<AssistantMessage message={message} />
+									<AssistantMessage message={message} onOpenPatient={onOpenPatient} onShowMore={() => showMore(message.id)} />
 								)}
 							</motion.div>
 						))}
@@ -716,7 +1141,9 @@ export {
 	AskInterceptPanel,
 	type AskInterceptAction,
 	type AskInterceptAnswer,
+	type AskInterceptAvatar,
 	type AskInterceptContext,
 	type AskInterceptNotice,
+	type AskInterceptPatientList,
 	type AskInterceptResponder,
 };

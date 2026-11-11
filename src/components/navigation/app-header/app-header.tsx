@@ -8,7 +8,6 @@ import {
 	GitForkIcon,
 	ListIcon,
 	MessageCircleMoreIcon,
-	MessageCircleOffIcon,
 	MoonIcon,
 	PlusIcon,
 	SunIcon,
@@ -149,7 +148,7 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	videoConsultOpen?: boolean;
 	/** Opens the patient's messages. Without it, there's no Messages button. With `messagesOpen`, it closes them. */
 	onOpenMessages?: () => void;
-	/** Whether the messages panel is open: Messages is pressed (`message-circle-off`, "Close messages"), its label kept. */
+	/** Whether the messages panel is open: Messages is pressed (its icon unchanged, "Close messages"), its label kept. */
 	messagesOpen?: boolean;
 	/** Unread messages, shown as a Counter on Messages from 1. */
 	unreadMessages?: number;
@@ -540,11 +539,8 @@ function PatientActions({
 						onClick={onOpenMessages}
 						className={cn(collapsibleClassName, messagesOpen && pressedClassName)}
 					>
-						{messagesOpen ? (
-							<MessageCircleOffIcon aria-hidden='true' />
-						) : (
-							<MessageCircleMoreIcon aria-hidden='true' />
-						)}
+						{/* The same icon open or closed (Nov 10, 2026, user's call); the pressed look says it's open. */}
+						<MessageCircleMoreIcon aria-hidden='true' />
 						<span className={collapsibleLabelClassName}>Messages</span>
 						{/* Brand (Counter `default`, Nov 6, 2026, user's call), flashing every 2 s while there's something unread
 						    (Unread pattern, Nov 5, 2026); still under reduced motion. */}

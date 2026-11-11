@@ -19,6 +19,7 @@ import { alertChanges } from "../shared/alert-changes";
 import { useAddressedAlerts } from "../shared/live-feed";
 import { bedsideChanges, flagSummary } from "../shared/flag-details";
 import { isPressorFlag, pressorPattern } from "../shared/pressors";
+import { avatarTones, patientInitials } from "../shared/patient-avatar";
 import { sampleHospitals, sampleTeam, sampleUser } from "./sample-workspace";
 
 // Synthetic Ask Intercept Live (PRD Patient details PD-100): a stand-in for the Conversational Clinical Data Agent that
@@ -115,6 +116,40 @@ const scoreWords = (acuity: CensusPatient["acuity"]) =>
 const flagWords = { high: "high", low: "low", critical: "critical" } as const;
 
 const list = (items: string[]) => items.map((item) => `- ${item}`).join("\n");
+
+/** "Sidney Regional · MICU Bed 11": the hospital, then the unit and bed. */
+const placeOf = (patient: Patient) =>
+	[sampleHospitals.find((hospital) => hospital.id === patient.census.hospitalId)?.name, where(patient)]
+		.filter(Boolean)
+		.join(" · ");
+
+/**
+ * A count linked to its patients (Nov 10, 2026, user's call): "[5 on pressors](list:pressors)" in the text, and the
+ * patients under `lists.pressors`, by name with their hospital and bed. A count of none stays plain text.
+ */
+function linkedCount(
+	lists: NonNullable<AskInterceptAnswer["lists"]>,
+	id: string,
+	rows: Patient[],
+	words: string,
+	title: string,
+) {
+	if (!rows.length) return `0 ${words}`;
+	// Their avatars as on their cards: the colors come from the whole roster, as the pages give them.
+	const tones = avatarTones(patients.map((patient) => patient.census));
+	lists[id] = {
+		title,
+		patients: rows.map((patient) => ({
+			id: patient.census.id,
+			name: fullName(patient),
+			photo: patient.census.photo,
+			initials: patientInitials(patient.census),
+			tone: tones.get(patient.census.id),
+			detail: placeOf(patient),
+		})),
+	};
+	return `[${rows.length} ${words}](list:${id})`;
+}
 const unique = (items: (string | undefined)[]) => [...new Set(items.filter((item): item is string => Boolean(item)))];
 const sentence = (text: string) => text.split(/(?<=\.)\s/)[0];
 
@@ -1032,11 +1067,27 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 				const items = [...alerts.map((alert) => alert.title), ...events.map((event) => runOn(event.label))];
 				return items.length ? [`${patientName(patient)}: ${joinWords(unique(items).slice(0, 3))}.`] : [];
 			});
+			// What a physician reviewing the latest activity asks next (Nov 10, 2026, user's call): who needs them first, the
+			// alerts still open, what's overdue and what's still pending, in the same scope (a hospital, a unit, their
+			// patients). A cut list carries its rest (`more`), which Show all on its "…and 18 more." line opens in place.
+			const within = label ? ` ${label.replace("assigned to you", "for my patients")}` : "";
+			const capAt = 8;
+			const followUps: AskInterceptAction[] = [
+				{ type: "ask", label: "Who needs attention first?", question: `Who needs attention first${within}?` },
+				{ type: "ask", label: "Which alerts are still open?", question: `Which alerts are still open${within}?` },
+				{ type: "ask", label: "What's overdue?", question: `What's overdue${within}?` },
+				{ type: "ask", label: "Any results still pending?", question: `Any results still pending${within}?` },
+				topic === "events"
+					? { type: "ask", label: "What changed in the last hour?", question: `What changed in the last hour${within}?` }
+					: { type: "ask", label: "What happened overnight?", question: `What happened overnight${within}?` },
+			];
 			return {
 				text: lines.length
-					? `In the last ${topic === "events" ? "12 hours" : "hour"}${among}:\n${capped(lines)}\n${scope.length - lines.length ? `${scope.length - lines.length} other patient${scope.length - lines.length === 1 ? " is" : "s are"} steady.` : ""}`
+					? `In the last ${topic === "events" ? "12 hours" : "hour"}${among}:\n${capped(lines, capAt)}\n${scope.length - lines.length ? `${scope.length - lines.length} other patient${scope.length - lines.length === 1 ? " is" : "s are"} steady.` : ""}`
 					: `Nothing new${among} in the last ${topic === "events" ? "12 hours" : "hour"}.`,
 				sources: ["Timeline", "Alerts"],
+				actions: followUps,
+				more: lines.length > capAt ? list(lines.slice(capAt)) : undefined,
 			};
 		}
 		case "alerts": {
@@ -1160,15 +1211,18 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 				.map((hospital) => ({ hospital, count: scope.filter((patient) => patient.census.hospitalId === hospital.id).length }))
 				.filter((row) => row.count);
 			const tagged = (tag: string | ((label: string) => boolean)) =>
-				scope.filter((patient) => patient.census.tags?.some((item) => (typeof tag === "string" ? item.label === tag : tag(item.label)))).length;
+				scope.filter((patient) => patient.census.tags?.some((item) => (typeof tag === "string" ? item.label === tag : tag(item.label))));
+			// Each count opens its patients in the chat, and from there their details (Nov 10, 2026, user's call).
+			const lists: NonNullable<AskInterceptAnswer["lists"]> = {};
 			return {
 				text: `${scope.length} patient${scope.length === 1 ? "" : "s"}${among}: ${byHospital.map((row) => `${row.count} at ${row.hospital.name}`).join(", ")}.\n${list([
-					`${tagged("Ventilated")} ventilated, ${tagged("NIV")} on NIV`,
-					`${tagged(isPressorFlag)} on pressors`,
-					`${scope.filter((patient) => patient.alerts.length).length} with open alerts`,
-					`${scope.filter((patient) => patient.census.mine).length} assigned to you`,
+					`${linkedCount(lists, "ventilated", tagged("Ventilated"), "ventilated", "Ventilated patients")}, ${linkedCount(lists, "niv", tagged("NIV"), "on NIV", "Patients on NIV")}`,
+					linkedCount(lists, "pressors", tagged(isPressorFlag), "on pressors", "Patients on pressors"),
+					linkedCount(lists, "alerts", scope.filter((patient) => patient.alerts.length), "with open alerts", "Patients with open alerts"),
+					linkedCount(lists, "mine", scope.filter((patient) => patient.census.mine), "assigned to you", "Patients assigned to you"),
 				])}`,
 				sources: ["Census"],
+				lists,
 			};
 		}
 	}
@@ -1495,6 +1549,30 @@ const answer: AskInterceptResponder = (input, context: AskInterceptContext) => {
  * Answers from `data`, then puts the module's data back. An answer to a question about alerts (the "alerts" topic:
  * alert, alarm, concern, flag) turns on the chat's alert updates; any other question turns them off.
  */
+/**
+ * Each patient a list line starts with ("- **Miller, Sarah** …") gets their avatar, as on their card (Nov 10, 2026,
+ * user's call); the colors come from the whole roster, as the pages give them.
+ */
+function withAvatars(reply: AskInterceptAnswer): AskInterceptAnswer {
+	const named = new Set(
+		[...`${reply.text}\n${reply.more ?? ""}`.matchAll(/^- \*\*([^*]+)\*\*/gm)].map((match) => match[1]),
+	);
+	if (!named.size) return reply;
+	const tones = avatarTones(patients.map((patient) => patient.census));
+	const avatars: NonNullable<AskInterceptAnswer["avatars"]> = {};
+	for (const patient of patients) {
+		const name = fullName(patient);
+		if (!named.has(name)) continue;
+		avatars[name] = {
+			photo: patient.census.photo,
+			initials: patientInitials(patient.census),
+			tone: tones.get(patient.census.id),
+			detail: placeOf(patient),
+		};
+	}
+	return Object.keys(avatars).length ? { ...reply, avatars } : reply;
+}
+
 function answerWith(data: Patient[], input: string, context: AskInterceptContext): AskInterceptAnswer {
 	const previous = patients;
 	patients = data;
@@ -1503,7 +1581,7 @@ function answerWith(data: Patient[], input: string, context: AskInterceptContext
 		const aboutAlerts = isRulesQuestion(input)
 			? /alert|alarm/i.test(input)
 			: topicOf(input, Boolean(context.patientName)) === "alerts";
-		return { ...answer(input, context), followAlerts: aboutAlerts };
+		return withAvatars({ ...answer(input, context), followAlerts: aboutAlerts });
 	} finally {
 		patients = previous;
 	}

@@ -430,7 +430,9 @@ function ToasterActions({
 	const any = closable > 0;
 	const several = any && toasts.length >= 2;
 	const show = any || mutedUntilTime !== null || paused;
-	const stackBottom = useStackTop(any, stackTopLimit(right));
+	// Over every toast on screen, a ringing call included: with only the call left (paused by Close all, or muted), the
+	// notice sits above it, never over it (Nov 10, 2026, user's call).
+	const stackBottom = useStackTop(toasts.length > 0, stackTopLimit(right));
 	// Without toasts (muted), the row sits where the stack would.
 	const bottom = stackBottom ?? right;
 	const hold = React.useRef(false);
@@ -697,8 +699,9 @@ function Toaster({
 						// Sonner reads `gap` for the expanded stack and this variable for the collapsed one's peek.
 						"--gap": `${peek}px`,
 						// Under the popovers, menus and tooltips the user opens, over dialogs (theme.css "Stacking order"); Sonner's
-						// own is 999999999, above everything.
-						zIndex: "var(--z-toast)",
+						// own is 999999999, above everything. While a call rings (a kept toast), above everything, its notice row
+						// included (`--z-call`; Nov 10, 2026, user's call).
+						zIndex: kept ? "var(--z-call)" : "var(--z-toast)",
 						...style,
 					} as React.CSSProperties
 				}
