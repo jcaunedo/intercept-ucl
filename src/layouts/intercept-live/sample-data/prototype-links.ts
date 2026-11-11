@@ -83,7 +83,7 @@ function resetPrototype() {
 // kept in step as the user moves, so a copied link opens the same place (Nov 2, 2026, user's call). `alert` (a patient
 // id) opens that patient's alert modal over it, and `consult=1` with its video consult calling, as its Video consult
 // button does (Nov 5, 2026, user's call): `?page=monitoring&alert=p1&consult=1`. Since Nov 11, 2026 (user's call), the
-// patient's tab, the open panels and modals too (`location-state.tsx`): `?page=monitoring&patient=p1&tab=chart&panels=
+// patient's tab, the open panels and modals too (`location-state.tsx`): `?page=monitoring&patient=p1&tab=labs&panels=
 // video,messages`, `&alert=p1&alertPanels=video,pathway`, `&side=chat`, `&feed=1`, `&filters=1`. `consult=1` is still
 // read (older links) but no longer written: `alertPanels=video` says it.
 const locationParams = ["page", "patient", "alert", "consult", ...locationStateKeys] as const;

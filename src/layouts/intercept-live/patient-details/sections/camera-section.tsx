@@ -14,7 +14,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
-import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { Badge } from "@/components/data-display/badge";
 import { Switch } from "@/components/forms/switch";

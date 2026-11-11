@@ -38,6 +38,7 @@ import {
 } from "../patient-details/sections/sample-vitals";
 import { sampleEhrByHospital } from "./sample-ehr";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
+import { withGlucose } from "../patient-details/sections/sample-glucose";
 
 // Story-only: Scenario 2 of the Demo Use Cases, "COPD respiratory failure during a blizzard", as beats the Prototype
 // menu plays. Dale Reynolds (`p21`), 64, a rancher with severe COPD, uninsured, out of the home oxygen he can't afford.
@@ -66,14 +67,11 @@ function reynoldsRecord(stage: "alert" | "resolved"): PatientRecord {
   const notes = sampleScenario2Notes();
   return {
     ...record,
-    vitals:
-      stage === "alert"
-        ? sampleScenario2Vitals()
-        : sampleScenario2ResolvedVitals(),
-    timeline:
-      stage === "alert"
-        ? sampleScenario2Timeline()
-        : sampleScenario2ResolvedTimeline(),
+    ...withGlucose("p21", {
+      vitals: stage === "alert" ? sampleScenario2Vitals() : sampleScenario2ResolvedVitals(),
+      timeline: stage === "alert" ? sampleScenario2Timeline() : sampleScenario2ResolvedTimeline(),
+      admittedAt: base.admittedAt,
+    }),
     chart: sampleScenario2Chart(base),
     medications: sampleScenario2Medications(),
     orders: sampleScenario2Orders(),

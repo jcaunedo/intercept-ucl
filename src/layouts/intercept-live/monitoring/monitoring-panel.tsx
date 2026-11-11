@@ -12,12 +12,12 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 
+import { PatientMonitoringCard, type PatientMonitoringCardProps } from "@/components/cards/patient-monitoring-card";
 import {
-	defaultMonitorLimits,
-	PatientMonitoringCard,
-	type MonitorLimits,
-	type PatientMonitoringCardProps,
-} from "@/components/cards/patient-monitoring-card";
+	monitorAlarm,
+	resolveMonitorLimits,
+	type MonitorAlarmParameter,
+} from "@/components/data-display/patient-monitor";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { FilterBar, FilterBarControls, FilterBarFilters } from "@/components/forms/filter-bar";
 import { SearchInput } from "@/components/forms/search-input";
@@ -238,22 +238,25 @@ function useFeedResolutions(alerts: TriageAlert[]) {
 // Recently resolved and Family messages went). Who to see first is the Active alerts chip's order.
 const sortOrderIds: readonly SortOrderId[] = ["name", "viewed"];
 
-/** The primary numerics with alarm limits, by the card's labels. */
+/** The primary numerics with alarm limits, by the card's labels, and the readings each alarms on (ABP: systolic and MAP). */
 const limitParameters = [
-	{ id: "hr", label: "HR" },
-	{ id: "spo2", label: "SpO₂" },
-	{ id: "systolic", label: "ABP" },
-	{ id: "rr", label: "RR" },
-] as const satisfies readonly { id: keyof MonitorLimits; label: string }[];
+	{ id: "hr", label: "HR", readings: ["hr"] },
+	{ id: "spo2", label: "SpO₂", readings: ["spo2"] },
+	{ id: "systolic", label: "ABP", readings: ["systolic", "map"] },
+	{ id: "rr", label: "RR", readings: ["rr"] },
+] as const satisfies readonly { id: MonitorAlarmParameter; label: string; readings: readonly MonitorAlarmParameter[] }[];
 
-/** Whether a numeric is outside the patient's alarm limits (the card's own limits, defaults included). */
+type LimitParameterId = (typeof limitParameters)[number]["id"];
+
+/** Whether a numeric is outside the patient's alarm limits, as the card marks it (the card's own limits, defaults included). */
 const isOutside =
-	(parameter: keyof MonitorLimits) =>
-	({ vitals = {}, limits }: PanelMonitoringPatient) => {
-		const value = vitals[parameter];
-		const [low, high] = { ...defaultMonitorLimits, ...limits }[parameter];
-		return value !== undefined && (value < low || value > high);
-	};
+	(parameter: LimitParameterId) =>
+	({ vitals = {}, limits }: PanelMonitoringPatient) =>
+		monitorAlarm(
+			vitals,
+			resolveMonitorLimits(limits),
+			limitParameters.find(({ id }) => id === parameter)!.readings,
+		).side !== undefined;
 
 /** Whether any primary numeric is outside the patient's alarm limits. */
 const isOutsideLimits = (patient: PanelMonitoringPatient) => limitParameters.some(({ id }) => isOutside(id)(patient));
@@ -706,6 +709,7 @@ function MonitoringPanel({
 							· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
 						</Typography>
 						<LiveFeedButton
+							size='md'
 							change={liveFeed}
 							open={rightPanel === "feed"}
 							onOpen={() => {

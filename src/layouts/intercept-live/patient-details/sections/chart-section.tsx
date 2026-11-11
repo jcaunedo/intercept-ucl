@@ -334,61 +334,55 @@ function ImagingReport({ report, now }: { report: ChartImagingReport; now: numbe
 
 type ChartSectionProps = { chart: PatientChart };
 
-/**
- * The patient's record from the hospital, read only: results by panel, microbiology and imaging in the main column;
- * problems, allergies, history and home medications in a 22rem column beside them on a wide canvas, after them on a
- * narrow one.
- */
 /** What the cards call the hospital's record: the EMR tab's name. */
 const emrLabel = "EMR";
 
-function ChartSection({ chart }: ChartSectionProps) {
+/**
+ * The Labs tab (Nov 11, 2026, user's call: Labs and Chart are their own tabs): results by panel, then microbiology,
+ * from the hospital's record, read only.
+ */
+function LabsSection({ chart }: ChartSectionProps) {
 	const now = useCurrentMinute();
 	// Each card names the record as the tab does, "EMR", whatever its system (`chart.source`, e.g. Meditech; Nov 11, 2026,
 	// user's call), so every hospital's page reads the same.
 	const source = freshness(emrLabel, chart.updatedAt, now);
+
+	return (
+		<div className='flex min-w-0 flex-col gap-6'>
+			<SectionCard title='Results' meta={<SourceLabel>{source}</SourceLabel>}>
+				{chart.panels.length ? (
+					<ResultsTable panels={chart.panels} now={now} />
+				) : (
+					<NoData>No results in the last 72 hours.</NoData>
+				)}
+			</SectionCard>
+			<SectionCard title='Microbiology' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
+				{chart.cultures.length ? (
+					<ul className='flex flex-col divide-y divide-border-muted'>
+						{chart.cultures.map((culture) => (
+							<CultureRow key={`${culture.specimen}-${culture.collectedAt}`} culture={culture} now={now} />
+						))}
+					</ul>
+				) : (
+					<NoData>No cultures in the last 72 hours.</NoData>
+				)}
+			</SectionCard>
+		</div>
+	);
+}
+
+/**
+ * The Chart tab: the rest of the hospital's record, read only. Problems and history in the main column, allergies and
+ * home medications in a 22rem column beside them on a wide canvas (after them on a narrow one), then imaging reports.
+ */
+function ChartSection({ chart }: ChartSectionProps) {
+	const now = useCurrentMinute();
 	const activeProblems = chart.problems.filter((problem) => problem.status === "active");
 	const resolvedProblems = chart.problems.filter((problem) => problem.status === "resolved");
 
 	return (
 		<div className='@container'>
 			<div className='grid gap-6 @min-[64rem]:grid-cols-[minmax(0,1fr)_22rem]'>
-				<div className='flex min-w-0 flex-col gap-6 @container'>
-					<SectionCard title='Results' meta={<SourceLabel>{source}</SourceLabel>}>
-						{chart.panels.length ? (
-							<ResultsTable panels={chart.panels} now={now} />
-						) : (
-							<NoData>No results in the last 72 hours.</NoData>
-						)}
-					</SectionCard>
-
-					<div className='grid gap-6 @min-[44rem]:grid-cols-2'>
-						<SectionCard title='Microbiology' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
-							{chart.cultures.length ? (
-								<ul className='flex flex-col divide-y divide-border-muted'>
-									{chart.cultures.map((culture) => (
-										<CultureRow key={`${culture.specimen}-${culture.collectedAt}`} culture={culture} now={now} />
-									))}
-								</ul>
-							) : (
-								<NoData>No cultures in the last 72 hours.</NoData>
-							)}
-						</SectionCard>
-
-						<SectionCard title='Imaging reports' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
-							{chart.imaging.length ? (
-								<ul className='flex flex-col divide-y divide-border-muted'>
-									{chart.imaging.map((report) => (
-										<ImagingReport key={`${report.study}-${report.performedAt}`} report={report} now={now} />
-									))}
-								</ul>
-							) : (
-								<NoData>No imaging reports this stay.</NoData>
-							)}
-						</SectionCard>
-					</div>
-				</div>
-
 				<div className='flex min-w-0 flex-col gap-6'>
 					<SectionCard title='Problems' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
 						{chart.problems.length ? (
@@ -421,29 +415,6 @@ function ChartSection({ chart }: ChartSectionProps) {
 							<NoData>No problems recorded.</NoData>
 						)}
 					</SectionCard>
-
-					<SectionCard title='Allergies' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
-						{chart.allergies.length ? (
-							<ul className='flex flex-col gap-2'>
-								{chart.allergies.map((allergy) => (
-									<li key={allergy.substance} className='flex items-start justify-between gap-3'>
-										<span className='flex flex-col'>
-											<span className='text-sm font-medium text-foreground'>{allergy.substance}</span>
-											{allergy.reaction ? <span className='text-xs text-muted-foreground'>{allergy.reaction}</span> : null}
-										</span>
-										{allergy.severity ? (
-											<Badge variant={allergy.severity === "severe" ? "red" : "outline"} size='xs'>
-												{severityLabels[allergy.severity]}
-											</Badge>
-										) : null}
-									</li>
-								))}
-							</ul>
-						) : (
-							<NoData>No known allergies.</NoData>
-						)}
-					</SectionCard>
-
 					<SectionCard title='History' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
 						<dl className='flex flex-col gap-3'>
 							<Detail label='Medical'>
@@ -479,7 +450,40 @@ function ChartSection({ chart }: ChartSectionProps) {
 							</Detail>
 						</dl>
 					</SectionCard>
-
+					<SectionCard title='Imaging reports' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
+						{chart.imaging.length ? (
+							<ul className='flex flex-col divide-y divide-border-muted'>
+								{chart.imaging.map((report) => (
+									<ImagingReport key={`${report.study}-${report.performedAt}`} report={report} now={now} />
+								))}
+							</ul>
+						) : (
+							<NoData>No imaging reports this stay.</NoData>
+						)}
+					</SectionCard>
+				</div>
+				<div className='flex min-w-0 flex-col gap-6'>
+					<SectionCard title='Allergies' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
+						{chart.allergies.length ? (
+							<ul className='flex flex-col gap-2'>
+								{chart.allergies.map((allergy) => (
+									<li key={allergy.substance} className='flex items-start justify-between gap-3'>
+										<span className='flex flex-col'>
+											<span className='text-sm font-medium text-foreground'>{allergy.substance}</span>
+											{allergy.reaction ? <span className='text-xs text-muted-foreground'>{allergy.reaction}</span> : null}
+										</span>
+										{allergy.severity ? (
+											<Badge variant={allergy.severity === "severe" ? "red" : "outline"} size='xs'>
+												{severityLabels[allergy.severity]}
+											</Badge>
+										) : null}
+									</li>
+								))}
+							</ul>
+						) : (
+							<NoData>No known allergies.</NoData>
+						)}
+					</SectionCard>
 					<SectionCard title='Home medications' meta={<SourceLabel>{emrLabel}</SourceLabel>}>
 						{chart.homeMedications.length ? (
 							<ul className='flex flex-col divide-y divide-border-muted'>
@@ -507,6 +511,7 @@ function ChartSection({ chart }: ChartSectionProps) {
 
 export {
 	ChartSection,
+	LabsSection,
 	type ChartAllergy,
 	type ChartCulture,
 	type ChartHistoryItem,

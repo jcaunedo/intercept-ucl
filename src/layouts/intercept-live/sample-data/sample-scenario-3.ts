@@ -21,6 +21,7 @@ import { sampleScenario3Timeline } from "../patient-details/sections/sample-time
 import { sampleScenario3Vitals } from "../patient-details/sections/sample-vitals";
 import { sampleEhrByHospital } from "./sample-ehr";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
+import { withGlucose } from "../patient-details/sections/sample-glucose";
 
 // Story-only: Scenario 3 of the Demo Use Cases, "Sepsis in a patient with diabetes and kidney disease", as beats the
 // Prototype menu plays. Rosa Medina (`p23`), 58, type 2 diabetes and CKD stage 4, on Medicaid, prefers Spanish. In
@@ -50,8 +51,10 @@ function medinaRecord(stage: "alert" | "6h" | "resolved"): PatientRecord {
 	const notes = sampleScenario3Notes();
 	return {
 		...record,
-		vitals: sampleScenario3Vitals(stage === "resolved" ? "resolved" : "alert"),
-		timeline: sampleScenario3Timeline(stage === "resolved" ? "resolved" : "alert"),
+		...withGlucose("p23", {
+			vitals: sampleScenario3Vitals(stage === "resolved" ? "resolved" : "alert"),
+			timeline: sampleScenario3Timeline(stage === "resolved" ? "resolved" : "alert"),
+		}),
 		chart: sampleScenario3Chart(base),
 		medications: sampleScenario3Medications(stage === "resolved" ? "resolved" : "alert"),
 		orders: sampleScenario3Orders(),

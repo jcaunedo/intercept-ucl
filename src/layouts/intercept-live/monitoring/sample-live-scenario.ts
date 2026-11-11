@@ -1,4 +1,4 @@
-import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor";
 
 import type { TriageAlert } from "./monitoring";
 

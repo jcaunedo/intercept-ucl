@@ -21,6 +21,7 @@ Each table has three columns: the term, its definition, and the document it come
 | PRD PC-xxx | `prds/patient-card.md` |
 | PRD PD-xxx | `prds/patient-details.md` |
 | PRD CC-xxx | `prds/chat-composer.md` |
+| PRD PMN-xxx | `prds/patient-monitor.md` |
 | CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md | UCL project docs |
 | General | Standard industry or clinical meaning. Not defined in a project document |
 
@@ -241,6 +242,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Alert severity** | *Proposed* taxonomy: Critical, High, Medium, Low. ⚠️ **Decision needed:** final names, ordering and clinical behaviors (OD-05). | PRD PC-070 |
 | **Alert source** | *Proposed* origin shown on an alert: AI agent (agent chip), Device (e.g. "Bedside monitor"), Rule ("Protocol"), Manual ("Flagged by…", a Clinician Intuition Alert) or System. ⚠️ **Decision needed:** OD-15. | PRD §15.1 |
 | **Device alarm priority** | The bedside device's own alarm priority (IEC 60601-1-8): High (red, flashing fast), Medium (yellow, flashing slowly), Low (cyan, steady). GE calls them Crisis, Warning and Advisory. Separate from the platform's alert severity. | Requirements AL-02; GE CARESCAPE Central Station manual |
+| **Alarm limits** | The low and high values a bedside monitor alarms outside of, per parameter, set in the bed's device profile and configurable per hospital. A limit can have one side only (e.g. RR above 30, MAP below 65); the side that's off reads **OFF**. | PRD PMN-030, Simulator SD-12 |
 | **Avatar (patient)** | The initials avatar next to the patient's name on the Patient card (e.g. JS). A generic icon when the name is missing or restricted. Decorative colors only, never status tones. | PRD PC-010 |
 | **Clinical trajectory** | The change in a patient's condition over a defined period. *Proposed* statuses: Improving, Relatively stable, Deteriorating, Insufficient data. Never inferred from a single observation. Observed trends must stay distinct from predictions. | PRD PC-031 |
 | **Clinical status** | *Proposed* on the Patient details header: the patient's clinical trajectory as the bedside team last assessed it (Improving, Relatively stable, Deteriorating, Insufficient data) and when ("Last assessed 2 min ago"). A documented assessment, not the score: it can differ from NEWS2. | PRD Patient details, PD-012; PRD PC-031 |
@@ -432,6 +434,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Interpreter prompt** | *Proposed* The video consult's offer to add a qualified medical interpreter when the patient's preferred language isn't English, as soon as the call is on. Not family members. | Demo Use Cases Scenario 3, step 2 |
 | **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
 | **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (MON-OD-01). | Spec §5.2, PRD Monitoring MON-010 |
+| **Patient monitor** | *Proposed* the remote view of a patient's bedside monitor: four lanes (II, Pleth, ABP, Resp), each a live waveform or its last hour beside its numbers and alarm limits, marking values outside them as the device does. One component (UCL `PatientMonitor`) on Patient details, the alert modal and the Monitoring card's full view. | PRD PMN-010 |
 | **Order recommendation** | An order change an AI agent suggests (Order-Entry Suggestion or Vent-Order Mismatch Agent) with its evidence and protocol. The clinician accepts, modifies or declines; it never becomes an order on its own. | Spec §5.5, §8.5, PRD PD-061 |
 | **Bedside camera** | The camera, microphone and speaker in each covered room, which the remote clinician uses to see the patient and their devices and talk to the bedside team. One use of it is a **camera session**. | Spec §5.2, PRD Bedside camera |
 | **Camera session** | *Proposed* one use of the bedside camera: off, connecting, live, ended, with the live values over the picture. Live Camera, Video consult and Huddle are all camera sessions. | PRD Bedside camera CAM-001 |

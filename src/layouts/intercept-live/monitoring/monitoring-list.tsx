@@ -3,13 +3,15 @@ import { AnimatePresence, motion } from "motion/react";
 
 import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import {
-	defaultMonitorLimits,
 	DeviceAlarmValue,
 	MonitorAlarmIcon,
+	monitorAlarm,
+	resolveMonitorLimits,
+	type MonitorAlarmLimits,
+	type MonitorAlarmParameter,
 	type MonitorAlarmPriorities,
-	type MonitorLimits,
 	type MonitorVitals,
-} from "@/components/cards/patient-monitoring-card";
+} from "@/components/data-display/patient-monitor";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { HospitalSectionHeader } from "@/components/data-display/hospital-section-header";
 import { exitTransition, resolvedFadeTransition, useMotionPreference } from "@/lib/motion";
@@ -29,9 +31,9 @@ type MonitoringListPatient = PanelPatient & {
 	photo?: string;
 	tone?: AvatarFallbackProps["tone"];
 	vitals?: MonitorVitals;
-	limits?: Partial<MonitorLimits>;
+	limits?: Partial<MonitorAlarmLimits>;
 	alarmPriorities?: MonitorAlarmPriorities;
-	acknowledgedAlarms?: (keyof MonitorLimits)[];
+	acknowledgedAlarms?: MonitorAlarmParameter[];
 };
 
 type Column = {
@@ -39,15 +41,16 @@ type Column = {
 	label: string;
 	unit: string;
 	color: string;
-	limit?: keyof MonitorLimits;
+	/** The readings the column alarms on, as on the card. */
+	alarms?: readonly MonitorAlarmParameter[];
 };
 
 const columns: Column[] = [
-	{ key: "hr", label: "HR", unit: "bpm", color: "text-monitor-ecg-ink", limit: "hr" },
-	{ key: "spo2", label: "SpO₂", unit: "%", color: "text-monitor-spo2-ink", limit: "spo2" },
-	{ key: "bp", label: "ABP", unit: "mmHg", color: "text-monitor-abp-ink", limit: "systolic" },
-	{ key: "map", label: "MAP", unit: "mmHg", color: "text-monitor-abp-ink" },
-	{ key: "rr", label: "RR", unit: "rpm", color: "text-monitor-resp-ink", limit: "rr" },
+	{ key: "hr", label: "HR", unit: "bpm", color: "text-monitor-ecg-ink", alarms: ["hr"] },
+	{ key: "spo2", label: "SpO₂", unit: "%", color: "text-monitor-spo2-ink", alarms: ["spo2"] },
+	{ key: "bp", label: "ABP", unit: "mmHg", color: "text-monitor-abp-ink", alarms: ["systolic"] },
+	{ key: "map", label: "MAP", unit: "mmHg", color: "text-monitor-abp-ink", alarms: ["map"] },
+	{ key: "rr", label: "RR", unit: "rpm", color: "text-monitor-resp-ink", alarms: ["rr"] },
 ];
 
 /** A column's value, its "--" when missing (never zero), and which side of its alarm limits it's on. */
@@ -60,12 +63,12 @@ function reading(patient: MonitoringListPatient, column: Column) {
 				? `${vitals.systolic}/${vitals.diastolic}`
 				: undefined
 			: raw;
-	if (!column.limit || raw === undefined) return { text, alarm: undefined, priority: undefined };
-	const [low, high] = { ...defaultMonitorLimits, ...patient.limits }[column.limit];
-	const alarm = raw > high ? ("above" as const) : raw < low ? ("below" as const) : undefined;
-	// The device's alarm, as on the card, until it's acknowledged at the bedside.
-	const acknowledged = patient.acknowledgedAlarms?.includes(column.limit);
-	const priority = alarm && !acknowledged ? patient.alarmPriorities?.[column.limit] : undefined;
+	if (!column.alarms || raw === undefined) return { text, alarm: undefined, priority: undefined };
+	// The card's limits (a side that's off never alarms) and the device's alarm, until it's acknowledged at the bedside.
+	const { side: alarm, priority } = monitorAlarm(vitals, resolveMonitorLimits(patient.limits), column.alarms, {
+		priorities: patient.alarmPriorities,
+		acknowledged: patient.acknowledgedAlarms,
+	});
 	return { text, alarm, priority };
 }
 

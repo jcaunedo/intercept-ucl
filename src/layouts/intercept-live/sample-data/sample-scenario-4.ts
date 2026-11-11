@@ -20,6 +20,7 @@ import { sampleScenario4Timeline } from "../patient-details/sections/sample-time
 import { sampleScenario4Vitals } from "../patient-details/sections/sample-vitals";
 import { sampleEhrByHospital } from "./sample-ehr";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
+import { withGlucose } from "../patient-details/sections/sample-glucose";
 
 // Story-only: Scenario 4 of the Demo Use Cases, "DKA caused by insulin rationing, managed by one night nurse", as beats
 // the Prototype menu plays. Tyler Kessler (`p24`), 60, type 1 diabetes since 11, works at a grain elevator, lost
@@ -52,8 +53,10 @@ function kesslerRecord(stage: "alert" | Scenario4RecordStage, noted = false): Pa
 	const notes = sampleScenario4Notes(noted ? "noted" : "admission");
 	return {
 		...record,
-		vitals: sampleScenario4Vitals(stage === "closed" ? "closed" : "alert"),
-		timeline: sampleScenario4Timeline(stage === "closed" ? "closed" : "alert"),
+		...withGlucose("p24", {
+			vitals: sampleScenario4Vitals(stage === "closed" ? "closed" : "alert"),
+			timeline: sampleScenario4Timeline(stage === "closed" ? "closed" : "alert"),
+		}),
 		chart: sampleScenario4Chart(base),
 		medications: sampleScenario4Medications(stage),
 		orders: sampleScenario4Orders(),

@@ -1,6 +1,5 @@
 import * as React from "react";
 import {
-	ActivityIcon,
 	ArrowRightLeftIcon,
 	BookOpenIcon,
 	ChartSplineIcon,
@@ -8,16 +7,23 @@ import {
 	DoorOpenIcon,
 	FileTextIcon,
 	FilePenLineIcon,
+	FlaskConicalIcon,
 	HeartCrackIcon,
 	HospitalIcon,
 	LinkIcon,
+	ListChecksIcon,
 	PillIcon,
 	VideoIcon,
 	type LucideIcon,
 } from "lucide-react";
 
 import type { PatientCensusCardProps } from "@/components/cards/patient-census-card";
-import type { MonitorLimits, MonitorTrends, MonitorVitals, PatientMonitorProps } from "@/components/cards/patient-monitoring-card";
+import type {
+	MonitorLimits,
+	MonitorTrends,
+	MonitorVitals,
+	PatientMonitorProps,
+} from "@/components/data-display/patient-monitor";
 import type { AvatarFallbackProps } from "@/components/data-display/avatar";
 import { PatientHeader, type PatientHeaderClinicalStatus, type PatientHeaderProps } from "@/components/data-display/patient-header";
 import { EmptyState } from "@/components/feedback/empty-state";
@@ -59,18 +65,18 @@ import {
 	useOpenPathwayPanel,
 	type PatientPathways,
 } from "./consult-panels";
-import { AlertsSection, PatientOverview } from "./patient-overview";
+import { AlertsSection, CarePlanSection, PatientOverview, type OverviewPathway } from "./patient-overview";
 import { LiveFeedButton } from "../shared/live-feed";
 import { patientFeedEntries } from "../shared/live-feed-entries";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
-import { ChartSection, type PatientChart } from "./sections/chart-section";
+import { ChartSection, LabsSection, type PatientChart } from "./sections/chart-section";
 import { EpicSection, type PatientEmr } from "./sections/epic-section";
 import { MedicationsSection, type PatientMedications } from "./sections/medications-section";
 import { NotesSection, type PatientNotes } from "./sections/notes-section";
 import { OrdersSection, type PatientOrders } from "./sections/orders-section";
 import { SepsisSection, type SepsisCase } from "./sections/sepsis-section";
 import { TimelineSection, type PatientTimeline } from "./sections/timeline-section";
-import { VitalsSection, type PatientVitals } from "./sections/vitals-section";
+import { LatestVitals, type PatientVitals } from "./sections/vitals-section";
 
 // Patient details (PRD Patient details): one patient's page, opened over the Census or Monitoring. Follows
 // Intercept-Live › Patient Details (`149:4464`, Oct 28, 2026): the app header's patient actions, the Patient Header, Line
@@ -423,9 +429,10 @@ type PatientAction =
 
 type SectionId =
 	| "overview"
-	| "vitals"
-	| "chart"
 	| "timeline"
+	| "labs"
+	| "chart"
+	| "care-plan"
 	| "medications"
 	| "orders"
 	| "discharge"
@@ -434,30 +441,52 @@ type SectionId =
 	| "sepsis"
 	| "camera";
 
-// The sections after Overview, in Intercept-Live's order, with the empty state each shows when the record has no data
-// for it.
+// The sections after Overview (Nov 11, 2026, user's calls: Overview · Timeline · Labs · Chart · Care Plan · Medications ·
+// Orders · Notes · EMR · Live Camera; Vitals merged into the Timeline the same day), with the empty state each shows when
+// the record has no data for it.
+// Sepsis and Discharge, shown only for some patients, follow Care Plan: they're plans too.
 const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon: LucideIcon; title: string; description: string }[] = [
-	{
-		id: "vitals",
-		label: "Vitals",
-		icon: ActivityIcon,
-		title: "No vitals yet",
-		description: "Vital signs and their trends will appear here, with each value's source and time.",
-	},
-	{
-		// "Labs" on screen; the id stays `chart`, as shared links name it (`tab=chart`).
-		id: "chart",
-		label: "Labs",
-		icon: BookOpenIcon,
-		title: "No labs yet",
-		description: "Results, microbiology and reports from the hospital's record will appear here, with problems and history.",
-	},
 	{
 		id: "timeline",
 		label: "Timeline",
 		icon: ChartSplineIcon,
 		title: "No timeline yet",
-		description: "Vitals, infusions, ventilator settings, labs and events will appear here on one time axis.",
+		description: "The latest vital signs, then vitals, infusions, ventilator settings, labs and events on one time axis, will appear here.",
+	},
+	{
+		id: "labs",
+		label: "Labs",
+		icon: FlaskConicalIcon,
+		title: "No labs yet",
+		description: "Results and microbiology from the hospital's record will appear here.",
+	},
+	{
+		id: "chart",
+		label: "Chart",
+		icon: BookOpenIcon,
+		title: "Nothing in the chart yet",
+		description: "Problems, history, allergies, home medications and imaging reports from the hospital's record will appear here.",
+	},
+	{
+		id: "care-plan",
+		label: "Care Plan",
+		icon: ListChecksIcon,
+		title: "No care plan yet",
+		description: "The hospital's plan of care and the pathways sent from Intercept will appear here.",
+	},
+	{
+		id: "sepsis",
+		label: "Sepsis",
+		icon: HeartCrackIcon,
+		title: "No sepsis screening yet",
+		description: "Screening criteria, validation and bundle tracking for this patient will appear here.",
+	},
+	{
+		id: "discharge",
+		label: "Discharge",
+		icon: DoorOpenIcon,
+		title: "No discharge plan yet",
+		description: "Social needs and referrals for discharge will appear here.",
 	},
 	{
 		id: "medications",
@@ -474,11 +503,11 @@ const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon
 		description: "Active orders and order recommendations will appear here.",
 	},
 	{
-		id: "discharge",
-		label: "Discharge",
-		icon: DoorOpenIcon,
-		title: "No discharge plan yet",
-		description: "Social needs and referrals for discharge will appear here.",
+		id: "notes",
+		label: "Notes",
+		icon: FileTextIcon,
+		title: "No notes yet",
+		description: "Notes from the hospital's record and Intercept notes will appear here, newest first.",
 	},
 	{
 		id: "emr",
@@ -488,22 +517,8 @@ const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon
 		description: "The patient's record in the hospital's EMR will appear here, where the hospital allows it.",
 	},
 	{
-		id: "notes",
-		label: "Notes",
-		icon: FileTextIcon,
-		title: "No notes yet",
-		description: "Notes from the hospital's record and Intercept notes will appear here, newest first.",
-	},
-	{
-		id: "sepsis",
-		label: "Sepsis",
-		icon: HeartCrackIcon,
-		title: "No sepsis screening yet",
-		description: "Screening criteria, validation and bundle tracking for this patient will appear here.",
-	},
-	{
 		id: "camera",
-		label: "Camera view",
+		label: "Live Camera",
 		icon: VideoIcon,
 		title: "Camera is off",
 		description: "The bedside camera will appear here when you start a video consult.",
@@ -598,22 +613,33 @@ function sectionContent(
 		onAction,
 		onDischargeDecision,
 		onShowSection,
+		pathway,
 	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction" | "onDischargeDecision"> & {
 		onShowSection: (id: SectionId) => void;
+		/** The pathway an open alert brought, for the Care Plan tab as on the Overview. */
+		pathway?: OverviewPathway;
 	},
 ): React.ReactNode {
 	switch (id) {
-		case "vitals":
-			return record?.vitals ? <VitalsSection vitals={record.vitals} monitor={monitor} /> : null;
+		case "labs":
+			return record?.chart ? <LabsSection chart={record.chart} /> : null;
 		case "chart":
 			return record?.chart ? <ChartSection chart={record.chart} /> : null;
+		case "care-plan":
+			return record?.planOfCare || record?.carePlan || pathway ? <CarePlanSection record={record} pathway={pathway} /> : null;
 		case "timeline":
-			// The activity log on the events lane, so each decision lines up with the vitals.
-			return record?.timeline ? (
-				<TimelineSection
-					timeline={withActivityEvents(record.timeline, record.activity)}
-					lastViewedAt={record.brief?.lastViewedAt}
-				/>
+			// The latest vitals over the chart (Vitals merged in, Nov 11, 2026), then the activity log on the events lane,
+			// so each decision lines up with the vitals.
+			return record?.vitals || record?.timeline ? (
+				<div className='flex flex-col gap-6'>
+					{record.vitals ? <LatestVitals vitals={record.vitals} monitor={monitor} /> : null}
+					{record.timeline ? (
+						<TimelineSection
+							timeline={withActivityEvents(record.timeline, record.activity)}
+							lastViewedAt={record.brief?.lastViewedAt}
+						/>
+					) : null}
+				</div>
 			) : null;
 		case "medications":
 			// An infusion's pump values are on the Timeline.
@@ -684,8 +710,13 @@ function PatientDetailsContent({
 	pathways,
 }: PatientDetailsProps) {
 	// The tab is in the address (`tab`), so a shared link opens it; one the page doesn't know opens the Overview.
+	// An older link's `tab=vitals` opens the Timeline, where the vitals are now.
 	const [section, setSection] = useLocationState<SectionId>("tab", "overview", (value) =>
-		value === "overview" || pendingSections.some((item) => item.id === value) ? (value as SectionId) : undefined,
+		value === "vitals"
+			? "timeline"
+			: value === "overview" || pendingSections.some((item) => item.id === value)
+				? (value as SectionId)
+				: undefined,
 	);
 	// The panels open on the right, in the address too (`panels`: video, alerts, messages, pathway). Alerts, Messages and
 	// Pathway are the patient's consult session's; the call's panel is PatientConsultPanels' own, which reports it.
@@ -905,6 +936,7 @@ function PatientDetailsContent({
 						onAction,
 						onDischargeDecision,
 						onShowSection: setSection,
+						pathway: overviewPathway,
 					});
 					// Keyed by patient, so a section's local state (an open form, an accepted recommendation) never
 					// carries over to the next patient. Block, not flex: the sections are size containers, which a flex

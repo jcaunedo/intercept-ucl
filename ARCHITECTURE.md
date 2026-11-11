@@ -101,6 +101,7 @@ Everything in a `sample-*` file (and `use-sample-live-feed.ts`) is made-up data 
 | Each patient's base record | `patient-details/sample-patient-records.ts` | The section samples build on it |
 | Each patient's plan of care (the hospital's, in the Overview's Care plan) | `patient-details/sample-plan-of-care.ts` | `sample-patient-records.ts` adds it to every record; the scenario records re-evaluate their main problem with `planOfCareWith` |
 | Each patient's clinical status (the Patient Header's Clinical status) | `patient-details/sample-clinical-status.ts` | `sample-patient-records.ts` adds it to every record; the scenario records change it with `clinicalStatusAt` |
+| Each patient's blood glucose (the Timeline's tile and lane) | `patient-details/sections/sample-glucose.ts` | `withGlucose` adds it in `sample-patient-details.ts` and in each scenario's record; a patient with a lab Glucose lane gets the tile from it |
 | Each tab's data, per patient | `patient-details/sections/sample-<name>.ts` (`sample<Name>ByPatient`) | The sections |
 | Full patient records | `patient-details/sample-patient-details.ts`, which merges the two above | Patient details |
 | A patient's thread before the page opened | `alert-panel/sample-bedside-messages.ts` (`sampleBedsideThread`): as many messages from the nurse as the record's `unreadMessages`; `samplePatientParts` puts them in each patient consult and alert detail | The Messages panels, here and in the alert panel |

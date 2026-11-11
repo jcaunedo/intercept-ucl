@@ -1,6 +1,11 @@
 import * as React from "react";
 
-import { defaultMonitorLimits, type MonitorLimits, type MonitorVitals } from "./patient-monitoring-card";
+import {
+	resolveMonitorLimits,
+	type MonitorAlarmLimit,
+	type MonitorAlarmLimits,
+	type MonitorVitals,
+} from "./patient-monitor";
 
 // Story-only, not exported from the package: makes sample vitals behave like a bedside monitor's, so every story that
 // shows a monitor is live. An app passes its real readings instead.
@@ -36,15 +41,16 @@ function nextOffsets(current: Offsets): Offsets {
  * Keeps a varied value on the same side of its alarm limits as the value it varies around, so the noise never sets or
  * clears an alarm (the ▲ / ▼ marks and "Outside limits" stay put); only a real change in the reading does.
  */
-function sameSide(base: number, value: number, [low, high]: [number, number]) {
-	if (base > high) return Math.max(value, high + 1);
-	if (base < low) return Math.min(value, low - 1);
-	return Math.max(low, Math.min(high, value));
+function sameSide(base: number, value: number, [low, high]: MonitorAlarmLimit) {
+	if (high !== null && base > high) return Math.max(value, high + 1);
+	if (low !== null && base < low) return Math.min(value, low - 1);
+	// A side that's off doesn't hold the value back.
+	return Math.max(low ?? -Infinity, Math.min(high ?? Infinity, value));
 }
 
-function applyOffsets(vitals: MonitorVitals, offsets: Offsets, limitsProp?: Partial<MonitorLimits>): MonitorVitals {
-	const limits = { ...defaultMonitorLimits, ...limitsProp };
-	const vary = (base: number | undefined, offset: number, limit?: [number, number]) =>
+function applyOffsets(vitals: MonitorVitals, offsets: Offsets, limitsProp?: Partial<MonitorAlarmLimits>): MonitorVitals {
+	const limits = resolveMonitorLimits(limitsProp);
+	const vary = (base: number | undefined, offset: number, limit?: MonitorAlarmLimit) =>
 		base === undefined ? undefined : limit ? sameSide(base, base + offset, limit) : base + offset;
 	const systolic = vary(vitals.systolic, offsets.systolic, limits.systolic);
 	const diastolic = vary(vitals.diastolic, offsets.diastolic);
@@ -55,8 +61,15 @@ function applyOffsets(vitals: MonitorVitals, offsets: Offsets, limitsProp?: Part
 		spo2: spo2 === undefined ? undefined : Math.min(100, spo2),
 		systolic,
 		diastolic,
-		// MAP follows the pressures.
-		map: systolic !== undefined && diastolic !== undefined ? Math.round((systolic + 2 * diastolic) / 3) : vitals.map,
+		// MAP follows the pressures, kept on its side of its own limits like the others.
+		map:
+			systolic !== undefined && diastolic !== undefined
+				? sameSide(
+						vitals.map ?? Math.round((vitals.systolic! + 2 * vitals.diastolic!) / 3),
+						Math.round((systolic + 2 * diastolic) / 3),
+						limits.map,
+					)
+				: vitals.map,
 		rr: vary(vitals.rr, offsets.rr, limits.rr),
 	};
 }
@@ -80,13 +93,13 @@ function useOffsets(keys: string[]) {
 }
 
 /** One patient's vitals, varying as on a bedside monitor. */
-function useLiveVitals(vitals: MonitorVitals | undefined, limits?: Partial<MonitorLimits>) {
+function useLiveVitals(vitals: MonitorVitals | undefined, limits?: Partial<MonitorAlarmLimits>) {
 	const offsets = useOffsets(["patient"]).patient;
 	return vitals && offsets ? applyOffsets(vitals, offsets, limits) : vitals;
 }
 
 /** Every patient's vitals, varying as on a bedside monitor, each on its own. */
-function useLivePatients<Patient extends { id: string; vitals?: MonitorVitals; limits?: Partial<MonitorLimits> }>(
+function useLivePatients<Patient extends { id: string; vitals?: MonitorVitals; limits?: Partial<MonitorAlarmLimits> }>(
 	patients: Patient[],
 ): Patient[] {
 	const offsets = useOffsets(patients.map((patient) => patient.id));

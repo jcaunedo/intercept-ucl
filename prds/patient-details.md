@@ -160,7 +160,9 @@ The page uses the Provider Desktop shell (Sidebar, sticky AppHeader, canvas, sid
 
 ✅ **Resolved:** the hospital record's tab is labeled **EMR** for every hospital, whatever its system (Meditech, Epic, Cerner, TruBridge…), so the tab row reads the same across sites. Inside the tab, the system is named ("Meditech at Sidney Regional"), and so is its empty state ("Nothing from Meditech yet").
 
-Proposed section list (each section's content is in §5–§11):
+✅ **Resolved:** the tabs, in this order: **Overview · Timeline · Labs · Chart · Care Plan · Medications · Orders · Notes · EMR · Live Camera** (~~Overview · Vitals · Labs · Chart · Timeline · …~~: Vitals merged into the Timeline the same day, see §6). Labs and Chart are separate tabs: Labs holds results and microbiology; Chart holds the rest of the hospital's record (problems, history, allergies, home medications, imaging reports). **Care Plan** is its own tab: the Overview's Care plan at full length (the pathway from an alert, keep or transfer, and every problem of the hospital's plan of care); the Overview's card shows four problems and its **View all** opens the tab. **Live Camera** is the bedside camera (it was "Camera view"). Sepsis and Discharge, shown only for some patients, follow Care Plan, since they're plans too. ⚠️ **Open question:** how the sections connect and which can merge (e.g. Chart into EMR, Discharge and Sepsis into Care Plan, Labs and Vitals into the Timeline); this order is the starting point.
+
+~~Proposed section list (each section's content is in §5–§11):~~ The list below predates the order above.
 
 | Section | Shows | Default |
 |---|---|---|
@@ -365,6 +367,8 @@ The latest value of the labs that matter for this patient (by default lactate, c
 
 ## 6. Timeline
 
+✅ **Resolved:** **Vitals and Timeline are one tab, Timeline**, right after Overview. At the top, the latest value of each vital sign (live from the monitor when there is one, its source, its age, dimmed when stale, a mark when outside its limits, its last 6 h); under it the time axis below. The chart opens on **12 h**, and its **Show as table** is the hourly flowsheet, for every lane, not only vitals. EtCO₂ has its own lane when the patient has it. ✅ **Resolved:** **blood glucose** is there too (the clinical advisor's request): a tile with the latest value, where it came from (a fingerstick by the bedside nurse, or the lab) and how old it is, outside 70–180 mg/dL marked, and a Glucose lane among the labs with each value printed. Checks follow the patient's care: hourly on an insulin infusion, every 6 h in the ICU or for a diabetic, every 12 h on the floor. ⚠️ **Open question:** the target range per patient (the prototype uses 70–180 mg/dL for everyone; insulin protocols often target 140–180). Why the merge: the Vitals tab's trends and flowsheet repeated the Timeline's monitor lanes and table; what only Vitals had was the latest-value row. One tab serves both "what is it now" and "what changed, and why". An older link to the Vitals tab opens the Timeline.
+
 ### PD-030 — One time axis
 
 Lanes share one time axis so cause and effect line up:
@@ -395,7 +399,7 @@ Any point opens its value, unit, observation time, ingestion time and source ("M
 
 ## 7. Labs
 
-✅ **Resolved:** the tab is labelled **Labs** (it said Chart for a while). It holds results, microbiology and imaging reports, with the problems, allergies, history and home medications beside them; "Chart" stays reserved for the hospital's record (PD-OD-01).
+~~✅ **Resolved:** the tab is labelled **Labs** (it said Chart for a while). It holds results, microbiology and imaging reports, with the problems, allergies, history and home medications beside them; "Chart" stays reserved for the hospital's record (PD-OD-01).~~ ✅ **Resolved:** Labs holds results and microbiology only; problems, history, allergies, home medications and imaging reports moved to their own **Chart** tab, after Labs (see §3.2).
 
 ✅ **Resolved:** each card on the Labs tab names its source **EMR** ("EMR · 12 min ago"), as the tab does, whatever the hospital's system, so every site's page reads the same. The system is named in the EMR tab.
 

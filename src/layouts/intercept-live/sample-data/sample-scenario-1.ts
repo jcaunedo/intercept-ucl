@@ -10,6 +10,7 @@ import { sampleScenario1Record, sampleScenario1ResolvedRecord } from "../patient
 import { sampleScenario1ResolvedTimeline, sampleScenario1Timeline } from "../patient-details/sections/sample-timeline";
 import { sampleScenario1ResolvedVitals, sampleScenario1Vitals } from "../patient-details/sections/sample-vitals";
 import type { AlertNotice } from "../shared/alert-toasts";
+import { withGlucose } from "../patient-details/sections/sample-glucose";
 
 // Story-only: Scenario 1 of the Demo Use Cases, "Heart failure at 2 a.m. in a 25-bed hospital", as beats the Prototype
 // menu plays. Margaret Hayes (`p15`, Chadron, Med-Surg) starts just before it, holding at NEWS2 5;
@@ -74,7 +75,10 @@ const scenario1Beats: ScenarioBeat[] = [
 			census: { p15: sampleScenario1Census },
 			monitoring: { p15: sampleScenario1Monitoring },
 			records: {
-				p15: { ...sampleScenario1Record(), vitals: sampleScenario1Vitals(), timeline: sampleScenario1Timeline() },
+				p15: {
+					...sampleScenario1Record(),
+					...withGlucose("p15", { vitals: sampleScenario1Vitals(), timeline: sampleScenario1Timeline() }),
+				},
 			},
 			fire: [
 				{
@@ -109,8 +113,7 @@ const scenario1Beats: ScenarioBeat[] = [
 			records: {
 				p15: {
 					...sampleScenario1ResolvedRecord(),
-					vitals: sampleScenario1ResolvedVitals(),
-					timeline: sampleScenario1ResolvedTimeline(),
+					...withGlucose("p15", { vitals: sampleScenario1ResolvedVitals(), timeline: sampleScenario1ResolvedTimeline() }),
 				},
 			},
 			resolve: {

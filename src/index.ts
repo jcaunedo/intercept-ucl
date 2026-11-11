@@ -80,18 +80,11 @@ export {
 	type PatientCardVital,
 } from "@/components/cards/patient-census-card";
 export {
-	defaultMonitorLimits,
-	PatientMonitor,
 	PatientMonitoringCard,
 	patientMonitoringCardVariants,
-	type MonitorAlarmPriorities,
-	type MonitorLimits,
-	type MonitorTrends,
-	type MonitorVitals,
 	type PatientMonitoringCardAction,
 	type PatientMonitoringCardProps,
 	type PatientMonitoringCardSize,
-	type PatientMonitorProps,
 } from "@/components/cards/patient-monitoring-card";
 
 /* -------------------------------------------------------------------------- */
@@ -128,6 +121,22 @@ export {
 export { HospitalSectionHeader, type HospitalSectionHeaderProps } from "@/components/data-display/hospital-section-header";
 export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderClinicalStatus, type PatientHeaderClinicalStatusValue, type PatientHeaderProps } from "@/components/data-display/patient-header";
 export { Logo, LogoSymbol, type LogoProps, type LogoSymbolProps } from "@/components/data-display/logo";
+export {
+	defaultMonitorLimits,
+	monitorAlarm,
+	monitorAlarmSide,
+	PatientMonitor,
+	resolveMonitorLimits,
+	type MonitorAlarmLimit,
+	type MonitorAlarmLimits,
+	type MonitorAlarmParameter,
+	type MonitorAlarmPriorities,
+	type MonitorLimits,
+	type MonitorTrends,
+	type MonitorVitals,
+	type PatientMonitorProps,
+	type PatientMonitorSize,
+} from "@/components/data-display/patient-monitor";
 
 /* -------------------------------------------------------------------------- */
 /* Feedback                                                                   */

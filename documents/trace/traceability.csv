@@ -6,7 +6,7 @@ PD-05,src/layouts/intercept-live/intercept-live.tsx,,Partial,Shell switches page
 PD-07,src/layouts/intercept-live/intercept-live.tsx,,Met (design),Live shift countdown (AppHeader)
 PD-08,src/layouts/intercept-live/ask-intercept-panel.tsx,,Met (UI),UI only; no answering
 PD-11,src/styles/theme.css,,Met (design),Light + dark (.dark)
-SV-01,src/components/cards/patient-monitoring-card/,MON-*,Partial (UI),Waveform + numerics UI; no live source; CARESCAPE ONE parameter set not checked
+SV-01,src/components/data-display/patient-monitor/ + src/components/cards/patient-monitoring-card/,MON-*,Partial (UI),Waveform + numerics UI; no live source; CARESCAPE ONE parameter set not checked
 SV-04,src/layouts/intercept-live/monitoring/,MON-*,Partial,Vitals trends per CX-01 §4.1
 SV-05,src/layouts/intercept-live/monitoring/view-controls.tsx,MON-*,Partial,Density / paging; verify 4/8/12/16
 SV-08,src/layouts/intercept-live/census/sample-census.ts,,Partial,missing variant present; stale / age per PRD

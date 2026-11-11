@@ -122,6 +122,7 @@ const limits = {
 	rr: [8, 30],
 	temp: [36, 38],
 	etco2: [35, 45],
+	glucose: [70, 180],
 } satisfies Record<VitalSeries["parameter"], [number, number]>;
 
 /**

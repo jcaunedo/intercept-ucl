@@ -19,6 +19,19 @@ import {
 	type PatientCensusCardProps,
 } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
+import {
+	MonitorFullLanes,
+	MonitorLane,
+	MonitorNumeric,
+	monitorParameterOrder,
+	MonitorSparkline,
+	resolveMonitorLimits,
+	type MonitorAlarmLimits,
+	type MonitorAlarmParameter,
+	type MonitorAlarmPriorities,
+	type MonitorTrends,
+	type MonitorVitals,
+} from "@/components/data-display/patient-monitor";
 import { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
 import {
@@ -28,124 +41,10 @@ import {
 	pressPattern,
 	resolvedFadeTransition,
 	standardTransition,
-	useDeviceAlarmFlash,
 	useExpandClip,
 	useMotionPreference,
-	type DeviceAlarmPriority,
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-
-import { MonitorWaveform, type WaveformKind } from "./monitor-waveform";
-
-/** Live bedside values. A missing value shows "--", never zero (PRD PC-143). */
-type MonitorVitals = {
-	/** Heart rate, bpm. Also paces the ECG, pleth and arterial waveforms. */
-	hr?: number;
-	/** SpO₂, %. */
-	spo2?: number;
-	/** Arterial pressure, mmHg. */
-	systolic?: number;
-	diastolic?: number;
-	/** Mean arterial pressure, mmHg. */
-	map?: number;
-	/** Respiratory rate, breaths/min. Also paces the respiration waveform. */
-	rr?: number;
-};
-
-/**
- * The last hour of each primary numeric, oldest first, for the monitor's `trends` plot. Points are spread
- * evenly, so any interval works (one a minute is typical); a missing series shows no sparkline.
- */
-type MonitorTrends = Partial<Record<"hr" | "spo2" | "systolic" | "rr", number[]>>;
-
-/** Alarm limits as [low, high]. A value outside them is marked as an alarm. */
-type MonitorLimits = {
-	hr: [number, number];
-	spo2: [number, number];
-	systolic: [number, number];
-	rr: [number, number];
-};
-
-/**
- * The bedside monitor's alarm priority for each parameter's limit alarm, from its device profile (PRD AL-02: device
- * alarm priority is the device's own attribute). A value outside its limits shows the priority's color and flash.
- */
-type MonitorAlarmPriorities = Partial<Record<keyof MonitorLimits, DeviceAlarmPriority>>;
-
-/** What the numerics need to show device alarms: each limit alarm's priority, and the ones acknowledged at the bedside. */
-type MonitorAlarmState = { priorities: MonitorAlarmPriorities; acknowledged: readonly (keyof MonitorLimits)[] };
-
-// A numeric in alarm, by priority: the device's colored box with its text color. Full class names, so Tailwind sees them.
-const deviceAlarmClassNames: Record<DeviceAlarmPriority, string> = {
-	high: "bg-device-alarm-high text-device-alarm-high-foreground",
-	medium: "bg-device-alarm-medium text-device-alarm-medium-foreground",
-	low: "bg-device-alarm-low text-device-alarm-low-foreground",
-};
-
-// Common adult ICU defaults; an app passes the patient's own limits. Exported so a page can filter on the same limits.
-const defaultMonitorLimits: MonitorLimits = { hr: [50, 120], spo2: [90, 100], systolic: [90, 160], rr: [8, 30] };
-
-type ParameterKey = "hr" | "spo2" | "bp" | "rr";
-
-// One color per parameter, everywhere (PRD Monitoring MON-072), with its waveform and its trend's lane label (ABP's
-// trend is the systolic).
-const parameters: Record<
-	ParameterKey,
-	{ label: string; wave: string; trend: string; unit: string; color: string; kind: WaveformKind }
-> = {
-	hr: { label: "HR", wave: "II", trend: "HR · 1 h", unit: "bpm", color: "text-monitor-ecg", kind: "ecg" },
-	spo2: { label: "SpO₂", wave: "Pleth", trend: "SpO₂ · 1 h", unit: "%", color: "text-monitor-spo2", kind: "pleth" },
-	bp: { label: "ABP", wave: "ABP", trend: "Sys · 1 h", unit: "mmHg", color: "text-monitor-abp", kind: "abp" },
-	rr: { label: "RR", wave: "Resp", trend: "RR · 1 h", unit: "rpm", color: "text-monitor-resp", kind: "resp" },
-};
-const parameterOrder: ParameterKey[] = ["hr", "spo2", "bp", "rr"];
-
-/**
- * The out-of-limits mark: ▲ above the alarm limits, ▼ below, the same triangles as PatientCensusCard's "Change in last 24 h",
- * a size smaller (12px). Its `className` sets the color. Decorative: say the side in words beside it for screen readers.
- * Shared with Monitoring's List table.
- */
-function MonitorAlarmIcon({ side, className }: { side: "above" | "below"; className?: string }) {
-	return (
-		<span aria-hidden='true' className={cn("shrink-0 text-xs leading-none", className)}>
-			{side === "above" ? "▲" : "▼"}
-		</span>
-	);
-}
-
-/**
- * A value in device alarm, as the bedside monitor shows it: in its priority's box (red with white text, yellow or cyan
- * with black), flashing for high and medium in step with every other alarm of that priority, steady for low and under
- * reduced motion. Without a `priority`, the value in its own `color`. The box's padding is there in every state (offset
- * by a negative margin), so flashing never moves the number. Shared with Monitoring's List table.
- */
-function DeviceAlarmValue({
-	priority,
-	color,
-	className,
-	children,
-}: {
-	priority?: DeviceAlarmPriority;
-	color?: string;
-	className?: string;
-	children: React.ReactNode;
-}) {
-	const { prefersReducedMotion } = useMotionPreference();
-	const on = useDeviceAlarmFlash(priority, !prefersReducedMotion);
-
-	return (
-		<span
-			data-device-alarm={priority}
-			className={cn("-mx-1 rounded-sm px-1", className, priority && on ? deviceAlarmClassNames[priority] : color)}
-		>
-			{children}
-		</span>
-	);
-}
-
-/** Which side of its alarm limits a value is on, if it's outside them. */
-const alarmSide = (value: number | undefined, [low, high]: [number, number]) =>
-	value === undefined ? undefined : value > high ? "above" : value < low ? "below" : undefined;
 
 // `md` for the Comfortable panel; `sm` for Compact (PRD Monitoring MON-012): tighter padding, smaller type and a shorter
 // condensed monitor, so four fit a row at 1728. Padding is 1px less than the step because the border adds it. `min-w-0`,
@@ -228,8 +127,11 @@ type PatientMonitoringCardProps = Omit<
 		 */
 		tags?: PatientCensusCardProps["tags"];
 		vitals?: MonitorVitals;
-		/** Alarm limits; defaults to common adult ICU limits. */
-		limits?: Partial<MonitorLimits>;
+		/**
+		 * Alarm limits per reading, `[low, high]`; `null` turns a side off (shown as OFF). A reading left out takes the
+		 * common adult ICU defaults (`defaultMonitorLimits`); MAP has none.
+		 */
+		limits?: Partial<MonitorAlarmLimits>;
 		/**
 		 * The bedside monitor's priority for each limit alarm (`high` | `medium` | `low`). A value outside its limits then
 		 * shows as the device does: its number in a red, yellow or cyan box, flashing for high and medium. Without a
@@ -237,7 +139,7 @@ type PatientMonitoringCardProps = Omit<
 		 */
 		alarmPriorities?: MonitorAlarmPriorities;
 		/** Limit alarms acknowledged at the bedside: they keep their ▲ / ▼ but lose the color, as on the central station. */
-		acknowledgedAlarms?: (keyof MonitorLimits)[];
+		acknowledgedAlarms?: MonitorAlarmParameter[];
 		/**
 		 * What the monitor plots, condensed or full: live waveforms (`waveform`, default) or each parameter's last hour
 		 * (`trends`, from `trends`). Condensed, that's the ECG strip or a sparkline under each numeric; full, a waveform
@@ -272,172 +174,6 @@ type PatientMonitoringCardProps = Omit<
 		/** The "…" menu right of the name, shown on hover or keyboard focus in the card. Without items there's no button. */
 		moreActions?: PatientMonitoringCardAction[];
 	};
-
-/** One parameter's numbers: label, value, unit, and in the full monitor its alarm limits. */
-function MonitorNumeric({
-	parameter,
-	vitals,
-	limits,
-	alarms,
-	full,
-	size,
-}: {
-	parameter: ParameterKey;
-	vitals: MonitorVitals;
-	limits: MonitorLimits;
-	alarms: MonitorAlarmState;
-	full: boolean;
-	size: PatientMonitoringCardSize;
-}) {
-	const { label, unit, color } = parameters[parameter];
-	const value =
-		parameter === "bp"
-			? vitals.systolic !== undefined && vitals.diastolic !== undefined
-				? `${vitals.systolic}/${vitals.diastolic}`
-				: "--"
-			: (vitals[parameter] ?? "--");
-	const limitKey = parameter === "bp" ? "systolic" : parameter;
-	const limit = limits[limitKey];
-	const alarm = alarmSide(parameter === "bp" ? vitals.systolic : vitals[parameter], limit);
-	// The device's alarm, as the monitor shows it, until it's resolved or acknowledged at the bedside.
-	const priority = alarm && !alarms.acknowledged.includes(limitKey) ? alarms.priorities[limitKey] : undefined;
-
-	// A value outside its alarm limits gets a small triangle in the label row, in the monitor's neutral ink: drift shows
-	// in place, before (or without) an alert, and the parameter keeps its color (PRD Monitoring MON-073). In the label row
-	// rather than by the number, so the numerics keep their width.
-	const alarmTag = alarm ? <MonitorAlarmIcon side={alarm} className='text-monitor-foreground' /> : null;
-
-	return (
-		<div
-			data-alarm={alarm}
-			className={cn(
-				"flex min-w-0 flex-1 flex-col justify-center gap-0.5 rounded-sm py-0.5",
-				size === "sm" ? "px-1.5" : full ? "px-2" : "px-1.5 @min-[308px]/monitor:px-2",
-			)}
-		>
-			<span className={cn("flex w-full items-center justify-between gap-1 text-xs/4 font-semibold", color)}>
-				<span className='flex min-w-0 items-center gap-1'>
-					{label}
-					{/* The mean pressure sits by the label, as on a bedside monitor. */}
-					{full && parameter === "bp" && vitals.map !== undefined ? (
-						<span className='font-normal text-monitor-foreground tabular-nums'>({vitals.map})</span>
-					) : null}
-					{full ? alarmTag : null}
-				</span>
-				{/* Condensed cells are too narrow for both, so the tag takes the unit's place there; the compact card's are too
-				    narrow for units at all (the full monitor shows them), and so are the default card's under a 308px monitor. */}
-				{alarm && !full ? (
-					alarmTag
-				) : full ? (
-					<span className='font-normal text-monitor-foreground'>{unit}</span>
-				) : size === "md" ? (
-					<span className='hidden font-normal text-monitor-foreground @min-[308px]/monitor:inline'>{unit}</span>
-				) : null}
-			</span>
-			<span className='flex w-full items-end justify-between gap-1'>
-				{/* Alarm limits, high over low, small beside the value. */}
-				{full ? (
-					<span className='flex flex-col text-xs/3.5 text-monitor-foreground tabular-nums'>
-						<span>{limit[1]}</span>
-						<span>{limit[0]}</span>
-					</span>
-				) : null}
-				<DeviceAlarmValue
-					priority={priority}
-					color={color}
-					className={cn(
-						"font-semibold tabular-nums leading-none",
-						full ? (size === "sm" ? "text-xl" : "text-2xl") : size === "sm" ? "text-lg" : "text-xl",
-					)}
-				>
-					{value}
-					{alarm ? (
-						<span className='sr-only'>
-							, {alarm} alarm limits{priority ? `, ${priority} priority alarm` : ""}
-						</span>
-					) : null}
-				</DeviceAlarmValue>
-			</span>
-		</div>
-	);
-}
-
-/**
- * A waveform lane with its label in the parameter's color, top left. The trace fills the space below the label, sized
- * by the lane (a canvas's own 150px default height would otherwise push the lane open).
- */
-function MonitorLane({ parameter, vitals, className }: { parameter: ParameterKey; vitals: MonitorVitals; className?: string }) {
-	const { wave, color, kind } = parameters[parameter];
-	const rate = kind === "resp" ? vitals.rr : vitals.hr;
-
-	return (
-		<div className={cn("relative min-h-0 min-w-0 flex-1", className)}>
-			<span className={cn("absolute top-0.5 left-2 text-xs font-semibold", color)}>{wave}</span>
-			<div className={cn("absolute inset-x-0 top-4 bottom-1", color)}>
-				<MonitorWaveform kind={kind} rate={rate} />
-			</div>
-		</div>
-	);
-}
-
-/**
- * A parameter's last hour as a line in its color, scaled to its own range (at least 4 units tall, so a steady value
- * stays flat instead of magnifying noise). Decorative: the number beside it carries the value.
- */
-function MonitorSparkline({
-	parameter,
-	values,
-	className,
-}: {
-	parameter: ParameterKey;
-	values?: number[];
-	className?: string;
-}) {
-	if (!values || values.length < 2) return <span className='h-6 shrink-0' />;
-	const low = Math.min(...values);
-	const high = Math.max(...values);
-	const middle = (low + high) / 2;
-	const [bottom, top] = high - low < 4 ? [middle - 2, middle + 2] : [low, high];
-	const points = values
-		.map((value, index) => {
-			const x = (index / (values.length - 1)) * 100;
-			const y = 22 - ((value - bottom) / (top - bottom)) * 20;
-			return `${x.toFixed(1)},${y.toFixed(1)}`;
-		})
-		.join(" ");
-
-	return (
-		<svg
-			aria-hidden='true'
-			viewBox='0 0 100 24'
-			preserveAspectRatio='none'
-			className={cn("h-6 w-full shrink-0 px-2", parameters[parameter].color, className)}
-		>
-			<polyline
-				points={points}
-				fill='none'
-				stroke='currentColor'
-				strokeWidth={1.5}
-				strokeLinejoin='round'
-				vectorEffect='non-scaling-stroke'
-			/>
-		</svg>
-	);
-}
-
-/** The full monitor's lane for the `trends` plot: the parameter's last hour across the lane, labeled like a waveform. */
-function MonitorTrendLane({ parameter, values }: { parameter: ParameterKey; values?: number[] }) {
-	const { trend, color } = parameters[parameter];
-
-	return (
-		<div className='relative min-h-0 min-w-0 flex-1'>
-			<span className={cn("absolute top-0.5 left-2 text-xs font-semibold", color)}>{trend}</span>
-			<div className='absolute inset-x-0 top-4 bottom-1'>
-				<MonitorSparkline parameter={parameter} values={values} className='h-full' />
-			</div>
-		</div>
-	);
-}
 
 // The alert bar, by state: a severity's fill with white text (PatientCardAlert's colors), green when the last alert
 // resolved, and a quiet grey without one. Stacked in one grid cell, so a change cross-fades without moving anything.
@@ -576,53 +312,6 @@ function AlertBar({
 	);
 }
 
-type PatientMonitorProps = Omit<React.ComponentProps<"section">, "children"> &
-	Pick<PatientMonitoringCardProps, "vitals" | "limits" | "alarmPriorities" | "acknowledgedAlarms" | "plot" | "trends">;
-
-/**
- * The full bedside monitor on its own, without the card: one lane per parameter (its waveform, or its last hour with
- * `plot="trends"`) beside its numbers and alarm limits, as in PatientMonitoringCard's full view. For a page that already
- * shows who the patient is, e.g. Patient details. 240px tall by default; a height in `className` stretches the lanes.
- * Pass an `aria-label` that names the patient.
- */
-function PatientMonitor({
-	vitals = {},
-	limits: limitsProp,
-	alarmPriorities = {},
-	acknowledgedAlarms = [],
-	plot = "waveform",
-	trends = {},
-	className,
-	...props
-}: PatientMonitorProps) {
-	const limits = { ...defaultMonitorLimits, ...limitsProp };
-	const alarms = { priorities: alarmPriorities, acknowledged: acknowledgedAlarms };
-
-	return (
-		<section
-			data-slot='patient-monitor'
-			className={cn(
-				"grid h-60 grid-rows-4 divide-y divide-monitor-grid overflow-hidden rounded-lg bg-monitor text-monitor-foreground",
-				className,
-			)}
-			{...props}
-		>
-			{parameterOrder.map((parameter) => (
-				<div key={parameter} className='flex min-h-0'>
-					{plot === "trends" ? (
-						<MonitorTrendLane parameter={parameter} values={trends[parameter === "bp" ? "systolic" : parameter]} />
-					) : (
-						<MonitorLane parameter={parameter} vitals={vitals} />
-					)}
-					<div className='flex w-32 shrink-0 border-l border-monitor-grid py-0.5'>
-						<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} alarms={alarms} size='md' full />
-					</div>
-				</div>
-			))}
-		</section>
-	);
-}
-
 /**
  * A patient's identity and location, with their acuity score and its change as a line under it when passed, their alert as
  * a bar (or "No active alerts"), over a live bedside monitor, with their tags below it when passed. Right of the name: a family message icon
@@ -681,7 +370,7 @@ function PatientMonitoringCard({
 	const alertRing = usePatientCardAlertRing({ alert, interactive });
 	const expanded = expandedProp ?? defaultExpanded;
 	const monitorId = React.useId();
-	const limits = { ...defaultMonitorLimits, ...limitsProp };
+	const limits = resolveMonitorLimits(limitsProp);
 	const alarms = { priorities: alarmPriorities, acknowledged: acknowledgedAlarms };
 	const cardSize = size ?? "md";
 	const plot = plotProp ?? condensedView ?? "waveform";
@@ -885,26 +574,14 @@ function PatientMonitoringCard({
 							exit='exit'
 							className='grid h-60 grid-rows-4 divide-y divide-monitor-grid'
 						>
-							{parameterOrder.map((parameter) => (
-								<div key={parameter} className='flex min-h-0'>
-									{plot === "trends" ? (
-										<MonitorTrendLane
-											parameter={parameter}
-											values={trends[parameter === "bp" ? "systolic" : parameter]}
-										/>
-									) : (
-										<MonitorLane parameter={parameter} vitals={vitals} />
-									)}
-									<div
-										className={cn(
-											"flex shrink-0 border-l border-monitor-grid py-0.5",
-											cardSize === "sm" ? "w-28" : "w-32",
-										)}
-									>
-										<MonitorNumeric parameter={parameter} vitals={vitals} limits={limits} alarms={alarms} size={cardSize} full />
-									</div>
-								</div>
-							))}
+							<MonitorFullLanes
+								vitals={vitals}
+								limits={limits}
+								alarms={alarms}
+								plot={plot}
+								trends={trends}
+								size={cardSize}
+							/>
 						</motion.div>
 					) : (
 						<motion.div
@@ -919,7 +596,7 @@ function PatientMonitoringCard({
 							{plot === "trends" ? (
 								// Each numeric over its last hour.
 								<div className={cn("grid h-full divide-x divide-monitor-grid py-1.5", condensedColumns[cardSize])}>
-									{parameterOrder.map((parameter) => (
+									{monitorParameterOrder.map((parameter) => (
 										<div key={parameter} className='flex min-w-0 flex-col justify-between'>
 											<MonitorNumeric
 												parameter={parameter}
@@ -945,7 +622,7 @@ function PatientMonitoringCard({
 											condensedColumns[cardSize],
 										)}
 									>
-										{parameterOrder.map((parameter) => (
+										{monitorParameterOrder.map((parameter) => (
 											<MonitorNumeric
 												key={parameter}
 												parameter={parameter}
@@ -985,18 +662,9 @@ function PatientMonitoringCard({
 
 export {
 	AlertBar,
-	defaultMonitorLimits,
-	DeviceAlarmValue,
-	MonitorAlarmIcon,
-	PatientMonitor,
 	PatientMonitoringCard,
 	patientMonitoringCardVariants,
-	type MonitorAlarmPriorities,
 	type PatientMonitoringCardAction,
-	type MonitorLimits,
-	type MonitorTrends,
-	type MonitorVitals,
 	type PatientMonitoringCardProps,
-	type PatientMonitorProps,
 	type PatientMonitoringCardSize,
 };

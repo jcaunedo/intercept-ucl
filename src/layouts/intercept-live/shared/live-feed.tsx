@@ -12,6 +12,7 @@ import {
 } from "@/lib/motion";
 
 import { LiveFeed, LiveFeedFilter, type LiveFeedFilterId } from "@/components/data-display/live-feed";
+import { cn } from "@/lib/utils";
 
 import type { TriageAlert, TriageAlertAction } from "../monitoring/triage-queue";
 import type { PatientRecord } from "../patient-details/patient-details";
@@ -78,7 +79,8 @@ const reducedFeedVariants: Variants = {
 };
 
 /**
- * The live feed line, right of the page's summary (on a patient's page, right of its tabs; Nov 11, 2026), 16px: "Live feed:" in `muted-foreground`, the latest change in
+ * The live feed line, right of the page's summary (on a patient's page, right of its tabs; Nov 11, 2026), 14px, 16px on
+ * Monitoring (`size`; Nov 11, 2026, user's calls): "Live feed:" in `muted-foreground`, the latest change in
  * `foreground`, then a chevron (Intercept-Live Census `179:8347`; it sat in the hospital bar until Oct 30, 2026); just "Live feed" before the first change. A button that opens and
  * closes the live feed panel, underlined on hover. Each new change rolls in like a ticker: it rises from below the
  * line as the last one rises out the top, at the same time. Both sit in one grid cell, right-aligned, so the leaving
@@ -90,12 +92,15 @@ function LiveFeedButton({
 	open,
 	onOpen,
 	controls = "live-feed",
+	size = "sm",
 }: {
 	change?: string;
 	open: boolean;
 	onOpen: () => void;
 	/** The id of the panel it opens. */
 	controls?: string;
+	/** 14px (`sm`), or 16px (`md`) on Monitoring (Nov 11, 2026, user's call). */
+	size?: "sm" | "md";
 }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 
@@ -108,7 +113,10 @@ function LiveFeedButton({
 			title={change ? `Live feed: ${change}` : undefined}
 			// Gives up room before the summary does (a high shrink factor), but only down to "Live feed:" and the chevron
 			// (its automatic minimum width; the change itself truncates to nothing), so it always stays visible and clickable.
-			className='group/feed flex shrink-[100] cursor-pointer items-center gap-2 rounded-sm px-1.5 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring'
+			className={cn(
+				"group/feed flex shrink-[100] cursor-pointer items-center gap-2 rounded-sm px-1.5 text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring",
+				size === "md" ? "text-base" : "text-sm",
+			)}
 		>
 			<span className='flex min-w-0 items-center'>
 				<motion.span

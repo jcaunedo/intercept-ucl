@@ -3,7 +3,8 @@ import { ArrowUpRightIcon, BellIcon, ChevronDownIcon, CircleAlertIcon, GitBranch
 import { AnimatePresence, motion, type Variants } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
-import { AlertBar, PatientMonitor } from "@/components/cards/patient-monitoring-card";
+import { AlertBar } from "@/components/cards/patient-monitoring-card";
+import { PatientMonitor } from "@/components/data-display/patient-monitor";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { LabTile } from "@/components/data-display/lab-tile";
 import { AiClinicalSummaryBanner } from "@/components/feedback/ai-clinical-summary-banner";
@@ -53,7 +54,7 @@ import { Detail, formatElapsed, formatTime, freshness, NoData } from "./section-
 const overviewSectionIds = { alerts: "patient-overview-alerts" } as const;
 
 /** The tabs the Overview links to. */
-type OverviewLinkedSection = "medications" | "orders";
+type OverviewLinkedSection = "medications" | "orders" | "care-plan";
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -857,6 +858,9 @@ function CarePlanCard({
 	running,
 	now,
 	onOpenPathway,
+	onShowAll,
+	expanded = false,
+	className,
 }: {
 	plan?: PatientCarePlan;
 	planOfCare?: PatientPlanOfCare;
@@ -864,8 +868,14 @@ function CarePlanCard({
 	running: PatientPathwayRunning[];
 	now: number | null;
 	onOpenPathway?: () => void;
+	/** "View all · n" opens the Care Plan tab instead of showing the rest in place. */
+	onShowAll?: () => void;
+	/** Every problem, no View all: the Care Plan tab. */
+	expanded?: boolean;
+	className?: string;
 }) {
-	const [showAll, setShowAll] = React.useState(false);
+	const [showAllInPlace, setShowAll] = React.useState(false);
+	const showAll = expanded || showAllInPlace;
 	const pathway = plan?.pathway;
 	const transfer = plan?.transfer;
 	const passed = transfer?.checkpoints.filter((checkpoint) => checkpoint.result?.status === "passed").length ?? 0;
@@ -879,11 +889,18 @@ function CarePlanCard({
 	return (
 		<OverviewCard
 			title='Care plan'
+			className={className}
 			actions={
-				onOpenPathway || planItems.length > PLAN_OF_CARE_ITEMS ? (
+				onOpenPathway || (!expanded && planItems.length > PLAN_OF_CARE_ITEMS) ? (
 					<>
-						{planItems.length > PLAN_OF_CARE_ITEMS ? (
-							<CardToggle expanded={showAll} total={planItems.length} onToggle={() => setShowAll(!showAll)} />
+						{!expanded && planItems.length > PLAN_OF_CARE_ITEMS ? (
+							onShowAll ? (
+								<CardLink onClick={onShowAll} aria-label={`View all ${planItems.length} problems of the care plan`}>
+									View all · {planItems.length}
+								</CardLink>
+							) : (
+								<CardToggle expanded={showAll} total={planItems.length} onToggle={() => setShowAll(!showAll)} />
+							)
 						) : null}
 						{onOpenPathway ? <CardLink onClick={onOpenPathway}>View full plan</CardLink> : null}
 					</>
@@ -1400,6 +1417,7 @@ function PatientOverview({
 						running={running}
 						now={now}
 						onOpenPathway={pathway?.onOpen}
+						onShowAll={onShowSection && (() => onShowSection("care-plan"))}
 					/>
 					<UpNextCard record={record} now={now} pathway={pathway} />
 					<MedicationsCard record={record} now={now} onShowAll={showMedications} />
@@ -1413,4 +1431,25 @@ function PatientOverview({
 	);
 }
 
-export { AlertsSection, PatientOverview, type OverviewLinkedSection, type OverviewPathway };
+/**
+ * The Care Plan tab (Nov 11, 2026, user's call): the Overview's Care plan at full length, every problem of the plan of
+ * care shown, with the same rows and the same way to the pathway.
+ */
+function CarePlanSection({ record, pathway }: { record?: PatientRecord; pathway?: OverviewPathway }) {
+	const now = useCurrentMinute();
+	const { suggestion, running } = pathway ? pathwaySummary(pathway, now) : { suggestion: undefined, running: [] };
+	return (
+		<CarePlanCard
+			plan={record?.carePlan}
+			planOfCare={record?.planOfCare}
+			suggestion={suggestion}
+			running={running}
+			now={now}
+			onOpenPathway={pathway?.onOpen}
+			expanded
+			className='max-w-4xl'
+		/>
+	);
+}
+
+export { AlertsSection, CarePlanSection, PatientOverview, type OverviewLinkedSection, type OverviewPathway };

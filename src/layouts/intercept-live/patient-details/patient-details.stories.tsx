@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 // Story-only helper, not part of the card's public API.
-import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
+import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
 import { Census } from "../census/census";
@@ -17,6 +17,7 @@ import { samplePatientRecords } from "./sample-patient-details";
 import { sampleScenario1ResolvedRecord } from "./sample-patient-records";
 import { sampleScenario1ResolvedTimeline } from "./sections/sample-timeline";
 import { sampleScenario1ResolvedVitals } from "./sections/sample-vitals";
+import { withGlucose } from "./sections/sample-glucose";
 
 // The Census's grid as it starts (every patient, sorted by Alert), so the details step through it as from a card.
 const censusOrder = [...samplePatients].sort(sortOrderById("alert").compare).map((patient) => patient.id);
@@ -70,7 +71,8 @@ type Story = StoryObj<typeof meta>;
  * and isolation, all outline). Line tabs: Overview (the AI clinical summary across the top, then her clinical findings:
  * key labs, temperature, MAP and the ventilator; then cards: live monitoring, care plan, Up next, medications, oxygen and
  * infusions, recent orders, encounter and referrals; her alerts are in the Alerts panel, from View alerts), then
- * Vitals, Labs, Timeline, Medications, Orders, EMR, Notes, Sepsis and Camera view. Every Census patient has the same
+ * Timeline (the latest vitals over the chart), Labs, Chart, Care Plan, Sepsis, Medications, Orders, Notes, EMR and Live
+ * Camera. Every Census patient has the same
  * depth of data: go back and open another. Back returns to the Census as it was.
  */
 export const Default: Story = {
@@ -399,8 +401,7 @@ export const CarePlanAndActivity: Story = {
 				? {
 						...record,
 						...sampleScenario1ResolvedRecord(),
-						vitals: sampleScenario1ResolvedVitals(),
-						timeline: sampleScenario1ResolvedTimeline(),
+						...withGlucose("p15", { vitals: sampleScenario1ResolvedVitals(), timeline: sampleScenario1ResolvedTimeline() }),
 						activity: sampleScenario1Activity,
 						carePlan: sampleScenario1CarePlan,
 					}

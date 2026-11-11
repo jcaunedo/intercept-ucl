@@ -1,4 +1,4 @@
-import { defaultMonitorLimits, type MonitorVitals } from "@/components/cards/patient-monitoring-card";
+import { defaultMonitorLimits, type MonitorVitals } from "@/components/data-display/patient-monitor";
 
 import * as React from "react";
 

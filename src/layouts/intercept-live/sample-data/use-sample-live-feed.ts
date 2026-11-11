@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor";
 
 import type { AlertConsultState, AlertDetailData } from "../alert-panel/alert-panel";
 import {

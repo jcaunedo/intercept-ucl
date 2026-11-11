@@ -214,7 +214,7 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 |---|---|
 | Hierarchy | HR, SpO₂, BP and RR lead each card, in the same order on every card (MON-071). |
 | Update | Vitals update in place; the number changes without moving the layout. |
-| Change cue | A value outside its alarm limits gets a ▲ / ▼ triangle in its label row (a ↑ / ↓ tag until Oct 30, 2026); the parameter keeps its color (MON-073). ✅ **Decision (Oct 30, 2026, product):** when the bedside monitor alarms on it, the value shows as the device shows it: GE CARESCAPE's red / yellow / cyan box by the device's alarm priority, flashing for high and medium, until acknowledged at the bedside (UCL DESIGN.md "Device alarms"). Device alarms only; the platform's alert severity keeps its own treatment. Replaces a filter for the same thing (MON-010). |
+| Change cue | A value outside its alarm limits gets a ▲ / ▼ triangle in its label row (a ↑ / ↓ tag until Oct 30, 2026); the parameter keeps its color (MON-073). ✅ **Decision (Oct 30, 2026, product):** when the bedside monitor alarms on it, the value shows as the device shows it: GE CARESCAPE's red / yellow / cyan box by the device's alarm priority, flashing for high and medium, until acknowledged at the bedside (UCL DESIGN.md "Device alarms"). Device alarms only; the platform's alert severity keeps its own treatment. Replaces a filter for the same thing (MON-010). ✅ **Resolved:** alarm limits can be one-sided, as the bed's device profile sets them (e.g. RR above 30 only, MAP below 65 only). The side that's off never alarms and reads **OFF** in the full monitor's limits; it never falls back to a default limit. ABP is marked when its systolic or its MAP is outside its limits, and shows the limits of the one that is. The Outside limits filters and the List table follow the same limits. |
 | Trend | Each vital can show a 1-hour sparkline (Comfortable density). ⚠️ **Decision needed:** trend window (PRD OD-07). |
 | Freshness | Values older than their freshness interval are labeled Stale (MON-050). |
 
@@ -456,7 +456,7 @@ What the exploration assumes beyond this PRD:
 - ⚠️ **Parameter colors on light surfaces:** the monitor's green and teal don't reach contrast on white, so List and the focus view's trends use darker inks of the same hues, and the monitor colors in dark mode (MON-OD-10).
 - ⚠️ **Escalation by role:** the signed-in user is a Critical Care RN, so Start intervention is disabled (MON-OD-08).
 - ⚠️ **Concern priority:** Medium or High (MON-OD-13).
-- ⚠️ **Trend limits:** the MAP 65 mmHg rule and the default alarm limits (HR 50–120, SpO₂ 90–100, systolic 90–160, RR 8–30) are examples, not configuration (PRD PC-044).
+- ⚠️ **Trend limits:** the MAP 65 mmHg rule and the default alarm limits (HR 50–120, SpO₂ 90–100, systolic 90–160, RR 8–30) are examples, not configuration (PRD PC-044). The card has no default MAP limit: MAP alarms only when the bed's profile sets one.
 
 ---
 

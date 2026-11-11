@@ -26,7 +26,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/buttons/button";
 import { Counter } from "@/components/data-display/counter";
 import type { PatientCardTag, PatientCensusCardProps } from "@/components/cards/patient-census-card";
-import type { PatientMonitorProps } from "@/components/cards/patient-monitoring-card";
+import type { PatientMonitorProps } from "@/components/data-display/patient-monitor";
 import {
 	Avatar,
 	AvatarBadge,

@@ -581,7 +581,8 @@ function TimelineTable({
  */
 function TimelineSection({ timeline, lastViewedAt }: TimelineSectionProps) {
 	const now = useCurrentMinute();
-	const [windowId, setWindowId] = React.useState<TimelineWindow["id"]>("6");
+	// 12 h by default (Nov 11, 2026, user's call, with Vitals merged in): its table is hourly, the old flowsheet's step.
+	const [windowId, setWindowId] = React.useState<TimelineWindow["id"]>("12");
 	const [showTable, setShowTable] = React.useState(false);
 	const [cursor, setCursor] = React.useState<number | null>(null);
 	const [announcement, setAnnouncement] = React.useState("");

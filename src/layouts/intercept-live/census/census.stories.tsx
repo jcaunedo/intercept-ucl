@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 // Story-only helper, not part of the card's public API.
-import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
+import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";

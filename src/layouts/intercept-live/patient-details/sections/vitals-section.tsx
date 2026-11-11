@@ -1,23 +1,21 @@
-import * as React from "react";
-
-import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
 import type { PatientMonitorData } from "../patient-details";
-import { formatElapsed, formatTime, NoData, SectionCard } from "../section-parts";
+import { formatElapsed, NoData, SectionCard } from "../section-parts";
 import { SourceLabel } from "../../shared/source-label";
 
-// Patient details › Vitals: each vital sign's latest value with its source, age and recent trend, then the hourly
+// Patient details › Timeline's latest values (Nov 11, 2026, user's call: Vitals merged into the Timeline): each vital
+// sign's latest value with its source, age and recent trend, over the Timeline's chart, whose table replaced the hourly
 // flowsheet. Live monitor values replace the charted ones on the tiles when the patient is on Monitoring. Out-of-limit
-// values carry a glyph and words, and the flowsheet marks them with a neutral wash, never a severity color (PRD SV-073).
+// values carry a glyph and words, never a severity color (PRD SV-073).
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
 /* -------------------------------------------------------------------------- */
 
-type VitalParameter = "hr" | "bp" | "map" | "spo2" | "rr" | "temp" | "etco2";
+type VitalParameter = "hr" | "bp" | "map" | "spo2" | "rr" | "temp" | "etco2" | "glucose";
 
 /** One charted value. For BP, `value` is the systolic and `diastolic` the diastolic. */
 type VitalReading = { at: string; value: number; diastolic?: number };
@@ -57,16 +55,12 @@ const parameters: Record<VitalParameter, { label: string; name: string; unit: st
 	rr: { label: "RR", name: "Respiratory rate", unit: "/min", color: "text-monitor-resp-ink" },
 	temp: { label: "Temp", name: "Temperature", unit: "°C", color: "text-foreground", digits: 1 },
 	etco2: { label: "EtCO₂", name: "End-tidal CO₂", unit: "mmHg", color: "text-foreground" },
+	// Point-of-care (fingerstick) or lab blood glucose (Nov 11, 2026, clinical advisor's request).
+	glucose: { label: "Glucose", name: "Blood glucose", unit: "mg/dL", color: "text-foreground" },
 };
 
-// Tiles show BP with its MAP, so MAP has no tile of its own; the flowsheet keeps it as a row.
-const tileOrder: VitalParameter[] = ["hr", "bp", "spo2", "rr", "temp", "etco2"];
-const rowOrder: VitalParameter[] = ["hr", "bp", "map", "spo2", "rr", "temp", "etco2"];
-
-const windows = [
-	{ value: "12", label: "12 h" },
-	{ value: "24", label: "24 h" },
-] as const;
+// Tiles show BP with its MAP, so MAP has no tile of its own (the Timeline has its lane).
+const tileOrder: VitalParameter[] = ["hr", "bp", "spo2", "rr", "temp", "etco2", "glucose"];
 
 const HOUR = 60 * 60_000;
 // The sparklines show the last 6 hours.
@@ -270,153 +264,19 @@ function VitalTile({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Flowsheet                                                                  */
-/* -------------------------------------------------------------------------- */
-
-/** The latest reading in each hour, by the hour's start time. */
-function byHour(readings: VitalReading[]) {
-	const buckets = new Map<number, VitalReading>();
-	for (const reading of readings) {
-		const time = Date.parse(reading.at);
-		buckets.set(time - (time % HOUR), reading);
-	}
-	return buckets;
-}
-
-/**
- * The hourly flowsheet: one row per parameter, one column per hour, oldest on the left and newest on the right, as on
- * the Timeline and the sparklines, so time always runs the same way. It opens scrolled to the newest hour, with the
- * parameter column pinned. Each cell is the last value charted in that hour.
- */
-function Flowsheet({ series, now }: { series: VitalSeries[]; now: number }) {
-	const [hours, setHours] = React.useState<(typeof windows)[number]["value"]>("12");
-	const scrollRef = React.useRef<HTMLDivElement>(null);
-	const currentHour = now - (now % HOUR);
-	const columns = Array.from({ length: Number(hours) }, (_, index) => currentHour - (Number(hours) - 1 - index) * HOUR);
-	const rows = rowOrder
-		.map((parameter) => series.find((item) => item.parameter === parameter))
-		.filter((item): item is VitalSeries => Boolean(item))
-		.map((item) => ({ series: item, buckets: byHour(item.readings) }));
-
-	React.useLayoutEffect(() => {
-		const scroller = scrollRef.current;
-		if (scroller) scroller.scrollLeft = scroller.scrollWidth;
-	}, [hours]);
-
-	return (
-		<SectionCard
-			title='Flowsheet'
-			meta='Hourly · newest on the right'
-			action={
-				<Tabs value={hours} onValueChange={(value) => setHours(value as typeof hours)}>
-					<TabsList aria-label='Flowsheet window'>
-						{windows.map((window) => (
-							<TabsTrigger key={window.value} value={window.value}>
-								{window.label}
-							</TabsTrigger>
-						))}
-					</TabsList>
-				</Tabs>
-			}
-		>
-			{/* Focusable, so the table scrolls from the keyboard. */}
-			<div
-				ref={scrollRef}
-				tabIndex={0}
-				className='-mx-4 -mb-4 overflow-x-auto rounded-b-card outline-none focus-visible:ring-2 focus-visible:ring-ring'
-			>
-				<table className='w-full border-separate border-spacing-0 text-sm'>
-					<caption className='sr-only'>
-						Vital signs, the last value charted each hour for the last {hours} hours, oldest first. Values outside their
-						limits say above or below.
-					</caption>
-					<thead>
-						<tr>
-							<th
-								scope='col'
-								className='sticky left-0 z-10 min-w-36 border-y border-border-muted bg-card px-4 py-2 text-left text-xs font-medium text-muted-foreground'
-							>
-								Parameter
-							</th>
-							{columns.map((hour) => (
-								<th
-									key={hour}
-									scope='col'
-									className='min-w-18 border-y border-border-muted px-2 py-2 text-right text-xs font-medium whitespace-nowrap text-muted-foreground tabular-nums last:pr-4'
-								>
-									{hour === currentHour ? <span className='block text-foreground'>Now</span> : null}
-									{formatTime(new Date(hour).toISOString())}
-								</th>
-							))}
-						</tr>
-					</thead>
-					<tbody>
-						{rows.map(({ series: item, buckets }) => {
-							const meta = parameters[item.parameter];
-							return (
-								<tr key={item.parameter}>
-									<th
-										scope='row'
-										className='sticky left-0 z-10 border-b border-border-muted bg-card px-4 py-2 text-left font-normal'
-									>
-										<span className={cn("block text-sm font-semibold", meta.color)}>{meta.label}</span>
-										<span className='block text-xs whitespace-nowrap text-muted-foreground'>
-											{meta.unit} · {item.source}
-										</span>
-									</th>
-									{columns.map((hour) => {
-										const reading = buckets.get(hour);
-										const state = limitState(reading?.value, item.limits);
-										return (
-											<td
-												key={hour}
-												className={cn(
-													"border-b border-border-muted px-2 py-2 text-right whitespace-nowrap tabular-nums last:pr-4",
-													state && "bg-neutral-subtle font-semibold",
-													!reading && "text-muted-foreground",
-												)}
-											>
-												{reading ? (
-													<>
-														{state ? <span aria-hidden='true'>{state.glyph} </span> : null}
-														{formatValue(item.parameter, reading.value)}
-														{reading.diastolic !== undefined ? `/${reading.diastolic}` : null}
-														{state ? <span className='sr-only'>, {state.words.toLowerCase()}</span> : null}
-													</>
-												) : (
-													<>
-														<span aria-hidden='true'>--</span>
-														<span className='sr-only'>No value</span>
-													</>
-												)}
-											</td>
-										);
-									})}
-								</tr>
-							);
-						})}
-					</tbody>
-				</table>
-			</div>
-		</SectionCard>
-	);
-}
-
-/* -------------------------------------------------------------------------- */
-/* VitalsSection                                                              */
+/* LatestVitals                                                               */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Patient details › Vitals: the latest value of each vital sign, with its source, age, limits and last 6 hours, then
- * the hourly flowsheet.
+ * The latest value of each vital sign, with its source, age, limits and last 6 hours: the top of the Timeline tab.
  */
-function VitalsSection({ vitals, monitor }: VitalsSectionProps) {
+function LatestVitals({ vitals, monitor }: VitalsSectionProps) {
 	const now = useCurrentMinute();
 	const seriesFor = (parameter: VitalParameter) => vitals.series.find((item) => item.parameter === parameter);
 	const tiles = tileOrder.map(seriesFor).filter((item): item is VitalSeries => Boolean(item));
 
 	return (
-		<div className='flex flex-col gap-6 @container'>
+		<div className='@container'>
 			<SectionCard
 				title='Latest values'
 				meta={
@@ -431,7 +291,8 @@ function VitalsSection({ vitals, monitor }: VitalsSectionProps) {
 				}
 			>
 				{tiles.length ? (
-					<ul className='grid grid-cols-2 gap-2 @min-[40rem]:grid-cols-3 @min-[80rem]:grid-cols-6'>
+					// As many per row as fit, each at least 10rem, so six or seven tiles (EtCO₂, glucose) fill the row either way.
+					<ul className='grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-2'>
 						{tiles.map((series) => (
 							<VitalTile
 								key={series.parameter}
@@ -446,14 +307,12 @@ function VitalsSection({ vitals, monitor }: VitalsSectionProps) {
 					<NoData>No vital signs recorded for this patient.</NoData>
 				)}
 			</SectionCard>
-
-			{vitals.series.length && now !== null ? <Flowsheet series={vitals.series} now={now} /> : null}
 		</div>
 	);
 }
 
 export {
-	VitalsSection,
+	LatestVitals,
 	type PatientVitals,
 	type VitalParameter,
 	type VitalReading,

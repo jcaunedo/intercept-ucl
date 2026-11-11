@@ -1,4 +1,4 @@
-import type { MonitorVitals } from "@/components/cards/patient-monitoring-card";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor";
 
 // Story-only: the bedside nurse's simulated replies in the consult's Messages (prototype only; an app gets real replies
 // from the hospital's messaging). Each reply answers what the clinician wrote (Nov 5, 2026, user's call: "related with

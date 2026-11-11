@@ -2,7 +2,7 @@ import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 // Story-only helper, not part of the card's public API.
-import { useLivePatients } from "@/components/cards/patient-monitoring-card/use-live-vitals";
+import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
@@ -267,7 +267,7 @@ export const ShareableLink: Story = {
 		await expect(await canvas.findByRole("complementary", { name: "Ask Intercept Live" })).toBeInTheDocument();
 		// Each change goes into the address.
 		await userEvent.click(canvas.getByRole("tab", { name: "Labs" }));
-		await waitFor(() => expect(addressParam("tab")).toBe("chart"));
+		await waitFor(() => expect(addressParam("tab")).toBe("labs"));
 		await userEvent.click(canvas.getByRole("button", { name: "Close alerts" }));
 		await waitFor(() => expect(addressParam("panels")).toBeNull());
 		await expect(addressParam("side")).toBe("chat");

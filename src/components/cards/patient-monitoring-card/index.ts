@@ -1,17 +1,8 @@
 export {
 	AlertBar,
-	defaultMonitorLimits,
-	DeviceAlarmValue,
-	MonitorAlarmIcon,
-	PatientMonitor,
 	PatientMonitoringCard,
 	patientMonitoringCardVariants,
-	type MonitorAlarmPriorities,
-	type MonitorLimits,
-	type MonitorTrends,
-	type MonitorVitals,
 	type PatientMonitoringCardAction,
 	type PatientMonitoringCardProps,
-	type PatientMonitorProps,
 	type PatientMonitoringCardSize,
 } from "./patient-monitoring-card";

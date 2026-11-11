@@ -9,7 +9,7 @@ import {
 	type MonitorVitals,
 	type PatientMonitoringCardProps,
 } from "./patient-monitoring-card";
-import { useLiveVitals } from "./use-live-vitals";
+import { useLiveVitals } from "@/components/data-display/patient-monitor/use-live-vitals";
 
 // Synthetic patient (PRD PC-180).
 const stable: MonitorVitals = { hr: 86, spo2: 97, systolic: 118, diastolic: 72, map: 87, rr: 16 };
@@ -252,6 +252,31 @@ export const DeviceAlarms: Story = {
 			value.getAttribute("data-device-alarm"),
 		);
 		await expect(priorities).toEqual(["medium", "high", "low"]);
+	},
+};
+
+/**
+ * One-sided limits, as device profiles set them: RR alarms only above 30 (`[null, 30]`) and MAP only below 65
+ * (`[65, null]`). The side that's off reads OFF in the limits, and never falls back to the card's defaults. ABP alarms
+ * on its mean here, so it shows MAP's limits (65 over OFF) and its high-priority box; screen readers hear "mean pressure
+ * below alarm limits".
+ */
+export const OneSidedLimits: Story = {
+	args: {
+		vitals: { hr: 104, spo2: 94, systolic: 96, diastolic: 39, map: 58, rr: 34 },
+		defaultExpanded: true,
+		limits: { rr: [null, 30], map: [65, null] },
+		alarmPriorities: { map: "high", rr: "medium" },
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// RR's low and MAP's high are off.
+		await expect(canvas.getAllByText("OFF")).toHaveLength(2);
+		const priorities = [...canvasElement.querySelectorAll("[data-device-alarm]")].map((value) =>
+			value.getAttribute("data-device-alarm"),
+		);
+		await expect(priorities).toEqual(["high", "medium"]);
+		await expect(canvas.getByText(/mean pressure below alarm limits/)).toBeInTheDocument();
 	},
 };
 

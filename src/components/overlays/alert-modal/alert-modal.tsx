@@ -9,7 +9,8 @@ import {
 	type PatientCardTag,
 	type PatientCensusCardProps,
 } from "@/components/cards/patient-census-card";
-import { AlertBar, PatientMonitor, type PatientMonitorProps } from "@/components/cards/patient-monitoring-card";
+import { AlertBar } from "@/components/cards/patient-monitoring-card";
+import { PatientMonitor, type PatientMonitorProps } from "@/components/data-display/patient-monitor";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { fadeVariants, revealVariants, standardTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
