@@ -1,4 +1,5 @@
 import type { PatientRecord } from "./patient-details";
+import { sampleAlertHistoryByPatient } from "./sample-alert-history";
 import { sampleAllergiesByPatient } from "./sample-allergies";
 import { samplePatientBaseRecords } from "./sample-patient-records";
 import { sampleCameraByPatient } from "./sections/sample-camera";
@@ -16,6 +17,7 @@ import { sampleVitalsByPatient } from "./sections/sample-vitals";
 const samplePatientRecords: PatientRecord[] = samplePatientBaseRecords.map((record) => ({
 	...record,
 	allergyDetails: sampleAllergiesByPatient[record.id],
+	alertHistory: sampleAlertHistoryByPatient[record.id],
 	vitals: sampleVitalsByPatient[record.id],
 	chart: sampleChartByPatient[record.id],
 	timeline: sampleTimelineByPatient[record.id],

@@ -188,7 +188,8 @@ export const Default: Story = {
 		// No pathway in the alert panel (Nov 10, 2026): it's on the patient's page.
 		await expect(canvas.queryByRole("button", { name: /pathway/i })).not.toBeInTheDocument();
 		// The header's Video consult, pressed while the call is on, ends it and closes its panel.
-		await userEvent.click(canvas.getByRole("button", { name: "Close video consult" }));
+		// The header's (the panel has a × of the same name since Nov 10, 2026).
+		await userEvent.click(canvas.getAllByRole("button", { name: "Close video consult" })[0]);
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Video consult" })).not.toBeInTheDocument());
 	},
 };

@@ -185,7 +185,8 @@ export const Scenario1HeartFailure: Story = {
 		await expect(await consult.findByText("Waiting for approval")).toBeInTheDocument();
 		// Messages open too, so her page picks them up.
 		await userEvent.click(consult.getByRole("button", { name: "Messages" }));
-		await expect(await consult.findByRole("button", { name: "Close messages" })).toBeInTheDocument();
+		// The header's and the panel's × (Nov 10, 2026).
+		await expect(await consult.findAllByRole("button", { name: "Close messages" })).toHaveLength(2);
 		// Her name leaves the modal for her page; the toasts stay hidden there too.
 		await userEvent.click(consult.getByRole("button", { name: "Hayes, Margaret, open patient" }));
 		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());

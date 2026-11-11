@@ -139,6 +139,17 @@ const reducedCardVariants: Variants = {
 	exit: { opacity: 0, transition: reducedMotionTransition },
 };
 
+/** The day an alert fired, for the Alerts panel's history: "Today", "Yesterday", or "Saturday, Nov 7". */
+function alertDayLabel(firedAt: string, now: number | null) {
+	const day = new Date(firedAt);
+	const today = new Date(now ?? Date.now());
+	const startOf = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+	const days = Math.round((startOf(today) - startOf(day)) / (24 * HOUR));
+	if (days <= 0) return "Today";
+	if (days === 1) return "Yesterday";
+	return day.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+}
+
 /**
  * One alert as the alert panel shows it (PRD PD-020): its bar (which opens the alert, with the consult, the pathway and
  * the messages), the reason and title, the source with Feedback for an AI alert, who did what, and the lifecycle
@@ -251,7 +262,8 @@ function OverviewAlertCard({
 function AlertsSection({
 	id = overviewSectionIds.alerts,
 	patientId,
-	alerts,
+	alerts: currentAlerts,
+	history = [],
 	escalationTargets,
 	onAlertAction,
 	allResolved = false,
@@ -262,6 +274,11 @@ function AlertsSection({
 	id?: string;
 	patientId: string;
 	alerts: TriageAlert[];
+	/**
+	 * Earlier alerts, all resolved (the record's history, and ones the feed resolved), listed with the resolved ones;
+	 * one already in `alerts` shows once, as `alerts` has it.
+	 */
+	history?: TriageAlert[];
 	escalationTargets: NonNullable<PatientDetailsProps["escalationTargets"]>;
 	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
 	/**
@@ -280,12 +297,29 @@ function AlertsSection({
 	const [resolvedToggled, setShowResolved] = React.useState(false);
 	const showResolved = allResolved || resolvedToggled;
 	const now = useCurrentMinute();
+	// Every alert the patient had: the current ones, then the history they don't already hold.
+	const alerts = [...currentAlerts, ...history.filter((alert) => !currentAlerts.some((item) => item.id === alert.id))];
 	const active = alerts.filter(isOpenAlert).sort(compareTriageAlerts);
-	const resolved = sortAddressedAlerts(alerts.filter((alert) => !isOpenAlert(alert)));
+	// In the Alerts panel, newest fired first, so they fall into their days; elsewhere, newest addressed first.
+	const resolved = allResolved
+		? alerts.filter((alert) => !isOpenAlert(alert)).sort((a, b) => b.firedAt.localeCompare(a.firedAt))
+		: sortAddressedAlerts(alerts.filter((alert) => !isOpenAlert(alert)));
 	const lastFired = lastFiredAt(alerts);
 	const inLast24h = now === null ? alerts.length : alerts.filter((alert) => now - Date.parse(alert.firedAt) < 24 * HOUR).length;
 	const shown = showResolved ? [...active, ...resolved] : active;
 	const order = shown.map((alert) => alert.id).join();
+	// With every alert listed (the Alerts panel), the resolved ones are grouped by the day they fired: "Today",
+	// "Yesterday", "Saturday, Nov 7" (Nov 10, 2026, user's call: the history stays). A label goes before the first alert of
+	// each day; the open alerts lead without one.
+	const dayLabels = new Map<string, string>();
+	if (allResolved) {
+		let previous: string | undefined;
+		for (const alert of resolved) {
+			const label = alertDayLabel(alert.firedAt, now);
+			if (label !== previous) dayLabels.set(alert.id, label);
+			previous = label;
+		}
+	}
 
 	return (
 		<section
@@ -304,6 +338,7 @@ function AlertsSection({
 				{shown.map((alert) => (
 					<motion.div
 						key={alert.id}
+						className={cn(dayLabels.has(alert.id) && "flex flex-col gap-2")}
 						layout='position'
 						layoutDependency={order}
 						variants={prefersReducedMotion ? reducedCardVariants : cardVariants}
@@ -312,6 +347,11 @@ function AlertsSection({
 						exit='exit'
 						transition={{ layout: resolve(reorderSpring) }}
 					>
+						{dayLabels.has(alert.id) ? (
+							<h3 className={cn("text-sm font-medium text-muted-foreground", alert !== shown[0] && "pt-2")}>
+								{dayLabels.get(alert.id)}
+							</h3>
+						) : null}
 						<OverviewAlertCard
 							alert={alert}
 							inLast24h={inLast24h}

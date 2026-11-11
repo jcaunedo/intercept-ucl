@@ -1821,6 +1821,10 @@ function AlertPanelContent({
 							{
 								id: "consult",
 								label: "Video consult",
+								// Its × ends the call and closes the panel, as the header's Close video consult does (Nov 10, 2026,
+								// user's call).
+								onClose: () => setConsult("idle"),
+								closeLabel: "Close video consult",
 								// The call and the notetaker under it (Nov 3, 2026, user's call: the history and labs aren't in the
 								// panel). The key findings are the alert's flag, in the tag row (`findingsFlag`).
 								content: (
@@ -1857,6 +1861,8 @@ function AlertPanelContent({
 							{
 								id: "messages",
 								label: "Messages",
+								// Its × closes the thread, as the header's Close messages does (Nov 10, 2026, user's call).
+								onClose: () => setMessagesOpen(false),
 								content: (
 									<ConsultMessages
 										messages={messages}
@@ -2068,6 +2074,7 @@ function PatientConsultDialogContent({
 									{
 										id: "messages",
 										label: "Messages",
+										onClose: () => setMessagesOpen(false),
 										content: (
 											<ConsultMessages
 												messages={messages}

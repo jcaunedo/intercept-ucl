@@ -97,7 +97,8 @@ export const Default: Story = {
 
 /**
  * The header's View alerts opens the Alerts panel (Nov 9, 2026, user's call): every alert of the patient, the unresolved
- * at the top, then the resolved; × closes it.
+ * at the top, then the resolved; × closes it. Every alert stays (Nov 10, 2026, user's call): her earlier ones, from her
+ * record's history, are listed with the resolved, grouped by the day they fired ("Yesterday", "Sunday, Nov 8").
  */
 export const ViewAlertsOpensPanel: Story = {
 	play: async ({ canvasElement }) => {
@@ -107,6 +108,10 @@ export const ViewAlertsOpensPanel: Story = {
 		const panel = within(await canvas.findByRole("complementary", { name: "Alerts" }));
 		await expect(panel.getByRole("region", { name: "Alerts" })).toBeInTheDocument();
 		await expect(panel.queryByRole("button", { name: /Show resolved/ })).toBeNull();
+		// Her history: the MAP alert 20 h ago and the sepsis candidate 52 h ago, under their days.
+		await expect(panel.getByRole("heading", { name: "MAP below 65 for 10 min" })).toBeInTheDocument();
+		await expect(panel.getByRole("heading", { name: "Lactate 4.1, fever, new infiltrate" })).toBeInTheDocument();
+		await expect(panel.getAllByRole("heading", { level: 3 }).some((heading) => /^(Today|Yesterday)$/.test(heading.textContent ?? ""))).toBe(true);
 		await userEvent.click(panel.getByRole("button", { name: "Close alerts" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Alerts" })).toBeNull());
 	},

@@ -136,6 +136,13 @@ type AlertModalPanel = {
 	 */
 	action?: React.ReactNode;
 	/**
+	 * Adds a × at the right of the label, after `action` (Nov 10, 2026, user's call): a ghost icon button, as the
+	 * modal's own. What closing does is the page's, e.g. the video consult's ends the call.
+	 */
+	onClose?: () => void;
+	/** The ×'s accessible name, e.g. "Close video consult". Defaults to "Close {label}". */
+	closeLabel?: string;
+	/**
 	 * Pinned under the scrolling content, 16px from the panel's bottom, e.g. the video consult's Add a note field. An
 	 * empty element (a portal target that's empty for now) takes no room.
 	 */
@@ -475,7 +482,19 @@ function AlertModal({
 									    label (Nov 9, 2026, user's call). */}
 									<div className='sticky -top-4 z-10 -mx-6 -mt-4 -mb-4 flex items-center justify-between gap-2 bg-background px-6 pt-4 pb-4'>
 										<h3 className='text-base font-semibold text-foreground'>{item.label}</h3>
-										{item.action ? <div className='shrink-0'>{item.action}</div> : null}
+										{item.action || item.onClose ? (
+											// The × is 32px; its -4px margins keep the header on the label's 24px line.
+											<div className='flex shrink-0 items-center gap-2'>
+												{item.action}
+												{item.onClose ? (
+													<AlertModalClose
+														aria-label={item.closeLabel ?? `Close ${item.label.toLowerCase()}`}
+														onClick={item.onClose}
+														className='-my-1'
+													/>
+												) : null}
+											</div>
+										) : null}
 									</div>
 									{item.content}
 								</div>

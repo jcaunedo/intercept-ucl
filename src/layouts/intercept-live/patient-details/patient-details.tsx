@@ -278,6 +278,11 @@ type PatientRecord = {
 	/** Unread messages in the patient's thread. */
 	unreadMessages?: number;
 	brief?: PatientBrief;
+	/**
+	 * The patient's earlier alerts, before the ones the live feed shows, all resolved: the Alerts panel lists every alert
+	 * the patient had (Nov 10, 2026, user's call: "all alerts, historical data, should stay").
+	 */
+	alertHistory?: TriageAlert[];
 	/** "Full code", "DNR", "DNR/DNI". Missing reads "Code status unknown", never blank (PRD PD-011). */
 	codeStatus?: string;
 	/** An empty list reads "No known allergies"; missing reads "Allergies unknown". */
@@ -341,6 +346,11 @@ type PatientDetailsProps = {
 	monitor?: PatientMonitorData;
 	/** The patient's alerts, for the Overview's alerts (PRD PD-020). */
 	alerts?: TriageAlert[];
+	/**
+	 * Alerts that left `alerts` (the feed resolved them), shown as resolved in the Alerts panel with the record's
+	 * `alertHistory`, so every alert the patient had stays there.
+	 */
+	leftAlerts?: TriageAlert[];
 	escalationTargets?: EscalationTarget[];
 	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
 	/** A patient action (Messages here; the app header's Raise concern, Escalate…). The prototype only reports it. */
@@ -622,6 +632,7 @@ function PatientDetailsContent({
 	record,
 	monitor,
 	alerts = [],
+	leftAlerts = [],
 	escalationTargets = [],
 	onAlertAction,
 	onAction,
@@ -710,6 +721,9 @@ function PatientDetailsContent({
 					id='patient-alerts-list'
 					patientId={patient.id}
 					alerts={alerts}
+					// Every alert the patient had stays here (Nov 10, 2026, user's call): the ones the feed resolved, then the
+					// record's history.
+					history={[...leftAlerts, ...(record?.alertHistory ?? [])]}
 					escalationTargets={escalationTargets}
 					onAlertAction={onAlertAction}
 					allResolved
@@ -957,6 +971,10 @@ function patientDetailsView(
 						: undefined
 				}
 				alerts={alerts.filter((alert) => alert.patientId === patientId)}
+				// Alerts the feed resolved drop out of `alerts`; their details keep them, so the Alerts panel still lists them.
+				leftAlerts={alertDetails
+					.filter((detail) => detail.alert.patientId === patientId && !alerts.some((alert) => alert.id === detail.alert.id))
+					.map((detail): TriageAlert => ({ ...detail.alert, status: "resolved" }))}
 				escalationTargets={escalationTargets}
 				onAlertAction={onAlertAction}
 				onAction={onAction ? (action) => onAction(patientId, action) : undefined}
