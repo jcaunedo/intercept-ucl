@@ -122,6 +122,8 @@ function Monitoring({
 	return (
 		<InterceptLive
 			{...shell}
+			// For the flags whose popover leads to an alert's pathway (Fall risk's fall prevention pathway).
+			alerts={alerts}
 			// The Sidebar's Monitoring shows the worst open alert, flashing, from any page.
 			navAlerts={shell.navAlerts ?? { Monitoring: worstOpenSeverity(alerts) }}
 			defaultPage={defaultPage}

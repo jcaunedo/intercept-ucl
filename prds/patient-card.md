@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 10, 2026
+Last updated: Nov 11, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines proposed presentation behavior, states and acceptance criteria 
 **Component:** Patient card  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 10, 2026
+**Last updated:** November 11, 2026
 
 ---
 
@@ -108,11 +108,11 @@ Includes:
 - Highest-priority unresolved alert, when present
 - Selected physiological observations
 
-✅ **Decision (Oct 31, 2026, product):** the Census's cards show no alert: the Census is for managing patients, and Monitoring and the live feed show alerts. intercept.ds's card sets dropped the alert badge. The component keeps the alert slot for other pages.
+The Census's cards show no alert: the Census is for managing patients, and Monitoring and the live feed show alerts. intercept.ds's card sets dropped the alert badge. The component keeps the alert slot for other pages.
 
-✅ **Decision (Nov 2, 2026, design):** the alert is back on the Census's cards as a badge: the bell in the severity's color, with the number of alerts from 2, no label and no ring. Clicking it opens the alert in the alert modal, not the patient. ⚠️ **Accessibility:** without its label, the badge tells severities apart by color alone; screen readers hear the severity (DESIGN.md "Patient census card" → "Alert badge").
+The alert is back on the Census's cards as a badge: the bell in the severity's color, with the number of alerts from 2, no label and no ring. Clicking it opens the alert in the alert modal, not the patient. ⚠️ **Accessibility:** without its label, the badge tells severities apart by color alone; screen readers hear the severity (DESIGN.md "Patient census card" → "Alert badge").
 
-✅ **Decision (Oct 31, 2026, product):** the card shows the patient's avatar before the name: their photo, or their initials in a color of their own, the same avatar as on their Patient details header.
+The card shows the patient's avatar before the name: their photo, or their initials in a color of their own, the same avatar as on their Patient details header.
 
 ℹ️ Whether the avatar may show a photo, and where, is open: see PC-016.
 
@@ -420,7 +420,7 @@ The following is a proposed presentation model derived from ADT and census-recon
 
 **Candidate scoring methods:**
 
-ℹ️ These are the scores ICUs commonly use. ✅ **Resolved (Oct 30, 2026, for the prototype; DU-14, SV-09 v0.6):** the prototype uses a **NEWS2-style current-state score** (scale 1) with NEWS2's bands (0–4 Low, 5–6 Medium, 7+ High), replacing the SOFA placeholder; the card shows `NEWS2 10 · High` with its 24 h change. Clinical approval of the method is still OD-02 (D-04).
+ℹ️ These are the scores ICUs commonly use. The prototype uses a **NEWS2-style current-state score** (scale 1) with NEWS2's bands (0–4 Low, 5–6 Medium, 7+ High), replacing the SOFA placeholder; the card shows `NEWS2 10 · High` with its 24 h change. Clinical approval of the method is still OD-02 (D-04).
 
 | Score | Range | Higher means | Updated | Notes |
 |---|---|---|---|---|
@@ -446,7 +446,7 @@ The following is a proposed presentation model derived from ADT and census-recon
 
 **Proposed tone treatment:**
 
-✅ **Resolved (Oct 27, 2026):** the UCL card shows the category as colored text after the score ("7 Moderate"; "7 Moderate risk" until Oct 29, 2026, when "risk" was dropped), with no pill, so it never looks like an alert. The colors follow the table below; Low uses the default text color. Only Moderate is drawn in Figma so far. Categories and colors still need clinical approval (OD-03). ⚠️ **On hold (Oct 29, 2026):** every level shows as neutral text, with no color, until acuity's design is decided (DESIGN.md "Patient census card").
+The UCL card shows the category as colored text after the score ("7 Moderate"; "7 Moderate risk" until Oct 29, 2026, when "risk" was dropped), with no pill, so it never looks like an alert. The colors follow the table below; Low uses the default text color. Only Moderate is drawn in Figma so far. Categories and colors still need clinical approval (OD-03). ⚠️ **On hold (Oct 29, 2026):** every level shows as neutral text, with no color, until acuity's design is decided (DESIGN.md "Patient census card").
 
 | Category | Tone | Tokens |
 |---|---|---|
@@ -473,7 +473,7 @@ The following is a proposed presentation model derived from ADT and census-recon
 
 The change in the score matters more than the number. Sepsis-3 treats a rise of 2 or more SOFA points as a sign of organ dysfunction, so a patient going from 4 to 7 may need more attention than one stable at 10. The card shows the score with its observed change over a stated period, not a status word such as "Stable".
 
-✅ **Resolved:** the comparison window is **24 hours** by default.
+The comparison window is **24 hours** by default.
 
 | Situation | On the card | Arrow |
 | --- | --- | --- |
@@ -484,7 +484,7 @@ The change in the score matters more than the number. Sepsis-3 treats a rise of 
 | Only one score in the window | `– NEWS2: 7 High · First score 06:00` | A muted dash (PC-031 "Insufficient data") |
 | No score | `– NEWS2: -- Unknown` | A muted dash |
 
-✅ **Decision (Nov 10, 2026, design; intercept.ds `patient-monitoring-card-2` `1232:5403`):** the score and its change are one line under the patient's location, on the Monitoring card, the Census card and the alert panel (✅ all three, user's call, so the score reads the same everywhere). Until then it was a row of its own between two rules, with the score beside "Change in last 24 h ▲ +1".
+The score and its change are one line under the patient's location, on the Monitoring card, the Census card and the alert panel (all three, so the score reads the same everywhere). Until then it was a row of its own between two rules, with the score beside "Change in last 24 h ▲ +1".
 
 - The line starts with a trend arrow, as the location line starts with its pin. Then the score ("NEWS2: 7 High"), a dot, and the change in words, in muted grey so the score leads ("1 point up in 24 h", "2 points down in 24 h", "No change in 24 h"). Written out, the change reads without knowing what "▲ +1" stands for.
 - "24 h" keeps its space, as in the alert bar on the same card ("3 in the last 24 h").
@@ -771,9 +771,10 @@ The complete set of displayed parameters must follow the approved respiratory su
 | Dialysis, 3% NaCl, Insulin infusion | The drip's rate |
 | DNR, isolation, Fall risk, ECMO | Nothing in the record yet: a plain pill, no popover |
 
-- ✅ **Decision (Nov 10, 2026, user's call): Fall risk links to the fall prevention pathway.** When the patient has one (a bed sensor alert suggests it), the Fall risk popover has **View fall prevention pathway**, a full-width outline button at its bottom (intercept.ds `Popover` `1352:13395`; ✅ user's call, same day: a button at the bottom, not a link right of the title). It opens the patient's page with the Pathway panel on that pathway (on their page, the panel itself). Without one, no link.
+- **Fall risk links to the fall prevention pathway.** When the patient has one (a bed sensor alert suggests it), the Fall risk popover has **View fall prevention pathway**, a full-width outline button at its bottom (intercept.ds `Popover` `1352:13395`; a button at the bottom, not a link right of the title). It opens the patient's page with the Pathway panel on that pathway (on their page, the panel itself). Without one, no link.
+- **Every Fall risk popover has it, wherever the flag shows.** The button belongs to the popover, not to the page showing it: the cards, the patient's page header and the alert modal's tag row all show **View fall prevention pathway** when the patient has a fall prevention pathway (the alert modal's was missing it). In the alert modal of the bed sensor alert that suggests the pathway, it opens the modal's Pathway panel beside the alert, as **Pathway** on the score line does; on the patient's page, the page's Pathway panel; anywhere else, the patient's page with the panel on that pathway.
 - ℹ️ Time reads "in the last 40 minutes", "in the last hour", "in the last 3 hours" (to the nearest hour from an hour up). A drip's percent is the net change since the titrating began within the window, not only the last step: norepinephrine 0.06 → 0.09 → 0.12 reads "increased by 100%".
-- ✅ **Ask Intercept Live (Nov 4, 2026, user's call):** asked about any patient, the summary and the quick overview have a **Changed at the bedside** line in the same words: every drip titration and ventilator setting change in the last 12 hours, newest first, the patient's other drips included (sedation too), not only the flagged ones; "nothing in the last 12 hours" for a patient with drips or settings and no change; no line without either. Asked about the vent, each setting says its change as the drips do ("FiO₂ 60%, up from 40% 2 h ago"). PRD Patient details, Ask Intercept Live "Overview".
+- Asked about any patient, the summary and the quick overview have a **Changed at the bedside** line in the same words: every drip titration and ventilator setting change in the last 12 hours, newest first, the patient's other drips included (sedation too), not only the flagged ones; "nothing in the last 12 hours" for a patient with drips or settings and no change; no line without either. Asked about the vent, each setting says its change as the drips do ("FiO₂ 60%, up from 40% 2 h ago"). PRD Patient details, Ask Intercept Live "Overview".
 - ⚠️ **Gap:** pumps and ventilators don't say who made a change, or whether an order was behind it. Whether the popover should say "not in an order" is open (PC-050's order mismatch covers ventilator settings only).
 - ⚠️ **Decision needed:** the 12-hour window (a shift) and percent for drips are proposals; confirm with the client.
 
@@ -837,7 +838,6 @@ The card should display:
 
 **Proposed display rule:** Show one primary alert summary and aggregate additional alerts behind an accessible count or detail view.
 
-✅ **Resolved (compact card):**
 
 | Active alerts | Alert line |
 |---|---|
@@ -994,7 +994,7 @@ The UI should reveal provenance through detail or an appropriate inspection inte
 
 Selecting the card's primary interaction navigates to the corresponding patient within Provider Desktop.
 
-✅ **Resolved:** the whole card is clickable and opens the **Patient details** page.
+The whole card is clickable and opens the **Patient details** page.
 
 ℹ️ The page is defined in PRD — Patient details (`prds/patient-details.md`).
 
@@ -1011,7 +1011,7 @@ When active alerts exist, the clinician must be able to access the relevant aler
 
 The detailed workflow is owned by Clinical Alerting & Events.
 
-✅ **Resolved:** with two or more active alerts, **Quick view** opens a popover listing them, without leaving the census. Clicking anywhere else on the card opens Patient details (PC-100).
+With two or more active alerts, **Quick view** opens a popover listing them, without leaving the census. Clicking anywhere else on the card opens Patient details (PC-100).
 
 - ℹ️ Quick view is a separate control, not nested inside the card's link, so each has its own keyboard focus and accessible name (PC-161). Activating Quick view must not also open Patient details.
 
@@ -1112,7 +1112,7 @@ Available observations remain visible while missing observations are clearly dif
 
 Card communicates loss of data connectivity without implying all values are current.
 
-✅ **Resolved:** cards always show live data, with no freshness indicator in the normal state. When connectivity is lost or data is significantly delayed, a connectivity alert appears in the alert slot with a CTA to refresh (reconnect). Affected values keep their stale treatment (V3).
+Cards always show live data, with no freshness indicator in the normal state. When connectivity is lost or data is significantly delayed, a connectivity alert appears in the alert slot with a CTA to refresh (reconnect). Affected values keep their stale treatment (V3).
 
 ⚠️ **Decision needed:** the delay that counts as "significant" (OD-06).
 
@@ -1152,7 +1152,7 @@ The full set of Patient card scenarios for design and prototype work. They are l
 | A8 | Low / medium administrative | Low–Med | Administrative | Rule / manual | Grey block, "Admin" tag |
 | A9 | Manual (staff-raised) | Any | Clinical | Manual | "Flagged by RN Lee" instead of agent chip (Clinician Intuition Alert, PC-073) |
 
-- ✅ **Resolved:** the compact card doesn't show the alert source (agent chip, "Bedside monitor", "Protocol", "Flagged by…"). The source appears in the Quick view popover, the alert details and other card layouts, which keeps the machine-versus-clinician distinction available (PC-073).
+- The compact card doesn't show the alert source (agent chip, "Bedside monitor", "Protocol", "Flagged by…"). The source appears in the Quick view popover, the alert details and other card layouts, which keeps the machine-versus-clinician distinction available (PC-073).
 - ⚠️ **Gap:** alert **category** (Clinical, Operational, Administrative) and alert **source** (AI agent, Device, Rule, Manual, System) are new dimensions. PC-070 defines only severity, and §10.1 lists origins without grouping them. Administrative alerts aren't among the §10.1 origins.
 - ⚠️ **Decision needed:** the tone for Medium (A6): neutral or teal.
 - ℹ️ Severity colors come from the `theme.css` tone tokens, never raw hex. Every severity also carries its icon and text label, so it never relies on color alone (PC-160).
@@ -1183,7 +1183,7 @@ The full set of Patient card scenarios for design and prototype work. They are l
 | M2 | Mixed severity | "N active alerts" + Quick view, in the highest severity's icon and color |
 | M3 | Clinical and operational together | Counted together; the line takes the highest severity. Quick view lists clinical alerts first |
 
-- ✅ **Resolved:** with two or more alerts the compact card shows the count, not the top alert's text (PC-072). Quick view opens the full set (PC-122).
+- With two or more alerts the compact card shows the count, not the top alert's text (PC-072). Quick view opens the full set (PC-122).
 - ℹ️ The order inside Quick view (newest first within a severity) is part of OD-05.
 
 #### 4. Content edge cases
@@ -1223,12 +1223,12 @@ The full set of Patient card scenarios for design and prototype work. They are l
 | P7 | Multi-site | Site badge visible (Sidney); hidden in single-site setups |
 
 - ℹ️ Each tag shows as a pill (UCL Badge). In P1, the **Ventilated** pill means invasive mechanical ventilation only (PC-050). A patient on noninvasive ventilation (a BiPAP or CPAP mask, no tube) gets its own **NIV** pill, never "Ventilated". Neither pill shows for room air or supplemental oxygen.
-- ✅ **Pressors counted (Nov 3, 2026, client feedback):** the pressor flag says how many are running, "1 pressor", "2 pressors" (it was "On pressors"): the pressors among the patient's continuous infusions (PC-060), from epinephrine, phenylephrine, norepinephrine, vasopressin, dopamine, dobutamine and angiotensin II (Giapreza). The Organ support quick view and Filters still group them as On pressors, any count.
-- ✅ **High-risk drips (Nov 3, 2026, client feedback):** a continuous infusion that's high-risk gets its own flag, as **Insulin infusion** has: **3% NaCl** (hypertonic saline). In the sample, Grace Whitfield (right MCA stroke, early swelling) is on it.
-- ✅ **Flag details (Nov 3, 2026, user's call; changed Nov 4, 2026, client feedback):** a click on a flag opens a popover and doesn't open the patient: what the bedside team changed in the last 12 hours ("Epinephrine drip increased by 75% in the last 3 hours", "FiO₂ increased from 40% to 60% in the last 2 hours"), what's behind it now (the pressors and their rates; the ventilator's mode and settings; a high-risk drip's rate and the lab watched with it: sodium for 3% NaCl, glucose for insulin) and its source and age ("Pump · 1 min ago"). The rule is PC-064. ~~It closes as soon as the pointer leaves the flag; on touch or with the keyboard, with Escape or a tap outside.~~ ✅ **Decision (Nov 10, 2026, user's call): it stays open until a click outside.** Once clicked, the popover stays open wherever the mouse goes, so the clinician can select and copy its text. A click anywhere outside it closes it, the flag that opened it included, and so does Escape. ℹ️ Tried the same day: closing once the mouse left both the flag and the popover; dropped. ✅ **Decision (Nov 10, 2026, user's call): that click only closes it.** A click outside an open flag popover closes it and does nothing else: on a card it doesn't open the patient, on a button it doesn't act, and the next click works as usual. Meanwhile everything outside the popover and its flag shows the plain arrow cursor, the card it belongs to included, so nothing looks clickable. ✅ **Decision (Nov 10, 2026, user's call): swap on hover.** Once a flag's popover is open, moving the mouse onto another flag in the same row opens that flag's popover in its place, no click needed; one popover is open at a time. Hover alone, with none open, opens nothing. ✅ **Decision (Nov 10, 2026, user's call): Tab steps along the row.** While a flag's popover is open, Tab opens the next flag's popover in the row and moves focus to that flag, looping from the last back to the first (1, 2, 3, 4, 1…); Shift+Tab goes back. The same as moving the mouse along the row. The same on the Monitoring card and the Patient details header. ~~What the flag means ("Drips that raise blood pressure, running now")~~: removed on Nov 4, 2026, the audience knows it; ~~a flag with nothing behind it in the record (DNR, isolation, Fall risk, ECMO) is a plain pill~~. ✅ **Every flag opens a popover (Nov 5, 2026, user's call):** Fall risk shows the latest fall assessment (Morse score, precautions, who assessed), DNR the code status order (who ordered it, who it was discussed with), isolation its reason, ECMO the console's settings; a change in the last 12 hours leads, as for the others. A flag the record has nothing on says so. ⚠️ **Gap:** confirm the real feeds behind them (nursing assessment, code status and isolation orders, ECMO console).
+- The pressor flag says how many are running, "1 pressor", "2 pressors" (it was "On pressors"): the pressors among the patient's continuous infusions (PC-060), from epinephrine, phenylephrine, norepinephrine, vasopressin, dopamine, dobutamine and angiotensin II (Giapreza). The Organ support quick view and Filters still group them as On pressors, any count.
+- A continuous infusion that's high-risk gets its own flag, as **Insulin infusion** has: **3% NaCl** (hypertonic saline). In the sample, Grace Whitfield (right MCA stroke, early swelling) is on it.
+- A click on a flag opens a popover and doesn't open the patient: what the bedside team changed in the last 12 hours ("Epinephrine drip increased by 75% in the last 3 hours", "FiO₂ increased from 40% to 60% in the last 2 hours"), what's behind it now (the pressors and their rates; the ventilator's mode and settings; a high-risk drip's rate and the lab watched with it: sodium for 3% NaCl, glucose for insulin) and its source and age ("Pump · 1 min ago"). The rule is PC-064. ~~It closes as soon as the pointer leaves the flag; on touch or with the keyboard, with Escape or a tap outside.~~ **It stays open until a click outside.** Once clicked, the popover stays open wherever the mouse goes, so the clinician can select and copy its text. A click anywhere outside it closes it, the flag that opened it included, and so does Escape. ℹ️ Tried the same day: closing once the mouse left both the flag and the popover; dropped. **That click only closes it.** A click outside an open flag popover closes it and does nothing else: on a card it doesn't open the patient, on a button it doesn't act, and the next click works as usual. Meanwhile everything outside the popover and its flag shows the plain arrow cursor, the card it belongs to included, so nothing looks clickable. **Swap on hover.** Once a flag's popover is open, moving the mouse onto another flag in the same row opens that flag's popover in its place, no click needed; one popover is open at a time. Hover alone, with none open, opens nothing. **Tab steps along the row.** While a flag's popover is open, Tab opens the next flag's popover in the row and moves focus to that flag, looping from the last back to the first (1, 2, 3, 4, 1…); Shift+Tab goes back. The same as moving the mouse along the row. The same on the Monitoring card and the Patient details header. ~~What the flag means ("Drips that raise blood pressure, running now")~~: removed on Nov 4, 2026, the audience knows it; ~~a flag with nothing behind it in the record (DNR, isolation, Fall risk, ECMO) is a plain pill~~. Fall risk shows the latest fall assessment (Morse score, precautions, who assessed), DNR the code status order (who ordered it, who it was discussed with), isolation its reason, ECMO the console's settings; a change in the last 12 hours leads, as for the others. A flag the record has nothing on says so. ⚠️ **Gap:** confirm the real feeds behind them (nursing assessment, code status and isolation orders, ECMO console).
 - ⚠️ **Gap:** safety tags (P2) and code status (P3) aren't in the PRD's data model yet. P1 partly maps to respiratory support (PC-050) and infusions (PC-060). Include them in OD-01 (mandatory fields).
 - ⚠️ **Gap:** "Transfer pending" (P5) isn't a census state in §5, and "Deceased" (P6) isn't one either. PC-130 says a discharged card leaves the active census; decide whether it shows greyed out first, and for how long.
-- ✅ **Resolved:** P4 matches PC-110 (no empty containers), and P7 matches PC-013 (facility context in multi-hospital views).
+- P4 matches PC-110 (no empty containers), and P7 matches PC-013 (facility context in multi-hospital views).
 
 #### 7. Card-level states
 

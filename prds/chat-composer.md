@@ -1,7 +1,7 @@
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 10, 2026
+Last updated: Nov 11, 2026
 Scope: The chat composer (UCL ChatComposer) and the Ask Intercept Live conversation it drives in the Provider Desktop: the message field, its buttons, slash commands, suggested questions, and how answers arrive.
 Purpose: Defines the composer's behavior, states, rules for answers and acceptance criteria, pending clinical and product validation, so design, engineering and the Conversational Clinical Data Agent team build the same thing.
 -->
@@ -13,7 +13,7 @@ Purpose: Defines the composer's behavior, states, rules for answers and acceptan
 **Surface:** Ask Intercept Live, the chat panel; its message box is the **chat composer** (UCL `ChatComposer`)  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 10, 2026
+**Last updated:** November 11, 2026
 
 ---
 
@@ -81,7 +81,7 @@ The agent retrieves and summarizes. It never diagnoses, recommends therapy or ac
 | CC-UC-04 | Across the census | "Lactate for everyone in the MICU", "Which of my patients are on pressors?" answer across patients, filtered by hospital, unit or assignment. |
 | CC-UC-05 | Handoff | "/handoff Miller" drafts an I-PASS handoff from the chart for the clinician to review and edit. |
 | CC-UC-06 | A long answer that's not needed | Stop ends it and keeps what's already there. |
-| CC-UC-07 | Hands busy | The microphone dictates the question (CC-031, built Nov 6, 2026). ✅ **Decision (Nov 6, 2026, user's call):** no voice conversation in Ask Intercept Live; its voice button is removed (CC-032). |
+| CC-UC-07 | Hands busy | The microphone dictates the question (CC-031, built Nov 6, 2026). No voice conversation in Ask Intercept Live; its voice button is removed (CC-032). |
 
 ---
 
@@ -106,7 +106,7 @@ The composer is one box: a field on top, a toolbar under it. The commands menu o
 
 ### CC-010 — Field
 
-- Placeholder: "Ask a question or search" (✅ Oct 31, 2026, product: search moved here from the Sidebar; "How can I help?" before). The field's accessible name stays "Ask Intercept Live", since a placeholder disappears once the clinician types.
+- Placeholder: "Ask a question or search" (search moved here from the Sidebar; "How can I help?" before). The field's accessible name stays "Ask Intercept Live", since a placeholder disappears once the clinician types.
 - **Enter** sends; **Shift+Enter** starts a new line. An Enter that ends an input-method composition (IME) doesn't send.
 - What's sent is trimmed; an empty or blank message is never sent.
 - The field stays editable while an answer is being written, so the next question can be typed.
@@ -131,9 +131,9 @@ The commands button, or "/" typed at the start of the field, opens the commands 
 - The menu filters as the clinician types after the slash ("/s" shows /summarize and /sepsis).
 - **↑ ↓** move, **Enter** or **Tab** picks, **Escape** closes the menu (and only the menu, not the panel around it). Clicking a command picks it.
 - Picking writes "/name " into the field, replacing a command being typed, or before text already there. The clinician can add a patient's name, then sends.
-- ✅ **Decision (Nov 1, 2026, product):** once a command is in the field with nothing after it, a guidance line shows right after it, muted, saying what to write next. With a patient in the chat: "Enter for Hayes, or add another patient"; without one: "Add a patient's name" (for /changes: "Enter for all your patients, or add a patient's name"). It disappears as soon as the clinician types after the command, and screen readers hear it as the field's description.
+- Once a command is in the field with nothing after it, a guidance line shows right after it, muted, saying what to write next. With a patient in the chat: "Enter for Hayes, or add another patient"; without one: "Add a patient's name" (for /changes: "Enter for all your patients, or add a patient's name"). It disappears as soon as the clinician types after the command, and screen readers hear it as the field's description.
 - With text already in the field, the commands button opens the menu without clearing it.
-- ✅ **Decision (Oct 31, 2026, product):** the menu lists the commands by name alone ("/summarize"), without a description beside each; what each does is in the table below.
+- The menu lists the commands by name alone ("/summarize"), without a description beside each; what each does is in the table below.
 
 | Command | Does | Patient |
 |---|---|---|
@@ -157,7 +157,7 @@ The commands button, or "/" typed at the start of the field, opens the commands 
 
 - A command that needs a patient, with none named or on screen, asks: "Which patient? Add a name after the command, like **/labs Miller**, or open the patient first."
 - An unknown command says so: "There's no **/foo** command. Type **/** to see the commands."
-- ✅ **Decision (Nov 1, 2026, product):** a patient's summary (/summarize, or a question that asks for one) always opens with the patient's full name in bold ("**Harris, William**"), so a first name alone ("/summarize William") shows who it found. Answers about several patients already open each with the name.
+- A patient's summary (/summarize, or a question that asks for one) always opens with the patient's full name in bold ("**Harris, William**"), so a first name alone ("/summarize William") shows who it found. Answers about several patients already open each with the name.
 
 ### CC-022 — /handoff draft
 
@@ -181,45 +181,45 @@ A draft handoff in I-PASS (PRD PD-110), built from the chart:
 
 ### CC-031 — Dictation (microphone)
 
-✅ **Resolved (Nov 6, 2026, user request):** built (`dictation`). Dictation fills the field with the spoken question, as it's said, for the clinician to check before sending; it never sends by itself. Browser speech recognition for the prototype; production needs a speech service the hospitals approve. ⚠️ **Decision needed:** which hospitals allow microphones, and push-to-talk (Spec §9.5, CC-OD-05).
+Built (`dictation`). Dictation fills the field with the spoken question, as it's said, for the clinician to check before sending; it never sends by itself. Browser speech recognition for the prototype; production needs a speech service the hospitals approve. ⚠️ **Decision needed:** which hospitals allow microphones, and push-to-talk (Spec §9.5, CC-OD-05).
 
 | Rule | Behavior |
 |---|---|
 | **Start** | The microphone button starts listening. The field reads "Listening…" while empty, in the text color (not the hint gray). |
-| **"Hey Intercept"** | ✅ **Decision (Nov 10, 2026, user's call): removed.** The microphone starts only when the clinician presses its button; nothing listens for a phrase. Listening for it opened the microphone as the chat opened, and the browser asked for it with no click. This also closes the always-listening risks below. ~~✅ **Decision (Nov 6, 2026, user's call):** while Ask Intercept Live is open and nothing is being dictated, the composer listens for "Hey Intercept", or just "Hey" (added the same day, user's call), and the placeholder says so ('Ask, search, or say "Hey Intercept"'). Hearing either starts dictation, as the button does; when dictation stops, it listens for the phrase again. Not while the panel is closed. Nothing else it hears is shown or kept. ⚠️ **Risk:** "Hey" alone is common in conversation at the hub, so it will start dictation by accident now and then (the microphone turns red; the microphone or "stop listening" ends it). ⚠️ **Risk:** browser recognition sends the room's audio to the browser's speech service the whole time the panel is open; production needs on-device wake-word detection or a hospital-approved service (CC-OD-05). ⚠️ **Decision needed:** whether hospitals allow an always-listening microphone at the hub, and an off switch.~~ |
+| **"Hey Intercept"** | **Removed.** The microphone starts only when the clinician presses its button; nothing listens for a phrase. Listening for it opened the microphone as the chat opened, and the browser asked for it with no click. This also closes the always-listening risks below. ~~While Ask Intercept Live is open and nothing is being dictated, the composer listens for "Hey Intercept", or just "Hey" (added the same day, user's call), and the placeholder says so ('Ask, search, or say "Hey Intercept"'). Hearing either starts dictation, as the button does; when dictation stops, it listens for the phrase again. Not while the panel is closed. Nothing else it hears is shown or kept. ⚠️ **Risk:** "Hey" alone is common in conversation at the hub, so it will start dictation by accident now and then (the microphone turns red; the microphone or "stop listening" ends it). ⚠️ **Risk:** browser recognition sends the room's audio to the browser's speech service the whole time the panel is open; production needs on-device wake-word detection or a hospital-approved service (CC-OD-05). ⚠️ **Decision needed:** whether hospitals allow an always-listening microphone at the hub, and an off switch.~~ |
 | **Words as they're said** | Recognition's guess shows at once and is replaced as it settles. Dictation goes after any text already in the field, with a space between; the first word is capitalized when the field was empty or ended a sentence. |
-| **Spoken punctuation** | ✅ **Decision (Nov 6, 2026, user's call):** saying "comma" writes ", ", "period" writes ". " and "question mark" writes "? " (the mark against the word before it, a space after), and the word after a period or question mark starts with a capital. Any word "period" is taken as the mark, as dictation software does. ✅ **Smart question mark (Nov 6, 2026, user's call):** a sentence that starts with a question word (what, why, how, when, where, who, which) or a verb that opens a yes/no question (is, are, do, does, did, can, could, should, would, will, has, have…) is a question: its "period" becomes "?", and an unfinished question gets "?" as soon as recognition settles with nothing more being said (it goes again if the sentence carries on), and when it's sent or dictation ends. A request ("Show me her labs") doesn't. ✅ **By structure (same day, user's call):** lead-in words are skipped to find where the question starts ("Okay so…", "Intercept, can you tell me how is Emily doing" → "Can you tell me how is Emily doing?"), and a statement with a question tag at its end is a question too ("…her lactate is down, right?", "…isn't it?"). After "Hey" wakes it, a leading "Intercept" is the wake phrase's and is left out. Typing ends dictation without adding one. ℹ️ Other marks ("exclamation point", "new line") aren't recognized yet. |
-| **Listening state** | ✅ **Decision (Nov 6, 2026, user's call):** the button turns Flat · Destructive (pale red fill, red icon) with the `mic-off` icon (archielabs.ds `6346:10225`), pressed, named "Stop dictating"; a darker red breathes in and out over its fill once a second, so it plainly reads as listening (still under reduced motion). |
-| **Voice meter** | ✅ **Decision (Nov 6, 2026, user's report: "it doesn't respond to my voice right away"):** a red halo behind the button swells with the voice from the first syllable, before any words return (about a second later); none in silence, none under reduced motion. |
+| **Spoken punctuation** | Saying "comma" writes ", ", "period" writes ". " and "question mark" writes "? " (the mark against the word before it, a space after), and the word after a period or question mark starts with a capital. Any word "period" is taken as the mark, as dictation software does. A sentence that starts with a question word (what, why, how, when, where, who, which) or a verb that opens a yes/no question (is, are, do, does, did, can, could, should, would, will, has, have…) is a question: its "period" becomes "?", and an unfinished question gets "?" as soon as recognition settles with nothing more being said (it goes again if the sentence carries on), and when it's sent or dictation ends. A request ("Show me her labs") doesn't. Lead-in words are skipped to find where the question starts ("Okay so…", "Intercept, can you tell me how is Emily doing" → "Can you tell me how is Emily doing?"), and a statement with a question tag at its end is a question too ("…her lactate is down, right?", "…isn't it?"). After "Hey" wakes it, a leading "Intercept" is the wake phrase's and is left out. Typing ends dictation without adding one. ℹ️ Other marks ("exclamation point", "new line") aren't recognized yet. |
+| **Listening state** | The button turns Flat · Destructive (pale red fill, red icon) with the `mic-off` icon (archielabs.ds `6346:10225`), pressed, named "Stop dictating"; a darker red breathes in and out over its fill once a second, so it plainly reads as listening (still under reduced motion). |
+| **Voice meter** | A red halo behind the button swells with the voice from the first syllable, before any words return (about a second later); none in silence, none under reduced motion. |
 | **Pauses** | Recognition ends itself after a silence and restarts at once, so the first words after a pause aren't lost. |
-| **"Send" / "Submit"** | ✅ **Decision (Nov 6, 2026, user's call):** saying "send" or "submit" as the last word sends the message, as the Send button does, without the word, and dictation goes on. It acts once recognition has settled on the word (about half a second after it's said), so "send me the labs" never sends early; meanwhile the word never shows in the field (Nov 6, 2026, user's call), and comes back only if more words follow it. Said alone with nothing in the field, it's dropped. ℹ️ A question that really ends in "send" is sent without that word. |
-| **Stays on** | ✅ **Decision (Nov 6, 2026, user's call):** dictation keeps listening until the clinician ends it. Sending (Send, Enter or "send") sends and clears the field, and it goes on listening for the next message. Typing doesn't stop it either: what's said next goes after what's typed. Escape doesn't stop it; it closes the panel, which ends it. |
+| **"Send" / "Submit"** | Saying "send" or "submit" as the last word sends the message, as the Send button does, without the word, and dictation goes on. It acts once recognition has settled on the word (about half a second after it's said), so "send me the labs" never sends early; meanwhile the word never shows in the field (Nov 6, 2026, user's call), and comes back only if more words follow it. Said alone with nothing in the field, it's dropped. ℹ️ A question that really ends in "send" is sent without that word. |
+| **Stays on** | Dictation keeps listening until the clinician ends it. Sending (Send, Enter or "send") sends and clears the field, and it goes on listening for the next message. Typing doesn't stop it either: what's said next goes after what's typed. Escape doesn't stop it; it closes the panel, which ends it. |
 | **Stop** | The microphone again, or saying "stop listening" (without the words, which never show in the field, even while recognition is still guessing; a spoken question gets its "?"). Closing the panel ends it too. |
-| **"Delete"** | ✅ **Decision (Nov 6, 2026, user's call):** saying "delete" removes the word before it, one word per "delete" (a spoken mark such as "comma" counts as a word). Once the dictated words are gone, it removes the field's own words, from the end. It acts at once, as recognition hears it. ℹ️ Any word "delete" is taken as the command, as with "period". |
+| **"Delete"** | Saying "delete" removes the word before it, one word per "delete" (a spoken mark such as "comma" counts as a word). Once the dictated words are gone, it removes the field's own words, from the end. It acts at once, as recognition hears it. ℹ️ Any word "delete" is taken as the command, as with "period". |
 | **Blocked microphone** | Dictation stops and a line under the field says "Allow the microphone to dictate." (or "Dictation isn't working right now. Try again." for other failures), until the clinician tries again, types or sends. |
 | **No speech recognition** | In browsers without it (Firefox), the microphone button isn't shown. |
 
 ### CC-032 — Voice conversation
 
-✅ **Decision (Nov 6, 2026, user's call):** not in Ask Intercept Live; its voice button is removed, and dictation (CC-031) is the spoken way in. The component keeps `onVoice` for other apps. Had it been built: a spoken conversation with the agent, answers read aloud, with CC-031's policy questions plus how a spoken answer cites its sources.
+Not in Ask Intercept Live; its voice button is removed, and dictation (CC-031) is the spoken way in. The component keeps `onVoice` for other apps. Had it been built: a spoken conversation with the agent, answers read aloud, with CC-031's policy questions plus how a spoken answer cites its sources.
 
 ### CC-040 — Suggested questions
 
-Shown under the greeting until the first question, as pills; picking one sends it. ✅ **Decision (Nov 10, 2026, user's call): they keep going.** After an answer with no follow-ups of its own (the shift brief, for example), up to 4 of the suggestions not asked yet show under it, as follow-ups, in the same order.
+Shown under the greeting until the first question, as pills; picking one sends it. **They keep going.** After an answer with no follow-ups of its own (the shift brief, for example), up to 4 of the suggestions not asked yet show under it, as follow-ups, in the same order.
 
 | Where | Suggestions |
 |---|---|
 | **Census and other pages, starting the shift** | (its first 2 hours; a shift is 12 hours, from the end time in the app header) "Brief me for the start of my shift", "What happened overnight?", "Who needs attention first?", "What's overdue?", "Which patients are sepsis candidates?", "What changed in the last hour?" |
-| **Census and other pages, on shift a while** | (✅ Nov 10, 2026, user's call) "What changed in the last hour?", "Who needs attention first?", "Which alerts are still open?", "What's overdue?", "Any results still pending?", "Which patients are sepsis candidates?" |
-| **A patient's page** | By the patient's first name: "Summarize Sarah's last 24 hours", "What changed for Sarah since I last looked?", "Show Sarah's latest labs", "What meds is Sarah on?", "Show Sarah's sepsis criteria" (labs and meds added Nov 2, 2026, user's call) (✅ Nov 2, 2026, user's call: the chat opened about a patient talks about them) |
+| **Census and other pages, on shift a while** | "What changed in the last hour?", "Who needs attention first?", "Which alerts are still open?", "What's overdue?", "Any results still pending?", "Which patients are sepsis candidates?" |
+| **A patient's page** | By the patient's first name: "Summarize Sarah's last 24 hours", "What changed for Sarah since I last looked?", "Show Sarah's latest labs", "What meds is Sarah on?", "Show Sarah's sepsis criteria" (labs and meds added Nov 2, 2026, user's call) (the chat opened about a patient talks about them) |
 
-✅ **Resolved in part (Nov 10, 2026, user's call):** suggestions adapt to the time of shift (starting it, or on it a while). ℹ️ The 12-hour shift and the 2-hour start are the prototype's; the real shift comes from staffing. ⚠️ **Decision needed:** whether they also adapt to role or what's open on the census (CC-OD-01).
+Suggestions adapt to the time of shift (starting it, or on it a while). ℹ️ The 12-hour shift and the 2-hour start are the prototype's; the real shift comes from staffing. ⚠️ **Decision needed:** whether they also adapt to role or what's open on the census (CC-OD-01).
 
 ### CC-041 — How answers arrive
 
 | Moment | Behavior |
 |---|---|
-| **First open** | Once the panel has opened, Intercept greets the clinician, streaming: "Have a question about your patients? Just ask. Intercept Live helps you find the answers you need." About a patient (their app header's sparkle): "Have a question about Sarah Miller? Just ask. Intercept Live can sum up their day, what changed, their labs and meds." Before the first question, a change of who the chat is about greets again, so the greeting and suggestions always match the context (✅ Nov 2, 2026, user's call) |
+| **First open** | Once the panel has opened, Intercept greets the clinician, streaming: "Have a question about your patients? Just ask. Intercept Live helps you find the answers you need." About a patient (their app header's sparkle): "Have a question about Sarah Miller? Just ask. Intercept Live can sum up their day, what changed, their labs and meds." Before the first question, a change of who the chat is about greets again, so the greeting and suggestions always match the context |
 | **Sent** | The question shows at once, right-aligned. |
 | **Thinking** | "Thinking…" with a soft pulse, for about a second. Stop is already available. |
 | **Streaming** | The answer arrives in short bursts of a few words, pausing briefly after a sentence, with a blinking cursor at its end. |
@@ -236,10 +236,10 @@ Shown under the greeting until the first question, as pills; picking one sends i
 | **Cites its sources** | Every answer names where its facts come from ("Sources: Monitor · Lab · MAR"); times are relative ("35 min ago"). ⚠️ **Gap:** sources are named, not linked; a citation should open its source and its place on the Timeline (PD-100, CC-OD-08). |
 | **Retrieves, never advises** | A request for a diagnosis, a treatment or a dose gets: "I can't recommend a treatment or make a diagnosis. I can bring up the data behind the decision, like a trend, the latest results or the sepsis criteria." (Spec §8.7) |
 | **Honest about thin data** | A question the chart can't answer gets "I don't have enough information…" with what it can answer (Spec §9.1, Principle 12). Missing values say they're missing, never zero. |
-| **Patient names stand out** | A patient's name is always bold, full ("**Miller, Sarah**") or first ("**Sarah**"). ✅ **Decision (Nov 10, 2026, user's call):** a list whose lines start with a patient (Breathing support, infusions, safety…) shows each patient's avatar before their line, as on their card, in place of the bullet, formatted as the rows of a count's patient list: the name (semibold) and, in grey under it, where they are (hospital, unit and bed), with the avatar centered beside both; then what the answer says about them below, lined up with the name. |
-| **Readable** | Short paragraphs and lists; long lists stop at 8 with "…and 3 more". ✅ **Decision (Nov 10, 2026, user's calls):** that line ends with **Show all**, which expands the same list in place with only the patients it hadn't shown (no new question); the line goes once they're shown. |
-| **Follow-ups on recent activity** | ✅ **Decision (Nov 10, 2026, user's call):** an answer about what happened (the last hour, the last 12 hours, overnight) offers what a physician reviewing it asks next: "Who needs attention first?", "Which alerts are still open?", "What's overdue?", "Any results still pending?", then the other window ("What changed in the last hour?" after the 12 hours, "What happened overnight?" after the hour), each in the same scope (a hospital, a unit, my patients). |
-| **Counts open their patients** | ✅ **Decision (Nov 10, 2026, user's call):** a count of patients in an answer ("5 ventilated", "1 on NIV", "5 on pressors", "2 with open alerts", "8 assigned to you") is a link once the answer is written: a click lists those patients under its line (their avatar as on their card, then the name, then hospital, unit and bed; avatars Nov 10, 2026, user's call), another hides them, and a patient opens their details. A count of none stays plain text. Today the census overview's counts link; ℹ️ other answers' counts can link the same way. |
+| **Patient names stand out** | A patient's name is always bold, full ("**Miller, Sarah**") or first ("**Sarah**"). A list whose lines start with a patient (Breathing support, infusions, safety…) shows each patient's avatar before their line, as on their card, in place of the bullet, formatted as the rows of a count's patient list: the name (semibold) and, in grey under it, where they are (hospital, unit and bed), with the avatar centered beside both; then what the answer says about them below, lined up with the name. |
+| **Readable** | Short paragraphs and lists; long lists stop at 8 with "…and 3 more". That line ends with **Show all**, which expands the same list in place with only the patients it hadn't shown (no new question); the line goes once they're shown. |
+| **Follow-ups on recent activity** | An answer about what happened (the last hour, the last 12 hours, overnight) offers what a physician reviewing it asks next: "Who needs attention first?", "Which alerts are still open?", "What's overdue?", "Any results still pending?", then the other window ("What changed in the last hour?" after the 12 hours, "What happened overnight?" after the hour), each in the same scope (a hospital, a unit, my patients). |
+| **Counts open their patients** | A count of patients in an answer ("5 ventilated", "1 on NIV", "5 on pressors", "2 with open alerts", "8 assigned to you") is a link once the answer is written: a click lists those patients under its line (their avatar as on their card, then the name, then hospital, unit and bed; avatars Nov 10, 2026, user's call), another hides them, and a patient opens their details. A count of none stays plain text. Today the census overview's counts link; ℹ️ other answers' counts can link the same way. |
 | **One tenant** | Answers only about patients the clinician has access to, in this tenant (PRD PD-AC-15). |
 
 ### CC-050 — Context

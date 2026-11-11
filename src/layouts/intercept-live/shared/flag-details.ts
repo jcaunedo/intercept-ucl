@@ -1,4 +1,5 @@
 import type { PatientCardTag, PatientCardTagDetails } from "@/components/cards/patient-census-card";
+import type { TagsPopoverActionResolver } from "@/components/overlays/tags-popover";
 
 import type { PatientInfusion, PatientRecord, PatientVentilator } from "../patient-details/patient-details";
 import { isPressorFlag, pressorPattern } from "./pressors";
@@ -102,11 +103,12 @@ const noRecordDetails: PatientCardTagDetails = { description: noRecordText };
 
 /**
  * One flag's popover, from the patient's record: what's behind it, or `noRecordDetails` when the record has nothing.
- * `undefined` only without a record.
+ * `undefined` only without a record. Its `subject` is the patient, so the app's TagsPopoverActionsProvider knows whose
+ * flag it is (`fallPathwayActions`).
  */
 function flagDetails(label: string, record?: PatientRecord): PatientCardTagDetails | undefined {
 	if (!record) return undefined;
-	return recordDetails(label, record) ?? noRecordDetails;
+	return { ...(recordDetails(label, record) ?? noRecordDetails), subject: record.id };
 }
 
 /**
@@ -263,7 +265,7 @@ function withFlagDetails<Patient extends { id: string; tags?: PatientCardTag[] }
 		return {
 			...patient,
 			tags: patient.tags.map((tag) => {
-				const details = tag.details ?? flagDetails(tag.label, record);
+				const details = tag.details ? { ...tag.details, subject: tag.details.subject ?? patient.id } : flagDetails(tag.label, record);
 				return details ? { ...tag, details } : tag;
 			}),
 		};
@@ -290,40 +292,40 @@ function flagSummary(tags: PatientCardTag[] = [], record?: PatientRecord) {
 	};
 }
 
+/** Whether an alert's pathway is a fall prevention pathway: a bed sensor alert's is (`samplePathway`). */
+const isFallPathwayAlert = (alert: Pick<TriageAlert, "source">) => alert.source.name === "Bed sensor";
+
 /**
  * The alert whose pathway is the patient's fall prevention pathway: their newest Bed sensor alert, open ones first (the
  * fall prevention pathway is what a bed sensor alert suggests, `samplePathway`). Undefined when they have none.
  */
 function fallPathwayAlert(patientId: string, alerts: TriageAlert[]) {
 	return alerts
-		.filter((alert) => alert.patientId === patientId && alert.source.name === "Bed sensor")
+		.filter((alert) => alert.patientId === patientId && isFallPathwayAlert(alert))
 		.sort((a, b) => Number(isOpenAlert(b)) - Number(isOpenAlert(a)) || b.firedAt.localeCompare(a.firedAt))[0];
 }
 
+/** Fall risk's button: the patient's fall prevention pathway. */
+const fallPathwayLabel = "View fall prevention pathway";
+
 /**
- * The Fall risk flag's link to the patient's fall prevention pathway (Nov 10, 2026, user's call): "View fall prevention
- * pathway", a button at the popover's bottom, when the patient has one (`fallPathwayAlert`). `openPathway` opens it, by its
- * alert: the patient's page with its Pathway panel there, or the panel itself on that page. Other flags are unchanged.
+ * The Fall risk flag's button to the patient's fall prevention pathway (Nov 10, 2026, user's call), for the app's
+ * TagsPopoverActionsProvider: "View fall prevention pathway" at the bottom of every Fall risk popover, on the cards, the
+ * patient's page and the alert modal alike (Nov 11, 2026, user's call: it belongs to the popover, not to each page), when
+ * the patient has one (`fallPathwayAlert`). `openPathway` opens it by the patient and its alert. Other flags get nothing
+ * from it; `fallback` (the provider around this one) answers for them.
  */
-function withFallPathwayLink(
-	tags: PatientCardTag[] | undefined,
-	patientId: string,
+function fallPathwayActions(
 	alerts: TriageAlert[],
-	openPathway: ((alertId: string) => void) | null | undefined,
-): PatientCardTag[] | undefined {
-	const alert = openPathway && fallPathwayAlert(patientId, alerts);
-	if (!tags || !alert) return tags;
-	return tags.map((tag) =>
-		tag.label === "Fall risk" && tag.details
-			? {
-					...tag,
-					details: {
-						...tag.details,
-						action: { label: "View fall prevention pathway", onSelect: () => openPathway(alert.id) },
-					},
-				}
-			: tag,
-	);
+	openPathway: (patientId: string, alertId: string) => void,
+	fallback?: TagsPopoverActionResolver | null,
+): TagsPopoverActionResolver {
+	return (tag) => {
+		const patientId = tag.details.subject;
+		const alert = tag.label === "Fall risk" && patientId ? fallPathwayAlert(patientId, alerts) : undefined;
+		if (!alert || !patientId) return fallback?.(tag);
+		return { label: fallPathwayLabel, onSelect: () => openPathway(patientId, alert.id) };
+	};
 }
 
-export { bedsideChanges, fallPathwayAlert, flagDetails, flagSummary, withFallPathwayLink, withFlagDetails };
+export { bedsideChanges, fallPathwayActions, fallPathwayAlert, fallPathwayLabel, isFallPathwayAlert, flagDetails, flagSummary, withFlagDetails };

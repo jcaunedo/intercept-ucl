@@ -62,7 +62,6 @@ import {
 } from "../shared/patient-panel";
 import { usePagePreferences } from "../page-preferences";
 import { usePatientNavigation } from "../patient-navigation";
-import { withFallPathwayLink } from "../shared/flag-details";
 import {
 	compareTriageAlerts,
 	isOpenAlert,
@@ -629,17 +628,8 @@ function MonitoringPanel({
 			// monitor alone; a patient without tags says "No tags", so the cards line up.
 			acuity={monitorView === "minimal" ? undefined : acuity}
 			trajectory={monitorView === "minimal" ? undefined : trajectory}
-			// Fall risk links to the patient's fall prevention pathway, on their page (Nov 10, 2026, user's call).
-			tags={
-				monitorView === "minimal"
-					? undefined
-					: (withFallPathwayLink(
-							tags,
-							id,
-							alerts,
-							navigation && ((alertId) => navigation.openPatient(id, undefined, { pathway: { alertId } })),
-						) ?? [])
-			}
+			// Fall risk's button to the fall prevention pathway comes from the app's TagsPopoverActionsProvider.
+			tags={monitorView === "minimal" ? undefined : (tags ?? [])}
 			alert={cardAlert(id)}
 			size={density === "compact" ? "sm" : "md"}
 			plot={plot}

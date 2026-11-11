@@ -319,7 +319,17 @@ export {
 	PopoverTitle,
 	PopoverTrigger,
 } from "@/components/overlays/popover";
-export { TagsPopover, TagsPopoverGroup, type TagsPopoverDetails, type TagsPopoverProps } from "@/components/overlays/tags-popover";
+export {
+	TagsPopover,
+	TagsPopoverActionsProvider,
+	TagsPopoverGroup,
+	useTagsPopoverActions,
+	type TagsPopoverAction,
+	type TagsPopoverActionRequest,
+	type TagsPopoverActionResolver,
+	type TagsPopoverDetails,
+	type TagsPopoverProps,
+} from "@/components/overlays/tags-popover";
 export {
 	Dialog,
 	DialogClose,

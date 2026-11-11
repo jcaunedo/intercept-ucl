@@ -38,6 +38,11 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { Textarea } from "@/components/forms/textarea";
 import { AlertModal, AlertModalClose } from "@/components/overlays/alert-modal";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/overlays/dialog";
+import {
+	TagsPopoverActionsProvider,
+	useTagsPopoverActions,
+	type TagsPopoverActionResolver,
+} from "@/components/overlays/tags-popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { useCurrentSecond } from "@/lib/hooks/use-current-second";
@@ -69,7 +74,7 @@ import {
 import { CarePlanCard, type PatientCarePlan } from "../patient-details/activity";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { RoomScene, RoomVideo, type RoomEquipment } from "../patient-details/sections/camera-section";
-import { withFlagDetails } from "../shared/flag-details";
+import { fallPathwayLabel, isFallPathwayAlert, withFlagDetails } from "../shared/flag-details";
 import {
 	CarePathwayPanel,
 	Expand,
@@ -1828,8 +1833,27 @@ function AlertPanelContent({
 	}, [pathwayOpen]);
 	const alertFlag = findingsFlag(data);
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
+	// Fall risk's button (the app's, TagsPopoverActionsProvider): when this alert's pathway is the patient's fall
+	// prevention pathway, it opens here, in the Pathway panel beside the alert, as Pathway on the score line does
+	// (Nov 11, 2026, user's call). Otherwise the app's answer stands (the patient's page with that pathway out).
+	const appTagActions = useTagsPopoverActions();
+	const ownFallPathway = hasPathway && isFallPathwayAlert(data.alert);
+	const tagActions = React.useCallback<TagsPopoverActionResolver>(
+		(tag) =>
+			ownFallPathway && tag.label === "Fall risk" && tag.details.subject === data.alert.patientId
+				? {
+						label: fallPathwayLabel,
+						onSelect: () => {
+							setFocusMessages(false);
+							setSidePanel("pathway");
+						},
+					}
+				: appTagActions?.(tag),
+		[ownFallPathway, data.alert.patientId, appTagActions],
+	);
 
 	return (
+		<TagsPopoverActionsProvider resolve={tagActions}>
 		<AlertModal
 			{...expandedContent(data, lifecycle.status)}
 			monitor={connectionMonitor.monitor}
@@ -1964,6 +1988,7 @@ function AlertPanelContent({
 		>
 			{lifecycle.formNode}
 		</AlertModal>
+		</TagsPopoverActionsProvider>
 	);
 }
 

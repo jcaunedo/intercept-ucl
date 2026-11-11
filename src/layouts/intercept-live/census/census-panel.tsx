@@ -41,7 +41,6 @@ import {
 	type SortOrderId,
 } from "../shared/patient-panel";
 import { usePatientNavigation } from "../patient-navigation";
-import { withFallPathwayLink } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
 import { LiveFeed, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
 import { isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
@@ -291,13 +290,6 @@ function CensusPanel({
 			{...card}
 			initials={patientInitials(card)}
 			tone={tones.get(id) ?? avatarTone(id)}
-			// Fall risk links to the patient's fall prevention pathway, on their page (Nov 10, 2026, user's call).
-			tags={withFallPathwayLink(
-				card.tags,
-				id,
-				alerts,
-				navigation && ((alertId) => navigation.openPatient(id, undefined, { pathway: { alertId } })),
-			)}
 			size={density === "compact" ? "sm" : "md"}
 			// The "…" menu on hover, as on Monitoring's cards (Nov 3, 2026, user's call). The card shows no alert, so no
 			// View alert.

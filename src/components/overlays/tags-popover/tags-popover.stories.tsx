@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
-import { TagsPopover, TagsPopoverGroup } from "./tags-popover";
+import { TagsPopover, TagsPopoverActionsProvider, TagsPopoverGroup } from "./tags-popover";
 
 // Times relative to when the story loads, so "1 min ago" reads the same in every session.
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -158,6 +158,52 @@ export const WithAction: Story = {
 		await userEvent.click(popover.getByRole("button", { name: "View fall prevention pathway" }));
 		await expect(args.details.action?.onSelect).toHaveBeenCalled();
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Fall risk" })).not.toBeInTheDocument());
+	},
+};
+
+// The app's one answer for every Fall risk tag, wherever it shows (WithActionsProvider).
+const openFallPathway = fn();
+
+/**
+ * From a TagsPopoverActionsProvider (Nov 11, 2026, user's call: the button belongs to the popover, not to each page): the
+ * app wraps itself once and every TagsPopover inside asks it for its button by label and `subject` (the patient). Here
+ * both Fall risk tags get "View fall prevention pathway" without an `action` of their own; DNR gets none.
+ */
+export const WithActionsProvider: Story = {
+	args: {
+		label: "Fall risk",
+		details: {
+			items: [{ label: "Morse Fall Scale", value: "55, high risk" }],
+			source: "Nursing assessment",
+			updatedAt: minutesAgo(300),
+			subject: "p2",
+		},
+	},
+	render: (args) => (
+		<TagsPopoverActionsProvider
+			resolve={({ label, details }) =>
+				label === "Fall risk" && details.subject
+					? { label: "View fall prevention pathway", onSelect: () => openFallPathway(details.subject) }
+					: undefined
+			}
+		>
+			<TagsPopoverGroup>
+				<div className='flex gap-2'>
+					<TagsPopover {...args} />
+					<TagsPopover label='DNR' details={{ items: [{ label: "Code status", value: "DNR" }], subject: "p2" }} />
+				</div>
+			</TagsPopoverGroup>
+		</TagsPopoverActionsProvider>
+	),
+	play: async ({ canvas }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "DNR" }));
+		const dnr = within(await screen.findByRole("dialog", { name: "DNR" }));
+		await expect(dnr.queryByRole("button", { name: "View fall prevention pathway" })).not.toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		await userEvent.click(canvas.getByRole("button", { name: "Fall risk" }));
+		const popover = within(await screen.findByRole("dialog", { name: "Fall risk" }));
+		await userEvent.click(popover.getByRole("button", { name: "View fall prevention pathway" }));
+		await expect(openFallPathway).toHaveBeenCalledWith("p2");
 	},
 };
 

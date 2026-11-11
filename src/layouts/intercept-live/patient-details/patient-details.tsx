@@ -21,13 +21,14 @@ import type { MonitorLimits, MonitorTrends, MonitorVitals, PatientMonitorProps }
 import type { AvatarFallbackProps } from "@/components/data-display/avatar";
 import { PatientHeader, type PatientHeaderProps } from "@/components/data-display/patient-header";
 import { EmptyState } from "@/components/feedback/empty-state";
+import { TagsPopoverActionsProvider, useTagsPopoverActions } from "@/components/overlays/tags-popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/navigation/tabs";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { useMotionPreference } from "@/lib/motion";
 
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
-import { flagDetails, withFallPathwayLink } from "../shared/flag-details";
+import { fallPathwayActions, flagDetails } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
 import type { AlertConsultState, AlertDetailData, PatientConsultData } from "../alert-panel/alert-panel";
 import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-panel/care-pathway";
@@ -649,6 +650,20 @@ function PatientDetailsContent({
 	const openPathwayPanel = useOpenPathwayPanel();
 	const openAlertsPanel = useOpenAlertsPanel();
 	const alertPathway = useAlertPathwayPanel();
+	const appTagActions = useTagsPopoverActions();
+	const fallPathwayInPlace = React.useMemo(
+		() =>
+			consult && pathways
+				? fallPathwayActions(
+						alerts,
+						(patientId, alertId) => {
+							if (patientId === patient.id && alertPathway.shownAlertId !== alertId) alertPathway.toggle(alertId);
+						},
+						appTagActions,
+					)
+				: (appTagActions ?? (() => undefined)),
+		[consult, pathways, alerts, patient.id, alertPathway, appTagActions],
+	);
 	const pathwayDetail = pathways?.details[0];
 	const [pathwayStatus] = useSessionState<CarePathwayStatus>(
 		pathwaySessionKey(pathwayDetail?.alert.id ?? "", "status"),
@@ -704,6 +719,9 @@ function PatientDetailsContent({
 	}, [patient]);
 
 	return (
+		// Fall risk's button (the app's, TagsPopoverActionsProvider) opens this patient's fall prevention pathway in the
+		// page's Pathway panel, in place, rather than opening the page again (Nov 10, 2026, user's call).
+		<TagsPopoverActionsProvider resolve={fallPathwayInPlace}>
 		<main data-patient-id={patient.id} className='flex flex-1 flex-col'>
 			<p aria-live='polite' className='sr-only'>
 				{announcement}
@@ -753,17 +771,7 @@ function PatientDetailsContent({
 				room={patient.room}
 				bed={patient.bed}
 				details={details}
-				// Fall risk's link opens the fall prevention pathway in the page's Pathway panel (Nov 10, 2026, user's call).
-				tags={withFallPathwayLink(
-					patientBadges(patient, record),
-					patient.id,
-					alerts,
-					consult && pathways
-						? (alertId) => {
-								if (alertPathway.shownAlertId !== alertId) alertPathway.toggle(alertId);
-							}
-						: undefined,
-				)}
+				tags={patientBadges(patient, record)}
 				acuity={patient.acuity}
 				trajectory={patient.trajectory}
 				alert={alertPill(alerts)}
@@ -825,6 +833,7 @@ function PatientDetailsContent({
 				})}
 			</Tabs>
 		</main>
+		</TagsPopoverActionsProvider>
 	);
 }
 

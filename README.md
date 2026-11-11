@@ -209,10 +209,10 @@ When you work on a component or layout with Claude Code, the design decisions yo
 **What Claude Code does:**
 
 1. **Finds the PRD that covers the work.** It searches `prds/` for the file's path, the component's name (under **Component:**) or the screen it belongs to. A component is often covered by the PRD of the screen that uses it, e.g. the Patient card → [patient-card.md](prds/patient-card.md). There's no rule that every component gets its own PRD.
-2. **Updates it in the same change:** rewrites the rule where it's described, adds a dated ✅ note saying who decided (`✅ **Decision (Nov 6, 2026, design):** …`), closes or rewords any ⚠️ note or open question the decision answers, and updates both `Last updated` lines.
+2. **Updates it in the same change:** rewrites the rule where it's described, adds a ✅ note tagged just `✅ **Resolved:**` (no date, no who decided, no ID; see [CONVENTIONS.md → PRD writing](CONVENTIONS.md)), strikes through any earlier decision it replaces, closes or rewords any ⚠️ note or open question the decision answers, and updates both `Last updated` lines.
 3. **Asks when no PRD covers the work:** create a dedicated PRD, or add a section to an existing one. It never creates a PRD on its own.
 4. **Names the PRD it updated** in its reply, so you can review the change.
-5. **Keeps the trace:** cites the requirement IDs the decision touches in the note and the commit, and adds new terms to the glossary.
+5. **Keeps the trace:** cites the requirement IDs the decision touches in the commit, and adds new terms to the glossary.
 
 ℹ️ When you edit code without Claude Code, follow the same steps by hand.
 

@@ -36,6 +36,7 @@ import {
 	type AppHeaderUser,
 } from "@/components/navigation/app-header";
 import { Sidebar, type SidebarAlert, type SidebarNavItem } from "@/components/navigation/sidebar";
+import { TagsPopoverActionsProvider } from "@/components/overlays/tags-popover";
 import {
 	DropdownMenuCheckboxItem,
 	DropdownMenuGroup,
@@ -57,6 +58,8 @@ import {
 import { cn } from "@/lib/utils";
 
 import { ConsultSessionProvider } from "./alert-panel/consult-session";
+import type { TriageAlert } from "./monitoring/triage-queue";
+import { fallPathwayActions } from "./shared/flag-details";
 import { AskInterceptPanel, type AskInterceptNotice, type AskInterceptResponder } from "./ask-intercept-panel";
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
@@ -294,6 +297,12 @@ type InterceptLiveProps = {
 	 * patient's details.
 	 */
 	renderAlert?: (target: OpenAlert, controls: AlertControls) => React.ReactNode;
+	/**
+	 * The app's alerts, for the flags whose popover leads to an alert's pathway: Fall risk's "View fall prevention
+	 * pathway", wherever the flag shows (cards, the patient's page, the alert modal), when the patient has a bed sensor
+	 * alert. It opens the patient's page with that pathway out. Without them, no flag has the button.
+	 */
+	alerts?: TriageAlert[];
 	/** A patient whose details show first, over `defaultPage`, with the list to step through. */
 	defaultPatient?: OpenPatient;
 	/**
@@ -389,6 +398,7 @@ function InterceptLive({
 	defaultPage = "Monitoring",
 	renderPatientDetails,
 	renderAlert,
+	alerts,
 	defaultPatient,
 	defaultAlert,
 	onLocationChange,
@@ -677,6 +687,19 @@ function InterceptLive({
 			alertPatientId,
 		],
 	);
+	// Fall risk's button (Nov 11, 2026, user's call: the popover's, wherever it shows): the patient's page with the fall
+	// prevention pathway out, from a card or the alert modal (which closes). The patient's page and the alert modal open
+	// it in place instead when they can (`fallPathwayActions` providers of their own).
+	const tagActions = React.useMemo(
+		() =>
+			alerts && renderPatientDetails
+				? fallPathwayActions(alerts, (patientId, alertId) => {
+						setOpenAlert((current) => (current ? { ...current, open: false } : current));
+						setOpenPatient({ id: patientId, pathway: { alertId } });
+					})
+				: () => undefined,
+		[alerts, renderPatientDetails],
+	);
 	const openAlertPatient = (patientId: string) => {
 		setOpenAlert((current) => (current ? { ...current, open: false } : current));
 		if (renderPatientDetails) setOpenPatient({ id: patientId });
@@ -753,6 +776,8 @@ function InterceptLive({
 
 	return (
 		<PatientNavigationProvider value={navigation}>
+			{/* Flags' popover buttons, for every TagsPopover in the app: Fall risk's fall prevention pathway. */}
+			<TagsPopoverActionsProvider resolve={tagActions}>
 			{/* A patient's consult (the call, its notetaker, the thread) goes with them between the alert and their page. */}
 			<ConsultSessionProvider>
 			<PagePreferencesProvider value={pagePreferences}>
@@ -937,6 +962,7 @@ function InterceptLive({
 				</PagePanelSlotProvider>
 			</PagePreferencesProvider>
 			</ConsultSessionProvider>
+			</TagsPopoverActionsProvider>
 		</PatientNavigationProvider>
 	);
 }

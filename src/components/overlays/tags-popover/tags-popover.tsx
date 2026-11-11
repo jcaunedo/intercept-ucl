@@ -15,6 +15,15 @@ import {
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
+/** The popover's button to what its flag leads to. */
+type TagsPopoverAction = { label: string; onSelect: () => void };
+
+/** A tag whose popover asks for its button: its label and its details (with their `subject`). */
+type TagsPopoverActionRequest = { label: string; details: TagsPopoverDetails };
+
+/** Gives a tag's popover its button, or `undefined` for none. */
+type TagsPopoverActionResolver = (tag: TagsPopoverActionRequest) => TagsPopoverAction | undefined;
+
 /** What a tag's popover says: what changed lately, what's behind it now, and where that comes from. */
 type TagsPopoverDetails = {
 	/**
@@ -36,9 +45,15 @@ type TagsPopoverDetails = {
 	updatedAt?: string;
 	/**
 	 * A button at the bottom to what the flag leads to, e.g. "View fall prevention pathway" on Fall risk (Nov 10, 2026,
-	 * user's call; intercept.ds `Popover` `1352:13395`). Selecting it closes the popover, then runs `onSelect`.
+	 * user's call; intercept.ds `Popover` `1352:13395`). Selecting it closes the popover, then runs `onSelect`. Without
+	 * one, the nearest TagsPopoverActionsProvider is asked for it, so an app gives a flag its button in one place.
 	 */
-	action?: { label: string; onSelect: () => void };
+	action?: TagsPopoverAction;
+	/**
+	 * Who or what the details are about, e.g. the patient's id. Never shown: it's passed to the nearest
+	 * TagsPopoverActionsProvider, so the app can tell which patient's flag asks for its button.
+	 */
+	subject?: string;
 };
 
 type TagsPopoverProps = {
@@ -174,6 +189,24 @@ type TagsPopoverGroupValue = {
 
 const TagsPopoverGroupContext = React.createContext<TagsPopoverGroupValue | null>(null);
 
+const TagsPopoverActionsContext = React.createContext<TagsPopoverActionResolver | null>(null);
+
+/**
+ * Gives every TagsPopover inside it the button its flag leads to (Nov 11, 2026, user's call: a popover's button belongs
+ * to the popover, wherever it's shown, not to each page that shows the tag). `resolve` gets each tag's label and details
+ * and returns its button, or `undefined` for none; a tag whose details already have an `action` keeps it. Wrap the app
+ * once. A provider inside another can refine a few tags (e.g. open a pathway in place) and leave the rest to
+ * `useTagsPopoverActions()`, the one around it.
+ */
+function TagsPopoverActionsProvider({ resolve, children }: { resolve: TagsPopoverActionResolver; children: React.ReactNode }) {
+	return <TagsPopoverActionsContext.Provider value={resolve}>{children}</TagsPopoverActionsContext.Provider>;
+}
+
+/** The nearest TagsPopoverActionsProvider's `resolve`, or `null` outside one. */
+function useTagsPopoverActions() {
+	return React.useContext(TagsPopoverActionsContext);
+}
+
 /**
  * A row of tags whose popovers work as one (Nov 10, 2026, user's call): one open at a time, and once one is open (a
  * click), moving the mouse onto another tag in the row opens its popover in place of the first, without another click.
@@ -235,6 +268,9 @@ function TagsPopoverGroup({ children }: { children: React.ReactNode }) {
 function TagsPopover({ label, details, variant = "outline", size = "sm" }: TagsPopoverProps) {
 	const id = React.useId();
 	const group = React.useContext(TagsPopoverGroupContext);
+	// The tag's own button, else the app's for this flag (TagsPopoverActionsProvider).
+	const resolveAction = useTagsPopoverActions();
+	const action = details.action ?? resolveAction?.({ label, details });
 	const [ownOpen, setOwnOpen] = React.useState(false);
 	const open = group ? group.openId === id : ownOpen;
 	const setOpen = React.useCallback(
@@ -350,17 +386,17 @@ function TagsPopover({ label, details, variant = "outline", size = "sm" }: TagsP
 					</p>
 				) : null}
 				{/* Last, full width, 16px under the content (the popover's 12px gap plus 4px; intercept.ds `1352:13395`). */}
-				{details.action ? (
+				{action ? (
 					<Button
 						variant='outline'
 						size='sm'
 						className='mt-1 w-full'
 						onClick={() => {
 							close();
-							details.action?.onSelect();
+							action.onSelect();
 						}}
 					>
-						{details.action.label}
+						{action.label}
 					</Button>
 				) : null}
 			</PopoverContent>
@@ -368,4 +404,14 @@ function TagsPopover({ label, details, variant = "outline", size = "sm" }: TagsP
 	);
 }
 
-export { TagsPopover, TagsPopoverGroup, type TagsPopoverDetails, type TagsPopoverProps };
+export {
+	TagsPopover,
+	TagsPopoverActionsProvider,
+	TagsPopoverGroup,
+	useTagsPopoverActions,
+	type TagsPopoverAction,
+	type TagsPopoverActionRequest,
+	type TagsPopoverActionResolver,
+	type TagsPopoverDetails,
+	type TagsPopoverProps,
+};

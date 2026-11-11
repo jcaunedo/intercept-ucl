@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 10, 2026
+Last updated: Nov 11, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -471,7 +471,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **PC-xxx** | A numbered Patient card requirement. | PRD |
 | **PD-xxx** | A numbered Patient details requirement. PD-AC-xx and PD-OD-xx are its acceptance criteria and open decisions. | PRD Patient details |
 | **Scenario ID** | A Patient card scenario code: a layer letter plus a number (A4, S3, V2). Combined to describe one card state, e.g. A4 + S3 + V2. | PRD §15.1 |
-| **Status labels** | In `product-specs/` docs, inline notes start with an emoji and a bold label: ⚠️ for unresolved (**Gap:**, **Decision needed:**, **Risk:**), ✅ for resolved (**Resolved:**, **Confirmed in Figma:**), ℹ️ for information, with no label. | CLAUDE.md |
+| **Status labels** | In `prds/` docs, inline notes start with an emoji and a bold label: ⚠️ for unresolved (**Gap:**, **Decision needed:**, **Risk:**), ✅ for resolved, always just **Resolved:** (no date or who decided), ℹ️ for information, with no label. | CONVENTIONS.md |
 | **UC-xx** | A numbered use case. | PRD §2.2 |
 
 ---
