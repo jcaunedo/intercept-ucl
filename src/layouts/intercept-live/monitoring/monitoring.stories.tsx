@@ -295,8 +295,9 @@ export const Scenario1Resolution: Story = {
 /**
  * The Prototype menu's "Scenario 2: COPD": Dale Reynolds isn't on Monitoring until it's picked; 1.5 s later Alliance's
  * ED requests the hub's consult and he joins with his Critical alert. On the video consult, Alliance's connection drops:
- * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist opens Pathway, accepts the COPD pathway and keeps him at Alliance: air is grounded and the road closed, so there's no
- * transfer to pick. A few seconds later it's 2 h on NIV: both checkpoints pass, his alert resolves (by his nurse) and
+ * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist opens Pathway,
+ * accepts the COPD pathway and keeps him at Alliance: air is grounded and the road closed, so there's no transfer to
+ * pick. A few seconds later it's 2 h on NIV: both checkpoints pass, his alert resolves (by his nurse) and
  * his card settles at NEWS2 5.
  */
 export const Scenario2Copd: Story = {
