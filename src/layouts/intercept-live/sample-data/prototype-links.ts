@@ -2,6 +2,7 @@ import * as React from "react";
 import { PlayIcon } from "lucide-react";
 
 import type { InterceptLivePage, OpenPatient, PrototypeShortcut } from "../intercept-live";
+import { locationStateKeys, parseLocationList, type LocationState } from "../location-state";
 import type { ScenarioId } from "./use-sample-live-feed";
 
 // Story-only: the Sidebar's Prototype menu for the Intercept Live stories (as bethere-ucl's prototype links). Not part
@@ -81,8 +82,23 @@ function resetPrototype() {
 // The page and the open patient, in the address: `?page=census&patient=p15`. Read once when the prototype opens, and
 // kept in step as the user moves, so a copied link opens the same place (Nov 2, 2026, user's call). `alert` (a patient
 // id) opens that patient's alert modal over it, and `consult=1` with its video consult calling, as its Video consult
-// button does (Nov 5, 2026, user's call): `?page=monitoring&alert=p1&consult=1`.
-const locationParams = ["page", "patient", "alert", "consult"] as const;
+// button does (Nov 5, 2026, user's call): `?page=monitoring&alert=p1&consult=1`. Since Nov 11, 2026 (user's call), the
+// patient's tab, the open panels and modals too (`location-state.tsx`): `?page=monitoring&patient=p1&tab=chart&panels=
+// video,messages`, `&alert=p1&alertPanels=video,pathway`, `&side=chat`, `&feed=1`, `&filters=1`. `consult=1` is still
+// read (older links) but no longer written: `alertPanels=video` says it.
+const locationParams = ["page", "patient", "alert", "consult", ...locationStateKeys] as const;
+
+/**
+ * Clears the prototype's place from the story frame's address (not Storybook UI's): the page, patient, alert, tab,
+ * panels and modals an earlier story left there. `onlyInTests`: only when the stories run as tests (Vitest's `test`
+ * mode), where every story of a file shares one address, so a shared link still opens its place in Storybook.
+ */
+function clearPrototypeLocation({ onlyInTests = false } = {}) {
+	if (onlyInTests && import.meta.env.MODE !== "test") return;
+	const url = new URL(window.location.href);
+	for (const name of locationParams) url.searchParams.delete(name);
+	if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
+}
 
 /**
  * The windows whose address holds the story: the story frame itself (`iframe.html?id=…`) and, inside Storybook's UI
@@ -119,14 +135,39 @@ function usePrototypeLocation(pages: readonly InterceptLivePage[], fallback: { p
 		const patient = readParam("patient");
 		const alert = readParam("alert");
 		const consult = readParam("consult");
+		const state: LocationState = {};
+		for (const key of locationStateKeys) {
+			const value = readParam(key);
+			if (value) state[key] = value;
+		}
+		const call = consult === "1" || consult === "true" || parseLocationList(state.alertPanels).includes("video");
 		return {
 			page: page ?? fallback.page,
 			patient: patient ? { id: patient } : fallback.patient,
-			alert: alert ? { patientId: alert, consult: consult === "1" || consult === "true" || undefined } : undefined,
+			alert: alert ? { patientId: alert, consult: call || undefined } : undefined,
+			state,
 		};
 	});
 	const onLocationChange = React.useCallback(
-		({ page, patientId, alert }: { page: InterceptLivePage; patientId?: string; alert?: { patientId: string; consult?: boolean } }) => {
+		({
+			page,
+			patientId,
+			alert,
+			state,
+		}: {
+			page: InterceptLivePage;
+			patientId?: string;
+			alert?: { patientId: string; consult?: boolean };
+			state: LocationState;
+		}) => {
+			// A patient's tab and panels only with their page open, the modal's panels only with the modal: a part still
+			// leaving (its exit animation) doesn't keep them in the address.
+			const shown: LocationState = {
+				...state,
+				tab: patientId ? state.tab : undefined,
+				panels: patientId ? state.panels : undefined,
+				alertPanels: alert ? state.alertPanels : undefined,
+			};
 			for (const target of storyWindows()) {
 				const url = new URL(target.location.href);
 				url.searchParams.set("page", page.toLowerCase());
@@ -134,14 +175,26 @@ function usePrototypeLocation(pages: readonly InterceptLivePage[], fallback: { p
 				else url.searchParams.delete("patient");
 				if (alert) url.searchParams.set("alert", alert.patientId);
 				else url.searchParams.delete("alert");
-				if (alert?.consult) url.searchParams.set("consult", "1");
-				else url.searchParams.delete("consult");
-				if (url.href !== target.location.href) target.history.replaceState(target.history.state, "", url);
+				url.searchParams.delete("consult");
+				for (const key of locationStateKeys) {
+					const value = shown[key];
+					if (value) url.searchParams.set(key, value);
+					else url.searchParams.delete(key);
+				}
+				// Commas read better unescaped (`panels=video,messages`); both forms parse the same.
+				const href = url.href.replace(/%2C/g, ",");
+				if (href !== target.location.href) target.history.replaceState(target.history.state, "", href);
 			}
 		},
 		[],
 	);
-	return { defaultPage: initial.page, defaultPatient: initial.patient, defaultAlert: initial.alert, onLocationChange };
+	return {
+		defaultPage: initial.page,
+		defaultPatient: initial.patient,
+		defaultAlert: initial.alert,
+		defaultLocationState: initial.state,
+		onLocationChange,
+	};
 }
 
-export { prototypeShortcuts, resetPrototype, usePrototypeLocation };
+export { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation };

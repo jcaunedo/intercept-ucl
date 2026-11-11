@@ -60,8 +60,15 @@ import { cn } from "@/lib/utils";
 import { ConsultSessionProvider } from "./alert-panel/consult-session";
 import type { TriageAlert } from "./monitoring/triage-queue";
 import { fallPathwayActions } from "./shared/flag-details";
-import { AskInterceptPanel, type AskInterceptNotice, type AskInterceptResponder } from "./ask-intercept-panel";
+import {
+	AskInterceptPanel,
+	type AskInterceptNotice,
+	type AskInterceptPatientAvatar,
+	type AskInterceptResponder,
+} from "./ask-intercept-panel";
+import { avatarTone, patientInitials } from "./shared/patient-avatar";
 import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
+import { LocationStateProvider, useLocationStateStore, type LocationState } from "./location-state";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
 import { PatientNavigationProvider, type ActiveAlertsRequest, type PatientNavigation } from "./patient-navigation";
 import {
@@ -234,6 +241,8 @@ type PatientDetailsView = {
 	patientList?: PatientListEntry[];
 	/** The patient's tags ("Ventilated"…), for Ask Intercept Live's questions about them. */
 	tags?: string[];
+	/** Their avatar (photo, else initials in their tone), for Ask Intercept Live's patient chip. */
+	avatar?: AskInterceptPatientAvatar;
 };
 
 /** Where the open patient sits in the list it was opened from, to step to the previous or next one (PRD PD-015). */
@@ -312,6 +321,12 @@ type InterceptLiveProps = {
 	 */
 	defaultAlert?: OpenAlert;
 	/**
+	 * The tab, panels and modals open from the start (`location-state.tsx`: `tab`, `panels`, `alertPanels`, `side`,
+	 * `feed`, `filters`), e.g. from a shared link. Each applies to the first part that opens with it: the patient's tab to
+	 * `defaultPatient`'s page, `alertPanels` to `defaultAlert`.
+	 */
+	defaultLocationState?: LocationState;
+	/**
 	 * Where the user is, each time it changes (and once at the start): the Sidebar's page, and the patient whose details
 	 * are open over it, if any. E.g. to keep the address in step, so a shared link opens the same place.
 	 */
@@ -320,6 +335,8 @@ type InterceptLiveProps = {
 		patientId?: string;
 		/** The alert open over it (the alert modal), if any, and whether it was opened with its video consult calling. */
 		alert?: { patientId: string; consult?: boolean };
+		/** The tab, panels and modals open now, each missing at its default (`location-state.tsx`). */
+		state: LocationState;
 	}) => void;
 	/**
 	 * Answers questions in Ask Intercept Live, with the page and the patient on screen. Without it, the chat greets the
@@ -401,6 +418,7 @@ function InterceptLive({
 	alerts,
 	defaultPatient,
 	defaultAlert,
+	defaultLocationState,
 	onLocationChange,
 	askIntercept,
 	askInterceptNotice,
@@ -412,7 +430,7 @@ function InterceptLive({
 	// Collapsed to the rail by default, and always at lg (1024) and below.
 	const { sidebarCollapsed, handleSidebarCollapsedChange } = useLayoutSidebar(true);
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
-	// Patient details open over the page, which stays the Sidebar's active item (PRD PD-001).
+	// Patient details open over the page, which stays mounted underneath (PRD PD-001); the Sidebar shows no item active meanwhile.
 	const [openPatient, setOpenPatient] = React.useState<OpenPatient | null>(defaultPatient ?? null);
 	// The alert modal over everything. The last alert stays after it closes, so the modal can animate out.
 	// `key` counts the openings, so each one starts the modal afresh (its consult, its scroll).
@@ -421,7 +439,14 @@ function InterceptLive({
 	);
 	// The left side panel: Ask Intercept Live (an action, not a page: it leaves the current page as it is) or, on a
 	// patient's page, the patient list. They share the place, so opening one closes the other.
-	const [leftPanel, setLeftPanel] = React.useState<"chat" | "patients" | null>(null);
+	// A shared link's `side` opens one of them (the patient list only with a patient's page).
+	const [leftPanel, setLeftPanel] = React.useState<"chat" | "patients" | null>(() =>
+		defaultLocationState?.side === "chat" || (defaultLocationState?.side === "patients" && defaultPatient)
+			? (defaultLocationState.side as "chat" | "patients")
+			: null,
+	);
+	// The tab, panels and modals the parts report for the address (`location-state.tsx`).
+	const { store: locationStore, state: reportedLocation } = useLocationStateStore(defaultLocationState);
 	const chatOpen = leftPanel === "chat";
 	const setChatOpen = React.useCallback((open: boolean) => setLeftPanel(open ? "chat" : null), []);
 	const toggleLeftPanel = React.useCallback(
@@ -595,13 +620,17 @@ function InterceptLive({
 	onLocationChangeRef.current = onLocationChange;
 	const alertPatientId = openAlert?.open ? openAlert.patientId : undefined;
 	const alertConsult = Boolean(openAlert?.open && openAlert.consult);
+	// The left panel, as it shows: the patient list only on a patient's page.
+	const shownSide = leftPanel === "chat" || (leftPanel === "patients" && openPatientId !== null) ? leftPanel : undefined;
+	const locationState = JSON.stringify({ ...reportedLocation, side: shownSide });
 	React.useEffect(() => {
 		onLocationChangeRef.current?.({
 			page,
 			patientId: openPatientId ?? undefined,
 			alert: alertPatientId ? { patientId: alertPatientId, consult: alertConsult || undefined } : undefined,
+			state: JSON.parse(locationState) as LocationState,
 		});
-	}, [page, openPatientId, alertPatientId, alertConsult]);
+	}, [page, openPatientId, alertPatientId, alertConsult, locationState]);
 	// Each patient whose details open, from a page or stepped to, for the pages' Recently viewed sort.
 	const [viewedAt, setViewedAt] = React.useState<Record<string, string>>({});
 	React.useEffect(() => {
@@ -751,6 +780,16 @@ function InterceptLive({
 			: openPatientId === null
 				? chatPatient.name
 				: undefined;
+	// Their avatar: the open patient's page has it; one from a toast gets their initials in their own tone.
+	const chatPatientAvatar =
+		chatPatientName === undefined || !chatPatient
+			? undefined
+			: chatPatient.id === openPatientId && patientView?.avatar
+				? patientView.avatar
+				: (() => {
+						const [lastName = "", firstName] = chatPatientName.split(", ");
+						return { initials: patientInitials({ lastName, firstName }), tone: avatarTone(chatPatient.id) };
+					})();
 	// Their tags, from the same place as the name.
 	const chatPatientTags =
 		chatPatientName === undefined ? undefined : chatPatient?.id === openPatientId ? patientView?.tags : chatPatient?.tags;
@@ -775,6 +814,7 @@ function InterceptLive({
 			: user;
 
 	return (
+		<LocationStateProvider value={locationStore}>
 		<PatientNavigationProvider value={navigation}>
 			{/* Flags' popover buttons, for every TagsPopover in the app: Fall risk's fall prevention pathway. */}
 			<TagsPopoverActionsProvider resolve={tagActions}>
@@ -788,7 +828,9 @@ function InterceptLive({
 								<Sidebar
 									groups={groups}
 									footerItems={footerItems}
-									activeItem={page}
+									// On a patient's page no item is active: the page underneath isn't what's on screen (Nov 11, 2026, user's
+									// call). An empty string, not undefined, which would fall back to the Sidebar's own last item.
+									activeItem={patientView ? "" : page}
 									onNavigate={(navigateTo) => {
 										setOpenPatient(null);
 										setPage(navigateTo as InterceptLivePage);
@@ -808,6 +850,7 @@ function InterceptLive({
 									context={{
 										page,
 										patientName: chatPatientName,
+										patientAvatar: chatPatientAvatar,
 										patientTags: chatPatientTags,
 										openPatientId: openPatientId ?? undefined,
 										shiftEndsAt,
@@ -964,6 +1007,7 @@ function InterceptLive({
 			</ConsultSessionProvider>
 			</TagsPopoverActionsProvider>
 		</PatientNavigationProvider>
+		</LocationStateProvider>
 	);
 }
 

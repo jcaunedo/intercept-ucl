@@ -35,9 +35,14 @@ import { SidePanel } from "./side-panel";
  * Where the user is when they ask, so an answer can be about the patient on screen. `patientTags` are that patient's
  * tags ("Ventilated"…), for the questions to start with. `openPatientId` is the patient whose page is open, if any.
  */
+/** The chat's patient as its chip shows them: their photo, else their initials in their tone. */
+type AskInterceptPatientAvatar = { photo?: string; initials?: string; tone?: AvatarFallbackProps["tone"] };
+
 type AskInterceptContext = {
 	page: string;
 	patientName?: string;
+	/** The avatar on the patient chip over the message box, in place of "About" (Nov 11, 2026, user's call). */
+	patientAvatar?: AskInterceptPatientAvatar;
 	patientTags?: string[];
 	openPatientId?: string;
 	/** When the user's shift ends, ISO 8601: the questions offered follow where they are in it. */
@@ -77,9 +82,16 @@ type AskInterceptPatientList = {
 
 /**
  * A patient as an answer's list shows them: their avatar as on their card (`photo`, or `initials` in `tone`), and
- * `detail`, where they are ("Sidney Regional · MICU Bed 11"), the grey line under the name.
+ * `detail`, where they are ("Sidney Regional · MICU Bed 11"), the grey line under the name. With `id`, the name opens
+ * their details (Nov 11, 2026, user's call).
  */
-type AskInterceptAvatar = { photo?: string; initials?: string; tone?: AvatarFallbackProps["tone"]; detail?: string };
+type AskInterceptAvatar = {
+	id?: string;
+	photo?: string;
+	initials?: string;
+	tone?: AvatarFallbackProps["tone"];
+	detail?: string;
+};
 
 /**
  * An answer. `text` is plain text with three marks: a line starting "- " is a list item, `**words**` are bold, and
@@ -401,6 +413,7 @@ function AnswerText({
 	onShowMore,
 	linksOn = false,
 	onOpenPatient,
+	onOpenNamedPatient = onOpenPatient,
 	idPrefix = "answer",
 }: {
 	text: string;
@@ -414,6 +427,8 @@ function AnswerText({
 	/** Whether the links work: not while the answer is still streaming. */
 	linksOn?: boolean;
 	onOpenPatient?: (patientId: string) => void;
+	/** A patient's name at the start of a list line, clicked. `onOpenPatient` without it. */
+	onOpenNamedPatient?: (patientId: string) => void;
 	/** Makes the lists' element ids unique on the page. */
 	idPrefix?: string;
 }) {
@@ -531,7 +546,22 @@ function AnswerText({
 										<div className='min-w-0 flex-1'>
 											{name ? (
 												<>
-													<p className='font-semibold text-foreground'>{name}</p>
+													<p className='font-semibold text-foreground'>
+														{/* Opens their details as soon as the name shows, while the answer still streams (the bold name
+														    only appears once whole); the panel then closes and clears, stopping the answer (Nov 11, 2026,
+														    user's calls). */}
+														{onOpenNamedPatient && avatar?.id ? (
+															<button
+																type='button'
+																onClick={() => onOpenNamedPatient(avatar.id!)}
+																className='cursor-pointer rounded-sm text-left underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
+															>
+																{name}
+															</button>
+														) : (
+															name
+														)}
+													</p>
 													{where ? <p className='text-xs text-muted-foreground'>{where}</p> : null}
 												</>
 											) : (
@@ -607,10 +637,13 @@ function CopyButton({ text }: { text: string }) {
 function AssistantMessage({
 	message,
 	onOpenPatient,
+	onOpenNamedPatient,
 	onShowMore,
 }: {
 	message: Extract<ChatMessage, { role: "assistant" }>;
 	onOpenPatient?: (patientId: string) => void;
+	/** A patient's name at the start of a list line, clicked (the chat closes and clears). */
+	onOpenNamedPatient?: (patientId: string) => void;
 	/** Opens the rest of the answer's cut list (`more`), from its "…and 18 more." line. */
 	onShowMore?: () => void;
 }) {
@@ -650,6 +683,7 @@ function AssistantMessage({
 					onShowMore={message.more && message.status === "done" ? onShowMore : undefined}
 					linksOn={message.status === "done"}
 					onOpenPatient={onOpenPatient}
+					onOpenNamedPatient={onOpenNamedPatient}
 					idPrefix={`message-${message.id}`}
 				/>
 			)}
@@ -839,6 +873,13 @@ function AskInterceptPanel({
 		setFollowingAlerts(false);
 		setSkipGreeting(false);
 		stickToBottom.current = true;
+	};
+	// A patient's name in an answer opens their details, and the chat closes and starts over (Nov 11, 2026, user's call:
+	// "chat should close and also clear"), so the page has the room. A count's patient list keeps the chat as it is.
+	const openNamedPatient = (patientId: string) => {
+		onOpenPatient?.(patientId);
+		onOpenChange(false);
+		clearConversation();
 	};
 	const chatCommands: ChatCommand[] = [
 		...commands.map((command) => ({ ...command, hint: commandHint(command.name, context.patientName) })),
@@ -1032,7 +1073,12 @@ function AskInterceptPanel({
 										</p>
 									</div>
 								) : (
-									<AssistantMessage message={message} onOpenPatient={onOpenPatient} onShowMore={() => showMore(message.id)} />
+									<AssistantMessage
+										message={message}
+										onOpenPatient={onOpenPatient}
+										onOpenNamedPatient={onOpenPatient ? openNamedPatient : undefined}
+										onShowMore={() => showMore(message.id)}
+									/>
 								)}
 							</motion.div>
 						))}
@@ -1100,10 +1146,17 @@ function AskInterceptPanel({
 							exit='exit'
 						>
 							<div className='flex pb-2'>
-								{/* `foreground` fill, `on-foreground` text (Oct 31, 2026, user's call); "About" softer than the name. */}
-								<span className='inline-flex min-w-0 items-center gap-1 rounded-full bg-foreground py-0.5 pr-0.5 pl-3 text-sm text-on-foreground'>
-									<span className='truncate'>
-										<span className='text-on-foreground/70'>About </span>
+								{/* `foreground` fill, `on-foreground` text (Oct 31, 2026, user's call). The patient's avatar leads, in place of
+								    "About" (Nov 11, 2026, user's call), 2px in so it sits round in the pill; "About" stays for screen readers. */}
+								<span className='inline-flex min-w-0 items-center gap-1.5 rounded-full bg-foreground py-0.5 pr-0.5 pl-0.5 text-sm text-on-foreground'>
+									{context.patientAvatar ? (
+										<Avatar size='xs' aria-hidden='true' className='shrink-0'>
+											{context.patientAvatar.photo ? <AvatarImage src={context.patientAvatar.photo} alt='' /> : null}
+											<AvatarFallback tone={context.patientAvatar.tone}>{context.patientAvatar.initials}</AvatarFallback>
+										</Avatar>
+									) : null}
+									<span className={cn("truncate", !context.patientAvatar && "pl-2.5")}>
+										<span className='sr-only'>About </span>
 										<span className='font-medium'>{context.patientName}</span>
 									</span>
 									<button
@@ -1144,6 +1197,7 @@ export {
 	type AskInterceptAvatar,
 	type AskInterceptContext,
 	type AskInterceptNotice,
+	type AskInterceptPatientAvatar,
 	type AskInterceptPatientList,
 	type AskInterceptResponder,
 };

@@ -65,12 +65,12 @@ type Story = StoryObj<typeof meta>;
 /**
  * Sarah Miller, opened from the Census (Intercept-Live › Patient Details). The app header turns to its patient variant
  * ("← Census › Miller, Sarah") with Video consult, Messages (3 unread), "…" (Raise concern, Huddle team,
- * Escalate, then Copy link) and "+" (Create: New note, Prepare handoff), then her care team. The Patient Header shows her photo and name,
+ * Escalate, then Admission note and Share patient link) and "+" (Create: New note, Prepare handoff), then her care team. The Patient Header shows her photo and name,
  * then MRN, sex and age, and location, then her flags (organ support, code status only when it limits care, allergy
  * and isolation, all outline). Line tabs: Overview (the AI clinical summary across the top, then her clinical findings:
  * key labs, temperature, MAP and the ventilator; then cards: live monitoring, care plan, Up next, medications, oxygen and
  * infusions, recent orders, encounter and referrals; her alerts are in the Alerts panel, from View alerts), then
- * Vitals, Chart, Timeline, Medications, Orders, Epic, Notes, Sepsis and Camera view. Every Census patient has the same
+ * Vitals, Labs, Timeline, Medications, Orders, Epic, Notes, Sepsis and Camera view. Every Census patient has the same
  * depth of data: go back and open another. Back returns to the Census as it was.
  */
 export const Default: Story = {
@@ -96,15 +96,46 @@ export const Default: Story = {
 };
 
 /**
- * The header's View alerts opens the Alerts panel (Nov 9, 2026, user's call): every alert of the patient, the unresolved
- * at the top, then the resolved; × closes it. Every alert stays (Nov 10, 2026, user's call): her earlier ones, from her
- * record's history, are listed with the resolved, grouped by the day they fired ("Yesterday", "Sunday, Nov 8").
+ * The header's Live feed opens this patient's feed beside the page (Nov 11, 2026, user's calls): a log of everything
+ * that happened to her, newest first by day, her earlier alerts included, not only alerts; × closes it.
+ */
+export const PatientLiveFeed: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
+		// On a patient's page no Sidebar item is active (Nov 11, 2026, user's call).
+		await expect(canvasElement.querySelector("[data-active][aria-current='page']")).toBeNull();
+		const button = canvas.getByRole("button", { name: "Live feed" });
+		await userEvent.click(button);
+		const panel = within(await canvas.findByRole("complementary", { name: "Live feed" }));
+		await expect(button).toHaveAttribute("aria-expanded", "true");
+		const log = within(panel.getByRole("log", { name: "Live feed" }));
+		await expect(log.getAllByRole("heading", { level: 3 })[0]).toHaveTextContent("Today");
+		// Her history stays (the MAP alert 20 h ago), and it isn't only alerts: care, drips, labs and notes are there too.
+		// It fired and was resolved: a line each.
+		await expect(log.getByText(/^Low alert: MAP below 65 for 10 min|alert: MAP below 65 for 10 min$/)).toBeInTheDocument();
+		await expect(log.getByText(/^Resolved: MAP below 65 for 10 min$/)).toBeInTheDocument();
+		const kinds = log.getAllByRole("listitem").map((item) => item.textContent?.split(":")[0]);
+		await expect(kinds.some((kind) => kind !== "Alert")).toBe(true);
+		await expect(panel.queryByText(/Johnson, Daniel/)).toBeNull();
+		// Its filter sits left of ×, as the Messages panel's.
+		await expect(panel.getByRole("button", { name: "Filter live feed" })).toBeInTheDocument();
+		await userEvent.click(panel.getByRole("button", { name: "Close live feed" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Live feed" })).toBeNull());
+	},
+};
+
+/**
+ * The header's alerts button ("2 active alerts") opens the Alerts panel (Nov 9, 2026, user's call): every alert of the
+ * patient, the unresolved at the top, then the resolved; × closes it. Every alert stays (Nov 10, 2026, user's call): her
+ * earlier ones, from her record's history, are listed with the resolved, grouped by the day they fired ("Yesterday",
+ * "Sunday, Nov 8"). Each card's bottom padding matches its sides, 16px (Nov 11, 2026, user's call).
  */
 export const ViewAlertsOpensPanel: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
-		await userEvent.click(canvas.getByRole("button", { name: "View alerts" }));
+		await userEvent.click(canvas.getByRole("button", { name: /^\d+ active alerts?$/ }));
 		const panel = within(await canvas.findByRole("complementary", { name: "Alerts" }));
 		await expect(panel.getByRole("region", { name: "Alerts" })).toBeInTheDocument();
 		await expect(panel.queryByRole("button", { name: /Show resolved/ })).toBeNull();
@@ -112,6 +143,19 @@ export const ViewAlertsOpensPanel: Story = {
 		await expect(panel.getByRole("heading", { name: "MAP below 65 for 10 min" })).toBeInTheDocument();
 		await expect(panel.getByRole("heading", { name: "Lactate 4.1, fever, new infiltrate" })).toBeInTheDocument();
 		await expect(panel.getAllByRole("heading", { level: 3 }).some((heading) => /^(Today|Yesterday)$/.test(heading.textContent ?? ""))).toBe(true);
+		// Each card: as much room under its last line as beside it (16px), resolved ones included.
+		for (const card of panel.getAllByRole("group")) {
+			const content = card.lastElementChild as HTMLElement;
+			const last = [...content.children].filter((child) => (child as HTMLElement).offsetHeight > 0).at(-1) as HTMLElement;
+			const box = card.getBoundingClientRect();
+			await expect(Math.round(box.bottom - last.getBoundingClientRect().bottom)).toBe(16);
+			await expect(Math.round(last.getBoundingClientRect().left - box.left)).toBe(16);
+			// A resolved alert's bar doesn't open it (no maximize icon); an open one's does (Nov 11, 2026, user's call).
+			const resolved = /^Resolved/.test(card.firstElementChild?.textContent ?? "") || /Resolved ·/.test(card.textContent ?? "");
+			const opens = within(card).queryAllByRole("button", { name: /^Open alert/ });
+			if (resolved) await expect(opens).toHaveLength(0);
+		}
+		await expect(panel.queryAllByRole("button", { name: /^Open alert/ }).length).toBeGreaterThan(0);
 		await userEvent.click(panel.getByRole("button", { name: "Close alerts" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Alerts" })).toBeNull());
 	},
@@ -135,7 +179,8 @@ export const BriefOpensAsk: Story = {
 
 /**
  * The Sidebar's Ask Intercept Live on a patient's page opens the chat about that patient (Nov 6, 2026, user's call): the
- * "About Miller, Sarah" chip over the message box, without asking anything for the user.
+ * Miller, Sarah chip over the message box, her avatar leading it (Nov 11, 2026, user's call: in place of "About"),
+ * without asking anything for the user.
  */
 export const SidebarAskInPatientContext: Story = {
 	play: async ({ canvasElement }) => {
@@ -144,7 +189,8 @@ export const SidebarAskInPatientContext: Story = {
 		const sidebar = within(canvas.getByRole("navigation", { name: "Main" }));
 		await userEvent.click(sidebar.getByRole("button", { name: "Ask Intercept Live" }));
 		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
-		await expect(await chat.findByRole("button", { name: "Remove Miller, Sarah from the chat" })).toBeInTheDocument();
+		const remove = await chat.findByRole("button", { name: "Remove Miller, Sarah from the chat" });
+		await expect(remove.parentElement?.querySelector("[data-slot='avatar']")).not.toBeNull();
 		await expect(chat.queryByText("Quick overview")).toBeNull();
 	},
 };
@@ -250,7 +296,7 @@ export const AlertPathwayBesideAlerts: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
-		await userEvent.click(canvas.getByRole("button", { name: "View alerts" }));
+		await userEvent.click(canvas.getByRole("button", { name: /^\d+ active alerts?$/ }));
 		const alertsPanel = await canvas.findByRole("complementary", { name: "Alerts" });
 		await expect(within(alertsPanel).queryByRole("button", { name: /pathway/i })).toBeNull();
 	},
@@ -266,7 +312,7 @@ export const ThreePanels: Story = {
 		const actions = within(canvas.getByRole("group", { name: "Patient actions" }));
 		await userEvent.click(actions.getByRole("button", { name: "Video consult" }));
 		await userEvent.click(actions.getByRole("button", { name: "Messages, 3 unread" }));
-		await userEvent.click(canvas.getByRole("button", { name: "View alerts" }));
+		await userEvent.click(canvas.getByRole("button", { name: /^\d+ active alerts?$/ }));
 		const consult = await canvas.findByRole("complementary", { name: "Video consult" });
 		const alerts = await canvas.findByRole("complementary", { name: "Alerts" });
 		const messages = await canvas.findByRole("complementary", { name: "Messages" });

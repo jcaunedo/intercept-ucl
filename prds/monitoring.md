@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 10, 2026
+Last updated: Nov 11, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 10, 2026
+**Last updated:** November 11, 2026
 
 ---
 
@@ -115,7 +115,7 @@ The page uses the Provider Desktop shell already built for the Census: Sidebar (
 |---|---|---|
 | **Page header** | Title, panel summary ("12 patients · 4 active alerts"), hospital tabs, panel controls | Same filter vocabulary as the Census, so the two pages feel like one workspace |
 | **Patient panel** | One expanded Patient card per patient, with live values | The main area. Density options in MON-012 |
-| **Triage queue** | The panel's active alerts, highest priority first | A right-hand rail; collapsible |
+| **Live feed** (~~Triage queue~~) | ~~The panel's active alerts, highest priority first~~ A log of everything that happens to the page's patients, each line with its patient (§5) | A right-hand rail; collapsible |
 | **Focus view** | One patient's trends, camera and actions | Opens over the panel (side sheet) when a patient is selected; the panel stays visible |
 
 ℹ️ The Sidebar's **Alert Queue** page is the full alert-management surface (Clinical Alerting & Events). Monitoring's triage queue shows the same alerts, scoped to the panel, in context. ⚠️ **Decision needed:** whether both exist in v1, or the triage queue is the only alert surface for clinicians (MON-OD-03).
@@ -243,6 +243,8 @@ Two controls at the start of the toolbar's actions, before Density, Sort by and 
 
 ## 5. Triage queue
 
+✅ **Resolved:** the live feed panel is no longer the triage queue. It's a log of everything that happens to the page's patients, the same one a patient's page shows (PRD Patient details, Live feed), newest first and grouped by day: each alert as it fired and each change of its status (by whom), care actions, drip and ventilator changes, lab results and notes, earlier days included. Each line starts with its patient, as in Ask Intercept Live's patient lists: avatar, name, and where they are in grey. Chips narrow it by kind (Alerts, Care, Drips, Ventilator, Labs, Notes). An open alert's line opens the alert, where Acknowledge, Escalate and Resolve are; a resolved alert's line doesn't; any other line opens the patient's page. The ranking and the inline actions below (MON-020 to MON-02x) no longer apply to the panel; they stay as the alert-management rules the alert modal and the Alerts panel follow.
+
 ### MON-020 — Content
 
 Every active alert for the panel, one row each: severity, patient (name, bed, hospital), title ("SpO₂ below 88%"), source, age, and lifecycle state.
@@ -263,6 +265,10 @@ Every active alert for the panel, one row each: severity, patient (name, bed, ho
 ✅ **Decision (Nov 3, 2026, user's call): a closed toast stays closed.** Once the clinician closes an alert's toast (its × or Close all), that alert doesn't toast again until the app reloads, whatever its severity, Critical and High included, and across pages. Its later changes (acknowledged or escalated by someone else, eased, active again, resolved) stay quiet; going above the severity it had when closed toasts again. Other alerts, the same patient's new ones included, toast as usual. A toast that leaves on its own timer, or after Open, Acknowledge, Ask or Open alert, isn't closed. The clinician decides what keeps interrupting them, without muting everything. ✅ **Close all pauses toasts (Nov 6, 2026, user's call: "alerts should stop"):** Close all also stops new alert toasts and their sounds, Critical included, until the clinician resumes them ("Alert notifications paused", Resume; ✅ **Copy fix (Nov 10, 2026, user's call):** was "Toasts paused"), the app reloads or the prototype resets; Don't show stops them until the time picked, then they resume on their own. Incoming consult calls still ring.
 
 ✅ **Decision (Nov 3, 2026, user's call):** while toasts are muted (Don't show), the "Muted until …" notice has **Play** (tooltip "Resume"), which shows toasts again now, and **×** (tooltip "Hide"), which closes the notice and keeps toasts muted until the app reloads. Picking a Don't show option closes every toast on screen and holds every new one back, Critical included (Nov 3, 2026, user's call; a new Critical showed before); the alerts stay in the live feed, on the cards and in the Sidebar's dot. ⚠️ **Decision needed (clinical):** this departs from AL-02 (Critical alerts interrupt); confirm a clinician may mute Critical toasts.
+
+✅ **Resolved:** a click spreads the toast stack, not hovering, so the stack doesn't move while the pointer passes over it. On a collapsed stack (two toasts or more), a click on a toast only spreads it, so the clinician sees every toast before opening one; the front toast's own buttons (×, Open patient, Ask Intercept Live) still act at once. Spread, a click on a toast opens its alert. A click outside the stack and its buttons (Don't show, Close all), or Escape, collapses it. Hovering the stack holds the toasts' timers, as before. A single toast opens its alert on a click.
+
+✅ **Resolved:** the hover border that says a click opens the alert (2px, as on the patient cards) shows only where a click does open it: on a single toast or a spread stack. Over a collapsed stack (two toasts or more), where the click spreads the stack, the toasts keep their look; the front toast's own buttons keep their hover.
 
 ### MON-021 — Ordering
 
@@ -478,6 +484,7 @@ What the exploration assumes beyond this PRD:
 | MON-AC-18 | Filters › Alert status narrows the panel to patients with an alert acknowledged, escalated, resolved in the last 24 h, or given AI feedback; the clinician's own actions count at once. |
 | MON-AC-19 | A toast closed with its × or Close all doesn't come back for that alert until the app reloads, unless the alert goes above the severity it had; the toasts hide while the live feed or Filters is open and come back when both are closed. |
 | MON-AC-20 | While a card shows an alert, its "…" menu offers View alert (View alerts when it counts several), which opens the alert modal as the alert bar does. |
+| MON-AC-21 | With two or more toasts, passing the pointer over the stack leaves it collapsed; a click on a toast spreads the stack without opening its alert, a second click opens it, and a click outside the stack collapses it. The front toast's ×, Open patient and Ask Intercept Live act on the first click. |
 
 ---
 

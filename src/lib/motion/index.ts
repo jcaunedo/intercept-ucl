@@ -1,4 +1,4 @@
-export { motionDuration, motionDistance, motionScale, motionRotation, motionStagger, motionBlur } from "./tokens";
+export { motionDuration, motionDistance, motionScale, motionRotation, motionStagger, motionBlur, motionDelay } from "./tokens";
 
 export {
   standardTransition,

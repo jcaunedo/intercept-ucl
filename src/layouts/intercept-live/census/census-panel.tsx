@@ -40,9 +40,11 @@ import {
 	type QuickView,
 	type SortOrderId,
 } from "../shared/patient-panel";
+import { useLocationFlag } from "../location-state";
 import { usePatientNavigation } from "../patient-navigation";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
-import { LiveFeed, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
+import { LiveFeedButton, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
+import type { PatientRecord } from "../patient-details/patient-details";
 import { isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import { DensityToggle, type PanelDensity } from "../monitoring/view-controls";
 import { FiltersButton, FiltersPanel, passesFilters, type PatientFilters } from "../shared/patient-filters";
@@ -113,6 +115,8 @@ type CensusPanelProps = {
 	/** The latest change from the live feed, e.g. "Moore worsens: Medium becomes Critical". Shown at the right of the
 	 * hospital bar as "Live feed: …"; just "Live feed" without it. */
 	liveFeed?: string;
+	/** The patients' records, for the live feed's log (each one's timeline, activity and earlier alerts). */
+	records?: PatientRecord[];
 	/** How Group by hospital shows: `board`, a Kanban column per hospital (default), or `sections` in the grid. */
 	groupedView?: GroupedView;
 	/** Called when the hospital bar's "Live feed" opens or closes the live feed panel (the triage queue). */
@@ -156,6 +160,7 @@ function CensusPanel({
 	escalationTargets = [],
 	onAlertAction,
 	liveFeed,
+	records,
 	onOpenLiveFeed,
 	groupedView = "board",
 }: CensusPanelProps) {
@@ -224,9 +229,11 @@ function CensusPanel({
 	// The panel right of the canvas: the live feed (the triage queue, as on Monitoring; the cards keep their own alert
 	// pills) or Filters, one at a time.
 	// The live feed sits beside the canvas; Filters floats over everything (a Sheet), so the two no longer take turns.
-	const [rightPanel, setRightPanel] = React.useState<"feed" | null>(null);
-	const toggleRightPanel = (panel: "feed") => setRightPanel((current) => (current === panel ? null : panel));
-	const [filtersOpen, setFiltersOpen] = React.useState(false);
+	// Both in the address (`feed`, `filters`), so a shared link opens them.
+	const [feedOpen, setFeedOpen] = useLocationFlag("feed");
+	const rightPanel = feedOpen ? "feed" : null;
+	const toggleRightPanel = (panel: "feed") => setFeedOpen((current) => (panel === "feed" ? !current : current));
+	const [filtersOpen, setFiltersOpen] = useLocationFlag("filters");
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 
 	const inTab = (scoped: CensusPatient[]) =>
@@ -354,7 +361,7 @@ function CensusPanel({
 								: `across ${hospitalCount} ${hospitalCount === 1 ? "hospital" : "hospitals"}`}
 						</span>
 					</Typography>
-					<LiveFeed
+					<LiveFeedButton
 						change={liveFeed}
 						open={rightPanel === "feed"}
 						onOpen={() => {
@@ -471,12 +478,11 @@ function CensusPanel({
 			/>
 			<LiveFeedPanel
 				open={rightPanel === "feed"}
-				onOpenChange={(open) => setRightPanel(open ? "feed" : null)}
+				onOpenChange={setFeedOpen}
 				alerts={alerts}
 				patients={patients}
-				escalationTargets={escalationTargets}
+				records={records}
 				onOpenPatient={openAlertPatient}
-				onAlertAction={handleAlertAction}
 			/>
 		</>
 	);

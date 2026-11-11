@@ -32,6 +32,7 @@ Calm, refined, natural, responsive. Never bouncy, cartoonish, mechanical or dist
 | `motionDistance.large`        | 40 px  | Page transitions                       |
 | `motionScale.press`           | 0.98   | Press                                  |
 | `motionScale.mediaHover`      | 1.03   | Media inside a Lift card               |
+| `motionDelay.tooltip`         | 500 ms | Hover wait before a tooltip that follows the pointer (AiClinicalSummaryBanner) |
 
 Don't go past `deliberate` (600 ms). A new value goes in `tokens.ts` with a comment saying what it's for, never inline in a component.
 

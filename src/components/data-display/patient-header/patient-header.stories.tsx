@@ -22,12 +22,13 @@ const meta = {
 		initials: "SM",
 		tone: 1,
 		mrn: "01033876",
+		account: "6325DF2",
 		sex: "F",
 		age: 59,
 		hospital: "Sidney Regional",
 		unit: "MICU",
+		room: "11",
 		bed: "Bed 11",
-		details: ["ICU day 3", "64 kg"],
 		tags: [
 			{ label: "Ventilated" },
 			{ label: "2 pressors" },
@@ -36,9 +37,9 @@ const meta = {
 		],
 		acuity: { label: "NEWS2", score: 10, level: "high" },
 		trajectory: { label: "Change in last 24 h", value: "+1", trend: "up" },
-		alert: { variant: "critical", count: 2 },
 		alertCounts: { critical: 1, low: 1 },
 		onViewAlerts: fn(),
+		onOpenLiveFeed: fn(),
 	},
 } satisfies Meta<typeof PatientHeader>;
 
@@ -46,65 +47,73 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * As in Figma: the 56px photo beside the name and the line under it (MRN, sex and age, and location), then the tags (all
- * outline) from the left edge, 12px below. On the right half, in three equal columns after rules: NEWS2 and its level,
- * the change in the last 24 h, and the open alerts in the worst one's color, with View alerts after the count.
+ * As in Figma: the 56px photo beside the name with sex and age ("- F, 59"), and one line under it: MRN and account, the
+ * location after a pin, and the score as the cards write it. The tags (all outline) from the left edge, 8px below. On
+ * the right, Live feed and the open alerts.
  */
 export const Default: Story = {
 	play: async ({ canvas, args }) => {
-		await expect(canvas.getByText("2")).toHaveClass("text-severity-critical");
-		canvas.getByRole("button", { name: "View alerts" }).click();
+		await expect(canvas.getByRole("heading", { level: 1, name: "Miller, Sarah" })).toBeInTheDocument();
+		await expect(canvas.getByText("- F, 59")).toBeInTheDocument();
+		await expect(canvas.getByText(/Sidney Regional · MICU · 11 - Bed 11/)).toBeInTheDocument();
+		await expect(canvas.getByText("6325DF2", { exact: false })).toBeInTheDocument();
+		canvas.getByRole("button", { name: "2 active alerts" }).click();
 		await expect(args.onViewAlerts).toHaveBeenCalled();
+		canvas.getByRole("button", { name: "Live feed" }).click();
+		await expect(args.onOpenLiveFeed).toHaveBeenCalled();
 	},
 };
 
-/** No open alert: the count reads 0 in the text color. A falling score's ▼ is green. */
+/** No open alert: the alerts button stays, "No active alerts" in outline. A falling score's arrow is green. */
 export const NoAlerts: Story = {
 	args: {
 		acuity: { label: "NEWS2", score: 3, level: "low" },
 		trajectory: { label: "Change in last 24 h", value: "−2", trend: "down" },
-		alert: undefined,
 		alertCounts: {},
 	},
 	play: async ({ canvas }) => {
-		await expect(canvas.getByText("0")).toHaveClass("text-foreground");
+		await expect(canvas.getByRole("button", { name: "No active alerts" })).toHaveAttribute("data-variant", "outline");
 	},
 };
 
-/** The count takes the worst open alert's color: High, Medium and Low. */
-export const AlertSeverities: Story = {
-	render: (args) => (
-		<div className='flex flex-col gap-6 py-6'>
-			<PatientHeader {...args} alert={{ variant: "high", count: 3 }} alertCounts={{ high: 1, medium: 2 }} />
-			<PatientHeader {...args} alert={{ variant: "medium", count: 1 }} alertCounts={{ medium: 1 }} />
-			<PatientHeader {...args} alert={{ variant: "low", count: 2 }} alertCounts={{ low: 2 }} />
-		</div>
-	),
+/** The live feed open: Live feed takes its pressed look (outline on the accent fill). */
+export const LiveFeedOpen: Story = {
+	args: { liveFeedOpen: true },
+	play: async ({ canvas }) => {
+		await expect(canvas.getByRole("button", { name: "Live feed" })).toHaveAttribute("aria-expanded", "true");
+	},
 };
 
-/** Without `alertCounts`, `alert` gives the count and its color; without `onViewAlerts`, no View alerts. */
+/** Without `alertCounts`, `alert` gives the count; without handlers, no buttons. */
 export const TotalOnly: Story = {
-	args: { alertCounts: undefined, onViewAlerts: undefined },
+	args: { alertCounts: undefined, alert: { variant: "critical", count: 3 }, onOpenLiveFeed: undefined },
 };
 
-/** No score, change or alert to show, and no View alerts: the patient's side alone, as before Nov 6, 2026. */
-export const WithoutStats: Story = {
-	args: { acuity: undefined, trajectory: undefined, alert: undefined, alertCounts: undefined, onViewAlerts: undefined },
+/** No score, no account and no buttons: the patient's side alone. */
+export const Minimal: Story = {
+	args: {
+		acuity: undefined,
+		trajectory: undefined,
+		account: undefined,
+		alertCounts: undefined,
+		onViewAlerts: undefined,
+		onOpenLiveFeed: undefined,
+	},
 };
 
 /**
- * The `actions` slot on the right, for an app that keeps a patient's actions in the header. Intercept Live leaves it
- * empty: Video consult and Messages are in the app header since Nov 5, 2026.
+ * The `actions` slot, after the buttons, for an app that keeps more of a patient's actions in the header. Intercept
+ * Live leaves it empty: Video consult and Messages are in the app header since Nov 5, 2026.
  */
 export const WithActions: Story = {
 	args: {
 		actions: (
 			<>
-				<Button variant='outline'>
+				<Button variant='outline' size='lg'>
 					<VideoIcon aria-hidden='true' />
 					Video consult
 				</Button>
-				<Button variant='outline' aria-label='Messages, 3 unread'>
+				<Button variant='outline' size='lg' aria-label='Messages, 3 unread'>
 					<MessageCircleMoreIcon aria-hidden='true' />
 					Messages
 					<Counter variant='secondary' count={3} aria-hidden='true' />
@@ -149,9 +158,9 @@ export const AllVariants: Story = {
 			<PatientHeader {...args} />
 			<PatientHeader {...args} photo={undefined} />
 			<PatientHeader {...args} {...NoAlerts.args} />
-			<PatientHeader {...args} alert={{ variant: "high", count: 3 }} alertCounts={{ high: 1, medium: 2 }} />
+			<PatientHeader {...args} {...LiveFeedOpen.args} />
 			<PatientHeader {...args} {...TotalOnly.args} />
-			<PatientHeader {...args} {...WithoutStats.args} />
+			<PatientHeader {...args} {...Minimal.args} />
 			<PatientHeader {...args} {...WithActions.args} />
 		</div>
 	),

@@ -168,6 +168,7 @@ function Census({
 			pages={{
 				Census: (
 					<CensusPanel
+						records={patientRecords}
 						hospitals={hospitals}
 						patients={flaggedPatients}
 						onOpenPatient={onOpenPatient}
@@ -181,6 +182,7 @@ function Census({
 				),
 				Monitoring: monitoringCards ? (
 					<MonitoringPanel
+						records={patientRecords}
 						hospitals={hospitals}
 						patients={monitoringCards}
 						alerts={alerts}

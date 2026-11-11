@@ -8,7 +8,7 @@ import { motion } from "motion/react";
 import { enterTransition, motionDistance, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-// Inverted colors (`foreground` surface, `background` text) and no arrow.
+// Inverted colors (`foreground` surface, `background` text); an arrow only with `arrow`.
 const tooltipContentVariants = cva("z-(--z-floating) w-fit rounded-menu bg-foreground text-balance text-background", {
 	variants: {
 		size: {
@@ -56,14 +56,18 @@ function TooltipSurface(props: React.ComponentProps<typeof motion.div> & { "data
 	);
 }
 
-type TooltipContentProps = React.ComponentProps<typeof TooltipPrimitive.Content> & VariantProps<typeof tooltipContentVariants>;
+type TooltipContentProps = React.ComponentProps<typeof TooltipPrimitive.Content> &
+	VariantProps<typeof tooltipContentVariants> & {
+		/** A small triangle pointing at the trigger, in the tooltip's fill (shadcn's). Off by default. */
+		arrow?: boolean;
+	};
 
 /**
- * The tooltip itself. `size`: `default` or `sm`.
+ * The tooltip itself. `size`: `default` or `sm`; `arrow` adds the triangle toward the trigger.
  *
  * Figma: [archielabs.ds › Tooltip](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=1172-2290)
  */
-function TooltipContent({ className, size = "default", sideOffset = 4, children, ...props }: TooltipContentProps) {
+function TooltipContent({ className, size = "default", sideOffset = 4, arrow = false, children, ...props }: TooltipContentProps) {
 	return (
 		<TooltipPrimitive.Portal>
 			<TooltipPrimitive.Content
@@ -74,7 +78,13 @@ function TooltipContent({ className, size = "default", sideOffset = 4, children,
 				className={cn(tooltipContentVariants({ size }), className)}
 				{...props}
 			>
-				<TooltipSurface>{children}</TooltipSurface>
+				<TooltipSurface>
+					{children}
+					{arrow ? (
+						// shadcn's arrow: a rotated square in the tooltip's fill, half tucked under its edge.
+						<TooltipPrimitive.Arrow className='z-(--z-floating) size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground' />
+					) : null}
+				</TooltipSurface>
 			</TooltipPrimitive.Content>
 		</TooltipPrimitive.Portal>
 	);

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
-import { muteToasts, Toaster } from "@/components/feedback/sonner";
+import { muteToasts, Toaster, toast } from "@/components/feedback/sonner";
 
 import { AlertToast, toastAlert, type ToastAlertOptions } from "./alert-toast";
 
@@ -190,6 +190,24 @@ export const InToaster: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Medium alert" }));
 		await userEvent.click(await screen.findByRole("button", { name: `Open alert: ${moore.title}` }));
 		await waitFor(() => expect(openMooreAlert).toHaveBeenCalled());
+
+		// With two or more, a click on the collapsed stack only spreads it (Nov 11, 2026, user's call); spread, a click on a
+		// toast opens its alert. The Toaster marks the collapsed stack (`data-stack-collapsed`), which drops the toasts' hover
+		// border until it's spread.
+		openMooreAlert.mockClear();
+		toastAlert({ ...hayes, id: "hayes-stacked", onOpenAlert: fn() });
+		toastAlert({ ...moore, id: "moore-stacked", onOpenAlert: openMooreAlert });
+		await waitFor(() => expect(document.querySelectorAll("[data-sonner-toast]:not([data-removed=true])")).toHaveLength(2));
+		const toaster = document.querySelector("[data-sonner-toaster]");
+		await expect(toaster).toHaveAttribute("data-stack-collapsed", "true");
+		const openMoore = await screen.findByRole("button", { name: `Open alert: ${moore.title}` });
+		await userEvent.click(openMoore);
+		await waitFor(() => expect(document.querySelector<HTMLElement>("[data-sonner-toast]")?.dataset.expanded).toBe("true"));
+		await expect(toaster).toHaveAttribute("data-stack-collapsed", "false");
+		await expect(openMooreAlert).not.toHaveBeenCalled();
+		await userEvent.click(openMoore);
+		await waitFor(() => expect(openMooreAlert).toHaveBeenCalledTimes(1));
+		toast.dismiss();
 	},
 };
 
@@ -253,7 +271,7 @@ const tallStack = Array.from({ length: 8 }, (_, index) => ({
 
 /**
  * Spread, a stack taller than the screen scrolls: the wheel brings the toasts above the screen into view, under Don't
- * show and Close all, which stay at the top. Hover the stack, then scroll up.
+ * show and Close all, which stay at the top. Click the stack to spread it, then scroll up.
  */
 export const TallStackScrolls: Story = {
 	parameters: { layout: "padded" },
@@ -267,16 +285,15 @@ export const TallStackScrolls: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Eight alerts" }));
 		const oldest = () => screen.getByText("Alert 1").closest<HTMLElement>("[data-sonner-toast]")!;
 		await waitFor(() => expect(oldest()).toBeInTheDocument());
-		// Spread it, and wait for the oldest to rise past the top of the screen.
-		await userEvent.hover(screen.getByText("Alert 8"));
+		// Spread it with a click, and wait for the oldest to rise past the top of the screen.
+		await userEvent.click(screen.getByText("Alert 8"));
 		await waitFor(() => expect(oldest().getBoundingClientRect().top).toBeLessThan(0));
 		// Scrolled up as far as it goes, the oldest sits under the actions row (16px from the top, 32px tall, 8px gap).
 		screen.getByText("Alert 8").dispatchEvent(new WheelEvent("wheel", { deltaY: -5000, bubbles: true, cancelable: true }));
 		await waitFor(() => expect(Math.round(oldest().getBoundingClientRect().top)).toBe(56));
 		await expect(screen.getByRole("button", { name: "Close all" }).getBoundingClientRect().top).toBe(16);
-		// Collapsed, it goes back.
-		await userEvent.unhover(screen.getByText("Alert 8"));
-		await userEvent.hover(canvas.getByRole("button", { name: "Eight alerts" }));
+		// Collapsed by a click outside, it goes back.
+		await userEvent.click(document.body);
 		await waitFor(() => expect(document.querySelector<HTMLElement>("[data-sonner-toaster]")!.style.translate).toBe(""));
 		await userEvent.click(screen.getByRole("button", { name: "Close all" }));
 		await waitFor(() => expect(stackOrder()).toEqual([]));

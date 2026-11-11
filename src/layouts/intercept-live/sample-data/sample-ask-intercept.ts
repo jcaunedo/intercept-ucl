@@ -1564,6 +1564,7 @@ function withAvatars(reply: AskInterceptAnswer): AskInterceptAnswer {
 		const name = fullName(patient);
 		if (!named.has(name)) continue;
 		avatars[name] = {
+			id: patient.census.id,
 			photo: patient.census.photo,
 			initials: patientInitials(patient.census),
 			tone: tones.get(patient.census.id),

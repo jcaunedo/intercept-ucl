@@ -27,12 +27,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { exitTransition, fadeVariants, standardTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-// How long the stack stays expanded after the pointer leaves it, so it can cross to the actions above it without the
-// stack collapsing (and the actions dropping) under it.
-const holdOpenDelay = 250;
 // The actions sit this far above the top toast.
 const actionsGap = 8;
-// Pointer targets that keep the stack expanded once it is: the stack, the actions and the Don't show menu.
+// The actions and the Don't show menu: a press there keeps a spread stack spread, as one on the stack does.
 const actionsSelector = "[data-slot=toaster-actions], [data-toaster-menu]";
 // The actions row's height (Button `sm`).
 const actionsHeight = 32;
@@ -248,7 +245,7 @@ const muteTimeFormat = new Intl.DateTimeFormat(undefined, { hour: "numeric", min
 /* Pausing                                                                    */
 /* -------------------------------------------------------------------------- */
 
-// Sonner pauses every toast's timer while its stack is hovered (which expands it) or pressed (`interacting`). UCL's copy
+// Sonner pauses every toast's timer while its stack is hovered, spread or pressed (`interacting`). UCL's copy
 // takes a `paused` prop that holds them the same way, without moving anything on screen. Counted, so the actions row and
 // `hidden` can each hold them, and kept here, outside the Toaster, so a hold made with no toasts reaches the next ones.
 // ⚠️ Don't go back to pressing the list with a synthetic pointerdown (until Nov 5, 2026): it bubbled to the document,
@@ -281,7 +278,7 @@ function usePauseToasts(paused: boolean) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Spread (hovered), a stack taller than the screen scrolls (Nov 4, 2026, user's call: "I should be able to scroll and see
+ * Spread (clicked), a stack taller than the screen scrolls (Nov 4, 2026, user's call: "I should be able to scroll and see
  * all sonner alerts"). Sonner places each toast from the bottom with transforms, so the list can't be a scroll container;
  * instead, the wheel (or trackpad) moves the whole list down (`translate`, apart from Sonner's `transform`) to bring the
  * toasts above the screen into view, and the list is clipped under the actions row (`limit`), which stays pinned at
@@ -405,8 +402,8 @@ const trailingIcon = "has-[>svg]:pl-[11px] has-[>svg]:pr-[7px]";
  * screen and holds every new one back, Critical too); with two or more, Close all too (closes every toast
  * as its × would, running its close handler, and holds new ones back until Resume: "Alert notifications paused", "Toasts paused" until Nov 10, 2026; Nov 6, 2026, user's
  * call). While muted, "Muted until 4:42 PM" (or "Alert notifications paused"), there even without toasts, with Play to show toasts again and × to close the notice and keep them muted until the app reloads
- * (Nov 3, 2026; the × showed them again before). Over it the stack stays as it was: expanded when the pointer comes from
- * it, collapsed when it comes from elsewhere, so the buttons never move away from the pointer. While the clinician is on
+ * (Nov 3, 2026; the × showed them again before). A click on it doesn't collapse a spread stack, so the buttons never move
+ * away from the pointer (`keepExpandedWithin`). While the clinician is on
  * the row (pointer over it, keyboard focus in it, or its menu open), the toasts' timers hold (Nov 3, 2026, user's call),
  * so nothing leaves and the row stays put until they've chosen.
  */
@@ -414,12 +411,10 @@ function ToasterActions({
 	right,
 	closeAllLabel,
 	muteLabel,
-	onHoldOpenChange,
 }: {
 	right: number;
 	closeAllLabel: string;
 	muteLabel: string;
-	onHoldOpenChange: (hold: boolean) => void;
 }) {
 	const { toasts } = useSonner();
 	const { until: mutedUntilTime, paused, untilReload } = useMuteState();
@@ -435,33 +430,17 @@ function ToasterActions({
 	const stackBottom = useStackTop(toasts.length > 0, stackTopLimit(right));
 	// Without toasts (muted), the row sits where the stack would.
 	const bottom = stackBottom ?? right;
-	const hold = React.useRef(false);
-	const release = React.useRef<number | undefined>(undefined);
 	const [menuOpen, setMenuOpen] = React.useState(false);
 	const [pointerOn, setPointerOn] = React.useState(false);
 	const [focusIn, setFocusIn] = React.useState(false);
 	usePauseToasts(show && (pointerOn || focusIn || menuOpen));
 
 	React.useEffect(() => {
-		const setHold = (next: boolean) => {
-			if (hold.current === next) return;
-			hold.current = next;
-			onHoldOpenChange(next);
-		};
+		// Tracked here, not with the row's pointerenter: an open menu blocks pointer events on the page, so closing it with
+		// the pointer still on Don't show would end the hold until the pointer moved.
 		const onPointerOver = (event: PointerEvent) => {
 			const target = event.target instanceof Element ? event.target : null;
-			const overStack = Boolean(target?.closest("[data-sonner-toaster]"));
-			const overActions = Boolean(target?.closest(actionsSelector));
-			// Tracked here, not with the row's pointerenter: an open menu blocks pointer events on the page, so closing it
-			// with the pointer still on Don't show would end the hold until the pointer moved.
-			if (event.pointerType !== "touch") setPointerOn(overActions);
-			if (overStack || (overActions && hold.current)) {
-				window.clearTimeout(release.current);
-				setHold(true);
-			} else if (!overActions && hold.current) {
-				window.clearTimeout(release.current);
-				release.current = window.setTimeout(() => setHold(false), holdOpenDelay);
-			}
+			if (event.pointerType !== "touch") setPointerOn(Boolean(target?.closest(actionsSelector)));
 		};
 		// Leaving the window ends it too.
 		const onLeaveWindow = () => setPointerOn(false);
@@ -470,17 +449,8 @@ function ToasterActions({
 		return () => {
 			document.removeEventListener("pointerover", onPointerOver);
 			document.documentElement.removeEventListener("pointerleave", onLeaveWindow);
-			window.clearTimeout(release.current);
 		};
-	}, [onHoldOpenChange]);
-
-	// Gone with the toasts: let the stack collapse again next time.
-	React.useEffect(() => {
-		if (!any && hold.current) {
-			hold.current = false;
-			onHoldOpenChange(false);
-		}
-	}, [any, onHoldOpenChange]);
+	}, []);
 
 	const mute = (until: Date) => {
 		muteToasts(until);
@@ -600,8 +570,9 @@ function ToasterActions({
  * shadcn's Radix Sonner, colored by UCL's tokens instead of Sonner's own theme (no `next-themes`), so `.dark` drives it
  * like everything else.
  * Toasts stack bottom right, 16px from the screen's edges, at most eight shown, the newest at the bottom. Collapsed, each one
- * behind peeks `peek` (16px) above the one in front; hovering the stack spreads them `gap` (8px) apart and pauses their
- * timers. "Don't show" (`muteLabel`: for 30 mins … until tomorrow) sits right-aligned 8px above the top toast, with
+ * behind peeks `peek` (16px) above the one in front. A click on the stack spreads them `gap` (8px) apart, and a click
+ * outside it (or Escape) collapses it again (Nov 11, 2026, user's call; hovering spread it until then): on a collapsed
+ * stack the click only spreads it, except on the front toast's own buttons. Hovering it pauses their timers. "Don't show" (`muteLabel`: for 30 mins … until tomorrow) sits right-aligned 8px above the top toast, with
  * "Close all" (`closeAllLabel`) beside it from two toasts; while muted, "Muted until …" with Play and × takes Don't show's
  * place (× keeps them muted until the app reloads, and the notice goes). `hidden` fades the
  * stack and its buttons out while something covers the screen (e.g. a modal), keeping every toast: their timers pause,
@@ -637,8 +608,6 @@ function Toaster({
 	/** The label of the menu that holds toasts back for a while, shown with two or more. */
 	muteLabel?: string;
 }) {
-	// Kept expanded while the pointer crosses from the stack to the actions above it.
-	const [holdOpen, setHoldOpen] = React.useState(false);
 	const { resolve } = useMotionPreference();
 	// A kept toast (an incoming call) is never hidden: while one is up, the whole stack shows, the call in front.
 	const kept = useKeptToastShown();
@@ -665,7 +634,8 @@ function Toaster({
 		>
 			<Sonner
 				paused={paused}
-				expand={expand || holdOpen}
+				expand={expand}
+				keepExpandedWithin={actionsSelector}
 				className={cn("toaster group", className)}
 				position={position}
 				visibleToasts={visibleToasts}
@@ -711,7 +681,6 @@ function Toaster({
 				right={typeof offset === "number" ? offset : 16}
 				closeAllLabel={closeAllLabel}
 				muteLabel={muteLabel}
-				onHoldOpenChange={setHoldOpen}
 			/>
 		</motion.div>
 	);

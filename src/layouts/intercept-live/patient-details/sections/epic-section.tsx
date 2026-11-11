@@ -133,7 +133,7 @@ function EpicSection({ emr, onOpenChart }: EpicSectionProps) {
 					}
 				>
 					<p className='max-w-[72ch] text-sm text-foreground'>
-						{emr.name} is the record of care. Intercept shows part of it in Vitals, Chart, Medications, Orders and Notes
+						{emr.name} is the record of care. Intercept shows part of it in Vitals, Labs, Medications, Orders and Notes
 						{writesBack ? ", and writes signed Intercept notes back to it." : "."}
 						{delayed.length ? ` Behind right now: ${delayed.map((feed) => feed.label.toLowerCase()).join(", ")}.` : null}
 					</p>

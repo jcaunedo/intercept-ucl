@@ -116,4 +116,10 @@ const motionStagger = {
 	normal: 0.06,
 } as const;
 
-export { motionDuration, motionDistance, motionScale, motionRotation, motionStagger, motionBlur };
+/** Seconds a hover waits before something it reveals appears, so passing the pointer over it shows nothing. */
+const motionDelay = {
+	/** A tooltip that names what's under the pointer (AiClinicalSummaryBanner, Nov 11, 2026). */
+	tooltip: 0.5,
+} as const;
+
+export { motionDuration, motionDistance, motionScale, motionRotation, motionStagger, motionBlur, motionDelay };

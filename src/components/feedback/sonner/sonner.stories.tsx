@@ -40,6 +40,62 @@ export const Default: Story = {
 	},
 };
 
+function SpreadOnClickExample(args: React.ComponentProps<typeof Toaster>) {
+	const [undone, setUndone] = React.useState(false);
+	return (
+		<>
+			<Toaster {...args} />
+			<div className='flex flex-col items-center gap-2'>
+				<Button
+					variant='outline'
+					onClick={() => {
+						setUndone(false);
+						toast("Vitals synced", { duration: Number.POSITIVE_INFINITY });
+						toast("Handoff note saved", {
+							duration: Number.POSITIVE_INFINITY,
+							action: { label: "Undo", onClick: () => setUndone(true) },
+						});
+					}}
+				>
+					Show two toasts
+				</Button>
+				<span>{undone ? "Undone" : null}</span>
+			</div>
+		</>
+	);
+}
+
+const stackSpread = () =>
+	[...document.querySelectorAll<HTMLElement>("[data-sonner-toast]")].every((item) => item.dataset.expanded === "true");
+
+/**
+ * A click spreads the stack, not hovering (Nov 11, 2026, user's call): on a collapsed stack a click on a toast only
+ * spreads it, a click outside collapses it again, and the front toast's own buttons (here Undo) act at once.
+ */
+export const SpreadOnClick: Story = {
+	render: (args) => <SpreadOnClickExample {...args} />,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		toast.dismiss();
+		await userEvent.click(canvas.getByRole("button", { name: "Show two toasts" }));
+		const front = await screen.findByText("Handoff note saved");
+		await waitFor(() => expect(document.querySelectorAll("[data-sonner-toast]")).toHaveLength(2));
+		// Hovering holds the timers but leaves the stack collapsed.
+		await userEvent.hover(front);
+		await new Promise((resolve) => setTimeout(resolve, 400));
+		await expect(stackSpread()).toBe(false);
+		// A click on the front toast spreads it, and a click outside collapses it.
+		await userEvent.click(front);
+		await waitFor(() => expect(stackSpread()).toBe(true));
+		await userEvent.click(document.body);
+		await waitFor(() => expect(stackSpread()).toBe(false));
+		// The front toast's own button acts on a collapsed stack, without spreading it.
+		await userEvent.click(screen.getByRole("button", { name: "Undo" }));
+		await expect(await canvas.findByText("Undone")).toBeInTheDocument();
+		toast.dismiss();
+	},
+};
+
 function HiddenExample(args: React.ComponentProps<typeof Toaster>) {
 	const [hidden, setHidden] = React.useState(false);
 	return (

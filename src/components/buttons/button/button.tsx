@@ -45,8 +45,8 @@ const buttonVariants = cva(
 				"destructive-secondary":
 					"bg-destructive-subtle text-destructive hover:bg-destructive-muted disabled:bg-disabled",
 				ghost: "hover:bg-accent hover:text-accent-foreground",
-				// Underlined on hover, so an inline link without padding still reads as one.
-				link: "text-neutral underline-offset-4 hover:underline",
+				// The brand color (Nov 11, 2026), underlined on hover, so an inline link without padding still reads as one.
+				link: "text-brand underline-offset-4 hover:underline",
 				// A white, fully round button for floating over a dark surface (e.g. a monitor), so it keeps the same light
 				// look in both modes. Usually icon only; round at every size (see compoundVariants).
 				circle: "rounded-full bg-(--white) text-(--gray-700) hover:bg-(--gray-100)",
@@ -83,12 +83,12 @@ const buttonVariants = cva(
 			{ variant: "outline", size: ["md", "default"], className: "px-[13px] has-[>svg]:pl-[9px]" },
 			{ variant: "outline", size: "lg", className: "px-[17px] has-[>svg]:pl-[11px]" },
 			{ variant: "outline", size: ["icon-xs", "icon-sm", "icon-md", "icon-lg", "icon"], className: "hover:border-input" },
-			// Loading: the spinner 16px from each side at 24px, 20px at 32px and 28px from 36px up.
+			// Loading: the spinner 16px from each side at 24px, 19px at 32px and 28px from 36px up.
 			{ loading: true, size: "xs", className: "px-4 has-[>svg]:px-4" },
-			{ loading: true, size: "sm", className: "px-5 has-[>svg]:px-5" },
+			{ loading: true, size: "sm", className: "px-[19px] has-[>svg]:px-[19px]" },
 			{ loading: true, size: ["md", "default", "lg"], className: "px-7 has-[>svg]:px-7" },
 			{ loading: true, variant: "outline", size: "xs", className: "px-[15px] has-[>svg]:px-[15px]" },
-			{ loading: true, variant: "outline", size: "sm", className: "px-[19px] has-[>svg]:px-[19px]" },
+			{ loading: true, variant: "outline", size: "sm", className: "px-[18px] has-[>svg]:px-[18px]" },
 			{ loading: true, variant: "outline", size: ["md", "default", "lg"], className: "px-[27px] has-[>svg]:px-[27px]" },
 			// The sizes set their own radius; the circle stays round at all of them.
 			{ variant: "circle", className: "rounded-full" },

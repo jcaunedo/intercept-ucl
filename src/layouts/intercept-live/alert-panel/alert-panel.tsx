@@ -85,6 +85,7 @@ import {
 	type CarePathwayStatus,
 } from "./care-pathway";
 import { useCallAudio } from "./call-audio";
+import { formatLocationList, parseLocationList, useInitialLocation, useLocationReport } from "../location-state";
 import { ConsultSessionScope, useSessionPeek, useSessionState } from "./consult-session";
 import { ConsultTranscriptView, type ConsultNote, type ConsultTranscript } from "./consult-transcript";
 import { BedsideTaskList, type BedsideTasks } from "./bedside-tasks";
@@ -1783,17 +1784,22 @@ function AlertPanelContent({
 	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
 	const [sharedPathwayOpen, setSharedPathwayOpen] = useSessionState("pathwayOpen", false);
 	const [sharedPathwayAlert, setSharedPathwayAlert] = useSessionState<string | undefined>("pathwayAlert", undefined);
+	// A shared link's `alertPanels` (messages or pathway) opens that column too.
+	const linkedPanels = parseLocationList(useInitialLocation("alertPanels"));
 	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(() =>
-		sharedMessagesOpen
+		sharedMessagesOpen || linkedPanels.includes("messages")
 			? "messages"
 			: hasPathway &&
 				  (defaultPathwayOpen ||
+						linkedPanels.includes("pathway") ||
 						(sharedPathwayOpen && (sharedPathwayAlert === undefined || sharedPathwayAlert === data.alert.id)))
 				? "pathway"
 				: null,
 	);
 	const pathwayOpen = sidePanel === "pathway";
 	const messagesOpen = sidePanel === "messages";
+	// The open panels, in the address (`alertPanels`), so a shared link opens the alert as it shows.
+	useLocationReport("alertPanels", formatLocationList([consultOn && "video", messagesOpen && "messages", pathwayOpen && "pathway"]));
 	React.useEffect(() => setSharedMessagesOpen(messagesOpen), [messagesOpen, setSharedMessagesOpen]);
 	React.useEffect(() => {
 		setSharedPathwayOpen(pathwayOpen);
@@ -2081,8 +2087,12 @@ function PatientConsultDialogContent({
 	// The messages with the bedside nurse, right of the call, as on the alert panel. Open or closed goes with the consult
 	// session.
 	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
-	const [messagesOpen, setMessagesOpen] = React.useState(sharedMessagesOpen);
+	// A shared link's `alertPanels=messages` opens them too.
+	const linkedPanels = parseLocationList(useInitialLocation("alertPanels"));
+	const [messagesOpen, setMessagesOpen] = React.useState(sharedMessagesOpen || linkedPanels.includes("messages"));
 	React.useEffect(() => setSharedMessagesOpen(messagesOpen), [messagesOpen, setSharedMessagesOpen]);
+	// The open panels, in the address (`alertPanels`), as on the alert panel.
+	useLocationReport("alertPanels", formatLocationList([consult !== "idle" && "video", messagesOpen && "messages"]));
 	const [focusMessages, setFocusMessages] = React.useState(false);
 	const toggleMessages = () => {
 		setFocusMessages(true);

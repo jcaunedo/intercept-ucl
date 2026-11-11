@@ -3,7 +3,9 @@
 // one (Nov 3, 2026, user's call: the most severe alert is always the one showing). Sonner always puts the newest in
 // front and has no way to change it. A toast with `moveToFrontOnUpdate` also moves to the front of its priority when it's
 // updated (Nov 4, 2026, user's call: an alert that changes is the latest). With it, toasts are measured unscaled (`measureToast`, Nov 4, 2026), since one can
-// now join the stack behind the front one, already scaled down. To update Sonner, copy the new dist/index.mjs and dist/index.d.mts over these and
+// now join the stack behind the front one, already scaled down. A click spreads the stack, not hovering (Nov 11, 2026,
+// user's call: "it should expand onClick not onHover"): hovering only holds the timers, a click on a collapsed stack
+// spreads it, and a click outside it (or `keepExpandedWithin`) collapses it. To update Sonner, copy the new dist/index.mjs and dist/index.d.mts over these and
 // reapply the "UCL:" changes. The bundle marks itself "use client" after the build (scripts/add-use-client.mjs).
 function __insertCSS(code) {
   if (!code || typeof document == 'undefined') return
@@ -1028,7 +1030,7 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
     const { id, invert, position = 'bottom-right', hotkey = [
         'altKey',
         'KeyT'
-    ], expand, closeButton, className, offset, mobileOffset, theme = 'light', richColors, duration, style, visibleToasts = VISIBLE_TOASTS_AMOUNT, toastOptions, dir = getDocumentDirection(), gap = GAP, icons, customAriaLabel, containerAriaLabel = 'Notifications', /* UCL: */ paused = false } = props;
+    ], expand, closeButton, className, offset, mobileOffset, theme = 'light', richColors, duration, style, visibleToasts = VISIBLE_TOASTS_AMOUNT, toastOptions, dir = getDocumentDirection(), gap = GAP, icons, customAriaLabel, containerAriaLabel = 'Notifications', /* UCL: */ paused = false, /* UCL: */ keepExpandedWithin } = props;
     const [toasts, setToasts] = React.useState([]);
     const filteredToasts = React.useMemo(()=>{
         if (id) {
@@ -1050,6 +1052,8 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
     const [heights, setHeights] = React.useState([]);
     const [expanded, setExpanded] = React.useState(false);
     const [interacting, setInteracting] = React.useState(false);
+    // UCL: the pointer is over the stack, which holds the timers as spreading it did.
+    const [hovered, setHovered] = React.useState(false);
     const [actualTheme, setActualTheme] = React.useState(theme !== 'system' ? theme : typeof window !== 'undefined' ? window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light' : 'light');
     const listRef = React.useRef(null);
     const hotkeyLabel = hotkey.join('+').replace(/Key/g, '').replace(/Digit/g, '');
@@ -1156,6 +1160,22 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
     }, [
         toasts
     ]);
+    // UCL: a spread stack stays spread until a press outside it, and outside `keepExpandedWithin` (the page's own
+    // controls for the stack, e.g. UCL's Don't show and Close all, and the menu they open).
+    React.useEffect(()=>{
+        if (!expanded) return;
+        const onPointerDown = (event)=>{
+            const target = event.target instanceof Element ? event.target : null;
+            if (!target || listRef.current && listRef.current.contains(target)) return;
+            if (keepExpandedWithin && target.closest(keepExpandedWithin)) return;
+            setExpanded(false);
+        };
+        document.addEventListener('pointerdown', onPointerDown, true);
+        return ()=>document.removeEventListener('pointerdown', onPointerDown, true);
+    }, [
+        expanded,
+        keepExpandedWithin
+    ]);
     React.useEffect(()=>{
         const handleKeyDown = (event)=>{
             var _listRef_current;
@@ -1213,6 +1233,9 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
             "data-sonner-theme": actualTheme,
             "data-y-position": y,
             "data-x-position": x,
+            // UCL: a collapsed stack of two toasts or more, where a click spreads the stack instead of acting on a toast
+            // (`onClickCapture`'s rule), so a toast drops the hover that says a click opens it (AlertToast).
+            "data-stack-collapsed": !(expanded || expand) && filteredToasts.length >= 2,
             style: {
                 // UCL: the front toast's height, which isn't the newest's once toasts stack by priority.
                 '--front-toast-height': `${((_heights_ = orderHeights(heights, filteredToasts)[0]) == null ? void 0 : _heights_.height) || 0}px`,
@@ -1240,13 +1263,23 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
                     lastFocusedElementRef.current = event.relatedTarget;
                 }
             },
-            onMouseEnter: ()=>setExpanded(true),
-            onMouseMove: ()=>setExpanded(true),
-            onMouseLeave: ()=>{
-                // Avoid setting expanded to false when interacting with a toast, e.g. swiping
-                if (!interacting) {
-                    setExpanded(false);
-                }
+            // UCL: hovering holds the timers but doesn't spread the stack; a click does.
+            onMouseEnter: ()=>setHovered(true),
+            onMouseLeave: ()=>setHovered(false),
+            // UCL: a click on a collapsed stack (two toasts or more) spreads it instead of acting on the toast it lands on.
+            // Only the front toast's own controls act at once (a ×, a button); a toast's open-everything target
+            // (`data-toast-open`, AlertToast's Open alert) spreads the stack like its body, and a toast behind, whose
+            // content is hidden, never acts. A keyboard activation (no pointer, `detail` 0) acts as usual.
+            onClickCapture: (event)=>{
+                if (expanded || expand || filteredToasts.length < 2 || event.detail === 0) return;
+                const target = event.target instanceof Element ? event.target : null;
+                const toastElement = target == null ? void 0 : target.closest('[data-sonner-toast]');
+                const control = target == null ? void 0 : target.closest('button, a, input, select, textarea, [role=button]');
+                const acts = toastElement && toastElement.dataset.front === 'true' && control && toastElement.contains(control) && !control.closest('[data-toast-open]');
+                if (acts) return;
+                event.preventDefault();
+                event.stopPropagation();
+                setExpanded(true);
             },
             onDragEnd: ()=>setExpanded(false),
             onPointerDown: (event)=>{
@@ -1271,7 +1304,7 @@ const Toaster = /*#__PURE__*/ React.forwardRef(function Toaster(props, ref) {
                 closeButton: (_toastOptions_closeButton = toastOptions == null ? void 0 : toastOptions.closeButton) != null ? _toastOptions_closeButton : closeButton,
                 // UCL: `paused` holds every toast's timer as a press on the stack does, without a synthetic pointerdown,
                 // which an open Radix modal took for a click outside it and closed (Nov 5, 2026).
-                interacting: interacting || paused,
+                interacting: interacting || paused || hovered,
                 position: position,
                 style: toastOptions == null ? void 0 : toastOptions.style,
                 unstyled: toastOptions == null ? void 0 : toastOptions.unstyled,

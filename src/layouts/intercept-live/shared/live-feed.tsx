@@ -11,17 +11,18 @@ import {
 	useMotionPreference,
 } from "@/lib/motion";
 
-import {
-	TriageQueue,
-	type EscalationTarget,
-	type TriageAlert,
-	type TriageAlertAction,
-	type TriageQueuePatient,
-} from "../monitoring/triage-queue";
+import { LiveFeed, LiveFeedFilter, type LiveFeedFilterId } from "@/components/data-display/live-feed";
+
+import type { TriageAlert, TriageAlertAction } from "../monitoring/triage-queue";
+import type { PatientRecord } from "../patient-details/patient-details";
+import { usePatientNavigation } from "../patient-navigation";
 import { PagePanel, SidePanel, sidePanelWidth, useHideToasts } from "../side-panel";
+import { patientFeedEntries } from "./live-feed-entries";
+import { avatarTones, patientInitials } from "./patient-avatar";
 
 // The live feed, on the Census and Monitoring pages: the "Live feed: …" button right of the page's summary, and the
-// panel it opens right of the canvas, the triage queue of the page's alerts.
+// panel it opens right of the canvas: everyone's log (UCL LiveFeed, the same lines as a patient's page, each with its
+// patient; Nov 11, 2026, user's calls; the triage queue until then).
 
 /* -------------------------------------------------------------------------- */
 /* Alert actions                                                              */
@@ -59,7 +60,7 @@ function useAddressedAlerts(alertsProp: TriageAlert[], onAlertAction?: (alertId:
 }
 
 /* -------------------------------------------------------------------------- */
-/* LiveFeed                                                                   */
+/* LiveFeedButton                                                             */
 /* -------------------------------------------------------------------------- */
 
 // A ticker: the new change rises in from below while the last one rises out the top, both clipped to the line. The
@@ -84,7 +85,7 @@ const reducedFeedVariants: Variants = {
  * one doesn't jump sideways; "Live feed:" glides to the new length. A near-instant cross-fade under reduced motion.
  * Truncates, with the full text in `title`.
  */
-function LiveFeed({ change, open, onOpen }: { change?: string; open: boolean; onOpen: () => void }) {
+function LiveFeedButton({ change, open, onOpen }: { change?: string; open: boolean; onOpen: () => void }) {
 	const { prefersReducedMotion, resolve } = useMotionPreference();
 
 	return (
@@ -132,32 +133,64 @@ function LiveFeed({ change, open, onOpen }: { change?: string; open: boolean; on
 /* LiveFeedPanel                                                              */
 /* -------------------------------------------------------------------------- */
 
+/** A patient as the panel names them: the card's identity, location and photo. */
+type LiveFeedPanelPatient = {
+	id: string;
+	lastName: string;
+	firstName: string;
+	hospital?: string;
+	unit?: string;
+	bed?: string;
+	photo?: string;
+};
+
 type LiveFeedPanelProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	/** The page's alerts, live. */
 	alerts: TriageAlert[];
-	patients: TriageQueuePatient[];
-	escalationTargets: EscalationTarget[];
+	/** The page's patients: whose lines the feed shows. */
+	patients: LiveFeedPanelPatient[];
+	/** Their records: each one's timeline, activity and earlier alerts. */
+	records?: PatientRecord[];
+	/** Opens a patient's page (a line that isn't an open alert's). */
 	onOpenPatient?: (patientId: string) => void;
-	onAlertAction: (alertId: string, action: TriageAlertAction) => void;
 };
 
 /**
- * The live feed panel: the triage queue, right of the canvas in the shell's page panel slot, like the chat on the left.
- * Its width stays while the page is open.
+ * The live feed panel: everyone's log (UCL LiveFeed), right of the canvas in the shell's page panel slot, like the chat
+ * on the left. Each line starts with its patient, as the chat's patient rows: an open alert's line opens the alert (the
+ * alert modal, where Acknowledge, Escalate and Resolve are), any other line the patient's page. Its width stays while
+ * the page is open.
  */
-function LiveFeedPanel({
-	open,
-	onOpenChange,
-	alerts,
-	patients,
-	escalationTargets,
-	onOpenPatient,
-	onAlertAction,
-}: LiveFeedPanelProps) {
+function LiveFeedPanel({ open, onOpenChange, alerts, patients, records = [], onOpenPatient }: LiveFeedPanelProps) {
 	const [width, setWidth] = React.useState<number>(sidePanelWidth.default);
+	// The kinds left out with the header's filter (Nov 11, 2026, user's call: a menu as the Messages panel's).
+	const [hiddenKinds, setHiddenKinds] = React.useState<LiveFeedFilterId[]>([]);
+	const navigation = usePatientNavigation();
 	// The feed lists every alert, so the toasts wait (hidden, timers paused) while it's open.
 	useHideToasts(open);
+	const entries = React.useMemo(() => {
+		const tones = avatarTones(patients);
+		return patients.flatMap((patient) => {
+			const record = records.find((item) => item.id === patient.id);
+			return patientFeedEntries({
+				timeline: record?.timeline,
+				activity: record?.activity,
+				alerts: [...alerts.filter((alert) => alert.patientId === patient.id), ...(record?.alertHistory ?? [])],
+				patient: {
+					name: `${patient.lastName}, ${patient.firstName}`,
+					// "Sidney Regional · MICU Bed 11", as the chat's patient rows.
+					detail: [patient.hospital, [patient.unit, patient.bed].filter(Boolean).join(" ")].filter(Boolean).join(" · "),
+					photo: patient.photo ?? record?.photo,
+					initials: patientInitials(patient),
+					tone: tones.get(patient.id),
+				},
+				onOpenAlert: navigation ? (alertId) => navigation.openAlert(patient.id, alertId) : undefined,
+				onOpenPatient: onOpenPatient ? () => onOpenPatient(patient.id) : undefined,
+			});
+		});
+	}, [alerts, patients, records, navigation, onOpenPatient]);
 
 	return (
 		<PagePanel>
@@ -169,18 +202,13 @@ function LiveFeedPanel({
 				onOpenChange={onOpenChange}
 				width={width}
 				onWidthChange={setWidth}
-				className='border-l border-border bg-background-subtle'
+				action={<LiveFeedFilter entries={entries} value={hiddenKinds} onValueChange={setHiddenKinds} size='icon-sm' />}
+				className='border-l border-border bg-background'
 			>
-				<TriageQueue
-					alerts={alerts}
-					patients={patients}
-					escalationTargets={escalationTargets}
-					onOpenPatient={onOpenPatient}
-					onAction={onAlertAction}
-				/>
+				<LiveFeed entries={entries} hiddenKinds={hiddenKinds} className='px-6 pb-6' />
 			</SidePanel>
 		</PagePanel>
 	);
 }
 
-export { LiveFeed, LiveFeedPanel, useAddressedAlerts, type LiveFeedPanelProps };
+export { LiveFeedButton, LiveFeedPanel, useAddressedAlerts, type LiveFeedPanelPatient, type LiveFeedPanelProps };

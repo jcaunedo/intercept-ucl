@@ -219,8 +219,9 @@ function OverviewAlertCard({
 				}}
 				size='md'
 				// A card that opens its pathway is one click target: its bar no longer opens the alert, so no maximize icon
-				// (Nov 9, 2026, user's call).
-				onOpen={opensPathway ? undefined : onOpen}
+				// (Nov 9, 2026, user's call). A resolved alert's bar doesn't open it either: nothing is left to do there (Nov 11,
+				// 2026, user's call: "remove maximize icon and action").
+				onOpen={opensPathway || resolved ? undefined : onOpen}
 				header
 			/>
 			<div className='flex flex-col gap-2 px-4 pb-2.5'>
@@ -247,9 +248,13 @@ function OverviewAlertCard({
 					</div>
 					{lifecycle.statusNode}
 				</div>
-				{/* Over the card's click target, so its own controls stay theirs. */}
-				{lifecycle.alertActionsNode ? <div className='relative z-[2] flex gap-2'>{lifecycle.alertActionsNode}</div> : null}
-				{lifecycle.formNode ? <div className='relative z-[2]'>{lifecycle.formNode}</div> : null}
+				{/* Over the card's click target, so its own controls stay theirs. Empty (a resolved alert has no buttons, and
+				    no form is open), they take no room: the column's 8px gap would otherwise leave the card's bottom 16px
+				    taller than its sides (Nov 11, 2026, user's call: "the same as x-padding"). */}
+				{lifecycle.alertActionsNode ? (
+					<div className='relative z-[2] flex gap-2 empty:hidden'>{lifecycle.alertActionsNode}</div>
+				) : null}
+				{lifecycle.formNode ? <div className='relative z-[2] empty:hidden'>{lifecycle.formNode}</div> : null}
 			</div>
 		</div>
 	);
@@ -1196,10 +1201,17 @@ function RecentOrdersCard({ record, now, onShowAll }: { record?: PatientRecord; 
 }
 
 /** Why the patient is here (PRD PD-026): the admitting diagnosis, the problem list and when and where from. */
-function EncounterCard({ record }: { record?: PatientRecord }) {
+// "ICU day 3": the day count since the ICU admission, the first day being day 1.
+const icuDay = (since: string, now: number) => Math.floor((now - Date.parse(since)) / (24 * 60 * 60_000)) + 1;
+
+/**
+ * Diagnosis, problems and admission, then the ICU day and weight, which left the Patient Header on Nov 11, 2026 (user's
+ * call, following intercept.ds).
+ */
+function EncounterCard({ record, now }: { record?: PatientRecord; now: number | null }) {
 	return (
 		<OverviewCard title='Encounter'>
-			{record?.diagnosis || record?.admittedAt || record?.problems?.length ? (
+			{record?.diagnosis || record?.admittedAt || record?.problems?.length || record?.icuAdmittedAt || record?.weight ? (
 				<dl className='flex flex-col gap-3'>
 					{record.diagnosis ? <Detail label='Diagnosis'>{record.diagnosis}</Detail> : null}
 					{record.problems?.length ? (
@@ -1218,6 +1230,10 @@ function EncounterCard({ record }: { record?: PatientRecord }) {
 							{record.admittedFrom ? ` from ${record.admittedFrom.toLowerCase()}` : null}
 						</Detail>
 					) : null}
+					{record.icuAdmittedAt && now !== null ? (
+						<Detail label='ICU day'>{icuDay(record.icuAdmittedAt, now)}</Detail>
+					) : null}
+					{record.weight ? <Detail label='Weight'>{record.weight}</Detail> : null}
 				</dl>
 			) : (
 				<NoData>No diagnosis or encounter details yet.</NoData>
@@ -1309,7 +1325,7 @@ function PatientOverview({
 	return (
 		// A size container, so the layout follows the room the side panels leave.
 		<div className='@container'>
-			<div className='flex flex-col gap-6'>
+			<div className='flex flex-col gap-4'>
 				{record?.brief && briefKey !== dismissedBrief ? (
 					<BriefBanner
 						brief={record.brief}
@@ -1338,7 +1354,7 @@ function PatientOverview({
 					<MedicationsCard record={record} now={now} onShowAll={showMedications} />
 					<OxygenAndInfusionsCard record={record} now={now} onShowAll={showMedications} />
 					<RecentOrdersCard record={record} now={now} onShowAll={onShowSection && (() => onShowSection("orders"))} />
-					<EncounterCard record={record} />
+					<EncounterCard record={record} now={now} />
 					<ReferralsCard record={record} />
 				</div>
 			</div>

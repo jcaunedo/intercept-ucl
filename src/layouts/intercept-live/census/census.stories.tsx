@@ -11,7 +11,7 @@ import { samplePatientRecords } from "../patient-details/sample-patient-details"
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
-import { prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
+import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Census } from "./census";
 import { samplePatients } from "./sample-census";
@@ -22,6 +22,9 @@ const meta = {
 	parameters: {
 		layout: "fullscreen",
 	},
+	// As tests, each story starts with a clean address: the stories of a file share one, and a tab, panel or modal an
+	// earlier story left there would open in the next (Storybook itself keeps a shared link's).
+	beforeEach: () => clearPrototypeLocation({ onlyInTests: true }),
 	// The Monitoring page's monitors are live here too (`useLivePatients`), and Ask Intercept Live answers from the same
 	// alerts (with the queue's actions) and values (`useLiveAskIntercept`).
 	render: function Render(args) {
@@ -59,6 +62,16 @@ const meta = {
 } satisfies Meta<typeof Census>;
 
 export default meta;
+
+/**
+ * The chat panel once it has slid open. It moves focus to its heading as the slide ends, so a story that types right
+ * away would lose the rest of its keys to it when the machine is slow.
+ */
+async function openedChat(canvas: ReturnType<typeof within>) {
+	const panel = await canvas.findByRole("complementary", { name: "Ask Intercept Live" });
+	await waitFor(() => expect(panel.contains(document.activeElement)).toBe(true));
+	return within(panel);
+}
 type Story = StoryObj<typeof meta>;
 
 /**
@@ -137,7 +150,7 @@ export const AskIntercept: Story = {
 export const AskInterceptPatientLists: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
-		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		const chat = await openedChat(canvas);
 		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), "fall risk patients?{Enter}");
 		const pressors = await chat.findByRole("button", { name: /on pressors/ }, { timeout: 15_000 });
 		await expect(pressors).toHaveAttribute("aria-expanded", "false");
@@ -161,10 +174,13 @@ export const AskInterceptPatientLists: Story = {
 export const AskInterceptPatientAvatars: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
-		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		const chat = await openedChat(canvas);
 		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), "Who is on oxygen?{Enter}");
 		const intro = await chat.findByText(/^Breathing support.*:$/, {}, { timeout: 15_000 });
 		const answer = intro.closest("div")?.parentElement as HTMLElement;
+		// A name is a link as soon as it shows, while the answer still streams (Nov 11, 2026, user's call).
+		await waitFor(() => expect(answer.querySelector("li p button")).not.toBeNull(), { timeout: 15_000 });
+		await expect(chat.getByRole("log", { name: "Conversation" })).toHaveAttribute("aria-busy", "true");
 		await waitFor(
 			() => {
 				const lines = [...answer.querySelectorAll("li")];
@@ -187,6 +203,16 @@ export const AskInterceptPatientAvatars: Story = {
 			const middle = (name.getBoundingClientRect().top + place.getBoundingClientRect().bottom) / 2;
 			await expect(Math.abs(avatar.top + avatar.height / 2 - middle)).toBeLessThanOrEqual(1);
 		}
+		// Each name opens the patient's page, and the chat closes and starts over (Nov 11, 2026, user's calls).
+		const first = answer.querySelector("li p") as HTMLElement;
+		const patientName = first.textContent ?? "";
+		await userEvent.click(within(first).getByRole("button", { name: patientName }));
+		await expect(await canvas.findByRole("heading", { level: 1, name: patientName })).toBeInTheDocument();
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Ask Intercept Live" })).toBeNull());
+		// The Sidebar's (the patient's header has one too).
+		await userEvent.click(canvas.getAllByRole("button", { name: "Ask Intercept Live" })[0]);
+		const reopened = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		await expect(reopened.queryByText("Who is on oxygen?")).toBeNull();
 	},
 };
 
@@ -198,7 +224,7 @@ export const AskInterceptPatientAvatars: Story = {
 export const AskInterceptActivityFollowUps: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
-		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		const chat = await openedChat(canvas);
 		await userEvent.type(chat.getByRole("combobox", { name: "Ask Intercept Live" }), "What happened overnight?{Enter}");
 		const followUps = within(await chat.findByRole("list", { name: "Follow-up actions" }, { timeout: 30_000 }));
 		await expect(followUps.getAllByRole("button").map((button) => button.textContent)).toEqual([
@@ -230,7 +256,7 @@ export const AskInterceptActivityFollowUps: Story = {
 export const AskInterceptSuggestedFollowUps: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
-		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		const chat = await openedChat(canvas);
 		const suggestions = within(await chat.findByRole("list", { name: "Suggested questions" }, { timeout: 15_000 }));
 		const offered = suggestions.getAllByRole("button").map((button) => button.textContent ?? "");
 		const brief = "Brief me for the start of my shift";
@@ -243,18 +269,20 @@ export const AskInterceptSuggestedFollowUps: Story = {
 };
 
 /**
- * The hospital bar's Live feed opens the live feed panel right of the canvas, as on Monitoring: the triage queue of the
- * census's alerts, highest priority first. The grid drops a column for the room it takes; Live feed again closes it.
+ * The hospital bar's Live feed opens the live feed panel right of the canvas, as on Monitoring: everyone's log, each
+ * line with its patient; an open alert's line opens it. The grid drops a column for the room it takes.
  */
 export const LiveFeed: Story = {
 	play: async ({ args, canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: /^Live feed/ }));
 		const panel = await canvas.findByRole("complementary", { name: "Live feed" });
 		await expect(args.onOpenLiveFeed).toHaveBeenCalled();
-		const queue = within(panel);
-		await userEvent.click(queue.getAllByRole("button", { name: "Acknowledge" })[0]);
-		await expect(args.onAlertAction).toHaveBeenCalledWith("a1", { type: "acknowledge" });
-		await expect(queue.getByText(/Acknowledged by you/)).toBeVisible();
+		// Everyone's log, each line with its patient; an open alert's line opens it (here the patient's page).
+		const log = within(within(panel).getByRole("log", { name: "Live feed" }));
+		const line = log.getAllByRole("button", { name: /Critical alert: / })[0];
+		const name = line.querySelector(".font-semibold")?.textContent ?? "";
+		await userEvent.click(line);
+		await expect(await canvas.findByRole("heading", { level: 1, name })).toBeInTheDocument();
 	},
 };
 
@@ -542,6 +570,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 			defaultPage={location.defaultPage}
 			defaultPatient={location.defaultPatient}
 			defaultAlert={location.defaultAlert}
+			defaultLocationState={location.defaultLocationState}
 			onLocationChange={location.onLocationChange}
 		/>
 	);

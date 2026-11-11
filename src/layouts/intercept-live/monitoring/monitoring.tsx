@@ -167,6 +167,7 @@ function Monitoring({
 			pages={{
 				Monitoring: (
 					<MonitoringPanel
+						records={patientRecords}
 						hospitals={hospitals}
 						patients={monitoringCards}
 						alerts={alerts}
@@ -181,6 +182,7 @@ function Monitoring({
 				),
 				Census: flaggedCensusPatients ? (
 					<CensusPanel
+						records={patientRecords}
 						hospitals={hospitals}
 						patients={flaggedCensusPatients}
 						onOpenPatient={onOpenPatient}

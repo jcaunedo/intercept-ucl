@@ -12,6 +12,7 @@ export {
 	motionScale,
 	motionRotation,
 	motionStagger,
+	motionDelay,
 	standardTransition,
 	enterTransition,
 	exitTransition,
@@ -114,6 +115,16 @@ export {
 export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display/badge";
 export { Counter, counterVariants, type CounterProps } from "@/components/data-display/counter";
 export { LabTile, labTileVariants, type LabTileFlag, type LabTileProps } from "@/components/data-display/lab-tile";
+export {
+	LiveFeed,
+	LiveFeedFilter,
+	type LiveFeedEntry,
+	type LiveFeedFilterId,
+	type LiveFeedKind,
+	type LiveFeedPatient,
+	type LiveFeedProps,
+	type LiveFeedSeverity,
+} from "@/components/data-display/live-feed";
 export { HospitalSectionHeader, type HospitalSectionHeaderProps } from "@/components/data-display/hospital-section-header";
 export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderProps } from "@/components/data-display/patient-header";
 export { Logo, LogoSymbol, type LogoProps, type LogoSymbolProps } from "@/components/data-display/logo";

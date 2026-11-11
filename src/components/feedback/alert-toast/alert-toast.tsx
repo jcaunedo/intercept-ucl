@@ -255,11 +255,15 @@ function AlertToast({
 
 	const ring = (
 		// Still, on every toast: none pulses (Nov 4, 2026, user's call: "remove flashing to all sonners"). A wrapper, so a
-		// collapsed stack and the hover can hide the ring with the opacity of their own.
+		// collapsed stack and the hover can hide the ring with the opacity of their own. It hides on hover only where the
+		// hover border shows (see below).
 		<span
 			data-slot='alert-toast-ring'
 			aria-hidden='true'
-			className={cn("pointer-events-none absolute -inset-px -z-10", onOpenAlert && !consult && "group-hover/toast:opacity-0")}
+			className={cn(
+				"pointer-events-none absolute -inset-px -z-10",
+				onOpenAlert && !consult && "not-in-data-[stack-collapsed=true]:group-hover/toast:opacity-0",
+			)}
 		>
 			<span className={cn("absolute inset-0 rounded-card border-2", ringClassNames[severity])} />
 		</span>
@@ -371,8 +375,10 @@ function AlertToast({
 			className={cn(
 				"group/toast relative isolate flex w-[var(--width,400px)] max-w-full flex-col gap-3 rounded-card border border-border bg-popover p-4 font-sans text-popover-foreground shadow-toast transition-[border-color] duration-160 ease-in-out",
 				// Opening the alert, it takes the patient cards' hover: a 2px `foreground` border (the ring hides meanwhile), the
-				// padding 1px less so the content stays put.
-				onOpenAlert && "hover:border-2 hover:border-foreground hover:p-[15px]",
+				// padding 1px less so the content stays put. Not on a collapsed stack (the Toaster's `data-stack-collapsed`):
+				// a click there spreads the stack instead of opening the alert, so the hover would promise the wrong thing.
+				onOpenAlert &&
+					"not-in-data-[stack-collapsed=true]:hover:border-2 not-in-data-[stack-collapsed=true]:hover:border-foreground not-in-data-[stack-collapsed=true]:hover:p-[15px]",
 				className,
 			)}
 			{...props}
@@ -382,10 +388,12 @@ function AlertToast({
 			{onOpenAlert ? (
 				// The whole toast opens the alert: one button over it, under its own buttons (z-2), which keep their clicks. It's
 				// over the avatar too, which is positioned. Sonner starts a swipe (and captures the pointer) on a press that
-				// doesn't land on a <button>; this is one, and the press stays here, so the toast isn't swiped away.
+				// doesn't land on a <button>; this is one, and the press stays here, so the toast isn't swiped away. On a collapsed
+				// stack a click here spreads the stack instead (`data-toast-open`, the Toaster's rule), as on the toast's body.
 				<button
 					type='button'
 					data-slot='alert-toast-open'
+					data-toast-open=''
 					aria-label={`${openAlertLabel}: ${title}`}
 					onClick={onOpenAlert}
 					onPointerDown={(event) => event.stopPropagation()}

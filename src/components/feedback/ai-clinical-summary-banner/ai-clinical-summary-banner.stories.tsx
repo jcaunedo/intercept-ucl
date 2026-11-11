@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn } from "storybook/test";
+import { expect, fireEvent, fn, screen, userEvent } from "storybook/test";
 
 import { AiClinicalSummaryBanner } from "./ai-clinical-summary-banner";
 
@@ -22,10 +22,24 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** As in Figma: the sparkle, the headline over the summary, the sources and how fresh it is, and ×. */
+/**
+ * As in Figma: the sparkle, then one line, the headline in bold and the summary after it, the sources and how fresh it
+ * is, and ×. Hovering it names it: "AI clinical summary".
+ */
 export const Default: Story = {
 	play: async ({ canvas, args }) => {
-		await expect(canvas.getByText("AI clinical summary: Worsening hemodynamic and respiratory status")).toBeVisible();
+		await expect(canvas.getByText("Worsening hemodynamic and respiratory status:")).toBeVisible();
+		await expect(canvas.getByRole("region", { name: "AI clinical summary" })).toBeInTheDocument();
+		const region = canvas.getByRole("region", { name: "AI clinical summary" });
+		await userEvent.hover(region);
+		await expect(await screen.findByRole("tooltip")).toHaveTextContent("AI clinical summary");
+		// A scroll under a still mouse (a trackpad's momentum) keeps it open; Radix alone would close it at once.
+		const box = region.getBoundingClientRect();
+		fireEvent.pointerMove(region, { pointerType: "mouse", clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 });
+		document.dispatchEvent(new Event("scroll"));
+		await new Promise((resolve) => setTimeout(resolve, 100));
+		await expect(screen.getByRole("tooltip")).toHaveTextContent("AI clinical summary");
+		await userEvent.unhover(region);
 		canvas.getByRole("button", { name: "Dismiss summary" }).click();
 		await expect(args.onClose).toHaveBeenCalled();
 	},
@@ -41,7 +55,7 @@ export const Openable: Story = {
 	},
 };
 
-/** No headline: the label alone on the top line. */
+/** No headline: the summary alone on its line. */
 export const WithoutTitle: Story = {
 	args: { title: undefined },
 };
@@ -51,7 +65,7 @@ export const Minimal: Story = {
 	args: { source: undefined, onClose: undefined },
 };
 
-/** A long summary in a narrow space: each line cut off with an ellipsis, the full text in its hover title. */
+/** A long summary in a narrow space: the line cut off with an ellipsis (the full text for screen readers). */
 export const Narrow: Story = {
 	decorators: [
 		(Story) => (

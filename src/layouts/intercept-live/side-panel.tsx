@@ -135,9 +135,12 @@ function SidePanel({
 	width,
 	onWidthChange,
 	description,
+	action,
 	className,
 	children,
 }: {
+	/** A control in the header, 8px left of × (e.g. the Live feed's filter, as the Messages panel's). */
+	action?: React.ReactNode;
 	/** Names the panel's parts (`<id>-title`), and the panel itself, for a trigger's `aria-controls`. */
 	id: string;
 	side: SidePanelSide;
@@ -199,15 +202,18 @@ function SidePanel({
 								>
 									{title}
 								</Typography>
-								<Button
-									variant='ghost'
-									size='icon-sm'
-									aria-label={`Close ${title}`}
-									onClick={() => onOpenChange(false)}
-									className='rounded-button-md'
-								>
-									<XIcon />
-								</Button>
+								<div className='flex shrink-0 items-center gap-2'>
+									{action}
+									<Button
+										variant='ghost'
+										size='icon-sm'
+										aria-label={`Close ${title}`}
+										onClick={() => onOpenChange(false)}
+										className='rounded-button-md'
+									>
+										<XIcon />
+									</Button>
+								</div>
 							</div>
 							{description ? <p className='pr-10 text-sm text-foreground'>{description}</p> : null}
 						</div>

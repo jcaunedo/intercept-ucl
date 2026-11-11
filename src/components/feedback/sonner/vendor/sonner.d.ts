@@ -123,6 +123,8 @@ interface ToasterProps {
     containerAriaLabel?: string;
     /** UCL: holds every toast's timer, as a press on the stack does. */
     paused?: boolean;
+    /** UCL: a selector for elements outside the stack where a press doesn't collapse a spread stack. */
+    keepExpandedWithin?: string;
 }
 type SwipeDirection = 'top' | 'right' | 'bottom' | 'left';
 interface ToastToDismiss {

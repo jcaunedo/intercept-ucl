@@ -11,7 +11,7 @@ import { samplePatientRecords } from "../patient-details/sample-patient-details"
 import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
-import { prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
+import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Monitoring, type MonitoringProps } from "./monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "./sample-monitoring";
@@ -22,6 +22,9 @@ const meta = {
 	parameters: {
 		layout: "fullscreen",
 	},
+	// As tests, each story starts with a clean address: the stories of a file share one, and a tab, panel or modal an
+	// earlier story left there would open in the next (Storybook itself keeps a shared link's).
+	beforeEach: () => clearPrototypeLocation({ onlyInTests: true }),
 	// The monitors are live in every story: the numbers vary as on a bedside monitor (`useLivePatients`), without
 	// crossing an alarm limit, so tags, filters and tests stay put. Ask Intercept Live answers from the same alerts
 	// (with the queue's actions) and values the cards show (`useLiveAskIntercept`).
@@ -125,7 +128,7 @@ export const VideoConsultWithoutAlert: Story = {
 
 /**
  * The Prototype menu's "Scenario 1: Heart failure": Margaret Hayes has no alert until it's picked; 1.5 s later her
- * NEWS2 crosses into High (5 → 10) and her Critical alert leads the live feed's queue. Ask in her toast (or Ask
+ * NEWS2 crosses into High (5 → 10) and her Critical alert arrives at the top of the live feed. Ask in her toast (or Ask
  * Intercept Live in her card's menu) answers why she's #1, the reason line explained, then her history and labs.
  */
 export const Scenario1HeartFailure: Story = {
@@ -133,10 +136,10 @@ export const Scenario1HeartFailure: Story = {
 	play: async ({ canvas, userEvent }) => {
 		const title = "NEWS2 10, High: up 5 in 4 h";
 		const feed = await openLiveFeed(canvas, userEvent);
-		await expect(feed.queryByText(title)).toBeNull();
+		await expect(feed.queryByText(`Critical alert: ${title}`)).toBeNull();
 		await userEvent.click(canvas.getByRole("button", { name: "Prototype" }));
 		await userEvent.click(await screen.findByRole("menuitem", { name: "Scenario 1: Heart failure" }));
-		await expect(await feed.findByText(title, {}, { timeout: 4000 })).toBeInTheDocument();
+		await expect(await feed.findByText(`Critical alert: ${title}`, {}, { timeout: 4000 })).toBeInTheDocument();
 		// Her toast waits while the feed is open (it lists the alert already) and shows once the feed closes.
 		await userEvent.click(canvas.getByRole("button", { name: /^Live feed/ }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Live feed" })).not.toBeInTheDocument());
@@ -221,11 +224,7 @@ export const Scenario1HeartFailure: Story = {
  */
 export const FallPreventionPathway: Story = {
 	// Starts on Monitoring, whatever page, patient or alert an earlier story left in the prototype's address.
-	beforeEach: () => {
-		const url = new URL(window.location.href);
-		for (const name of ["page", "patient", "alert", "consult"]) url.searchParams.delete(name);
-		window.history.replaceState(window.history.state, "", url);
-	},
+	beforeEach: () => clearPrototypeLocation(),
 	render: (args) => <LiveMonitoring {...args} />,
 	play: async ({ canvas, userEvent }) => {
 		const anderson = await waitFor(
@@ -240,6 +239,70 @@ export const FallPreventionPathway: Story = {
 		await expect(section.getByText("Patient identified as at risk for falls")).toBeInTheDocument();
 		await expect(section.getByText(/Hospital fall prevention protocol/)).toBeInTheDocument();
 		await expect(section.getByText("Related event: Bed exit alarm")).toBeInTheDocument();
+	},
+};
+
+/** The prototype's address, the frame's own (the test runs in the bare story frame). */
+const addressParam = (name: string) => new URL(window.location.href).searchParams.get(name);
+
+/**
+ * A shared link opens the same place (Nov 11, 2026, user's call): the patient's tab, the panels and the chat in the
+ * address open as they were, and each change goes back into it. Here Sarah Miller's EMR tab with Alerts open and the
+ * chat beside it; then Chart, Alerts closed, Back, and the live feed.
+ */
+export const ShareableLink: Story = {
+	beforeEach: () => {
+		clearPrototypeLocation();
+		const url = new URL(window.location.href);
+		const link = { page: "monitoring", patient: "p1", tab: "emr", panels: "alerts", side: "chat" };
+		for (const [name, value] of Object.entries(link)) url.searchParams.set(name, value);
+		window.history.replaceState(window.history.state, "", url);
+		return () => clearPrototypeLocation();
+	},
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		// Opened as the link says.
+		await expect(await canvas.findByRole("tab", { name: "EMR", selected: true }, { timeout: 10000 })).toBeInTheDocument();
+		await expect(await canvas.findByRole("complementary", { name: "Alerts" })).toBeInTheDocument();
+		await expect(await canvas.findByRole("complementary", { name: "Ask Intercept Live" })).toBeInTheDocument();
+		// Each change goes into the address.
+		await userEvent.click(canvas.getByRole("tab", { name: "Labs" }));
+		await waitFor(() => expect(addressParam("tab")).toBe("chart"));
+		await userEvent.click(canvas.getByRole("button", { name: "Close alerts" }));
+		await waitFor(() => expect(addressParam("panels")).toBeNull());
+		await expect(addressParam("side")).toBe("chat");
+		// Back: no patient, so no tab either; the page's own panels go in instead.
+		await userEvent.click(canvas.getByRole("button", { name: "Back to Monitoring" }));
+		await waitFor(() => expect(addressParam("patient")).toBeNull());
+		await expect(addressParam("tab")).toBeNull();
+		// Her page has left (its header has a Live feed button of its own).
+		await waitFor(() => expect(canvas.queryByRole("heading", { level: 1, name: "Miller, Sarah" })).toBeNull());
+		await openLiveFeed(canvas, userEvent);
+		await waitFor(() => expect(addressParam("feed")).toBe("1"));
+	},
+};
+
+/**
+ * The alert modal's panels in a shared link (`alertPanels`): Sarah Miller's alert opens with Messages out, and closing
+ * the modal takes the alert and its panels out of the address.
+ */
+export const ShareableLinkAlert: Story = {
+	beforeEach: () => {
+		clearPrototypeLocation();
+		const url = new URL(window.location.href);
+		const link = { page: "monitoring", alert: "p1", alertPanels: "messages" };
+		for (const [name, value] of Object.entries(link)) url.searchParams.set(name, value);
+		window.history.replaceState(window.history.state, "", url);
+		return () => clearPrototypeLocation();
+	},
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ userEvent }) => {
+		const alert = within(await screen.findByRole("dialog", {}, { timeout: 10000 }));
+		await expect(await alert.findByRole("complementary", { name: "Messages" })).toBeInTheDocument();
+		await waitFor(() => expect(addressParam("alertPanels")).toBe("messages"));
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(addressParam("alert")).toBeNull());
+		await expect(addressParam("alertPanels")).toBeNull();
 	},
 };
 
@@ -486,55 +549,39 @@ export const Filters: Story = {
 	},
 };
 
-/** Acknowledging the queue's first alert: it stays in the queue, marked with who and when, and Miller's ring stops pulsing. */
-export const AcknowledgeAlert: Story = {
-	play: async ({ args, canvas, userEvent }) => {
-		const queue = await openLiveFeed(canvas, userEvent);
-		await userEvent.click(queue.getAllByRole("button", { name: "Acknowledge" })[0]);
-		await expect(args.onAlertAction).toHaveBeenCalledWith("a1", { type: "acknowledge" });
-		await expect(queue.getByText(/Acknowledged by you/)).toBeVisible();
+/**
+ * Everyone's live feed (Nov 11, 2026, user's calls): a log, each line starting with its patient as the chat's patient
+ * rows. An open alert's line opens the alert (here, without alert details, the patient's page, the shell's fallback);
+ * the actions (Acknowledge, Escalate, Resolve) are in the alert modal, no longer in the feed.
+ */
+export const FeedLineOpensAlert: Story = {
+	play: async ({ canvas, userEvent }) => {
+		const feed = await openLiveFeed(canvas, userEvent);
+		const log = within(feed.getByRole("log", { name: "Live feed" }));
+		const line = log.getAllByRole("button", { name: /Critical alert: / }).find((button) => button.textContent?.includes("Miller, Sarah"));
+		await expect(line).toBeDefined();
+		await userEvent.click(line as HTMLElement);
+		await expect(await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" })).toBeInTheDocument();
 	},
 };
 
-/** Escalating Johnson's SpO₂ alert to the intensivist on call. */
-export const EscalateAlert: Story = {
+/** The feed's filter, in its header left of ×, as the Messages panel's: unchecking Alerts leaves every other kind. */
+export const FeedFilters: Story = {
 	play: async ({ canvas, userEvent }) => {
-		const queue = await openLiveFeed(canvas, userEvent);
-		const row = within(queue.getByText("SpO₂ below 88% for 5 min").closest("li") as HTMLElement);
-		await userEvent.click(row.getByRole("button", { name: "Escalate" }));
-		await userEvent.type(row.getByRole("textbox", { name: "Note (optional)" }), "Desaturating on FiO₂ 70%");
-		await userEvent.click(row.getByRole("button", { name: "Escalate" }));
-		await expect(row.getByText(/Escalated to James Turner by you/)).toBeVisible();
-	},
-};
-
-/** Resolving needs a reason. The alert leaves Active for Resolved, and Anderson's card loses its pill. */
-export const ResolveAlert: Story = {
-	play: async ({ canvas, userEvent }) => {
-		const queue = await openLiveFeed(canvas, userEvent);
-		const row = within(queue.getByText("Bed exit alarm").closest("li") as HTMLElement);
-		await userEvent.click(row.getByRole("button", { name: "Resolve" }));
-		await expect(row.getByRole("button", { name: "Mark as resolved" })).toBeDisabled();
-		await userEvent.click(row.getByRole("radio", { name: "Artifact or false alarm" }));
-		await userEvent.click(row.getByRole("button", { name: "Mark as resolved" }));
-		await waitFor(() => expect(queue.queryByText("Bed exit alarm")).not.toBeInTheDocument());
-		await userEvent.click(queue.getByRole("tab", { name: /Resolved/ }));
-		await expect(await queue.findByText(/Resolved by you · .* · Artifact or false alarm/)).toBeVisible();
-	},
-};
-
-/** No alerts on the panel: the queue says so, and no card has a pill. */
-export const EmptyQueue: Story = {
-	args: { alerts: [] },
-	play: async ({ canvas, userEvent }) => {
-		const queue = await openLiveFeed(canvas, userEvent);
-		await expect(queue.getByText("No active alerts")).toBeVisible();
+		const feed = await openLiveFeed(canvas, userEvent);
+		const all = within(feed.getByRole("log", { name: "Live feed" })).getAllByRole("listitem").length;
+		await userEvent.click(feed.getByRole("button", { name: "Filter live feed" }));
+		await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Alerts" }));
+		// Counted in the DOM: the open menu hides the page from role queries.
+		const lines = () => [...feed.getByRole("log", { name: "Live feed", hidden: true }).querySelectorAll("li")];
+		await waitFor(() => expect(lines().length).toBeLessThan(all));
+		for (const line of lines()) await expect(line.textContent).not.toMatch(/Alert: /);
 	},
 };
 
 /**
- * The live feed panel: "Live feed" in the hospital bar opens the triage queue right of the canvas, like the chat on
- * the left; it resizes from its left edge, and its close button, Escape inside it or the link again closes it.
+ * The live feed panel: "Live feed" in the hospital bar opens everyone's log right of the canvas, like the chat on the
+ * left; it resizes from its left edge, and its close button, Escape inside it or the link again closes it.
  */
 export const LiveFeedPanel: Story = {
 	play: async ({ canvas, userEvent }) => {
@@ -542,7 +589,9 @@ export const LiveFeedPanel: Story = {
 		await expect(link).toHaveAttribute("aria-expanded", "false");
 		const panel = await openLiveFeed(canvas, userEvent);
 		await expect(link).toHaveAttribute("aria-expanded", "true");
-		await expect(panel.getByRole("tab", { name: /Active/ })).toHaveTextContent("3");
+		// Each line names its patient, with the avatar, as the chat's patient rows.
+		const firstLine = within(panel.getByRole("log", { name: "Live feed" })).getAllByRole("listitem")[0];
+		await expect(firstLine.querySelector("[data-slot='avatar']")).not.toBeNull();
 		await expect(panel.getByRole("separator", { name: "Resize Live feed" })).toBeInTheDocument();
 		// The feed lists every alert, so the toasts hide (paused) while it's open and come back when it closes.
 		const toasts = () => document.querySelector("[data-slot='toaster-region']");
@@ -680,6 +729,7 @@ function LiveMonitoring(props: MonitoringProps) {
 			defaultPage={location.defaultPage}
 			defaultPatient={location.defaultPatient}
 			defaultAlert={location.defaultAlert}
+			defaultLocationState={location.defaultLocationState}
 			onLocationChange={location.onLocationChange}
 		/>
 	);

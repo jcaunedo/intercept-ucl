@@ -27,7 +27,13 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { useMotionPreference } from "@/lib/motion";
 
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
-import { compareTriageAlerts, isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
+import {
+	compareTriageAlerts,
+	isOpenAlert,
+	type EscalationTarget,
+	type TriageAlert,
+	type TriageAlertAction,
+} from "../monitoring/triage-queue";
 import { fallPathwayActions, flagDetails } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
 import type { AlertConsultState, AlertDetailData, PatientConsultData } from "../alert-panel/alert-panel";
@@ -36,17 +42,25 @@ import { ConsultSessionScope, useSessionState } from "../alert-panel/consult-ses
 import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "../alert-panel/discharge-plan";
 import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
+import {
+	formatLocationList,
+	parseLocationList,
+	useInitialLocation,
+	useLocationReport,
+	useLocationState,
+} from "../location-state";
 import { usePatientNavigation } from "../patient-navigation";
 import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
 import {
 	PatientAlertsPanel,
 	PatientConsultPanels,
+	PatientLiveFeedPanel,
 	useAlertPathwayPanel,
-	useOpenAlertsPanel,
 	useOpenPathwayPanel,
 	type PatientPathways,
 } from "./consult-panels";
 import { AlertsSection, PatientOverview } from "./patient-overview";
+import { patientFeedEntries } from "../shared/live-feed-entries";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { ChartSection, type PatientChart } from "./sections/chart-section";
 import { EpicSection, type PatientEmr } from "./sections/epic-section";
@@ -276,6 +290,8 @@ type PatientRecord = {
 	photo?: string;
 	/** Preformatted, e.g. "64 kg". */
 	weight?: string;
+	/** The hospital account (encounter) number, after the MRN in the Patient Header: "ACCT 6325DF2". */
+	account?: string;
 	/** Unread messages in the patient's thread. */
 	unreadMessages?: number;
 	brief?: PatientBrief;
@@ -397,6 +413,7 @@ type PatientAction =
 	| "new-note"
 	| "handoff"
 	| "copy-link"
+	| "admission-note"
 	| "care-team";
 
 type SectionId =
@@ -407,7 +424,7 @@ type SectionId =
 	| "medications"
 	| "orders"
 	| "discharge"
-	| "epic"
+	| "emr"
 	| "notes"
 	| "sepsis"
 	| "camera";
@@ -423,11 +440,12 @@ const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon
 		description: "Vital signs and their trends will appear here, with each value's source and time.",
 	},
 	{
+		// "Labs" on screen; the id stays `chart`, as shared links name it (`tab=chart`).
 		id: "chart",
-		label: "Chart",
+		label: "Labs",
 		icon: BookOpenIcon,
-		title: "No chart yet",
-		description: "The patient's record from the hospital will appear here: problems, history and results.",
+		title: "No labs yet",
+		description: "Results, microbiology and reports from the hospital's record will appear here, with problems and history.",
 	},
 	{
 		id: "timeline",
@@ -458,11 +476,11 @@ const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon
 		description: "Social needs and referrals for discharge will appear here.",
 	},
 	{
-		id: "epic",
-		label: "Epic",
+		id: "emr",
+		label: "EMR",
 		icon: HospitalIcon,
-		title: "Nothing from Epic yet",
-		description: "The patient's record in Epic will appear here, where the hospital allows it.",
+		title: "Nothing from the EMR yet",
+		description: "The patient's record in the hospital's EMR will appear here, where the hospital allows it.",
 	},
 	{
 		id: "notes",
@@ -486,11 +504,6 @@ const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon
 		description: "The bedside camera will appear here when you start a video consult.",
 	},
 ];
-
-const DAY = 24 * 60 * 60_000;
-
-/** "ICU day 3": the day of the ICU stay, counting the first as day 1. */
-const icuDay = (since: string, now: number) => Math.floor((now - Date.parse(since)) / DAY) + 1;
 
 /** The Patient Header's badges: safety first, in words (PRD PD-011), then the patient's tags. */
 /** "Full code": no limit on resuscitation, every patient's default. */
@@ -543,9 +556,13 @@ const createActions: { label: string; icon: LucideIcon; action: PatientAction }[
 	{ label: "Prepare handoff", icon: ArrowRightLeftIcon, action: "handoff" },
 ];
 
-/** The "…" menu's own items, after the patient's actions (PRD PD-014 More). */
+/**
+ * The "…" menu's own items, after the patient's actions (PRD PD-014 More). Admission note opens the note the patient
+ * was admitted with, the original clinical documentation.
+ */
 const moreActions: { label: string; icon: LucideIcon; action: PatientAction }[] = [
-	{ label: "Copy link", icon: LinkIcon, action: "copy-link" },
+	{ label: "Admission note", icon: FileTextIcon, action: "admission-note" },
+	{ label: "Share patient link", icon: LinkIcon, action: "copy-link" },
 ];
 
 /** A section's content from the patient's record, or null when the record has nothing for it. */
@@ -586,7 +603,7 @@ function sectionContent(
 			return record?.discharge ? (
 				<DischargePlanPanel plan={record.discharge} onDecision={onDischargeDecision} headingLevel='h2' className='max-w-2xl' />
 			) : null;
-		case "epic":
+		case "emr":
 			return record?.emr ? <EpicSection emr={record.emr} /> : null;
 		case "notes":
 			return record?.notes ? <NotesSection notes={record.notes} onNewNote={() => onAction?.("new-note")} /> : null;
@@ -643,12 +660,58 @@ function PatientDetailsContent({
 	defaultPathway,
 	pathways,
 }: PatientDetailsProps) {
-	const [section, setSection] = React.useState<SectionId>("overview");
+	// The tab is in the address (`tab`), so a shared link opens it; one the page doesn't know opens the Overview.
+	const [section, setSection] = useLocationState<SectionId>("tab", "overview", (value) =>
+		value === "overview" || pendingSections.some((item) => item.id === value) ? (value as SectionId) : undefined,
+	);
+	// The panels open on the right, in the address too (`panels`: video, alerts, messages, pathway). Alerts, Messages and
+	// Pathway are the patient's consult session's; the call's panel is PatientConsultPanels' own, which reports it.
+	const [alertsOpen, setAlertsOpen] = useSessionState("alertsOpen", false);
+	const [messagesOpen, setMessagesOpen] = useSessionState("messagesOpen", false);
+	const [pathwayOpen, setPathwayOpen] = useSessionState("pathwayOpen", false);
+	const [feedOpen, setFeedOpen] = useSessionState("feedOpen", false);
+	const [videoOpen, setVideoOpen] = React.useState(false);
+	const initialPanelsValue = useInitialLocation("panels");
+	const initialPanels = React.useMemo(() => parseLocationList(initialPanelsValue), [initialPanelsValue]);
+	const hasPathways = Boolean(pathways?.details.length);
+	React.useEffect(() => {
+		if (initialPanels.includes("alerts")) setAlertsOpen(true);
+		if (initialPanels.includes("feed")) setFeedOpen(true);
+		if (!consult) return;
+		if (initialPanels.includes("messages")) {
+			setPathwayOpen(false);
+			setMessagesOpen(true);
+		} else if (initialPanels.includes("pathway") && hasPathways) {
+			setMessagesOpen(false);
+			setPathwayOpen(true);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the page opens from a shared link.
+	}, []);
+	useLocationReport(
+		"panels",
+		formatLocationList([
+			consult && videoOpen && "video",
+			alertsOpen && "alerts",
+			feedOpen && "feed",
+			consult && messagesOpen && "messages",
+			consult && !messagesOpen && pathwayOpen && hasPathways && "pathway",
+		]),
+	);
 	// The pathway the Overview shows: the first alert's, where it is now (the session's, as the panels have it, or the
 	// app's), and the way to it: the page's Pathway panel, or the alert without one.
 	const navigation = usePatientNavigation();
+	// The patient's Live feed (UCL LiveFeed), history included: an open alert's lines open it.
+	const feedEntries = React.useMemo(
+		() =>
+			patientFeedEntries({
+				timeline: record?.timeline,
+				activity: record?.activity,
+				alerts: [...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])],
+				onOpenAlert: navigation ? (alertId) => navigation.openAlert(patient.id, alertId) : undefined,
+			}),
+		[record, alerts, leftAlerts, navigation, patient.id],
+	);
 	const openPathwayPanel = useOpenPathwayPanel();
-	const openAlertsPanel = useOpenAlertsPanel();
 	const alertPathway = useAlertPathwayPanel();
 	const appTagActions = useTagsPopoverActions();
 	const fallPathwayInPlace = React.useMemo(
@@ -683,24 +746,17 @@ function PatientDetailsContent({
 		: undefined;
 	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080), Discharge only once the
 	// discharge workflow has flagged social needs (Scenario 2, step 6).
-	// The hospital's record section is named after its system (Epic, Meditech…).
+	// The hospital's record tab is always "EMR", whatever its system (Meditech, Epic, Cerner…; Nov 11, 2026, user's call);
+	// its empty state names the system when the record knows it.
 	const sections = pendingSections
 		.filter((item) => item.id !== "sepsis" || patient.sepsisWatch)
 		.filter((item) => item.id !== "discharge" || record?.discharge)
-		.map((item) =>
-			item.id === "epic" && record?.emr
-				? { ...item, label: record.emr.name, title: `Nothing from ${record.emr.name} yet` }
-				: item,
-		);
+		.map((item) => (item.id === "emr" && record?.emr ? { ...item, title: `Nothing from ${record.emr.name} yet` } : item));
 	const shownSection = sections.some((item) => item.id === section) ? section : "overview";
 
 	// A switch is announced, so it's never mistaken for an update; the first patient isn't (the page title says it).
 	const [announcement, setAnnouncement] = React.useState("");
 	const now = useCurrentMinute();
-	const details = [
-		record?.icuAdmittedAt && now !== null ? `ICU day ${icuDay(record.icuAdmittedAt, now)}` : undefined,
-		record?.weight,
-	].filter((detail): detail is string => Boolean(detail));
 	// The header's "View breakdown" and "View alerts" open the Overview and bring the card into view, with focus on it.
 	const { prefersReducedMotion } = useMotionPreference();
 	const showOverviewCard = (id: string) => {
@@ -731,7 +787,9 @@ function PatientDetailsContent({
 				<PatientConsultPanels
 					key={patient.id}
 					data={consult}
-					defaultConsult={defaultConsult}
+					// A shared link's `panels=video` opens the call's panel, calling the bedside, as Video consult does.
+					defaultConsult={defaultConsult ?? (initialPanels.includes("video") ? "connecting" : undefined)}
+					onConsultOpenChange={setVideoOpen}
 					defaultPathway={defaultPathway}
 					pathways={pathways}
 					onOpenConsult={() => onAction?.("video-consult")}
@@ -756,6 +814,8 @@ function PatientDetailsContent({
 					onTogglePathway={alertPathway.toggle}
 				/>
 			</PatientAlertsPanel>
+			{/* The header's Live feed: this patient's log, history included (Nov 11, 2026, user's calls). */}
+			<PatientLiveFeedPanel entries={feedEntries} />
 			{/* 16px below the app header and above the tabs: the header's own padding (intercept.ds `1191:3147`). */}
 			<PatientHeader
 				lastName={patient.lastName}
@@ -770,13 +830,16 @@ function PatientDetailsContent({
 				unit={patient.unit}
 				room={patient.room}
 				bed={patient.bed}
-				details={details}
+				account={record?.account}
 				tags={patientBadges(patient, record)}
 				acuity={patient.acuity}
 				trajectory={patient.trajectory}
 				alert={alertPill(alerts)}
 				alertCounts={alertCountsBySeverity(alerts)}
-				onViewAlerts={openAlertsPanel}
+				onViewAlerts={() => setAlertsOpen((open) => !open)}
+				alertsOpen={alertsOpen}
+				onOpenLiveFeed={() => setFeedOpen((open) => !open)}
+				liveFeedOpen={feedOpen}
 			/>
 
 			<Tabs
@@ -947,8 +1010,11 @@ function patientDetailsView(
 			acuity: item.acuity,
 		}));
 
+	const tone = avatarTones([...patients, ...monitoringPatients]).get(patientId);
 	return {
 		name: patientName(patient),
+		// As the header's avatar, for Ask Intercept Live's patient chip.
+		avatar: { photo: records.find((item) => item.id === patientId)?.photo, initials: patientInitials(patient), tone },
 		patientList,
 		tags: patient.tags?.map((tag) => tag.label),
 		headerActions: {
@@ -971,7 +1037,7 @@ function patientDetailsView(
 		content: (
 			<PatientDetails
 				patient={identity}
-				tone={avatarTones([...patients, ...monitoringPatients]).get(patientId)}
+				tone={tone}
 				record={records.find((item) => item.id === patientId)}
 				monitor={
 					live

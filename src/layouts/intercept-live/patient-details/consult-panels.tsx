@@ -3,6 +3,7 @@ import { ListFilterIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
+import { LiveFeed, LiveFeedFilter, type LiveFeedEntry, type LiveFeedFilterId } from "@/components/data-display/live-feed";
 import {
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
@@ -310,6 +311,7 @@ function PatientConsultPanels({
 	onOpenMessages,
 	onConsultNote,
 	onSendMessage,
+	onConsultOpenChange,
 }: {
 	data: PatientConsultData;
 	/** The call as the panels open: `live` for a consult request answered on the patient's page, its panel open. */
@@ -325,10 +327,16 @@ function PatientConsultPanels({
 	onConsultNote?: (note: string) => void;
 	/** A message the clinician sent the bedside nurse. */
 	onSendMessage?: (text: string) => void;
+	/** The call's panel opened or closed (and closed as the panels leave), e.g. for the address's `panels`. */
+	onConsultOpenChange?: (open: boolean) => void;
 }) {
 	const [consult, setConsult] = useConsult(defaultConsult);
 	// A call picked up from the alert panel opens with its panel; Messages as they were there.
 	const [consultOpen, setConsultOpen] = React.useState(consult !== "idle");
+	const consultOpenChange = React.useRef(onConsultOpenChange);
+	consultOpenChange.current = onConsultOpenChange;
+	React.useEffect(() => consultOpenChange.current?.(consultOpen), [consultOpen]);
+	React.useEffect(() => () => consultOpenChange.current?.(false), []);
 	const [messagesOpen, setMessagesOpen] = useSessionState("messagesOpen", false);
 	// Pathway shares Messages' place: one at a time.
 	const [pathwayOpen, setPathwayOpen] = useSessionState("pathwayOpen", false);
@@ -586,9 +594,55 @@ function PatientAlertsPanel({ children }: { children: React.ReactNode }) {
 	);
 }
 
+/**
+ * The page's Live feed (Nov 11, 2026, user's calls: "this patient's feed", "like a log, not just alerts", "keep
+ * historical data"): the patient's log (`PatientLiveLog`), opened by the patient header's Live feed. It stays open beside
+ * the other panels, right of Alerts (CSS `order`, as Alerts). × or Escape closes it, and the shell's alert toasts hide
+ * while it's open, as with the app's feed.
+ */
+function PatientLiveFeedPanel({ entries }: { entries: LiveFeedEntry[] }) {
+	const [feedOpen, setFeedOpen] = useSessionState("feedOpen", false);
+	const [hiddenKinds, setHiddenKinds] = React.useState<LiveFeedFilterId[]>([]);
+	useHideToasts(feedOpen);
+	return (
+		<PagePanel>
+			<PatientPanel
+				id='patient-live-feed'
+				title='Live feed'
+				open={feedOpen}
+				action={
+					// The filter, then ×, 8px apart, as the Messages panel's.
+					<div className='flex shrink-0 items-center gap-2'>
+						<LiveFeedFilter entries={entries} value={hiddenKinds} onValueChange={setHiddenKinds} />
+						<Button variant='ghost' size='icon-md' aria-label='Close live feed' onClick={() => setFeedOpen(false)}>
+							<XIcon aria-hidden='true' />
+						</Button>
+					</div>
+				}
+				onOpened={(heading) => heading?.focus({ preventScroll: true })}
+				onKeyDown={(event) => {
+					// Not from the filter's menu (a portal, outside the panel's DOM).
+					if (event.key === "Escape" && event.currentTarget.contains(event.target as Node)) setFeedOpen(false);
+				}}
+				className={cn(panelShadow, "order-2")}
+			>
+				<div className='flex min-h-0 flex-1 flex-col overflow-y-auto'>
+					<LiveFeed
+						entries={entries}
+						hiddenKinds={hiddenKinds}
+						emptyText='Nothing has happened for this patient yet.'
+						className='p-6'
+					/>
+				</div>
+			</PatientPanel>
+		</PagePanel>
+	);
+}
+
 export {
 	PatientAlertsPanel,
 	PatientConsultPanels,
+	PatientLiveFeedPanel,
 	useAlertPathwayPanel,
 	useOpenAlertsPanel,
 	useOpenPathwayPanel,

@@ -61,6 +61,7 @@ import {
 	type SortOrderId,
 } from "../shared/patient-panel";
 import { usePagePreferences } from "../page-preferences";
+import { useLocationFlag } from "../location-state";
 import { usePatientNavigation } from "../patient-navigation";
 import {
 	compareTriageAlerts,
@@ -70,7 +71,8 @@ import {
 	type TriageAlert,
 	type TriageAlertAction,
 } from "./triage-queue";
-import { LiveFeed, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
+import { LiveFeedButton, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
+import type { PatientRecord } from "../patient-details/patient-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
 import {
 	alertFilterGroup,
@@ -135,6 +137,8 @@ type MonitoringPanelProps = {
 	/** The latest change from the live feed, e.g. "Moore worsens: Medium becomes Critical". Shown at the right of the
 	 * hospital bar as "Live feed: …"; nothing shows without it. */
 	liveFeed?: string;
+	/** The patients' records, for the live feed's log (each one's timeline, activity and earlier alerts). */
+	records?: PatientRecord[];
 	/** How Group by hospital shows: `board`, a Kanban column per hospital (default), or `sections` in the grid. */
 	groupedView?: GroupedView;
 	/** Called when the hospital bar's "Live feed" opens or closes the live feed panel (the triage queue). */
@@ -360,6 +364,7 @@ function MonitoringPanel({
 	onOpenPatient,
 	onAlertAction,
 	liveFeed,
+	records,
 	onOpenLiveFeed,
 	groupedView = "board",
 	closedResolutions = {},
@@ -418,9 +423,11 @@ function MonitoringPanel({
 	const [monitorView, setMonitorView] = React.useState<MonitorView>("full");
 	// The panel right of the canvas: the live feed (the triage queue) or Filters, one at a time, as on the Census.
 	// The live feed sits beside the canvas; Filters floats over everything (a Sheet), so the two no longer take turns.
-	const [rightPanel, setRightPanel] = React.useState<"feed" | null>(null);
-	const toggleRightPanel = (panel: "feed") => setRightPanel((current) => (current === panel ? null : panel));
-	const [filtersOpen, setFiltersOpen] = React.useState(false);
+	// Both in the address (`feed`, `filters`), so a shared link opens them.
+	const [feedOpen, setFeedOpen] = useLocationFlag("feed");
+	const rightPanel = feedOpen ? "feed" : null;
+	const toggleRightPanel = (panel: "feed") => setFeedOpen((current) => (panel === "feed" ? !current : current));
+	const [filtersOpen, setFiltersOpen] = useLocationFlag("filters");
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 	// With Active alerts on, the order follows the alerts even under the pointer, so who to see first is always on top.
 	const { paused, pauseProps } = useSortPause(statusFilter?.id !== "alerts");
@@ -698,7 +705,7 @@ function MonitoringPanel({
 							</span>{" "}
 							· {alertCount} active {alertCount === 1 ? "alert" : "alerts"}
 						</Typography>
-						<LiveFeed
+						<LiveFeedButton
 							change={liveFeed}
 							open={rightPanel === "feed"}
 							onOpen={() => {
@@ -825,12 +832,11 @@ function MonitoringPanel({
 			/>
 			<LiveFeedPanel
 				open={rightPanel === "feed"}
-				onOpenChange={(open) => setRightPanel(open ? "feed" : null)}
+				onOpenChange={setFeedOpen}
 				alerts={alerts}
 				patients={patients}
-				escalationTargets={escalationTargets}
+				records={records}
 				onOpenPatient={canOpenPatient ? openAlertPatient : undefined}
-				onAlertAction={handleAlertAction}
 			/>
 		</div>
 	);

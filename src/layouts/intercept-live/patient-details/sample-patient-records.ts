@@ -59,6 +59,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		id: "p1",
 		photo: samplePatientPhotos.p1,
+		account: "6325DF2",
 		weight: "64 kg",
 		unreadMessages: 3,
 		// The brief Intercept-Live draws (`157:9660`), in step with her alerts and values.
@@ -169,6 +170,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		id: "p2",
 		photo: samplePatientPhotos.p2,
+		account: "7B13550",
 		weight: "92 kg",
 		unreadMessages: 1,
 		brief: {
@@ -220,6 +222,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p3",
+		account: "2DC2762",
 		weight: "71 kg",
 		brief: {
 			title: "Improving on day 3 of treatment",
@@ -269,6 +272,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p4",
+		account: "C126FE6",
 		weight: "84 kg",
 		unreadMessages: 2,
 		brief: {
@@ -309,6 +313,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		id: "p5",
 		photo: samplePatientPhotos.p5,
+		account: "CC80E64",
 		weight: "61 kg",
 		brief: {
 			title: "SpO₂ not reporting",
@@ -353,6 +358,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p6",
+		account: "29AB8A3",
 		weight: "70 kg",
 		brief: {
 			title: "Confused after hip surgery, hemoglobin falling",
@@ -393,6 +399,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p7",
+		account: "DAC78AD",
 		weight: "66 kg",
 		brief: {
 			title: "Improving after surgery",
@@ -427,6 +434,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p8",
+		account: "F014E5C",
 		weight: "88 kg",
 		brief: {
 			title: "Stable after a bleeding ulcer was clipped",
@@ -459,6 +467,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p9",
+		account: "822FD5A",
 		weight: "78 kg",
 		unreadMessages: 2,
 		brief: {
@@ -508,6 +517,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p10",
+		account: "5F412B6",
 		weight: "74 kg",
 		brief: {
 			title: "Low blood pressure on rising pressors",
@@ -543,6 +553,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p11",
+		account: "16D619B",
 		weight: "79 kg",
 		unreadMessages: 1,
 		brief: {
@@ -580,6 +591,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p12",
+		account: "BFF30D1",
 		weight: "52 kg",
 		brief: {
 			title: "Respiratory rate not reporting",
@@ -624,6 +636,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p13",
+		account: "85AADCC",
 		weight: "95 kg",
 		unreadMessages: 4,
 		brief: {
@@ -687,6 +700,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 	{
 		id: "p14",
+		account: "083EDBA",
 		weight: "68 kg",
 		brief: {
 			title: "New atrial fibrillation, rate controlled",
@@ -720,6 +734,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		// more oxygen overnight but holding. Not in an ICU, so no ICU day; no one from Intercept has looked in yet. At 01:40
 		// her score crosses into High: the Prototype menu's Scenario 1 plays that (`sampleScenario1Record`).
 		id: "p15",
+		account: "BA82902",
 		weight: "78 kg",
 		brief: {
 			title: "Needing more oxygen overnight",
@@ -784,6 +799,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// Hayes's neighbor on the med-surg floor, with the same night nurse: pneumonia, improving on day 3.
 		id: "p16",
+		account: "9E2AAE6",
 		weight: "71 kg",
 		brief: {
 			title: "Pneumonia improving",
@@ -820,6 +836,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// On the same floor, stable: cellulitis improving on day 2 of IV antibiotics.
 		id: "p19",
+		account: "F0EDB06",
 		weight: "84 kg",
 		brief: {
 			title: "Cellulitis improving",
@@ -848,6 +865,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// On the same floor, stable: kidney injury from dehydration, back toward his baseline on IV fluids.
 		id: "p20",
+		account: "F270140",
 		weight: "88 kg",
 		brief: {
 			title: "Kidney injury improving",
@@ -879,6 +897,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		// splinting are the likely cause; nothing has fired.
 		id: "p17",
 		photo: samplePatientPhotos.p17,
+		account: "6EFA3B6",
 		weight: "62 kg",
 		brief: {
 			title: "Score rising after bowel surgery",
@@ -914,6 +933,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 		// Diabetic ketoacidosis, nearly closed: the insulin drip comes off once the gap stays closed and he's eating.
 		id: "p18",
 		photo: samplePatientPhotos.p18,
+		account: "B33CB99",
 		weight: "74 kg",
 		brief: {
 			title: "Ketoacidosis resolving",
@@ -948,6 +968,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// Right hip hemiarthroplasty after a fall on the ice, post-op day 1: stable on 2 L while she gets moving.
 		id: "p22",
+		account: "09A0F85",
 		weight: "61 kg",
 		brief: {
 			title: "Recovering after hip surgery",
@@ -989,6 +1010,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// Diverticulitis, improving on day 2 of IV antibiotics.
 		id: "p25",
+		account: "D0CAB9F",
 		weight: "92 kg",
 		brief: {
 			title: "Diverticulitis improving",
@@ -1018,6 +1040,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// Influenza A with viral pneumonia, day 1: on 2 L, the fever gone overnight. DNR, as her POLST says.
 		id: "p26",
+		account: "E23BCF2",
 		weight: "58 kg",
 		brief: {
 			title: "Influenza pneumonia, slightly better",
@@ -1050,6 +1073,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// A swing bed for rehab after a knee replacement at Sidney Regional; going home with his wife.
 		id: "p27",
+		account: "825ACFC",
 		weight: "86 kg",
 		brief: {
 			title: "Rehab after knee replacement, on track",
@@ -1086,6 +1110,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// Observation for an upper GI bleed from ibuprofen: hemoglobin holding, endoscopy next.
 		id: "p28",
+		account: "8FC5C29",
 		weight: "70 kg",
 		brief: {
 			title: "GI bleed, hemoglobin holding",
@@ -1122,6 +1147,7 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	{
 		// In Bridgeport's ED with an asthma attack, better after three nebulizers; likely home tonight.
 		id: "p29",
+		account: "0C655EB",
 		weight: "66 kg",
 		brief: {
 			title: "Asthma attack improving",
@@ -1284,6 +1310,7 @@ const sampleScenarioCareTeams: Record<string, CareTeamMember[]> = { p21: reynold
  */
 const sampleScenario2BaseRecord = (): PatientRecord => ({
 	id: "p21",
+	account: "F7C7964",
 	weight: "82 kg",
 	brief: {
 		title: "COPD exacerbation, out of home oxygen",
@@ -1480,6 +1507,7 @@ function medinaLabs(stage: "alert" | Scenario3RecordStage): PatientLab[] {
  */
 const sampleScenario3BaseRecord = (): PatientRecord => ({
 	id: "p23",
+	account: "B8837D8",
 	weight: "68 kg",
 	brief: {
 		title: "Possible urosepsis, blood pressure falling",
@@ -1705,6 +1733,7 @@ const kesslerInputs = (rr: [number, number], hr: [number, number], sbp: [number,
  */
 const sampleScenario4BaseRecord = (): PatientRecord => ({
 	id: "p24",
+	account: "0DD16F0",
 	weight: "70 kg",
 	brief: {
 		title: "Ketoacidosis after rationing insulin",
