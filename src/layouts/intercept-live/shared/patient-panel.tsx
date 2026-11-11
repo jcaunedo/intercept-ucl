@@ -1318,13 +1318,22 @@ function PanelBoard<Patient extends PanelPatient>({
 		// The page's scroll, found from the header row: from the body it would be the board's own sideways scroll box.
 		const scroller = scrollContainerOf(head);
 		const timeline = typeof ScrollTimeline === "undefined" ? null : new ScrollTimeline({ source: scroller, axis: "block" });
-		let animations: Animation[] = [];
+		// Each column's running animation, with its keyframes as a key, so an unchanged movement is left running.
+		const animations = new Map<Element, { key: string; animation: Animation }>();
+		const stop = (column: Element) => {
+			animations.get(column)?.animation.cancel();
+			animations.delete(column);
+		};
 		// Each column's offset (px down its board) as a function of the page's scroll, from its last anchor.
 		const offsets = new Map<Element, (at: number) => number>();
-		// Works each column's movement out again from where it is at the scroll position `anchorAt` (default: now).
+		// Works each column's movement out again from where it is at the scroll position `anchorAt` (default: now). It runs
+		// after every render (the live numbers re-render the board each second), so it must never leave a column unmoved
+		// for a frame: the cards' layout animation would read that frame as the cards moving and glide them back, every
+		// second (Nov 11, 2026). So an unchanged movement keeps its animation, and a changed one replaces the old only once
+		// it's running (a scroll-driven animation starts a frame after it's created).
 		const place = (anchorAt = scroller.scrollTop) => {
-			for (const animation of animations) animation.cancel();
-			animations = [];
+			const columns = Array.from(body.children);
+			for (const column of animations.keys()) if (!columns.includes(column)) stop(column);
 			const box = scroller.getBoundingClientRect();
 			const board = body.getBoundingClientRect();
 			const scrolled = scroller.scrollTop;
@@ -1332,12 +1341,13 @@ function PanelBoard<Patient extends PanelPatient>({
 			// The board's top in the page's scroll, so the numbers below don't depend on where the page is now.
 			const boardTop = board.top - box.top + scrolled;
 			const topRest = headTop + head.offsetHeight;
-			for (const column of Array.from(body.children) as HTMLElement[]) {
+			for (const column of columns as HTMLElement[]) {
 				const height = column.offsetHeight;
 				// How far the column can move down its board: the tallest one can't, and stays put.
 				const travel = board.height - height;
-				column.style.transform = "";
 				if (travel <= 0 || maxScroll <= 0 || settling.current) {
+					stop(column);
+					column.style.transform = "";
 					offsets.delete(column);
 					continue;
 				}
@@ -1358,18 +1368,21 @@ function PanelBoard<Patient extends PanelPatient>({
 					column.style.transform = now ? `translateY(${now}px)` : "";
 					continue;
 				}
+				column.style.transform = "";
 				// Keyframes where the movement can change: where each resting place starts and ends, and where the column,
 				// moving with the page from where it's held, reaches one.
 				const kinks = [startTop, startTop + travel, startBottom, startBottom + travel, startTop + held, startBottom + held];
 				const stops = [...new Set([0, maxScroll, ...kinks].map((at) => Math.min(Math.max(at, 0), maxScroll)))].sort(
 					(x, y) => x - y,
 				);
-				animations.push(
-					column.animate(
-						stops.map((at) => ({ offset: at / maxScroll, transform: `translateY(${offsetAt(at)}px)` })),
-						{ timeline, fill: "both", easing: "linear" },
-					),
-				);
+				const keyframes = stops.map((at) => ({ offset: at / maxScroll, transform: `translateY(${offsetAt(at)}px)` }));
+				const key = JSON.stringify(keyframes);
+				const current = animations.get(column);
+				if (current?.key === key) continue;
+				const animation = column.animate(keyframes, { timeline, fill: "both", easing: "linear" });
+				animations.set(column, { key, animation });
+				// The new one composites over the old, so the old can go once the new is running.
+				if (current) animation.ready.then(() => current.animation.cancel(), () => {});
 			}
 		};
 		placeRef.current = place;
@@ -1394,7 +1407,7 @@ function PanelBoard<Patient extends PanelPatient>({
 		return () => {
 			scroller.removeEventListener("scroll", onScroll);
 			resize.disconnect();
-			for (const animation of animations) animation.cancel();
+			for (const column of [...animations.keys()]) stop(column);
 			placeRef.current = undefined;
 		};
 	}, [hasPatients, columnKey, headTop]);
