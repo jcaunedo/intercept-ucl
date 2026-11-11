@@ -79,6 +79,32 @@ type PatientCarePlan = {
 	};
 };
 
+/** How a plan-of-care goal is going, as the bedside team last evaluated it. */
+type PatientPlanOfCareStatus = "progressing" | "not-progressing" | "met";
+
+/** One problem of the plan of care, with its goal and what the team does toward it. */
+type PatientPlanOfCareItem = {
+	/** The problem, e.g. "Hypertensive emergency with PRES". */
+	problem: string;
+	/** The goal, measurable where it can be: "SBP 140–160 mmHg". */
+	goal: string;
+	/** What the team does toward it: "Nicardipine titration · neuro checks every hour". */
+	interventions?: string;
+	status: PatientPlanOfCareStatus;
+};
+
+/**
+ * The hospital's plan of care, from its record system: every admitted patient has one (CMS and Joint Commission), kept
+ * by the bedside team and reviewed on rounds. Intercept's own decisions (`PatientCarePlan`) add to it.
+ */
+type PatientPlanOfCare = {
+	items: PatientPlanOfCareItem[];
+	/** The record system it comes from: "Meditech", "Cerner". */
+	source: string;
+	/** When it was last reviewed. */
+	reviewedAt: string;
+};
+
 /**
  * A pathway an open alert suggests that nobody has decided on yet: the Care plan shows it dashed, as the alert does, so
  * the clinician who opens the patient first sees what's waiting for them (Nov 6, 2026).
@@ -351,4 +377,7 @@ export {
 	type PatientCarePlanOrder,
 	type PatientPathwayRunning,
 	type PatientPathwaySuggestion,
+	type PatientPlanOfCare,
+	type PatientPlanOfCareItem,
+	type PatientPlanOfCareStatus,
 };

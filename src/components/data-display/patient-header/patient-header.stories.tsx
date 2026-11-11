@@ -37,9 +37,10 @@ const meta = {
 		],
 		acuity: { label: "NEWS2", score: 10, level: "high" },
 		trajectory: { label: "Change in last 24 h", value: "+1", trend: "up" },
+		clinicalStatus: { status: "deteriorating", assessedAt: new Date(Date.now() - 2 * 60_000).toISOString() },
 		alertCounts: { critical: 1, low: 1 },
+		recentAlerts: { count: 6, period: "12 h" },
 		onViewAlerts: fn(),
-		onOpenLiveFeed: fn(),
 	},
 } satisfies Meta<typeof PatientHeader>;
 
@@ -47,9 +48,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * As in Figma: the 56px photo beside the name with sex and age ("- F, 59"), and one line under it: MRN and account, the
- * location after a pin, and the score as the cards write it. The tags (all outline) from the left edge, 8px below. On
- * the right, Live feed and the open alerts.
+ * As in Figma: the 56px photo beside the name with sex and age ("- F, 59"), and one line under it: MRN and account and
+ * the location after a pin. The tags (all outline) from the left edge, 8px below. On the right, as wide, three columns
+ * after rules: NEWS2 with its change, the clinical status with when it was assessed, and the alerts in the last 12 h
+ * with the open ones' button.
  */
 export const Default: Story = {
 	play: async ({ canvas, args }) => {
@@ -57,10 +59,11 @@ export const Default: Story = {
 		await expect(canvas.getByText("- F, 59")).toBeInTheDocument();
 		await expect(canvas.getByText(/Sidney Regional · MICU · 11 - Bed 11/)).toBeInTheDocument();
 		await expect(canvas.getByText("6325DF2", { exact: false })).toBeInTheDocument();
+		await expect(canvas.getByRole("group", { name: "NEWS2" })).toHaveTextContent(/10High1 point up in 24 h$/);
+		await expect(canvas.getByRole("group", { name: "Clinical status" })).toHaveTextContent(/DeterioratingLast assessed \d+ min ago$/);
+		await expect(canvas.getByRole("group", { name: /^Alerts\s*·\s*6 alerts in last 12 h$/ })).toBeInTheDocument();
 		canvas.getByRole("button", { name: "2 active alerts" }).click();
 		await expect(args.onViewAlerts).toHaveBeenCalled();
-		canvas.getByRole("button", { name: "Live feed" }).click();
-		await expect(args.onOpenLiveFeed).toHaveBeenCalled();
 	},
 };
 
@@ -76,33 +79,35 @@ export const NoAlerts: Story = {
 	},
 };
 
-/** The live feed open: Live feed takes its pressed look (outline on the accent fill). */
-export const LiveFeedOpen: Story = {
-	args: { liveFeedOpen: true },
-	play: async ({ canvas }) => {
-		await expect(canvas.getByRole("button", { name: "Live feed" })).toHaveAttribute("aria-expanded", "true");
+/** A vital stopped reporting, so the status can't be assessed: Insufficient data. */
+export const InsufficientData: Story = {
+	args: {
+		acuity: { label: "NEWS2", level: "unknown" },
+		trajectory: undefined,
+		clinicalStatus: { status: "insufficient-data", assessedAt: new Date(Date.now() - 41 * 60_000).toISOString() },
 	},
 };
 
-/** Without `alertCounts`, `alert` gives the count; without handlers, no buttons. */
+/** Without `alertCounts`, `alert` gives the count; without `recentAlerts`, the label is "Alerts" alone. */
 export const TotalOnly: Story = {
-	args: { alertCounts: undefined, alert: { variant: "critical", count: 3 }, onOpenLiveFeed: undefined },
+	args: { alertCounts: undefined, alert: { variant: "critical", count: 3 }, recentAlerts: undefined },
 };
 
-/** No score, no account and no buttons: the patient's side alone. */
+/** No score, no status, no account and no alerts button: the patient's side alone. */
 export const Minimal: Story = {
 	args: {
 		acuity: undefined,
 		trajectory: undefined,
+		clinicalStatus: undefined,
 		account: undefined,
 		alertCounts: undefined,
+		recentAlerts: undefined,
 		onViewAlerts: undefined,
-		onOpenLiveFeed: undefined,
 	},
 };
 
 /**
- * The `actions` slot, after the buttons, for an app that keeps more of a patient's actions in the header. Intercept
+ * The `actions` slot, after the columns, for an app that keeps more of a patient's actions in the header. Intercept
  * Live leaves it empty: Video consult and Messages are in the app header since Nov 5, 2026.
  */
 export const WithActions: Story = {
@@ -158,7 +163,7 @@ export const AllVariants: Story = {
 			<PatientHeader {...args} />
 			<PatientHeader {...args} photo={undefined} />
 			<PatientHeader {...args} {...NoAlerts.args} />
-			<PatientHeader {...args} {...LiveFeedOpen.args} />
+			<PatientHeader {...args} {...InsufficientData.args} />
 			<PatientHeader {...args} {...TotalOnly.args} />
 			<PatientHeader {...args} {...Minimal.args} />
 			<PatientHeader {...args} {...WithActions.args} />

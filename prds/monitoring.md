@@ -268,7 +268,7 @@ Every active alert for the panel, one row each: severity, patient (name, bed, ho
 
 ✅ **Resolved:** a click spreads the toast stack, not hovering, so the stack doesn't move while the pointer passes over it. On a collapsed stack (two toasts or more), a click on a toast only spreads it, so the clinician sees every toast before opening one; the front toast's own buttons (×, Open patient, Ask Intercept Live) still act at once. Spread, a click on a toast opens its alert. A click outside the stack and its buttons (Don't show, Close all), or Escape, collapses it. Hovering the stack holds the toasts' timers, as before. A single toast opens its alert on a click.
 
-✅ **Resolved:** the hover border that says a click opens the alert (2px, as on the patient cards) shows only where a click does open it: on a single toast or a spread stack. Over a collapsed stack (two toasts or more), where the click spreads the stack, the toasts keep their look; the front toast's own buttons keep their hover.
+✅ **Resolved:** the hover border that says a click opens the alert (2px, as on the patient cards) shows only where a click does open it: on a single toast or a spread stack. Over a collapsed stack (two toasts or more), where the click spreads the stack, the toasts keep their look; the front toast's own buttons keep their hover. The cursor does the same: the arrow over a collapsed stack, the pointer only where a click opens the alert.
 
 ### MON-021 — Ordering
 

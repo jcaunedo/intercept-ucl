@@ -8,6 +8,7 @@ export {
 	patientCardAcuityLevels,
 	patientCardAlertVariants,
 	patientCardMetricVariants,
+	scoreChangeSummary,
 	scoreTrendClassName,
 	scoreTrendVariant,
 	type PatientCardAlertProps,

@@ -233,7 +233,7 @@ function LiveFeed({
 				<div role='log' aria-label={label} className='flex flex-col gap-5'>
 					{days.map((day) => (
 						<section key={day.label} aria-labelledby={`${idPrefix}-${day.label}`} className='flex flex-col gap-1'>
-							<h3 id={`${idPrefix}-${day.label}`} className='text-xs font-medium text-muted-foreground'>
+							<h3 id={`${idPrefix}-${day.label}`} className='text-sm font-semibold text-foreground'>
 								{day.label}
 							</h3>
 							<ul className='flex flex-col'>

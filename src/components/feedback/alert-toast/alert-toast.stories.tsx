@@ -201,9 +201,12 @@ export const InToaster: Story = {
 		const toaster = document.querySelector("[data-sonner-toaster]");
 		await expect(toaster).toHaveAttribute("data-stack-collapsed", "true");
 		const openMoore = await screen.findByRole("button", { name: `Open alert: ${moore.title}` });
+		// The pointer cursor shows only where a click opens the alert: the arrow over a collapsed stack.
+		await expect(getComputedStyle(openMoore).cursor).toBe("default");
 		await userEvent.click(openMoore);
 		await waitFor(() => expect(document.querySelector<HTMLElement>("[data-sonner-toast]")?.dataset.expanded).toBe("true"));
 		await expect(toaster).toHaveAttribute("data-stack-collapsed", "false");
+		await expect(getComputedStyle(openMoore).cursor).toBe("pointer");
 		await expect(openMooreAlert).not.toHaveBeenCalled();
 		await userEvent.click(openMoore);
 		await waitFor(() => expect(openMooreAlert).toHaveBeenCalledTimes(1));

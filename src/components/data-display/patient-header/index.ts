@@ -1,1 +1,1 @@
-export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderProps } from "./patient-header";
+export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderClinicalStatus, type PatientHeaderClinicalStatusValue, type PatientHeaderProps } from "./patient-header";

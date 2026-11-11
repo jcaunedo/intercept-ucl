@@ -4,6 +4,8 @@ import samplePhoto3 from "@/components/data-display/avatar/images/sample-photo-3
 
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { CareTeamMember, PatientEarlyWarning, PatientLab, PatientRecord, PatientVentilator } from "./patient-details";
+import { clinicalStatusAt, sampleClinicalStatus } from "./sample-clinical-status";
+import { planOfCareWith, samplePlanOfCare } from "./sample-plan-of-care";
 // Synthetic data (PRD Patient details PD-150). The reference patient is Sarah Miller (`p1`: Sidney, MICU
 // Bed 11, SOFA 13, ventilated, on pressors), in step with her alerts in `sample-monitoring.ts`: lactate 4.1 up from 2.2,
 // MAP 58 on norepinephrine 0.22, temperature 38.9 °C, WBC 17.2. Every other patient on the Census has a record as full
@@ -55,7 +57,7 @@ const charted = (support: string, minutes: number, settings: PatientVentilator["
 	updatedAt: minutesAgo(minutes),
 });
 
-const samplePatientBaseRecords: PatientRecord[] = [
+const baseRecords: PatientRecord[] = [
 	{
 		id: "p1",
 		photo: samplePatientPhotos.p1,
@@ -1175,12 +1177,23 @@ const samplePatientBaseRecords: PatientRecord[] = [
 	},
 ];
 
+// Every patient's plan of care, from their hospital's record system (`sample-plan-of-care.ts`), and clinical status
+// (`sample-clinical-status.ts`).
+const samplePatientBaseRecords: PatientRecord[] = baseRecords.map((record) => ({
+	...record,
+	planOfCare: samplePlanOfCare(record.id),
+	clinicalStatus: sampleClinicalStatus(record.id),
+}));
+
 /**
  * Scenario 1's early warning (Demo Use Cases, Chadron at 01:40): what changes in Margaret Hayes's record when her NEWS2
  * crosses into High, 5 an hour ago and 10 now, with RR 20 → 26, SpO₂ 89% and HR 112 (`sampleScenario1Vitals`). Built
  * when the Prototype menu's Scenario 1 plays it, so its times read "just now".
  */
 const sampleScenario1Record = (): Partial<PatientRecord> => ({
+	// The night nurse re-evaluates her heart failure goal: not progressing.
+	planOfCare: planOfCareWith("p15", { 0: "not-progressing" }, 5),
+	clinicalStatus: clinicalStatusAt("deteriorating", 1),
 	brief: {
 		title: "Breathing harder in the last hour",
 		text: "Breathing harder in the last hour: RR up from 20 to 26 and SpO₂ down to 89% on 4 L, with HR 112, so NEWS2 is 10 (High), up from 5. Overnight her oxygen went from 2 to 4 L to hold SpO₂ at 92%. Net fluid balance is +1.8 L and weight is up 2.1 kg over 48 h on IV furosemide. BNP is 2,400, up from 1,850 on admission, and creatinine 1.9 from 1.6.",
@@ -1221,6 +1234,8 @@ const sampleScenario1Record = (): Partial<PatientRecord> => ({
 // Scenario 1's resolution (06:00): RR 20 and SpO₂ 95% on 2 L, so NEWS2 3, Low; both checkpoints passed and she stays at
 // Chadron. Her plan, the decisions and who made them come from the app's record of them (the feed's activity).
 const sampleScenario1ResolvedRecord = (): Partial<PatientRecord> => ({
+	planOfCare: planOfCareWith("p15", { 0: "progressing" }, 20),
+	clinicalStatus: clinicalStatusAt("improving", 20),
 	brief: {
 		title: "Stable on 2 L by morning",
 		text: "Stable on 2 L by morning: RR 20 and SpO₂ 95%, with HR 88, so NEWS2 is 3 (Low), down from 10 at the alert. The CHF exacerbation pathway is running, with urine output above its target on the furosemide infusion. Both checkpoints passed, so she stays at Chadron: the transfer was avoided.",
@@ -1310,6 +1325,8 @@ const sampleScenarioCareTeams: Record<string, CareTeamMember[]> = { p21: reynold
  */
 const sampleScenario2BaseRecord = (): PatientRecord => ({
 	id: "p21",
+	planOfCare: samplePlanOfCare("p21"),
+	clinicalStatus: sampleClinicalStatus("p21"),
 	account: "F7C7964",
 	weight: "82 kg",
 	brief: {
@@ -1375,6 +1392,8 @@ const sampleScenario2BaseRecord = (): PatientRecord => ({
  * NEWS2 5 (Medium). Both checkpoints passed; he stays at Alliance, without intubation or a transfer.
  */
 const sampleScenario2ResolvedRecord = (): Partial<PatientRecord> => ({
+	planOfCare: planOfCareWith("p21", { 0: "progressing" }, 10),
+	clinicalStatus: clinicalStatusAt("improving", 10),
 	brief: {
 		title: "NIV is working",
 		text: "NIV is working: at 2 h the repeat gas is pH 7.31 and PaCO₂ 64, from 7.24 and 78 on arrival. RR 21, HR 96 and SpO₂ 91% on BiPAP, more alert and speaking in full sentences. NEWS2 5 (Medium), down from 7. Both checkpoints passed, so he stays at Alliance in a monitored bed, with no intubation and no transfer.",
@@ -1507,6 +1526,8 @@ function medinaLabs(stage: "alert" | Scenario3RecordStage): PatientLab[] {
  */
 const sampleScenario3BaseRecord = (): PatientRecord => ({
 	id: "p23",
+	planOfCare: samplePlanOfCare("p23"),
+	clinicalStatus: sampleClinicalStatus("p23"),
 	account: "B8837D8",
 	weight: "68 kg",
 	brief: {
@@ -1602,6 +1623,8 @@ function sampleScenario3RecordAt(stage: Scenario3RecordStage): Partial<PatientRe
 			};
 		case "6h":
 			return {
+				planOfCare: planOfCareWith("p23", { 0: "progressing" }, 10),
+				clinicalStatus: clinicalStatusAt("improving", 10),
 				brief: {
 					title: "Bundle done, lactate cleared",
 					text: "At 6 h the bundle is done and lactate has cleared to 1.6. BP 112/60 (MAP 77) on norepinephrine weaned to 0.04 mcg/kg/min, HR 96, RR 18, SpO₂ 97% on room air, T 37.8 °C. Glucose 172 on the insulin infusion, down to 2 units/h. Piperacillin-tazobactam continues at the renal dose. Still boarding in the ED. NEWS2 1 (Low).",
@@ -1617,6 +1640,8 @@ function sampleScenario3RecordAt(stage: Scenario3RecordStage): Partial<PatientRe
 			};
 		case "resolved":
 			return {
+				planOfCare: planOfCareWith("p23", { 0: "met" }, 30),
+				clinicalStatus: clinicalStatusAt("improving", 30),
 				brief: {
 					title: "Out of shock by morning",
 					text: "Out of shock by morning: off norepinephrine for 1 h with BP 118/66 (MAP 83), HR 88, RR 16, SpO₂ 97% on room air, T 37.4 °C. Blood cultures grew gram-negative rods in 2 of 2 sets, E. coli, sensitivities pending; piperacillin-tazobactam continues at the renal dose. Creatinine 2.5, from 2.6, near her baseline of 2.4. Glucose 158 on the insulin infusion, with a move to basal-bolus insulin planned this morning. A bed opened, so she's admitted to Sidney's inpatient unit under hub co-management. NEWS2 0 (Low).",
@@ -1733,6 +1758,8 @@ const kesslerInputs = (rr: [number, number], hr: [number, number], sbp: [number,
  */
 const sampleScenario4BaseRecord = (): PatientRecord => ({
 	id: "p24",
+	planOfCare: samplePlanOfCare("p24"),
+	clinicalStatus: sampleClinicalStatus("p24"),
 	account: "0DD16F0",
 	weight: "70 kg",
 	brief: {
@@ -1788,6 +1815,8 @@ function sampleScenario4RecordAt(stage: Scenario4RecordStage): Partial<PatientRe
 	switch (stage) {
 		case "dextrose":
 			return {
+				planOfCare: planOfCareWith("p24", { 0: "progressing" }, 10),
+				clinicalStatus: clinicalStatusAt("improving", 10),
 				brief: {
 					title: "DKA protocol, 6 hours in",
 					text: "Six hours into the DKA protocol. Glucose 238, from 520, so dextrose is in (D5 0.45% saline with KCl 20 mEq/L at 150 mL/h) and insulin came down to 3.5 units/h (0.05 units/kg/h), signed on the intensivist's phone. Anion gap 17 and bicarbonate 14, closing. Potassium fell to 3.1 at 03:00, so insulin was held for an hour while KCl 20 mEq/h ran; it's 3.9 now. HR 96, BP 116/70, RR 20, SpO₂ 99% on room air, alert. Every hourly check on time so far, with one RN on the floor. NEWS2 1 (Low).",
@@ -1803,6 +1832,8 @@ function sampleScenario4RecordAt(stage: Scenario4RecordStage): Partial<PatientRe
 			};
 		case "closed":
 			return {
+				planOfCare: planOfCareWith("p24", { 0: "met" }, 10),
+				clinicalStatus: clinicalStatusAt("improving", 10),
 				brief: {
 					title: "Anion gap closed, back on home insulin",
 					text: "The anion gap closed at hour 13 (12:00): gap 11, bicarbonate 19, pH 7.34, glucose 164. He ate lunch. Glargine 22 units SC, his home dose, at 12:12 and lispro 6 units with the meal; the drip ran 1 h more and stopped at 13:00, after 14 h. One low potassium (3.1 at 03:00), caught by the protocol with insulin held; no hypoglycemia. Creatinine 0.9, back to his baseline. HR 82, BP 122/76, RR 16, SpO₂ 99% on room air. The APP's admission note records cost-related insulin rationing after he lost Medicaid in August. Staying at Bridgeport, with referrals to send at discharge. NEWS2 0 (Low).",

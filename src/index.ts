@@ -126,7 +126,7 @@ export {
 	type LiveFeedSeverity,
 } from "@/components/data-display/live-feed";
 export { HospitalSectionHeader, type HospitalSectionHeaderProps } from "@/components/data-display/hospital-section-header";
-export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderProps } from "@/components/data-display/patient-header";
+export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderClinicalStatus, type PatientHeaderClinicalStatusValue, type PatientHeaderProps } from "@/components/data-display/patient-header";
 export { Logo, LogoSymbol, type LogoProps, type LogoSymbolProps } from "@/components/data-display/logo";
 
 /* -------------------------------------------------------------------------- */

@@ -36,6 +36,8 @@ import {
 	type PatientCarePlan,
 	type PatientPathwayRunning,
 	type PatientPathwaySuggestion,
+	type PatientPlanOfCare,
+	type PatientPlanOfCareStatus,
 } from "./activity";
 import type { PatientBrief, PatientDetailsProps, PatientRecord } from "./patient-details";
 import { Detail, formatElapsed, formatTime, freshness, NoData } from "./section-parts";
@@ -830,39 +832,73 @@ function RunningLine({ item }: { item: PatientPathwayRunning }) {
 	);
 }
 
+// A plan-of-care goal's status, in the words of the nursing care plan's evaluation.
+const planOfCareStatuses: Record<PatientPlanOfCareStatus, { label: string; variant: BadgeProps["variant"] }> = {
+	progressing: { label: "Progressing", variant: "blue" },
+	"not-progressing": { label: "Not progressing", variant: "red" },
+	met: { label: "Met", variant: "green" },
+};
+
+/** Plan-of-care problems shown before View all. */
+const PLAN_OF_CARE_ITEMS = 4;
+
 /**
  * The care plan (Intercept-Live `242:12310`, Nov 9, 2026, user's call: Figma's rows): a row each for the pathway (the
  * suggestion waiting for review, or the one sent with where co-signature is) with what it runs now under it, and the
  * decision to keep or transfer with how its checkpoints went. The orders, doses and checkpoint details are behind
- * **View full plan**, the page's Pathway panel.
+ * **View full plan**, the page's Pathway panel. Under them, the hospital's plan of care from its record system (Nov 11,
+ * 2026, user's call: every admitted patient has one): a row per problem with its goal, what's done toward it and how
+ * it's going. A source line each, Intercept's and the record system's.
  */
 function CarePlanCard({
 	plan,
+	planOfCare,
 	suggestion,
 	running,
 	now,
 	onOpenPathway,
 }: {
 	plan?: PatientCarePlan;
+	planOfCare?: PatientPlanOfCare;
 	suggestion?: PatientPathwaySuggestion;
 	running: PatientPathwayRunning[];
 	now: number | null;
 	onOpenPathway?: () => void;
 }) {
+	const [showAll, setShowAll] = React.useState(false);
 	const pathway = plan?.pathway;
 	const transfer = plan?.transfer;
 	const passed = transfer?.checkpoints.filter((checkpoint) => checkpoint.result?.status === "passed").length ?? 0;
 	const missed = transfer?.checkpoints.some((checkpoint) => checkpoint.result?.status === "missed");
 	const updated = latest([pathway?.at, pathway?.cosignedAt, transfer?.at]);
 	const hasPathwayRow = Boolean(pathway || suggestion);
+	const hasInterceptRows = hasPathwayRow || running.length > 0 || Boolean(transfer);
+	const planItems = planOfCare?.items ?? [];
+	const shownPlanItems = showAll ? planItems : planItems.slice(0, PLAN_OF_CARE_ITEMS);
 
 	return (
 		<OverviewCard
 			title='Care plan'
-			actions={onOpenPathway ? <CardLink onClick={onOpenPathway}>View full plan</CardLink> : undefined}
-			footer={updated ? <CardSource>{freshness("Intercept", updated, now)}</CardSource> : undefined}
+			actions={
+				onOpenPathway || planItems.length > PLAN_OF_CARE_ITEMS ? (
+					<>
+						{planItems.length > PLAN_OF_CARE_ITEMS ? (
+							<CardToggle expanded={showAll} total={planItems.length} onToggle={() => setShowAll(!showAll)} />
+						) : null}
+						{onOpenPathway ? <CardLink onClick={onOpenPathway}>View full plan</CardLink> : null}
+					</>
+				) : undefined
+			}
+			footer={
+				updated || planOfCare ? (
+					<>
+						{updated ? <CardSource>{freshness("Intercept", updated, now)}</CardSource> : null}
+						{planOfCare ? <CardSource>{freshness(planOfCare.source, planOfCare.reviewedAt, now)}</CardSource> : null}
+					</>
+				) : undefined
+			}
 		>
-			{hasPathwayRow || running.length || transfer ? (
+			{hasInterceptRows || planItems.length ? (
 				<CardList>
 					{pathway ? (
 						<CardRow
@@ -933,9 +969,23 @@ function CarePlanCard({
 							}
 						/>
 					) : null}
+					{shownPlanItems.map((item) => (
+						<CardRow
+							key={item.problem}
+							title={item.problem}
+							detail={`Goal: ${item.goal}`}
+							aside={
+								<Badge variant={planOfCareStatuses[item.status].variant} size='xs'>
+									{planOfCareStatuses[item.status].label}
+								</Badge>
+							}
+						>
+							{item.interventions ? <p className='text-sm text-muted-foreground'>{item.interventions}</p> : null}
+						</CardRow>
+					))}
 				</CardList>
 			) : (
-				<NoData>No care plan recorded for this patient.</NoData>
+				<NoData>Care plan not received from the record system yet.</NoData>
 			)}
 		</OverviewCard>
 	);
@@ -1345,6 +1395,7 @@ function PatientOverview({
 					<LiveMonitoringCard record={record} monitor={monitor} name={name} />
 					<CarePlanCard
 						plan={record?.carePlan}
+						planOfCare={record?.planOfCare}
 						suggestion={suggestion}
 						running={running}
 						now={now}

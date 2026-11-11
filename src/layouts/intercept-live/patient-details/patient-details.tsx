@@ -19,7 +19,7 @@ import {
 import type { PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import type { MonitorLimits, MonitorTrends, MonitorVitals, PatientMonitorProps } from "@/components/cards/patient-monitoring-card";
 import type { AvatarFallbackProps } from "@/components/data-display/avatar";
-import { PatientHeader, type PatientHeaderProps } from "@/components/data-display/patient-header";
+import { PatientHeader, type PatientHeaderClinicalStatus, type PatientHeaderProps } from "@/components/data-display/patient-header";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { TagsPopoverActionsProvider, useTagsPopoverActions } from "@/components/overlays/tags-popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/navigation/tabs";
@@ -50,7 +50,7 @@ import {
 	useLocationState,
 } from "../location-state";
 import { usePatientNavigation } from "../patient-navigation";
-import { withActivityEvents, type PatientActivity, type PatientCarePlan } from "./activity";
+import { withActivityEvents, type PatientActivity, type PatientCarePlan, type PatientPlanOfCare } from "./activity";
 import {
 	PatientAlertsPanel,
 	PatientConsultPanels,
@@ -60,6 +60,7 @@ import {
 	type PatientPathways,
 } from "./consult-panels";
 import { AlertsSection, PatientOverview } from "./patient-overview";
+import { LiveFeedButton } from "../shared/live-feed";
 import { patientFeedEntries } from "../shared/live-feed-entries";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { ChartSection, type PatientChart } from "./sections/chart-section";
@@ -342,6 +343,10 @@ type PatientRecord = {
 	activity?: PatientActivity[];
 	/** The care plan in force: the pathway sent from an alert and the decision to keep or transfer, for the Overview. */
 	carePlan?: PatientCarePlan;
+	/** The hospital's plan of care (problems, goals, interventions), under Intercept's rows in the Overview's Care plan. */
+	planOfCare?: PatientPlanOfCare;
+	/** How the patient is doing, as the bedside team last assessed it: the Patient Header's Clinical status. */
+	clinicalStatus?: PatientHeaderClinicalStatus;
 	/**
 	 * Social needs at discharge, once the discharge workflow has flagged them (Scenario 2, step 6): adds the Discharge
 	 * section, the same panel as in the alert's Pathway panel.
@@ -541,6 +546,24 @@ function patientBadges(patient: PatientDetailsPatient, record?: PatientRecord): 
 function alertPill(alerts: TriageAlert[]): PatientHeaderProps["alert"] {
 	const open = alerts.filter(isOpenAlert).sort(compareTriageAlerts);
 	return open.length ? { variant: open[0].severity, count: open.length } : undefined;
+}
+
+// The header's Alerts column counts every alert that fired in this window, resolved ones included.
+const RECENT_ALERT_HOURS = 12;
+
+/** "Alerts · 6 alerts in last 12 h": the patient's alerts fired in the last 12 h, each once. */
+function recentAlertCount(alerts: TriageAlert[]): NonNullable<PatientHeaderProps["recentAlerts"]> {
+	const since = Date.now() - RECENT_ALERT_HOURS * 3_600_000;
+	const ids = new Set(alerts.filter((alert) => Date.parse(alert.firedAt) >= since).map((alert) => alert.id));
+	return { count: ids.size, period: `${RECENT_ALERT_HOURS} h` };
+}
+
+/** The newest line of the patient's live feed, for its button right of the tabs. */
+function latestFeedLine(entries: ReturnType<typeof patientFeedEntries>) {
+	return entries.reduce<(typeof entries)[number] | undefined>(
+		(newest, entry) => (!newest || Date.parse(entry.at) > Date.parse(newest.at) ? entry : newest),
+		undefined,
+	)?.title;
 }
 
 /** The header's alert box breakdown: the patient's open alerts by severity ("1 critical · 1 low"). */
@@ -836,10 +859,10 @@ function PatientDetailsContent({
 				trajectory={patient.trajectory}
 				alert={alertPill(alerts)}
 				alertCounts={alertCountsBySeverity(alerts)}
+				clinicalStatus={record?.clinicalStatus}
+				recentAlerts={recentAlertCount([...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])])}
 				onViewAlerts={() => setAlertsOpen((open) => !open)}
 				alertsOpen={alertsOpen}
-				onOpenLiveFeed={() => setFeedOpen((open) => !open)}
-				liveFeedOpen={feedOpen}
 			/>
 
 			<Tabs
@@ -847,7 +870,9 @@ function PatientDetailsContent({
 				onValueChange={(value) => setSection(value as SectionId)}
 				className='flex flex-1 flex-col gap-0'
 			>
-				<div className='border-y border-border px-4'>
+				{/* The tabs, then the patient's Live feed at the right end, as on Monitoring: the newest line, a chevron, the
+				    panel it opens (Nov 11, 2026, user's call: it left the Patient Header). */}
+				<div className='flex items-center justify-between gap-4 border-y border-border px-4'>
 					<TabsList variant='line' size='lg' aria-label='Patient sections'>
 						<TabsTrigger value='overview'>Overview</TabsTrigger>
 						{sections.map((item) => (
@@ -856,6 +881,12 @@ function PatientDetailsContent({
 							</TabsTrigger>
 						))}
 					</TabsList>
+					<LiveFeedButton
+						change={latestFeedLine(feedEntries)}
+						open={feedOpen}
+						onOpen={() => setFeedOpen((open) => !open)}
+						controls='patient-live-feed'
+					/>
 				</div>
 				<TabsContent value='overview' className='p-6'>
 					<PatientOverview

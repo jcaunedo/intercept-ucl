@@ -413,6 +413,27 @@ function scoreChange(value: unknown) {
 }
 
 /**
+ * How a score's change reads, everywhere it's shown: which way it went (the data's direction, else the change's sign;
+ * none for no change) and "1 point up in 24 h", "No change in 24 h", or the value as given when it isn't a number.
+ * `text` is undefined when there's no change to show.
+ */
+function scoreChangeSummary(trajectory: PatientCensusCardProps["trajectory"], period = "24 h") {
+	const change = scoreChange(trajectory?.value);
+	const direction: "up" | "down" | undefined =
+		change === 0 ? undefined : (trajectory?.trend ?? (change === undefined ? undefined : change > 0 ? "up" : "down"));
+	const points = Math.abs(change ?? 0);
+	const hasChange = Boolean(trajectory) && (change !== undefined || (trajectory?.value != null && trajectory.value !== ""));
+	const text = !hasChange
+		? undefined
+		: change === undefined
+			? String(trajectory?.value)
+			: direction
+				? `${points} ${points === 1 ? "point" : "points"} ${direction} in ${period}`
+				: `No change in ${period}`;
+	return { direction, text };
+}
+
+/**
  * The acuity score and its change as one line, for under a patient's location: a trend arrow, then "NEWS2: 7 High · 1
  * point up in 24 h" (the score medium, the dot and the change muted, the change regular). The change says how many
  * points and which way over `period`; the arrow points the same way, in `scoreTrendClassName`'s color. No change reads
@@ -433,11 +454,7 @@ function PatientCardScore({
 	className?: string;
 }) {
 	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
-	const change = scoreChange(trajectory?.value);
-	// The data's direction, else the change's sign. No direction for no change, or a change with neither.
-	const direction = change === 0 ? undefined : (trajectory?.trend ?? (change === undefined ? undefined : change > 0 ? "up" : "down"));
-	const points = Math.abs(change ?? 0);
-	const hasChange = Boolean(trajectory) && (change !== undefined || (trajectory?.value != null && trajectory.value !== ""));
+	const { direction, text: changeText } = scoreChangeSummary(trajectory, period);
 	const TrendIcon = direction === "up" ? TrendingUpIcon : direction === "down" ? TrendingDownIcon : MinusIcon;
 
 	return (
@@ -456,14 +473,10 @@ function PatientCardScore({
 						{acuityLevel ? <span className={acuityLevels[acuityLevel].className}> {acuityLevels[acuityLevel].label}</span> : null}
 					</span>
 				) : null}
-				{hasChange ? (
+				{changeText ? (
 					<span className='text-muted-foreground'>
 						{acuity ? <span className='font-medium'> · </span> : null}
-						{change === undefined
-							? trajectory?.value
-							: direction
-								? `${points} ${points === 1 ? "point" : "points"} ${direction} in ${period}`
-								: `No change in ${period}`}
+						{changeText}
 					</span>
 				) : null}
 			</span>
@@ -882,6 +895,7 @@ export {
 	PatientCardScore,
 	PatientCardTags,
 	acuityLevels as patientCardAcuityLevels,
+	scoreChangeSummary,
 	patientCardAlertVariants,
 	patientCardMetricVariants,
 	scoreTrendClassName,

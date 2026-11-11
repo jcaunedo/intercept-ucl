@@ -275,7 +275,7 @@ export const ShareableLink: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Back to Monitoring" }));
 		await waitFor(() => expect(addressParam("patient")).toBeNull());
 		await expect(addressParam("tab")).toBeNull();
-		// Her page has left (its header has a Live feed button of its own).
+		// Her page has left (it has a Live feed button of its own, right of its tabs).
 		await waitFor(() => expect(canvas.queryByRole("heading", { level: 1, name: "Miller, Sarah" })).toBeNull());
 		await openLiveFeed(canvas, userEvent);
 		await waitFor(() => expect(addressParam("feed")).toBe("1"));
@@ -429,7 +429,8 @@ export const Static: Story = {
 
 /**
  * Sort by offers Patient name (the default) and Recently viewed, nothing else (Nov 10, 2026, user's call). The Active
- * alerts chip orders the patients by who to see first instead: Miller (Critical), then Johnson, then Anderson.
+ * alerts chip orders the patients by who to see first instead: Miller (Critical), Erickson (High), Lambert (Medium),
+ * then the Lows.
  */
 export const SortOrders: Story = {
 	play: async ({ canvas, userEvent }) => {
@@ -441,10 +442,13 @@ export const SortOrders: Story = {
 		await userEvent.keyboard("{Escape}");
 		const names = () =>
 			canvas.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent?.split(",")[0]);
-		// Active alerts orders by who to see first instead: Miller (Critical), then the two Lows by acuity band, Johnson
-		// (NEWS2 15, High) above Anderson (3, Low).
+		// Active alerts orders by who to see first instead: Miller (Critical), Erickson (High), Lambert (Medium), then the
+		// Lows by acuity band, Johnson (NEWS2 15, High) first, then the three Low bands by the longest wait: Carlson
+		// (22 min), Hughes (12 min), Anderson (1 min).
 		await userEvent.click(canvas.getByRole("button", { name: /Active alerts/ }));
-		await waitFor(() => expect(names()).toEqual(["Miller", "Johnson", "Anderson"]));
+		await waitFor(() =>
+			expect(names()).toEqual(["Miller", "Erickson", "Lambert", "Johnson", "Carlson", "Hughes", "Anderson"]),
+		);
 	},
 };
 

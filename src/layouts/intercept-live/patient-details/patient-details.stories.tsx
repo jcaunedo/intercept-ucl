@@ -70,7 +70,7 @@ type Story = StoryObj<typeof meta>;
  * and isolation, all outline). Line tabs: Overview (the AI clinical summary across the top, then her clinical findings:
  * key labs, temperature, MAP and the ventilator; then cards: live monitoring, care plan, Up next, medications, oxygen and
  * infusions, recent orders, encounter and referrals; her alerts are in the Alerts panel, from View alerts), then
- * Vitals, Labs, Timeline, Medications, Orders, Epic, Notes, Sepsis and Camera view. Every Census patient has the same
+ * Vitals, Labs, Timeline, Medications, Orders, EMR, Notes, Sepsis and Camera view. Every Census patient has the same
  * depth of data: go back and open another. Back returns to the Census as it was.
  */
 export const Default: Story = {
@@ -96,8 +96,9 @@ export const Default: Story = {
 };
 
 /**
- * The header's Live feed opens this patient's feed beside the page (Nov 11, 2026, user's calls): a log of everything
- * that happened to her, newest first by day, her earlier alerts included, not only alerts; × closes it.
+ * Live feed, right of the tabs as on Monitoring (Nov 11, 2026, user's call: it left the Patient Header), opens this
+ * patient's feed beside the page: a log of everything that happened to her, newest first by day, her earlier alerts
+ * included, not only alerts; × closes it.
  */
 export const PatientLiveFeed: Story = {
 	play: async ({ canvasElement }) => {
@@ -105,7 +106,7 @@ export const PatientLiveFeed: Story = {
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		// On a patient's page no Sidebar item is active (Nov 11, 2026, user's call).
 		await expect(canvasElement.querySelector("[data-active][aria-current='page']")).toBeNull();
-		const button = canvas.getByRole("button", { name: "Live feed" });
+		const button = canvas.getByRole("button", { name: /^Live feed/ });
 		await userEvent.click(button);
 		const panel = within(await canvas.findByRole("complementary", { name: "Live feed" }));
 		await expect(button).toHaveAttribute("aria-expanded", "true");

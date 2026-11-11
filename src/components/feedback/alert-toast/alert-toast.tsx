@@ -389,7 +389,8 @@ function AlertToast({
 				// The whole toast opens the alert: one button over it, under its own buttons (z-2), which keep their clicks. It's
 				// over the avatar too, which is positioned. Sonner starts a swipe (and captures the pointer) on a press that
 				// doesn't land on a <button>; this is one, and the press stays here, so the toast isn't swiped away. On a collapsed
-				// stack a click here spreads the stack instead (`data-toast-open`, the Toaster's rule), as on the toast's body.
+				// stack a click here spreads the stack instead (`data-toast-open`, the Toaster's rule), as on the toast's body, so
+				// there it keeps the arrow cursor, as it keeps its border: the pointer shows only where a click opens the alert.
 				<button
 					type='button'
 					data-slot='alert-toast-open'
@@ -397,7 +398,7 @@ function AlertToast({
 					aria-label={`${openAlertLabel}: ${title}`}
 					onClick={onOpenAlert}
 					onPointerDown={(event) => event.stopPropagation()}
-					className='absolute inset-0 z-1 cursor-pointer rounded-card outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset'
+					className='absolute inset-0 z-1 cursor-pointer rounded-card outline-none in-data-[stack-collapsed=true]:cursor-default focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset'
 				/>
 			) : null}
 

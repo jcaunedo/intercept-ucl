@@ -18,7 +18,8 @@ import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitor
 // (`sampleScenario1Monitoring`, `sample-data/sample-scenario-1.ts`).
 // Erickson, Carlson and Hansen (Chadron) are the floor's other patients, Ortega, Norman and Jensen (Alliance's med-surg floor) fill its
 // count, and Peterson, Lambert, Jacobs, Hughes and Ramirez are Bridgeport's (Med-Surg, a swing bed, observation and
-// the ED; Nov 6, 2026, user's call); all eleven inside the limits, with no alert. My patients are the same as on the
+// the ED; Nov 6, 2026, user's call); all eleven inside the limits. Erickson, Carlson, Lambert and Hughes have an
+// open alert (Nov 11, 2026), the rest none. My patients are the same as on the
 // Census (`sample-census.ts`).
 //
 // Acuity is the NEWS2-style current-state score (DU-14, scale 1), worked out from each patient's charted vitals in
@@ -533,7 +534,9 @@ const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).
 // Three open alerts on three patients, as the Census's pills (Oct 29, 2026, user request: 1 Critical and 2 Low to start):
 // Miller's Sepsis candidate (Critical), Johnson's SpO₂ and Anderson's bed exit (Low). Their times run against their
 // severity (Anderson's Low is the newest, Miller's Critical the oldest; Oct 31, 2026), so their ages and the
-// Active alerts chip's order (most severe first) visibly differ. The live feed adds and changes the
+// Active alerts chip's order (most severe first) visibly differ. Then two at Chadron (Erickson's bed exit, High, and
+// Carlson's overdue vitals, Low) and two at Bridgeport (Lambert's RR, Medium, and Hughes's pain reassessment, Low), so
+// every hospital but Alliance starts with open alerts (Nov 11, 2026, user's call). The live feed adds and changes the
 // rest (`sample-live-scenario.ts`). Then alerts resolved earlier in the last 24 h (Oct 31, 2026, user request), so cards
 // show the Resolved bar: Wilson 24 min ago, Bennett (3 in 24 h) 1.5 h ago, Harris 6 h ago, Taylor 20 h ago.
 const resolved = (minutes: number, reason: string) => ({
@@ -570,6 +573,43 @@ const sampleMonitoringAlerts: TriageAlert[] = [
 		source: { kind: "device", name: "Bed sensor" },
 		firedAt: minutesAgo(1),
 		respondBy: minutesAgo(-19),
+	},
+	{
+		id: "a9",
+		patientId: "p16",
+		severity: "high",
+		title: "Bed exit alarm",
+		source: { kind: "device", name: "Bed sensor" },
+		firedAt: minutesAgo(4),
+		respondBy: minutesAgo(-6),
+		recommendation: "Fall risk: check on him at the bedside.",
+	},
+	{
+		id: "a10",
+		patientId: "p19",
+		severity: "low",
+		title: "Vitals check overdue",
+		source: { kind: "rule", name: "Nursing" },
+		firedAt: minutesAgo(22),
+		respondBy: minutesAgo(-38),
+	},
+	{
+		id: "a11",
+		patientId: "p26",
+		severity: "medium",
+		title: "Respiratory rate above 20 for 15 min",
+		source: { kind: "rule", name: "Vitals" },
+		firedAt: minutesAgo(7),
+		respondBy: minutesAgo(-23),
+	},
+	{
+		id: "a12",
+		patientId: "p28",
+		severity: "low",
+		title: "Pain reassessment overdue",
+		source: { kind: "rule", name: "Nursing" },
+		firedAt: minutesAgo(12),
+		respondBy: minutesAgo(-48),
 	},
 	{
 		id: "r1",

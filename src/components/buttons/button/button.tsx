@@ -59,7 +59,8 @@ const buttonVariants = cva(
 				xs: "h-6 gap-1 rounded-lg px-2 text-xs [&_svg:not([class*='size-'])]:size-3",
 				sm: "h-8 gap-[5px] rounded-button-md px-3 font-semibold has-[>svg]:pl-2",
 				md: mdSize,
-				lg: "h-10 gap-1.5 rounded-button-md px-4.5 font-semibold has-[>svg]:pl-3",
+				// A 16px label at 40px, with more room around a leading icon.
+				lg: "h-10 gap-2 rounded-button-md px-4.5 text-base font-semibold has-[>svg]:pl-4",
 				"icon-xs": "size-6 rounded-lg [&_svg:not([class*='size-'])]:size-3",
 				"icon-sm": "size-8 rounded-button-md",
 				"icon-md": iconMdSize,
@@ -81,7 +82,7 @@ const buttonVariants = cva(
 			{ variant: "outline", size: "xs", className: "px-[7px]" },
 			{ variant: "outline", size: "sm", className: "px-[11px] has-[>svg]:pl-[7px]" },
 			{ variant: "outline", size: ["md", "default"], className: "px-[13px] has-[>svg]:pl-[9px]" },
-			{ variant: "outline", size: "lg", className: "px-[17px] has-[>svg]:pl-[11px]" },
+			{ variant: "outline", size: "lg", className: "px-[17px] has-[>svg]:pl-[15px]" },
 			{ variant: "outline", size: ["icon-xs", "icon-sm", "icon-md", "icon-lg", "icon"], className: "hover:border-input" },
 			// Loading: the spinner 16px from each side at 24px, 19px at 32px and 28px from 36px up.
 			{ loading: true, size: "xs", className: "px-4 has-[>svg]:px-4" },

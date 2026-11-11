@@ -1,10 +1,18 @@
 import * as React from "react";
-import { BellRingIcon, MapPinIcon, ZapIcon } from "lucide-react";
+import { BellRingIcon, MapPinIcon, MinusIcon, TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
-import { PatientCardScore, PatientCardTags, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
+import {
+	PatientCardTags,
+	patientCardAcuityLevels,
+	scoreChangeSummary,
+	scoreTrendClassName,
+	type PatientCensusCardProps,
+} from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
 import { Typography } from "@/components/typography/typography";
+import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
+import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
@@ -23,10 +31,17 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 	> & {
 		/** The hospital account (encounter) number, after the MRN: "MRN 01033876 · ACCT 6325DF2". */
 		account?: string;
-		/** The early-warning score with its level, e.g. NEWS2 10 High: the score line's start, as on the cards. */
+		/** The early-warning score with its level, e.g. NEWS2 10 High: the first column on the right, named by the score. */
 		acuity?: PatientCensusCardProps["acuity"];
-		/** The score's change in the last 24 h, e.g. ▲ +1: the score line's arrow and "1 point up in 24 h". */
+		/** The score's change in the last 24 h, e.g. +1: the arrow and "1 point up in 24 h" under the score. */
 		trajectory?: PatientCensusCardProps["trajectory"];
+		/**
+		 * How the patient is doing, from a documented clinical assessment or an approved calculation (PRD PC-031), and
+		 * when it was last assessed: the Clinical status column ("Deteriorating", "Last assessed 2 min ago").
+		 */
+		clinicalStatus?: PatientHeaderClinicalStatus;
+		/** Every alert in a recent window, resolved ones included: "Alerts · 6 alerts in last 12 h". */
+		recentAlerts?: { count: number; period: string };
 		/**
 		 * The patient's worst open alert, with `count` the number of open alerts: the alerts button's count when there's no
 		 * `alertCounts`. Without one, or `resolved`, there are none.
@@ -41,9 +56,9 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 		onViewAlerts?: () => void;
 		/** Whether what the alerts button opens is open (`aria-expanded`). */
 		alertsOpen?: boolean;
-		/** Shows the Live feed button, e.g. to open a panel with this patient's live feed. */
+		/** @deprecated Ignored since Nov 11, 2026: Live feed moved to AppHeader's patient variant (`onOpenLiveFeed`). */
 		onOpenLiveFeed?: () => void;
-		/** Whether the live feed is open: the button's pressed look and `aria-expanded`. */
+		/** @deprecated Ignored since Nov 11, 2026, with `onOpenLiveFeed`. */
 		liveFeedOpen?: boolean;
 		/** Photo URL. Without it, the avatar shows `initials`. */
 		photo?: string;
@@ -54,7 +69,7 @@ type PatientHeaderProps = Omit<React.ComponentProps<"div">, "children"> &
 		details?: string[];
 		/** Heading level for the name. Defaults to `h1`: the bar heads the patient's page. */
 		headingLevel?: "h1" | "h2";
-		/** More of the bar's right side, after its buttons. */
+		/** More of the bar's right side, after its columns. */
 		actions?: React.ReactNode;
 		/** @deprecated Ignored since Nov 9, 2026: the header no longer has "View breakdown". */
 		onViewScore?: () => void;
@@ -67,11 +82,55 @@ type PatientHeaderAlertCounts = Partial<Record<PatientHeaderAlertSeverity, numbe
 
 const alertSeverities: PatientHeaderAlertSeverity[] = ["critical", "high", "medium", "low"];
 
+/** PRD PC-031's trajectory statuses. */
+type PatientHeaderClinicalStatusValue = "improving" | "stable" | "deteriorating" | "insufficient-data";
+
+type PatientHeaderClinicalStatus = {
+	status: PatientHeaderClinicalStatusValue;
+	/** When it was last assessed: "Last assessed 2 min ago", updated each minute. */
+	assessedAt?: string;
+};
+
+const clinicalStatusLabels: Record<PatientHeaderClinicalStatusValue, string> = {
+	improving: "Improving",
+	stable: "Relatively stable",
+	deteriorating: "Deteriorating",
+	"insufficient-data": "Insufficient data",
+};
+
+/**
+ * One of the right side's columns, after a rule: its label, then its value and the line under it, centered. A column
+ * whose content is a single control (`bottom`) puts it at the bottom of the same 50px, level with the others' last line.
+ */
+function PatientHeaderColumn({
+	label,
+	bottom = false,
+	children,
+}: {
+	label: React.ReactNode;
+	bottom?: boolean;
+	children: React.ReactNode;
+}) {
+	const labelId = React.useId();
+	return (
+		<>
+			<span aria-hidden='true' className='w-px shrink-0 self-stretch bg-border' />
+			<div role='group' aria-labelledby={labelId} className='flex min-w-0 flex-1 flex-col justify-center gap-2'>
+				<p id={labelId} className='text-sm text-foreground'>
+					{label}
+				</p>
+				<div className={cn("flex min-w-0 flex-col items-start", bottom && "min-h-[50px] justify-end")}>{children}</div>
+			</div>
+		</>
+	);
+}
+
 /**
  * Heads a patient's page: photo (a circle) beside the name, with sex and age after it, and a line with the MRN and
- * account number, the location after a pin, and the early-warning score as the cards write it; under them the tags,
- * from the left edge (one line that scrolls sideways). On the right, Live feed and the alerts ("2 active alerts" in red,
- * "No active alerts" in outline), each with its handler, then any `actions`.
+ * account number and the location after a pin; under them the tags, from the left edge (one line that scrolls
+ * sideways). On the right, as wide as the patient's side, columns after rules: the early-warning score with its change,
+ * the clinical status with when it was assessed, and the alerts ("2 active alerts" in red, "No active alerts" in
+ * outline, with `onViewAlerts`), each shown with its data; then any `actions`.
  *
  * Figma: [intercept.ds › Patient Header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1191-3147)
  */
@@ -90,11 +149,13 @@ function PatientHeader({
 	alertCounts,
 	acuity,
 	trajectory,
+	clinicalStatus,
+	recentAlerts,
 	onViewScore: _onViewScore,
 	onViewAlerts,
 	alertsOpen,
-	onOpenLiveFeed,
-	liveFeedOpen = false,
+	onOpenLiveFeed: _onOpenLiveFeed,
+	liveFeedOpen: _liveFeedOpen,
 	tags = [],
 	photo,
 	initials,
@@ -115,7 +176,11 @@ function PatientHeader({
 	const counted = alertSeverities.reduce((total, severity) => total + (alertCounts?.[severity] ?? 0), 0);
 	const pillOpen = alert && alert.variant !== "resolved" && alert.variant !== "message";
 	const openAlerts = alertCounts ? counted : pillOpen ? (alert?.count ?? 1) : 0;
-	const hasButtons = Boolean(onOpenLiveFeed || onViewAlerts || actions);
+	const now = useCurrentMinute();
+	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
+	const { direction, text: changeText } = scoreChangeSummary(trajectory);
+	const TrendIcon = direction === "up" ? TrendingUpIcon : direction === "down" ? TrendingDownIcon : MinusIcon;
+	const hasColumns = Boolean(acuity || trajectory || clinicalStatus || onViewAlerts || actions);
 
 	return (
 		<div data-slot='patient-header' className={cn("flex items-center gap-4 py-4 pr-10 pl-6", className)} {...props}>
@@ -163,7 +228,6 @@ function PatientHeader({
 									{location}
 								</p>
 							) : null}
-							{acuity || trajectory ? <PatientCardScore acuity={acuity} trajectory={trajectory} className='text-base' /> : null}
 						</div>
 					</div>
 				</div>
@@ -173,40 +237,92 @@ function PatientHeader({
 				{tags.length ? <PatientCardTags tags={tags} name={`${firstName} ${lastName}`} /> : null}
 			</div>
 
-			{hasButtons ? (
-				<div className='flex shrink-0 items-center gap-4'>
-					{onOpenLiveFeed ? (
-						// While its panel is open, the outline on the `accent` fill, as AppHeader's panel buttons.
-						<Button
-							variant='outline'
-							size='lg'
-							aria-expanded={liveFeedOpen}
-							onClick={onOpenLiveFeed}
-							className={cn(liveFeedOpen && "bg-accent")}
-						>
-							<ZapIcon aria-hidden='true' />
-							Live feed
-						</Button>
+			{hasColumns ? (
+				// As wide as the patient's side, as tall as the bar's content: the columns' rules run its full height.
+				<div data-slot='patient-header-columns' className='flex min-w-0 flex-1 items-stretch gap-4 self-stretch'>
+					{acuity || trajectory ? (
+						<PatientHeaderColumn label={acuity?.label ?? "Score"}>
+							{acuity ? (
+								<p className='flex items-baseline gap-2 text-xl/[30px] text-foreground'>
+									<span className='font-semibold tabular-nums'>{acuity.score ?? "--"}</span>
+									{/* The level keeps the cards' colors, so it reads the same everywhere. */}
+									{acuityLevel ? (
+										<span className={patientCardAcuityLevels[acuityLevel].className}>
+											{patientCardAcuityLevels[acuityLevel].label}
+										</span>
+									) : null}
+								</p>
+							) : null}
+							{changeText ? (
+								<p
+									className={cn(
+										"flex items-center gap-1 text-sm",
+										direction ? scoreTrendClassName({ ...trajectory, trend: direction }) : "text-muted-foreground",
+									)}
+								>
+									<TrendIcon aria-hidden='true' className='size-4 shrink-0' />
+									{changeText}
+								</p>
+							) : null}
+						</PatientHeaderColumn>
+					) : null}
+					{clinicalStatus ? (
+						<PatientHeaderColumn label='Clinical status'>
+							<p className='text-xl/[30px] font-semibold text-foreground'>{clinicalStatusLabels[clinicalStatus.status]}</p>
+							{clinicalStatus.assessedAt && now !== null ? (
+								<p className='text-sm text-muted-foreground'>
+									Last assessed{" "}
+									<time dateTime={clinicalStatus.assessedAt} title={formatRelativeDate(clinicalStatus.assessedAt, now).title}>
+										{formatRelativeDate(clinicalStatus.assessedAt, now).label.replace(/^Just now$/, "just now")}
+									</time>
+								</p>
+							) : null}
+						</PatientHeaderColumn>
 					) : null}
 					{onViewAlerts ? (
-						// Always there (Nov 11, 2026, user's call: "still missing the Alerts button"): red while an alert is open,
-						// the outline look with none, pressed on `accent` like Live feed while its panel is open.
-						<Button
-							variant={openAlerts > 0 ? "destructive" : "outline"}
-							size='lg'
-							aria-expanded={alertsOpen}
-							onClick={onViewAlerts}
-							className={cn(openAlerts === 0 && alertsOpen && "bg-accent")}
+						<PatientHeaderColumn
+							bottom
+							label={
+								<>
+									Alerts
+									{recentAlerts ? (
+										<span className='text-muted-foreground'>
+											{" "}
+											· {recentAlerts.count} {recentAlerts.count === 1 ? "alert" : "alerts"} in last {recentAlerts.period}
+										</span>
+									) : null}
+								</>
+							}
 						>
-							<BellRingIcon aria-hidden='true' />
-							{openAlerts > 0 ? `${openAlerts} active ${openAlerts === 1 ? "alert" : "alerts"}` : "No active alerts"}
-						</Button>
+							{/* Red while an alert is open (the critical alert color, as Figma binds it), the outline look with none,
+							    pressed on `accent` while its panel is open. */}
+							<Button
+								variant={openAlerts > 0 ? "destructive" : "outline"}
+								size='lg'
+								aria-expanded={alertsOpen}
+								onClick={onViewAlerts}
+								className={cn(
+									openAlerts > 0 &&
+										"bg-severity-critical hover:bg-[color-mix(in_srgb,var(--severity-critical)_80%,black)]",
+									openAlerts === 0 && alertsOpen && "bg-accent",
+								)}
+							>
+								<BellRingIcon aria-hidden='true' />
+								{openAlerts > 0 ? `${openAlerts} active ${openAlerts === 1 ? "alert" : "alerts"}` : "No active alerts"}
+							</Button>
+						</PatientHeaderColumn>
 					) : null}
-					{actions}
+					{actions ? <div className='flex shrink-0 items-center gap-4'>{actions}</div> : null}
 				</div>
 			) : null}
 		</div>
 	);
 }
 
-export { PatientHeader, type PatientHeaderAlertCounts, type PatientHeaderProps };
+export {
+	PatientHeader,
+	type PatientHeaderAlertCounts,
+	type PatientHeaderClinicalStatus,
+	type PatientHeaderClinicalStatusValue,
+	type PatientHeaderProps,
+};
