@@ -82,6 +82,15 @@ type PatientHeaderAlertCounts = Partial<Record<PatientHeaderAlertSeverity, numbe
 
 const alertSeverities: PatientHeaderAlertSeverity[] = ["critical", "high", "medium", "low"];
 
+// The alerts button by the highest open severity: its fill and white label, as the cards' alert bar, darkened under the
+// solid buttons' 20% black on hover. Full class names, so Tailwind sees them.
+const alertButtonSeverityClassNames: Record<PatientHeaderAlertSeverity, string> = {
+	critical: "bg-severity-critical text-severity-foreground hover:bg-[color-mix(in_srgb,var(--severity-critical)_80%,black)]",
+	high: "bg-severity-high text-severity-foreground hover:bg-[color-mix(in_srgb,var(--severity-high)_80%,black)]",
+	medium: "bg-severity-medium text-severity-foreground hover:bg-[color-mix(in_srgb,var(--severity-medium)_80%,black)]",
+	low: "bg-severity-low text-severity-foreground hover:bg-[color-mix(in_srgb,var(--severity-low)_80%,black)]",
+};
+
 /** PRD PC-031's trajectory statuses. */
 type PatientHeaderClinicalStatusValue = "improving" | "stable" | "deteriorating" | "insufficient-data";
 
@@ -176,6 +185,15 @@ function PatientHeader({
 	const counted = alertSeverities.reduce((total, severity) => total + (alertCounts?.[severity] ?? 0), 0);
 	const pillOpen = alert && alert.variant !== "resolved" && alert.variant !== "message";
 	const openAlerts = alertCounts ? counted : pillOpen ? (alert?.count ?? 1) : 0;
+	// The highest open severity colors the alerts button: the first in the counts, else the worst alert's.
+	const topSeverity: PatientHeaderAlertSeverity | undefined =
+		openAlerts === 0
+			? undefined
+			: ((alertCounts
+					? alertSeverities.find((severity) => (alertCounts[severity] ?? 0) > 0)
+					: pillOpen
+						? (alert?.variant as PatientHeaderAlertSeverity)
+						: undefined) ?? "critical");
 	const now = useCurrentMinute();
 	const acuityLevel = acuity?.level ?? (acuity && acuity.score === undefined ? "unknown" : undefined);
 	const { direction, text: changeText } = scoreChangeSummary(trajectory);
@@ -294,17 +312,18 @@ function PatientHeader({
 								</>
 							}
 						>
-							{/* Red while an alert is open (the critical alert color, as Figma binds it), the outline look with none,
-							    pressed on `accent` while its panel is open. */}
+							{/* While an alert is open, the highest open severity's color, as the cards' alert bar shows it (Critical
+							    red, High orange, Medium amber, Low blue); the outline look with none, pressed on `accent` while its
+							    panel is open. */}
 							<Button
-								variant={openAlerts > 0 ? "destructive" : "outline"}
+								variant={topSeverity ? "destructive" : "outline"}
 								size='lg'
 								aria-expanded={alertsOpen}
 								onClick={onViewAlerts}
+								data-severity={topSeverity}
 								className={cn(
-									openAlerts > 0 &&
-										"bg-severity-critical hover:bg-[color-mix(in_srgb,var(--severity-critical)_80%,black)]",
-									openAlerts === 0 && alertsOpen && "bg-accent",
+									topSeverity && alertButtonSeverityClassNames[topSeverity],
+									!topSeverity && alertsOpen && "bg-accent",
 								)}
 							>
 								<BellRingIcon aria-hidden='true' />

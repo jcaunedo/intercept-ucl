@@ -62,8 +62,31 @@ export const Default: Story = {
 		await expect(canvas.getByRole("group", { name: "NEWS2" })).toHaveTextContent(/10High1 point up in 24 h$/);
 		await expect(canvas.getByRole("group", { name: "Clinical status" })).toHaveTextContent(/DeterioratingLast assessed \d+ min ago$/);
 		await expect(canvas.getByRole("group", { name: /^Alerts\s*·\s*6 alerts in last 12 h$/ })).toBeInTheDocument();
+		// A Critical and a Low open: the button takes the highest, Critical.
+		await expect(canvas.getByRole("button", { name: "2 active alerts" })).toHaveAttribute("data-severity", "critical");
 		canvas.getByRole("button", { name: "2 active alerts" }).click();
 		await expect(args.onViewAlerts).toHaveBeenCalled();
+	},
+};
+
+/**
+ * The alerts button takes the color of the highest open severity, as the cards' alert bar: Critical red, High orange,
+ * Medium amber, Low blue.
+ */
+export const AlertSeverities: Story = {
+	render: (args) => (
+		<div className='flex flex-col divide-y divide-border'>
+			<PatientHeader {...args} alertCounts={{ critical: 1, low: 2 }} />
+			<PatientHeader {...args} alertCounts={{ high: 1, medium: 1 }} />
+			<PatientHeader {...args} alertCounts={{ medium: 2 }} />
+			<PatientHeader {...args} alertCounts={{ low: 1 }} />
+		</div>
+	),
+	play: async ({ canvasElement }) => {
+		const severities = [...canvasElement.querySelectorAll("[data-slot='patient-header'] button[data-severity]")].map(
+			(button) => button.getAttribute("data-severity"),
+		);
+		await expect(severities).toEqual(["critical", "high", "medium", "low"]);
 	},
 };
 
