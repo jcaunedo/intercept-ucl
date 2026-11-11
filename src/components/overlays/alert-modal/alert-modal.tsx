@@ -91,6 +91,11 @@ type AlertModalProps = Omit<React.ComponentProps<"div">, "title"> &
 		titleAs?: React.ElementType;
 		/** The description's element. Inside a Dialog, pass `DialogDescription`. */
 		descriptionAs?: React.ElementType;
+		/**
+		 * A link under the alert's panel, right-aligned, e.g. Intercept Live's View suggested pathway (Button `link`).
+		 * Ignored without `alert`.
+		 */
+		alertLink?: React.ReactNode;
 		/** The buttons under the alert (Button `outline` `md`), one row at equal widths. */
 		actions?: React.ReactNode;
 		/**
@@ -243,6 +248,7 @@ function AlertModal({
 	children,
 	titleAs: Title = "h2",
 	descriptionAs: Description = "p",
+	alertLink,
 	actions,
 	headerActions,
 	acuity,
@@ -422,6 +428,7 @@ function AlertModal({
 						</div>
 					</section>
 				) : null}
+				{alert && alertLink ? <div className='flex shrink-0 justify-end'>{alertLink}</div> : null}
 
 				{actions ? <div className='flex gap-2 *:flex-1'>{actions}</div> : null}
 

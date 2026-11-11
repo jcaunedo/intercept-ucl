@@ -244,9 +244,10 @@ export const FallPreventionPathway: Story = {
 };
 
 /**
- * Scenario 1, steps 4 to 6: from Hayes's alert the intensivist opens her page (the alert has no pathway since Nov 10,
- * 2026), accepts the CHF pathway from the Care plan and keeps her at Chadron. A few seconds later it's 06:00: both
- * checkpoints pass, the panel logs Transfer avoided and the Care plan tracks it.
+ * Scenario 1, steps 4 to 6: in Hayes's alert the intensivist opens View suggested pathway (back Nov 11, 2026, user's
+ * call), accepts the CHF pathway and keeps her at Chadron. A few seconds later it's 06:00: both checkpoints pass, the
+ * panel logs Transfer avoided, her alert resolves (by her bedside nurse) and her card settles at NEWS2 3, Low. Reopened,
+ * the alert keeps the decision, and her page's Care plan tracks it.
  */
 export const Scenario1Resolution: Story = {
 	render: (args) => <LiveMonitoring {...args} />,
@@ -259,12 +260,8 @@ export const Scenario1Resolution: Story = {
 		});
 		await userEvent.click(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ }));
 		const modal = within(await screen.findByRole("dialog"));
-		await expect(modal.queryByRole("button", { name: /pathway/i })).toBeNull();
-		// Her page: the Care plan opens the pathway in the Pathway panel.
-		await userEvent.click(modal.getByRole("button", { name: "Hayes, Margaret, open patient" }));
-		const plan = within(await screen.findByRole("region", { name: "Care plan" }, { timeout: 5000 }));
-		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
-		const pathway = within(await screen.findByRole("complementary", { name: "Pathway" }));
+		await userEvent.click(modal.getByRole("button", { name: "View suggested pathway" }));
+		const pathway = within(await modal.findByRole("complementary", { name: "Pathway" }));
 		await userEvent.click(await pathway.findByRole("button", { name: "Accept" }));
 		const panel = within(await pathway.findByRole("region", { name: "Keep or transfer" }));
 		await userEvent.click(panel.getByRole("button", { name: "Keep at Chadron" }));
@@ -272,11 +269,25 @@ export const Scenario1Resolution: Story = {
 		const form = within(await panel.findByRole("form", { name: "Keep at Chadron" }));
 		await userEvent.type(form.getByRole("textbox", { name: "Why keep at Chadron?" }), "BiPAP and RT are here");
 		await userEvent.click(form.getByRole("button", { name: "Keep at Chadron" }));
-		// 06:00: the checkpoints pass and the transfer is avoided.
+		// 06:00, while the alert is open: the checkpoints pass and the transfer is avoided.
 		await expect(await panel.findByText("Transfer avoided", {}, { timeout: 10000 })).toBeInTheDocument();
 		await expect(panel.getAllByText(/Passed/)).toHaveLength(2);
-		// Her Care plan tracks it all.
-		await waitFor(() => expect(plan.getByText("Keeping at Chadron")).toBeInTheDocument());
+		await expect(await modal.findByText(/Resolved by Kayla Brandt, RN/)).toBeInTheDocument();
+		// Closed and reopened, the decision and the outcome stay.
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		const card = within(hayes() as HTMLElement);
+		await waitFor(() => expect(card.getByText(/NEWS2: 3/)).toBeInTheDocument());
+		// Once the Critical bar has faded out, only the Resolved one is left.
+		await waitFor(() => expect(card.getAllByRole("button", { name: /Open alert/ })).toHaveLength(1));
+		await userEvent.click(card.getByRole("button", { name: /Open alert/ }));
+		const reopened = within(await screen.findByRole("dialog"));
+		await expect(await reopened.findByText(/Keeping at Chadron/)).toBeInTheDocument();
+		await expect(reopened.getByText("Transfer avoided")).toBeInTheDocument();
+		// Her page tracks it all in the care plan.
+		await userEvent.click(reopened.getByRole("button", { name: "Hayes, Margaret, open patient" }));
+		const plan = within(await screen.findByRole("region", { name: "Care plan" }, { timeout: 5000 }));
+		await expect(plan.getByText("Keeping at Chadron")).toBeInTheDocument();
 		await expect(plan.getByText("Transfer avoided")).toBeInTheDocument();
 	},
 };
@@ -284,9 +295,10 @@ export const Scenario1Resolution: Story = {
 /**
  * The Prototype menu's "Scenario 2: COPD": Dale Reynolds isn't on Monitoring until it's picked; 1.5 s later Alliance's
  * ED requests the hub's consult and he joins with his Critical alert. On the video consult, Alliance's connection drops:
- * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist opens his page (the
- * call goes with him), accepts the COPD pathway from the Care plan and keeps him at Alliance: air is grounded and the
- * road closed, so there's no transfer to pick. A few seconds later it's 2 h on NIV: both checkpoints pass.
+ * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist opens View suggested
+ * pathway, accepts the COPD pathway and keeps him at Alliance: air is grounded and the road closed, so there's no
+ * transfer to pick. A few seconds later it's 2 h on NIV: both checkpoints pass, his alert resolves (by his nurse) and
+ * his card settles at NEWS2 5.
  */
 export const Scenario2Copd: Story = {
 	render: (args) => <LiveMonitoring {...args} />,
@@ -315,11 +327,8 @@ export const Scenario2Copd: Story = {
 		await expect(modal.getByText("Low bandwidth:")).toBeInTheDocument();
 		await expect(await modal.findByText("Video paused for low bandwidth", {}, { timeout: 5000 })).toBeInTheDocument();
 		await expect(await modal.findByText("BiPAP screen", {}, { timeout: 12000 })).toBeInTheDocument();
-		// The pathway is on his page (Nov 10, 2026): the name opens it, the call going with him.
-		await userEvent.click(modal.getByRole("button", { name: "Reynolds, Dale, open patient" }));
-		const plan = within(await screen.findByRole("region", { name: "Care plan" }, { timeout: 5000 }));
-		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
-		const pathway = within(await screen.findByRole("complementary", { name: "Pathway" }));
+		await userEvent.click(modal.getByRole("button", { name: "View suggested pathway" }));
+		const pathway = within(await modal.findByRole("complementary", { name: "Pathway" }));
 		await expect(await pathway.findByText("COPD exacerbation pathway")).toBeInTheDocument();
 		await userEvent.click(await pathway.findByRole("button", { name: "Accept" }));
 		const panel = within(await pathway.findByRole("region", { name: "Keep or transfer" }));
@@ -329,13 +338,18 @@ export const Scenario2Copd: Story = {
 		const form = within(await panel.findByRole("form", { name: "Keep at Alliance" }));
 		await userEvent.type(form.getByRole("textbox", { name: "Why keep at Alliance?" }), "No way out tonight; NIV with checkpoints");
 		await userEvent.click(form.getByRole("button", { name: "Keep at Alliance" }));
-		// 2 h on NIV: the blood gases' photos and Megan's note arrive, and Messages opens on its own in Pathway's place.
-		await expect(await screen.findByText("Blood gas, 2 h on BiPAP", {}, { timeout: 10000 })).toBeInTheDocument();
+		// 2 h on NIV, while the alert is open: the blood gases' photos and Megan's note arrive, and Messages opens on its own
+		// in Pathway's place.
+		await expect(await modal.findByText("Blood gas, 2 h on BiPAP", {}, { timeout: 10000 })).toBeInTheDocument();
+		await expect(await modal.findByText(/Resolved by Megan Foster, RN/)).toBeInTheDocument();
 		// Back to Pathway: both checkpoints passed and no transfer was needed.
-		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
-		const resolved = within(await screen.findByRole("region", { name: "Keep or transfer" }));
+		await userEvent.click(modal.getByRole("button", { name: "View pathway" }));
+		const resolved = within(await modal.findByRole("region", { name: "Keep or transfer" }));
 		await expect(await resolved.findByText("Transfer avoided")).toBeInTheDocument();
 		await expect(resolved.getAllByText(/Passed/)).toHaveLength(2);
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		await waitFor(() => expect(within(reynolds() as HTMLElement).getByText(/NEWS2: 5/)).toBeInTheDocument());
 	},
 };
 

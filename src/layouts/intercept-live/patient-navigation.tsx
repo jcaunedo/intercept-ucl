@@ -29,8 +29,8 @@ type PatientNavigation = {
 	 */
 	/**
 	 * `consult`: with the video consult ringing the bedside (`true`), or already on, a consult request answered
-	 * (`"answered"`). `focus`: opened at a part of its pathway, e.g. the discharge referrals a notice is about: the
-	 * patient's page opens instead, its Pathway panel there, since the alert has no pathway (Nov 10, 2026, user's call).
+	 * (`"answered"`). `focus`: opened at a part of its pathway, e.g. the discharge referrals a notice is about (its
+	 * Pathway panel there; without an alert modal, the patient's page's).
 	 */
 	openAlert: (
 		patientId: string,

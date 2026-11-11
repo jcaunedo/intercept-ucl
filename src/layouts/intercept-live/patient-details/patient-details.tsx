@@ -376,8 +376,8 @@ type PatientDetailsProps = {
 	/**
 	 * The patient's alerts that come with a pathway (or a sepsis bundle, or a protocol), the one to show first leading:
 	 * the Overview's Care plan shows it (suggested, or what it runs) and opens it in the Pathway panel right of the page.
-	 * The only place a pathway is decided since Nov 10, 2026 (user's call: the alert panel has none). The panel needs
-	 * `consult` (it's one of the page's panels); without it, the Care plan has no way to it.
+	 * The same pathway as the alert panel's (View suggested pathway), kept in step through the consult session. The panel
+	 * needs `consult` (it's one of the page's panels); without it, the Care plan's way to it opens the alert.
 	 */
 	pathways?: PatientPathways;
 };
@@ -644,7 +644,7 @@ function PatientDetailsContent({
 }: PatientDetailsProps) {
 	const [section, setSection] = React.useState<SectionId>("overview");
 	// The pathway the Overview shows: the first alert's, where it is now (the session's, as the panels have it, or the
-	// app's), and the way to it: the page's Pathway panel (the alert has no pathway since Nov 10, 2026).
+	// app's), and the way to it: the page's Pathway panel, or the alert without one.
 	const navigation = usePatientNavigation();
 	const openPathwayPanel = useOpenPathwayPanel();
 	const openAlertsPanel = useOpenAlertsPanel();
@@ -658,7 +658,12 @@ function PatientDetailsContent({
 		? {
 				detail: pathwayDetail,
 				status: pathwayStatus,
-				onOpen: consult ? openPathwayPanel : undefined,
+				// The page's Pathway panel; without one (no consult), the alert, with its pathway (back Nov 11, 2026).
+				onOpen: consult
+					? openPathwayPanel
+					: navigation
+						? () => navigation.openAlert(patient.id, pathwayDetail.alert.id)
+						: undefined,
 			}
 		: undefined;
 	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080), Discharge only once the

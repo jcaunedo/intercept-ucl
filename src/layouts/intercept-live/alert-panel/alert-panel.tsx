@@ -313,13 +313,13 @@ type AlertPanelDialogProps = {
 	escalationTargets?: EscalationTarget[];
 	/** The patient's name opens their details. */
 	onOpenPatient?: () => void;
-	/** @deprecated Ignored since Nov 10, 2026: the alert panel has no pathway; the patient's page decides it. */
+	/** The intensivist accepted the pathway's orders (with any edited dose) or declined it. */
 	onPathwayDecision?: (decision: CarePathwayDecision) => void;
-	/** @deprecated Ignored since Nov 10, 2026: keep or transfer is on the patient's page. */
+	/** The intensivist decided to keep or transfer the patient, or took the decision back. */
 	onTransferDecision?: (decision: KeepOrTransferDecision) => void;
-	/** @deprecated Ignored since Nov 10, 2026: the discharge referrals are on the patient's page. */
+	/** A discharge referral sent (with who agreed to it) or skipped, or a skip taken back. */
 	onDischargeDecision?: (decision: DischargeDecision) => void;
-	/** @deprecated Ignored since Nov 10, 2026: the sepsis bundle is on the patient's page. */
+	/** A sepsis bundle element's check confirmed (a renal dose review), or taken back. */
 	onBundleDecision?: (decision: BundleDecision) => void;
 };
 
@@ -1680,6 +1680,13 @@ function joinNames(names: string[]) {
 /* -------------------------------------------------------------------------- */
 
 type AlertPanelProps = Omit<AlertPanelDialogProps, "open" | "defaultOpen" | "onOpenChange"> & {
+	/**
+	 * Shows the pathway in the side panel when it opens. By default, when it has been acted on (its orders sent, or keep or
+	 * transfer decided), or it runs a sepsis bundle or a protocol, so a reopened alert shows where it was left.
+	 */
+	defaultPathwayOpen?: boolean;
+	/** Opened at the discharge referrals (a notice's Review referrals): Pathway open, scrolled to them. */
+	focusDischarge?: boolean;
 	/** The heading's element; inside a Dialog, `DialogTitle`. */
 	titleAs?: React.ElementType;
 	/** The description's element; inside a Dialog, `DialogDescription`. */
@@ -1700,11 +1707,11 @@ const threadWith = (bedside?: AlertDetailBedside) => (bedside ? `${bedside.name}
 /**
  * One alert, expanded, with everything the alert modal did (it replaced the modal, Nov 3, 2026, user's call): UCL's
  * AlertModal with the alert's lifecycle (Acknowledge, Escalate and Resolve, each form under the buttons), Video consult
- * and Messages. Each opens a side panel that slides out on the right, the thread's to the right of the call's: the
- * call, with the AI Notetaker under it (Scenario 1, step 3), and the messages with the bedside nurse. No pathway (Nov 10,
- * 2026, user's call; intercept.ds `alert-modal`): the care pathway, keep or transfer, the bundle, the protocol and the
- * discharge referrals are on the patient's page (its Pathway panel). The alert's key findings are a flag, first in its
- * tag row.
+ * and Messages right of the name, and View suggested pathway under the alert. Each opens a side panel that slides out on
+ * the right, right of the call's: the call, with the AI Notetaker under it (Scenario 1, step 3), then the messages with
+ * the bedside nurse or the care pathway, one at a time, with keep or transfer, the bundle, the protocol and the discharge
+ * referrals (steps 4 and 5; back Nov 11, 2026, user's call, for the demo's four scenarios). The patient's page has the
+ * same pathway in its Pathway panel. The alert's key findings are a flag, first in its tag row.
  *
  * Figma: [intercept.ds › alert-modal](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1355-14776)
  */
@@ -1726,6 +1733,18 @@ function AlertPanelContent({
 	actions: actionsProp,
 	escalationTargets = [],
 	onOpenPatient,
+	onPathwayDecision,
+	onTransferDecision,
+	onDischargeDecision,
+	onBundleDecision,
+	focusDischarge = false,
+	// A sepsis bundle opens with the alert, so its hour-1 timer is in view from the start (Scenario 3, step 1); so does a
+	// running protocol, so a nudge about an overdue check opens on the checklist (Scenario 4, step 3).
+	defaultPathwayOpen = focusDischarge ||
+		Boolean(data.bundle) ||
+		Boolean(data.protocol) ||
+		(data.pathwayStatus !== undefined && data.pathwayStatus !== "suggested") ||
+		Boolean(data.transfer?.decided),
 	titleAs,
 	descriptionAs,
 	close,
@@ -1751,20 +1770,43 @@ function AlertPanelContent({
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- once, as the modal opens.
 	}, []);
 	const consultOn = consult !== "idle";
-	// The messages with the bedside nurse, right of the call (intercept.ds `alert-modal` › Messages `1375:8218`). They open
-	// from the header, with or without a call, and stay when the call ends (Nov 5, 2026, user's call). Open or closed goes
-	// with the consult session, both ways between here and the patient's page.
+	// The column right of the call (intercept.ds `alert-modal` › Messages `1375:8218`): the messages with the bedside
+	// nurse, or the pathway, one at a time (Nov 5, 2026, user's call; the pathway back Nov 11, 2026, user's call). The
+	// messages open from the header, with or without a call, and stay when the call ends. Which one is open goes with the
+	// consult session, both ways between here and the patient's page (its Pathway panel shows this alert's pathway).
+	const hasPathway = Boolean(data.pathway || data.bundle);
 	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
-	const [messagesOpen, setMessagesOpen] = React.useState(sharedMessagesOpen);
+	const [sharedPathwayOpen, setSharedPathwayOpen] = useSessionState("pathwayOpen", false);
+	const [sharedPathwayAlert, setSharedPathwayAlert] = useSessionState<string | undefined>("pathwayAlert", undefined);
+	const [sidePanel, setSidePanel] = React.useState<"pathway" | "messages" | null>(() =>
+		sharedMessagesOpen
+			? "messages"
+			: hasPathway &&
+				  (defaultPathwayOpen ||
+						(sharedPathwayOpen && (sharedPathwayAlert === undefined || sharedPathwayAlert === data.alert.id)))
+				? "pathway"
+				: null,
+	);
+	const pathwayOpen = sidePanel === "pathway";
+	const messagesOpen = sidePanel === "messages";
 	React.useEffect(() => setSharedMessagesOpen(messagesOpen), [messagesOpen, setSharedMessagesOpen]);
+	React.useEffect(() => {
+		setSharedPathwayOpen(pathwayOpen);
+		if (pathwayOpen) setSharedPathwayAlert(data.alert.id);
+	}, [pathwayOpen, setSharedPathwayOpen, setSharedPathwayAlert, data.alert.id]);
 	// The message field takes focus when the clinician opens the column, not when it opens on its own (below).
 	const [focusMessages, setFocusMessages] = React.useState(false);
-	const toggleMessages = () => {
-		setFocusMessages(true);
-		setMessagesOpen((current) => !current);
+	const togglePanel = (panel: "pathway" | "messages") => {
+		setFocusMessages(panel === "messages");
+		setSidePanel((current) => (current === panel ? null : panel));
 	};
-	// No pathway here (Nov 10, 2026, user's call; intercept.ds `alert-modal` dropped View pathway): it's on the patient's
-	// page. DESIGN.md "Alert panel".
+	// "View suggested pathway" while it's a suggestion, "View pathway" once it's been decided or it runs a bundle or a
+	// protocol, "Hide pathway" while it's out.
+	const [pathwayStatus] = useSessionState<CarePathwayStatus>(
+		pathwaySessionKey(data.alert.id, "status"),
+		data.pathwayStatus ?? "suggested",
+	);
+	const pathwaySuggested = pathwayStatus === "suggested" && !data.bundle && !data.protocol;
 	const lifecycle = useAlertLifecycle({
 		alert: data.alert,
 		actions: actionsProp,
@@ -1777,14 +1819,20 @@ function AlertPanelContent({
 		onSendMessage,
 		data.scriptedReplies,
 	);
-	// Only a new message from the bedside opens the column on its own, without moving focus; the connection dropping
-	// doesn't (Nov 5, 2026, user's call). The Messages buttons count what came while the alert wasn't open.
+	// Only a new message from the bedside opens the column on its own, in Pathway's place and without moving focus; the
+	// connection dropping doesn't (Nov 5, 2026, user's call). The Messages buttons count what came while the alert wasn't open.
 	if (useNewIncoming(messages) && !messagesOpen) {
 		setFocusMessages(false);
-		setMessagesOpen(true);
+		setSidePanel("messages");
 	}
 	const unread = useUnreadMessages(messages, messagesOpen);
-	if (escapeRef) escapeRef.current = () => lifecycle.escape();
+	const pathwayEscape = React.useRef<(() => boolean) | null>(null);
+	if (escapeRef) escapeRef.current = () => lifecycle.escape() || Boolean(pathwayOpen && pathwayEscape.current?.());
+	// The pathway's column takes focus as it opens, so the keyboard lands there too.
+	const pathwayRef = React.useRef<HTMLDivElement>(null);
+	React.useEffect(() => {
+		if (pathwayOpen) pathwayRef.current?.focus({ preventScroll: true });
+	}, [pathwayOpen]);
 	const alertFlag = findingsFlag(data);
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
 
@@ -1800,6 +1848,21 @@ function AlertPanelContent({
 			sourceAction={lifecycle.feedbackNode}
 			status={lifecycle.statusNode}
 			alertActions={lifecycle.alertActionsNode}
+			// The alert's pathway, a link under the alert, right-aligned (Nov 11, 2026, user's call: back for the demo's
+			// scenarios; intercept.ds `alert-modal` `1353:14304`). DESIGN.md "Alert panel".
+			alertLink={
+				hasPathway ? (
+					<Button
+						variant='link'
+						size='xs'
+						aria-expanded={pathwayOpen}
+						onClick={() => togglePanel("pathway")}
+						className='h-auto p-0 text-sm font-medium text-foreground underline decoration-dotted underline-offset-2 hover:decoration-solid aria-expanded:decoration-solid'
+					>
+						{pathwayOpen ? "Hide pathway" : pathwaySuggested ? "View suggested pathway" : "View pathway"}
+					</Button>
+				) : undefined
+			}
 			// Video consult and Messages right of the name (Nov 9, 2026, user's call; the row under the alert is gone).
 			headerActions={
 				<TooltipProvider>
@@ -1811,7 +1874,7 @@ function AlertPanelContent({
 						icon={MessageCircleMoreIcon}
 						openIcon={MessageCircleMoreIcon}
 						unread={unread}
-						onClick={toggleMessages}
+						onClick={() => togglePanel("messages")}
 					/>
 				</TooltipProvider>
 			}
@@ -1855,14 +1918,14 @@ function AlertPanelContent({
 							},
 						]
 					: []),
-				// Right of the call's (intercept.ds `alert-modal` › Messages `1375:8218`).
+				// Right of the call's (intercept.ds `alert-modal` › Messages `1375:8218`), in the pathway's place.
 				...(messagesOpen
 					? [
 							{
 								id: "messages",
 								label: "Messages",
 								// Its × closes the thread, as the header's Close messages does (Nov 10, 2026, user's call).
-								onClose: () => setMessagesOpen(false),
+								onClose: () => setSidePanel(null),
 								content: (
 									<ConsultMessages
 										messages={messages}
@@ -1870,6 +1933,30 @@ function AlertPanelContent({
 										nurse={threadWith(data.bedside)}
 										typing={nurseTyping}
 										autoFocus={focusMessages}
+									/>
+								),
+							},
+						]
+					: []),
+				// The alert's pathway, in Messages' place: View suggested pathway opens it, its × or Hide pathway closes it.
+				...(pathwayOpen && hasPathway
+					? [
+							{
+								id: "pathway",
+								label: "Pathway",
+								ref: pathwayRef,
+								onClose: () => setSidePanel(null),
+								content: (
+									// It fills the panel, so the decision sits at the bottom however short the pathway is.
+									<PathwayContent
+										data={data}
+										onPathwayDecision={onPathwayDecision}
+										onTransferDecision={onTransferDecision}
+										onDischargeDecision={onDischargeDecision}
+										onBundleDecision={onBundleDecision}
+										escapeRef={pathwayEscape}
+										fill
+										focusDischarge={focusDischarge}
 									/>
 								),
 							},
@@ -1895,7 +1982,7 @@ function AlertPanelDialog({
 	defaultOpen,
 	onOpenChange,
 	...props
-}: AlertPanelDialogProps) {
+}: AlertPanelDialogProps & { defaultPathwayOpen?: boolean; focusDischarge?: boolean }) {
 	const escapeRef = React.useRef<(() => boolean) | null>(null);
 	return (
 		<Dialog open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
@@ -1932,8 +2019,8 @@ function AlertPanelDialog({
  * no active alert. The alert panel without its alert: the patient (the name, the heading, opens their details), Video
  * consult and Messages in the header, as on the alert panel, their score, monitor and tags, and the Video consult panel,
  * always open, with the AI Notetaker under the call (already ringing; Cancel, End, then Video consult to call again),
- * and Messages right of it. No Pathway (Nov 10, 2026, user's call, as on the alert panel): the care plan is on the
- * patient's page. No lifecycle buttons: no alert to act on.
+ * and Messages right of it. No Pathway (Nov 10, 2026, user's call): with no alert there's no pathway suggested, and the
+ * care plan is on the patient's page. No lifecycle buttons: no alert to act on.
  */
 function PatientConsultDialog(props: React.ComponentProps<typeof PatientConsultDialogContent>) {
 	// The dialog stays mounted once closed (to animate out); it's in the patient's consult session only while open.
@@ -2136,6 +2223,10 @@ function alertPanelRenderer({
 	alerts,
 	escalationTargets,
 	onAlertAction,
+	onPathwayDecision,
+	onTransferDecision,
+	onDischargeDecision,
+	onBundleDecision,
 	onConsultChange,
 	onConsultNote,
 	records,
@@ -2152,15 +2243,15 @@ function alertPanelRenderer({
 	escalationTargets?: EscalationTarget[];
 	onAlertAction: (alertId: string, action: TriageAlertAction) => void;
 	/**
-	 * @deprecated Ignored since Nov 10, 2026 (user's call): the alert panel has no pathway. The patient's page takes the
-	 * pathway, keep or transfer, discharge and bundle decisions (`patientDetailsRenderer`).
+	 * The pathway decided in the modal, by alert, so the app keeps it after the modal closes. Each callback also gets the
+	 * alert's detail as opened (the patient, the pathway as suggested, keep or transfer), for the app's record of it.
 	 */
 	onPathwayDecision?: (alertId: string, decision: CarePathwayDecision, detail: AlertDetailData) => void;
-	/** @deprecated Ignored since Nov 10, 2026: on the patient's page. */
+	/** Keep or transfer decided in the modal, by alert. */
 	onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
-	/** @deprecated Ignored since Nov 10, 2026: on the patient's page. */
+	/** A discharge referral decided in the modal, by patient: the patient's page shows the same referrals. */
 	onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
-	/** @deprecated Ignored since Nov 10, 2026: on the patient's page. */
+	/** A sepsis bundle check confirmed or taken back in the modal (Scenario 3's renal dose review), by alert. */
 	onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
 	/** The video consult rang, went live or ended (closing the modal ends it), by alert. */
 	onConsultChange?: (alertId: string, state: AlertConsultState, detail: AlertDetailData) => void;
@@ -2207,10 +2298,16 @@ function alertPanelRenderer({
 				data={data}
 				// A consult request answered from its toast is on at once; Video consult from a card rings the bedside first.
 				defaultConsult={target.consult === "answered" ? "live" : target.consult ? "connecting" : "idle"}
+				// A notice's Review referrals opens it at the discharge referrals.
+				focusDischarge={target.focus === "discharge"}
 				open={open}
 				onOpenChange={onOpenChange}
 				onOpenPatient={openPatient}
 				escalationTargets={escalationTargets}
+				onPathwayDecision={onPathwayDecision && ((decision) => onPathwayDecision(alert.id, decision, data))}
+				onTransferDecision={onTransferDecision && ((decision) => onTransferDecision(alert.id, decision, data))}
+				onDischargeDecision={onDischargeDecision && ((decision) => onDischargeDecision(alert.patientId, decision))}
+				onBundleDecision={onBundleDecision && ((decision) => onBundleDecision(alert.id, decision))}
 				onConsultChange={onConsultChange && ((state) => onConsultChange(alert.id, state, data))}
 				onConsultNote={onConsultNote && ((note) => onConsultNote(alert.id, note, data))}
 				// Every action keeps the modal open, confirmed in place by the state line (Nov 10, 2026, user's call): the

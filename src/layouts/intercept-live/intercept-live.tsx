@@ -250,7 +250,7 @@ type PatientStepper = {
 
 /**
  * Where the patient's page opens its Pathway panel: an alert's pathway, and a part of it to scroll to, e.g. the
- * discharge referrals a notice is about. The alert panel has no pathway since Nov 10, 2026 (user's call).
+ * discharge referrals a notice is about. The alert panel shows the same pathway (View suggested pathway).
  */
 type PatientPathwayTarget = { alertId?: string; focus?: "discharge" };
 
@@ -634,14 +634,11 @@ function InterceptLive({
 				if (!renderPatientDetails) return;
 				setOpenPatient({ id: patientId, list, consult: options?.consult, pathway: options?.pathway });
 			},
-			// The alert modal (`renderAlert`); without one, the patient's details. Opened at a part of the pathway (a
-			// notice's Review referrals), the patient's page with its Pathway panel there: the alert has no pathway since
-			// Nov 10, 2026 (user's call).
+			// The alert modal (`renderAlert`), opened at a part of its pathway when asked (a notice's Review referrals: its
+			// Pathway panel at the referrals; the alert's pathway is back since Nov 11, 2026, user's call). Without a modal,
+			// the patient's details, with their Pathway panel there.
 			openAlert: (patientId, alertId, options) => {
-				if (options?.focus && renderPatientDetails) {
-					setOpenAlert((current) => (current ? { ...current, open: false } : current));
-					setOpenPatient({ id: patientId, pathway: { alertId, focus: options.focus } });
-				} else if (renderAlert)
+				if (renderAlert)
 					setOpenAlert((current) => ({
 						patientId,
 						alertId,
@@ -650,7 +647,11 @@ function InterceptLive({
 						open: true,
 						key: (current?.key ?? 0) + 1,
 					}));
-				else if (renderPatientDetails) setOpenPatient({ id: patientId });
+				else if (renderPatientDetails)
+					setOpenPatient({
+						id: patientId,
+						pathway: options?.focus ? { alertId, focus: options.focus } : undefined,
+					});
 			},
 			askAboutPatient: (patientId, patientName, tags, question = patientOverviewQuestion) => {
 				setChatPatient({ id: patientId, name: patientName, tags });

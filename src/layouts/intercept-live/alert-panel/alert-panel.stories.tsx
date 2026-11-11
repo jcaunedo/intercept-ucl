@@ -30,10 +30,11 @@ import {
  * The alert panel (UCL AlertModal with the alert's interactions), opened from a Monitoring card's alert bar or an
  * alert toast; in the app it opens in a Dialog (`AlertPanelDialog`). Margaret Hayes's Critical alert at 01:40 in
  * Scenario 1: the alert with her NEWS2, monitor and tags (step 2), the one-click video consult to her bedside nurse
- * (step 3) and the messages with the bedside, each in a side panel. In the Monitoring and Census prototypes, Open alert
- * shows it. No pathway since Nov 10, 2026 (user's call): the Pathway stories below show the patient page's Pathway panel
- * (`PathwayContent`), where step 4's CHF exacerbation pathway is decided now. It replaced the three-column alert modal (Nov 3, 2026, user's call; the modal's code
- * was removed on Nov 9, 2026).
+ * (step 3), the messages with the bedside and step 4's CHF exacerbation pathway (View suggested pathway, back Nov 11,
+ * 2026, user's call), each in a side panel. In the Monitoring and Census prototypes, Open alert shows it. The Pathway
+ * stories below show the pathway's column on its own (`PathwayContent`, as the alert and the patient page's Pathway
+ * panel show it). It replaced the three-column alert modal (Nov 3, 2026, user's call; the modal's code was removed on
+ * Nov 9, 2026).
  */
 const meta = {
 	title: "Layouts/Intercept Live/Alert panel",
@@ -96,9 +97,8 @@ function Demo(props: AlertPanelProps) {
 }
 
 /**
- * The patient page's Pathway panel (`PathwayContent`, as `PatientConsultPanels` shows it): the alert panel has no
- * pathway since Nov 10, 2026 (user's call), so the pathway's stories render it on its own, in the patient's consult
- * session.
+ * The pathway's column on its own (`PathwayContent`, as the alert panel's Pathway and the patient page's Pathway panel
+ * show it), in the patient's consult session, so each pathway story starts on it.
  */
 function PathwayDemo(props: AlertPanelProps) {
 	// Escape closes an open dose edit or decision first, as the patient page's panel does.
@@ -128,8 +128,9 @@ const pathwayRender = (args: AlertPanelProps) => <PathwayDemo {...args} />;
  * The patient's name opens their details. Acknowledge confirms in place, and a second click undoes it. Video consult
  * rings Kayla Brandt, RN and slides a panel out with the call and the AI Notetaker under it (Scenario 1, step 3): once
  * the others on the call approve, it captures the consultation, prepares the notes and offers the draft for review and
- * approval. Close video consult ends the call and slides its panel back. No View pathway under the buttons (Nov 10,
- * 2026, user's call; intercept.ds `alert-modal`).
+ * approval. View suggested pathway, under the alert, slides the CHF pathway out to the right of the call's, in Messages'
+ * place (steps 4 and 5; back Nov 11, 2026, user's call; intercept.ds `alert-modal`). Close video consult and Hide
+ * pathway each slide theirs back.
  */
 export const Default: Story = {
 	play: async ({ args, canvas, userEvent }) => {
@@ -185,12 +186,18 @@ export const Default: Story = {
 		await expect(note.value.startsWith("Video consult with Kayla Brandt, RN")).toBe(true);
 		await userEvent.click(call.getByRole("button", { name: "Approve notes" }));
 		await expect(await call.findByText(/Approved by you/)).toBeInTheDocument();
-		// No pathway in the alert panel (Nov 10, 2026): it's on the patient's page.
-		await expect(canvas.queryByRole("button", { name: /pathway/i })).not.toBeInTheDocument();
+		// The pathway opens in a second panel, to the right of the call's.
+		await userEvent.click(canvas.getByRole("button", { name: "View suggested pathway" }));
+		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
+		await expect(await pathway.findByRole("button", { name: "Accept" })).toBeInTheDocument();
+		const panels = canvas.getAllByRole("complementary").map((panel) => panel.getAttribute("aria-label"));
+		await expect(panels).toEqual(["Video consult", "Pathway"]);
 		// The header's Video consult, pressed while the call is on, ends it and closes its panel.
 		// The header's (the panel has a × of the same name since Nov 10, 2026).
 		await userEvent.click(canvas.getAllByRole("button", { name: "Close video consult" })[0]);
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Video consult" })).not.toBeInTheDocument());
+		await userEvent.click(canvas.getByRole("button", { name: "Hide pathway" }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).not.toBeInTheDocument());
 	},
 };
 
@@ -236,9 +243,10 @@ const feedDetails = sampleAlertDetails({
  * bundle, to be co-signed by the patient's attending of record.
  */
 export const SepsisAlert: Story = {
-	args: { data: feedDetails.find((detail) => detail.alert.id === "a1")! },
+	args: { defaultPathwayOpen: true, data: feedDetails.find((detail) => detail.alert.id === "a1")! },
 	play: async ({ canvas }) => {
 		await expect(feedDetails.filter((detail) => !detail.pathway)).toEqual([]);
+		await expect(await canvas.findByRole("region", { name: "Sepsis bundle, hour 1" })).toBeInTheDocument();
 		// An AI recommendation can be resolved (it was right, and it's handled) or get feedback (it was wrong), a link on its
 		// source line.
 		const panel = within(canvas.getByRole("region", { name: "Alert" }));
