@@ -244,7 +244,7 @@ export const FallPreventionPathway: Story = {
 };
 
 /**
- * Scenario 1, steps 4 to 6: in Hayes's alert the intensivist opens View suggested pathway (back Nov 11, 2026, user's
+ * Scenario 1, steps 4 to 6: in Hayes's alert the intensivist opens Pathway (back Nov 11, 2026, user's
  * call), accepts the CHF pathway and keeps her at Chadron. A few seconds later it's 06:00: both checkpoints pass, the
  * panel logs Transfer avoided, her alert resolves (by her bedside nurse) and her card settles at NEWS2 3, Low. Reopened,
  * the alert keeps the decision, and her page's Care plan tracks it.
@@ -260,7 +260,7 @@ export const Scenario1Resolution: Story = {
 		});
 		await userEvent.click(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ }));
 		const modal = within(await screen.findByRole("dialog"));
-		await userEvent.click(modal.getByRole("button", { name: "View suggested pathway" }));
+		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
 		const pathway = within(await modal.findByRole("complementary", { name: "Pathway" }));
 		await userEvent.click(await pathway.findByRole("button", { name: "Accept" }));
 		const panel = within(await pathway.findByRole("region", { name: "Keep or transfer" }));
@@ -295,8 +295,7 @@ export const Scenario1Resolution: Story = {
 /**
  * The Prototype menu's "Scenario 2: COPD": Dale Reynolds isn't on Monitoring until it's picked; 1.5 s later Alliance's
  * ED requests the hub's consult and he joins with his Critical alert. On the video consult, Alliance's connection drops:
- * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist opens View suggested
- * pathway, accepts the COPD pathway and keeps him at Alliance: air is grounded and the road closed, so there's no
+ * the call goes on as audio, in low-bandwidth mode, and the BiPAP's photo arrives. The intensivist opens Pathway, accepts the COPD pathway and keeps him at Alliance: air is grounded and the road closed, so there's no
  * transfer to pick. A few seconds later it's 2 h on NIV: both checkpoints pass, his alert resolves (by his nurse) and
  * his card settles at NEWS2 5.
  */
@@ -327,7 +326,7 @@ export const Scenario2Copd: Story = {
 		await expect(modal.getByText("Low bandwidth:")).toBeInTheDocument();
 		await expect(await modal.findByText("Video paused for low bandwidth", {}, { timeout: 5000 })).toBeInTheDocument();
 		await expect(await modal.findByText("BiPAP screen", {}, { timeout: 12000 })).toBeInTheDocument();
-		await userEvent.click(modal.getByRole("button", { name: "View suggested pathway" }));
+		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
 		const pathway = within(await modal.findByRole("complementary", { name: "Pathway" }));
 		await expect(await pathway.findByText("COPD exacerbation pathway")).toBeInTheDocument();
 		await userEvent.click(await pathway.findByRole("button", { name: "Accept" }));
@@ -343,7 +342,7 @@ export const Scenario2Copd: Story = {
 		await expect(await modal.findByText("Blood gas, 2 h on BiPAP", {}, { timeout: 10000 })).toBeInTheDocument();
 		await expect(await modal.findByText(/Resolved by Megan Foster, RN/)).toBeInTheDocument();
 		// Back to Pathway: both checkpoints passed and no transfer was needed.
-		await userEvent.click(modal.getByRole("button", { name: "View pathway" }));
+		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
 		const resolved = within(await modal.findByRole("region", { name: "Keep or transfer" }));
 		await expect(await resolved.findByText("Transfer avoided")).toBeInTheDocument();
 		await expect(resolved.getAllByText(/Passed/)).toHaveLength(2);

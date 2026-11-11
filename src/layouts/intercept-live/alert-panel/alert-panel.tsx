@@ -1707,7 +1707,7 @@ const threadWith = (bedside?: AlertDetailBedside) => (bedside ? `${bedside.name}
 /**
  * One alert, expanded, with everything the alert modal did (it replaced the modal, Nov 3, 2026, user's call): UCL's
  * AlertModal with the alert's lifecycle (Acknowledge, Escalate and Resolve, each form under the buttons), Video consult
- * and Messages right of the name, and View suggested pathway under the alert. Each opens a side panel that slides out on
+ * and Messages right of the name, and Pathway at the end of the score line. Each opens a side panel that slides out on
  * the right, right of the call's: the call, with the AI Notetaker under it (Scenario 1, step 3), then the messages with
  * the bedside nurse or the care pathway, one at a time, with keep or transfer, the bundle, the protocol and the discharge
  * referrals (steps 4 and 5; back Nov 11, 2026, user's call, for the demo's four scenarios). The patient's page has the
@@ -1800,13 +1800,6 @@ function AlertPanelContent({
 		setFocusMessages(panel === "messages");
 		setSidePanel((current) => (current === panel ? null : panel));
 	};
-	// "View suggested pathway" while it's a suggestion, "View pathway" once it's been decided or it runs a bundle or a
-	// protocol, "Hide pathway" while it's out.
-	const [pathwayStatus] = useSessionState<CarePathwayStatus>(
-		pathwaySessionKey(data.alert.id, "status"),
-		data.pathwayStatus ?? "suggested",
-	);
-	const pathwaySuggested = pathwayStatus === "suggested" && !data.bundle && !data.protocol;
 	const lifecycle = useAlertLifecycle({
 		alert: data.alert,
 		actions: actionsProp,
@@ -1848,18 +1841,20 @@ function AlertPanelContent({
 			sourceAction={lifecycle.feedbackNode}
 			status={lifecycle.statusNode}
 			alertActions={lifecycle.alertActionsNode}
-			// The alert's pathway, a link under the alert, right-aligned (Nov 11, 2026, user's call: back for the demo's
-			// scenarios; intercept.ds `alert-modal` `1353:14304`). DESIGN.md "Alert panel".
-			alertLink={
+			// The alert's pathway at the end of the score line, right-aligned (Nov 11, 2026, user's calls: back for the demo's
+			// scenarios, moved here from under the alert, then "Pathway" in 16px; intercept.ds `alert-modal` `1353:14304`).
+			// Hide pathway while it's out. DESIGN.md "Alert panel".
+			scoreAction={
 				hasPathway ? (
 					<Button
 						variant='link'
 						size='xs'
 						aria-expanded={pathwayOpen}
 						onClick={() => togglePanel("pathway")}
-						className='h-auto p-0 text-sm font-medium text-foreground underline decoration-dotted underline-offset-2 hover:decoration-solid aria-expanded:decoration-solid'
+						className='h-auto gap-1 p-0 text-base font-medium text-foreground underline-offset-2 aria-expanded:underline [&_svg:not([class*=size-])]:size-4'
 					>
-						{pathwayOpen ? "Hide pathway" : pathwaySuggested ? "View suggested pathway" : "View pathway"}
+						<GitForkIcon />
+						{pathwayOpen ? "Hide pathway" : "Pathway"}
 					</Button>
 				) : undefined
 			}
@@ -1938,7 +1933,7 @@ function AlertPanelContent({
 							},
 						]
 					: []),
-				// The alert's pathway, in Messages' place: View suggested pathway opens it, its × or Hide pathway closes it.
+				// The alert's pathway, in Messages' place: Pathway opens it, its × or Hide pathway closes it.
 				...(pathwayOpen && hasPathway
 					? [
 							{

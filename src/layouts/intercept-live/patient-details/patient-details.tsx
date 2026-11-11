@@ -376,7 +376,7 @@ type PatientDetailsProps = {
 	/**
 	 * The patient's alerts that come with a pathway (or a sepsis bundle, or a protocol), the one to show first leading:
 	 * the Overview's Care plan shows it (suggested, or what it runs) and opens it in the Pathway panel right of the page.
-	 * The same pathway as the alert panel's (View suggested pathway), kept in step through the consult session. The panel
+	 * The same pathway as the alert panel's (Pathway, on its score line), kept in step through the consult session. The panel
 	 * needs `consult` (it's one of the page's panels); without it, the Care plan's way to it opens the alert.
 	 */
 	pathways?: PatientPathways;

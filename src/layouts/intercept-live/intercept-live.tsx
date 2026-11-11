@@ -250,7 +250,7 @@ type PatientStepper = {
 
 /**
  * Where the patient's page opens its Pathway panel: an alert's pathway, and a part of it to scroll to, e.g. the
- * discharge referrals a notice is about. The alert panel shows the same pathway (View suggested pathway).
+ * discharge referrals a notice is about. The alert panel shows the same pathway (Pathway, on its score line).
  */
 type PatientPathwayTarget = { alertId?: string; focus?: "discharge" };
 

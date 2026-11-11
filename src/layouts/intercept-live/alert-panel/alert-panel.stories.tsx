@@ -30,7 +30,7 @@ import {
  * The alert panel (UCL AlertModal with the alert's interactions), opened from a Monitoring card's alert bar or an
  * alert toast; in the app it opens in a Dialog (`AlertPanelDialog`). Margaret Hayes's Critical alert at 01:40 in
  * Scenario 1: the alert with her NEWS2, monitor and tags (step 2), the one-click video consult to her bedside nurse
- * (step 3), the messages with the bedside and step 4's CHF exacerbation pathway (View suggested pathway, back Nov 11,
+ * (step 3), the messages with the bedside and step 4's CHF exacerbation pathway (Pathway on the score line, back Nov 11,
  * 2026, user's call), each in a side panel. In the Monitoring and Census prototypes, Open alert shows it. The Pathway
  * stories below show the pathway's column on its own (`PathwayContent`, as the alert and the patient page's Pathway
  * panel show it). It replaced the three-column alert modal (Nov 3, 2026, user's call; the modal's code was removed on
@@ -128,7 +128,7 @@ const pathwayRender = (args: AlertPanelProps) => <PathwayDemo {...args} />;
  * The patient's name opens their details. Acknowledge confirms in place, and a second click undoes it. Video consult
  * rings Kayla Brandt, RN and slides a panel out with the call and the AI Notetaker under it (Scenario 1, step 3): once
  * the others on the call approve, it captures the consultation, prepares the notes and offers the draft for review and
- * approval. View suggested pathway, under the alert, slides the CHF pathway out to the right of the call's, in Messages'
+ * approval. Pathway, at the end of the score line, slides the CHF pathway out to the right of the call's, in Messages'
  * place (steps 4 and 5; back Nov 11, 2026, user's call; intercept.ds `alert-modal`). Close video consult and Hide
  * pathway each slide theirs back.
  */
@@ -187,7 +187,7 @@ export const Default: Story = {
 		await userEvent.click(call.getByRole("button", { name: "Approve notes" }));
 		await expect(await call.findByText(/Approved by you/)).toBeInTheDocument();
 		// The pathway opens in a second panel, to the right of the call's.
-		await userEvent.click(canvas.getByRole("button", { name: "View suggested pathway" }));
+		await userEvent.click(canvas.getByRole("button", { name: "Pathway" }));
 		const pathway = within(await canvas.findByRole("complementary", { name: "Pathway" }));
 		await expect(await pathway.findByRole("button", { name: "Accept" })).toBeInTheDocument();
 		const panels = canvas.getAllByRole("complementary").map((panel) => panel.getAttribute("aria-label"));

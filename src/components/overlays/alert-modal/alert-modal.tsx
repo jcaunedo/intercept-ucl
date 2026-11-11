@@ -92,10 +92,10 @@ type AlertModalProps = Omit<React.ComponentProps<"div">, "title"> &
 		/** The description's element. Inside a Dialog, pass `DialogDescription`. */
 		descriptionAs?: React.ElementType;
 		/**
-		 * A link under the alert's panel, right-aligned, e.g. Intercept Live's View suggested pathway (Button `link`).
-		 * Ignored without `alert`.
+		 * A control at the end of the score line, right-aligned and level with its last line, e.g. Intercept Live's
+		 * Pathway (Button `link`, an icon then its label).
 		 */
-		alertLink?: React.ReactNode;
+		scoreAction?: React.ReactNode;
 		/** The buttons under the alert (Button `outline` `md`), one row at equal widths. */
 		actions?: React.ReactNode;
 		/**
@@ -248,7 +248,7 @@ function AlertModal({
 	children,
 	titleAs: Title = "h2",
 	descriptionAs: Description = "p",
-	alertLink,
+	scoreAction,
 	actions,
 	headerActions,
 	acuity,
@@ -382,16 +382,20 @@ function AlertModal({
 				</div>
 				{/* Under the name: its 8px padding and 1px rule, the column's 16px gap taken back. Never pulled up into the
 				    sticky patient, whose background would mask the pin's top (Nov 9, 2026, user's report). */}
-				{location || acuity || trajectory ? (
-					// The location, then the score and its change, 4px apart, as on the patient's card.
-					<div className='-mt-4 flex flex-col gap-1'>
-						{location ? (
-							<p className='flex items-center gap-1 text-sm font-medium text-foreground'>
-								<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
-								<span className='truncate'>{location}</span>
-							</p>
-						) : null}
-						{acuity || trajectory ? <PatientCardScore acuity={acuity} trajectory={trajectory} /> : null}
+				{location || acuity || trajectory || scoreAction ? (
+					// The location, then the score and its change, 4px apart, as on the patient's card; `scoreAction` on the
+					// right, level with the last line.
+					<div className='-mt-4 flex items-end gap-1'>
+						<div className='flex min-w-0 flex-1 flex-col gap-1'>
+							{location ? (
+								<p className='flex items-center gap-1 text-sm font-medium text-foreground'>
+									<MapPinIcon aria-hidden='true' className='size-4 shrink-0 text-icon-muted' />
+									<span className='truncate'>{location}</span>
+								</p>
+							) : null}
+							{acuity || trajectory ? <PatientCardScore acuity={acuity} trajectory={trajectory} /> : null}
+						</div>
+						{scoreAction ? <div className='flex shrink-0 items-center'>{scoreAction}</div> : null}
 					</div>
 				) : null}
 
@@ -428,7 +432,6 @@ function AlertModal({
 						</div>
 					</section>
 				) : null}
-				{alert && alertLink ? <div className='flex shrink-0 justify-end'>{alertLink}</div> : null}
 
 				{actions ? <div className='flex gap-2 *:flex-1'>{actions}</div> : null}
 

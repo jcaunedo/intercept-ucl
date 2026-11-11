@@ -1,5 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowUpFromLineIcon, CheckCheckIcon, MessageCircleMoreIcon, ScanEyeIcon, VideoIcon, VideoOffIcon } from "lucide-react";
+import {
+	ArrowUpFromLineIcon,
+	CheckCheckIcon,
+	GitForkIcon,
+	MessageCircleMoreIcon,
+	ScanEyeIcon,
+	VideoIcon,
+	VideoOffIcon,
+} from "lucide-react";
 import { expect, fn, screen } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
@@ -49,8 +57,8 @@ const hayes = {
 	],
 } satisfies AlertModalProps;
 
-// The lifecycle buttons and the buttons right of the name, as Intercept Live passes them (Nov 10, 2026; intercept.ds
-// `alert-modal` `1353:14304`: no View pathway link under the buttons).
+// The lifecycle buttons, the buttons right of the name and Pathway at the end of the score line, as Intercept
+// Live passes them (Nov 11, 2026; intercept.ds `alert-modal` `1353:14304`).
 const lifecycle = (
 	<>
 		<Button variant='outline' size='sm' className='flex-1 font-semibold'>
@@ -78,6 +86,17 @@ const header = (
 	</>
 );
 
+const pathway = (
+	<Button
+		variant='link'
+		size='xs'
+		className='h-auto gap-1 p-0 text-base font-medium text-foreground underline-offset-2 [&_svg:not([class*=size-])]:size-4'
+	>
+		<GitForkIcon />
+		Pathway
+	</Button>
+);
+
 const meta = {
 	title: "Overlays/Alert Modal",
 	component: AlertModal,
@@ -85,15 +104,22 @@ const meta = {
 		layout: "centered",
 	},
 	tags: ["autodocs"],
-	args: { ...hayes, alertActions: lifecycle, headerActions: header, onOpenPatient: fn(), onClose: fn() },
+	args: {
+		...hayes,
+		alertActions: lifecycle,
+		headerActions: header,
+		scoreAction: pathway,
+		onOpenPatient: fn(),
+		onClose: fn(),
+	},
 } satisfies Meta<typeof AlertModal>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * As in Figma: Hayes's Critical alert, Video consult and Messages right of her name, the lifecycle buttons with Pathway
- * and the Resolve link under them, her score, monitor and tags.
+ * As in Figma: Hayes's Critical alert, Video consult and Messages right of her name, her score with Pathway at the
+ * end of its line, the lifecycle buttons, her monitor and tags.
  */
 export const Default: Story = {
 	play: async ({ args, canvas, userEvent }) => {
