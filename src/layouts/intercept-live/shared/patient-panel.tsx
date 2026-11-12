@@ -1300,6 +1300,7 @@ function PanelBoard<Patient extends PanelPatient>({
 	// frame behind the scroll and shakes; that's only the fallback where ScrollTimeline isn't supported.
 	const bodyRef = React.useRef<HTMLDivElement>(null);
 	const placeRef = React.useRef<(anchorAt?: number) => void>(undefined);
+	const placeIfMovedRef = React.useRef<() => void>(undefined);
 	// While cards glide in from the grid, the columns stay unmoved: a transformed column is a stacking context of its own,
 	// so a card crossing it on its way to another column would pass under its fill. They follow the page once landed.
 	const settling = React.useRef(animateIn && !reducedMotion);
@@ -1326,12 +1327,27 @@ function PanelBoard<Patient extends PanelPatient>({
 		};
 		// Each column's offset (px down its board) as a function of the page's scroll, from its last anchor.
 		const offsets = new Map<Element, (at: number) => number>();
-		// Works each column's movement out again from where it is at the scroll position `anchorAt` (default: now). It runs
-		// after every render (the live numbers re-render the board each second), so it must never leave a column unmoved
-		// for a frame: the cards' layout animation would read that frame as the cards moving and glide them back, every
-		// second (Nov 11, 2026). So an unchanged movement keeps its animation, and a changed one replaces the old only once
-		// it's running (a scroll-driven animation starts a frame after it's created).
+		// What the movement is worked out from: the board's place in the page's scroll, its height, the columns' heights,
+		// the scroll's extent and where the header row rests. While none of it changes, the movement doesn't either.
+		const geometry = () => {
+			const box = scroller.getBoundingClientRect();
+			const board = body.getBoundingClientRect();
+			return [
+				Math.round(board.top - box.top + scroller.scrollTop),
+				Math.round(board.height),
+				Math.round(box.height),
+				scroller.scrollHeight,
+				scroller.clientHeight,
+				headTop + head.offsetHeight,
+				...Array.from(body.children, (column) => (column as HTMLElement).offsetHeight),
+			].join();
+		};
+		let placedGeometry = "";
+		// Works each column's movement out again from where it is at the scroll position `anchorAt` (default: now). It must
+		// never leave a column unmoved for a frame: the cards' layout animation would read that frame as the cards moving
+		// and glide them back (Nov 11, 2026). So an unchanged movement keeps its animation, and a changed one updates it.
 		const place = (anchorAt = scroller.scrollTop) => {
+			placedGeometry = geometry();
 			const columns = Array.from(body.children);
 			for (const column of animations.keys()) if (!columns.includes(column)) stop(column);
 			const box = scroller.getBoundingClientRect();
@@ -1379,23 +1395,39 @@ function PanelBoard<Patient extends PanelPatient>({
 				const key = JSON.stringify(keyframes);
 				const current = animations.get(column);
 				if (current?.key === key) continue;
-				const animation = column.animate(keyframes, { timeline, fill: "both", easing: "linear" });
-				animations.set(column, { key, animation });
-				// The new one composites over the old, so the old can go once the new is running.
-				if (current) animation.ready.then(() => current.animation.cancel(), () => {});
+				// One animation per column for as long as it's shown; a new movement changes its keyframes in place. A second
+				// animation, even for a frame, makes Chrome run the column's movement on the main thread for good (it checks
+				// when an animation starts: "target has incompatible animations"), a frame behind the scroll, so a column
+				// resting on screen shook while the page scrolled (Nov 11, 2026). Cancelling first instead leaves the column
+				// unmoved for a frame while the new one starts.
+				if (current?.animation.effect instanceof KeyframeEffect) {
+					current.animation.effect.setKeyframes(keyframes);
+					current.key = key;
+					continue;
+				}
+				animations.set(column, { key, animation: column.animate(keyframes, { timeline, fill: "both", easing: "linear" }) });
 			}
 		};
 		placeRef.current = place;
+		// After a render, only when the board moved or resized: the live numbers re-render the board every second, and
+		// working the movement out again then re-anchored every column mid-scroll, swapping its animation each second, and
+		// a column resting on screen shook a frame behind the scroll (Nov 11, 2026). Between turns the movement holds.
+		placeIfMovedRef.current = () => {
+			if (geometry() !== placedGeometry) place();
+		};
 		place();
 		// The columns' movement depends on the way the page is going: when it turns, work it out again from where the
-		// page turned. Without ScrollTimeline, every scroll moves the columns this way.
+		// column is now. Not from where the page turned: by the time the scroll event arrives, the browser has already drawn
+		// the turned scroll with the old movement, so anchoring at the turn snapped each moving column back by the scroll's
+		// last step (60px a wheel notch), a visible jump at every turn (Nov 11, 2026). Without ScrollTimeline, every scroll
+		// moves the columns this way.
 		let lastScroll = scroller.scrollTop;
 		let direction = 0;
 		const onScroll = () => {
 			const now = scroller.scrollTop;
 			const way = Math.sign(now - lastScroll);
 			if (!timeline) place(lastScroll);
-			else if (way && direction && way !== direction) place(lastScroll);
+			else if (way && direction && way !== direction) place();
 			if (way) direction = way;
 			lastScroll = now;
 		};
@@ -1409,10 +1441,11 @@ function PanelBoard<Patient extends PanelPatient>({
 			resize.disconnect();
 			for (const column of [...animations.keys()]) stop(column);
 			placeRef.current = undefined;
+			placeIfMovedRef.current = undefined;
 		};
 	}, [hasPatients, columnKey, headTop]);
 	// Content above or inside the board can move it without resizing anything observed.
-	React.useEffect(() => placeRef.current?.());
+	React.useEffect(() => placeIfMovedRef.current?.());
 	if (!hasPatients) return null;
 	// One track per hospital, shown or not, plus any spare ones, so a column keeps its width however many hospitals have
 	// patients (Nov 3, 2026, user's call): two columns of four stay a quarter wide each, from the left, and the rest of
