@@ -109,7 +109,8 @@ const clinicalStatusLabels: Record<PatientHeaderClinicalStatusValue, string> = {
 
 /**
  * One of the right side's columns, after a rule: its label, then its value and the line under it, centered. A column
- * whose content is a single control (`bottom`) puts it at the bottom of the same 50px, level with the others' last line.
+ * whose content is a single control (`bottom`) puts it 2px above the bottom of the same 50px, level with the others'
+ * last line.
  */
 function PatientHeaderColumn({
 	label,
@@ -128,7 +129,7 @@ function PatientHeaderColumn({
 				<p id={labelId} className='text-sm text-foreground'>
 					{label}
 				</p>
-				<div className={cn("flex min-w-0 flex-col items-start", bottom && "min-h-[50px] justify-end")}>{children}</div>
+				<div className={cn("flex min-w-0 flex-col items-start", bottom && "min-h-[50px] justify-end pb-0.5")}>{children}</div>
 			</div>
 		</>
 	);
@@ -317,7 +318,7 @@ function PatientHeader({
 							    panel is open. */}
 							<Button
 								variant={topSeverity ? "destructive" : "outline"}
-								size='lg'
+								size='md'
 								aria-expanded={alertsOpen}
 								onClick={onViewAlerts}
 								data-severity={topSeverity}
