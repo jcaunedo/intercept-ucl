@@ -224,7 +224,12 @@ function LiveFeedPanel({ open, onOpenChange, alerts, patients, records = [], onO
 				action={<LiveFeedFilter entries={entries} value={hiddenKinds} onValueChange={setHiddenKinds} size='icon-sm' />}
 				className='border-l border-border bg-background'
 			>
-				<LiveFeed entries={entries} hiddenKinds={hiddenKinds} className='px-6 pb-6' />
+				{/* The log scrolls under the panel's header, which stays put (as the chat and patient list do). */}
+				<LiveFeed
+					entries={entries}
+					hiddenKinds={hiddenKinds}
+					className='scrollbar-soft min-h-0 flex-1 overflow-y-auto px-6 pb-6'
+				/>
 			</SidePanel>
 		</PagePanel>
 	);
