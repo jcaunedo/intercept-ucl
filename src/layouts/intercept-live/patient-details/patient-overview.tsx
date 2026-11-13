@@ -9,7 +9,7 @@ import { Badge, type BadgeProps } from "@/components/data-display/badge";
 import { LabTile } from "@/components/data-display/lab-tile";
 import { AiClinicalSummaryBanner } from "@/components/feedback/ai-clinical-summary-banner";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
-import { formatRelativeDate } from "@/lib/relative-date";
+import { formatDayLabel, formatRelativeDate } from "@/lib/relative-date";
 import {
 	reducedMotionTransition,
 	reorderSpring,
@@ -143,15 +143,7 @@ const reducedCardVariants: Variants = {
 };
 
 /** The day an alert fired, for the Alerts panel's history: "Today", "Yesterday", or "Saturday, Nov 7". */
-function alertDayLabel(firedAt: string, now: number | null) {
-	const day = new Date(firedAt);
-	const today = new Date(now ?? Date.now());
-	const startOf = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-	const days = Math.round((startOf(today) - startOf(day)) / (24 * HOUR));
-	if (days <= 0) return "Today";
-	if (days === 1) return "Yesterday";
-	return day.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-}
+const alertDayLabel = (firedAt: string, now: number | null) => formatDayLabel(firedAt, now ?? Date.now());
 
 /**
  * One alert as the alert panel shows it (PRD PD-020): its bar (which opens the alert, with the consult, the pathway and
@@ -321,7 +313,7 @@ function AlertsSection({
 	const order = shown.map((alert) => alert.id).join();
 	// With every alert listed (the Alerts panel), the resolved ones are grouped by the day they fired: "Today",
 	// "Yesterday", "Saturday, Nov 7" (Nov 10, 2026, user's call: the history stays). A label goes before the first alert of
-	// each day; the open alerts lead without one.
+	// each day; the open alerts lead without one. The labels are LiveFeed's day headings: 14/20 semibold `foreground`.
 	const dayLabels = new Map<string, string>();
 	if (allResolved) {
 		let previous: string | undefined;
@@ -359,7 +351,7 @@ function AlertsSection({
 						transition={{ layout: resolve(reorderSpring) }}
 					>
 						{dayLabels.has(alert.id) ? (
-							<h3 className={cn("text-sm font-medium text-muted-foreground", alert !== shown[0] && "pt-2")}>
+							<h3 className={cn("text-sm font-semibold text-foreground", alert !== shown[0] && "pt-2")}>
 								{dayLabels.get(alert.id)}
 							</h3>
 						) : null}
@@ -654,10 +646,36 @@ function CardToggle({ expanded, total, onToggle }: { expanded: boolean; total: n
 	);
 }
 
-/** A card's list: rows between rules, the first with one above it too. */
-function CardList({ children, ...props }: React.ComponentProps<"ul">) {
+/**
+ * A card's list: rows between rules, the first with one above it too. At most 400px tall, about Up next's five rows (one or two wrapped)
+ * (Nov 13, 2026, user's call), and it never scrolls: a row that wouldn't fit whole is hidden, never cut, and the card's
+ * View all leads to the rest. The footer (the source line) stays under it. `capped={false}` for a list shown in full
+ * (the Care Plan tab, Up next expanded).
+ */
+function CardList({ capped = true, className, children, ...props }: React.ComponentProps<"ul"> & { capped?: boolean }) {
+	const ref = React.useRef<HTMLUListElement>(null);
+	React.useLayoutEffect(() => {
+		const list = ref.current;
+		if (!list) return;
+		const rows = [...list.children] as HTMLElement[];
+		const fit = () => {
+			for (const row of rows) row.hidden = false;
+			if (!capped) return;
+			const limit = parseFloat(getComputedStyle(list).maxHeight);
+			if (!Number.isFinite(limit)) return;
+			// The first row always shows, so a card is never empty.
+			for (const row of rows.slice(1)) row.hidden = row.offsetTop + row.offsetHeight > limit;
+		};
+		fit();
+		const observer = new ResizeObserver(fit);
+		observer.observe(list);
+		return () => {
+			observer.disconnect();
+			for (const row of rows) row.hidden = false;
+		};
+	});
 	return (
-		<ul className='flex flex-col' {...props}>
+		<ul ref={ref} className={cn("relative flex flex-col", capped && "max-h-100 overflow-hidden", className)} {...props}>
 			{children}
 		</ul>
 	);
@@ -850,14 +868,17 @@ const planOfCareStatuses: Record<PatientPlanOfCareStatus, { label: string; varia
 	met: { label: "Met", variant: "green" },
 };
 
-/** Plan-of-care problems shown before View all. */
-const PLAN_OF_CARE_ITEMS = 4;
+/**
+ * The Care plan's rows on the Overview, Intercept's included, before View all: its three-line rows fill about the height
+ * of Up next's five two-line rows (Nov 13, 2026, user's call: Up next is the reference, no scrolling inside a card).
+ */
+const CARE_PLAN_ROWS = 4;
 
 /**
  * The care plan (Intercept-Live `242:12310`, Nov 9, 2026, user's call: Figma's rows): a row each for the pathway (the
  * suggestion waiting for review, or the one sent with where co-signature is) with what it runs now under it, and the
  * decision to keep or transfer with how its checkpoints went. The orders, doses and checkpoint details are behind
- * **View full plan**, the page's Pathway panel. Under them, the hospital's plan of care from its record system (Nov 11,
+ * **View full plan** on the Care Plan tab (the Overview's card has none since Nov 13, 2026), the page's Pathway panel. Under them, the hospital's plan of care from its record system (Nov 11,
  * 2026, user's call: every admitted patient has one): a row per problem with its goal, what's done toward it and how
  * it's going. A source line each, Intercept's and the record system's.
  */
@@ -894,16 +915,21 @@ function CarePlanCard({
 	const hasPathwayRow = Boolean(pathway || suggestion);
 	const hasInterceptRows = hasPathwayRow || running.length > 0 || Boolean(transfer);
 	const planItems = planOfCare?.items ?? [];
-	const shownPlanItems = showAll ? planItems : planItems.slice(0, PLAN_OF_CARE_ITEMS);
+	// The problems fill the rows Intercept's (the pathway or what runs, keep or transfer) leave, at least one.
+	const interceptRows = (hasPathwayRow ? 1 : running.length) + (transfer ? 1 : 0);
+	const problemRows = Math.max(1, CARE_PLAN_ROWS - interceptRows);
+	const hasMore = planItems.length > problemRows;
+	const shownPlanItems = showAll ? planItems : planItems.slice(0, problemRows);
 
 	return (
 		<OverviewCard
 			title='Care plan'
 			className={className}
+			// The Overview's card has no "View full plan" since Nov 13, 2026 (user's call); the Care Plan tab keeps it.
 			actions={
-				onOpenPathway || (!expanded && planItems.length > PLAN_OF_CARE_ITEMS) ? (
+				onOpenPathway || (!expanded && hasMore) ? (
 					<>
-						{!expanded && planItems.length > PLAN_OF_CARE_ITEMS ? (
+						{!expanded && hasMore ? (
 							onShowAll ? (
 								<CardLink onClick={onShowAll} aria-label={`View all ${planItems.length} problems of the care plan`}>
 									View all · {planItems.length}
@@ -926,7 +952,7 @@ function CarePlanCard({
 			}
 		>
 			{hasInterceptRows || planItems.length ? (
-				<CardList>
+				<CardList capped={!expanded}>
 					{pathway ? (
 						<CardRow
 							title={pathway.title}
@@ -1033,7 +1059,7 @@ function UpNextCard({ record, now, pathway }: { record?: PatientRecord; now: num
 			}
 		>
 			{items.length ? (
-				<CardList>
+				<CardList capped={!showAll}>
 					{shown.map((item) => {
 						const chip = now === null ? undefined : dueChip(item.at, now);
 						return (
@@ -1060,6 +1086,9 @@ function UpNextCard({ record, now, pathway }: { record?: PatientRecord; now: num
 	);
 }
 
+/** Scheduled medications the Overview lists; View all opens Medications with every one. */
+const MEDICATION_ROWS = 5;
+
 /**
  * What the patient is on: the scheduled medications, each with when it was last given (when it's next due is Up
  * next's), and the infusions and as-needed ones counted under them. **View all** opens Medications.
@@ -1071,7 +1100,9 @@ function MedicationsCard({ record, now, onShowAll }: { record?: PatientRecord; n
 		(a, b) => (b.lastGivenAt ? Date.parse(b.lastGivenAt) : 0) - (a.lastGivenAt ? Date.parse(a.lastGivenAt) : 0),
 	);
 	const total = medications ? medications.continuous.length + medications.scheduled.length + medications.prn.length : 0;
+	const moreScheduled = scheduled.length - MEDICATION_ROWS;
 	const others = [
+		moreScheduled > 0 ? `${moreScheduled} more scheduled` : undefined,
 		medications?.continuous.length
 			? `${medications.continuous.length} ${medications.continuous.length === 1 ? "infusion" : "infusions"}`
 			: undefined,
@@ -1088,12 +1119,12 @@ function MedicationsCard({ record, now, onShowAll }: { record?: PatientRecord; n
 					</CardLink>
 				) : undefined
 			}
-			footer={others.length ? <p className='text-sm text-muted-foreground'>Plus {others.join(" and ")}.</p> : undefined}
+			footer={others.length ? <p className='text-sm text-muted-foreground'>Plus {`${others.slice(0, -1).join(", ")}${others.length > 1 ? " and " : ""}${others.at(-1)}`}.</p> : undefined}
 		>
 			{medications ? (
 				scheduled.length ? (
 					<CardList>
-						{scheduled.map((med) => (
+						{scheduled.slice(0, MEDICATION_ROWS).map((med) => (
 							<CardRow
 								key={med.drug}
 								title={`${med.drug} ${med.dose === "Per scale" ? "" : `${med.dose} `}${med.route}`.replace(/\s+/g, " ")}
@@ -1426,7 +1457,6 @@ function PatientOverview({
 						suggestion={suggestion}
 						running={running}
 						now={now}
-						onOpenPathway={pathway?.onOpen}
 						onShowAll={onShowSection && (() => onShowSection("care-plan"))}
 					/>
 					<UpNextCard record={record} now={now} pathway={pathway} />

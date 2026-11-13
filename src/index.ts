@@ -109,6 +109,20 @@ export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display
 export { Counter, counterVariants, type CounterProps } from "@/components/data-display/counter";
 export { LabTile, labTileVariants, type LabTileFlag, type LabTileProps } from "@/components/data-display/lab-tile";
 export {
+	Table,
+	TableBody,
+	TableCaption,
+	TableCell,
+	TableFooter,
+	TableHead,
+	TableHeader,
+	TableRow,
+	tableHeaderVariants,
+	tableVariants,
+	type TableHeaderProps,
+	type TableProps,
+} from "@/components/data-display/table";
+export {
 	LiveFeed,
 	LiveFeedFilter,
 	type LiveFeedEntry,

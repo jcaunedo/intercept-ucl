@@ -25,6 +25,7 @@ import {
 } from "@/components/overlays/dropdown-menu";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { revealVariants, useMotionPreference } from "@/lib/motion";
+import { formatDayLabel } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 /** What a line is: an alert as it fired, a change of an alert's status, or something done or measured. */
@@ -115,16 +116,8 @@ const severityClassNames: Record<LiveFeedSeverity, string> = {
 
 const formatTime = (iso: string) => new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
-/** "Today", "Yesterday", or "Saturday, Nov 7". */
-function dayLabel(at: string, now: number | null) {
-	const day = new Date(at);
-	const today = new Date(now ?? Date.now());
-	const startOf = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-	const days = Math.round((startOf(today) - startOf(day)) / 86_400_000);
-	if (days <= 0) return "Today";
-	if (days === 1) return "Yesterday";
-	return day.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
-}
+/** "Today", "Yesterday", or "Saturday, Nov 7" (the shared day heading). */
+const dayLabel = (at: string, now: number | null) => formatDayLabel(at, now ?? Date.now());
 
 /** The line's icon: a green check for a resolution, a bell in the severity's color for an alert, else its kind's. */
 function EntryIcon({ entry }: { entry: LiveFeedEntry }) {

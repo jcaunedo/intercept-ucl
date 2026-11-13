@@ -89,5 +89,21 @@ function formatRelativeDate(
   return { label: absoluteDateFormat.format(time), title };
 }
 
-export { formatRelativeDate, RELATIVE_CUTOVER };
+/**
+ * The day heading for a list grouped by day: `Today`, `Yesterday`, or
+ * `Saturday, Nov 7`. Calendar days in the viewer's time zone, not 24-hour
+ * spans, so a message at 11 PM reads "Yesterday" at 1 AM. Shared by every day
+ * heading (the live feed, the Alerts panel's history, the Messages thread), so
+ * they always agree.
+ */
+function formatDayLabel(value: string | number | Date, now: number = Date.now()): string {
+  const day = new Date(value);
+  const startOf = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const days = Math.round((startOf(new Date(now)) - startOf(day)) / DAY);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return day.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+}
+
+export { formatDayLabel, formatRelativeDate, RELATIVE_CUTOVER };
 export type { RelativeDate };

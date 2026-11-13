@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 6, 2026
 Created by: Julio Caunedo
-Last updated: Nov 10, 2026
+Last updated: Nov 13, 2026
 Scope: Messages in Intercept Live: the clinician's thread with a patient's bedside nurse, bridged through the hospital's messaging. Covers where it opens (the alert panel, the patient consult, the patient page), the thread, the composer, unread counts, the filter, bedside photos, and the Sidebar's Messages page (not built). Governs `alert-panel/consult-messages.tsx`, the Messages column in `alert-panel/alert-panel.tsx` and the Messages panel in `patient-details/consult-panels.tsx`.
 Purpose: Messages was built on Nov 5–6, 2026 from decisions recorded only in DESIGN.md and code comments. This PRD sets the product rules in one place and lists what's still open.
 -->
@@ -19,7 +19,7 @@ Purpose: Messages was built on Nov 5–6, 2026 from decisions recorded only in D
 **Surface:** The alert panel's third column; the patient consult (no alert); Patient details › Messages panel, opened from the app header; Sidebar › Messages  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 10, 2026
+**Last updated:** November 13, 2026
 
 ---
 
@@ -102,7 +102,7 @@ Messages is how the Intercept clinician writes to a patient's bedside nurse and 
 |---|---|---|
 | MSG-001 | **A bridged thread** | Each patient has one thread with the bedside. What the clinician sends reaches the bedside nurse in her hospital's messaging tool, and her replies come back into the thread (CC-02, Spec §5.3, §6.11). ⚠️ **Not built (prototype):** no bridge. A sent message is reported to the app (`onSendMessage`), and the prototype's replies are simulated (MSG-008). |
 | MSG-002 | **Who's in it** | The thread is with the patient's bedside nurse, from the record's care team: "Kelly Ortiz, RN" (`threadWith`); "the bedside nurse" when the record names none. Anyone else at the bedside who writes or sends a photo shows by name and role ("Rachel Lindgren, RRT"). The clinician's own messages show as **You**. |
-| MSG-003 | **The thread** | Oldest first, 16px apart. Above each message, who and when, relative and updated each minute ("Kelly Ortiz, RN · 13 min ago", "You · Just now"), the exact time in its tooltip. The bedside's messages on the left (outlined, on `background`); the clinician's on the right (`neutral-muted`), each at most 85% wide. A new message rises in and the thread scrolls to it. The thread scrolls on its own above the field, so the field never covers a message. A message never changes once shown (Nov 5, 2026, user's call). |
+| MSG-003 | **The thread** | Oldest first, 16px apart. ✅ **Resolved:** grouped by day, with a heading before each day's first message ("Yesterday", then "Today"), as the live feed and the Alerts panel write it. Above each message, who and when, relative and updated each minute ("Kelly Ortiz, RN · 13 min ago", "You · Just now"), the exact time in its tooltip. The bedside's messages on the left (outlined, on `background`); the clinician's on the right (`neutral-muted`), each at most 85% wide. A new message rises in and the thread scrolls to it. The thread scrolls on its own above the field, so the field never covers a message. A message never changes once shown (Nov 5, 2026, user's call). |
 | MSG-004 | **Empty** | With no messages: a message icon over "No messages", centered in the thread, with no heading (Intercept-Live `222:18375`). The field stays. |
 | MSG-005 | **The composer** | One field pinned to the bottom (`ConsultField`): a 48px pill, "Send a message…", named "Message {nurse}". **Send** appears only once there's text and leaves when the field is cleared (Nov 6, 2026, user's call: no disabled button always in view). Enter or Send sends the trimmed text; an empty or blank message is never sent. The unsent draft stays with the patient's consult session (MSG-013). |
 | MSG-006 | **Bedside photos** | A photo the bedside sends is a message from whoever took it, at the time it was taken: the picture (4:3), then what it is and its readings ("BiPAP screen", "IPAP 12 · EPAP 5 · FiO₂ 35% · …"). Without an image file, the picture is drawn from its readings (a device screen or a blood gas printout). ✅ **Photos are messages (Nov 5, 2026, user's call):** they used to list under the call. ⚠️ **Gap:** photos arrive only with a low-bandwidth connection (`connection.photos`); no full-size view. |

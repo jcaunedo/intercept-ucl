@@ -262,11 +262,15 @@ export const Pathway: Story = {
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
-		const plan = within(canvas.getByRole("region", { name: "Care plan" }));
-		await expect(plan.getByText("Needs review")).toBeVisible();
+		const overviewPlan = within(canvas.getByRole("region", { name: "Care plan" }));
+		await expect(overviewPlan.getByText("Needs review")).toBeVisible();
+		// The Overview's card has no way into the pathway (Nov 13, 2026); the Care Plan tab has View full plan.
+		await expect(overviewPlan.queryByRole("button", { name: "View full plan" })).toBeNull();
+		await userEvent.click(canvas.getByRole("tab", { name: "Care Plan" }));
+		const plan = within(await canvas.findByRole("region", { name: "Care plan" }));
 
 		// The Care plan's way in opens the panel. The header has no Pathway: it belongs to the alert (Nov 9, 2026).
-		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
+		await userEvent.click(await plan.findByRole("button", { name: "View full plan" }));
 		await canvas.findByRole("complementary", { name: "Pathway" });
 		const actions = within(canvas.getByRole("group", { name: "Patient actions" }));
 		await expect(actions.queryByRole("button", { name: /pathway/i })).toBeNull();

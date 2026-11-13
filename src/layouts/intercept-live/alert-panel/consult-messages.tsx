@@ -13,7 +13,7 @@ import {
 	unreadFlashVariants,
 	useMotionPreference,
 } from "@/lib/motion";
-import { formatRelativeDate } from "@/lib/relative-date";
+import { formatDayLabel, formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
 import { useSessionState } from "./consult-session";
@@ -331,10 +331,29 @@ function ConsultMessages({
 				{shown.length ? (
 					<ol className='flex flex-col gap-4'>
 						<AnimatePresence initial={false}>
-							{shown.map((message) => {
+							{shown.flatMap((message, index) => {
 								const you = message.from === "you";
 								const sent = now !== null ? formatRelativeDate(message.sentAt, now) : undefined;
-								return (
+								// A day heading before the first message of each day, oldest first ("Yesterday", then "Today"), in
+								// Live feed's style (14/20 semibold `foreground`).
+								const day = now !== null ? formatDayLabel(message.sentAt, now) : undefined;
+								const newDay = day && (index === 0 || formatDayLabel(shown[index - 1].sentAt, now ?? undefined) !== day);
+								return [
+									...(newDay
+										? [
+												<motion.li
+													key={`day-${day}`}
+													// A heading, not a message: the list's items stay the messages for screen readers.
+													role='presentation'
+													variants={prefersReducedMotion ? fadeVariants : revealVariants}
+													initial='initial'
+													animate='animate'
+													className={cn(index > 0 && "pt-1")}
+												>
+													<h3 className='text-sm font-semibold text-foreground'>{day}</h3>
+												</motion.li>,
+											]
+										: []),
 									<motion.li
 										key={message.id}
 										variants={prefersReducedMotion ? fadeVariants : revealVariants}
@@ -375,8 +394,8 @@ function ConsultMessages({
 												{message.text}
 											</p>
 										) : null}
-									</motion.li>
-								);
+									</motion.li>,
+								];
 							})}
 						</AnimatePresence>
 					</ol>

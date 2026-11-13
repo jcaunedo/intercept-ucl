@@ -190,8 +190,10 @@ function PatientHeader({
 	const hasColumns = Boolean(acuity || trajectory || clinicalStatus || onViewAlerts || actions);
 
 	return (
-		<div data-slot='patient-header' className={cn("flex items-center gap-4 py-4 pr-10 pl-6", className)} {...props}>
-			<div className='flex min-w-0 flex-1 flex-col gap-2'>
+		<div data-slot='patient-header' className={cn("flex flex-wrap items-center gap-4 py-4 pr-10 pl-6", className)} {...props}>
+			{/* Both halves start from the same 36rem, so side by side they share the row equally; narrower than both, the
+			    columns wrap to a row of their own under the patient. Breakpoint specifics are still to come. */}
+			<div className='flex min-w-0 flex-1 basis-[36rem] flex-col gap-2'>
 				<div className='flex min-w-0 items-center gap-4'>
 					{/* 56px, above Avatar's sizes, and Avatar's circle; the initials keep Avatar's proportion (11px at 32px). */}
 					<Avatar aria-hidden='true' className='size-14'>
@@ -246,7 +248,7 @@ function PatientHeader({
 
 			{hasColumns ? (
 				// As wide as the patient's side, as tall as the bar's content: the columns' rules run its full height.
-				<div data-slot='patient-header-columns' className='flex min-w-0 flex-1 items-stretch gap-4 self-stretch'>
+				<div data-slot='patient-header-columns' className='flex min-w-0 flex-1 basis-[36rem] items-stretch gap-4 self-stretch'>
 					{acuity || trajectory ? (
 						<PatientHeaderColumn label={acuity?.label ?? "Score"}>
 							{acuity ? (
@@ -263,7 +265,7 @@ function PatientHeader({
 							{changeText ? (
 								<p
 									className={cn(
-										"flex items-center gap-1 text-sm",
+										"flex items-center gap-1 text-sm font-medium",
 										direction ? scoreTrendClassName({ ...trajectory, trend: direction }) : "text-muted-foreground",
 									)}
 								>

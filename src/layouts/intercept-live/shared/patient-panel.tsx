@@ -654,7 +654,7 @@ function hospitalTabCounts(patients: PanelPatient[]) {
 }
 
 /**
- * One tab's counters: how many patients, then, when any have an active alert, how many alerts, in the color of the
+ * One tab's counters: how many patients (none at 0), then, when any have an active alert, how many alerts, in the color of the
  * worst one. Both are muted at rest and solid on the active tab (patients `secondary` → `neutral`, alerts
  * `<severity>-muted` → `<severity>`), easing between the two with the label. Hovering a counter names it in a
  * tooltip; screen readers get the same words from the tab's name, so the counters are hidden from them.
@@ -677,20 +677,24 @@ function HospitalTabCounters({
 
 	return (
 		<>
-			<Tooltip>
-				{/* TooltipTrigger's own `data-slot` would replace the counter's, which TabsTrigger needs to set the pair 2px
-				    apart, so the counters restate theirs. */}
-				<TooltipTrigger asChild>
-					<Counter
-						data-slot='counter'
-						aria-hidden
-						variant={active ? "neutral" : "secondary"}
-						count={patients.length}
-						className='transition-colors'
-					/>
-				</TooltipTrigger>
-				<TooltipContent side='top'>{patientsText}</TooltipContent>
-			</Tooltip>
+			{/* No patients, no count (Nov 13, 2026, user's call): an empty hospital shows its name alone; the tab's name still
+			    says "0 patients". */}
+			{patients.length ? (
+				<Tooltip>
+					{/* TooltipTrigger's own `data-slot` would replace the counter's, which TabsTrigger needs to set the pair 2px
+					    apart, so the counters restate theirs. */}
+					<TooltipTrigger asChild>
+						<Counter
+							data-slot='counter'
+							aria-hidden
+							variant={active ? "neutral" : "secondary"}
+							count={patients.length}
+							className='transition-colors'
+						/>
+					</TooltipTrigger>
+					<TooltipContent side='top'>{patientsText}</TooltipContent>
+				</Tooltip>
+			) : null}
 			{severity && alertsText ? (
 				<Tooltip>
 					<TooltipTrigger asChild>

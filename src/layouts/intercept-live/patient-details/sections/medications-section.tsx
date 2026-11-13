@@ -3,12 +3,12 @@ import { ClockIcon, SearchIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { Counter } from "@/components/data-display/counter";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/data-display/table";
 import { Input } from "@/components/forms/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
-import { cn } from "@/lib/utils";
 
-import { formatDateTime, formatElapsed, formatTime, freshness, NoData, SectionCard } from "../section-parts";
+import { formatDateTime, formatElapsed, formatTime, freshness, NoData, SectionGroup } from "../section-parts";
 
 // Patient details › Medications (PRD PD-050): the active medications from the hospital's record, read-only. Continuous
 // infusions show the ordered rate beside the pump's when both are known; a difference isn't flagged until an infusion
@@ -141,9 +141,9 @@ function DrugCell({
 }) {
 	return (
 		<>
-			<span className='block font-medium text-foreground'>{drug}</span>
-			{detail ? <span className='block text-xs text-muted-foreground'>{detail}</span> : null}
-			<span className='block text-xs text-muted-foreground'>
+			<span className='block text-foreground'>{drug}</span>
+			{detail ? <span className='block text-xs font-normal text-muted-foreground'>{detail}</span> : null}
+			<span className='block text-xs font-normal text-muted-foreground'>
 				{timeShown ? provenance.source : freshness(provenance.source, provenance.updatedAt, now)}
 			</span>
 		</>
@@ -154,27 +154,22 @@ function DrugCell({
 /* Groups                                                                     */
 /* -------------------------------------------------------------------------- */
 
-// Tables on a wide card; on a narrow one, the same rows stacked as label-over-value pairs. Only one of the two is
-// displayed, so screen readers meet each row once.
-const tableClass = "hidden w-full border-separate border-spacing-0 text-sm @min-[56rem]:table";
-const headClass = "border-b border-border-muted px-2 py-2 text-left text-xs font-medium text-muted-foreground first:pl-0 last:pr-0";
-const cellClass = "border-b border-border-muted px-2 py-2.5 align-top first:pl-0 last:pr-0 [tr:last-child_&]:border-b-0";
-const stackClass = "flex flex-col divide-y divide-border-muted @min-[56rem]:hidden";
+// Each group is a UCL Table (Nov 13, 2026, user's call: "apply table components", no cards around them): the flat
+// heading row, 48px rows that grow with the drug's lines, and the table scrolling sideways when the page is narrow.
+// The drug's cell is first, so it's semibold; its detail and source lines are regular.
 
-/** A stacked row's label-over-value pairs. */
-function StackedRow({ title, items }: { title: React.ReactNode; items: [string, React.ReactNode][] }) {
+/** The heading row: the columns, the first one wide enough for the drug's lines. */
+function GroupHead({ columns }: { columns: string[] }) {
 	return (
-		<li className='flex flex-col gap-2 py-3 text-sm first:pt-0 last:pb-0'>
-			<div>{title}</div>
-			<dl className='grid grid-cols-2 gap-x-4 gap-y-2'>
-				{items.map(([label, value]) => (
-					<div key={label} className='flex flex-col'>
-						<dt className='text-xs text-muted-foreground'>{label}</dt>
-						<dd className='text-foreground'>{value}</dd>
-					</div>
+		<TableHeader variant='flat'>
+			<TableRow className='hover:bg-transparent'>
+				{columns.map((column, index) => (
+					<TableHead key={column} scope='col' className={index === 0 ? "w-[34%]" : undefined}>
+						{column}
+					</TableHead>
 				))}
-			</dl>
-		</li>
+			</TableRow>
+		</TableHeader>
 	);
 }
 
@@ -187,137 +182,74 @@ function ContinuousGroup({
 	now: number | null;
 	onShowPumpValues?: (drug: string) => void;
 }) {
-	const pump = (item: ContinuousMedication) => (
-		<span className='flex flex-col items-start'>
-			{item.pumpRate ? (
-				<span className='font-semibold text-foreground tabular-nums'>{item.pumpRate}</span>
-			) : (
-				<span className='text-muted-foreground'>Rate unavailable</span>
-			)}
-			{item.change ? (
-				<span className='text-xs text-muted-foreground'>
-					<span aria-hidden='true'>{item.change.direction === "up" ? "▲" : "▼"} </span>
-					{item.change.direction === "up" ? "Up" : "Down"} from {item.change.from} at {formatTime(item.change.at)}
-				</span>
-			) : null}
-			{onShowPumpValues ? (
-				<Button variant='link' size='xs' className='h-auto px-0' onClick={() => onShowPumpValues(item.drug)}>
-					Pump values
-				</Button>
-			) : null}
-		</span>
-	);
-	const ordered = (item: ContinuousMedication) => (
-		<span className='flex flex-col'>
-			<span className='tabular-nums'>{item.orderedRate ?? <span className='text-muted-foreground'>--</span>}</span>
-			{item.titration ? <span className='text-xs text-muted-foreground'>{item.titration}</span> : null}
-		</span>
-	);
-
 	return (
-		<>
-			<table className={tableClass}>
-				<caption className='sr-only'>Continuous infusions: ordered rate and pump rate</caption>
-				<thead>
-					<tr>
-						<th scope='col' className={cn(headClass, "w-[34%]")}>
-							Medication
-						</th>
-						<th scope='col' className={headClass}>
-							Ordered
-						</th>
-						<th scope='col' className={headClass}>
-							Pump
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((item) => (
-						<tr key={item.drug}>
-							<th scope='row' className={cn(cellClass, "text-left font-normal")}>
-								<DrugCell drug={item.drug} detail={item.concentration} provenance={item} now={now} />
-							</th>
-							<td className={cellClass}>{ordered(item)}</td>
-							<td className={cellClass}>{pump(item)}</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-			<ul className={stackClass}>
+		<Table size='md'>
+			<TableCaption className='sr-only'>Continuous infusions: ordered rate and pump rate</TableCaption>
+			<GroupHead columns={["Medication", "Ordered", "Pump"]} />
+			<TableBody>
 				{items.map((item) => (
-					<StackedRow
-						key={item.drug}
-						title={<DrugCell drug={item.drug} detail={item.concentration} provenance={item} now={now} />}
-						items={[
-							["Ordered", ordered(item)],
-							["Pump", pump(item)],
-						]}
-					/>
+					<TableRow key={item.drug}>
+						<TableCell>
+							<DrugCell drug={item.drug} detail={item.concentration} provenance={item} now={now} />
+						</TableCell>
+						<TableCell>
+							<span className='flex flex-col'>
+								<span className='tabular-nums'>{item.orderedRate ?? <span className='text-muted-foreground'>--</span>}</span>
+								{item.titration ? <span className='text-xs text-muted-foreground'>{item.titration}</span> : null}
+							</span>
+						</TableCell>
+						<TableCell>
+							<span className='flex flex-col items-start'>
+								{item.pumpRate ? (
+									<span className='font-semibold text-foreground tabular-nums'>{item.pumpRate}</span>
+								) : (
+									<span className='text-muted-foreground'>Rate unavailable</span>
+								)}
+								{item.change ? (
+									<span className='text-xs text-muted-foreground'>
+										<span aria-hidden='true'>{item.change.direction === "up" ? "▲" : "▼"} </span>
+										{item.change.direction === "up" ? "Up" : "Down"} from {item.change.from} at {formatTime(item.change.at)}
+									</span>
+								) : null}
+								{onShowPumpValues ? (
+									<Button variant='link' size='xs' className='h-auto px-0' onClick={() => onShowPumpValues(item.drug)}>
+										Pump values
+									</Button>
+								) : null}
+							</span>
+						</TableCell>
+					</TableRow>
 				))}
-			</ul>
-		</>
+			</TableBody>
+		</Table>
 	);
 }
 
 function ScheduledGroup({ items, now }: { items: ScheduledMedication[]; now: number | null }) {
 	return (
-		<>
-			<table className={tableClass}>
-				<caption className='sr-only'>Scheduled medications: dose, frequency, last given and next due</caption>
-				<thead>
-					<tr>
-						<th scope='col' className={cn(headClass, "w-[34%]")}>
-							Medication
-						</th>
-						<th scope='col' className={headClass}>
-							Dose · route
-						</th>
-						<th scope='col' className={headClass}>
-							Frequency
-						</th>
-						<th scope='col' className={headClass}>
-							Last given
-						</th>
-						<th scope='col' className={headClass}>
-							Next due
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((item) => (
-						<tr key={item.drug}>
-							<th scope='row' className={cn(cellClass, "text-left font-normal")}>
-								<DrugCell drug={item.drug} detail={item.indication} provenance={item} now={now} timeShown={item.lastGivenAt === item.updatedAt} />
-							</th>
-							<td className={cn(cellClass, "tabular-nums")}>
-								{item.dose} · {item.route}
-							</td>
-							<td className={cellClass}>{item.frequency}</td>
-							<td className={cellClass}>
-								<GivenLabel at={item.lastGivenAt} now={now} />
-							</td>
-							<td className={cellClass}>
-								<DueLabel at={item.nextDueAt} now={now} />
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-			<ul className={stackClass}>
+		<Table size='md'>
+			<TableCaption className='sr-only'>Scheduled medications: dose, frequency, last given and next due</TableCaption>
+			<GroupHead columns={["Medication", "Dose · route", "Frequency", "Last given", "Next due"]} />
+			<TableBody>
 				{items.map((item) => (
-					<StackedRow
-						key={item.drug}
-						title={<DrugCell drug={item.drug} detail={item.indication} provenance={item} now={now} timeShown={item.lastGivenAt === item.updatedAt} />}
-						items={[
-							["Dose · route", `${item.dose} · ${item.route}`],
-							["Frequency", item.frequency],
-							["Last given", <GivenLabel key='given' at={item.lastGivenAt} now={now} />],
-							["Next due", <DueLabel key='due' at={item.nextDueAt} now={now} />],
-						]}
-					/>
+					<TableRow key={item.drug}>
+						<TableCell>
+							<DrugCell drug={item.drug} detail={item.indication} provenance={item} now={now} timeShown={item.lastGivenAt === item.updatedAt} />
+						</TableCell>
+						<TableCell className='tabular-nums'>
+							{item.dose} · {item.route}
+						</TableCell>
+						<TableCell>{item.frequency}</TableCell>
+						<TableCell>
+							<GivenLabel at={item.lastGivenAt} now={now} />
+						</TableCell>
+						<TableCell>
+							<DueLabel at={item.nextDueAt} now={now} />
+						</TableCell>
+					</TableRow>
 				))}
-			</ul>
-		</>
+			</TableBody>
+		</Table>
 	);
 }
 
@@ -325,61 +257,27 @@ function PrnGroup({ items, now }: { items: PrnMedication[]; now: number | null }
 	const given = (count: number) => (count ? `${count} ${count === 1 ? "dose" : "doses"}` : "None");
 
 	return (
-		<>
-			<table className={tableClass}>
-				<caption className='sr-only'>As-needed medications: dose, when to give, last given and doses in 24 hours</caption>
-				<thead>
-					<tr>
-						<th scope='col' className={cn(headClass, "w-[34%]")}>
-							Medication
-						</th>
-						<th scope='col' className={headClass}>
-							Dose · route
-						</th>
-						<th scope='col' className={headClass}>
-							Frequency
-						</th>
-						<th scope='col' className={headClass}>
-							Last given
-						</th>
-						<th scope='col' className={headClass}>
-							In 24 h
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{items.map((item) => (
-						<tr key={item.drug}>
-							<th scope='row' className={cn(cellClass, "text-left font-normal")}>
-								<DrugCell drug={item.drug} detail={item.indication} provenance={item} now={now} timeShown={item.lastGivenAt === item.updatedAt} />
-							</th>
-							<td className={cn(cellClass, "tabular-nums")}>
-								{item.dose} · {item.route}
-							</td>
-							<td className={cellClass}>{item.frequency}</td>
-							<td className={cellClass}>
-								<GivenLabel at={item.lastGivenAt} now={now} />
-							</td>
-							<td className={cn(cellClass, "tabular-nums")}>{given(item.givenLast24h)}</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
-			<ul className={stackClass}>
+		<Table size='md'>
+			<TableCaption className='sr-only'>As-needed medications: dose, when to give, last given and doses in 24 hours</TableCaption>
+			<GroupHead columns={["Medication", "Dose · route", "Frequency", "Last given", "In 24 h"]} />
+			<TableBody>
 				{items.map((item) => (
-					<StackedRow
-						key={item.drug}
-						title={<DrugCell drug={item.drug} detail={item.indication} provenance={item} now={now} timeShown={item.lastGivenAt === item.updatedAt} />}
-						items={[
-							["Dose · route", `${item.dose} · ${item.route}`],
-							["Frequency", item.frequency],
-							["Last given", <GivenLabel key='given' at={item.lastGivenAt} now={now} />],
-							["In 24 h", given(item.givenLast24h)],
-						]}
-					/>
+					<TableRow key={item.drug}>
+						<TableCell>
+							<DrugCell drug={item.drug} detail={item.indication} provenance={item} now={now} timeShown={item.lastGivenAt === item.updatedAt} />
+						</TableCell>
+						<TableCell className='tabular-nums'>
+							{item.dose} · {item.route}
+						</TableCell>
+						<TableCell>{item.frequency}</TableCell>
+						<TableCell>
+							<GivenLabel at={item.lastGivenAt} now={now} />
+						</TableCell>
+						<TableCell className='tabular-nums'>{given(item.givenLast24h)}</TableCell>
+					</TableRow>
 				))}
-			</ul>
-		</>
+			</TableBody>
+		</Table>
 	);
 }
 
@@ -456,7 +354,7 @@ function MedicationsSection({ medications, onShowPumpValues }: MedicationsSectio
 					// A group the search emptied is left out, so the result reads as one list.
 					if (query && !items.length) return null;
 					return (
-						<SectionCard
+						<SectionGroup
 							key={id}
 							title={groupLabels[id]}
 							meta={id === "continuous" && items.length ? "Ordered and pump rates" : undefined}
@@ -476,7 +374,7 @@ function MedicationsSection({ medications, onShowPumpValues }: MedicationsSectio
 							) : (
 								<PrnGroup items={filtered.prn} now={now} />
 							)}
-						</SectionCard>
+						</SectionGroup>
 					);
 				})
 			)}

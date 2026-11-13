@@ -76,6 +76,25 @@ function SectionCard({
 	);
 }
 
+/**
+ * A section's group without a card (Nov 13, 2026, user's call: tables without containers): its heading, a note at the
+ * right (e.g. the source), then its content, usually a UCL Table.
+ */
+function SectionGroup({ title, meta, children }: { title: string; meta?: React.ReactNode; children: React.ReactNode }) {
+	const headingId = React.useId();
+	return (
+		<section aria-labelledby={headingId} className='flex min-w-0 flex-col gap-3'>
+			<div className='flex flex-wrap items-center justify-between gap-x-3 gap-y-1'>
+				<h2 id={headingId} className='text-base font-semibold text-foreground'>
+					{title}
+				</h2>
+				{meta ? <p className='flex items-center gap-1.5 text-xs text-muted-foreground'>{meta}</p> : null}
+			</div>
+			{children}
+		</section>
+	);
+}
+
 /** What a section shows when there's nothing to show: plain words, never an empty box or a zero. */
 function NoData({ children }: { children: React.ReactNode }) {
 	return <p className='text-sm text-muted-foreground'>{children}</p>;
@@ -91,4 +110,4 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 	);
 }
 
-export { Detail, formatDateTime, formatElapsed, formatTime, freshness, NoData, SectionCard };
+export { Detail, formatDateTime, formatElapsed, formatTime, freshness, NoData, SectionCard, SectionGroup };

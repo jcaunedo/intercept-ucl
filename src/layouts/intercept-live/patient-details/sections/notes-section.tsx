@@ -479,19 +479,23 @@ function NotesSection({
 					<div className='flex shrink-0 items-center gap-2 border-b border-border p-3'>
 						{/* The search opens across the row, over the filters (Expand); the filters fold away and leave the tab
 						    order while it's open. */}
-						<div
-							className='flex min-w-0 flex-1 items-center'
-							onFocus={() => setSearchFocused(true)}
-							onBlur={(event) => {
-								if (!event.currentTarget.contains(event.relatedTarget)) setSearchFocused(false);
-							}}
-						>
-							<SearchInput
-								value={query}
-								onValueChange={setQuery}
-								placeholder='Search notes'
-								expandedWidth='100%'
-							/>
+						<div className='flex min-w-0 flex-1 items-center'>
+							{/* Only the search's own focus opens it: focus on a filter (a click, a picked option) leaves the filters
+							    in place. `contents` keeps the search sized against the row. */}
+							<div
+								className='contents'
+								onFocus={() => setSearchFocused(true)}
+								onBlur={(event) => {
+									if (!event.currentTarget.contains(event.relatedTarget)) setSearchFocused(false);
+								}}
+							>
+								<SearchInput
+									value={query}
+									onValueChange={setQuery}
+									placeholder='Search notes'
+									expandedWidth='100%'
+								/>
+							</div>
 							<div
 								inert={searchOpen}
 								aria-hidden={searchOpen || undefined}

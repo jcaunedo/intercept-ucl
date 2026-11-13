@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 1, 2026
 Created by: Julio Caunedo
-Last updated: Nov 3, 2026
+Last updated: Nov 13, 2026
 Scope: The Census page of Intercept Live (Provider Desktop, Spec §5.1): its purpose, how it differs from Monitoring, the patients it shows, its controls and states.
 Purpose: Gives the Census one written purpose, next to Monitoring's, and lists the decisions still open, so the two pages stop overlapping by accident.
 -->
@@ -18,7 +18,7 @@ Purpose: Gives the Census one written purpose, next to Monitoring's, and lists t
 **Surface:** Census page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 3, 2026
+**Last updated:** November 13, 2026
 
 ---
 
@@ -108,7 +108,7 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 
 | Region | Content | Requirements |
 |---|---|---|
-| **Hospital bar** | Hospital tabs (All hospitals, then each hospital), each with its patient count and active-alert count; **Group by hospital** at the right ("Group by location" until Nov 3, 2026, user's call: it groups by hospital, and "location" also reads as unit or bed) | CEN-001, CEN-020 |
+| **Hospital bar** | Hospital tabs (All hospitals, then each hospital), each with its patient count and active-alert count (✅ **Resolved:** a hospital with no patients shows no count, its name alone); **Group by hospital** at the right ("Group by location" until Nov 3, 2026, user's call: it groups by hospital, and "location" also reads as unit or bed) | CEN-001, CEN-020 |
 | **Summary row** | "18 patients across 4 hospitals"; the live feed line ("Live feed: …"), which opens the live feed panel | CEN-001, CEN-021 ⚠️ |
 | **Filter bar** | Search, My patients, quick views (New patients, Rising score, Organ support, Sepsis watch); Density, Sort by, Filters | CEN-002, CEN-003 |
 | **Patients** | Cards (Comfortable, Compact) or a table (List); with Group by hospital, a column per hospital with patients (board; a hospital the filters empty has none, Nov 3, 2026) | CEN-010–CEN-013 |

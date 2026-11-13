@@ -1,7 +1,7 @@
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 11, 2026
+Last updated: Nov 13, 2026
 Scope: The chat composer (UCL ChatComposer) and the Ask Intercept Live conversation it drives in the Provider Desktop: the message field, its buttons, slash commands, suggested questions, and how answers arrive.
 Purpose: Defines the composer's behavior, states, rules for answers and acceptance criteria, pending clinical and product validation, so design, engineering and the Conversational Clinical Data Agent team build the same thing.
 -->
@@ -13,7 +13,7 @@ Purpose: Defines the composer's behavior, states, rules for answers and acceptan
 **Surface:** Ask Intercept Live, the chat panel; its message box is the **chat composer** (UCL `ChatComposer`)  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 11, 2026
+**Last updated:** November 13, 2026
 
 ---
 
@@ -237,7 +237,7 @@ Suggestions adapt to the time of shift (starting it, or on it a while). ℹ️ T
 | **Retrieves, never advises** | A request for a diagnosis, a treatment or a dose gets: "I can't recommend a treatment or make a diagnosis. I can bring up the data behind the decision, like a trend, the latest results or the sepsis criteria." (Spec §8.7) |
 | **Honest about thin data** | A question the chart can't answer gets "I don't have enough information…" with what it can answer (Spec §9.1, Principle 12). Missing values say they're missing, never zero. |
 | **Patient names stand out** | A patient's name is always bold, full ("**Miller, Sarah**") or first ("**Sarah**"). A list whose lines start with a patient (Breathing support, infusions, safety…) shows each patient's avatar before their line, as on their card, in place of the bullet, formatted as the rows of a count's patient list: the name (semibold) and, in grey under it, where they are (hospital, unit and bed), with the avatar centered beside both; then what the answer says about them below, lined up with the name. ✅ **Resolved:** ~~once the answer is written~~ as soon as it shows (the answer may still be streaming), each of those names is a link that opens the patient's details; the chat then closes and starts over (the conversation is cleared, as with /clear), so the page has the room. A row of a count's patient list still opens the patient with the chat left as it is. Clicked while the answer streams, it stops the answer. |
-| **Readable** | Short paragraphs and lists; long lists stop at 8 with "…and 3 more". That line ends with **Show all**, which expands the same list in place with only the patients it hadn't shown (no new question); the line goes once they're shown. |
+| **Readable** | Short paragraphs and lists; long lists stop at 8 with "…and 3 more". That line ends with **Show all**, which expands the same list in place with only the patients it hadn't shown (no new question); the line goes once they're shown. ✅ **Resolved:** every cut list in an answer has **Show all**, whatever the question ("What's overdue?", data gaps, the shift summary), never a bare "…and 10 more." |
 | **Follow-ups on recent activity** | An answer about what happened (the last hour, the last 12 hours, overnight) offers what a physician reviewing it asks next: "Who needs attention first?", "Which alerts are still open?", "What's overdue?", "Any results still pending?", then the other window ("What changed in the last hour?" after the 12 hours, "What happened overnight?" after the hour), each in the same scope (a hospital, a unit, my patients). |
 | **Counts open their patients** | A count of patients in an answer ("5 ventilated", "1 on NIV", "5 on pressors", "2 with open alerts", "8 assigned to you") is a link once the answer is written: a click lists those patients under its line (their avatar as on their card, then the name, then hospital, unit and bed; avatars Nov 10, 2026, user's call), another hides them, and a patient opens their details. A count of none stays plain text. Today the census overview's counts link; ℹ️ other answers' counts can link the same way. |
 | **One tenant** | Answers only about patients the clinician has access to, in this tenant (PRD PD-AC-15). |

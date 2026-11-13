@@ -167,9 +167,15 @@ function bedsideChangesLine(record: PatientRecord | undefined) {
 /** Lowercases a label's first letter to run on in a sentence, unless it starts an abbreviation ("ABG", "SpO₂"). */
 const runOn = (label: string) => (/^[A-Z][a-z]/.test(label) && !/^[A-Z][a-z]?[A-Z₀-₉]/.test(label) ? label.charAt(0).toLowerCase() + label.slice(1) : label);
 
-/** A list of at most `max` items, then how many more there are. */
-function capped(items: string[], max = 8) {
-	return items.length > max ? `${list(items.slice(0, max))}\n…and ${items.length - max} more.` : list(items);
+/**
+ * A list of at most `max` items, then "…and 6 more." with the rest as `more`. An answer that shows a cut list passes
+ * its `more` on (`AskInterceptAnswer.more`), so the chat puts Show all on that line, always (Nov 13, 2026, user's call:
+ * every cut list in an answer opens in place). One cut list per answer: Show all opens the first.
+ */
+function capped(items: string[], max = 8): { text: string; more?: string } {
+	return items.length > max
+		? { text: `${list(items.slice(0, max))}\n…and ${items.length - max} more.`, more: list(items.slice(max)) }
+		: { text: list(items) };
 }
 
 /** "A, B and C". */
@@ -1015,11 +1021,12 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 				...(patient.vitals && patient.vitals.rr === undefined ? [`RR for ${patientName(patient)}`] : []),
 			]);
 			const hospitals = sampleHospitals.filter((hospital) => scope.some((patient) => patient.census.hospitalId === hospital.id));
+			const overdue = capped([...overdueAlerts, ...overdueBundles, ...overdueMeds], 6);
 			return {
 				text: [
 					`Here's your shift${among}, ${sampleUser.name.split(" ")[0]}. ${scope.length} patients across ${hospitals.length} hospital${hospitals.length === 1 ? "" : "s"}; ${mine.length} assigned to you. ${scope.filter((patient) => patient.alerts.length).length} have open alerts.`,
 					`**Needs you first:**\n${list(ranked.map((patient) => `${who(patient)}: ${patient.alerts[0] ? `${patient.alerts[0].title} (${severityWords[patient.alerts[0].severity]})` : scoreWords(patient.census.acuity)}`))}`,
-					overdueAlerts.length || overdueMeds.length || overdueBundles.length ? `**Overdue now:**\n${capped([...overdueAlerts, ...overdueBundles, ...overdueMeds], 6)}` : "**Overdue now:** nothing.",
+					overdueAlerts.length || overdueMeds.length || overdueBundles.length ? `**Overdue now:**\n${overdue.text}` : "**Overdue now:** nothing.",
 					carried.length ? `**Carried over from last shift:**\n${list(carried)}` : undefined,
 					pending.length ? `**Waiting on:** ${joinWords(pending)}.` : undefined,
 					gaps.length ? `**Not reporting:** ${joinWords(gaps)}.` : undefined,
@@ -1027,6 +1034,7 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 					.filter(Boolean)
 					.join("\n"),
 				sources: ["Census", "Alerts", "MAR", "Sepsis Sniffer", "Lab", "Monitor"],
+				more: overdue.more,
 			};
 		}
 		case "attention": {
@@ -1083,11 +1091,11 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			];
 			return {
 				text: lines.length
-					? `In the last ${topic === "events" ? "12 hours" : "hour"}${among}:\n${capped(lines, capAt)}\n${scope.length - lines.length ? `${scope.length - lines.length} other patient${scope.length - lines.length === 1 ? " is" : "s are"} steady.` : ""}`
+					? `In the last ${topic === "events" ? "12 hours" : "hour"}${among}:\n${capped(lines, capAt).text}\n${scope.length - lines.length ? `${scope.length - lines.length} other patient${scope.length - lines.length === 1 ? " is" : "s are"} steady.` : ""}`
 					: `Nothing new${among} in the last ${topic === "events" ? "12 hours" : "hour"}.`,
 				sources: ["Timeline", "Alerts"],
 				actions: followUps,
-				more: lines.length > capAt ? list(lines.slice(capAt)) : undefined,
+				more: capped(lines, capAt).more,
 			};
 		}
 		case "alerts": {
@@ -1130,7 +1138,8 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 				].filter(Boolean);
 				return missing.length ? [`${patientName(patient)}: ${missing.join(", ")}`] : [];
 			});
-			return { text: lines.length ? `Data gaps${among}:\n${capped(lines)}` : `No data gaps${among}.`, sources: ["Monitor", "EMR"] };
+			const shown = capped(lines);
+			return { text: lines.length ? `Data gaps${among}:\n${shown.text}` : `No data gaps${among}.`, sources: ["Monitor", "EMR"], more: shown.more };
 		}
 		case "labs": {
 			const names = namedLabs(question);
@@ -1159,9 +1168,11 @@ function answerForCensus(topic: Topic | undefined, question: string, scope: Pati
 			const rows = scope
 				.flatMap((patient) => (patient.record?.medications?.scheduled ?? []).filter((item) => item.nextDueAt && Date.parse(item.nextDueAt) - Date.now() < 60 * MINUTE).map((item) => ({ patient, item })))
 				.sort((a, b) => a.item.nextDueAt!.localeCompare(b.item.nextDueAt!));
+			const shown = capped(rows.map(({ patient, item }) => `**${item.drug}** for ${patientName(patient)}, ${due(item.nextDueAt!)}`));
 			return {
-				text: rows.length ? `Due or overdue in the next hour${among}:\n${capped(rows.map(({ patient, item }) => `**${item.drug}** for ${patientName(patient)}, ${due(item.nextDueAt!)}`))}` : `Nothing is due in the next hour${among}.`,
+				text: rows.length ? `Due or overdue in the next hour${among}:\n${shown.text}` : `Nothing is due in the next hour${among}.`,
 				sources: ["MAR"],
+				more: shown.more,
 			};
 		}
 		case "meds": {

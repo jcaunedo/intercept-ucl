@@ -119,6 +119,22 @@ function Monitoring({
 		[flaggedPatients, alerts, alertDetails],
 	);
 
+	// Virtual Sepsis (Nov 13, 2026, user's calls: "identify the patients we have with sepsis", "use the monitoring card"):
+	// Monitoring's cards, for the patients on sepsis watch (the census's flag) or with a sepsis case in their record,
+	// with their alerts and only the hospitals they're at.
+	const sepsis = React.useMemo(() => {
+		const ids = new Set([
+			...(censusPatients ?? []).filter((patient) => patient.sepsisWatch).map((patient) => patient.id),
+			...(patientRecords ?? []).filter((record) => record.sepsis).map((record) => record.id),
+		]);
+		const cards = monitoringCards.filter((patient) => ids.has(patient.id));
+		return {
+			cards,
+			alerts: alerts.filter((alert) => ids.has(alert.patientId)),
+			hospitals: hospitals.filter((hospital) => cards.some((patient) => patient.hospitalId === hospital.id)),
+		};
+	}, [censusPatients, patientRecords, monitoringCards, alerts, hospitals]);
+
 	return (
 		<InterceptLive
 			{...shell}
@@ -180,6 +196,21 @@ function Monitoring({
 						closedResolutions={closedResolutions}
 					/>
 				),
+				"Virtual Sepsis": sepsis.cards.length ? (
+					<MonitoringPanel
+						records={patientRecords}
+						hospitals={sepsis.hospitals}
+						patients={sepsis.cards}
+						alerts={sepsis.alerts}
+						escalationTargets={escalationTargets}
+						onOpenPatient={onOpenPatient}
+						onAlertAction={handleAlertAction}
+						liveFeed={liveFeed}
+						onOpenLiveFeed={onOpenLiveFeed}
+						groupedView={groupedView}
+						closedResolutions={closedResolutions}
+					/>
+				) : undefined,
 				Census: flaggedCensusPatients ? (
 					<CensusPanel
 						records={patientRecords}
