@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 11, 2026
+Last updated: Nov 13, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -103,7 +103,7 @@ Each table has three columns: the term, its definition, and the document it come
 
 | Term | Definition | Source |
 | --- | --- | --- |
-| **Advanced Practice Provider (APP)** | A critical care Nurse Practitioner (NP) or Physician Assistant (PA), licensed and privileged to deliver tele-critical care under state scope-of-practice rules. Pairs with an intensivist, or covers independently where scope permits. | Spec §3.2 |
+| **Advanced Practice Provider (APP)** | A critical care Nurse Practitioner (NP) or Physician Assistant (PA), licensed and privileged to deliver tele-critical care under state scope-of-practice rules. Pairs with an intensivist, or covers independently where scope permits. Intercept's note templates call them **APC** (advanced practice clinician). | Spec §3.2, PRD Notes |
 | **Client Administrator** | Hospital-side or client-organization administrator with full authority over their tenant's configuration: integrations, protocols, note flows, clinician access, identity federation and alerts. | Spec §3.8 |
 | **Client Manager** | Hospital-side operational leader (e.g. a tele-critical care program director) who can see the platform's activity at their facility but has no configuration, security or governance authority. | Spec §3.9 |
 | **CMIO (Chief Medical Information Officer)** | Hospital physician executive who owns clinical-system integration decisions. Acts through the Client Administrator, with no own UI in v1. | Spec §3.11 |
@@ -129,6 +129,7 @@ Each table has three columns: the term, its definition, and the document it come
 | **AI Visual Perception and Screen Operation** | A Core Service that reads data from, and operates, hospital systems through their user interfaces when no API exists (Citrix-delivered EMRs, vendor dashboards, portals). Disclosed to the hospital and consented to in the deployment agreement. ⚠️ **Constraint:** never shown in external demo material. | Spec §6.17, Brief |
 | **Hybrid posture** | Integrated for some capabilities and Overlay for others, configured per feature per tenant. Most production deployments will be hybrid. | Spec §4.3 |
 | **Integrated Mode** | Direct, native integration with the hospital's EMR, devices, identity and messaging, including approved write-back. The target state for every customer. | Spec §4.1 |
+| **Intercept standard format** | The one way Intercept clinicians write a note, whatever the hospital. The platform converts it into each hospital's note structure (Epic, Cerner, Meditech) on write-back. Intercept's templates in a hospital's Epic are that hospital's converted form, not the standard format. | Spec §5.4, CD-09, PRD Notes |
 | **Operating Mode** | How the platform connects to a given hospital: Integrated, Overlay or hybrid. Set per hospital tenant. Decides how most modules behave. | Spec §4 |
 | **Overlay Mode** | Working without deep EMR integration, through narrower channels: read-only exports, deep links into the EMR, AI Scribe output pasted or delivered as PDF, the hospital's own messaging. Not a degraded experience; only the data depth differs. | Spec §4.2 |
 | **Piggyback integration** | An Integrated-mode deployment that gets data through the hospital's existing tele-critical care vendor (Ceiba, eCareManager) instead of building direct integrations. The usual first deployment at existing Intercept customers. | Spec §4.1 |
@@ -277,7 +278,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | Term | Definition | Source |
 | --- | --- | --- |
 | **ABCDEF Bundle** | ICU care bundle: Assessment of pain, Both spontaneous awakening and breathing trials, Choice of analgesia and sedation, Delirium monitoring, Early mobility, Family engagement. | Spec Appendix A |
-| **Admission / encounter** | A patient's hospital stay, with admission time, encounter identifier and status. | PRD PC-015 |
+| **Admission / encounter** | A patient's hospital stay, admission to discharge, with admission time, encounter identifier (the account number, ACCT) and status. Many notes, orders and results file under one encounter; a note is never the encounter. ⚠️ The specs also say "encounter" for one clinical contact (a consult, a camera session): Open naming conflicts #10. | PRD PC-015, PRD Notes §1.1 |
 | **ADT (Admission, Discharge, Transfer)** | The HL7v2 message family hospitals use for patient movement. Keeps the census aligned with the hospital. Real-time in Integrated mode, manually reconciled in Overlay. | Spec §7.12 |
 | **Anion gap** | The difference between measured cations and anions (Na − Cl − HCO₃), in mEq/L. Raised in DKA by ketoacids; the gap **closing** (12 or under, with bicarbonate 15 or more) is when DKA has resolved and the insulin drip can move to subcutaneous insulin. Scenario 4. | Demo Use Cases, Scenario 4 |
 | **APACHE II / IV (Acute Physiology and Chronic Health Evaluation)** | ICU severity score calculated once, in the first 24 hours of an ICU stay, to predict mortality and benchmark units. APACHE II runs 0–71; higher is sicker. Philips eICU uses APACHE IV. A candidate acuity score (OD-02). | General, PRD PC-030 |
@@ -395,6 +396,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **CMS** | Centers for Medicare & Medicaid Services. Owner of SEP-1 and the Two-Midnight Rule. | General |
 | **Condition Code 44** | CMS mechanism to reclassify an inpatient admission to observation before discharge. | Spec Appendix A |
 | **CPT 99291 / 99292** | Billing codes for the first 30–74 minutes, and each additional 30 minutes, of critical care. | Spec Appendix A |
+| **Critical-care attestation** | The closing lines of a tele-ICU note that the hospital bills on: the clinician's minutes, in a **critical care** version ("aggregate critical care time… high probability of sudden clinical deterioration…", for CPT 99291 / 99292) or a **standard** one, then the telehealth lines (consent in chart, distant site by state, persons involved, two-way interactive audiovisual). The **attending attestation** adds the attending's own exam and time, separate from the APP's. | Client note templates, PRD Notes §4.3 |
 | **Elite tier** | Intercept's premium service tier ($78K per year per ADC). | Spec Appendix A |
 | **HIPAA / PHI** | The US health-privacy law / Protected Health Information it governs. | General |
 | **KYC (Know Your Customer)** | Identity verification for Marketplace participants. | Spec Appendix A |
@@ -416,6 +418,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 
 | Term | Definition | Source |
 | --- | --- | --- |
+| **Addendum** | A dated entry added to a signed note, linked to it; the signed note itself never changes. The note's status then reads Addendum. | CD-11, DU-24, PRD Notes |
 | **Activity (activity log)** | *Proposed* on Patient details, everything done and decided about the patient with who and when: alerts and their actions, video consults, consult notes, pathways sent and co-signed, keep or transfer, checkpoints, Transfer avoided. On the Timeline (the Overview's log was removed Nov 9, 2026). A synthetic audit trail, a design element, not a compliance system (CC-09). | PRD Patient details, Care plan and activity |
 | **Ask Intercept Live** | *Proposed* name of the Provider Desktop's chat panel, where a clinician asks the Conversational Clinical Data Agent about their patients. Opened from the Sidebar or the patient-context app header. | PRD Chat composer §1, PRD PD-100 |
 | **Bedside tasks** | *Proposed* The bedside nurses' tasks an accepted order set generates (e.g. a peripheral norepinephrine's IV site check every hour), shared between the hub and the bedside: the nurses check them off, the hub sees the status. Open, done or cancelled; overdue 10 min past due. | Demo Use Cases Scenario 3, step 5; Requirements CC-06; DU-25 |
@@ -435,6 +438,10 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Intervention loop** | The discrete workflow that follows surveillance when a clinician decides to act: orders, notes, bedside coordination. Surveillance escalates into it. | Spec §5.2 |
 | **Monitoring panel** | The patients an on-shift clinician watches continuously on the Monitoring page, shown as monitoring cards (PatientMonitoringCard) with live values. ⚠️ **Decision needed:** defined by shift assignment, a watch list or both (MON-OD-01). | Spec §5.2, PRD Monitoring MON-010 |
 | **Patient monitor** | *Proposed* the remote view of a patient's bedside monitor: four lanes (II, Pleth, ABP, Resp), each a live waveform or its last hour beside its numbers and alarm limits, marking values outside them as the device does. One component (UCL `PatientMonitor`) on Patient details, the alert modal and the Monitoring card's full view. | PRD PMN-010 |
+| **Note** | A signed clinical document filed under the patient's encounter, with its own type, author, time and status; one encounter has many notes. Signed notes change only by addendum. | Spec §5.4, PRD Notes |
+| **Note template** | A note type's structure: its sections in order, which are required, and which fill from the chart. Versioned, with tenant overrides (Template and Lexicon Management). In Epic, a SmartText whose `***` blanks must be filled before signing. | Spec §5.4, §6.19, PRD Notes |
+| **Note type** | The kind of note: in Intercept's templates, Initial note, Progress note, Event note, Brief event note and Attending attestation, each in a critical care and a standard version. ⚠️ **Decision needed:** the final list (PRD Notes NTE-OD-01). | CD-07, PRD Notes §4.1 |
+| **Unverified (AI draft)** | A note section the AI drafted that the clinician hasn't edited or accepted yet. Marked in the note editor; a note can't be signed while any section is Unverified. | CD-03, PRD Notes NTE-007 |
 | **Order recommendation** | An order change an AI agent suggests (Order-Entry Suggestion or Vent-Order Mismatch Agent) with its evidence and protocol. The clinician accepts, modifies or declines; it never becomes an order on its own. | Spec §5.5, §8.5, PRD PD-061 |
 | **Bedside camera** | The camera, microphone and speaker in each covered room, which the remote clinician uses to see the patient and their devices and talk to the bedside team. One use of it is a **camera session**. | Spec §5.2, PRD Bedside camera |
 | **Camera session** | *Proposed* one use of the bedside camera: off, connecting, live, ended, with the live values over the picture. Live Camera, Video consult and Huddle are all camera sessions. | PRD Bedside camera CAM-001 |
@@ -497,3 +504,4 @@ Resolve each one with Intercept or the doc owner, then update the entry above.
 | 7 | Vent-Order Mismatch Agent vs Ventilator Optimization agent family | Spec §8.3 | Use **Vent-Order Mismatch Agent** for the v1 capability, and Ventilator Optimization only for the roadmap family |
 | 8 | "Consult": the nurse call (Video consult) vs the specialist consult | Scenario 1 step 3 vs Spec §5.11, SC-*, DU-27 | ⚠️ **Decision needed:** keep Video consult for the nurse call and call the other **Request specialist** (SC-01), or rename the nurse call. PRD Bedside camera §8 |
 | 9 | Live Camera vs Look in | Patient details header vs PRD Patient details PD-014, PD-090 | ⚠️ **Decision needed:** one name, sentence case. PRD Bedside camera §8 |
+| 10 | "Encounter": the hospital stay vs one clinical contact | PRD PC-015, Patient details (Encounter card, ACCT) vs CD-04, BR-10, Spec §5.4, §8.12 | Use **encounter** for the stay only, and **consult** or **session** for one contact. ⚠️ **Decision needed:** what "opt-out ends capture for the encounter" means (PRD Notes NTE-OD-03) |

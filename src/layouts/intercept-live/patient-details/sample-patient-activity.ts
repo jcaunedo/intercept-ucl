@@ -40,7 +40,7 @@ const sampleScenario1Activity: PatientActivity[] = [
 		detail: "Orders active. The bedside team carries them out.",
 		by: "Dr. Tom Weller, family physician on call",
 	},
-	{ id: "a6", at: minutesAgo(31), kind: "consult", title: "Video consult ended", detail: "Lasted 8 min", by: "You" },
+	{ id: "a6", at: minutesAgo(31), kind: "consult", title: "Video consult ended", detail: "Lasted 8 min", by: "You", durationMs: 8 * 60_000 },
 	{
 		id: "a7",
 		at: minutesAgo(30),

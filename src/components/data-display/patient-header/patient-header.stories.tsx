@@ -61,7 +61,7 @@ export const Default: Story = {
 		await expect(canvas.getByText("6325DF2", { exact: false })).toBeInTheDocument();
 		await expect(canvas.getByRole("group", { name: "NEWS2" })).toHaveTextContent(/10High1 point up in 24 h$/);
 		await expect(canvas.getByRole("group", { name: "Clinical status" })).toHaveTextContent(/DeterioratingLast assessed \d+ min ago$/);
-		await expect(canvas.getByRole("group", { name: /^Alerts\s*·\s*6 alerts in last 12 h$/ })).toBeInTheDocument();
+		await expect(canvas.getByRole("group", { name: /^Alerts\s+6 alerts in last 12 h$/ })).toBeInTheDocument();
 		// A Critical and a Low open: the button takes the highest, Critical.
 		await expect(canvas.getByRole("button", { name: "2 active alerts" })).toHaveAttribute("data-severity", "critical");
 		canvas.getByRole("button", { name: "2 active alerts" }).click();

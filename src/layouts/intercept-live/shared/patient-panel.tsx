@@ -2,8 +2,8 @@ import * as React from "react";
 import {
 	ArrowDownUpIcon,
 	ArrowUpIcon,
+	BellIcon,
 	FlagIcon,
-	Maximize2Icon,
 	SparklesIcon,
 	UsersIcon,
 	VideoIcon,
@@ -617,7 +617,7 @@ function patientCardActions(
 						? [
 								{
 									label: alertCount > 1 ? "View alerts" : "View alert",
-									icon: Maximize2Icon,
+									icon: BellIcon,
 									onSelect: () => navigation.openAlert(id),
 									divider: true,
 								},

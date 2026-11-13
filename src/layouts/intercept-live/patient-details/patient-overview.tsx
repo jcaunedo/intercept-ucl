@@ -278,6 +278,7 @@ function AlertsSection({
 	pathwayAlertIds = [],
 	pathwayShownId,
 	onTogglePathway,
+	onAlertOpened,
 }: {
 	id?: string;
 	patientId: string;
@@ -299,6 +300,8 @@ function AlertsSection({
 	/** The alert whose pathway the Pathway panel shows. */
 	pathwayShownId?: string;
 	onTogglePathway?: (alertId: string) => void;
+	/** Called after an alert's bar opens the alert modal (the page's Alerts panel closes then). */
+	onAlertOpened?: (alertId: string) => void;
 }) {
 	const navigation = usePatientNavigation();
 	const { prefersReducedMotion, resolve } = useMotionPreference();
@@ -365,7 +368,14 @@ function AlertsSection({
 							inLast24h={inLast24h}
 							escalationTargets={escalationTargets}
 							onAlertAction={onAlertAction}
-							onOpen={navigation ? () => navigation.openAlert(patientId, alert.id) : undefined}
+							onOpen={
+								navigation
+									? () => {
+											navigation.openAlert(patientId, alert.id);
+											onAlertOpened?.(alert.id);
+										}
+									: undefined
+							}
 							onTogglePathway={
 								onTogglePathway && pathwayAlertIds.includes(alert.id) ? () => onTogglePathway(alert.id) : undefined
 							}

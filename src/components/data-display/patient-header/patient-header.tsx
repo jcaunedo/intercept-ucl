@@ -107,20 +107,8 @@ const clinicalStatusLabels: Record<PatientHeaderClinicalStatusValue, string> = {
 	"insufficient-data": "Insufficient data",
 };
 
-/**
- * One of the right side's columns, after a rule: its label, then its value and the line under it, centered. A column
- * whose content is a single control (`bottom`) puts it 2px above the bottom of the same 50px, level with the others'
- * last line.
- */
-function PatientHeaderColumn({
-	label,
-	bottom = false,
-	children,
-}: {
-	label: React.ReactNode;
-	bottom?: boolean;
-	children: React.ReactNode;
-}) {
+/** One of the right side's columns, after a rule: its label, then its value and the line under it, centered. */
+function PatientHeaderColumn({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
 	const labelId = React.useId();
 	return (
 		<>
@@ -129,7 +117,7 @@ function PatientHeaderColumn({
 				<p id={labelId} className='text-sm text-foreground'>
 					{label}
 				</p>
-				<div className={cn("flex min-w-0 flex-col items-start", bottom && "min-h-[50px] justify-end pb-0.5")}>{children}</div>
+				<div className='flex min-w-0 flex-col items-start'>{children}</div>
 			</div>
 		</>
 	);
@@ -300,14 +288,14 @@ function PatientHeader({
 					) : null}
 					{onViewAlerts ? (
 						<PatientHeaderColumn
-							bottom
 							label={
 								<>
 									Alerts
+									{/* On its own line under the label; the space keeps the two apart for screen readers. */}
 									{recentAlerts ? (
-										<span className='text-muted-foreground'>
+										<span className='block text-muted-foreground'>
 											{" "}
-											· {recentAlerts.count} {recentAlerts.count === 1 ? "alert" : "alerts"} in last {recentAlerts.period}
+											{recentAlerts.count} {recentAlerts.count === 1 ? "alert" : "alerts"} in last {recentAlerts.period}
 										</span>
 									) : null}
 								</>
@@ -318,7 +306,7 @@ function PatientHeader({
 							    panel is open. */}
 							<Button
 								variant={topSeverity ? "destructive" : "outline"}
-								size='md'
+								size='sm'
 								aria-expanded={alertsOpen}
 								onClick={onViewAlerts}
 								data-severity={topSeverity}

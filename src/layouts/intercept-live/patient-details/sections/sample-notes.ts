@@ -101,7 +101,7 @@ const sarahNotes: PatientNote[] = [
 	},
 	{
 		id: "p1-n6",
-		type: "Event note",
+		type: "Tele-ICU event note",
 		author: { name: "Maria Ruiz", role: "Intercept RN" },
 		at: hoursAgo(7),
 		origin: "intercept",
@@ -130,7 +130,7 @@ const sarahNotes: PatientNote[] = [
 	},
 	{
 		id: "p1-n8",
-		type: "Tele-ICU admission note",
+		type: "Tele-ICU initial note",
 		author: { name: "Joanna Smith", role: "Intercept intensivist" },
 		at: hoursAgo(50),
 		origin: "intercept",
@@ -271,7 +271,7 @@ function buildNotes(record: PatientRecord, spec: NotesSpec): PatientNote[] {
 			: []),
 		{
 			id: id(6),
-			type: "Tele-ICU admission note",
+			type: "Tele-ICU initial note",
 			author: { name: "Joanna Smith", role: "Intercept intensivist" },
 			at: hoursAgo(Math.max(icu - 1, 1)),
 			origin: "intercept",
@@ -779,21 +779,29 @@ const ramirezNotes: PatientNote[] = [
 	},
 ];
 
+// A hospital that takes Intercept's notes back (`writesBack`) shows it in its notes: some were written to its record, or
+// failed to be. A note signed in the editor follows the same rule (`writeBack`).
+const notesFor = (id: string, notes: PatientNote[]): PatientNotes => ({
+	emr: sampleEhrFor(id),
+	writeBack: notes.some((note) => note.status === "written-back" || note.status === "write-back-failed"),
+	notes,
+});
+
 const sampleNotesByPatient: Record<string, PatientNotes> = {
-	p1: { emr: sampleEhrFor("p1"), notes: sarahNotes },
-	p15: { emr: sampleEhrFor("p15"), notes: hayesNotes },
-	p16: { emr: sampleEhrFor("p16"), notes: ericksonNotes },
-	p19: { emr: sampleEhrFor("p19"), notes: carlsonNotes },
-	p20: { emr: sampleEhrFor("p20"), notes: hansenNotes },
-	p25: { emr: sampleEhrFor("p25"), notes: petersonNotes },
-	p26: { emr: sampleEhrFor("p26"), notes: lambertNotes },
-	p27: { emr: sampleEhrFor("p27"), notes: jacobsNotes },
-	p28: { emr: sampleEhrFor("p28"), notes: hughesNotes },
-	p29: { emr: sampleEhrFor("p29"), notes: ramirezNotes },
+	p1: notesFor("p1", sarahNotes),
+	p15: notesFor("p15", hayesNotes),
+	p16: notesFor("p16", ericksonNotes),
+	p19: notesFor("p19", carlsonNotes),
+	p20: notesFor("p20", hansenNotes),
+	p25: notesFor("p25", petersonNotes),
+	p26: notesFor("p26", lambertNotes),
+	p27: notesFor("p27", jacobsNotes),
+	p28: notesFor("p28", hughesNotes),
+	p29: notesFor("p29", ramirezNotes),
 	...Object.fromEntries(
 		samplePatientBaseRecords
 			.filter((record) => notesSpecs[record.id])
-			.map((record) => [record.id, { emr: sampleEhrFor(record.id), notes: buildNotes(record, notesSpecs[record.id]) }]),
+			.map((record) => [record.id, notesFor(record.id, buildNotes(record, notesSpecs[record.id]))]),
 	),
 };
 

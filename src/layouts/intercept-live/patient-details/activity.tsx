@@ -30,6 +30,8 @@ type PatientActivity = {
 	detail?: string;
 	/** Who: "You", "Dr. Tom Weller", "Kayla Brandt, RN", or what ("Deterioration score"). */
 	by?: string;
+	/** How long it lasted, on a video consult's "ended" entry: a note's attestation adds up the day's (PRD Notes NTE-009). */
+	durationMs?: number;
 };
 
 /** One order of the pathway in force, with its dose as sent. */

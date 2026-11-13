@@ -634,6 +634,7 @@ function useSampleLiveFeed() {
 					title: "Video consult ended",
 					detail: `Lasted ${formatDuration(Date.now() - Date.parse(started))}`,
 					by: YOU,
+					durationMs: Date.now() - Date.parse(started),
 				});
 			}
 		},
@@ -911,7 +912,8 @@ function useSampleLiveFeed() {
 					.filter((note) => note.patientId === record.id)
 					.map((note) => ({
 						id: note.id,
-						type: "Consult note",
+						// A video consult is documented as an event note (PRD Notes §4.1): the draft opens in its template.
+						type: "Tele-ICU event note",
 						author: { name: sampleUser.name, role: "Intercept intensivist" },
 						at: note.at,
 						origin: "intercept",

@@ -73,6 +73,7 @@ import { ChartSection, LabsSection, type PatientChart } from "./sections/chart-s
 import { EpicSection, type PatientEmr } from "./sections/epic-section";
 import { MedicationsSection, type PatientMedications } from "./sections/medications-section";
 import { NotesSection, type PatientNotes } from "./sections/notes-section";
+import { noteContextFrom } from "./sections/note-chart";
 import { OrdersSection, type PatientOrders } from "./sections/orders-section";
 import { SepsisSection, type SepsisCase } from "./sections/sepsis-section";
 import { TimelineSection, type PatientTimeline } from "./sections/timeline-section";
@@ -655,7 +656,14 @@ function sectionContent(
 		case "emr":
 			return record?.emr ? <EpicSection emr={record.emr} /> : null;
 		case "notes":
-			return record?.notes ? <NotesSection notes={record.notes} onNewNote={() => onAction?.("new-note")} /> : null;
+			// New note opens the note editor here, filled from the record and the live monitor (PRD Notes NTE-004).
+			return record?.notes ? (
+				<NotesSection
+					notes={record.notes}
+					context={noteContextFrom(record, monitor?.vitals)}
+					onNewNote={() => onAction?.("new-note")}
+				/>
+			) : null;
 		case "sepsis":
 			return record?.sepsis ? <SepsisSection sepsis={record.sepsis} /> : null;
 		case "camera":
@@ -866,6 +874,8 @@ function PatientDetailsContent({
 					pathwayAlertIds={pathways?.details.map((detail) => detail.alert.id)}
 					pathwayShownId={alertPathway.shownAlertId}
 					onTogglePathway={alertPathway.toggle}
+					// An alert's bar opens the alert modal and closes this panel (Nov 13, 2026, user's call).
+					onAlertOpened={() => setAlertsOpen(false)}
 				/>
 			</PatientAlertsPanel>
 			{/* The header's Live feed: this patient's log, history included (Nov 11, 2026, user's calls). */}
@@ -941,8 +951,14 @@ function PatientDetailsContent({
 					// Keyed by patient, so a section's local state (an open form, an accepted recommendation) never
 					// carries over to the next patient. Block, not flex: the sections are size containers, which a flex
 					// row would shrink to nothing.
+					// Notes is two panes edge to edge under the tabs (intercept.ds `1516:405`), so it takes no padding and the
+					// tab's full height; the other sections sit 24px in.
 					return content ? (
-						<TabsContent key={`${item.id}-${patient.id}`} value={item.id} className='p-6'>
+						<TabsContent
+							key={`${item.id}-${patient.id}`}
+							value={item.id}
+							className={item.id === "notes" ? "flex flex-1" : "p-6"}
+						>
 							{content}
 						</TabsContent>
 					) : (
