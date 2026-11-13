@@ -1,5 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowRightLeftIcon, FilePenLineIcon, LinkIcon } from "lucide-react";
+import {
+	ArrowRightLeftIcon,
+	ClipboardPlusIcon,
+	ClockPlusIcon,
+	FilePenLineIcon,
+	GitForkIcon,
+	LinkIcon,
+	ListTodoIcon,
+	SendIcon,
+	StethoscopeIcon,
+} from "lucide-react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import samplePhoto1 from "@/components/data-display/avatar/images/sample-photo-1.png";
@@ -87,6 +97,12 @@ const patientArgs = {
 	// The Create menu, the dark "+" before "…".
 	createActions: [
 		{ label: "New note", icon: FilePenLineIcon, onSelect: fn() },
+		{ label: "New order", icon: ClipboardPlusIcon, onSelect: fn() },
+		{ label: "New task", icon: ListTodoIcon, onSelect: fn() },
+		{ label: "Request consult", icon: StethoscopeIcon, onSelect: fn() },
+		{ label: "New referral", icon: SendIcon, onSelect: fn() },
+		{ label: "Start pathway", icon: GitForkIcon, onSelect: fn() },
+		{ label: "Log critical care time", icon: ClockPlusIcon, onSelect: fn() },
 		{ label: "Prepare handoff", icon: ArrowRightLeftIcon, onSelect: fn() },
 	],
 	// The patient's care team, before the buttons; the first three show.
@@ -103,7 +119,7 @@ const patientArgs = {
  * On a patient's page: Back, the patient list and Ask Intercept (shown when the app handles them), then a breadcrumb
  * back to where the user came from; the patient's care team (its first three), then 16px to Video consult, Messages
  * (with its unread count) and Pathway, dark until their panel opens, then "+" and "…", all dark. "…" holds Raise concern, Huddle team and Escalate, then a rule, then
- * Copy link; "+" (Create) holds New note and Prepare handoff.
+ * Copy link; "+" (Create) holds New note, New order, New task, Request consult, New referral, Start pathway, Log critical care time and Prepare handoff.
  */
 export const PatientContext: Story = {
 	render: (args) => (
@@ -135,7 +151,16 @@ export const PatientContext: Story = {
 		await userEvent.keyboard("{Escape}");
 		await userEvent.click(canvas.getByRole("button", { name: "Create" }));
 		const create = within(await within(document.body).findByRole("menu"));
-		await expect(create.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["New note", "Prepare handoff"]);
+		await expect(create.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+			"New note",
+			"New order",
+			"New task",
+			"Request consult",
+			"New referral",
+			"Start pathway",
+			"Log critical care time",
+			"Prepare handoff",
+		]);
 		await userEvent.keyboard("{Escape}");
 		// The care team: three avatars, everyone in its name, before the buttons.
 		const careTeam = canvas.getByRole("button", { name: "Care team: Kayla Brandt, Daniel Reyes, Megan Hart, Ryan Cole" });

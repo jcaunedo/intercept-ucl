@@ -66,7 +66,7 @@ type Story = StoryObj<typeof meta>;
 /**
  * Sarah Miller, opened from the Census (Intercept-Live › Patient Details). The app header turns to its patient variant
  * ("← Census › Miller, Sarah") with Video consult, Messages (3 unread), "…" (Raise concern, Huddle team,
- * Escalate, then Admission note and Share patient link) and "+" (Create: New note, Prepare handoff), then her care team. The Patient Header shows her photo and name,
+ * Escalate, then Admission note and Share patient link) and "+" (Create: New note, New order, New task, Request consult, New referral, Start pathway, Log critical care time, Prepare handoff), then her care team. The Patient Header shows her photo and name,
  * then MRN, sex and age, and location, then her flags (organ support, code status only when it limits care, allergy
  * and isolation, all outline). Line tabs: Overview (the AI clinical summary across the top, then her clinical findings:
  * key labs, temperature, MAP and the ventilator; then cards: live monitoring, care plan, Up next, medications, oxygen and

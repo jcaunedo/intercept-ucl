@@ -1,6 +1,7 @@
 import * as React from "react";
 import {
 	ArrowRightLeftIcon,
+	ClipboardPlusIcon,
 	BookOpenIcon,
 	ChartSplineIcon,
 	ClipboardListIcon,
@@ -15,6 +16,11 @@ import {
 	PillIcon,
 	VideoIcon,
 	type LucideIcon,
+	ListTodoIcon,
+	StethoscopeIcon,
+	SendIcon,
+	GitForkIcon,
+	ClockPlusIcon,
 } from "lucide-react";
 
 import type { PatientCensusCardProps } from "@/components/cards/patient-census-card";
@@ -423,6 +429,12 @@ type PatientAction =
 	| "escalate"
 	| "messages"
 	| "new-note"
+	| "new-order"
+	| "new-task"
+	| "consult-request"
+	| "new-referral"
+	| "start-pathway"
+	| "log-time"
 	| "handoff"
 	| "copy-link"
 	| "admission-note"
@@ -592,6 +604,17 @@ function alertCountsBySeverity(alerts: TriageAlert[]): NonNullable<PatientHeader
 /** The Create menu, the header's "+" (PRD PD-014; Nov 9, 2026, user's call: out of "…"). */
 const createActions: { label: string; icon: LucideIcon; action: PatientAction }[] = [
 	{ label: "New note", icon: FilePenLineIcon, action: "new-note" },
+	// Opens Order Entry in context (Nov 13, 2026, user's call).
+	{ label: "New order", icon: ClipboardPlusIcon, action: "new-order" },
+	// A follow-up for the bedside or the clinician, with a due time, and a specialist consult for this patient (Nov 13,
+	// 2026, user's call).
+	{ label: "New task", icon: ListTodoIcon, action: "new-task" },
+	{ label: "Request consult", icon: StethoscopeIcon, action: "consult-request" },
+	// A referral outside the discharge workflow, a care pathway without waiting for an alert, and the minutes toward the
+	// critical care attestation (Nov 13, 2026, user's call: "add them now"; whether all belong here is open, PD-014).
+	{ label: "New referral", icon: SendIcon, action: "new-referral" },
+	{ label: "Start pathway", icon: GitForkIcon, action: "start-pathway" },
+	{ label: "Log critical care time", icon: ClockPlusIcon, action: "log-time" },
 	{ label: "Prepare handoff", icon: ArrowRightLeftIcon, action: "handoff" },
 ];
 
