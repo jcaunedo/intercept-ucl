@@ -478,8 +478,9 @@ function NoteEditor({ draft, context, onChange, onSaveDraft, onSign }: NoteEdito
 
 	return (
 		<section aria-labelledby={headingId} className='flex min-w-0 flex-col bg-card'>
-			{/* The note's header stays under the page's header while the sections scroll (52px compact, as the list). */}
-			<div className='sticky top-[52px] z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-card px-6 py-3'>
+			{/* The note's header stays under the page's header while the sections scroll (52px compact, as the list). Its side
+			    padding lines it up with the centered sections below (at most 1000px, 24px in at least). */}
+			<div className='sticky top-[52px] z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-card px-[max(1.5rem,calc((100%-1000px)/2))] py-3'>
 				<div className='flex min-w-0 flex-col gap-1'>
 					<div className='flex flex-wrap items-center gap-[10px]'>
 						<h2 id={headingId} className='font-display text-2xl font-semibold text-foreground'>

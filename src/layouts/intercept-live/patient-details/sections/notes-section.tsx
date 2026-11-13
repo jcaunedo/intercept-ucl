@@ -246,7 +246,12 @@ function NoteDetail({
 		.join(" · ");
 
 	return (
-		<section aria-labelledby={headingId} className='flex min-w-0 flex-col gap-3 bg-card p-6'>
+		// Centered in the pane, at most 1000px wide, as the note editor: the side padding grows past 24px once the pane is
+		// wider than 1048px (a percentage padding reads the pane's width).
+		<section
+			aria-labelledby={headingId}
+			className='flex min-w-0 flex-col gap-3 bg-card px-[max(1.5rem,calc((100%-1000px)/2))] py-6'
+		>
 			<div className='flex flex-col gap-3'>
 				{/* The source sits under the title, 4px below it (it was at the row's right end until Nov 13, 2026). */}
 				<div className='flex flex-col gap-1'>
@@ -295,7 +300,7 @@ function NoteDetail({
 				</div>
 			) : null}
 
-			<div className='flex max-w-[900px] flex-col gap-3 text-sm leading-6 text-foreground'>
+			<div className='flex flex-col gap-3 text-sm leading-6 text-foreground'>
 				{note.sections.map((section, index) => (
 					<div key={section.heading ?? index} className='flex flex-col gap-1'>
 						{section.heading ? <h3 className='text-base font-semibold text-foreground'>{section.heading}</h3> : null}
@@ -547,7 +552,7 @@ function NotesSection({
 						) : null}
 					</div>
 					{shown.length ? (
-						<ul aria-label='Notes, newest first' className='scrollbar-soft flex min-h-0 flex-1 flex-col overflow-y-auto px-4'>
+						<ul aria-label='Notes, newest first' className='scrollbar-soft flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-6'>
 							{shown.map((note) => (
 								<NoteListItem
 									key={note.id}
