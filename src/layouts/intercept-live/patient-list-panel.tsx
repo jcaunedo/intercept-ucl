@@ -60,7 +60,8 @@ function PatientListPanel({
 		<SidePanel
 			id='patient-list'
 			side='left'
-			title='Patients'
+			title='Census'
+			header='bar'
 			description={`From the ${sourcePage}, in its order${index >= 0 ? ` · ${index + 1} of ${patients.length}` : ""}`}
 			open={open}
 			onOpenChange={onOpenChange}

@@ -136,9 +136,13 @@ function SidePanel({
 	onWidthChange,
 	description,
 	action,
+	header = "chat",
 	className,
 	children,
 }: {
+	/** The header's look: `chat` (intercept.ds Chat's, the default) or `bar` (the Messages panel's: a 60px row on a rule,
+	 * 16px semibold title, a larger ×; the description moves under the rule). */
+	header?: "chat" | "bar";
 	/** A control in the header, 8px left of × (e.g. the Live feed's filter, as the Messages panel's). */
 	action?: React.ReactNode;
 	/** Names the panel's parts (`<id>-title`), and the panel itself, for a trigger's `aria-controls`. */
@@ -188,7 +192,29 @@ function SidePanel({
 					{/* At the panel's width, so the content doesn't reflow while the panel opens or closes. A right panel's
 					    content keeps to its right edge, so it slides in with the edge. */}
 					<div className={cn("absolute inset-y-0 flex flex-col", side === "left" ? "left-0" : "right-0")} style={{ width }}>
-						{/* intercept.ds Chat's header (`1200:1397`): every side panel follows it. 14px on top centers its row with the app header's. */}
+						{header === "bar" ? (
+							<>
+								{/* The Messages panel's header (`PatientPanel` in `consult-panels.tsx`): 60px, as tall as the app header. */}
+								<div className='flex h-15 shrink-0 items-center gap-4 border-b border-border px-4'>
+									<h2
+										ref={headingRef}
+										id={`${id}-title`}
+										tabIndex={-1}
+										className='min-w-0 flex-1 truncate px-2 text-base font-semibold text-foreground outline-none'
+									>
+										{title}
+									</h2>
+									<div className='flex shrink-0 items-center gap-2'>
+										{action}
+										<Button variant='ghost' size='icon-md' aria-label={`Close ${title}`} onClick={() => onOpenChange(false)}>
+											<XIcon aria-hidden='true' />
+										</Button>
+									</div>
+								</div>
+								{description ? <p className='shrink-0 px-6 pt-4 pb-3 text-sm text-foreground'>{description}</p> : null}
+							</>
+						) : (
+						/* intercept.ds Chat's header (`1200:1397`). 14px on top centers its row with the app header's. */
 						<div className='flex shrink-0 flex-col gap-4 px-5 pt-[14px] pb-4'>
 							<div className='flex items-center justify-between gap-2'>
 								<Typography
@@ -217,6 +243,7 @@ function SidePanel({
 							</div>
 							{description ? <p className='pr-10 text-sm text-foreground'>{description}</p> : null}
 						</div>
+						)}
 						{children}
 					</div>
 					<ResizeHandle side={side} label={`Resize ${title}`} width={width} onWidthChange={onWidthChange} />

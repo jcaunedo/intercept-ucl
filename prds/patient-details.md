@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 13, 2026
+Last updated: Nov 15, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Patient details page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 13, 2026
+**Last updated:** November 15, 2026
 
 ---
 
@@ -279,6 +279,7 @@ Previous / next buttons step through the list the clinician came from (the Censu
 - Never navigate to another patient because of stale or recycled bed information (PC-100).
 - ✅ **Always there (Nov 3, 2026, user's call):** opened from somewhere with no list of its own (an alert, a toast, the live feed, the chat), the patient gets the list of the page under them, in its order and filters as it shows then; a patient that list leaves out comes first. It was hidden before.
 - ✅ **Resolved (Oct 28, 2026, prototype):** the switcher is a patient list, opened from a list button at the left of the app header (intercept.ds `app-header` Patient Context). It shows the source list in its order, the open patient marked; picking one switches. Previous / next buttons and the ↑/↓, J/K shortcuts aren't built yet.
+- ✅ **Resolved:** the list panel is titled **Census** (~~Patients~~), whichever page it comes from; the line under the title still names the source page and the position ("From the Monitoring, in its order · 4 of 26").
 
 ### PD-016 — Sticky header
 
