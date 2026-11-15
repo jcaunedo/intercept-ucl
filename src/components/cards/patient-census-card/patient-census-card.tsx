@@ -877,7 +877,12 @@ function PatientCensusCard({
 			) : null}
 
 			{/* With no tags the row stays, so every card in a row or column is the same height (Oct 30, 2026, user's call). */}
-			<PatientCardTags tags={tags} name={name} size={size} openRef={interactive ? openRef : undefined} />
+			{/* Pinned to the card's bottom (`mt-auto` takes the spare height), so when a grid row stretches the cards to the
+			    tallest one, every tag row lines up along the bottom. On a wrapper: the row's own `-m-1` (its focus ring's room)
+			    must keep its top margin. */}
+			<div className='mt-auto'>
+				<PatientCardTags tags={tags} name={name} size={size} openRef={interactive ? openRef : undefined} />
+			</div>
 		</motion.article>
 	);
 }
