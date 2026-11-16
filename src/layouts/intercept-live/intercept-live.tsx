@@ -1,31 +1,37 @@
 import * as React from "react";
 import {
-	BellRingIcon,
 	BookOpenTextIcon,
-	BoxIcon,
+	BuildingIcon,
+	CalendarCheckIcon,
+	CalendarClockIcon,
+	CalendarIcon,
 	ChartColumnIcon,
 	CircleUserIcon,
+	ContactIcon,
 	ExternalLinkIcon,
+	FileTextIcon,
 	HeartCrackIcon,
-	LayoutGridIcon,
+	InboxIcon,
 	LifeBuoyIcon,
+	ListCheckIcon,
 	type LucideIcon,
 	MenuIcon,
 	MessageCircleMoreIcon,
-	ShieldIcon,
+	RadarIcon,
+	SettingsIcon,
+	ShieldCheckIcon,
 	SparklesIcon,
 	SquareActivityIcon,
 	Undo2Icon,
+	UserSearchIcon,
+	UsersIcon,
 } from "lucide-react";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 
-import { BoxSolidIcon } from "@/components/icons/box-solid-icon";
 import { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
 import { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
 import { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
-import { LayoutGridSolidIcon } from "@/components/icons/layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
-import { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { muteToasts, Toaster } from "@/components/feedback/sonner";
@@ -35,6 +41,7 @@ import {
 	type AppHeaderPerson,
 	type AppHeaderUser,
 } from "@/components/navigation/app-header";
+import type { AccountMenuProps, AccountMenuShift, AccountMenuStatus } from "@/components/navigation/account-menu";
 import { Sidebar, type SidebarAlert, type SidebarNavItem } from "@/components/navigation/sidebar";
 import { TagsPopoverActionsProvider } from "@/components/overlays/tags-popover";
 import {
@@ -57,7 +64,9 @@ import {
 } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+import { KeyboardShortcutsDialog, SignedOutScreen, SignOutDialog, shortcutsKey, useShortcutsKey } from "./account-dialogs";
 import { ConsultSessionProvider } from "./alert-panel/consult-session";
+import type { MonitorView } from "./monitoring/view-controls";
 import type { TriageAlert } from "./monitoring/triage-queue";
 import { fallPathwayActions } from "./shared/flag-details";
 import {
@@ -67,7 +76,7 @@ import {
 	type AskInterceptResponder,
 } from "./ask-intercept-panel";
 import { avatarTone, patientInitials } from "./shared/patient-avatar";
-import { PatientListPanel, type PatientListEntry } from "./patient-list-panel";
+import { CensusListPanel, type CensusListEntry } from "./census-list-panel";
 import { LocationStateProvider, useLocationStateStore, type LocationState } from "./location-state";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
 import { PatientNavigationProvider, type ActiveAlertsRequest, type PatientNavigation } from "./patient-navigation";
@@ -97,71 +106,161 @@ const askInterceptLabel = "Ask Intercept Live";
 // What Ask in an alert toast asks for the clinician (Scenario 1, step 3: the patient at a glance).
 const patientOverviewQuestion = "Quick overview";
 
-// No Search item (Oct 31, 2026, intercept.ds `sidebar` `1001:544`, user's call): search happens in Ask Intercept Live.
-const navGroups: SidebarNavItem[][] = [
-	[{ icon: SparklesIcon, label: askInterceptLabel }],
+// The Clinical workspace's items (intercept.ds `sidebar` Role=Clinical, Nov 16, 2026; PRD Sidebar NAV-020). No Search
+// item (Oct 31, 2026, user's call): search happens in Ask Intercept Live. The Census page is **Patients**, the full list
+// of everyone treated, in hospital or not (Nov 16, 2026, user's call); Alert Queue became Inbox.
+const askGroup: SidebarNavItem[] = [{ icon: SparklesIcon, label: askInterceptLabel }];
+
+const clinicalGroups: SidebarNavItem[][] = [
+	askGroup,
 	[
 		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring", navigateTo: "Monitoring" },
-		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census", navigateTo: "Census" },
-		{ icon: BellRingIcon, label: "Alert Queue", navigateTo: "Alert Queue" },
+		{ icon: InboxIcon, label: "Inbox", navigateTo: "Inbox" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages", navigateTo: "Messages" },
+		{ icon: ListCheckIcon, label: "Protocols", navigateTo: "Protocols" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis", navigateTo: "Virtual Sepsis" },
 	],
 	[
-		{ icon: ShieldIcon, activeIcon: ShieldSolidIcon, label: "Compliance", navigateTo: "Compliance" },
+		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Patients", navigateTo: "Patients" },
+		{ icon: CalendarIcon, label: "Schedule", navigateTo: "Schedule" },
 		{ icon: ChartColumnIcon, activeIcon: ChartColumnSolidIcon, label: "Analytics", navigateTo: "Analytics" },
-		{ icon: BoxIcon, activeIcon: BoxSolidIcon, label: "Marketplace", navigateTo: "Marketplace" },
-		{ icon: LayoutGridIcon, activeIcon: LayoutGridSolidIcon, label: "Administration", navigateTo: "Administration" },
 	],
 ];
+
+// Intercept's Marketplace sidebar, the oversight side (intercept.ds `sidebar` Role=Marketplace; PRD Sidebar NAV-022).
+const marketplaceGroups: SidebarNavItem[][] = [
+	askGroup,
+	[
+		{ icon: UserSearchIcon, label: "Requests", navigateTo: "Requests" },
+		{ icon: CalendarClockIcon, label: "Open shifts", navigateTo: "Open shifts" },
+		{ icon: UsersIcon, label: "Clinician network", navigateTo: "Clinician network" },
+	],
+	[{ icon: FileTextIcon, label: "Contracts & billing", navigateTo: "Contracts & billing" }],
+];
+
+// Intercept's Administration sidebar (intercept.ds `sidebar` Role=Administration; PRD Sidebar NAV-021).
+const administrationGroups: SidebarNavItem[][] = [
+	askGroup,
+	[
+		{ icon: RadarIcon, label: "Operations", navigateTo: "Operations" },
+		{ icon: CalendarCheckIcon, label: "Coverage", navigateTo: "Coverage" },
+		{ icon: ContactIcon, label: "Providers", navigateTo: "Providers" },
+		{ icon: BuildingIcon, label: "Hospitals", navigateTo: "Hospitals" },
+	],
+	[
+		{ icon: ShieldCheckIcon, label: "Compliance", navigateTo: "Compliance" },
+		{ icon: SettingsIcon, label: "System", navigateTo: "System" },
+	],
+];
+
+/** The account menu's props, as the app header takes them. */
+type AppHeaderAccountMenu = Omit<AccountMenuProps, "children" | "user">;
+
+/** The three workspaces (Left Nav Spec), switched from the account menu (PRD Account menu ACM-010). */
+type InterceptLiveWorkspace = "Clinical" | "Marketplace" | "Administration";
+
+// Each workspace's sidebar and its line in the account menu. Each lands on its first page (Monitoring, Requests,
+// Operations). Marketplace carries "Preview" while its Phase 2 scope is confirmed (Left Nav Spec).
+const workspaceNav: Record<InterceptLiveWorkspace, { description: string; tag?: string; groups: SidebarNavItem[][] }> = {
+	Clinical: { description: "Patients, alerts and messages", groups: clinicalGroups },
+	Marketplace: { description: "Open shifts and coverage requests", tag: "Preview", groups: marketplaceGroups },
+	Administration: { description: "Operations, coverage and providers", groups: administrationGroups },
+};
+
+const allWorkspaces = Object.keys(workspaceNav) as InterceptLiveWorkspace[];
+
+/** The workspace a page belongs to; none for a page outside the sidebars (Profile). */
+function workspaceOf(page: string) {
+	return allWorkspaces.find((workspace) =>
+		workspaceNav[workspace].groups.some((group) => group.some((item) => item.navigateTo === page)),
+	);
+}
+
+/** Where a workspace lands: its first page. */
+function landingPage(workspace: InterceptLiveWorkspace) {
+	return workspaceNav[workspace].groups.flat().find((item) => item.navigateTo)?.navigateTo as InterceptLivePage;
+}
 
 const navFooter: SidebarNavItem[] = [
 	{ icon: BookOpenTextIcon, label: "Documentation" },
 	{ icon: LifeBuoyIcon, label: "Support" },
 ];
 
-// Every Sidebar page, with the empty state it shows when a layout doesn't render it. Ask Intercept isn't a page (it
+// Every page (each workspace's Sidebar pages, then Profile), with the empty state it shows when a layout doesn't render it. Ask Intercept isn't a page (it
 // opens over the current one), so it has no entry.
 const emptyPages = {
-	Census: {
-		title: "No patients on the census",
-		description: "Patients admitted to your hospitals will appear here.",
-	},
-	// The Monitoring page is the Specification's Tele-Critical Care Clinical Surveillance module.
+	// The Monitoring page is the Specification's Tele-Critical Care Clinical Surveillance module: the patients in
+	// hospital now.
 	Monitoring: {
 		title: "No patients being monitored",
 		description: "Patients you're monitoring will appear here, with their live vitals and trends.",
 	},
-	"Alert Queue": {
-		title: "No alerts in the queue",
-		description: "New alerts for your patients will appear here, highest priority first.",
+	Inbox: {
+		title: "Nothing in your inbox",
+		description: "Alerts, notes and orders waiting on you will appear here.",
 	},
 	Messages: { title: "No messages yet", description: "Messages from your care team will appear here." },
+	Protocols: {
+		title: "No protocols running",
+		description: "Protocols tracking your patients, like Virtual Sepsis, will appear here.",
+	},
 	"Virtual Sepsis": {
 		title: "No patients on sepsis watch",
 		description: "Patients flagged by sepsis screening will appear here.",
 	},
-	Compliance: {
-		title: "No compliance reports yet",
-		description: "Protocol and documentation compliance for your units will appear here.",
+	// Everyone the program has treated, in hospital or not (the Census page until Nov 16, 2026).
+	Patients: {
+		title: "No patients yet",
+		description: "Every patient you've cared for will appear here, whether they're in hospital or not.",
+	},
+	Schedule: {
+		title: "No shifts scheduled",
+		description: "Your shifts across your hospitals will appear here.",
 	},
 	Analytics: {
 		title: "No analytics yet",
-		description: "Once your census has activity, you'll see trends and outcomes here.",
+		description: "Once your patients have activity, you'll see trends and outcomes here.",
 	},
-	Marketplace: {
-		title: "Nothing in the Marketplace yet",
-		description: "Clinical agents and integrations you can add to Intercept will appear here.",
+	// Marketplace (Intercept oversight).
+	Requests: {
+		title: "No coverage requests",
+		description: "Hospitals' requests for specialists and shift coverage will appear here.",
 	},
-	Administration: {
-		title: "Nothing to manage yet",
-		description: "Users, hospitals and settings for your organization will appear here.",
+	"Open shifts": { title: "No open shifts", description: "Shifts hospitals need covered will appear here." },
+	"Clinician network": {
+		title: "No clinicians yet",
+		description: "Clinicians who take Marketplace shifts will appear here, with their credentials.",
+	},
+	"Contracts & billing": {
+		title: "No contracts yet",
+		description: "Contracts, rates and invoices with hospitals will appear here.",
+	},
+	// Administration (Intercept).
+	Operations: {
+		title: "Nothing to show yet",
+		description: "Shifts, call queues and who's online will appear here.",
+	},
+	Coverage: { title: "No coverage scheduled", description: "Shift coverage across your hospitals will appear here." },
+	Providers: { title: "No providers yet", description: "Clinicians, their licenses and privileges will appear here." },
+	Hospitals: {
+		title: "No hospitals yet",
+		description: "Hospitals, their setup and integration status will appear here.",
+	},
+	Compliance: {
+		title: "Nothing to review",
+		description: "Audit logs, credential expiries and access reviews will appear here.",
+	},
+	System: { title: "No system settings yet", description: "Platform settings, integrations and roles will appear here." },
+	// The account menu's Profile & credentials, outside the sidebars.
+	Profile: {
+		title: "No credentials on file",
+		description: "Your licenses, hospital privileges and when each one expires will appear here.",
 	},
 } satisfies Record<string, { title: string; description: string }>;
 
 type InterceptLivePage = keyof typeof emptyPages;
 
-/** Every Sidebar page, in the Sidebar's order. */
+/** Every page, in the Sidebars' order (Clinical, Marketplace, Administration), then Profile. */
 const interceptLivePages = Object.keys(emptyPages) as InterceptLivePage[];
 
 /** "Wed Oct 21 · 4:54 PM" in the user's locale: weekday, month and day (without the locale's commas), then the time. */
@@ -237,8 +336,8 @@ type PatientDetailsView = {
 		| "team"
 		| "onOpenTeam"
 	>;
-	/** The patients of the list the patient was opened from, in its order, for the patient list (PRD PD-015). */
-	patientList?: PatientListEntry[];
+	/** The patients of the list the patient was opened from, in its order, for the census list (only those in hospital show; PRD PD-015). */
+	patientList?: CensusListEntry[];
 	/** The patient's tags ("Ventilated"…), for Ask Intercept Live's questions about them. */
 	tags?: string[];
 	/** Their avatar (photo, else initials in their tone), for Ask Intercept Live's patient chip. */
@@ -283,6 +382,16 @@ type InterceptLiveProps = {
 	shiftEndsAt?: string;
 	/** The clinicians on shift with the user. */
 	team: AppHeaderPerson[];
+	/**
+	 * The workspaces the user has, switched from the account menu (PRD Account menu ACM-010). All three by default: the
+	 * prototype shows the switcher for demos. With one, there's no switcher.
+	 */
+	workspaces?: InterceptLiveWorkspace[];
+	/**
+	 * The shift the user is on (hospitals, call queues), for the account menu's My shift and Start handoff; its end is
+	 * `shiftEndsAt`'s countdown. Without it, the user is off shift: no My shift, and Sign out doesn't ask to hand off.
+	 */
+	shift?: Omit<AccountMenuShift, "ends">;
 	/** Unread messages. From 1, the Sidebar's Messages item shows a flashing brand dot (`navAlerts.Messages` wins). */
 	unreadMessages: number;
 	/**
@@ -410,6 +519,8 @@ function InterceptLive({
 	user,
 	shiftEndsAt,
 	team,
+	workspaces = allWorkspaces,
+	shift,
 	unreadMessages,
 	pages,
 	defaultPage = "Monitoring",
@@ -430,6 +541,22 @@ function InterceptLive({
 	// Collapsed to the rail by default, and always at lg (1024) and below.
 	const { sidebarCollapsed, handleSidebarCollapsedChange } = useLayoutSidebar(true);
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
+	// The workspace on screen: the one the page belongs to, kept on a page outside the sidebars (Profile). Switching it
+	// in the account menu lands on its first page (PRD Account menu ACM-010).
+	const [workspace, setWorkspace] = React.useState<InterceptLiveWorkspace>(() => workspaceOf(defaultPage) ?? "Clinical");
+	React.useEffect(() => {
+		const pageWorkspace = workspaceOf(page);
+		if (pageWorkspace) setWorkspace(pageWorkspace);
+	}, [page]);
+	// The account menu's settings (PRD Account menu): the user's status, how Monitoring opens, and whether alerts ping.
+	const [status, setStatus] = React.useState<AccountMenuStatus>("available");
+	const [monitorView, setMonitorView] = React.useState<MonitorView>("full");
+	const [alertSounds, setAlertSounds] = React.useState(true);
+	const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
+	const openShortcuts = React.useCallback(() => setShortcutsOpen(true), []);
+	useShortcutsKey(openShortcuts);
+	const [signOutOpen, setSignOutOpen] = React.useState(false);
+	const [signedOut, setSignedOut] = React.useState(false);
 	// Patient details open over the page, which stays mounted underneath (PRD PD-001); the Sidebar shows no item active meanwhile.
 	const [openPatient, setOpenPatient] = React.useState<OpenPatient | null>(defaultPatient ?? null);
 	// The alert modal over everything. The last alert stays after it closes, so the modal can animate out.
@@ -463,7 +590,7 @@ function InterceptLive({
 	const [activeAlerts, setActiveAlerts] = React.useState(false);
 	// Closed alert toasts stay closed across pages, until a reload.
 	const [closedAlertToasts, setClosedAlertToasts] = React.useState<PagePreferences["closedAlertToasts"]>({});
-	const currentPage = page === "Census" ? "census" : page === "Monitoring" ? "monitoring" : undefined;
+	const currentPage = page === "Patients" ? "patients" : page === "Monitoring" ? "monitoring" : undefined;
 	const pagePreferences = React.useMemo<PagePreferences>(
 		() => ({
 			groupByHospital,
@@ -478,8 +605,10 @@ function InterceptLive({
 			closedAlertToasts,
 			onCloseAlertToast: (alertId, severity) =>
 				setClosedAlertToasts((current) => ({ ...current, [alertId]: severity })),
+			monitorView,
+			alertSounds,
 		}),
-		[groupByHospital, sortBy, scope, activeAlerts, currentPage, closedAlertToasts],
+		[groupByHospital, sortBy, scope, activeAlerts, currentPage, closedAlertToasts, monitorView, alertSounds],
 	);
 	// Where the current page's side panel renders (PagePanel).
 	const [panelSlot, setPanelSlot] = React.useState<HTMLDivElement | null>(null);
@@ -505,7 +634,7 @@ function InterceptLive({
 	const sidebarChatRef = React.useRef(() => toggleLeftPanel("chat"));
 	const groups = React.useMemo(
 		() =>
-			navGroups.map((group) =>
+			workspaceNav[workspace].groups.map((group) =>
 				group.map((item) =>
 					item.label === askInterceptLabel
 						? { ...item, onClick: () => sidebarChatRef.current() }
@@ -514,7 +643,7 @@ function InterceptLive({
 							: item,
 				),
 			),
-		[toggleLeftPanel, shownNavAlerts],
+		[toggleLeftPanel, shownNavAlerts, workspace],
 	);
 	// The Prototype menu: its shortcuts by group, a divider between groups, then "Reset prototype" after a divider (as in
 	// bethere-ucl).
@@ -812,6 +941,53 @@ function InterceptLive({
 		shiftEndsAt && currentMinute !== null
 			? { ...user, shiftEnds: formatShiftRemaining(shiftEndsAt, currentMinute) }
 			: user;
+	// Start handoff (PRD Account menu ACM-031): Ask Intercept Live, about no one in particular, asked "/handoff", which
+	// lists the clinician's patients, sickest first, to draft each one's I-PASS handoff.
+	const startHandoff = () => {
+		setChatPatient(null);
+		setChatOpener({ id: String(openerCount.current++), question: "/handoff" });
+		setChatOpen(true);
+	};
+	// The account menu the user's name opens (PRD Account menu).
+	const accountMenu: AppHeaderAccountMenu = {
+		status,
+		onStatusChange: setStatus,
+		workspaces: workspaces.map((id) => ({
+			id,
+			label: id,
+			description: workspaceNav[id].description,
+			tag: workspaceNav[id].tag,
+		})),
+		workspace,
+		onWorkspaceChange: (id) => {
+			const next = id as InterceptLiveWorkspace;
+			setOpenPatient(null);
+			setWorkspace(next);
+			setPage(landingPage(next));
+		},
+		shift: shift ? { ...shift, ends: shownUser.shiftEnds } : undefined,
+		onStartHandoff: startHandoff,
+		preferences: {
+			theme,
+			onThemeChange: (next) => {
+				if (next !== theme) toggleTheme();
+			},
+			monitoringView: monitorView,
+			onMonitoringViewChange: setMonitorView,
+			alertSounds,
+			onAlertSoundsChange: setAlertSounds,
+		},
+		onOpenProfile: () => {
+			setOpenPatient(null);
+			setPage("Profile");
+		},
+		onOpenShortcuts: openShortcuts,
+		shortcutsKey,
+		// On shift, it asks to hand off first (ACM-060).
+		onSignOut: () => (shift ? setSignOutOpen(true) : setSignedOut(true)),
+	};
+
+	if (signedOut) return <SignedOutScreen onSignIn={() => setSignedOut(false)} />;
 
 	return (
 		<LocationStateProvider value={locationStore}>
@@ -865,7 +1041,7 @@ function InterceptLive({
 	
 								{/* On a patient's page: the list they were opened from, else the page's, to switch patient (PRD PD-015). */}
 								{patientView?.patientList && openPatient ? (
-									<PatientListPanel
+									<CensusListPanel
 										open={patientListOpen}
 										onOpenChange={(open) => setLeftPanel(open ? "patients" : null)}
 										carded={sidebarCollapsed}
@@ -933,6 +1109,7 @@ function InterceptLive({
 										<AppHeader
 											clock={shownClock}
 											user={shownUser}
+											accountMenu={accountMenu}
 											team={team}
 											compact={headerCompact}
 											theme={theme}
@@ -999,6 +1176,13 @@ function InterceptLive({
 							{/* The app's one toast region: alert toasts and any other message. Hidden while the alert modal or a patient's
 							    page is open, so a toast never covers them, and while the live feed is open, which already lists every
 							    alert; they come back, with any that arrived meanwhile, when it closes. */}
+							<KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+							<SignOutDialog
+								open={signOutOpen}
+								onOpenChange={setSignOutOpen}
+								onStartHandoff={startHandoff}
+								onSignOut={() => setSignedOut(true)}
+							/>
 							<Toaster hidden={Boolean((openAlert?.open && alertView) || patientView || panelsHidingToasts > 0)} />
 						</PatientHeaderActionsProvider>
 					</PageHidesToastsProvider>

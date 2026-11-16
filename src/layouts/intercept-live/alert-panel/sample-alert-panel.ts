@@ -1,4 +1,4 @@
-import type { CensusPatient } from "../census/census-panel";
+import type { CensusPatient } from "../patients/patients-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import {
 	sampleMonitoringPatients,

@@ -5,11 +5,11 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
-import { Census } from "../census/census";
-import { samplePatients, sampleScenario1ResolvedCensus } from "../census/sample-census";
+import { Patients } from "../patients/patients";
+import { samplePatients, sampleScenario1ResolvedCensus } from "../sample-data/sample-census";
 import { Monitoring } from "../monitoring/monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
-import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
 import { sortOrderById } from "../shared/patient-panel";
 import { sampleScenario1Activity, sampleScenario1CarePlan } from "./sample-patient-activity";
@@ -24,17 +24,17 @@ const censusOrder = [...samplePatients].sort(sortOrderById("alert").compare).map
 
 const meta = {
 	title: "Layouts/Intercept Live/Patient details",
-	component: Census,
+	component: Patients,
 	parameters: {
 		layout: "fullscreen",
 	},
 	// Opened over the Census, with live monitors (`useLivePatients`).
 	render: function Render(args) {
-		return <Census {...args} monitoringPatients={useLivePatients(args.monitoringPatients ?? [])} />;
+		return <Patients {...args} monitoringPatients={useLivePatients(args.monitoringPatients ?? [])} />;
 	},
 	args: {
 		// Opened from the Census (the app opens on Monitoring).
-		defaultPage: "Census",
+		defaultPage: "Patients",
 		hospitals: sampleHospitals,
 		patients: samplePatients,
 		monitoringPatients: sampleMonitoringPatients,
@@ -49,6 +49,7 @@ const meta = {
 		user: sampleUser,
 		askIntercept: sampleAskIntercept,
 		shiftEndsAt: sampleShiftEndsAt,
+		shift: sampleShift,
 		team: sampleTeam,
 		unreadMessages: 3,
 		defaultPatient: { id: "p1", list: censusOrder },
@@ -336,7 +337,7 @@ export const BackToCensus: Story = {
 		const canvas = within(canvasElement);
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		const breadcrumb = within(canvas.getByRole("navigation", { name: "Breadcrumb" }));
-		await userEvent.click(breadcrumb.getByRole("button", { name: "Census" }));
+		await userEvent.click(breadcrumb.getByRole("button", { name: "Patients" }));
 		// The Census glides back in.
 		const title = await canvas.findByRole("heading", { level: 1, name: new RegExp(`${samplePatients.length} patients`) });
 		await waitFor(() => expect(title).toBeVisible());

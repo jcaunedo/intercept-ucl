@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 15, 2026
+Last updated: Nov 16, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Patient details page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 15, 2026
+**Last updated:** November 16, 2026
 
 ---
 
@@ -279,7 +279,12 @@ Previous / next buttons step through the list the clinician came from (the Censu
 - Never navigate to another patient because of stale or recycled bed information (PC-100).
 - ✅ **Always there (Nov 3, 2026, user's call):** opened from somewhere with no list of its own (an alert, a toast, the live feed, the chat), the patient gets the list of the page under them, in its order and filters as it shows then; a patient that list leaves out comes first. It was hidden before.
 - ✅ **Resolved (Oct 28, 2026, prototype):** the switcher is a patient list, opened from a list button at the left of the app header (intercept.ds `app-header` Patient Context). It shows the source list in its order, the open patient marked; picking one switches. Previous / next buttons and the ↑/↓, J/K shortcuts aren't built yet.
-- ✅ **Resolved:** the list panel is titled **Census** (~~Patients~~), whichever page it comes from; the line under the title still names the source page and the position ("From the Monitoring, in its order · 4 of 26").
+- ✅ **Resolved:** the list panel is titled **Census** (~~Patients~~), ~~whichever page it comes from~~; the line under the title still names the source page and the position (~~"From the Monitoring, in its order · 4 of 26"~~).
+- ✅ **Resolved:** opened from Monitoring, the list is the census (the patients in hospital now), so it's titled **Census**, and the line reads "From Monitoring, in its order · 4 of 26".
+- ~~⚠️ **Decision needed:** whether a patient opened from Patients (everyone treated, in hospital or not; PRD Patients) gets this list at all, and what it's called there. Until then it keeps the Census title.~~ ✅ **Resolved:** the list only shows the census, from any page: the **census list**, titled **Census**. Opened from Patients, it keeps Patients' order and leaves out anyone no longer in hospital ("From Patients, in its order · 12 of 26").
+- ✅ **Resolved:** the list is a UCL component, **CensusList** (`data-display/census-list`), inside the shell's side panel.
+- ✅ **Resolved:** the list has its own PRD, **PRD Census list** (`prds/census-list.md`, CNL-): what it shows, its title, position line, order and states. This section keeps Previous / next, which step through that list (CNL-040).
+- ~~⚠️ **Gap:** the prototype has no patients out of hospital yet (PRD Patients CEN-OD-09), so nothing is left out today; and Previous / next, when built, should step through the same census list.~~ Moved to PRD Census list (CNL-001, CNL-040).
 
 ### PD-016 — Sticky header
 

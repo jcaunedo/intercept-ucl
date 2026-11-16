@@ -1,4 +1,4 @@
-import { samplePatients } from "../../census/sample-census";
+import { samplePatients } from "../../sample-data/sample-census";
 import { sampleEhrByHospital } from "../../sample-data/sample-ehr";
 import type { PatientRecord } from "../patient-details";
 import { samplePatientBaseRecords } from "../sample-patient-records";

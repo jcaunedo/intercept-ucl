@@ -6,9 +6,9 @@ import { useLivePatients } from "@/components/data-display/patient-monitor/use-l
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
-import { samplePatients } from "../census/sample-census";
+import { samplePatients } from "../sample-data/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
-import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
@@ -46,6 +46,7 @@ const meta = {
 		user: sampleUser,
 		askIntercept: sampleAskIntercept,
 		shiftEndsAt: sampleShiftEndsAt,
+		shift: sampleShift,
 		team: sampleTeam,
 		unreadMessages: 3,
 		onOpenPatient: fn(),
@@ -209,8 +210,8 @@ export const Scenario1HeartFailure: Story = {
 		await expect(events().queryByText(/^Video consult ended/)).toBeNull();
 		// Opened from the alert, her page still has the patient list: Monitoring's, as it shows now.
 		await userEvent.click(canvas.getByRole("button", { name: "Patient list" }));
-		const list = within(await canvas.findByRole("complementary", { name: "Patients" }));
-		await expect(list.getByText(/^From the Monitoring, in its order · \d+ of \d+$/)).toBeInTheDocument();
+		const list = within(await canvas.findByRole("complementary", { name: "Census" }));
+		await expect(list.getByText(/^From Monitoring, in its order · \d+ of \d+$/)).toBeInTheDocument();
 		// Ended on her page (the panel's ×, as the header's), the call is logged as ended, against her alert.
 		await userEvent.click(pageCall.getByRole("button", { name: "Close video consult" }));
 		await expect(await events().findByText(/^Video consult ended/)).toBeInTheDocument();
@@ -467,20 +468,24 @@ export const OutsideLimits: Story = {
 
 /**
  * The monitor-view buttons (Full is the default): Condensed view shows the ECG strip over the four numerics on every
- * card; Minimal view is that alone, without the NEWS2 row or the tags, which close as it's picked; Full view brings back
- * the four waveform lanes, the score and the tags.
+ * card; Minimal view swaps every card for the Patients page's (no monitor, the score and tags kept) and turns Card
+ * monitor off; Full view brings back the four waveform lanes.
  */
 export const MonitorViews: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
 		const expandedCards = () => canvasElement.querySelectorAll("[data-slot='patient-monitoring-card'][data-expanded]");
+		const monitoringCards = () => canvasElement.querySelectorAll("[data-slot='patient-monitoring-card']");
+		const censusCards = () => canvasElement.querySelectorAll("[data-slot='patient-census-card']");
 		const scores = () => canvas.queryAllByText(/^NEWS2: /);
 		await expect(expandedCards()).toHaveLength(sampleMonitoringPatients.length);
 		await userEvent.click(canvas.getByRole("button", { name: "Condensed view" }));
 		await waitFor(() => expect(expandedCards()).toHaveLength(0));
 		await expect(scores().length).toBeGreaterThan(0);
 		await userEvent.click(canvas.getByRole("button", { name: "Minimal view" }));
-		await waitFor(() => expect(scores()).toHaveLength(0));
-		await expect(expandedCards()).toHaveLength(0);
+		await waitFor(() => expect(censusCards()).toHaveLength(sampleMonitoringPatients.length));
+		await expect(monitoringCards()).toHaveLength(0);
+		await expect(scores().length).toBeGreaterThan(0);
+		await expect(canvas.getByRole("group", { name: "Card monitor" }).querySelector("button:disabled")).not.toBeNull();
 		await userEvent.click(canvas.getByRole("button", { name: "Full view" }));
 		await waitFor(() => expect(expandedCards()).toHaveLength(sampleMonitoringPatients.length));
 		await waitFor(() => expect(scores().length).toBeGreaterThan(0));

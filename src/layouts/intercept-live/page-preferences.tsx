@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import type { TriageAlertSeverity } from "./monitoring/triage-queue";
+import type { MonitorView } from "./monitoring/view-controls";
 import type { PatientScope, SortOrderId } from "./shared/patient-panel";
 
 // View choices the user makes on one page that hold across pages: the shell keeps them, so switching from the Census to
@@ -31,10 +32,14 @@ type PagePreferences = {
 	 */
 	closedAlertToasts: Readonly<Record<string, TriageAlertSeverity>>;
 	onCloseAlertToast: (alertId: string, severity: TriageAlertSeverity) => void;
+	/** How Monitoring opens (the account menu's Preferences, PRD Account menu ACM-040): Full, Condensed or Minimal view. */
+	monitorView?: MonitorView;
+	/** Whether new alerts ping (the account menu's Preferences, ACM-040). On by default. */
+	alertSounds?: boolean;
 };
 
 /** The pages with a Sort by menu and a My patients chip. */
-type SortPage = "census" | "monitoring";
+type SortPage = "patients" | "monitoring";
 
 const PagePreferencesContext = React.createContext<PagePreferences | null>(null);
 

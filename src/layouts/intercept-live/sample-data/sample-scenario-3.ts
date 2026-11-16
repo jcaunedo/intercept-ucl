@@ -6,7 +6,7 @@ import {
 	sampleScenario3Tasks,
 } from "../alert-panel/sample-alert-panel";
 import type { BundleElement, FluidBolus } from "../alert-panel/sepsis-bundle";
-import { sampleScenario3Census, sampleScenario3CensusAt } from "../census/sample-census";
+import { sampleScenario3Census, sampleScenario3CensusAt } from "./sample-census";
 import { sampleScenario3Monitoring, sampleScenario3MonitoringAt } from "../monitoring/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleScenario3BaseRecord, sampleScenario3RecordAt } from "../patient-details/sample-patient-records";

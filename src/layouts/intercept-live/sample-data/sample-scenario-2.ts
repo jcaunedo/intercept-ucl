@@ -8,7 +8,7 @@ import {
 import {
   sampleScenario2Census,
   sampleScenario2ResolvedCensus,
-} from "../census/sample-census";
+} from "./sample-census";
 import {
   sampleScenario2Monitoring,
   sampleScenario2ResolvedMonitoring,

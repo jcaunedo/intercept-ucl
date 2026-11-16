@@ -8,17 +8,17 @@ import { useLivePatients } from "@/components/data-display/patient-monitor/use-l
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
-import { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
-import { Census } from "./census";
-import { samplePatients } from "./sample-census";
+import { Patients } from "./patients";
+import { samplePatients } from "../sample-data/sample-census";
 
 const meta = {
-	title: "Layouts/Intercept Live/Census",
-	component: Census,
+	title: "Layouts/Intercept Live/Patients",
+	component: Patients,
 	parameters: {
 		layout: "fullscreen",
 	},
@@ -31,7 +31,7 @@ const meta = {
 		const monitoringPatients = useLivePatients(args.monitoringPatients ?? []);
 		const live = useLiveAskIntercept(args.alerts ?? [], monitoringPatients, args.onAlertAction);
 		return (
-			<Census
+			<Patients
 				{...args}
 				monitoringPatients={monitoringPatients}
 				askIntercept={live.askIntercept}
@@ -42,7 +42,7 @@ const meta = {
 	},
 	args: {
 		// The app opens on Monitoring; these stories show the Census page.
-		defaultPage: "Census",
+		defaultPage: "Patients",
 		hospitals: sampleHospitals,
 		patients: samplePatients,
 		monitoringPatients: sampleMonitoringPatients,
@@ -53,6 +53,7 @@ const meta = {
 		user: sampleUser,
 		askIntercept: sampleAskIntercept,
 		shiftEndsAt: sampleShiftEndsAt,
+		shift: sampleShift,
 		team: sampleTeam,
 		unreadMessages: 3,
 		onOpenPatient: fn(),
@@ -323,7 +324,7 @@ export const GroupingAcrossPages: Story = {
 		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
 		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
 		await waitFor(() => expect(canvas.getByRole("switch", { name: "Group by hospital" })).toBeChecked());
-		await userEvent.click(canvas.getByRole("button", { name: "Census" }));
+		await userEvent.click(canvas.getByRole("button", { name: "Patients" }));
 		await waitFor(() => expect(canvas.getByRole("heading", { level: 1, name: /across/ })).toBeInTheDocument());
 		await expect(canvas.getByRole("switch", { name: "Group by hospital" })).toBeChecked();
 	},
@@ -495,9 +496,9 @@ export const NoMatches: Story = {
 	},
 };
 
-/** A page that isn't built yet (here Alert Queue): its title and an empty state. Every Sidebar page but Census has one. */
+/** A page that isn't built yet (here Inbox): its title and an empty state. Every Sidebar page but Patients has one. */
 export const EmptyPage: Story = {
-	args: { defaultPage: "Alert Queue" },
+	args: { defaultPage: "Inbox" },
 };
 
 /** Plays the sample live feed into the Census: its alerts and the Monitoring page's values. */
@@ -523,7 +524,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 	} = useSampleLiveFeed();
 	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
 	const location = usePrototypeLocation(interceptLivePages, {
-		page: props.defaultPage ?? "Census",
+		page: props.defaultPage ?? "Patients",
 		patient: props.defaultPatient,
 	});
 	const monitoringPatients = useLivePatients(monitoring);
@@ -546,7 +547,7 @@ function LiveCensus(props: React.ComponentProps<typeof Census>) {
 		{ censusPatients, patientRecords },
 	);
 	return (
-		<Census
+		<Patients
 			{...props}
 			patients={withFeedAlerts(censusPatients, alerts)}
 			patientRecords={patientRecords}

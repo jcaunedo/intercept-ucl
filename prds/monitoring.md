@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 11, 2026
+Last updated: Nov 16, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 11, 2026
+**Last updated:** November 16, 2026
 
 ---
 
@@ -27,9 +27,24 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 
 Monitoring is where an on-shift clinician watches their patient panel continuously, evaluates alerts, looks in on patients through the bedside camera, and decides when to escalate to intervention. The System Specification describes it as "a sustained workflow loop that runs throughout the shift, distinct from the discrete intervention loop that follows it" (Spec §5.2).
 
-The Census is where the clinician **manages** their patients, with a general picture of how each is doing; Monitoring is where they **monitor** their clinical status in real time (PRD Census §1, decision Nov 1, 2026; the Census read "who is on my census and who needs attention" before). Monitoring answers *what is happening to these patients right now, and do I need to act*. Census is a roster of compact cards; Monitoring is a live monitoring surface built from expanded cards, trends and a triage queue.
+The Census is where the clinician **manages** their patients, with a general picture of how each is doing; Monitoring is where they **monitor** their clinical status in real time (PRD Patients §1, the PRD Census until Nov 16, 2026; decision Nov 1, 2026; the Census read "who is on my census and who needs attention" before). Monitoring answers *what is happening to these patients right now, and do I need to act*. Census is a roster of compact cards; Monitoring is a live monitoring surface built from expanded cards, trends and a triage queue.
 
 Monitoring is not the patient chart and not the intervention workflow. It shows enough to notice, judge and escalate; ordering, documenting and messaging happen in their own modules, opened from here without losing context (Spec §9.1, Principle 11).
+
+✅ **Resolved:** the Census page became the Sidebar's **Patients**, every patient treated, in hospital or not (PRD Patients). **The census**, the patients in hospital now, is Monitoring's ("The census" below).
+
+### The census
+
+The census is the set of patients in hospital now that the clinician is responsible for, across the hospitals they cover: admitted, under observation, in the ED or boarding. Monitoring shows it, and it's the page a shift lands on (PRD Sidebar NAV-020). Everyone treated before, discharged or transferred out, is on **Patients** (PRD Patients CEN-001).
+
+| | Monitoring (the census) | Patients |
+|---|---|---|
+| **Who** | In hospital now, across the clinician's hospitals | Everyone the program has treated, in hospital or not |
+| **How** | Live: vitals, waveforms, alerts as they fire | A general picture, current but not live |
+| **When** | Through the shift, from its start | Finding a patient, reviewing a group, looking back |
+
+- ⚠️ **Decision needed:** which of Patients' census tasks move here now that Monitoring is the census: the start-of-shift scan, roster changes (admissions, transfers, discharges) and My patients (PRD Patients CEN-OD-10).
+- ℹ️ Who among the census is on the clinician's panel (all of it, a watchlist, the shift assignment) is still MON-OD-01 / CEN-OD-02.
 
 ### 1.1 Product objectives
 
@@ -162,7 +177,7 @@ The panel shows the patients the clinician is responsible for on this shift: by 
 
 A filter on live status would also add and remove cards as readings change, which MON-013 rules out.
 
-ℹ️ Since Nov 1, 2026, Outside limits and Data gap are Monitoring's alone: the Census dropped its Out of range and Data gap quick views and its Vitals out of range filters, because they're live monitoring data (PRD Census CEN-OD-07).
+ℹ️ Since Nov 1, 2026, Outside limits and Data gap are Monitoring's alone: the Census dropped its Out of range and Data gap quick views and its Vitals out of range filters, because they're live monitoring data (PRD Patients CEN-OD-07).
 
 ℹ️ Since Nov 1, 2026 the Filters panel floats over the page on a scrim, 400px, with **Done** to close it (Apply until Nov 3, 2026) (Intercept-Live Filter example `205:5447`), instead of sitting in the live feed's place.
 
@@ -194,7 +209,7 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 
 ### MON-013 — Ordering
 
-✅ **Decision (Nov 1, 2026, product):** ~~Recently resolved is Monitoring's alone (alert history); Family messages is on both pages (the Census's as a patient-management task).~~ Both sorts left Monitoring on Nov 10, 2026 (below); Family messages stays on the Census. A **Rising score** chip (after Active alerts) and a **Not reporting** chip (last) join Active alerts and Outside limits. Not reporting: patients with a primary vital not reporting (the card's "--"), held when pressed like Outside limits; data gaps are live monitoring data (PRD Census CEN-OD-07).
+✅ **Decision (Nov 1, 2026, product):** ~~Recently resolved is Monitoring's alone (alert history); Family messages is on both pages (the Census's as a patient-management task).~~ Both sorts left Monitoring on Nov 10, 2026 (below); Family messages stays on the Census. A **Rising score** chip (after Active alerts) and a **Not reporting** chip (last) join Active alerts and Outside limits. Not reporting: patients with a primary vital not reporting (the card's "--"), held when pressed like Outside limits; data gaps are live monitoring data (PRD Patients CEN-OD-07).
 
 ✅ **Decision (Nov 10, 2026, user's call):** Sort by offers **Patient name** (the default) and **Recently viewed**, nothing else. Alerts, Recently resolved and Family messages are gone. Who to see first is the **Active alerts** chip's order (severity, acuity band, 4 h rise, time waiting), whatever the sort. MON-AC-17 is retired with the Alerts sort.
 
@@ -231,7 +246,7 @@ Two controls at the start of the toolbar's actions, before Density, Sort by and 
 | **Density** | A segmented control with an icon for each option, named by a tooltip (and for screen readers): **Comfortable** (default), **Compact**, **List** (MON-012). One option is pressed at a time. Switching reflows the panel in place; the order and the scope stay the same. |
 | **Card monitor** | A segmented control like Density, with icon and label (the labels only from 1600px of page width, icons alone with tooltips below, so the filter bar stays on one row; Nov 3, 2026), just left of it: **ECG strip** (default) or **1 h trends**, which puts a sparkline under each numeric instead of the waveform, and in full monitors draws each lane's last hour instead of its waveform (MON-014, MON-OD-12). Disabled in List. Moved out of the View menu on Oct 27, 2026. |
 | **Card details** | ✅ **Removed (Oct 31, 2026, product):** the cards always show the acuity score and its 24 h change over the monitor and the tags under it ("No tags" when there are none). ~~A menu with checkboxes, NEWS2 & 24 h change and Tags, that showed or hid them on every card (Oct 30, 2026).~~ |
-| **Monitor view** | Three icon buttons with tooltips, **Full view** (default since Oct 30, 2026) / **Condensed view** / **Minimal view** (Oct 31, 2026; "Full monitors" / "Condensed monitors" before), between Card monitor and Density: all four lanes on every card, every card's monitor condensed, or the condensed monitor alone without the NEWS2 row and the tags (Comfortable and Compact). The only way to switch: the cards have no expand button of their own since Oct 30, 2026. Disabled in List. Replaced the View menu on Oct 27, 2026. |
+| **Monitor view** | Three icon buttons with tooltips, **Full view** (default since Oct 30, 2026) / **Condensed view** / **Minimal view** (Oct 31, 2026; "Full monitors" / "Condensed monitors" before), between Card monitor and Density: all four lanes on every card, every card's monitor condensed, or the Patients page's card, with no monitor (Comfortable and Compact). In Minimal view, Card monitor (ECG strip / 1 h trends) is disabled: there's no monitor to plot. ✅ **Resolved:** Minimal view shows the Patients page's card (PatientCensusCard: identity, location, NEWS2 line and tags), keeping the alert's badge and ring, unlike on Patients (~~the condensed monitor alone without the NEWS2 row and the tags~~). The only way to switch: the cards have no expand button of their own since Oct 30, 2026. Disabled in List. Replaced the View menu on Oct 27, 2026. |
 
 - Neither control appears on the Census: densities and monitors are Monitoring's own (filters in context, MON-010).
 - Values outside their limits aren't a View option: the card always marks them (MON-014). The exploration's "Mark values outside limits" switch was dropped when that became the default.

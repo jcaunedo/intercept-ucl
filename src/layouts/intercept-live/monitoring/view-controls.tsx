@@ -167,10 +167,13 @@ function MonitorPlotToggle({
 	value,
 	onValueChange,
 	density,
+	monitorView,
 }: {
 	value: MonitorPlot;
 	onValueChange: (value: MonitorPlot) => void;
 	density: PanelDensity;
+	/** Minimal view's cards have no monitor, so there's nothing to plot. */
+	monitorView?: MonitorView;
 }) {
 	return (
 		<SegmentedToggle
@@ -178,7 +181,7 @@ function MonitorPlotToggle({
 			options={monitorPlots}
 			value={value}
 			onValueChange={onValueChange}
-			disabled={density === "list"}
+			disabled={density === "list" || monitorView === "minimal"}
 			iconOnly='narrow'
 		/>
 	);
@@ -187,7 +190,8 @@ function MonitorPlotToggle({
 /** Every card's monitor full or condensed. */
 /**
  * How much each card shows: `full` (the four-lane monitor, the score and tags), `condensed` (the ECG strip and numerics,
- * the score and tags) or `minimal` (the condensed monitor alone: no score, no tags; Oct 31, 2026, user's call).
+ * the score and tags) or `minimal` (the Patients page's card, PatientCensusCard: no monitor; Nov 16, 2026, user's call;
+ * the condensed monitor alone, without score or tags, from Oct 31, 2026).
  */
 type MonitorView = "full" | "condensed" | "minimal";
 

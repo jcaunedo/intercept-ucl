@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 11, 2026
+Last updated: Nov 16, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines proposed presentation behavior, states and acceptance criteria 
 **Component:** Patient card  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 11, 2026
+**Last updated:** November 16, 2026
 
 ---
 
@@ -115,6 +115,10 @@ The alert is back on the Census's cards as a badge: the bell in the severity's c
 The card shows the patient's avatar before the name: their photo, or their initials in a color of their own, the same avatar as on their Patient details header.
 
 ℹ️ Whether the avatar may show a photo, and where, is open: see PC-016.
+
+Monitoring's **Minimal view** shows this card too (MON-015), keeping the alert: the badge and the ring in the severity's color, pulsing until the alert is addressed, and the badge opens the alert. The Patients page still passes no alert.
+
+- ✅ **Resolved:** Monitoring's Minimal view uses the compact card instead of a monitoring card without its monitor.
 
 - Access to patient detail (the whole card is clickable, PC-100)
 

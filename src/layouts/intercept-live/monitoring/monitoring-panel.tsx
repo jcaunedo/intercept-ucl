@@ -12,6 +12,7 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 
+import { PatientCensusCard } from "@/components/cards/patient-census-card";
 import { PatientMonitoringCard, type PatientMonitoringCardProps } from "@/components/cards/patient-monitoring-card";
 import {
 	monitorAlarm,
@@ -422,8 +423,12 @@ function MonitoringPanel({
 	// The board fades its columns in when the user switches to it, not when the page opens on it.
 	const boardSwitched = useChangedSinceMount(board);
 	const [plot, setPlot] = React.useState<MonitorPlot>("waveform");
-	// Full, condensed or minimal view, for every card at once (the cards have no toggle of their own). Full by default.
-	const [monitorView, setMonitorView] = React.useState<MonitorView>("full");
+	// Full, condensed or minimal view, for every card at once (the cards have no toggle of their own). It opens in the
+	// user's choice from the account menu's Preferences (PRD Account menu ACM-040), Full without one, and follows it
+	// when it changes.
+	const preferredMonitorView = usePagePreferences()?.monitorView ?? "full";
+	const [monitorView, setMonitorView] = React.useState<MonitorView>(preferredMonitorView);
+	React.useEffect(() => setMonitorView(preferredMonitorView), [preferredMonitorView]);
 	// The panel right of the canvas: the live feed (the triage queue) or Filters, one at a time, as on the Census.
 	// The live feed sits beside the canvas; Filters floats over everything (a Sheet), so the two no longer take turns.
 	// Both in the address (`feed`, `filters`), so a shared link opens them.
@@ -627,35 +632,68 @@ function MonitoringPanel({
 		trajectory,
 		tags,
 		...card
-	}: PanelMonitoringPatient) => (
-		// The avatar, as on the Census's cards and the Patient details header: the photo, or the initials in the patient's
-		// color (`shared/patient-avatar.ts`).
-		<PatientMonitoringCard
-			{...card}
-			initials={patientInitials(card)}
-			tone={tones.get(id) ?? avatarTone(id)}
-			// The score and tags show except in Minimal view (Oct 31, 2026, user's call), where the card is the condensed
-			// monitor alone; a patient without tags says "No tags", so the cards line up.
-			acuity={monitorView === "minimal" ? undefined : acuity}
-			trajectory={monitorView === "minimal" ? undefined : trajectory}
-			// Fall risk's button to the fall prevention pathway comes from the app's TagsPopoverActionsProvider.
-			tags={monitorView === "minimal" ? undefined : (tags ?? [])}
-			alert={cardAlert(id)}
-			size={density === "compact" ? "sm" : "md"}
-			plot={plot}
-			expanded={monitorView === "full"}
-			moreActions={patientCardActions(navigation, {
-				id,
-				name: `${card.lastName}, ${card.firstName}`,
-				tags,
-				showsAlert: Boolean(cardAlert(id)),
-				alertCount: cardAlert(id)?.count,
-			})}
-			onOpen={canOpenPatient ? () => openPatient(id) : undefined}
-			// The alert bar opens the alert; only inside the shell, which holds where it opens.
-			onOpenAlert={navigation ? () => navigation.openAlert(id) : undefined}
-		/>
-	);
+	}: PanelMonitoringPatient) => {
+		const moreActions = patientCardActions(navigation, {
+			id,
+			name: `${card.lastName}, ${card.firstName}`,
+			tags,
+			showsAlert: Boolean(cardAlert(id)),
+			alertCount: cardAlert(id)?.count,
+		});
+		const onOpen = canOpenPatient ? () => openPatient(id) : undefined;
+		// The alert opens the alert; only inside the shell, which holds where it opens.
+		const onOpenAlert = navigation ? () => navigation.openAlert(id) : undefined;
+		// Minimal view is the Patients page's card (Nov 16, 2026, user's call; was the condensed monitor alone): identity,
+		// location, score and tags, no monitor. Unlike on Patients, it keeps the alert (its badge and ring), since
+		// Monitoring is where alerts are watched.
+		if (monitorView === "minimal") {
+			const {
+				vitals: _vitals,
+				limits: _limits,
+				alarmPriorities: _alarmPriorities,
+				acknowledgedAlarms: _acknowledgedAlarms,
+				trends: _trends,
+				unreadMessages: _unreadMessages,
+				...censusCard
+			} = card;
+			return (
+				<PatientCensusCard
+					{...censusCard}
+					initials={patientInitials(card)}
+					tone={tones.get(id) ?? avatarTone(id)}
+					acuity={acuity}
+					trajectory={trajectory}
+					tags={tags}
+					alert={cardAlert(id)}
+					size={density === "compact" ? "sm" : "md"}
+					moreActions={moreActions}
+					onOpen={onOpen}
+					onOpenAlert={onOpenAlert}
+				/>
+			);
+		}
+		return (
+			// The avatar, as on the Patients page's cards and the Patient details header: the photo, or the initials in the
+			// patient's color (`shared/patient-avatar.ts`).
+			<PatientMonitoringCard
+				{...card}
+				initials={patientInitials(card)}
+				tone={tones.get(id) ?? avatarTone(id)}
+				// A patient without tags says "No tags", so the cards line up.
+				acuity={acuity}
+				trajectory={trajectory}
+				// Fall risk's button to the fall prevention pathway comes from the app's TagsPopoverActionsProvider.
+				tags={tags ?? []}
+				alert={cardAlert(id)}
+				size={density === "compact" ? "sm" : "md"}
+				plot={plot}
+				expanded={monitorView === "full"}
+				moreActions={moreActions}
+				onOpen={onOpen}
+				onOpenAlert={onOpenAlert}
+			/>
+		);
+	};
 
 	const changeFilters = (next: PatientFilters) => setFilters(next, rawFilterGroups, patients);
 
@@ -741,7 +779,7 @@ function MonitoringPanel({
 							{/* View controls (PRD MON-015): card monitor, monitor view, then density, the switches of one view, and the
 							    cards' details; then Sort and Filters, as on the Census. */}
 							<FilterBarControls>
-								<MonitorPlotToggle value={plot} onValueChange={setPlot} density={density} />
+								<MonitorPlotToggle value={plot} onValueChange={setPlot} density={density} monitorView={monitorView} />
 								<MonitorViewToggle
 									density={density}
 									value={monitorView}

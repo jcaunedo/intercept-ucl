@@ -19,7 +19,21 @@ import {
 import { motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
-import { Avatar, AvatarFallback, AvatarGroup, AvatarImage, type AvatarFallbackProps } from "@/components/data-display/avatar";
+import {
+	AccountMenu,
+	accountMenuStatusDotClassName,
+	accountMenuStatusLabels,
+	type AccountMenuProps,
+	type AccountMenuStatus,
+} from "@/components/navigation/account-menu";
+import {
+	Avatar,
+	AvatarBadge,
+	AvatarFallback,
+	AvatarGroup,
+	AvatarImage,
+	type AvatarFallbackProps,
+} from "@/components/data-display/avatar";
 import { Counter } from "@/components/data-display/counter";
 import {
 	Breadcrumb,
@@ -62,6 +76,8 @@ type AppHeaderPerson = {
 type AppHeaderUser = AppHeaderPerson & {
 	/** Preformatted, e.g. "Shift ends on 3:45". */
 	shiftEnds: string;
+	/** What they do, e.g. "Intensivist": shown in the account menu, under their name. */
+	role?: string;
 };
 
 /** An item in the patient variant's "…" menu. */
@@ -89,6 +105,11 @@ type AppHeaderDefaultProps = AppHeaderCommonProps & {
 	team: AppHeaderPerson[];
 	/** The signed-in user. */
 	user: AppHeaderUser;
+	/**
+	 * The account menu (AccountMenu) the user's name opens: status, workspaces, shift, preferences, sign out. Its `user`
+	 * comes from `user`. Without it, the name calls `onOpenUserMenu`.
+	 */
+	accountMenu?: Omit<AccountMenuProps, "children" | "user">;
 	onOpenUserMenu?: () => void;
 	/**
 	 * @deprecated The default header no longer has a Messages button (Nov 6, 2026): unread messages show as a dot on the
@@ -270,11 +291,13 @@ function ThemeIcon({ theme }: { theme: "light" | "dark" }) {
 	);
 }
 
-function PersonAvatar({ person }: { person: AppHeaderPerson }) {
+/** `status`: the user's, as the avatar's dot (intercept.ds avatar "Show Dot"). */
+function PersonAvatar({ person, status }: { person: AppHeaderPerson; status?: AccountMenuStatus }) {
 	return (
 		<Avatar size='md'>
 			{person.src ? <AvatarImage src={person.src} alt='' /> : null}
 			<AvatarFallback tone={person.tone}>{person.initials}</AvatarFallback>
+			{status ? <AvatarBadge className={accountMenuStatusDotClassName[status]} /> : null}
 		</Avatar>
 	);
 }
@@ -439,14 +462,39 @@ function TeamMenu({
 	);
 }
 
-/** The signed-in user, with their shift, opening their menu. */
-function AccountMenu({ user, onOpenUserMenu }: Pick<AppHeaderDefaultProps, "user" | "onOpenUserMenu">) {
+/** The signed-in user, with their shift, opening their account menu (or calling `onOpenUserMenu` without one). */
+function UserMenu({
+	user,
+	accountMenu,
+	onOpenUserMenu,
+}: Pick<AppHeaderDefaultProps, "user" | "accountMenu" | "onOpenUserMenu">) {
+	const button = (
+		<UserButton user={user} status={accountMenu?.status} onClick={accountMenu ? undefined : onOpenUserMenu} />
+	);
+	if (!accountMenu) return button;
+	const { shiftEnds: _shiftEnds, ...person } = user;
 	return (
-		<button type='button' onClick={onOpenUserMenu} className={menuClassName}>
+		<AccountMenu {...accountMenu} user={person}>
+			{button}
+		</AccountMenu>
+	);
+}
+
+function UserButton({
+	user,
+	status,
+	...props
+}: { user: AppHeaderUser; status?: AccountMenuStatus } & React.ComponentProps<"button">) {
+	return (
+		<button type='button' className={menuClassName} {...props}>
 			<span className='flex items-center gap-2'>
-				<PersonAvatar person={user} />
+				<PersonAvatar person={user} status={status} />
 				<span className='flex flex-col items-start'>
-					<span className='text-sm/[19px] font-bold'>{user.name}</span>
+					<span className='text-sm/[19px] font-bold'>
+						{user.name}
+						{/* The dot is decorative; the status is read with the name ("Dr. Reyes, Available"). */}
+						{status ? <span className='sr-only'>, {accountMenuStatusLabels[status]}</span> : null}
+					</span>
 					<span className='text-sm/[14px]'>{user.shiftEnds}</span>
 				</span>
 			</span>
@@ -463,6 +511,7 @@ function DefaultActions({
 	team,
 	onOpenTeam,
 	user,
+	accountMenu,
 	onOpenUserMenu,
 	themeButton,
 }: AppHeaderDefaultProps & { themeButton: React.ReactNode }) {
@@ -471,7 +520,7 @@ function DefaultActions({
 		<div className='flex items-center gap-4'>
 			<TeamMenu team={team} onOpenTeam={onOpenTeam} />
 			{themeButton}
-			<AccountMenu user={user} onOpenUserMenu={onOpenUserMenu} />
+			<UserMenu user={user} accountMenu={accountMenu} onOpenUserMenu={onOpenUserMenu} />
 		</div>
 	);
 }
@@ -644,6 +693,7 @@ function AppHeader(props: AppHeaderProps) {
 		onTogglePatientList: _onTogglePatientList,
 		patientListOpen: _patientListOpen,
 		user: _user,
+		accountMenu: _accountMenu,
 		onOpenUserMenu: _onOpenUserMenu,
 		unreadMessages: _unreadMessages,
 		onOpenMessages: _onOpenMessages,

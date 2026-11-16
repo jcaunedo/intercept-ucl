@@ -1,7 +1,7 @@
 import type { AlertDetailData } from "../alert-panel/alert-panel";
 import { sampleScenario1ResolvedDetail } from "../alert-panel/sample-alert-panel";
-import type { CensusPatient } from "../census/census-panel";
-import { sampleScenario1Census, sampleScenario1ResolvedCensus } from "../census/sample-census";
+import type { CensusPatient } from "../patients/patients-panel";
+import { sampleScenario1Census, sampleScenario1ResolvedCensus } from "./sample-census";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleScenario1Monitoring, sampleScenario1ResolvedMonitoring } from "../monitoring/sample-monitoring";
 import type { PatientActivity } from "../patient-details/activity";

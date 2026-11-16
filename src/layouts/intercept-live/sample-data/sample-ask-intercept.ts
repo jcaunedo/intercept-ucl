@@ -9,8 +9,8 @@ import type {
 	AskInterceptNotice,
 	AskInterceptResponder,
 } from "../ask-intercept-panel";
-import type { CensusPatient } from "../census/census-panel";
-import { samplePatients } from "../census/sample-census";
+import type { CensusPatient } from "../patients/patients-panel";
+import { samplePatients } from "./sample-census";
 import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { compareTriageAlerts, isOpenAlert, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import type { PatientRecord } from "../patient-details/patient-details";
@@ -1282,6 +1282,33 @@ function handoffFor(patient: Patient): AskInterceptAnswer {
 }
 
 // Each command as the question it stands for.
+/**
+ * The shift handoff (the account menu's Start handoff, PRD Account menu ACM-031): "/handoff" with no patient named or
+ * open. The clinician's patients, sickest first (`comparePriority`), each with the reason it's high on the list, and how
+ * to draft one's I-PASS handoff.
+ */
+function shiftHandoff(): AskInterceptAnswer {
+	const mine = patients.filter(({ census }) => census.mine);
+	const ranked = [...(mine.length ? mine : patients)].sort(comparePriority);
+	const lines = ranked.map((patient) => {
+		const alert = patient.alerts[0];
+		const why = alert ? `${severityWords[alert.severity]} alert: ${alert.title}` : scoreWords(patient.census.acuity);
+		return `${who(patient)}${why ? `, ${why}` : ""}`;
+	});
+	const { text, more } = capped(lines);
+	return {
+		text: [
+			`**Your handoff:** ${ranked.length} ${ranked.length === 1 ? "patient" : "patients"}${mine.length ? " assigned to you" : ""}, sickest first.`,
+			text,
+			"Draft one's I-PASS handoff with **/handoff** and their name, like **/handoff Miller**. Drafts aren't saved or sent.",
+		]
+			.filter(Boolean)
+			.join("\n"),
+		more,
+		sources: ["Census", "Alerts"],
+	};
+}
+
 const commandQuestions: Record<string, string> = {
 	summarize: "summary",
 	changes: "what changed in the last hour",
@@ -1515,7 +1542,8 @@ const answer: AskInterceptResponder = (input, context: AskInterceptContext) => {
 		const [, name, rest] = command;
 		const target = namedPatients(rest)[0] ?? (context.patientName ? patients.find((patient) => fullName(patient) === context.patientName) : undefined);
 		if (name === "handoff") {
-			return target ? handoffFor(target) : { text: "Which patient? Add a name after the command, like **/handoff Miller**, or open the patient first." };
+			// With no one named or open, the whole shift's handoff.
+			return target ? handoffFor(target) : rest.trim() ? { text: "Which patient? Add a name after the command, like **/handoff Miller**, or open the patient first." } : shiftHandoff();
 		}
 		if (!commandQuestions[name]) return { text: `There's no **/${name}** command. Type **/** to see the commands.` };
 		if (!target && name !== "changes") {

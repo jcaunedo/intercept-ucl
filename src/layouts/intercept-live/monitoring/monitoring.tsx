@@ -11,7 +11,7 @@ import type { CarePathwayDecision } from "../alert-panel/care-pathway";
 import type { DischargeDecision } from "../alert-panel/discharge-plan";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
-import { CensusPanel, type CensusPatient } from "../census/census-panel";
+import { PatientsPanel, type CensusPatient } from "../patients/patients-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
 import { AlertToasts, useClosedResolutions, type AlertNotice } from "../shared/alert-toasts";
@@ -30,11 +30,11 @@ import { worstOpenSeverity } from "./triage-queue";
 
 type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 	MonitoringPanelProps & {
-		/** The census's patients. With them, the Sidebar's Census opens the Census page, with the same live feed. */
+		/** The census's patients. With them, the Sidebar's Patients opens the Census page's list, with the same live feed. */
 		censusPatients?: CensusPatient[];
 		/**
-		 * The page shown first, Monitoring by default (the app's default page). The Sidebar switches between Monitoring, the
-		 * Census and the pages that aren't built.
+		 * The page shown first, Monitoring by default (the app's default page). The Sidebar switches between Monitoring,
+		 * Patients and the pages that aren't built.
 		 */
 		defaultPage?: InterceptLivePage;
 		/** What's known about each patient beyond the card, for their details page. A patient without one shows the card's. */
@@ -211,8 +211,8 @@ function Monitoring({
 						closedResolutions={closedResolutions}
 					/>
 				) : undefined,
-				Census: flaggedCensusPatients ? (
-					<CensusPanel
+				Patients: flaggedCensusPatients ? (
+					<PatientsPanel
 						records={patientRecords}
 						hospitals={hospitals}
 						patients={flaggedCensusPatients}

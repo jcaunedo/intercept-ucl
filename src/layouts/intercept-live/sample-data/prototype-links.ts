@@ -123,15 +123,21 @@ function readParam(name: (typeof locationParams)[number]) {
 	return undefined;
 }
 
+// Old page names in saved links (the Sidebar's Clinical items, Nov 16, 2026).
+const renamedPages: Record<string, string> = { census: "patients", "alert queue": "inbox" };
+
 /**
  * The prototype's address: where it opens (`page`, `patient` from the URL, else the story's own; `alert`, a patient whose
  * alert modal opens over it, and `consult=1`, with its video consult calling) and `onLocationChange` for InterceptLive,
  * which writes each move back to the URL without adding history entries. Pages go by their Sidebar name, lowercased
- * ("monitoring", "census"); a patient by id. Unknown values are ignored.
+ * ("monitoring", "patients"); a patient by id. Unknown values are ignored. Pages renamed on Nov 16, 2026 still open
+ * from old links: "census" opens Patients and "alert queue" opens Inbox.
  */
 function usePrototypeLocation(pages: readonly InterceptLivePage[], fallback: { page?: InterceptLivePage; patient?: OpenPatient } = {}) {
 	const [initial] = React.useState(() => {
-		const page = pages.find((name) => name.toLowerCase() === readParam("page")?.toLowerCase());
+		const requested = readParam("page")?.toLowerCase();
+		const pageName = requested ? (renamedPages[requested] ?? requested) : undefined;
+		const page = pages.find((name) => name.toLowerCase() === pageName);
 		const patient = readParam("patient");
 		const alert = readParam("alert");
 		const consult = readParam("consult");

@@ -1,5 +1,5 @@
-import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
-import type { CensusPatient } from "./census";
+import { samplePatientPhotos } from "./sample-patient-photos";
+import type { CensusPatient } from "../patients/patients";
 
 // Synthetic data (PRD PC-180). The first eight patients are Figma's; eighteen more fill the hospital counts (Sidney 14,
 // Chadron 4, Alliance 3, Bridgeport 5: 26). Eight of Sidney's were at Harbor Point General until Nov 6, 2026, when it

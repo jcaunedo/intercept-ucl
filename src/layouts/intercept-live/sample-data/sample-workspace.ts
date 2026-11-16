@@ -1,6 +1,7 @@
 import samplePhoto1 from "@/components/data-display/avatar/images/sample-photo-1.png";
 import samplePhoto2 from "@/components/data-display/avatar/images/sample-photo-2.png";
 import samplePhoto3 from "@/components/data-display/avatar/images/sample-photo-3.png";
+import type { AccountMenuShift } from "@/components/navigation/account-menu";
 import type { AppHeaderPerson, AppHeaderUser } from "@/components/navigation/app-header";
 
 import type { PanelHospital } from "../shared/patient-panel";
@@ -29,6 +30,7 @@ const sampleUser: AppHeaderUser = {
 	initials: "JS",
 	src: samplePhoto3,
 	tone: 1,
+	role: "Intensivist",
 	// Shown until the countdown (sampleShiftEndsAt) takes over on the first client render.
 	shiftEnds: "Shift ends at 8:00 PM",
 };
@@ -41,10 +43,16 @@ const sampleShiftEndsAt = (() => {
 	return end.toISOString();
 })();
 
+// What the user covers this shift, for the account menu's My shift: every hospital, and the hub's call queues.
+const sampleShift: Omit<AccountMenuShift, "ends"> = {
+	hospitals: sampleHospitals.map((hospital) => hospital.name),
+	callQueues: ["Tele-ICU", "Rapid response"],
+};
+
 const sampleTeam: AppHeaderPerson[] = [
 	{ name: "Maria Ruiz", initials: "MR", src: samplePhoto2, tone: 3 },
 	{ name: "James Turner", initials: "JT", src: samplePhoto1, tone: 6 },
 	{ name: "Ava Brooks", initials: "AB", tone: 2 },
 ];
 
-export { sampleHospitals, sampleShiftEndsAt, sampleTeam, sampleUser };
+export { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser };

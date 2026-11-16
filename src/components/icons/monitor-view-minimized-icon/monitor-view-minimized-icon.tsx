@@ -1,15 +1,15 @@
 import * as React from "react";
 
 /**
- * A short, wide block framed by viewfinder corners: the condensed monitor view (ECG strip and numerics). Pairs
- * with MonitorViewExpandedIcon. Filled with `currentColor`, so it follows its button's color.
+ * A shorter rounded rectangle: the condensed monitor view (the ECG strip and numerics). Between MonitorViewExpandedIcon
+ * and MonitorViewMinimalIcon. Filled with `currentColor`, so it follows its button's color.
  *
- * Figma: [archielabs.ds › monitor-view-minimized](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6234-10234)
+ * Figma: [archielabs.ds › condensed-view](https://www.figma.com/design/w8YHn6HqwgvKEyFOYkDFmW/archielabs.ds?node-id=6234-10234)
  */
 function MonitorViewMinimizedIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (
 		<svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-			<path d="M2 19V17C2 16.4477 2.44772 16 3 16C3.55228 16 4 16.4477 4 17V19C4 19.2652 4.10543 19.5195 4.29297 19.707C4.48051 19.8946 4.73478 20 5 20H7C7.55228 20 8 20.4477 8 21C8 21.5523 7.55228 22 7 22H5C4.20435 22 3.44151 21.6837 2.87891 21.1211C2.3163 20.5585 2 19.7956 2 19ZM20 19V17C20 16.4477 20.4477 16 21 16C21.5523 16 22 16.4477 22 17V19C22 19.7957 21.6837 20.5585 21.1211 21.1211C20.5585 21.6837 19.7957 22 19 22H17C16.4477 22 16 21.5523 16 21C16 20.4477 16.4477 20 17 20H19C19.2652 20 19.5195 19.8946 19.707 19.707C19.8946 19.5195 20 19.2652 20 19ZM9 11V13H15V11H9ZM2 9V5C2 4.20435 2.3163 3.44152 2.87891 2.87891C3.44152 2.3163 4.20435 2 5 2H7C7.55228 2 8 2.44772 8 3C8 3.55228 7.55228 4 7 4H5C4.73478 4 4.4805 4.10543 4.29297 4.29297C4.10543 4.4805 4 4.73478 4 5V9C4 9.55228 3.55228 10 3 10C2.44772 10 2 9.55228 2 9ZM20 7V5C20 4.73478 19.8946 4.48051 19.707 4.29297C19.5195 4.10543 19.2652 4 19 4H17C16.4477 4 16 3.55228 16 3C16 2.44772 16.4477 2 17 2H19C19.7956 2 20.5585 2.3163 21.1211 2.87891C21.6837 3.44151 22 4.20435 22 5V7C22 7.55228 21.5523 8 21 8C20.4477 8 20 7.55228 20 7ZM17 13C17 14.1046 16.1046 15 15 15H9C7.89543 15 7 14.1046 7 13V11C7 9.89543 7.89543 9 9 9H15C16.1046 9 17 9.89543 17 11V13Z" fill="currentColor" />
+			<path d="M20 6C20 5.44771 19.5523 5 19 5H5C4.44772 5 4 5.44772 4 6V18C4 18.5523 4.44771 19 5 19H19C19.5523 19 20 18.5523 20 18V6ZM22 18C22 19.6569 20.6569 21 19 21H5C3.34315 21 2 19.6569 2 18V6C2 4.34315 3.34315 3 5 3H19C20.6569 3 22 4.34315 22 6V18Z" fill="currentColor" />
 		</svg>
 	);
 }

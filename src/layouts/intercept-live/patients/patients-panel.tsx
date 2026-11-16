@@ -48,8 +48,8 @@ import type { PatientRecord } from "../patient-details/patient-details";
 import { isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import { DensityToggle, type PanelDensity } from "../monitoring/view-controls";
 import { FiltersButton, FiltersPanel, passesFilters, type PatientFilters } from "../shared/patient-filters";
-import { censusFilterGroups } from "./census-filters";
-import { CensusList } from "./census-list";
+import { patientsFilterGroups } from "./patients-filters";
+import { PatientsList } from "./patients-list";
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -76,7 +76,7 @@ type CensusPatient = Omit<PatientCensusCardProps, "onOpen" | "href" | "alertRing
 	unreadMessages?: number;
 };
 
-// The Census's sorts: managing patients (PRD Census). No Alerts sort (Oct 31, 2026, user's call): its cards show no
+// The Census's sorts: managing patients (PRD Patients). No Alerts sort (Oct 31, 2026, user's call): its cards show no
 // alert, so the order wouldn't explain itself; no Recently resolved, alert history is Monitoring's (Nov 1, 2026, user's
 // call). Family messages, a patient-management task, joins Monitoring's (Nov 1, 2026, user's call).
 const sortOrderIds: readonly SortOrderId[] = ["acuity", "change", "name", "viewed", "messages"];
@@ -102,7 +102,7 @@ const boardClassNames: Record<Exclude<PanelDensity, "list">, string> = {
 
 type CensusUser = AppHeaderUser;
 
-type CensusPanelProps = {
+type PatientsPanelProps = {
 	hospitals: CensusHospital[];
 	patients: CensusPatient[];
 	onOpenPatient?: (patientId: string) => void;
@@ -127,14 +127,14 @@ type CensusPanelProps = {
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
-// New patients: arrived on their unit in the last 24 h, admitted or moved in (Nov 3, 2026, user's call; PRD Census CEN-030).
+// New patients: arrived on their unit in the last 24 h, admitted or moved in (Nov 3, 2026, user's call; PRD Patients CEN-030).
 const newPatientWindow = 24 * 3_600_000;
 const isNewPatient = (patient: CensusPatient) =>
 	patient.arrivedAt !== undefined && Date.now() - Date.parse(patient.arrivedAt) < newPatientWindow;
 
 // Quick views. At most one is active; pressing it again turns it off. My patients is its own chip before them, so it
 // combines with any quick view. Only what the card shows: Out of range and Data gap are live monitoring data, so they're
-// Monitoring's (Nov 1, 2026, PRD Census CEN-OD-07), and so is Active alerts (Nov 1, 2026, user's call): its cards show
+// Monitoring's (Nov 1, 2026, PRD Patients CEN-OD-07), and so is Active alerts (Nov 1, 2026, user's call): its cards show
 // no alert, and the Filters panel's Highest alert still finds them.
 // New patients first, beside My patients (Nov 3, 2026, user's call).
 const quickViews: QuickView<CensusPatient>[] = [
@@ -152,7 +152,7 @@ const quickViews: QuickView<CensusPatient>[] = [
  * The Census page's content: every patient across the user's hospitals as cards, with its filter bar, and the live feed
  * panel of their alerts.
  */
-function CensusPanel({
+function PatientsPanel({
 	hospitals,
 	patients: patientsProp,
 	onOpenPatient,
@@ -163,7 +163,7 @@ function CensusPanel({
 	records,
 	onOpenLiveFeed,
 	groupedView = "board",
-}: CensusPanelProps) {
+}: PatientsPanelProps) {
 	// Alerts resolved in this session: opening a card with an active alert resolves it (prototype behavior; an app
 	// resolves through Clinical Alerting). Applied before filtering, so counters and filters see it. Kept with when, for the
 	// Recently resolved sort.
@@ -203,13 +203,13 @@ function CensusPanel({
 	};
 	const [hospitalId, setHospitalId] = React.useState("all");
 	const [quickView, setQuickView] = React.useState<string | null>(null);
-	const [scope, setScope] = usePatientScope("census");
+	const [scope, setScope] = usePatientScope("patients");
 	// The Filters panel's options, by group (unit among them since Oct 30, 2026: the Unit menu moved there).
 	const [filters, setFilters] = React.useState<PatientFilters>({});
 	// The filter bar's search: everything the card shows.
 	const [query, setQuery] = React.useState("");
 	// The score first (Oct 31, 2026, user's call): the cards show no alert, so Alert isn't offered here; Monitoring keeps it.
-	const [sortBy, setSortBy] = useSortBy("census", "acuity");
+	const [sortBy, setSortBy] = useSortBy("patients", "acuity");
 	// Comfortable and Compact cards, or the List table, as on Monitoring.
 	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
 	// Where the board's header row sticks: under the sticky filter bar, which reports it as its height changes.
@@ -239,7 +239,7 @@ function CensusPanel({
 	const inTab = (scoped: CensusPatient[]) =>
 		hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
 	// The Filters panel's groups, from the hospital tab's patients (its units, its score's bands).
-	const filterGroups = censusFilterGroups(inTab(patients), filters);
+	const filterGroups = patientsFilterGroups(inTab(patients), filters);
 	// My patients narrows everything below it, the tab counters included. The other filters run on both scopes, so the
 	// title can say "6 of 14 patients": the user's own among everyone the filters match. `inView` is before the Filters
 	// panel (its counts start there); `inUnit`, after it, is what the chips count.
@@ -399,7 +399,7 @@ function CensusPanel({
 							/>
 							{/* Opens the Filters panel (Unit is one of its groups). */}
 							<FiltersButton
-								panelId='census-filters'
+								panelId='patients-filters'
 								open={filtersOpen}
 								filters={filters}
 								onClick={() => setFiltersOpen((current) => !current)}
@@ -409,7 +409,7 @@ function CensusPanel({
 				</StickyFilterBar>
 
 				{density === "list" ? (
-					<CensusList
+					<PatientsList
 						patients={visible.map((patient) => ({
 							...patient,
 							tone: tones.get(patient.id) ?? avatarTone(patient.id),
@@ -468,7 +468,7 @@ function CensusPanel({
 			</main>
 
 			<FiltersPanel
-				id='census-filters'
+				id='patients-filters'
 				open={filtersOpen}
 				onOpenChange={setFiltersOpen}
 				groups={filterGroups}
@@ -489,9 +489,9 @@ function CensusPanel({
 }
 
 export {
-	CensusPanel,
+	PatientsPanel,
 	type CensusHospital,
-	type CensusPanelProps,
+	type PatientsPanelProps,
 	type CensusPatient,
 	type CensusUser,
 };

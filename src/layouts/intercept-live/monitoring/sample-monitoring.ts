@@ -5,7 +5,7 @@ import {
 	sampleScenario4Flags,
 	type Scenario3Stage,
 	type Scenario4Stage,
-} from "../census/sample-census";
+} from "../sample-data/sample-census";
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 

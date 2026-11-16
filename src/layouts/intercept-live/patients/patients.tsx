@@ -19,15 +19,15 @@ import { AlertToasts, useClosedResolutions, type AlertNotice } from "../shared/a
 import { withFlagDetails } from "../shared/flag-details";
 import { useAddressedAlerts } from "../shared/live-feed";
 import {
-	CensusPanel,
+	PatientsPanel,
 	type CensusHospital,
-	type CensusPanelProps,
+	type PatientsPanelProps,
 	type CensusPatient,
 	type CensusUser,
-} from "./census-panel";
+} from "./patients-panel";
 
-type CensusProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
-	CensusPanelProps & {
+type PatientsProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
+	PatientsPanelProps & {
 		/**
 		 * The panel's patients with their live values. With them, the Sidebar's Monitoring opens the Monitoring page, which
 		 * takes the same `alerts` for its triage queue and its cards' alert pills.
@@ -78,7 +78,7 @@ type CensusProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
  * assignment and quick view, with the live feed panel of their alerts. A card opens the patient's details over the
  * page. Figma origin: Intercept-Live › Census (1:350).
  */
-function Census({
+function Patients({
 	hospitals,
 	patients,
 	monitoringPatients,
@@ -103,7 +103,7 @@ function Census({
 	onConsultNote,
 	notices,
 	...shell
-}: CensusProps) {
+}: PatientsProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on the Census and Monitoring.
 	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 	// Closing a Resolved toast resets that patient's Monitoring card to no alert.
@@ -166,8 +166,8 @@ function Census({
 				})
 			}
 			pages={{
-				Census: (
-					<CensusPanel
+				Patients: (
+					<PatientsPanel
 						records={patientRecords}
 						hospitals={hospitals}
 						patients={flaggedPatients}
@@ -209,11 +209,11 @@ function Census({
 }
 
 export {
-	Census,
-	CensusPanel,
+	Patients,
+	PatientsPanel,
 	type CensusHospital,
-	type CensusPanelProps,
+	type PatientsPanelProps,
 	type CensusPatient,
-	type CensusProps,
+	type PatientsProps,
 	type CensusUser,
 };

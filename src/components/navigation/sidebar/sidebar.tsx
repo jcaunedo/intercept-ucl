@@ -276,6 +276,7 @@ type SidebarProps = Omit<
 /**
  * The app's navigation rail, 280px expanded and 64px collapsed. The width animates on `enterTransition`, clicking
  * anywhere on the rail's empty space toggles it, and hovering the collapsed rail swaps the mark for an expand icon.
+ * Each workspace (Clinical, Marketplace, Administration) passes its own `groups`; the rail itself is the same.
  *
  * Figma: [intercept.ds › sidebar](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1001-544)
  */

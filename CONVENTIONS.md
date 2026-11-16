@@ -38,10 +38,29 @@ The chain and the home of every prefix are defined in the Operating Model (§6) 
 
 **Minted here** (repo-local PRD IDs, so they never collide with a Cowork prefix):
 
-- `MON-` / `MON-AC-` — the Monitoring PRD (`prds/monitoring.md`) and its acceptance criteria.
-- `PC-` / `PC-AC-` — the Patient-card PRD (`prds/patient-card.md`) and its acceptance criteria.
+Each PRD has its own prefix. The same prefix with a suffix numbers the PRD's other lists: `-AC-` acceptance criteria, `-OD-` open decisions, `-UC-` use cases (e.g. `MON-AC-01`, `CEN-OD-09`).
+
+| Prefix | PRD | PRD created |
+|---|---|---|
+| `MON-` | Monitoring (`prds/monitoring.md`) | Oct 26, 2026 |
+| `PC-` | Patient card (`prds/patient-card.md`) | Oct 22, 2026 |
+| `CEN-` | Patients (`prds/patients.md`; PRD Census, `prds/census.md`, until Nov 16, 2026, IDs unchanged) | Nov 1, 2026 |
+| `AMM-` | Alert maximized modal (`prds/alert-maximized-modal.md`) | Nov 2, 2026 |
+| `CAM-` | Bedside camera (`prds/bedside-camera.md`) | Nov 3, 2026 |
+| `VID-` | Video consult (`prds/video-consult.md`) | Nov 6, 2026 |
+| `MSG-` | Messages (`prds/messages.md`) | Nov 6, 2026 |
+| `PMN-` | Patient monitor (`prds/patient-monitor.md`) | Nov 11, 2026 |
+| `NTE-` | Notes (`prds/notes.md`) | Nov 13, 2026 |
+| `VSP-` | Virtual Sepsis (`prds/virtual-sepsis.md`; `VS-` is Cowork's) | Nov 13, 2026 |
+| `NAV-` | Sidebar (`prds/sidebar.md`) | Nov 16, 2026 |
+| `ACM-` | Account menu (`prds/account-menu.md`) | Nov 16, 2026 |
+| `CNL-` | Census list (`prds/census-list.md`; `CL-` is Cowork's) | Nov 16, 2026 |
+
+All are pending the team's OK, and are reconciled into Cowork as below. A new PRD takes a prefix that isn't in either list above, and gets its row here and in CLAUDE.md → "Traceability" in the same change.
 
 > ⚠️ **Open:** `prds/patient-details.md` currently mints `PD-xxx` (plus `PD-AC-`, `PD-OD-`, `PD-UC-`), which **collides with the Cowork `PD-` (Provider Desktop) prefix** above. It needs a repo-local namespace of its own — the name is Julio's choice (G0-3) — and was **left unchanged** in the governance PR that added this file. Pick a namespace and renamespace it in a follow-up.
+
+> ⚠️ **Open:** `prds/chat-composer.md` mints `CC-xxx` (plus `CC-AC-`, `CC-OD-`, `CC-UC-`), which **collides with the Cowork `CC-` (Care Coordination) prefix** the same way (e.g. Cowork CC-05 is presence; the PRD's CC-022 is the /handoff draft). It needs its own namespace too.
 
 New "what" items a repo PRD introduces are reconciled back into Cowork on Fridays (Operating Model §4).
 

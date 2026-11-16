@@ -12,7 +12,7 @@ import {
 import { consentText, type DischargeDecision, type DischargePlan, type ReferralOutcome } from "../alert-panel/discharge-plan";
 import type { KeepOrTransferDecision, TransferChoice } from "../alert-panel/keep-or-transfer";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
-import type { CensusPatient } from "../census/census-panel";
+import type { CensusPatient } from "../patients/patients-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleLiveScenario } from "../monitoring/sample-live-scenario";
 import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
@@ -972,7 +972,7 @@ const severityOrder = ["critical", "high", "medium", "low"] as const;
 /**
  * The Census cards with their alert pills taken from the feed's alerts: the worst open severity and how many are open,
  * so the cards, the live feed panel and the hospital bar tell the same story. A patient with no open alert loses the
- * pill. The cards' own pills are otherwise app data (CensusPanel doesn't derive them).
+ * pill. The cards' own pills are otherwise app data (PatientsPanel doesn't derive them).
  */
 function withFeedAlerts(patients: CensusPatient[], alerts: TriageAlert[]): CensusPatient[] {
 	return patients.map((patient) => {

@@ -45,6 +45,38 @@ type Story = StoryObj<typeof meta>;
 /** As in Figma: photos for most people, initials for one. */
 export const Default: Story = {};
 
+/** The user's name opens the account menu (AccountMenu): status, workspaces, shift, preferences and sign out. */
+export const WithAccountMenu: Story = {
+	args: {
+		user: {
+			name: "Joanna Smith",
+			initials: "JS",
+			src: samplePhoto3,
+			tone: 1,
+			shiftEnds: "Shift ends on 3:45",
+			role: "Intensivist",
+		},
+		accountMenu: {
+			status: "available",
+			onStatusChange: fn(),
+			workspaces: [
+				{ id: "clinical", label: "Clinical", description: "Patients, alerts and messages" },
+				{ id: "marketplace", label: "Marketplace", description: "Open shifts and coverage requests", tag: "Preview" },
+				{ id: "administration", label: "Administration", description: "Operations, coverage and providers" },
+			],
+			workspace: "clinical",
+			onWorkspaceChange: fn(),
+			shift: { hospitals: ["Alliance Community", "Sidney Regional"], ends: "Ends in 3h 45m" },
+			onStartHandoff: fn(),
+			onSignOut: fn(),
+		},
+	},
+	play: async ({ canvasElement }) => {
+		await userEvent.click(within(canvasElement).getByRole("button", { name: /Joanna Smith/ }));
+		await expect(await within(document.body).findByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
+	},
+};
+
 /** Tighter vertical padding (8px), e.g. while the page scrolls under a sticky header. Toggle `compact` to see it animate. */
 export const Compact: Story = {
 	args: { compact: true },

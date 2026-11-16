@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 import { patientInitials } from "../shared/patient-avatar";
 import { activeAlertCount, type PanelHospital } from "../shared/patient-panel";
-import type { CensusPatient } from "./census-panel";
+import type { CensusPatient } from "./patients-panel";
 
 // The Census's List density: one row per patient with what the card shows (identity, location, top alert, score, its
 // 24 h change and tags) as columns. Built like Monitoring's List (`monitoring/monitoring-list.tsx`), without vitals:
@@ -18,7 +18,7 @@ import type { CensusPatient } from "./census-panel";
 
 
 /** One patient's row. The name opens the patient; the whole row does too, for the mouse. */
-function CensusListRow({ patient, onOpenPatient }: { patient: CensusPatient; onOpenPatient?: (id: string) => void }) {
+function PatientsListRow({ patient, onOpenPatient }: { patient: CensusPatient; onOpenPatient?: (id: string) => void }) {
 	const name = `${patient.lastName}, ${patient.firstName}`;
 	const identity = [patient.mrn, [patient.sex, patient.age].filter(Boolean).join(", ")].filter(Boolean).join(" - ");
 	const { resolve } = useMotionPreference();
@@ -143,7 +143,7 @@ function CensusListRow({ patient, onOpenPatient }: { patient: CensusPatient; onO
  * The census as a table. Group by hospital groups it, with a HospitalSectionHeader row per hospital (the patients
  * must already be sorted by hospital). Scrolls sideways inside its frame when the page is narrow.
  */
-function CensusList({
+function PatientsList({
 	patients,
 	hospitals,
 	grouped,
@@ -189,7 +189,7 @@ function CensusList({
 							</tr>
 						) : null}
 						{rows.map((patient) => (
-							<CensusListRow key={patient.id} patient={patient} onOpenPatient={onOpenPatient} />
+							<PatientsListRow key={patient.id} patient={patient} onOpenPatient={onOpenPatient} />
 						))}
 					</tbody>
 				))}
@@ -198,4 +198,4 @@ function CensusList({
 	);
 }
 
-export { CensusList };
+export { PatientsList };

@@ -7,7 +7,7 @@ import {
 	type FilterGroup,
 	type PatientFilters,
 } from "../shared/patient-filters";
-import type { CensusPatient } from "./census-panel";
+import type { CensusPatient } from "./patients-panel";
 
 // The Census's groups for the shared Filters panel (`shared/patient-filters.tsx`). Groups the census has no data for
 // (alert type, the sepsis validation steps) are left out until it does.
@@ -27,7 +27,7 @@ const levelOrder: PatientCardAcuityLevel[] = ["critical", "high", "moderate", "m
  * The filter groups for these patients. Unit lists the units among `patients` (the hospital tab's), plus any already
  * picked; the score group is titled by the score's name ("NEWS2") and lists its bands.
  */
-function censusFilterGroups(patients: CensusPatient[], filters: PatientFilters): FilterGroup<CensusPatient>[] {
+function patientsFilterGroups(patients: CensusPatient[], filters: PatientFilters): FilterGroup<CensusPatient>[] {
 	const scoreName = patients.find((patient) => patient.acuity)?.acuity?.label ?? "Score";
 	const levels = levelOrder.filter((level) => patients.some((patient) => patient.acuity?.level === level));
 
@@ -65,4 +65,4 @@ function censusFilterGroups(patients: CensusPatient[], filters: PatientFilters):
 	];
 }
 
-export { censusFilterGroups };
+export { patientsFilterGroups };

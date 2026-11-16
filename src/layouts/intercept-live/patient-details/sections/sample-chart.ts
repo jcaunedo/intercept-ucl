@@ -1,4 +1,4 @@
-import { samplePatients } from "../../census/sample-census";
+import { samplePatients } from "../../sample-data/sample-census";
 import type { PatientRecord } from "../patient-details";
 import { samplePatientBaseRecords } from "../sample-patient-records";
 import type { ChartCulture, ChartHomeMedication, ChartImagingReport, ChartProblem, ChartResult, ChartResultPanel, PatientChart } from "./chart-section";

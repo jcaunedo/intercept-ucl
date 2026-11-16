@@ -6,7 +6,7 @@ import {
 	sampleScenario4Overlap,
 	sampleScenario4Protocol,
 } from "../alert-panel/sample-alert-panel";
-import { sampleScenario4Census, sampleScenario4CensusAt, sampleScenario4Flags } from "../census/sample-census";
+import { sampleScenario4Census, sampleScenario4CensusAt, sampleScenario4Flags } from "./sample-census";
 import { sampleScenario4Monitoring, sampleScenario4MonitoringAt } from "../monitoring/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleScenario4BaseRecord, sampleScenario4RecordAt, type Scenario4RecordStage } from "../patient-details/sample-patient-records";

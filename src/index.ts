@@ -106,6 +106,12 @@ export {
 	type AvatarProps,
 } from "@/components/data-display/avatar";
 export { Badge, badgeVariants, type BadgeProps } from "@/components/data-display/badge";
+export {
+	CensusList,
+	censusListPosition,
+	type CensusListPatient,
+	type CensusListProps,
+} from "@/components/data-display/census-list";
 export { Counter, counterVariants, type CounterProps } from "@/components/data-display/counter";
 export { LabTile, labTileVariants, type LabTileFlag, type LabTileProps } from "@/components/data-display/lab-tile";
 export {
@@ -280,6 +286,17 @@ export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-
 /* Navigation                                                                 */
 /* -------------------------------------------------------------------------- */
 
+export {
+	AccountMenu,
+	accountMenuStatusDotClassName,
+	accountMenuStatusLabels,
+	type AccountMenuPreferences,
+	type AccountMenuProps,
+	type AccountMenuShift,
+	type AccountMenuStatus,
+	type AccountMenuUser,
+	type AccountMenuWorkspace,
+} from "@/components/navigation/account-menu";
 export {
 	AppHeader,
 	type AppHeaderDefaultProps,

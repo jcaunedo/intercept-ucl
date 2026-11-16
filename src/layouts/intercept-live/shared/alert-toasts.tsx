@@ -189,7 +189,8 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 	const mineOnly = Boolean(preferences?.currentPage && preferences.scope[preferences.currentPage] === "mine");
 	// The ping sounds only while Monitoring's Active alerts chip is on; read when it would play.
 	const pingOn = React.useRef(false);
-	pingOn.current = Boolean(preferences?.activeAlerts);
+	// Off too when the user turned Alert sounds off in the account menu (PRD Account menu ACM-040).
+	pingOn.current = Boolean(preferences?.activeAlerts) && preferences?.alertSounds !== false;
 	const pingAllowed = React.useCallback(() => pingOn.current, []);
 	const tones = React.useMemo(() => avatarTones(patients), [patients]);
 	const previous = React.useRef(alerts);

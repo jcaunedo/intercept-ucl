@@ -96,14 +96,14 @@ export const AiSparkle: Story = {
 	),
 };
 
-/** The monitor-view pair (archielabs.ds, custom): condensed and full monitor, at 16px (in buttons) and 24px. */
+/** The monitor-view icons (archielabs.ds, custom): full, condensed and minimal view, at 16px (in buttons) and 24px. */
 export const MonitorView: Story = {
 	render: () => (
 		<div className='grid grid-cols-[auto_repeat(2,2rem)] items-center gap-x-4 gap-y-3 text-sm text-foreground'>
 			{(
 				[
-					["monitor-view-minimized", MonitorViewMinimizedIcon],
-					["monitor-view-expanded", MonitorViewExpandedIcon],
+					["full-view", MonitorViewExpandedIcon],
+					["condensed-view", MonitorViewMinimizedIcon],
 					["minimal-view", MonitorViewMinimalIcon],
 				] as const
 			).map(([name, Icon]) => (

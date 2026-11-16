@@ -2,31 +2,37 @@ import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, userEvent, within } from "storybook/test";
 import {
-	BellRingIcon,
 	BookOpenTextIcon,
-	BoxIcon,
+	BuildingIcon,
+	CalendarCheckIcon,
+	CalendarClockIcon,
+	CalendarIcon,
 	ChartColumnIcon,
 	CircleUserIcon,
+	ContactIcon,
+	FileTextIcon,
 	HeartCrackIcon,
 	HomeIcon,
-	LayoutGridIcon,
+	InboxIcon,
 	LifeBuoyIcon,
+	ListCheckIcon,
 	MenuIcon,
 	MessageCircleMoreIcon,
-	ShieldIcon,
+	RadarIcon,
+	SettingsIcon,
+	ShieldCheckIcon,
 	SparklesIcon,
 	SquareActivityIcon,
 	Undo2Icon,
+	UserSearchIcon,
+	UsersIcon,
 } from "lucide-react";
 
-import { BoxSolidIcon } from "@/components/icons/box-solid-icon";
 import { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
 import { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
 import { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
 import { HomeSolidIcon } from "@/components/icons/home-solid-icon";
-import { LayoutGridSolidIcon } from "@/components/icons/layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
-import { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 import {
 	DropdownMenuGroup,
@@ -36,23 +42,50 @@ import {
 } from "@/components/overlays/dropdown-menu";
 import { Sidebar, SidebarMenuButton, type SidebarNavItem } from "./sidebar";
 
-// Solid icons show while an item is active. Ask Intercept and the footer items have none yet, so they keep their outline
-// icon. lucide has no AI icon for Ask Intercept; Sparkles stands in. No Search item since Oct 31, 2026: search is in the
-// chat.
-const groups: SidebarNavItem[][] = [
-	[{ icon: SparklesIcon, label: "Ask Intercept" }],
+// Each workspace passes its own items (intercept.ds `sidebar` Role=Clinical, Marketplace, Administration; Left Nav Spec,
+// PRD Sidebar). Solid icons show while an item is active; items without one keep their outline icon. lucide has no AI
+// icon for Ask Intercept; Sparkles stands in.
+const ask: SidebarNavItem = { icon: SparklesIcon, label: "Ask Intercept" };
+
+const clinicalGroups: SidebarNavItem[][] = [
+	[ask],
 	[
 		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring" },
-		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Census" },
-		{ icon: BellRingIcon, label: "Alert Queue" },
+		{ icon: InboxIcon, label: "Inbox" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages" },
+		{ icon: ListCheckIcon, label: "Protocols" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis" },
 	],
 	[
-		{ icon: ShieldIcon, activeIcon: ShieldSolidIcon, label: "Compliance" },
+		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Patients" },
+		{ icon: CalendarIcon, label: "Schedule" },
 		{ icon: ChartColumnIcon, activeIcon: ChartColumnSolidIcon, label: "Analytics" },
-		{ icon: BoxIcon, activeIcon: BoxSolidIcon, label: "Marketplace" },
-		{ icon: LayoutGridIcon, activeIcon: LayoutGridSolidIcon, label: "Administration" },
+	],
+];
+
+// The hospital side's Marketplace sidebar: Requests is where it lands.
+const marketplaceGroups: SidebarNavItem[][] = [
+	[ask],
+	[
+		{ icon: UserSearchIcon, label: "Requests" },
+		{ icon: CalendarClockIcon, label: "Open shifts" },
+		{ icon: UsersIcon, label: "Clinician network" },
+	],
+	[{ icon: FileTextIcon, label: "Contracts & billing" }],
+];
+
+// Intercept's Administration sidebar: Operations is where it lands.
+const administrationGroups: SidebarNavItem[][] = [
+	[ask],
+	[
+		{ icon: RadarIcon, label: "Operations" },
+		{ icon: CalendarCheckIcon, label: "Coverage" },
+		{ icon: ContactIcon, label: "Providers" },
+		{ icon: BuildingIcon, label: "Hospitals" },
+	],
+	[
+		{ icon: ShieldCheckIcon, label: "Compliance" },
+		{ icon: SettingsIcon, label: "System" },
 	],
 ];
 
@@ -92,7 +125,7 @@ const meta = {
 	},
 	tags: ["autodocs"],
 	args: {
-		groups,
+		groups: clinicalGroups,
 		footerItems,
 		// The first item (Ask Intercept) is an action, not a page. Monitoring is the first page and the default one.
 		defaultActiveItem: "Monitoring",
@@ -110,7 +143,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Click the collapse button, or anywhere on the rail's empty space, to collapse it. */
+/** The Clinical workspace. Click the collapse button, or anywhere on the rail's empty space, to collapse it. */
 export const Default: Story = {
 	args: { className: "h-full" },
 };
@@ -120,13 +153,23 @@ export const Collapsed: Story = {
 	args: { className: "h-full", defaultCollapsed: true },
 };
 
+/** The Marketplace workspace, hospital side: it lands on Requests. */
+export const Marketplace: Story = {
+	args: { className: "h-full", groups: marketplaceGroups, defaultActiveItem: "Requests" },
+};
+
+/** The Administration workspace, Intercept's side: it lands on Operations. */
+export const Administration: Story = {
+	args: { className: "h-full", groups: administrationGroups, defaultActiveItem: "Operations" },
+};
+
 /** An active item other than the first, with a trailing suffix. */
 export const ActiveItemAndSuffix: Story = {
 	args: {
 		className: "h-full",
-		defaultActiveItem: "Alert Queue",
-		groups: groups.map((group) =>
-			group.map((item) => (item.label === "Alert Queue" ? { ...item, suffix: 12 } : item)),
+		defaultActiveItem: "Inbox",
+		groups: clinicalGroups.map((group) =>
+			group.map((item) => (item.label === "Inbox" ? { ...item, suffix: 8 } : item)),
 		),
 	},
 };
@@ -188,17 +231,17 @@ export const MenuButtonStates: Story = {
 
 /**
  * An item with an active alert shows a dot on its icon in the severity's color; a resolved alert, or none, shows no dot.
- * Here Monitoring has a critical alert and Alert Queue a medium one. The page shell passes the most severe open alert.
+ * Here Monitoring has a critical alert and Inbox a medium one. The page shell passes the most severe open alert.
  * Messages has unread messages: `unread`, a brand-colored dot that flashes every 2 s (MOTION.md Unread).
  */
 export const ItemAlerts: Story = {
 	args: {
 		className: "h-full",
-		groups: groups.map((group) =>
+		groups: clinicalGroups.map((group) =>
 			group.map((item) => {
 				if (item.label === "Monitoring") return { ...item, alert: "critical" as const };
-				if (item.label === "Alert Queue") return { ...item, alert: "medium" as const };
-				if (item.label === "Census") return { ...item, alert: "resolved" as const };
+				if (item.label === "Inbox") return { ...item, alert: "medium" as const };
+				if (item.label === "Virtual Sepsis") return { ...item, alert: "resolved" as const };
 				if (item.label === "Messages") return { ...item, alert: "unread" as const };
 				return item;
 			}),
@@ -206,8 +249,8 @@ export const ItemAlerts: Story = {
 	},
 	play: async ({ canvas, canvasElement }) => {
 		await expect(canvas.getByRole("button", { name: "Monitoring, Critical alert" })).toBeInTheDocument();
-		await expect(canvas.getByRole("button", { name: "Alert Queue, Medium alert" })).toBeInTheDocument();
-		await expect(canvas.getByRole("button", { name: "Census" })).toBeInTheDocument();
+		await expect(canvas.getByRole("button", { name: "Inbox, Medium alert" })).toBeInTheDocument();
+		await expect(canvas.getByRole("button", { name: "Virtual Sepsis" })).toBeInTheDocument();
 		await expect(canvas.getByRole("button", { name: "Messages, Unread" })).toBeInTheDocument();
 		const dots = canvasElement.querySelectorAll("[data-slot=sidebar-menu-button-alert][data-severity]");
 		await expect(dots).toHaveLength(3);
@@ -238,12 +281,14 @@ export const ItemWithMenu: Story = {
 	},
 };
 
-/** Expanded and collapsed side by side. */
+/** Figma's four: Clinical expanded and collapsed, then Marketplace and Administration expanded. */
 export const AllVariants: Story = {
 	render: (args) => (
 		<div className='flex h-full gap-8'>
 			<Sidebar {...args} className='h-full' />
 			<Sidebar {...args} className='h-full' defaultCollapsed />
+			<Sidebar {...args} className='h-full' groups={marketplaceGroups} defaultActiveItem='Requests' />
+			<Sidebar {...args} className='h-full' groups={administrationGroups} defaultActiveItem='Operations' />
 		</div>
 	),
 };

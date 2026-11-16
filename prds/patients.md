@@ -7,15 +7,16 @@ status: proposed — confirm with Carlos
 Created: Nov 1, 2026
 Created by: Julio Caunedo
 Last updated: Nov 16, 2026
-Scope: The Census page of Intercept Live (Provider Desktop, Spec §5.1): its purpose, how it differs from Monitoring, the patients it shows, its controls and states.
-Purpose: Gives the Census one written purpose, next to Monitoring's, and lists the decisions still open, so the two pages stop overlapping by accident.
+Scope: The Patients page of Intercept Live (Provider Desktop, Spec §5.1), the Census page until Nov 16, 2026: its purpose, how it differs from Monitoring, the patients it shows, its controls and states.
+Purpose: Gives Patients one written purpose, next to Monitoring's, and lists the decisions still open, so the two pages stop overlapping by accident.
+Renamed: prds/census.md (PRD Census) → prds/patients.md (PRD Patients) on Nov 16, 2026. Requirement IDs keep the CEN- prefix, already cited in commits, the CHANGELOG and the trace.
 -->
 
-# PRD — Census
+# PRD — Patients
 
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Provider Desktop (Single Pane of Glass) ★  
-**Surface:** Census page  
+**Surface:** the Sidebar's **Patients** page (page key `Patients`; code in `src/layouts/intercept-live/patients/`, `PatientsPanel`, the `census/` folder until Nov 16, 2026; the in-hospital data keeps the census name: `CensusPatient`, `sample-data/sample-census.ts`)  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
 **Last updated:** November 16, 2026
@@ -24,25 +25,29 @@ Purpose: Gives the Census one written purpose, next to Monitoring's, and lists t
 
 ## 1. Overview
 
-**The Census is where the clinician manages their patients; Monitoring is where they monitor their clinical status in real time.**
+ℹ️ This PRD was **PRD Census** until Nov 16, 2026. Its IDs keep the `CEN-` prefix. In the text below, "the Census" written before that date means this page; **the census** itself, the patients in hospital now, is Monitoring's (PRD Monitoring, "The census").
 
-Managing patients means knowing who they are and where, finding them, keeping the roster true (admissions, transfers, discharges), deciding who to see first, and handing them off. Part of that is a **general picture of how each patient is doing at the moment**: their score, which way it's going, what support they're on. The Census shows that picture as information for managing, not as monitoring: it's a current state, not a live feed, and nothing on the page asks the clinician to act on it.
+~~**The Census is where the clinician manages their patients; Monitoring is where they monitor their clinical status in real time.**~~ ✅ **Resolved:** **Patients is where the clinician finds and manages every patient their program has treated, in hospital or not; Monitoring is where they watch the patients in hospital now, in real time.**
 
-It's the page a shift starts on and the roster the clinician comes back to between tasks. It doesn't move on its own; it lets the clinician decide who to look at.
+Managing patients means knowing who they are and where, finding them (including after they've gone home), looking back at a past stay, keeping the roster true (admissions, transfers, discharges), deciding who to see first, and handing them off. Part of that is a **general picture of how each patient is doing at the moment**: their score, which way it's going, what support they're on. The Census shows that picture as information for managing, not as monitoring: it's a current state, not a live feed, and nothing on the page asks the clinician to act on it.
+
+~~It's the page a shift starts on and the roster the clinician comes back to between tasks.~~ ✅ **Resolved:** a shift starts on Monitoring (PRD Sidebar NAV-020); Patients is where the clinician goes to find anyone, review a group or look back. It doesn't move on its own; it lets the clinician decide who to look at.
 
 ℹ️ Until this PRD, the Census's purpose was written in three places that disagreed (see §1.3). This section replaces them.
 
-### 1.1 Census and Monitoring
+✅ **Resolved:** the Census page becomes **Patients** in the Sidebar (PRD Sidebar NAV-020): the full list of everyone the clinician's program has treated, whether they're in hospital or not. The patients in hospital now, the census itself, are Monitoring's. The page keeps its controls and cards; what changes is who is on it (CEN-001).
 
-The two pages show the same patients and share the same shell, filters and sort vocabulary. They answer different questions.
+### 1.1 Patients and Monitoring
 
-| | Census | Monitoring |
+~~The two pages show the same patients and share the same shell, filters and sort vocabulary.~~ ✅ **Resolved:** Monitoring shows the patients in hospital now (the census); Patients shows them and everyone treated before. The two share the same shell, filters and sort vocabulary. They answer different questions.
+
+| | Patients (the Census page until Nov 16, 2026) | Monitoring |
 |---|---|---|
 | **Job** | Manage the patients | Monitor their clinical status in real time |
-| **The question it answers** | Who are my patients, how are they doing in general, and what do I need to do for them? | What's happening to my patients right now, and do I need to act? |
-| **When** | Start of shift, planning, between tasks, handoff | Continuously, through the shift (Spec §5.2: "a sustained workflow loop") |
+| **The question it answers** | ~~Who are my patients, how are they doing in general, and what do I need to do for them?~~ ✅ **Resolved:** Who has my program treated, where are they now, and how are they doing in general? | What's happening to my patients right now, and do I need to act? |
+| **When** | ~~Start of shift, planning, between tasks, handoff~~ ✅ **Resolved:** Finding a patient, reviewing a group, looking back at a stay; the start-of-shift scan is open (CEN-OD-10) | Continuously, through the shift (Spec §5.2: "a sustained workflow loop") |
 | **Clinical status** | A general picture, current but not live: the score, its band and 24 h change, support and flags (CEN-016) | Live: vitals and waveforms as they arrive, trends, alerts as they fire |
-| **Patients** | Everyone in the clinician's scope, across their hospitals (PD-01) | The panel the clinician watches ⚠️ (CEN-OD-02, MON-OD-01) |
+| **Patients** | ~~Everyone in the clinician's scope, across their hospitals (PD-01)~~ ✅ **Resolved:** everyone ever treated in the clinician's scope, in hospital or not (CEN-001) | The census: the patients in hospital now, across the hospitals the clinician covers ⚠️ (CEN-OD-02, MON-OD-01) |
 | **Card** | Compact PatientCard: identity, location, score and 24 h change, flags | PatientMonitoringCard: identity, the alert bar, a live bedside monitor, score, flags |
 | **Alerts** | Orientation only (CEN-020): no alert on the cards (no badge, no ring); the hospital tabs' counts, Highest alert and the List's Alert column ⚠️ (CEN-OD-01) | Primary: the card's alert bar, ring, the triage queue |
 | **Movement** | Cards never re-sort on their own | Cards re-sort with alerts (MON-013) |
@@ -52,7 +57,7 @@ The two pages show the same patients and share the same shell, filters and sort 
 
 | Objective | What it means on this page |
 |---|---|
-| **Know the census** | Every patient in scope is on the page, grouped by hospital, with nobody missing or shown twice (PD-01, BR-09). |
+| **Know every patient** | ~~**Know the census:**~~ Every patient in scope, in hospital or not, is on the page, grouped by hospital, with nobody missing or shown twice (PD-01, BR-09). |
 | **Know how each is doing** | A general picture of each patient's current state, who is on a vent, on pressors, teetering or stable, reads from the cards without opening anyone (UX-01). It informs managing; it isn't monitoring. |
 | **Find a patient fast** | Search, filters and sorts get to a patient or a group of patients in a few seconds (PD-03). |
 | **Plan the shift** | The clinician can tell who to see first from acuity, trajectory and support, before any alert fires (WF-01). |
@@ -104,7 +109,7 @@ The two pages show the same patients and share the same shell, filters and sort 
 
 ## 3. Page architecture
 
-The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census active), sticky AppHeader, the canvas.
+The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Patients active), sticky AppHeader, the canvas.
 
 | Region | Content | Requirements |
 |---|---|---|
@@ -124,7 +129,7 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 
 | ID | Requirement | Status |
 |---|---|---|
-| **CEN-001 Scope** | Every patient in the clinician's scope across the hospitals they cover, **always grouped by hospital** (tabs; Group by hospital for sections or columns). Counts are per hospital. | ✅ Built. ⚠️ **Gap:** DU-06 asks for per-hospital counts only, without the "across 3 hospitals" summary, and for each hospital's EHR, time zone and connection status (PD-01) |
+| **CEN-001 Scope** | ~~Every patient in the clinician's scope across the hospitals they cover~~ ✅ **Resolved:** every patient ever treated in the clinician's scope across the hospitals they cover, whether they're in hospital or not (Sidebar: Patients), **always grouped by hospital** (tabs; Group by hospital for sections or columns). Counts are per hospital. | ✅ Built for the patients in hospital. ⚠️ **Gap:** discharged and transferred-out patients aren't listed yet, nor how they show (a status on the card, a filter, In hospital first); see CEN-OD-09. ⚠️ **Gap:** DU-06 asks for per-hospital counts only, without the "across 3 hospitals" summary, and for each hospital's EHR, time zone and connection status (PD-01) |
 | **CEN-002 My patients** | A chip narrows the census to the clinician's assigned patients; off by default, so the census starts complete. | ✅ Built |
 | **CEN-003 Filters** | Search (everything the card shows), quick views (one at a time) and the Filters panel (Unit, Highest alert, the score's bands with No score, Change in last 24 h, Organ support, Code status & safety, Sepsis). Only what the card shows: filters on live vitals and data gaps are Monitoring's (CEN-OD-07). Every option shows its count. Clear filters returns to the full census. | ✅ Built (PD-03). ⚠️ **Gap:** PD-03's "watchlist first" and "transferred in 24 h" aren't built |
 | **CEN-004 Tenant isolation** | Patient data never crosses tenants; the census combines hospitals only within the clinician's coverage and privileges (BR-09). | ✅ By design |
@@ -141,9 +146,9 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Census
 | **CEN-015 Open** | Clicking a card or row opens the patient's details; the census order becomes the patient list for stepping through (PD-05). | ✅ Built. ⚠️ **Gap:** PD-05's census side rail isn't built; the header's patient list stands in |
 | **CEN-016 General status, not monitoring** | The card's clinical content is a general picture of the patient's current state: the score with its band, its 24 h change, and flags (support, code status, isolation). It updates when the data does, but nothing on the Census streams or flashes: no vitals, waveforms, live numbers or device alarms, and no prompt to act. Those are Monitoring's. | ✅ Decision (Nov 1, 2026, product) |
 
-### 4.3 Alerts on the Census
+### 4.3 Alerts on Patients
 
-The Census isn't where alerts are handled (§1.1), but a clinician scanning the roster needs to know that something is going on and where.
+Patients isn't where alerts are handled (§1.1), but a clinician scanning the roster needs to know that something is going on and where.
 
 | ID | Requirement | Status |
 |---|---|---|
@@ -204,3 +209,5 @@ The Census isn't where alerts are handled (§1.1), but a clinician scanning the 
 | CEN-OD-06 | Default sort | Score; Score change; Name | **Score** (today): the sickest first fits the shift scan |
 | CEN-OD-07 | Filters on vitals the card doesn't show (Out of range, Data gap, Vitals out of range) | They're live monitoring data, so they're Monitoring's. Removed from the Census: the Out of range and Data gap quick views and the Vitals out of range group. Monitoring already covers them: the Outside limits chip, Outside alarm limits with Not reporting in its Filters panel, and the "not reporting" System alert (MON-051). The Census keeps No score in its NEWS2 group | — |
 | CEN-OD-08 | How a data gap shows on the Census. A vital that stops reporting can make the patient's score, and so their general status, unreliable (CEN-016) | A note on the card ("Score incomplete: SpO₂ not reporting"); a mark on the score; nothing, leaving it to Monitoring | ⚠️ **Decision needed (Nov 1, 2026, product: work on it later):** likely a short message on the card, as information, not an alert to act on |
+| CEN-OD-09 | How patients no longer in hospital show on Patients (CEN-001) | (a) In the same list, with their status (Discharged, Transferred) and last stay; (b) In hospital by default, with a filter for everyone; (c) Two tabs, In hospital and All | ⚠️ **Decision needed:** (b) keeps today's start-of-shift scan; (a) makes the list historical from the first look |
+| CEN-OD-10 | Which use cases stay on Patients now that Monitoring is the census and the landing page: the shift scan (CEN-UC-01), My patients (CEN-UC-04), roster changes (CEN-030) and handoff (CEN-033) | Stay here; move to Monitoring; both | ⚠️ **Decision needed:** roster changes and the shift scan read as Monitoring's (the patients in hospital now); finding and looking back stay here. Handoff now starts from the account menu (PRD Account menu ACM-031) |
