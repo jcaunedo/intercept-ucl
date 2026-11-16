@@ -69,7 +69,7 @@ The Left Nav Spec calls it the "Census column": "a list of the clinician's patie
 |---|---|
 | **Title** | **Census**, from any page (CNL-010). |
 | **Position line** | "From {page}, in its order · {n} of {count}", counted over the census only (CNL-011). |
-| **Row** | Name (semibold for the patient on screen), the alert's severity pill at the right, location ("MICU · Bed 11 · Sidney Regional"), score ("NEWS2 17 · High" in the band's color; no score reads "NEWS2 -- · Unknown"). |
+| **Row** | As a patient in Ask Intercept Live's answers: the patient's avatar (photo, else initials in their card's color), centered on the name (semibold) and the location under it ("MICU · Bed 11 · Sidney Regional"), the alert's severity pill at the right; then, under the name, the patient cards' score line: the trend arrow, "NEWS2: 17 High" (the band in its color) and the change, muted ("· 2 points up in 24 h"); no score reads "NEWS2: -- Unknown" (CNL-013). |
 | **Patient on screen** | The `accent` fill, `aria-current`, kept in view (CNL-020). |
 | **Empty** | "No patients in hospital". |
 
@@ -102,9 +102,16 @@ The list shows the patients in hospital now, never anyone discharged or transfer
 
 The order and filters of the source page, as it showed them when the patient opened (taken once, so the list doesn't reorder under the clinician). A patient that list leaves out comes first (PD-015's "Always there").
 
+### CNL-013 — Row
+
+Each row shows the patient as Ask Intercept Live's answers do, and the score as the patient cards do (PatientCardScore), so a patient reads the same everywhere.
+
+- ✅ **Resolved:** the avatar before the name and location, as in the chat's patient lists; every name semibold.
+- ✅ **Resolved:** the score is the cards' score line, with its trend arrow and the 24 h change (~~"NEWS2 17 · High", the whole line in the band's color~~).
+
 ### CNL-020 — The patient on screen
 
-Marked (`accent` fill, semibold name, `aria-current="page"`) and scrolled into view when the list opens and each time the patient changes.
+Marked (`accent` fill, `aria-current="page"`; ~~semibold name~~, every name is semibold now) and scrolled into view when the list opens and each time the patient changes.
 
 ### CNL-021 — Picking a patient
 
@@ -152,4 +159,4 @@ When PD-015's Previous / next buttons (↑/↓, J/K) are built, they step throug
 |---|---|---|---|
 | CNL-OD-01 | The list's design in intercept.ds | Design | Only the header's button is drawn |
 | CNL-OD-02 | On the page of a patient not in hospital (from Patients): show the list button (census, no position) or hide it | Product | Depends on PRD Patients CEN-OD-09 |
-| CNL-OD-03 | Should the rows show more (flags, unread messages, the score's 24 h change)? | Product, clinicians | Today: name, alert, location, score |
+| CNL-OD-03 | Should the rows show more (flags, unread messages)? | Product, clinicians | Today: avatar, name, alert, location, score and its 24 h change. ✅ **Resolved:** the score's 24 h change shows (CNL-013) |

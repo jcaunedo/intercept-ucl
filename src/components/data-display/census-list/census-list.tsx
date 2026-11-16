@@ -1,10 +1,7 @@
 import * as React from "react";
 
-import {
-	PatientCardAlert,
-	patientCardAcuityLevels,
-	type PatientCensusCardProps,
-} from "@/components/cards/patient-census-card";
+import { PatientCardAlert, PatientCardScore, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
 import { cn } from "@/lib/utils";
 
 /** One patient in the census list. */
@@ -14,10 +11,16 @@ type CensusListPatient = {
 	name: string;
 	/** "MICU · Bed 11 · Sidney Regional", broad to specific. */
 	location?: string;
+	/** Their avatar before the name, as on their card: the photo, else `initials` in `tone`. */
+	photo?: PatientCensusCardProps["photo"];
+	initials?: PatientCensusCardProps["initials"];
+	tone?: PatientCensusCardProps["tone"];
 	/** The patient's alert, shown as its severity pill. */
 	alert?: PatientCensusCardProps["alert"];
-	/** The score, shown as "NEWS2 17 · High" in its band's color. */
+	/** The score, as the card's score line: "NEWS2: 17 High", the band in its color. */
 	acuity?: PatientCensusCardProps["acuity"];
+	/** The score's change, after it as on the card: the trend arrow and "2 points up in 24 h". */
+	trajectory?: PatientCensusCardProps["trajectory"];
 	/**
 	 * False for a patient no longer in hospital (discharged, transferred out), whom the list leaves out: the census is the
 	 * patients in hospital now. In hospital unless said otherwise.
@@ -52,8 +55,8 @@ function censusListPosition(patients: CensusListPatient[], currentId?: string) {
 }
 
 /**
- * The census, the patients in hospital now, as a list to jump between them: each patient's name, alert pill, location
- * and score, the one on screen marked and kept in view. Patients no longer in hospital never show. Intercept Live's
+ * The census, the patients in hospital now, as a list to jump between them: each patient's avatar, name, alert pill,
+ * location and score line (the patient cards'), the one on screen marked and kept in view. Patients no longer in hospital never show. Intercept Live's
  * census list, on a patient's page (PRD Census list).
  *
  * Figma: none yet; intercept.ds draws the header's list button, not the list.
@@ -68,6 +71,7 @@ function CensusList({
 }: CensusListProps) {
 	const census = React.useMemo(() => censusOf(patients), [patients]);
 	const currentRef = React.useRef<HTMLElement>(null);
+	const withAvatars = census.some((patient) => patient.photo || patient.initials);
 
 	// Keep the patient on screen in view as the user steps through the list (and when the list first shows).
 	React.useEffect(() => {
@@ -90,33 +94,48 @@ function CensusList({
 		>
 			{census.map((patient) => {
 				const current = patient.id === currentId;
-				// No score is "Unknown", never a band (PRD Patient card).
-				const level =
-					patient.acuity?.level ?? (patient.acuity && patient.acuity.score === undefined ? "unknown" : undefined);
+				const hasAvatar = Boolean(patient.photo || patient.initials);
+				// As a patient in Ask Intercept Live's answers: the avatar centered on the name and location, the rest under the
+				// name. A row without an avatar keeps its room while others have one, so the names line up.
 				const content = (
 					<>
-						<span className='flex items-center justify-between gap-2'>
-							<span className={cn("truncate text-sm text-foreground", current ? "font-semibold" : "font-medium")}>
-								{patient.name}
-							</span>
-							{patient.alert ? (
-								<PatientCardAlert
-									variant={patient.alert.variant}
-									count={patient.alert.count}
-									className='shrink-0 py-0.5 text-xs'
-								/>
+						<span className='flex items-center gap-2'>
+							{hasAvatar ? (
+								<Avatar size='sm' className='shrink-0'>
+									{patient.photo ? <AvatarImage src={patient.photo} alt='' /> : null}
+									<AvatarFallback tone={patient.tone}>{patient.initials}</AvatarFallback>
+								</Avatar>
+							) : withAvatars ? (
+								<span aria-hidden='true' className='size-8 shrink-0' />
 							) : null}
-						</span>
-						{patient.location ? <span className='truncate text-xs text-muted-foreground'>{patient.location}</span> : null}
-						{level ? (
-							<span className={cn("text-xs font-medium", patientCardAcuityLevels[level].className)}>
-								{patient.acuity ? `${patient.acuity.label} ${patient.acuity.score ?? "--"} · ` : null}
-								{patientCardAcuityLevels[level].label}
+							<span className='flex min-w-0 flex-1 flex-col'>
+								<span className='flex items-center justify-between gap-2'>
+									<span className='truncate text-sm font-semibold text-foreground'>{patient.name}</span>
+									{patient.alert ? (
+										<PatientCardAlert
+											variant={patient.alert.variant}
+											count={patient.alert.count}
+											className='shrink-0 py-0.5 text-xs'
+										/>
+									) : null}
+								</span>
+								{patient.location ? (
+									<span className='truncate text-xs text-muted-foreground'>{patient.location}</span>
+								) : null}
 							</span>
+						</span>
+						{/* The card's score line (no score reads "NEWS2: -- Unknown"), under the name: past the avatar's 32px and gap. */}
+						{patient.acuity || patient.trajectory ? (
+							<PatientCardScore
+								acuity={patient.acuity}
+								trajectory={patient.trajectory}
+								size='sm'
+								className={cn(withAvatars && "pl-10")}
+							/>
 						) : null}
 					</>
 				);
-				const rowClassName = cn("flex w-full flex-col gap-0.5 rounded-lg px-3 py-2 text-left", current && "bg-accent");
+				const rowClassName = cn("flex w-full flex-col gap-1 rounded-lg px-3 py-2 text-left", current && "bg-accent");
 				return (
 					<li key={patient.id}>
 						{onSelectPatient ? (

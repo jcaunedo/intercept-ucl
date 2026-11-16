@@ -1101,6 +1101,8 @@ function patientDetailsView(
 
 	// The list the patient was opened from, as the source page shows it (PRD PD-015). Patients none of the sources has
 	// are left out.
+	// Each with their avatar and score line as on their card (Nov 16, 2026, user's call).
+	const tones = avatarTones([...patients, ...monitoringPatients]);
 	const patientList = stepper.list
 		?.map((id) => find(id))
 		.filter((item): item is NonNullable<typeof item> => Boolean(item))
@@ -1108,11 +1110,15 @@ function patientDetailsView(
 			id: item.id,
 			name: patientName(item),
 			location: [item.unit, item.bed, item.hospital].filter(Boolean).join(" · "),
+			photo: item.photo ?? records.find((record) => record.id === item.id)?.photo,
+			initials: patientInitials(item),
+			tone: tones.get(item.id),
 			alert: alertPill(alerts.filter((alert) => alert.patientId === item.id)),
 			acuity: item.acuity,
+			trajectory: item.trajectory,
 		}));
 
-	const tone = avatarTones([...patients, ...monitoringPatients]).get(patientId);
+	const tone = tones.get(patientId);
 	return {
 		name: patientName(patient),
 		// As the header's avatar, for Ask Intercept Live's patient chip.
