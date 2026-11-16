@@ -95,8 +95,8 @@ function CensusList({
 			{census.map((patient) => {
 				const current = patient.id === currentId;
 				const hasAvatar = Boolean(patient.photo || patient.initials);
-				// As a patient in Ask Intercept Live's answers: the avatar centered on the name and location, the rest under the
-				// name. A row without an avatar keeps its room while others have one, so the names line up.
+				// As a patient in Ask Intercept Live's answers: the avatar centered on the name and location, the score line under the
+				// avatar. A row without an avatar keeps its room while others have one, so the names line up.
 				const content = (
 					<>
 						<span className='flex items-center gap-2'>
@@ -124,14 +124,10 @@ function CensusList({
 								) : null}
 							</span>
 						</span>
-						{/* The card's score line (no score reads "NEWS2: -- Unknown"), under the name: past the avatar's 32px and gap. */}
+						{/* The card's score line (no score reads "NEWS2: -- Unknown"), under the avatar, from the row's edge, not indented
+						    to the name (Nov 16, 2026, user's call). */}
 						{patient.acuity || patient.trajectory ? (
-							<PatientCardScore
-								acuity={patient.acuity}
-								trajectory={patient.trajectory}
-								size='sm'
-								className={cn(withAvatars && "pl-10")}
-							/>
+							<PatientCardScore acuity={patient.acuity} trajectory={patient.trajectory} size='sm' />
 						) : null}
 					</>
 				);

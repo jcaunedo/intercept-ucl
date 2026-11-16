@@ -1,4 +1,4 @@
-import { CensusList, censusListPosition, type CensusListPatient } from "@/components/data-display/census-list";
+import { CensusList, type CensusListPatient } from "@/components/data-display/census-list";
 import { cn } from "@/lib/utils";
 
 import { SidePanel } from "./side-panel";
@@ -22,7 +22,6 @@ function CensusListPanel({
 	carded,
 	width,
 	onWidthChange,
-	sourcePage,
 	patients,
 	currentId,
 	onSelectPatient,
@@ -33,16 +32,11 @@ function CensusListPanel({
 	carded: boolean;
 	width: number;
 	onWidthChange: (width: number) => void;
-	/** The page the list comes from, e.g. "Patients". */
-	sourcePage: string;
 	/** The source page's list, in its order; only those in hospital show. */
 	patients: CensusListEntry[];
 	currentId: string;
 	onSelectPatient: (patientId: string) => void;
 }) {
-	// The list scrolls the open patient into view itself (CensusList); it mounts each time the panel opens.
-	const { position, count } = censusListPosition(patients, currentId);
-
 	return (
 		<SidePanel
 			id='patient-list'
@@ -50,7 +44,6 @@ function CensusListPanel({
 			// The census, from any page (Nov 16, 2026, user's call; PRD Patient details PD-015).
 			title='Census'
 			header='bar'
-			description={`From ${sourcePage}, in its order${position ? ` · ${position} of ${count}` : ""}`}
 			open={open}
 			onOpenChange={onOpenChange}
 			width={width}
@@ -60,7 +53,9 @@ function CensusListPanel({
 				carded && "rounded-l-2xl shadow-[0_0_26px_0_oklch(0_0_0/16%)]",
 			)}
 		>
-			<CensusList patients={patients} currentId={currentId} onSelectPatient={onSelectPatient} />
+			{/* No line under the title (Nov 16, 2026, user's call; PRD Census list CNL-011), so the list starts 12px under the
+			    rule. It scrolls the open patient into view itself; it mounts each time the panel opens. */}
+			<CensusList patients={patients} currentId={currentId} onSelectPatient={onSelectPatient} className='pt-3' />
 		</SidePanel>
 	);
 }

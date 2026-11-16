@@ -1047,7 +1047,6 @@ function InterceptLive({
 										carded={sidebarCollapsed}
 										width={patientListWidth}
 										onWidthChange={setPatientListWidth}
-										sourcePage={page}
 										patients={patientView.patientList}
 										currentId={openPatient.id}
 										onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}

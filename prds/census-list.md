@@ -7,7 +7,7 @@ status: proposed — confirm with Intercept
 Created: Nov 16, 2026
 Created by: Julio Caunedo
 Last updated: Nov 16, 2026
-Scope: The census list on a patient's page (UCL CensusList, in Intercept Live's census-list-panel.tsx): the patients it shows, its title and position line, how it's opened and how picking a patient works. Taken out of PRD Patient details PD-015, which keeps Previous / next. Sources: documents/Intercept Live — Left Nav Spec.md ("Census column"), the System Specification §5.1, PRD Patients, PRD Monitoring.
+Scope: The census list on a patient's page (UCL CensusList, in Intercept Live's census-list-panel.tsx): the patients it shows, its title, how it's opened and how picking a patient works. Taken out of PRD Patient details PD-015, which keeps Previous / next. Sources: documents/Intercept Live — Left Nav Spec.md ("Census column"), the System Specification §5.1, PRD Patients, PRD Monitoring.
 Purpose: Gives the census list its own rules, now that it's its own component and only shows the census.
 -->
 
@@ -60,7 +60,6 @@ The Left Nav Spec calls it the "Census column": "a list of the clinician's patie
 | Use case | Story |
 |---|---|
 | **Work down the list** | On Margaret Hayes's page, the clinician opens the list and picks the next patient; the page switches, the list stays open on the new patient. |
-| **Where am I** | The line under the title says where the patient sits: "From Monitoring, in its order · 4 of 26". |
 | **From Patients** | Opened on a patient reached from Patients, the list shows only those of Patients' list who are in hospital. |
 
 ## 3. Anatomy
@@ -68,8 +67,7 @@ The Left Nav Spec calls it the "Census column": "a list of the clinician's patie
 | Part | What it shows |
 |---|---|
 | **Title** | **Census**, from any page (CNL-010). |
-| **Position line** | "From {page}, in its order · {n} of {count}", counted over the census only (CNL-011). |
-| **Row** | As a patient in Ask Intercept Live's answers: the patient's avatar (photo, else initials in their card's color), centered on the name (semibold) and the location under it ("MICU · Bed 11 · Sidney Regional"), the alert's severity pill at the right; then, under the name, the patient cards' score line: the trend arrow, "NEWS2: 17 High" (the band in its color) and the change, muted ("· 2 points up in 24 h"); no score reads "NEWS2: -- Unknown" (CNL-013). |
+| **Row** | As a patient in Ask Intercept Live's answers: the patient's avatar (photo, else initials in their card's color), centered on the name (semibold) and the location under it ("MICU · Bed 11 · Sidney Regional"); then, under the avatar from the row's edge (not indented to the name), the patient cards' score line: the trend arrow, "NEWS2: 17 High" (the band in its color) and the change, muted ("· 2 points up in 24 h"); no score reads "NEWS2: -- Unknown" (CNL-013). |
 | **Patient on screen** | The `accent` fill, `aria-current`, kept in view (CNL-020). |
 | **Empty** | "No patients in hospital". |
 
@@ -84,7 +82,7 @@ The list shows the patients in hospital now, never anyone discharged or transfer
 - ✅ **Resolved:** the list only shows the census, from any page.
 - ✅ **Resolved:** the filter is in the component (`inHospital: false` leaves a patient out), so a page that passes its whole list still shows only the census.
 - ⚠️ **Gap:** the prototype has no patients out of hospital yet (PRD Patients CEN-OD-09), so nothing is left out today.
-- ⚠️ **Decision needed:** a patient opened from Patients who isn't in hospital isn't in the list: does the list button still show on their page (with the census, and no position), or is it hidden (CNL-OD-02)?
+- ⚠️ **Decision needed:** a patient opened from Patients who isn't in hospital isn't in the list: does the list button still show on their page (with the census), or is it hidden (CNL-OD-02)?
 
 ### CNL-010 — Title
 
@@ -92,11 +90,14 @@ The list shows the patients in hospital now, never anyone discharged or transfer
 
 - ✅ **Resolved:** titled Census whichever page it comes from (~~Patients~~ before; ~~"Census" only from Monitoring, undecided from Patients~~).
 
-### CNL-011 — Position line
+### CNL-011 — No line under the title
 
-"From Monitoring, in its order · 4 of 26": the source page by its Sidebar name, without "the", then the patient's place and the count, both over the census only. With the patient on screen not in the census, the position is left out.
+The list starts right under the title bar: no line saying which page it comes from or where the patient sits.
 
-- ✅ **Resolved:** "From Monitoring", no longer "From the Monitoring".
+- ✅ **Resolved:** no source line (~~"From Monitoring, in its order": the source page by its Sidebar name, without "the"~~).
+- ✅ **Resolved:** no position (~~"· 4 of 26", the patient's place and the count over the census only~~). UCL's `censusListPosition` still works it out, for a page that wants it.
+
+- ~~✅ **Resolved:** "From Monitoring", no longer "From the Monitoring".~~
 
 ### CNL-012 — Order
 
@@ -107,6 +108,7 @@ The order and filters of the source page, as it showed them when the patient ope
 Each row shows the patient as Ask Intercept Live's answers do, and the score as the patient cards do (PatientCardScore), so a patient reads the same everywhere.
 
 - ✅ **Resolved:** the avatar before the name and location, as in the chat's patient lists; every name semibold.
+- ✅ **Resolved:** no alert pill for now (~~the alert's severity pill at the right of the name~~); the component still shows one when given the patient's alert.
 - ✅ **Resolved:** the score is the cards' score line, with its trend arrow and the 24 h change (~~"NEWS2 17 · High", the whole line in the band's color~~).
 
 ### CNL-020 — The patient on screen
@@ -132,7 +134,7 @@ When PD-015's Previous / next buttons (↑/↓, J/K) are built, they step throug
 | State | What it shows |
 |---|---|
 | **Default** | The census in the source page's order, the patient on screen marked |
-| **Patient on screen not in the census** | The census, nothing marked, no position (CNL-OD-02) |
+| **Patient on screen not in the census** | The census, nothing marked (CNL-OD-02) |
 | **Empty** | "No patients in hospital" |
 | **Read-only** (no selection handler) | The rows as text, not buttons; for use outside a patient's page |
 
@@ -140,15 +142,15 @@ When PD-015's Previous / next buttons (↑/↓, J/K) are built, they step throug
 
 - A list of buttons, one per patient; Tab and Enter, or Space, pick one.
 - The patient on screen is `aria-current="page"`, read with the row.
-- The alert pill reads its severity; the score's band is a word, never color alone.
+- The score's band is a word, never color alone.
 - The panel closes with Escape or ×, returning focus to the list button.
 
 ## 7. Acceptance criteria
 
 | ID | Criterion |
 |---|---|
-| CNL-AC-01 | Opened from Monitoring, the list shows Monitoring's patients in its order, titled Census, with "From Monitoring, in its order · n of N" (CNL-001, CNL-010, CNL-011). |
-| CNL-AC-02 | A patient with `inHospital: false` never appears, and the count leaves them out (CNL-001, CNL-011). |
+| CNL-AC-01 | Opened from Monitoring, the list shows Monitoring's patients in its order, titled Census, with no line under the title (CNL-001, CNL-010, CNL-011). |
+| CNL-AC-02 | A patient with `inHospital: false` never appears (CNL-001). |
 | CNL-AC-03 | The patient on screen is marked and in view; picking another switches the page and keeps the list open with the new one marked (CNL-020, CNL-021). |
 | CNL-AC-04 | Opening the list closes Ask Intercept Live, and the reverse (CNL-030). |
 | CNL-AC-05 | With no patient in hospital, it says "No patients in hospital". |
@@ -158,5 +160,5 @@ When PD-015's Previous / next buttons (↑/↓, J/K) are built, they step throug
 | ID | Decision | Owner | Notes |
 |---|---|---|---|
 | CNL-OD-01 | The list's design in intercept.ds | Design | Only the header's button is drawn |
-| CNL-OD-02 | On the page of a patient not in hospital (from Patients): show the list button (census, no position) or hide it | Product | Depends on PRD Patients CEN-OD-09 |
-| CNL-OD-03 | Should the rows show more (flags, unread messages)? | Product, clinicians | Today: avatar, name, alert, location, score and its 24 h change. ✅ **Resolved:** the score's 24 h change shows (CNL-013) |
+| CNL-OD-02 | On the page of a patient not in hospital (from Patients): show the list button (census, nothing marked) or hide it | Product | Depends on PRD Patients CEN-OD-09 |
+| CNL-OD-03 | Should the rows show more (flags, unread messages, the alert again)? | Product, clinicians | Today: avatar, name, location, score and its 24 h change. ✅ **Resolved:** the score's 24 h change shows (CNL-013) |

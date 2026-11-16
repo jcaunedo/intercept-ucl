@@ -1113,7 +1113,8 @@ function patientDetailsView(
 			photo: item.photo ?? records.find((record) => record.id === item.id)?.photo,
 			initials: patientInitials(item),
 			tone: tones.get(item.id),
-			alert: alertPill(alerts.filter((alert) => alert.patientId === item.id)),
+			// No alert pill for now (Nov 16, 2026, user's call; PRD Census list CNL-013): CensusList still shows one when given
+			// `alert: alertPill(alerts.filter((alert) => alert.patientId === item.id))`.
 			acuity: item.acuity,
 			trajectory: item.trajectory,
 		}));
