@@ -149,8 +149,9 @@ function SidebarMenuButton({
 			aria-current={active ? "page" : undefined}
 			aria-label={accessibleName}
 			className={cn(
-				// The row hugs its content: 32px tall (6px vertical padding around the 20px label line).
-				"flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium outline-none",
+				// The row hugs its content: 32px tall (6px vertical padding around the 20px label line). The label is 15px, a
+				// literal Figma size with no token (DESIGN.md "Sidebar", Nov 16, 2026).
+				"flex items-center gap-3 rounded-lg px-2 py-1.5 text-[15px]/5 font-medium outline-none",
 				"[&_svg]:size-4.5 [&_svg]:shrink-0",
 				// Fill, label and icon color fade over motionDuration.fast (160ms).
 				"transition-[background-color,color] duration-160 ease-in-out [&_svg]:transition-colors [&_svg]:duration-160 [&_svg]:ease-in-out",
