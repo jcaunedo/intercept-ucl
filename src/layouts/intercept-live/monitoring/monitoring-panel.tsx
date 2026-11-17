@@ -620,7 +620,8 @@ function MonitoringPanel({
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- only a new request applies.
 	}, [activeAlertsRequest]);
 	const alertCount = activeAlertCount(visible);
-	// Each card's record system, from its hospital (Scenario 5, step 1).
+	// Each monitoring card's record system, from its hospital (Scenario 5, step 1). Not on the Patients card (Minimal
+	// view), Nov 17, 2026, user's call.
 	const sourceOf = (hospitalId: string) => hospitals.find((hospital) => hospital.id === hospitalId)?.ehr;
 	const renderCard = ({
 		id,
@@ -661,7 +662,6 @@ function MonitoringPanel({
 			return (
 				<PatientCensusCard
 					{...censusCard}
-					source={sourceOf(hospitalId)}
 					initials={patientInitials(card)}
 					tone={tones.get(id) ?? avatarTone(id)}
 					acuity={acuity}

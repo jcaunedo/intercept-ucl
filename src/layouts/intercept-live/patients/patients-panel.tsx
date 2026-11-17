@@ -351,7 +351,6 @@ function PatientsPanel({
 			unit={patient.unit}
 			room={patient.room}
 			bed={patient.bed}
-			source={hospitals.find((hospital) => hospital.id === patient.hospitalId)?.ehr}
 			photo={patient.photo}
 			initials={patientInitials(patient)}
 			tone={patient.tone}
