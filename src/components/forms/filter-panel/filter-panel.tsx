@@ -11,6 +11,7 @@ import { FieldLegend, FieldSet } from "@/components/forms/field";
 import { Label } from "@/components/forms/label";
 import { SearchInput } from "@/components/forms/search-input";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/overlays/sheet";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import { expandVariants, fadeVariants, useExpandClip, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -214,7 +215,7 @@ function FilterPanel({
 											<span aria-hidden='true' className={cn("size-2 shrink-0 rounded-full", option.swatch)} />
 										) : null}
 										{option.icon ? <option.icon aria-hidden='true' className='size-4 shrink-0 text-icon' /> : null}
-										<Label htmlFor={optionId} className='min-w-0 flex-1 cursor-pointer font-normal text-inherit'>
+										<Label htmlFor={optionId} className='min-w-0 flex-1 cursor-pointer font-medium text-inherit'>
 											{option.label}
 										</Label>
 										{option.count !== undefined ? (
@@ -278,9 +279,14 @@ type FilterPanelButtonProps = Omit<React.ComponentProps<typeof Button>, "childre
 	panelId?: string;
 	/** Whether the panel is open, for `aria-expanded`. */
 	open?: boolean;
-	/** How many options are picked (`filterPanelCount`); a Counter after the label from 1. */
+	/** How many options are picked (`filterPanelCount`); a Counter after the label from 1 (on the corner when `iconOnly`). */
 	count?: number;
 	label?: string;
+	/**
+	 * The icon alone, a square button (`icon-md` by default), the label as its name and in a tooltip; the count sits on
+	 * its top-right corner. Intercept Live's filter bars, right of the search (Nov 17, 2026).
+	 */
+	iconOnly?: boolean;
 };
 
 /**
@@ -293,21 +299,43 @@ function FilterPanelButton({
 	count = 0,
 	label = "Filters",
 	variant = "outline",
+	iconOnly = false,
+	size,
+	className,
 	...props
 }: FilterPanelButtonProps) {
-	return (
+	const button = (
 		<Button
 			data-slot='filter-panel-button'
 			variant={variant}
+			size={size ?? (iconOnly ? "icon-md" : undefined)}
 			aria-expanded={open}
 			aria-controls={panelId}
-			aria-label={count ? `${label}, ${count} picked` : undefined}
+			aria-label={count ? `${label}, ${count} picked` : iconOnly ? label : undefined}
+			className={cn(iconOnly && "relative overflow-visible", className)}
 			{...props}
 		>
 			<ListFilterIcon aria-hidden='true' />
-			{label}
-			{count ? <Counter count={count} /> : null}
+			{iconOnly ? null : label}
+			{count ? (
+				<Counter
+					count={count}
+					// On the icon button's corner, outside its square, so the icon stays centered. Read in the button's name.
+					aria-hidden={iconOnly || undefined}
+					className={iconOnly ? "absolute -top-2 -right-2" : undefined}
+				/>
+			) : null}
 		</Button>
+	);
+	if (!iconOnly) return button;
+	// The icon alone: the label in a tooltip on hover and keyboard focus, as the filter bar's other icon controls.
+	return (
+		<TooltipProvider>
+			<Tooltip>
+				<TooltipTrigger asChild>{button}</TooltipTrigger>
+				<TooltipContent side='bottom'>{label}</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	);
 }
 

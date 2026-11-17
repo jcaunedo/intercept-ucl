@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 16, 2026
+Last updated: Nov 17, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 16, 2026
+**Last updated:** November 17, 2026
 
 ---
 
@@ -27,7 +27,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 
 Monitoring is where an on-shift clinician watches their patient panel continuously, evaluates alerts, looks in on patients through the bedside camera, and decides when to escalate to intervention. The System Specification describes it as "a sustained workflow loop that runs throughout the shift, distinct from the discrete intervention loop that follows it" (Spec §5.2).
 
-The Census is where the clinician **manages** their patients, with a general picture of how each is doing; Monitoring is where they **monitor** their clinical status in real time (PRD Patients §1, the PRD Census until Nov 16, 2026; decision Nov 1, 2026; the Census read "who is on my census and who needs attention" before). Monitoring answers *what is happening to these patients right now, and do I need to act*. Census is a roster of compact cards; Monitoring is a live monitoring surface built from expanded cards, trends and a triage queue.
+~~The Census is where the clinician **manages** their patients, with a general picture of how each is doing; Monitoring is where they **monitor** their clinical status in real time (PRD Patients §1, the PRD Census until Nov 16, 2026; decision Nov 1, 2026; the Census read "who is on my census and who needs attention" before). Monitoring answers *what is happening to these patients right now, and do I need to act*. Census is a roster of compact cards; Monitoring is a live monitoring surface built from expanded cards, trends and a triage queue.~~ ✅ **Resolved:** Monitoring answers *who needs my clinical attention right now?*: active coverage, NEWS2, deterioration, alerts, organ support, clinical state, real-time monitoring. Patients answers *how do I find or return to a patient's record?*: a directory of current and past patients, a table by default, with no alerts, scores or live data (PRD Patients §1). Monitoring is a live monitoring surface built from expanded cards, trends and a triage queue.
 
 Monitoring is not the patient chart and not the intervention workflow. It shows enough to notice, judge and escalate; ordering, documenting and messaging happen in their own modules, opened from here without losing context (Spec §9.1, Principle 11).
 
@@ -43,7 +43,7 @@ The census is the set of patients in hospital now that the clinician is responsi
 | **How** | Live: vitals, waveforms, alerts as they fire | A general picture, current but not live |
 | **When** | Through the shift, from its start | Finding a patient, reviewing a group, looking back |
 
-- ⚠️ **Decision needed:** which of Patients' census tasks move here now that Monitoring is the census: the start-of-shift scan, roster changes (admissions, transfers, discharges) and My patients (PRD Patients CEN-OD-10).
+- ~~⚠️ **Decision needed:** which of Patients' census tasks move here now that Monitoring is the census: the start-of-shift scan, roster changes (admissions, transfers, discharges) and My patients (PRD Patients CEN-OD-10).~~ ✅ **Resolved:** the start-of-shift scan, reviewing a clinical group (rising score, organ support, sepsis watch, new patients) and roster changes as they happen are Monitoring's; My patients is on both pages, each for its own job (PRD Patients CEN-OD-10).
 - ℹ️ Who among the census is on the clinician's panel (all of it, a watchlist, the shift assignment) is still MON-OD-01 / CEN-OD-02.
 
 ### 1.1 Product objectives
@@ -181,7 +181,7 @@ A filter on live status would also add and remove cards as readings change, whic
 
 ℹ️ Since Nov 1, 2026 the Filters panel floats over the page on a scrim, 400px, with **Done** to close it (Apply until Nov 3, 2026) (Intercept-Live Filter example `205:5447`), instead of sitting in the live feed's place.
 
-✅ **Resolved (Oct 30, 2026, user's call): a Filters panel, as on the Census.** This reopens "filters in context" above. The toolbar's **Filters** button opens the Census's panel (on the right, in the live feed's place, one at a time) with Monitoring's groups: **Unit** (the Unit menu moved into it), **Highest alert**, **Alert status** (Acknowledged, Escalated, Resolved, Feedback: where the patient's alerts stand after the team's actions; Nov 3, 2026), **Outside alarm limits** (HR, SpO₂, ABP, RR, and Not reporting), **Organ support** and **Code status & safety** (the patient's tags, though the monitoring card doesn't show them). The limits options read live numbers, so once picked they keep the patients who matched then, as the Outside limits chip does (MON-013). The quick-view chips stay as they are: My patients and Outside limits. Rising score and Sepsis watch aren't in the panel: the monitoring card doesn't show acuity, and Monitoring patients carry no sepsis status.
+✅ **Resolved (Oct 30, 2026, user's call): a Filters panel, as on the Census.** This reopens "filters in context" above. The toolbar's **Filters** button (✅ **Resolved:** an icon button right of the search, its name in a tooltip, the picked count on its corner, on every page with this filter bar) opens the Census's panel (on the right, in the live feed's place, one at a time) with Monitoring's groups: **Unit** (the Unit menu moved into it), **Highest alert**, **Alert status** (Acknowledged, Escalated, Resolved, Feedback: where the patient's alerts stand after the team's actions; Nov 3, 2026), **Outside alarm limits** (HR, SpO₂, ABP, RR, and Not reporting), **Organ support** and **Code status & safety** (the patient's tags, though the monitoring card doesn't show them). The limits options read live numbers, so once picked they keep the patients who matched then, as the Outside limits chip does (MON-013). The quick-view chips stay as they are: My patients and Outside limits. Rising score and Sepsis watch aren't in the panel: the monitoring card doesn't show acuity, and Monitoring patients carry no sepsis status.
 
 - ⚠️ **Decision needed:** how a panel is defined (shift assignment, a hand-picked watch list, or both) and whether a clinician can add a patient from the Census to their panel (MON-OD-01).
 - ⚠️ **Constraint:** the brief's ground rule "patient data never crosses tenants" applies. A cross-hospital panel may only combine hospitals the clinician's tenant covers, filtered by per-hospital privileges (Spec §5.2 "Cross-hospital surveillance with per-hospital privilege filtering").
@@ -239,7 +239,7 @@ Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, l
 
 ### MON-015 — View controls
 
-Two controls at the start of the toolbar's actions, before Density, Sort by and Filters, change how the panel looks, never who is on it (MON-010). From the exploration (§12.1).
+Two controls ~~at the start of the toolbar's actions, before Density and Sort by and Filters~~ ✅ **Resolved:** after Sort by, which leads the toolbar's actions, and before Density, change how the panel looks, never who is on it (MON-010). From the exploration (§12.1).
 
 | Control | Behavior |
 |---|---|

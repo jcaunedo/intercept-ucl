@@ -1,68 +1,110 @@
-import { patientCardAcuityLevels, type PatientCardAcuityLevel } from "@/components/cards/patient-census-card";
+import { isPressorFlag } from "../shared/pressors";
+import { unitFilterGroup, type FilterGroup, type PatientFilters } from "../shared/patient-filters";
+import type { PanelHospital } from "../shared/patient-panel";
+import { patientStatus, patientStatusOrder, patientStatuses } from "./patient-status";
+import type { DirectoryPatient } from "./patients-panel";
 
-import {
-	alertFilterGroup,
-	tagFilterGroups,
-	unitFilterGroup,
-	type FilterGroup,
-	type PatientFilters,
-} from "../shared/patient-filters";
-import type { CensusPatient } from "./patients-panel";
+// Patients' groups for the shared Filters panel (`shared/patient-filters.tsx`; PRD Patients CEN-003): a directory's
+// filters, never Monitoring's. Hospital and Unit first (the filter bar's Hospital and Unit menus set the same groups),
+// then care team, status, recency and, last and secondary, clinical context. No score, alert or live-data
+// group: those are Monitoring's.
 
-// The Census's groups for the shared Filters panel (`shared/patient-filters.tsx`). Groups the census has no data for
-// (alert type, the sepsis validation steps) are left out until it does.
+const dayMs = 24 * 3_600_000;
 
-// The card's "Change in last 24 h" as a number: "+7", "−3", "0"; none without a value.
-const change = (patient: CensusPatient) => {
-	const value = patient.trajectory?.value;
-	if (patient.trajectory?.variant === "missing" || value === undefined) return undefined;
-	const number = Number(String(value).replace("−", "-"));
-	return Number.isNaN(number) ? undefined : number;
+/** Within the last `days` days (today: since midnight). */
+const within = (iso: string | undefined, days: number | "today") => {
+	if (!iso) return false;
+	const time = Date.parse(iso);
+	if (days === "today") {
+		const midnight = new Date();
+		midnight.setHours(0, 0, 0, 0);
+		return time >= midnight.getTime();
+	}
+	return Date.now() - time < days * dayMs;
 };
 
-// Score bands, most severe first; a score shows only the bands its patients have.
-const levelOrder: PatientCardAcuityLevel[] = ["critical", "high", "moderate", "medium", "low"];
+/** Recently viewed, the filter bar's chip: opened by the clinician in the last 7 days. */
+const recentlyViewedDays = 7;
+const isRecentlyViewed = (patient: DirectoryPatient) => within(patient.lastViewedAt, recentlyViewedDays);
+
+const tagged = (match: (label: string) => boolean) => (patient: DirectoryPatient) =>
+	(patient.tags ?? []).some((tag) => match(tag.label));
+
+// Clinical context: the flags that help tell patients apart in a directory (PRD Patients CEN-003). Secondary.
+const clinicalOptions = [
+	{ id: "ventilated", label: "Ventilated", matches: tagged((label) => label === "Ventilated") },
+	{ id: "pressor", label: "On pressors", matches: tagged(isPressorFlag) },
+	{ id: "dialysis", label: "Dialysis", matches: tagged((label) => label === "Dialysis") },
+	{ id: "isolation", label: "Isolation", matches: tagged((label) => /isolation/i.test(label)) },
+	{ id: "dnr", label: "DNR", matches: tagged((label) => /^DNR/.test(label)) },
+	{ id: "fall", label: "Fall risk", matches: tagged((label) => label === "Fall risk") },
+];
+
+/** Whether a flag is one the directory shows as clinical context (the table's column, the card's tag row). */
+const isClinicalContextFlag = (label: string) =>
+	label === "Ventilated" || isPressorFlag(label) || label === "Dialysis" || /isolation/i.test(label) || /^DNR/.test(label) || label === "Fall risk";
 
 /**
- * The filter groups for these patients. Unit lists the units among `patients` (the hospital tab's), plus any already
- * picked; the score group is titled by the score's name ("NEWS2") and lists its bands.
+ * The filter groups for these patients. Unit lists the units among `patients` in the picked hospitals (all of them
+ * without one), plus any already picked; Care team lists the attendings the patients have.
  */
-function patientsFilterGroups(patients: CensusPatient[], filters: PatientFilters): FilterGroup<CensusPatient>[] {
-	const scoreName = patients.find((patient) => patient.acuity)?.acuity?.label ?? "Score";
-	const levels = levelOrder.filter((level) => patients.some((patient) => patient.acuity?.level === level));
+function patientsFilterGroups(
+	patients: DirectoryPatient[],
+	hospitals: PanelHospital[],
+	filters: PatientFilters,
+): FilterGroup<DirectoryPatient>[] {
+	const pickedHospitals = filters.hospital ?? [];
+	const inHospitals = pickedHospitals.length
+		? patients.filter((patient) => pickedHospitals.includes(patient.hospitalId))
+		: patients;
+	const attendings = [...new Set(patients.map((patient) => patient.attending).filter((name): name is string => Boolean(name)))].sort();
+	const statuses = patientStatusOrder.filter((status) => patients.some((patient) => patientStatus(patient) === status));
 
 	return [
-		unitFilterGroup(patients, filters),
-		alertFilterGroup(),
 		{
-			id: "score",
-			title: scoreName,
+			id: "hospital",
+			title: "Hospital",
+			options: hospitals.map((hospital) => ({
+				id: hospital.id,
+				label: hospital.name,
+				matches: (patient: DirectoryPatient) => patient.hospitalId === hospital.id,
+			})),
+		},
+		unitFilterGroup(inHospitals, filters),
+		{
+			id: "relationship",
+			title: "Care team",
 			options: [
-				...levels.map((level) => ({
-					id: level,
-					label: patientCardAcuityLevels[level].label,
-					matches: (patient: CensusPatient) => patient.acuity?.level === level,
+				// My patients is the filter bar's chip, not repeated here.
+				{ id: "team", label: "On my care team", matches: (patient) => Boolean(patient.onCareTeam) },
+				...attendings.map((name) => ({
+					id: `attending:${name}`,
+					label: `${name} (attending)`,
+					matches: (patient: DirectoryPatient) => patient.attending === name,
 				})),
-				{ id: "none", label: "No score", matches: (patient) => patient.acuity?.score === undefined },
 			],
 		},
 		{
-			id: "change",
-			title: "Change in last 24 h",
+			id: "status",
+			title: "Patient status",
+			options: statuses.map((status) => ({
+				id: status,
+				label: patientStatuses[status].label,
+				icon: patientStatuses[status].icon,
+				matches: (patient: DirectoryPatient) => patientStatus(patient) === status,
+			})),
+		},
+		{
+			id: "recency",
+			title: "Last activity",
 			options: [
-				{ id: "rise2", label: "Rising 2 or more", matches: (patient) => (change(patient) ?? 0) >= 2 },
-				{ id: "rise1", label: "Rising 1", matches: (patient) => change(patient) === 1 },
-				{ id: "flat", label: "No change", matches: (patient) => change(patient) === 0 },
-				{ id: "fall", label: "Falling", matches: (patient) => (change(patient) ?? 0) < 0 },
+				{ id: "today", label: "Today", matches: (patient) => within(patient.lastActivityAt, "today") },
+				{ id: "7d", label: "Last 7 days", matches: (patient) => within(patient.lastActivityAt, 7) },
+				{ id: "30d", label: "Last 30 days", matches: (patient) => within(patient.lastActivityAt, 30) },
 			],
 		},
-		...tagFilterGroups<CensusPatient>(),
-		{
-			id: "sepsis",
-			title: "Sepsis",
-			options: [{ id: "watch", label: "Sepsis watch", matches: (patient) => Boolean(patient.sepsisWatch) }],
-		},
+		{ id: "clinical", title: "Clinical context", options: clinicalOptions },
 	];
 }
 
-export { patientsFilterGroups };
+export { isClinicalContextFlag, isRecentlyViewed, patientsFilterGroups, recentlyViewedDays };

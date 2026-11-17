@@ -9,12 +9,15 @@ import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-schedule";
+import { sampleMessageThreads } from "../messages/sample-messages";
+import { sampleInboxItems } from "../inbox/sample-inbox";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Patients } from "./patients";
-import { samplePatients } from "../sample-data/sample-census";
+import { samplePastPatients, samplePatients, sampleUncertainStatusPatients } from "../sample-data/sample-census";
 
 const meta = {
 	title: "Layouts/Intercept Live/Patients",
@@ -41,10 +44,17 @@ const meta = {
 		);
 	},
 	args: {
-		// The app opens on Monitoring; these stories show the Census page.
+		// The app opens on Monitoring; these stories show the Patients page.
 		defaultPage: "Patients",
 		hospitals: sampleHospitals,
-		patients: samplePatients,
+		// The Sidebar's Schedule: the clinician's shifts and the open shifts they can take.
+		schedule: { shifts: sampleScheduleShifts, openShifts: sampleOpenShifts, onShiftAction: fn(), onNewRequest: fn() },
+		// The Sidebar's Messages: every thread with the bedside, across the hospitals.
+		messages: { threads: sampleMessageThreads, onSendMessage: fn() },
+		// The Sidebar's Inbox: work besides alerts (the alerts come from `alerts`).
+		inbox: { items: sampleInboxItems, onItemAction: fn() },
+		// The directory: the census, the patients treated before (discharged, transferred) and two with an uncertain status (pending reconciliation, unknown).
+		patients: [...samplePatients, ...samplePastPatients, ...sampleUncertainStatusPatients],
 		monitoringPatients: sampleMonitoringPatients,
 		patientRecords: samplePatientRecords,
 		onPatientDetailsAction: fn(),
@@ -60,7 +70,7 @@ const meta = {
 		onAlertAction: fn(),
 		onOpenLiveFeed: fn(),
 	},
-} satisfies Meta<typeof Census>;
+} satisfies Meta<typeof Patients>;
 
 export default meta;
 
@@ -76,51 +86,17 @@ async function openedChat(canvas: ReturnType<typeof within>) {
 type Story = StoryObj<typeof meta>;
 
 /**
- * Hospital tabs, the My patients chip and the quick views filter the grid; cards are sorted by score (NEWS2).
- * The live feed plays as on Monitoring (PRD SV-081): at 1.5 s, at 8 s, then every 15 to 30 s, an alert fires, changes
- * severity or resolves. The hospital bar says what changed ("Live feed: …"), and the live feed panel's queue, the counts
- * and the List's Alert column follow (`withFeedAlerts`). The cards hold still and show no alert: the Census is for
- * managing patients, so it never re-sorts on its own (Monitoring does, and shows alerts on its cards). Then it loops.
+ * Patients, the directory: search first, then My patients, Current and Recently viewed, the Hospital and Unit menus and
+ * Filters; the count, Sort (Recently viewed) and Table / Cards. Current and past patients together, each with their
+ * status. The live feed plays in the shell (toasts, Monitoring), but nothing on this page moves or ranks by alerts or
+ * NEWS2: that's Monitoring's (PRD Patients).
  */
 export const Default: Story = {
-	render: (args) => <LiveCensus {...args} />,
+	render: (args) => <LiveDirectory {...args} />,
 };
 
 /** The same screen without the scripted feed: the sample as it starts, nothing changing. */
 export const Static: Story = {};
-
-/**
- * My patients: a chip like the quick views, off by default, so the grid starts with everyone. Pressed, it narrows the
- * grid to the user's own and the title reads "8 of 26 patients"; pressed again, everyone is back.
- */
-export const MyPatients: Story = {
-	play: async ({ canvas, userEvent }) => {
-		const mine = samplePatients.filter((patient) => patient.mine).length;
-		const chip = canvas.getByRole("button", { name: /^My patients/ });
-		await expect(chip).toHaveAttribute("aria-pressed", "false");
-		await expect(chip).toHaveTextContent(new RegExp(`·\\s*${mine}$`));
-		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(`${samplePatients.length} patients`);
-		await userEvent.click(chip);
-		await expect(chip).toHaveAttribute("aria-pressed", "true");
-		await waitFor(() =>
-			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(`${mine} of ${samplePatients.length} patients`),
-		);
-		await userEvent.click(chip);
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).not.toHaveTextContent(" of "));
-	},
-};
-
-/** New patients, right after My patients: the ten who arrived on their unit in the last 24 h. */
-export const NewPatients: Story = {
-	play: async ({ canvas, userEvent }) => {
-		const chip = canvas.getByRole("button", { name: /^New patients/ });
-		await expect(chip).toHaveTextContent(/·\s*10$/);
-		await userEvent.click(chip);
-		await waitFor(() =>
-			expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^10 patients/),
-		);
-	},
-};
 
 /**
  * The Sidebar's Ask Intercept Live opens the chat panel from the left, on any page: the page narrows beside it. Its
@@ -269,109 +245,196 @@ export const AskInterceptSuggestedFollowUps: Story = {
 	},
 };
 
+/** Everyone on the sample directory: the census, the patients treated before and two with an uncertain status (pending reconciliation, unknown). */
+const directory = [...samplePatients, ...samplePastPatients, ...sampleUncertainStatusPatients];
+
+/** What the results line says: "34 patients", "11 of 34 patients". */
+const resultsCount = (canvasElement: HTMLElement) =>
+	canvasElement.querySelector("[data-results-count]")?.textContent?.trim() ?? "";
+
+/** Within the last 7 days, as the Recently viewed chip counts. */
+const viewedThisWeek = (patient: { lastViewedAt?: string }) =>
+	Boolean(patient.lastViewedAt && Date.now() - Date.parse(patient.lastViewedAt) < 7 * 24 * 3_600_000);
+
+/** The Table view (the default on a desktop; the test browser is narrow, so cards are its default) and its table. */
+async function showTable(canvas: ReturnType<typeof within>, userEvent: { click: (element: Element) => Promise<void> }) {
+	const button = canvas.getByRole("button", { name: "Table" });
+	if (button.getAttribute("aria-pressed") !== "true") await userEvent.click(button);
+	return canvas.findByRole("table", { name: "Patients" });
+}
+
 /**
- * The hospital bar's Live feed opens the live feed panel right of the canvas, as on Monitoring: everyone's log, each
- * line with its patient; an open alert's line opens it. The grid drops a column for the room it takes.
+ * The directory's table: identity, status, location, the attending, last activity, clinical context and the "…"
+ * menu. No NEWS2 or alert column: those are Monitoring's. A row per patient, past patients included.
  */
-export const LiveFeed: Story = {
-	play: async ({ args, canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: /^Live feed/ }));
-		const panel = await canvas.findByRole("complementary", { name: "Live feed" });
-		await expect(args.onOpenLiveFeed).toHaveBeenCalled();
-		// Everyone's log, each line with its patient; an open alert's line opens it (here the patient's page).
-		const log = within(within(panel).getByRole("log", { name: "Live feed" }));
-		const line = log.getAllByRole("button", { name: /Critical alert: / })[0];
-		const name = line.querySelector(".font-semibold")?.textContent ?? "";
-		await userEvent.click(line);
-		await expect(await canvas.findByRole("heading", { level: 1, name })).toBeInTheDocument();
+export const TableView: Story = {
+	play: async ({ canvas, userEvent }) => {
+		const table = within(await showTable(canvas, userEvent));
+		const headers = table.getAllByRole("columnheader").map((header) => header.textContent);
+		await expect(headers).toEqual([
+			"Patient",
+			"Status",
+			"Location",
+			"Attending",
+			"Last activity",
+			"Clinical context",
+			"Actions",
+		]);
+		await expect(table.queryByRole("columnheader", { name: "NEWS2" })).toBeNull();
+		await expect(table.getAllByRole("row")).toHaveLength(directory.length + 1);
+		// Every status the data can have shows: Current, Pending reconciliation, Transferred, Discharged, Status unknown.
+		for (const status of ["Current", "Pending reconciliation", "Transferred", "Discharged", "Status unknown"]) {
+			await expect(table.getAllByText(status).length).toBeGreaterThan(0);
+		}
+		// A transfer says where it went; status is a word and an icon, never color alone.
+		const foster = table.getByRole("row", { name: /Foster, Gary/ });
+		await expect(foster).toHaveTextContent("Transferred");
+		await expect(foster).toHaveTextContent("To Denver Health");
 	},
 };
 
 /**
- * Group by hospital (the switch at the right of the filter chips): a Kanban board, a column per hospital, the sort
- * inside each.
+ * A status's details show on hover (or keyboard focus) of its badge, in a tooltip, so the column stays one line: where a
+ * transfer went and when, when a patient was discharged, what an uncertain status means. Screen readers get them with
+ * the badge.
  */
-export const GroupByHospital: Story = {
+export const StatusDetails: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
-		for (const hospital of new Set(samplePatients.map((patient) => patient.hospital))) {
-			await waitFor(() => expect(canvas.getByRole("region", { name: hospital })).toBeInTheDocument());
-		}
-	},
-};
-
-/** Filters that empty a hospital drop its column: only hospitals with patients show (Nov 3, 2026). */
-export const KanbanFiltered: Story = {
-	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
-		const hospitals = [...new Set(samplePatients.map((patient) => patient.hospital))];
-		for (const hospital of hospitals) {
-			await waitFor(() => expect(canvas.getByRole("region", { name: hospital })).toBeInTheDocument());
-		}
-		await userEvent.click(canvas.getByRole("button", { name: /^Sepsis watch/ }));
+		const table = within(await showTable(canvas, userEvent));
+		const foster = within(table.getByRole("row", { name: /Foster, Gary/ }));
+		const badge = foster.getByText("Transferred");
+		await expect(badge).toBeVisible();
+		// Not on screen until hovered.
+		await expect(document.querySelector("[data-slot='tooltip-content']")).toBeNull();
+		await userEvent.hover(badge);
 		await waitFor(() => {
-			const shown = hospitals.filter((hospital) => canvas.queryByRole("region", { name: hospital }));
-			expect(shown.length).toBeGreaterThan(0);
-			expect(shown.length).toBeLessThan(hospitals.length);
+			const tooltip = document.querySelector("[data-slot='tooltip-content']");
+			expect(tooltip).toHaveTextContent("To Denver Health");
+			expect(tooltip).toHaveTextContent(/Transferred .* · \d+ hr ago/);
 		});
-		await expect(canvas.queryByText("No patients match these filters")).not.toBeInTheDocument();
 	},
 };
 
-/** Group by hospital holds across pages: the shell keeps it, so Monitoring opens grouped and the Census stays so. */
-export const GroupingAcrossPages: Story = {
+/** The whole row opens the patient's page; so does Enter on the name, the row's keyboard target. */
+export const OpenFromRow: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
-		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
-		await waitFor(() => expect(canvas.getByRole("switch", { name: "Group by hospital" })).toBeChecked());
-		await userEvent.click(canvas.getByRole("button", { name: "Patients" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1, name: /across/ })).toBeInTheDocument());
-		await expect(canvas.getByRole("switch", { name: "Group by hospital" })).toBeChecked();
+		const table = within(await showTable(canvas, userEvent));
+		await userEvent.click(within(table.getByRole("row", { name: /Davis, Linda/ })).getByText("Sidney Regional"));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Davis"));
+	},
+};
+
+/** By keyboard: the name is a button in the row's first cell; Enter opens the patient, a discharged one too. */
+export const OpenWithKeyboard: Story = {
+	play: async ({ canvas, userEvent }) => {
+		const table = within(await showTable(canvas, userEvent));
+		table.getByRole("button", { name: "Brooks, Karen" }).focus();
+		await userEvent.keyboard("{Enter}");
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Brooks"));
+	},
+};
+
+/** The "…" menu: Open patient and Copy patient link, no clinical actions. */
+export const RowActions: Story = {
+	play: async ({ canvas, userEvent }) => {
+		await showTable(canvas, userEvent);
+		await userEvent.click(canvas.getByRole("button", { name: "More for Miller, Sarah" }));
+		const items = (await screen.findAllByRole("menuitem")).map((item) => item.textContent);
+		await expect(items).toEqual(["Open patient", "Copy patient link"]);
+		await userEvent.click(screen.getByRole("menuitem", { name: "Open patient" }));
+		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Miller"));
+	},
+};
+
+/** My patients narrows to the clinician's own, past patients included: "11 of 34 patients". Pressed again, everyone. */
+export const MyPatients: Story = {
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		const mine = directory.filter((patient) => patient.mine).length;
+		const chip = canvas.getByRole("button", { name: /^My patients/ });
+		await expect(chip).toHaveAttribute("aria-pressed", "false");
+		await expect(chip).toHaveTextContent(new RegExp(`·\\s*${mine}$`));
+		await expect(resultsCount(canvasElement)).toBe(`${directory.length} patients`);
+		await userEvent.click(chip);
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${mine} of ${directory.length} patients`));
+		await userEvent.click(chip);
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${directory.length} patients`));
+	},
+};
+
+/** Current: the patients in hospital now. The rest stay on the page until it's pressed: they're still patients. */
+export const CurrentPatients: Story = {
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: /^Current/ }));
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${samplePatients.length} of ${directory.length} patients`));
+	},
+};
+
+/** Recently viewed: opened in the last 7 days, the latest first (the default sort). */
+export const RecentlyViewed: Story = {
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		const viewed = directory.filter(viewedThisWeek);
+		await userEvent.click(canvas.getByRole("button", { name: /^Recently viewed/ }));
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${viewed.length} of ${directory.length} patients`));
+		const table = within(await showTable(canvas, userEvent));
+		const latest = [...viewed].sort((a, b) => Date.parse(b.lastViewedAt ?? "") - Date.parse(a.lastViewedAt ?? ""))[0];
+		await expect(table.getAllByRole("row")[1]).toHaveTextContent(`${latest.lastName}, ${latest.firstName}`);
 	},
 };
 
 /**
- * The search leads the filter chips: it opens on click, narrows the cards and the chips' counts, and clears. It
- * searches everything the card shows, the score included.
+ * Search leads the filter bar, as on Monitoring: a magnifier that opens on click. Name, MRN, hospital, unit, room or bed;
+ * Clear brings everyone back.
  */
 export const Search: Story = {
-	play: async ({ canvas, userEvent }) => {
+	play: async ({ canvas, canvasElement, userEvent }) => {
 		const search = canvas.getByRole("searchbox", { name: "Search patients" });
 		await userEvent.click(search);
-		await userEvent.type(search, "hayes");
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^1 patient at /));
-		await expect(canvas.getByRole("button", { name: /^My patients/ })).toHaveTextContent(/1$/);
-		await userEvent.click(canvas.getByRole("button", { name: "Clear search" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(new RegExp(`^${samplePatients.length} patients`)));
-		// Anything the card shows: Miller's score, "NEWS2 17".
-		await userEvent.type(search, "17");
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^2 patients/));
+		await userEvent.type(search, "01033876");
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`1 of ${directory.length} patients`));
 		await expect(canvas.getByText("Miller, Sarah")).toBeInTheDocument();
+		await userEvent.click(canvas.getByRole("button", { name: "Clear search" }));
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${directory.length} patients`));
+		// A hospital and a unit together.
+		await userEvent.type(search, "chadron med-surg");
+		const chadron = directory.filter((patient) => patient.hospitalId === "chadron" && patient.unit === "Med-Surg").length;
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${chadron} of ${directory.length} patients`));
 	},
 };
 
 /**
- * Filters opens a panel on the right (where the live feed opens). Options narrow the cards as they're picked, the
- * button counts them, and Clear all brings everyone back.
+ * A search that only matches patients no longer in hospital, with Current on: the page says they exist rather than "no
+ * patients found", and Show all statuses brings them in.
  */
+export const SearchFindsPastPatients: Story = {
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: /^Current/ }));
+		await userEvent.click(canvas.getByRole("searchbox", { name: "Search patients" }));
+		await userEvent.type(canvas.getByRole("searchbox", { name: "Search patients" }), "Brooks");
+		await waitFor(() => expect(canvas.getByText("No current patients found")).toBeVisible());
+		await userEvent.click(canvas.getByRole("button", { name: "Show all statuses" }));
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`1 of ${directory.length} patients`));
+		await expect(canvas.getByRole("button", { name: /^Current/ })).toHaveAttribute("aria-pressed", "false");
+	},
+};
+
+/** Filters: Hospital, Unit, Care team, Patient status, Last activity and Clinical context. Discharged finds the past stays. */
 export const Filters: Story = {
-	play: async ({ canvas, userEvent }) => {
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		const discharged = directory.filter((patient) => patient.status === "discharged").length;
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
-		const ventilated = await screen.findByRole("checkbox", { name: "Ventilated" });
-		await userEvent.click(ventilated);
-		await expect(screen.getByText(`5 of ${samplePatients.length} patients in this view`)).toBeInTheDocument();
-		// A modal: the page behind is hidden from assistive tech until Done closes the sheet.
-		await userEvent.click(screen.getByRole("button", { name: "Done" }));
+		const dialog = within(await screen.findByRole("dialog", { name: "Filters" }));
+		for (const group of ["Hospital", "Unit", "Care team", "Patient status", "Last activity", "Clinical context"]) {
+			await expect(dialog.getByText(group)).toBeInTheDocument();
+		}
+		await expect(dialog.queryByText("NEWS2")).toBeNull();
+		await userEvent.click(dialog.getByRole("checkbox", { name: /^Discharged/ }));
+		await userEvent.click(dialog.getByRole("button", { name: "Done" }));
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
-		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^5 patients/);
-		const filtersButton = canvas.getByRole("button", { name: "Filters, 1 picked" });
-		await expect(filtersButton).toHaveAttribute("aria-expanded", "false");
-		await userEvent.click(filtersButton);
+		await expect(resultsCount(canvasElement)).toBe(`${discharged} of ${directory.length} patients`);
+		await userEvent.click(canvas.getByRole("button", { name: "Filters, 1 picked" }));
 		await userEvent.click(await screen.findByRole("button", { name: "Clear all" }));
-		// With nothing picked, the footer (Clear all, Done) leaves; the close button closes the sheet.
-		await waitFor(() => expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument());
 		await userEvent.click(screen.getByRole("button", { name: "Close Filters" }));
-		await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(new RegExp(`^${samplePatients.length} patients`)));
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${directory.length} patients`));
 	},
 };
 
@@ -385,75 +448,130 @@ export const FiltersSearch: Story = {
 		const search = await screen.findByRole("searchbox", { name: "Search filters" });
 		await waitFor(() => expect(search).toHaveFocus());
 		await userEvent.type(search, "vent");
-		await expect(screen.getByRole("checkbox", { name: "Ventilated" })).toBeInTheDocument();
-		await expect(screen.queryByRole("checkbox", { name: "CCU" })).not.toBeInTheDocument();
+		await expect(screen.getByRole("checkbox", { name: /^Ventilated/ })).toBeInTheDocument();
+		await expect(screen.queryByRole("checkbox", { name: /^CCU/ })).not.toBeInTheDocument();
 		await userEvent.clear(search);
 		await userEvent.type(search, "unit");
-		await expect(screen.getByRole("checkbox", { name: "CCU" })).toBeInTheDocument();
-		await expect(screen.queryByRole("checkbox", { name: "Ventilated" })).not.toBeInTheDocument();
+		await expect(screen.getByRole("checkbox", { name: /^CCU/ })).toBeInTheDocument();
+		await expect(screen.queryByRole("checkbox", { name: /^Ventilated/ })).not.toBeInTheDocument();
 		await userEvent.clear(search);
 		await userEvent.type(search, "zzz");
 		await expect(screen.getByText('No filters match "zzz"')).toBeInTheDocument();
 		await userEvent.keyboard("{Escape}");
 		await expect(search).toHaveValue("");
-		await expect(screen.getByRole("dialog", { name: "Filters" })).toBeInTheDocument();
 		await userEvent.keyboard("{Escape}");
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
 	},
 };
 
-/** Group by hospital's other view (`groupedView="sections"`): a grid section each. */
-export const GroupedGrid: Story = {
-	args: { groupedView: "sections" },
+/** Sort: Recently viewed by default. No NEWS2 sort: ranking by acuity is Monitoring's. */
+export const Sort: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("switch", { name: "Group by hospital" }));
-		const hospitals = new Set(samplePatients.map((patient) => patient.hospital)).size;
-		await waitFor(() => expect(canvas.getAllByRole("heading", { level: 2 })).toHaveLength(hospitals));
-		await expect(canvas.queryByRole("region", { name: "Sidney Regional" })).not.toBeInTheDocument();
+		const sort = canvas.getByRole("combobox", { name: "Sort by" });
+		await expect(sort).toHaveTextContent("Recently viewed");
+		await userEvent.click(sort);
+		const options = (await screen.findAllByRole("option")).map((option) => option.textContent);
+		await expect(options).toEqual([
+			"Recently viewed",
+			"Patient name",
+			"Most recent activity",
+			"Admission date",
+			"Hospital",
+			"Unit",
+		]);
+		await userEvent.click(screen.getByRole("option", { name: "Patient name" }));
+		const table = within(await showTable(canvas, userEvent));
+		const first = [...directory].sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName))[0];
+		await expect(table.getAllByRole("row")[1]).toHaveTextContent(`${first.lastName}, ${first.firstName}`);
 	},
 };
 
 /**
- * One hospital picked on its tab turns Group by hospital off (the switch disabled); All hospitals brings back the
- * user's choice, here the board.
+ * Cards: identity, location, status, the attending, last activity, then the flags. No score line: NEWS2 isn't
+ * how the directory reads.
  */
-export const GroupingOneHospital: Story = {
-	play: async ({ canvas, userEvent }) => {
-		const grouping = canvas.getByRole("switch", { name: "Group by hospital" });
-		await userEvent.click(grouping);
-		await waitFor(() => expect(canvas.getByRole("region", { name: "Sidney Regional" })).toBeInTheDocument());
-		await userEvent.click(canvas.getByRole("tab", { name: /^Sidney/ }));
-		await waitFor(() => expect(canvas.queryByRole("region", { name: "Sidney Regional" })).not.toBeInTheDocument());
-		await expect(grouping).not.toBeChecked();
-		await expect(grouping).toBeDisabled();
-		await userEvent.click(canvas.getByRole("tab", { name: /^All hospitals/ }));
-		await waitFor(() => expect(canvas.getByRole("region", { name: "Sidney Regional" })).toBeInTheDocument());
-		await expect(grouping).toBeChecked();
-	},
-};
-
-/** Compact density: the small card (`size="sm"`), one more a row than Comfortable at every width. */
-export const Compact: Story = {
+export const Cards: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: "Compact" }));
+		await userEvent.click(canvas.getByRole("button", { name: "Cards" }));
 		await waitFor(() =>
-			expect(canvasElement.querySelectorAll("[data-slot='patient-census-card'][data-size='sm']")).toHaveLength(samplePatients.length),
+			expect(canvasElement.querySelectorAll("[data-slot='patient-census-card']")).toHaveLength(directory.length),
 		);
+		const cards = [...canvasElement.querySelectorAll("[data-slot='patient-census-card']")];
+		await expect(cards.some((card) => card.textContent?.includes("NEWS2"))).toBe(false);
+		const miller = cards.find((card) => card.textContent?.includes("Miller, Sarah")) as HTMLElement;
+		await expect(miller).toHaveTextContent("Current");
+		await expect(miller).toHaveTextContent(/Last activity/);
 	},
 };
 
-/** List density: the census as a table, a row per patient with its alert, NEWS2, 24 h change and tags. */
-export const List: Story = {
+/** A search that matches no one: "No patients found", pointing at what can be searched. */
+export const NoResults: Story = {
 	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: "List" }));
-		const table = await canvas.findByRole("table");
-		await expect(within(table).getByRole("columnheader", { name: "NEWS2" })).toBeInTheDocument();
-		// One header row plus a row per patient.
-		await expect(within(table).getAllByRole("row")).toHaveLength(samplePatients.length + 1);
+		await userEvent.click(canvas.getByRole("searchbox", { name: "Search patients" }));
+		await userEvent.type(canvas.getByRole("searchbox", { name: "Search patients" }), "zzzz");
+		await waitFor(() => expect(canvas.getByText("No patients found")).toBeVisible());
+		await expect(canvas.getByText("Try another name, MRN, hospital, unit, or adjust your filters.")).toBeInTheDocument();
 	},
 };
 
-/** The Sidebar's Monitoring opens the Monitoring page: the same patients as live monitors. */
+/** Filters that match no one (Current and Discharged): Clear filters brings every patient back. */
+export const NoMatches: Story = {
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: /^Current/ }));
+		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
+		await userEvent.click(await screen.findByRole("checkbox", { name: /^Discharged/ }));
+		await userEvent.click(screen.getByRole("button", { name: "Done" }));
+		await waitFor(() => expect(canvas.getByText("No patients match these filters")).toBeVisible());
+		await userEvent.click(canvas.getByRole("button", { name: "Clear filters" }));
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${directory.length} patients`));
+	},
+};
+
+/**
+ * A directory far past the census's few dozen: 50 rows, then Show more adds the next 50. The table stays semantic and
+ * quick; filters and search work on everyone, not only what's shown.
+ */
+export const LargeDirectory: Story = {
+	args: {
+		patients: Array.from({ length: 4 }, (_, copy) =>
+			directory.map((patient) => ({
+				...patient,
+				id: `${patient.id}-${copy}`,
+				mrn: `${copy}${patient.mrn?.slice(1)}`,
+			})),
+		).flat(),
+	},
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		const total = directory.length * 4;
+		const table = within(await showTable(canvas, userEvent));
+		await expect(resultsCount(canvasElement)).toBe(`${total} patients`);
+		await expect(table.getAllByRole("row")).toHaveLength(50 + 1);
+		await userEvent.click(canvas.getByRole("button", { name: "Show 50 more" }));
+		await waitFor(() => expect(table.getAllByRole("row")).toHaveLength(100 + 1));
+		await expect(canvas.getByRole("button", { name: `Show ${total - 100} more` })).toBeInTheDocument();
+	},
+};
+
+/** Loading: placeholder rows in the view's shape, and the count line says so. */
+export const Loading: Story = {
+	args: { loading: true },
+	play: async ({ canvasElement }) => {
+		await expect(resultsCount(canvasElement)).toBe("Loading patients…");
+	},
+};
+
+/** The directory couldn't load: an error state, with Try again. */
+export const LoadError: Story = {
+	args: { loadError: true, onRetry: fn() },
+	play: async ({ args, canvas, userEvent }) => {
+		// The empty state Reveals in (opacity 0 → 1).
+		await waitFor(() => expect(canvas.getByText("Patients couldn't load")).toBeVisible());
+		await userEvent.click(canvas.getByRole("button", { name: "Try again" }));
+		await expect(args.onRetry).toHaveBeenCalled();
+	},
+};
+
+/** The Sidebar's Monitoring opens the Monitoring page: the census as live monitors, where alerts and NEWS2 lead. */
 export const GoToMonitoring: Story = {
 	play: async ({ canvas, userEvent }) => {
 		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
@@ -461,48 +579,42 @@ export const GoToMonitoring: Story = {
 	},
 };
 
-/** No patients at all: the title reads 0 and an empty state explains what will appear. */
+/** No patients at all: an empty state explains what will appear. */
 export const Empty: Story = {
 	args: { patients: [] },
+	play: async ({ canvas }) => {
+		await waitFor(() => expect(canvas.getByText("No patients yet")).toBeVisible());
+	},
 };
 
 /**
- * A hospital with no patients at all (here Bridgeport, its five left out of the roster): its tab says so, "No patients
- * at Bridgeport Valley", rather than blaming the filters, and Show all hospitals goes back to everyone.
+ * The Messages page from the Patients layout: every thread with the bedside, the same as the Messages layout shows (the
+ * threads come in through `messages`). The first thread, Sarah Miller's urgent one, is open; the Sidebar moves back to
+ * Patients.
  */
-export const EmptyHospital: Story = {
-	args: {
-		patients: samplePatients.filter((patient) => patient.hospitalId !== "bridgeport"),
-		monitoringPatients: sampleMonitoringPatients.filter((patient) => patient.hospitalId !== "bridgeport"),
-	},
-	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("tab", { name: /^Bridgeport/ }));
-		await waitFor(() => expect(canvas.getByText("No patients at Bridgeport Valley")).toBeVisible());
-		await expect(canvas.queryByText("No patients match these filters")).not.toBeInTheDocument();
-		await userEvent.click(canvas.getByRole("button", { name: "Show all hospitals" }));
-		await waitFor(() => expect(canvas.getByRole("tab", { name: /^All hospitals/ })).toHaveAttribute("aria-selected", "true"));
-		await expect(canvas.queryByText("No patients at Bridgeport Valley")).not.toBeInTheDocument();
+export const MessagesPage: Story = {
+	args: { defaultPage: "Messages" },
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		const threads = within(await canvas.findByRole("region", { name: "Threads" }));
+		const first = threads.getAllByRole("button")[0];
+		await expect(first).toHaveAttribute("aria-current", "true");
+		await expect(first).toHaveAccessibleName(/^Sarah Miller, Urgent/);
+		await expect(await canvas.findByRole("log", { name: "Messages with Kelly Ortiz, RN" })).toBeVisible();
+		await userEvent.click(canvas.getByRole("button", { name: "Patients" }));
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${directory.length} patients`));
 	},
 };
 
-/** Filters that match nobody (Rising score in CCU): an empty state with Clear filters, which brings every patient back. */
-export const NoMatches: Story = {
-	play: async ({ canvas, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: /Rising score/ }));
-		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
-		await userEvent.click(await screen.findByRole("checkbox", { name: "CCU" }));
-		// The empty state Reveals in (opacity 0 → 1), so wait for it to finish appearing.
-		await waitFor(() => expect(canvas.getByText("No patients match these filters")).toBeVisible());
-	},
-};
-
-/** A page that isn't built yet (here Inbox): its title and an empty state. Every Sidebar page but Patients has one. */
+/**
+ * A page that isn't built yet (here Analytics): its title and an empty state. Inbox, Messages and Schedule are built
+ * (this layout passes their data), so they're no longer empty pages.
+ */
 export const EmptyPage: Story = {
-	args: { defaultPage: "Inbox" },
+	args: { defaultPage: "Analytics" },
 };
 
-/** Plays the sample live feed into the Census: its alerts and the Monitoring page's values. */
-function LiveCensus(props: React.ComponentProps<typeof Census>) {
+/** Plays the sample live feed into the shell: its alerts and the Monitoring page's values. Patients holds still. */
+function LiveDirectory(props: React.ComponentProps<typeof Patients>) {
 	const {
 		patients: monitoring,
 		alerts,

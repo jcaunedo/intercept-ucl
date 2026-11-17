@@ -266,11 +266,13 @@ export { Textarea, textareaVariants, type TextareaProps } from "@/components/for
 // Intercept's AI mark, in its gradient (Ask Intercept Live).
 export { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
 export { BoxSolidIcon } from "@/components/icons/box-solid-icon";
+export { CalendarSolidIcon } from "@/components/icons/calendar-solid-icon";
 export { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
 export { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
 export { EyeSolidIcon } from "@/components/icons/eye-solid-icon";
 export { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
 export { HomeSolidIcon } from "@/components/icons/home-solid-icon";
+export { InboxSolidIcon } from "@/components/icons/inbox-solid-icon";
 export { LayoutGridSolidIcon } from "@/components/icons/layout-grid-solid-icon";
 export { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
 export { MessageCircleSolidIcon } from "@/components/icons/message-circle-solid-icon";
@@ -279,6 +281,7 @@ export { MonitorViewExpandedIcon } from "@/components/icons/monitor-view-expande
 export { MonitorViewMinimalIcon } from "@/components/icons/monitor-view-minimal-icon";
 export { MonitorViewMinimizedIcon } from "@/components/icons/monitor-view-minimized-icon";
 export { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
+export { SparklesSolidIcon } from "@/components/icons/sparkles-solid-icon";
 export { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
 

@@ -1,6 +1,6 @@
 import type * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { CheckCheckIcon, EllipsisIcon } from "lucide-react";
+import { EllipsisIcon } from "lucide-react";
 import { expect, within } from "storybook/test";
 
 import { Avatar, AvatarFallback } from "@/components/data-display/avatar";
@@ -144,6 +144,10 @@ type Message = {
 	preview: string;
 	kind: "Request" | "Update" | "System";
 	at: string;
+	/** A second line under the date: when it's due, or how long it's overdue. */
+	due?: { text: string; overdue?: boolean };
+	/** The row's action, before "…". */
+	action: string;
 	unread: boolean;
 };
 
@@ -158,6 +162,8 @@ const messages: Message[] = [
 		preview: "Her husband is here and asking whether the plan changed overnight. Could someone call him before rounds?",
 		kind: "Request",
 		at: "4 min ago",
+		due: { text: "Overdue 5 min", overdue: true },
+		action: "Reply",
 		unread: true,
 	},
 	{
@@ -170,6 +176,7 @@ const messages: Message[] = [
 		preview: "All four orders are active. Lactate is due again at 7:04 PM.",
 		kind: "Update",
 		at: "18 min ago",
+		action: "Review",
 		unread: true,
 	},
 	{
@@ -182,6 +189,7 @@ const messages: Message[] = [
 		preview: "The pulse oximeter at Alliance ED Bay 3 stopped sending values 6 minutes ago.",
 		kind: "System",
 		at: "1 h ago",
+		action: "Acknowledge",
 		unread: false,
 	},
 	{
@@ -194,6 +202,8 @@ const messages: Message[] = [
 		preview: "Draw it before the 11 PM dose so we can adjust for her kidney function.",
 		kind: "Request",
 		at: "Yesterday",
+		due: { text: "Due in 5 h" },
+		action: "Review",
 		unread: false,
 	},
 	{
@@ -206,6 +216,7 @@ const messages: Message[] = [
 		preview: "Cleaned and set up with a ventilator. The family can wait in the lounge.",
 		kind: "Update",
 		at: "Nov 11",
+		action: "Review",
 		unread: false,
 	},
 ];
@@ -322,21 +333,23 @@ export const WithTotal: Story = {
 };
 
 /**
- * `lg`: an inbox. A 44px heading row with a checkbox that selects every message, then 70px rows, 12px above and below
- * and from the edges: a checkbox, the unread dot (`info`), who it's from with their role, the subject over a one-line
- * preview, its type, its date and two actions. intercept.ds
- * [Inbox table](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1531-7584).
+ * `lg`: an inbox. A 44px heading row with a checkbox that selects every message, then 70px rows, 12px from the edges:
+ * a checkbox, the unread dot (`inbox-unread`), who it's from with their role, the subject over a one-line preview, its type,
+ * its date with when it's due, the row's action and "…". An unread row shows the dot and bolds who and the subject.
+ * intercept.ds Table Row, Variant=Inbox, State=Default and Unread
+ * ([`1531:7617`, `1563:5209`](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1531-4265)).
  */
 export const Inbox: Story = {
 	args: { size: "lg" },
 	render: (args) => (
 		<Table {...args} aria-label='Inbox' className='table-fixed'>
 			<colgroup>
-				<col className='w-[19.75rem]' />
+				{/* Figma's column widths plus each cell's 24px of spacing (12px at the row's edges). */}
+				<col className='w-[20.5rem]' />
 				<col />
-				<col className='w-[12.75rem]' />
-				<col className='w-[12.75rem]' />
-				<col className='w-[6.25rem]' />
+				<col className='w-[9.25rem]' />
+				<col className='w-[11.25rem]' />
+				<col className='w-[11.5rem]' />
 			</colgroup>
 			<TableHeader variant='flat'>
 				<TableRow className='hover:bg-transparent'>
@@ -358,27 +371,29 @@ export const Inbox: Story = {
 				{messages.map((message) => (
 					<TableRow key={message.id}>
 						<TableCell>
-							<div className='flex items-center gap-2.5'>
+							<div className='flex items-center gap-2'>
 								<Checkbox aria-label={`Select the message from ${message.from}`} />
 								<span
 									aria-label={message.unread ? "Unread" : undefined}
 									role={message.unread ? "img" : undefined}
-									className={message.unread ? "size-2.5 shrink-0 rounded-full bg-info" : "size-2.5 shrink-0"}
+									className={message.unread ? "size-2 shrink-0 rounded-full bg-inbox-unread" : "size-2 shrink-0"}
 								/>
 								<div className='flex min-w-0 items-center gap-2'>
 									<Avatar size='md'>
 										<AvatarFallback tone={message.tone}>{message.initials}</AvatarFallback>
 									</Avatar>
 									<div className='flex min-w-0 flex-col gap-1'>
-										<span className='truncate'>{message.from}</span>
-										<span className='truncate text-xs font-normal'>{message.role}</span>
+										<span className={message.unread ? "truncate font-bold" : "truncate"}>{message.from}</span>
+										<span className='truncate font-normal text-muted-foreground'>{message.role}</span>
 									</div>
 								</div>
 							</div>
 						</TableCell>
 						<TableCell>
-							<div className='flex min-w-0 flex-col gap-1.5'>
-								<span className='truncate font-semibold'>{message.subject}</span>
+							<div className='flex min-w-0 flex-col gap-1'>
+								<span className={message.unread ? "truncate font-bold" : "truncate font-semibold"}>
+									{message.subject}
+								</span>
 								<span className='truncate'>{message.preview}</span>
 							</div>
 						</TableCell>
@@ -387,13 +402,25 @@ export const Inbox: Story = {
 								{message.kind}
 							</Badge>
 						</TableCell>
-						<TableCell>{message.at}</TableCell>
 						<TableCell>
-							<div className='flex items-center justify-end gap-6'>
-								<Button variant='ghost' size='icon-xs' aria-label='Mark as read' className='text-icon-subtle'>
-									<CheckCheckIcon />
+							<div className='flex flex-col gap-1'>
+								<span>{message.at}</span>
+								{message.due ? (
+									<span className={message.due.overdue ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
+										{message.due.text}
+									</span>
+								) : null}
+							</div>
+						</TableCell>
+						<TableCell>
+							<div className='flex items-center justify-end gap-4'>
+								<Button variant='outline' size='sm'>
+									{message.action}
 								</Button>
-								<RowActions name={`the message from ${message.from}`} />
+								{/* The Inbox row's "…" is outlined and 32px, as its action (other rows' are ghost and 24px). */}
+								<Button variant='outline' size='icon-sm' aria-label={`More actions for the message from ${message.from}`}>
+									<EllipsisIcon />
+								</Button>
 							</div>
 						</TableCell>
 					</TableRow>

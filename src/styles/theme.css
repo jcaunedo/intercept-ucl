@@ -127,6 +127,7 @@
 	--color-badge-yellow-foreground: var(--badge-yellow-foreground);
 	--color-badge-amber: var(--badge-amber);
 	--color-badge-amber-foreground: var(--badge-amber-foreground);
+	--color-inbox-unread: var(--inbox-unread);
 	--color-avatar-1: var(--avatar-1);
 	--color-avatar-2: var(--avatar-2);
 	--color-avatar-3: var(--avatar-3);
@@ -405,6 +406,7 @@
 
 	--sky-50: oklch(0.963 0.020 238.66); /* #e7f5ff */
 	--sky-300: oklch(0.758 0.135 241.66); /* #57bafe */
+	--sky-500: oklch(0.680 0.176 247.21); /* #0f9efe */
 	--sky-700: oklch(0.483 0.124 247.22); /* #0862a0 */
 	--sky-950: oklch(0.227 0.053 244.57); /* #021e33 */
 
@@ -605,6 +607,10 @@
 	--badge-yellow-foreground: var(--corn-800);
 	--badge-amber: var(--flamingo-100);
 	--badge-amber-foreground: var(--flamingo-700);
+
+	/* An Inbox row's unread dot (archielabs.ds components › inbox-unread, palettes/sky/500). One mode in Figma, so the
+	   same in dark mode. */
+	--inbox-unread: var(--sky-500);
 
 	/* Avatar initials fills (intercept.ds avatar i1–i10). Raw values in Figma, no variables yet; white initials on each.
 	   Same in both modes. Figma's hue and chroma; 1, 3, 8, 9 and 10 are darker than Figma's, so look-alikes differ in

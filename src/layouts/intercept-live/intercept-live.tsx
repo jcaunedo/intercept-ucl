@@ -28,10 +28,13 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 
+import { CalendarSolidIcon } from "@/components/icons/calendar-solid-icon";
 import { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
 import { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
 import { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
+import { InboxSolidIcon } from "@/components/icons/inbox-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
+import { SparklesSolidIcon } from "@/components/icons/sparkles-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { muteToasts, Toaster } from "@/components/feedback/sonner";
@@ -109,20 +112,20 @@ const patientOverviewQuestion = "Quick overview";
 // The Clinical workspace's items (intercept.ds `sidebar` Role=Clinical, Nov 16, 2026; PRD Sidebar NAV-020). No Search
 // item (Oct 31, 2026, user's call): search happens in Ask Intercept Live. The Census page is **Patients**, the full list
 // of everyone treated, in hospital or not (Nov 16, 2026, user's call); Alert Queue became Inbox.
-const askGroup: SidebarNavItem[] = [{ icon: SparklesIcon, label: askInterceptLabel }];
+const askGroup: SidebarNavItem[] = [{ icon: SparklesIcon, activeIcon: SparklesSolidIcon, label: askInterceptLabel }];
 
 const clinicalGroups: SidebarNavItem[][] = [
 	askGroup,
 	[
 		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring", navigateTo: "Monitoring" },
-		{ icon: InboxIcon, label: "Inbox", navigateTo: "Inbox" },
+		{ icon: InboxIcon, activeIcon: InboxSolidIcon, label: "Inbox", navigateTo: "Inbox" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages", navigateTo: "Messages" },
 		{ icon: ListCheckIcon, label: "Protocols", navigateTo: "Protocols" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis", navigateTo: "Virtual Sepsis" },
 	],
 	[
 		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Patients", navigateTo: "Patients" },
-		{ icon: CalendarIcon, label: "Schedule", navigateTo: "Schedule" },
+		{ icon: CalendarIcon, activeIcon: CalendarSolidIcon, label: "Schedule", navigateTo: "Schedule" },
 		{ icon: ChartColumnIcon, activeIcon: ChartColumnSolidIcon, label: "Analytics", navigateTo: "Analytics" },
 	],
 ];
@@ -199,7 +202,10 @@ const emptyPages = {
 		title: "Nothing in your inbox",
 		description: "Alerts, notes and orders waiting on you will appear here.",
 	},
-	Messages: { title: "No messages yet", description: "Messages from your care team will appear here." },
+	Messages: {
+		title: "No messages yet",
+		description: "Messages with your patients' bedside nurses, from every hospital you cover, will appear here.",
+	},
 	Protocols: {
 		title: "No protocols running",
 		description: "Protocols tracking your patients, like Virtual Sepsis, will appear here.",
@@ -637,13 +643,14 @@ function InterceptLive({
 			workspaceNav[workspace].groups.map((group) =>
 				group.map((item) =>
 					item.label === askInterceptLabel
-						? { ...item, onClick: () => sidebarChatRef.current() }
+						? // Pressed while its column is open: the solid sparkles, never the current page's look (PRD Sidebar NAV-030).
+							{ ...item, pressed: chatOpen, onClick: () => sidebarChatRef.current() }
 						: item.navigateTo && shownNavAlerts[item.navigateTo as InterceptLivePage]
 							? { ...item, alert: shownNavAlerts[item.navigateTo as InterceptLivePage] }
 							: item,
 				),
 			),
-		[toggleLeftPanel, shownNavAlerts, workspace],
+		[toggleLeftPanel, shownNavAlerts, workspace, chatOpen],
 	);
 	// The Prototype menu: its shortcuts by group, a divider between groups, then "Reset prototype" after a divider (as in
 	// bethere-ucl).

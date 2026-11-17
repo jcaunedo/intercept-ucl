@@ -10,7 +10,7 @@ const tableVariants = cva("w-full caption-bottom text-sm text-foreground", {
 		size: {
 			sm: "[--table-cell-h:2.5rem] [--table-cell-py:0.375rem] [--table-edge:0.5rem] [--table-head-h:2.5rem] [--table-head-py:0.375rem]",
 			md: "[--table-cell-h:3rem] [--table-cell-py:0.5rem] [--table-edge:0.5rem] [--table-head-h:2.5rem] [--table-head-py:0.375rem]",
-			lg: "[--table-cell-h:auto] [--table-cell-py:0.75rem] [--table-edge:0.75rem] [--table-head-h:2.75rem] [--table-head-py:0.75rem]",
+			lg: "[--table-cell-h:auto] [--table-cell-py:0.8125rem] [--table-edge:0.75rem] [--table-head-h:2.75rem] [--table-head-py:0.75rem]",
 		},
 	},
 	defaultVariants: { size: "sm" },
@@ -20,8 +20,9 @@ type TableProps = React.ComponentProps<"table"> & VariantProps<typeof tableVaria
 
 /**
  * A data table: shadcn's Table, styled from intercept.ds. `size` sets the body rows: `sm` 40px, `md` 48px (a cell with
- * two lines grows its row, e.g. an avatar with a name and a detail, 56px), `lg` the roomier Inbox rows (12px above and
- * below the content: 70px with two lines of text, Figma's 16px around its 16px-tall text boxes; a 44px heading row). Scrolls sideways when it's wider than its container.
+ * two lines grows its row, e.g. an avatar with a name and a detail, 56px), `lg` the roomier Inbox rows (13px above and
+ * below the content: 70px with two lines of text 4px apart, Figma's 17px around its 16px-tall text boxes; a 44px
+ * heading row). Scrolls sideways when it's wider than its container.
  *
  * Figma: [intercept.ds › Table Row](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1531-4265)
  */

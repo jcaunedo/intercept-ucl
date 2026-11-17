@@ -12,8 +12,11 @@ import type { DischargeDecision } from "../alert-panel/discharge-plan";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
-import { MonitoringPanel, type MonitoringPatient } from "../monitoring/monitoring-panel";
+import { MonitoringPanel, type MonitoringPanelProps, type MonitoringPatient } from "../monitoring/monitoring-panel";
 import { worstOpenSeverity } from "../monitoring/triage-queue";
+import { InboxPanel, type InboxPanelProps } from "../inbox/inbox-panel";
+import { MessagesPanel, type MessagesPanelProps } from "../messages/messages-panel";
+import { SchedulePanel, type SchedulePanelProps } from "../schedule/schedule-panel";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
 import { AlertToasts, useClosedResolutions, type AlertNotice } from "../shared/alert-toasts";
 import { withFlagDetails } from "../shared/flag-details";
@@ -27,7 +30,9 @@ import {
 } from "./patients-panel";
 
 type PatientsProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
-	PatientsPanelProps & {
+	Omit<PatientsPanelProps, "records"> &
+	// Monitoring's and the shell's: every alert (the triage queue, the cards' alerts, the toasts) and the live feed.
+	Pick<MonitoringPanelProps, "alerts" | "escalationTargets" | "onAlertAction" | "liveFeed" | "onOpenLiveFeed" | "groupedView"> & {
 		/**
 		 * The panel's patients with their live values. With them, the Sidebar's Monitoring opens the Monitoring page, which
 		 * takes the same `alerts` for its triage queue and its cards' alert pills.
@@ -71,12 +76,22 @@ type PatientsProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		onConsultNote?: (alertId: string, note: string, detail: AlertDetailData) => void;
 		/** Things to act on, each a toast unless its alert is open (Scenario 2's social needs; `AlertToasts`). */
 		notices?: AlertNotice[];
+		/** The clinician's schedule. With it, the Sidebar's Schedule opens the calendar of their shifts and open shifts. */
+		schedule?: Omit<SchedulePanelProps, "hospitals">;
+		/** Every thread with the bedside. With them, the Sidebar's Messages opens the inbox (PRD Messages MSG-018). */
+		messages?: Omit<MessagesPanelProps, "hospitals">;
+		/**
+		 * Work besides alerts (drafts to sign, suggested orders, failed write-backs, handed-over items). With it, the
+		 * Sidebar's Inbox opens the queue, with this layout's alerts in it.
+		 */
+		inbox?: Pick<InboxPanelProps, "items" | "onItemAction">;
 	};
 
 /**
- * The Census screen of Intercept Live: every patient across the user's hospitals as cards, filtered by hospital,
- * assignment and quick view, with the live feed panel of their alerts. A card opens the patient's details over the
- * page. Figma origin: Intercept-Live › Census (1:350).
+ * The Patients screen of Intercept Live (PRD Patients): the directory of every patient the clinician is authorized to
+ * see, in hospital or not, as a table (default) or cards, to find a patient and open their record. The shell's other
+ * pages (Monitoring, Inbox, Messages, Schedule) come with it. Figma origin: Intercept-Live › Census (1:350), redesigned
+ * in code as a directory on Nov 17, 2026.
  */
 function Patients({
 	hospitals,
@@ -95,6 +110,10 @@ function Patients({
 	onPatientDetailsAction,
 	alertDetails,
 	patientConsults,
+	loading,
+	loadError,
+	onRetry,
+	patientHref,
 	onPathwayDecision,
 	onTransferDecision,
 	onDischargeDecision,
@@ -102,6 +121,9 @@ function Patients({
 	onConsultChange,
 	onConsultNote,
 	notices,
+	schedule,
+	messages,
+	inbox,
 	...shell
 }: PatientsProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on the Census and Monitoring.
@@ -172,14 +194,23 @@ function Patients({
 						hospitals={hospitals}
 						patients={flaggedPatients}
 						onOpenPatient={onOpenPatient}
-						alerts={alerts}
-						escalationTargets={escalationTargets}
-						onAlertAction={handleAlertAction}
-						liveFeed={liveFeed}
-						onOpenLiveFeed={onOpenLiveFeed}
-						groupedView={groupedView}
+						loading={loading}
+						loadError={loadError}
+						onRetry={onRetry}
+						patientHref={patientHref}
 					/>
 				),
+				Schedule: schedule ? <SchedulePanel hospitals={hospitals} {...schedule} /> : undefined,
+				Messages: messages ? <MessagesPanel hospitals={hospitals} {...messages} /> : undefined,
+				// The same alerts as Monitoring's, so acknowledging one in the Inbox acknowledges it everywhere.
+				Inbox: inbox ? (
+					<InboxPanel
+						{...inbox}
+						alerts={alerts}
+						patients={[...patients, ...(monitoringPatients ?? [])]}
+						onAlertAction={handleAlertAction}
+					/>
+				) : undefined,
 				Monitoring: monitoringCards ? (
 					<MonitoringPanel
 						records={patientRecords}

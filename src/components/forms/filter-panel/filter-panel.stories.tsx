@@ -143,7 +143,22 @@ export const InFilterBar: Story = {
 	},
 };
 
-function BarExample(props: React.ComponentProps<typeof FilterPanel>) {
+/** The icon alone, right of the search, as on Intercept Live's filter bars: its name in a tooltip, the count on its corner. */
+export const IconOnlyInFilterBar: Story = {
+	args: { defaultOpen: false },
+	render: (args) => <BarExample {...args} iconOnly />,
+	play: async ({ canvas }) => {
+		const button = canvas.getByRole("button", { name: "Filters" });
+		await userEvent.click(button);
+		const panel = within(await screen.findByRole("dialog", { name: "Filters" }));
+		await userEvent.click(panel.getByRole("checkbox", { name: "Critical" }));
+		await userEvent.click(await panel.findByRole("button", { name: "Done" }));
+		await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+		await expect(canvas.getByRole("button", { name: "Filters, 1 picked" })).toBeInTheDocument();
+	},
+};
+
+function BarExample({ iconOnly = false, ...props }: React.ComponentProps<typeof FilterPanel> & { iconOnly?: boolean }) {
 	const [open, setOpen] = React.useState(false);
 	const [value, setValue] = React.useState<FilterPanelValue>({});
 	const id = React.useId();
@@ -152,10 +167,15 @@ function BarExample(props: React.ComponentProps<typeof FilterPanel>) {
 			<FilterBar aria-label='Patient filters'>
 				<FilterBarFilters>
 					<SearchInput label='Search patients' />
+					{iconOnly ? (
+						<FilterPanelButton iconOnly panelId={id} open={open} count={filterPanelCount(value)} onClick={() => setOpen(true)} />
+					) : null}
 				</FilterBarFilters>
-				<FilterBarControls>
-					<FilterPanelButton panelId={id} open={open} count={filterPanelCount(value)} onClick={() => setOpen(true)} />
-				</FilterBarControls>
+				{iconOnly ? null : (
+					<FilterBarControls>
+						<FilterPanelButton panelId={id} open={open} count={filterPanelCount(value)} onClick={() => setOpen(true)} />
+					</FilterBarControls>
+				)}
 			</FilterBar>
 			<FilterPanel
 				{...props}

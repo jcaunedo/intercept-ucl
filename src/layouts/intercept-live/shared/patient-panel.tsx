@@ -86,6 +86,10 @@ type PanelPatient = Pick<
 	unreadMessages?: number;
 	/** When the patient's most recent open alert fired, ISO 8601. For the Alerts sort (newest first). */
 	lastAlertAt?: string;
+	/** When the patient was admitted to the hospital, ISO 8601. For the Admission date sort (Patients). */
+	admittedAt?: string;
+	/** The patient's latest meaningful chart activity, ISO 8601. For the Most recent activity sort (Patients). */
+	lastActivityAt?: string;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -223,6 +227,13 @@ const byAlertPriority = (a: PanelPatient, b: PanelPatient) =>
 // The most unread family messages first; patients without any last.
 const byMessages = descending((patient) => patient.unreadMessages || undefined);
 
+// Patients' directory sorts (PRD Patients CEN-013): the latest chart activity first, the latest admission first, and
+// location A–Z (hospital, then unit). Patients without the value last.
+const byActivity = descending((patient) => time(patient.lastActivityAt));
+const byAdmitted = descending((patient) => time(patient.admittedAt));
+const byUnit = (a: PanelPatient, b: PanelPatient) => (a.unit ?? "\uffff").localeCompare(b.unit ?? "\uffff");
+const byHospital = (a: PanelPatient, b: PanelPatient) => (a.hospital ?? "\uffff").localeCompare(b.hospital ?? "\uffff");
+
 // Sort orders. Alert ranks like the triage queue (severity, band, 4 h rise), then by score; Acuity breaks ties by
 // alert, so both signals count in either lens; then by name, so the order is stable.
 const sortOrders = [
@@ -252,6 +263,22 @@ const sortOrders = [
 		label: "Family messages",
 		compare: (a: PanelPatient, b: PanelPatient) => byMessages(a, b) || byName(a, b),
 	},
+	{
+		id: "activity",
+		label: "Most recent activity",
+		compare: (a: PanelPatient, b: PanelPatient) => byActivity(a, b) || byName(a, b),
+	},
+	{
+		id: "admitted",
+		label: "Admission date",
+		compare: (a: PanelPatient, b: PanelPatient) => byAdmitted(a, b) || byName(a, b),
+	},
+	{
+		id: "hospital",
+		label: "Hospital",
+		compare: (a: PanelPatient, b: PanelPatient) => byHospital(a, b) || byUnit(a, b) || byName(a, b),
+	},
+	{ id: "unit", label: "Unit", compare: (a: PanelPatient, b: PanelPatient) => byUnit(a, b) || byName(a, b) },
 ] as const;
 
 type SortOrderId = (typeof sortOrders)[number]["id"];
@@ -873,7 +900,8 @@ const menuTriggerClassName = "gap-1.5 [&_[data-slot=select-value]]:font-semibold
 
 /**
  * The sort menu. Re-sorting reuses the grid's glide: cards are keyed by patient, so they move to their new slots. A page
- * can offer only the `orders` that make sense on it (e.g. no acuity sorts where the card doesn't show acuity).
+ * can offer only the `orders` that make sense on it (e.g. no acuity sorts where the card doesn't show acuity), in the
+ * order it lists them.
  */
 function SortSelect({
 	value,
@@ -903,8 +931,8 @@ function SortSelect({
 				<SelectValue />
 			</SelectTrigger>
 			<SelectContent position='popper' align='start'>
-				{sortOrders
-					.filter((order) => orders.includes(order.id))
+				{orders
+					.map((id) => sortOrderById(id))
 					.map((order) => (
 						<SelectItem key={order.id} value={order.id}>
 							{label(order)}

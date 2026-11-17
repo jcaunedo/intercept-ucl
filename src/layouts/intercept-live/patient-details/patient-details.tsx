@@ -48,6 +48,7 @@ import {
 } from "../monitoring/triage-queue";
 import { fallPathwayActions, flagDetails } from "../shared/flag-details";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
+import { patientStatuses, type PatientCensusStatus } from "../patients/patient-status";
 import type { AlertConsultState, AlertDetailData, PatientConsultData } from "../alert-panel/alert-panel";
 import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-panel/care-pathway";
 import { ConsultSessionScope, useSessionState } from "../alert-panel/consult-session";
@@ -1117,6 +1118,9 @@ function patientDetailsView(
 			// `alert: alertPill(alerts.filter((alert) => alert.patientId === item.id))`.
 			acuity: item.acuity,
 			trajectory: item.trajectory,
+			// The census list is the patients in hospital now: a discharged or transferred patient from Patients' directory
+			// stays out of it (PRD Patients CEN-040).
+			inHospital: "status" in item && item.status ? patientStatuses[item.status as PatientCensusStatus].inHospital : undefined,
 		}));
 
 	const tone = tones.get(patientId);

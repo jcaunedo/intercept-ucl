@@ -17,7 +17,7 @@ const change = "Change in last 24 h";
 // 24 h for New patients, Carter, Harris, Moore, Bennett, Hayes, Ortega, Norman, Lambert, Hughes and Ramirez.
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
 
-const samplePatients: CensusPatient[] = [
+const censusPatients: CensusPatient[] = [
 	{
 		id: "p1",
 		hospitalId: "sidney",
@@ -643,6 +643,214 @@ const samplePatients: CensusPatient[] = [
 	},
 ];
 
+// Minutes since each patient's latest chart activity (a note, an order, a charted result; PRD Patients CEN-014): what the
+// API's last-activity field would return. The census is in hospital now, so every one of them is admitted (Current).
+const lastActivityMinutes: Record<string, number> = {
+	p1: 18, p2: 6, p3: 41, p4: 12, p5: 3, p6: 95, p7: 27, p8: 64, p9: 9, p10: 2, p11: 130, p12: 52, p13: 210,
+	p14: 15, p15: 33, p16: 75, p19: 160, p20: 240, p17: 22, p18: 48, p22: 85, p25: 300, p26: 11, p27: 190, p28: 36,
+	p29: 58,
+};
+
+const samplePatients: CensusPatient[] = censusPatients.map((patient) => ({
+	status: "admitted",
+	lastActivityAt: hoursAgo((lastActivityMinutes[patient.id] ?? 60) / 60),
+	...patient,
+}));
+
+const daysAgo = (days: number) => hoursAgo(days * 24);
+
+/**
+ * Patients the program treated before, no longer in hospital (PRD Patients CEN-001, CEN-040): on Patients only, never on
+ * Monitoring or the census list. Their location is the last one they had; `statusAt` is when they left, `transferredTo`
+ * where a transfer went. Synthetic (PRD PC-180). Keep them out of the scenario rosters: none has an alert or a record.
+ */
+const samplePastPatients: CensusPatient[] = [
+	{
+		id: "h1",
+		hospitalId: "sidney",
+		lastName: "Brooks",
+		firstName: "Karen",
+		mrn: "00871244",
+		sex: "F",
+		age: 66,
+		hospital: "Sidney Regional",
+		unit: "MICU",
+		bed: "Bed 9",
+		status: "discharged",
+		statusAt: daysAgo(1.2),
+		admittedAt: daysAgo(6),
+		lastActivityAt: daysAgo(1.2),
+		lastViewedAt: daysAgo(1.5),
+		tags: [{ label: "Fall risk" }],
+	},
+	{
+		id: "h2",
+		hospitalId: "chadron",
+		mine: true,
+		lastName: "Foster",
+		firstName: "Gary",
+		mrn: "00663017",
+		sex: "M",
+		age: 71,
+		hospital: "Chadron Memorial",
+		unit: "Med-Surg",
+		bed: "Bed 2",
+		status: "transferred",
+		statusAt: hoursAgo(20),
+		transferredTo: "Denver Health",
+		admittedAt: daysAgo(3),
+		lastActivityAt: hoursAgo(20),
+		lastViewedAt: hoursAgo(21),
+		tags: [{ label: "DNR" }],
+	},
+	{
+		id: "h3",
+		hospitalId: "alliance",
+		mine: true,
+		lastName: "Simmons",
+		firstName: "Paula",
+		mrn: "00592260",
+		sex: "F",
+		age: 54,
+		hospital: "Alliance Community",
+		unit: "ED",
+		bed: "Bay 1",
+		status: "discharged",
+		statusAt: daysAgo(3),
+		admittedAt: daysAgo(4),
+		lastActivityAt: daysAgo(3),
+		lastViewedAt: daysAgo(3),
+	},
+	{
+		id: "h4",
+		hospitalId: "sidney",
+		lastName: "Powell",
+		firstName: "Steven",
+		mrn: "00744981",
+		sex: "M",
+		age: 63,
+		hospital: "Sidney Regional",
+		unit: "CVICU",
+		bed: "Bed 2",
+		status: "transferred",
+		statusAt: daysAgo(5),
+		transferredTo: "UCHealth Medical Center of the Rockies",
+		admittedAt: daysAgo(8),
+		lastActivityAt: daysAgo(5),
+		tags: [{ label: "Dialysis" }],
+	},
+	{
+		id: "h5",
+		hospitalId: "bridgeport",
+		lastName: "Long",
+		firstName: "Deborah",
+		mrn: "00418735",
+		sex: "F",
+		age: 79,
+		hospital: "Bridgeport Valley",
+		unit: "Swing bed",
+		bed: "Bed 6",
+		status: "discharged",
+		statusAt: daysAgo(12),
+		admittedAt: daysAgo(26),
+		lastActivityAt: daysAgo(12),
+		tags: [{ label: "Fall risk" }, { label: "DNR" }],
+	},
+	{
+		id: "h6",
+		hospitalId: "sidney",
+		lastName: "Bailey",
+		firstName: "Brian",
+		mrn: "00350612",
+		sex: "M",
+		age: 47,
+		hospital: "Sidney Regional",
+		unit: "MICU",
+		bed: "Bed 4",
+		status: "discharged",
+		statusAt: daysAgo(21),
+		admittedAt: daysAgo(27),
+		lastActivityAt: daysAgo(21),
+	},
+	{
+		id: "h7",
+		hospitalId: "chadron",
+		mine: true,
+		lastName: "Gray",
+		firstName: "Nancy",
+		mrn: "00602298",
+		sex: "F",
+		age: 83,
+		hospital: "Chadron Memorial",
+		unit: "Med-Surg",
+		bed: "Bed 5",
+		status: "discharged",
+		statusAt: daysAgo(9),
+		admittedAt: daysAgo(14),
+		lastActivityAt: daysAgo(9),
+		lastViewedAt: daysAgo(10),
+	},
+	{
+		id: "h8",
+		hospitalId: "sidney",
+		lastName: "Price",
+		firstName: "Michael",
+		mrn: "00986504",
+		sex: "M",
+		age: 58,
+		hospital: "Sidney Regional",
+		unit: "CVICU",
+		bed: "Bed 8",
+		status: "discharged",
+		statusAt: daysAgo(45),
+		admittedAt: daysAgo(52),
+		lastActivityAt: daysAgo(45),
+		tags: [{ label: "Contact isolation" }],
+	},
+];
+
+/**
+ * Patients whose census state is uncertain (PRD Patients CEN-031, CEN-040), so the page shows every status. On Patients
+ * only, like the past patients: not on the census Monitoring shows, no alert, no record. Synthetic (PRD PC-180).
+ * - Rebecca Ward: **Pending reconciliation**. Bridgeport Valley runs without automated ADT (Overlay mode), and her ED
+ *   visit was never closed or turned into an admission, so she stays pending until someone confirms it.
+ * - Gregory Mason: **Status unknown**. His record came over without a census status (no `status`): the page says so,
+ *   never Current (SV-08). His location is the last one on file.
+ */
+const sampleUncertainStatusPatients: CensusPatient[] = [
+	{
+		id: "r1",
+		hospitalId: "bridgeport",
+		lastName: "Ward",
+		firstName: "Rebecca",
+		mrn: "01198246",
+		sex: "F",
+		age: 68,
+		hospital: "Bridgeport Valley",
+		unit: "ED",
+		bed: "Bay 2",
+		status: "pending-reconciliation",
+		admittedAt: hoursAgo(14),
+		lastActivityAt: hoursAgo(9),
+		lastViewedAt: hoursAgo(10),
+		tags: [{ label: "Fall risk" }],
+	},
+	{
+		id: "u1",
+		hospitalId: "alliance",
+		lastName: "Mason",
+		firstName: "Gregory",
+		mrn: "00527713",
+		sex: "M",
+		age: 74,
+		hospital: "Alliance Community",
+		unit: "Med-Surg",
+		bed: "Bed 7",
+		admittedAt: daysAgo(16),
+		lastActivityAt: daysAgo(15),
+	},
+];
+
 /** Hayes's card at Scenario 1's early warning (Demo Use Cases, 01:40): NEWS2 10, High, up 5 in 4 h and 6 in 24 h. */
 const sampleScenario1Census: Partial<CensusPatient> = {
 	acuity: { label: news2, score: 10, level: "high" },
@@ -677,6 +885,8 @@ const sampleScenario1ResolvedCensus: Partial<CensusPatient> = {
  */
 const sampleScenario2Census = (): CensusPatient => ({
 	id: "p21",
+	status: "admitted",
+	lastActivityAt: hoursAgo(10 / 60),
 	hospitalId: "alliance",
 	mine: true,
 	lastName: "Reynolds",
@@ -762,6 +972,8 @@ const sampleScenario3Flags = (): NonNullable<CensusPatient["tags"]> => [
  */
 const sampleScenario3Census = (): CensusPatient => ({
 	id: "p23",
+	status: "admitted",
+	lastActivityAt: hoursAgo(10 / 60),
 	hospitalId: "sidney",
 	lastName: "Medina",
 	firstName: "Rosa",
@@ -899,6 +1111,8 @@ const sampleScenario4Flags = (rationing = false): NonNullable<CensusPatient["tag
  */
 const sampleScenario4Census = (): CensusPatient => ({
 	id: "p24",
+	status: "admitted",
+	lastActivityAt: hoursAgo(10 / 60),
 	hospitalId: "bridgeport",
 	lastName: "Kessler",
 	firstName: "Tyler",
@@ -971,6 +1185,8 @@ function sampleScenario4CensusAt(stage: Scenario4Stage): Partial<CensusPatient> 
 }
 
 export {
+	samplePastPatients,
+	sampleUncertainStatusPatients,
 	samplePatients,
 	sampleScenario1Census,
 	sampleScenario1ResolvedCensus,

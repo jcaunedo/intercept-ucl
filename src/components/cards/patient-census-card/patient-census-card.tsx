@@ -402,6 +402,11 @@ type PatientCensusCardProps = Omit<
 	moreActions?: PatientCardAction[];
 	/** @deprecated Ignored: use `moreActions`, the "…" menu's items (Nov 3, 2026). */
 	onMoreActions?: React.MouseEventHandler<HTMLButtonElement>;
+	/**
+	 * More about the patient, as a section of its own after the location and score, before the tags: e.g. Patients'
+	 * status, care relationship and last activity. Not interactive: the whole card is the open target.
+	 */
+	children?: React.ReactNode;
 };
 
 /** A score's change as a number: "+1" is 1, "−2" is -2, "0" is 0. None when the value isn't a number ("First score 06:00"). */
@@ -686,6 +691,7 @@ function PatientCensusCard({
 	alertRing: showAlertRing = true,
 	moreActions = [],
 	onMoreActions: _onMoreActions,
+	children,
 	className,
 	onClickCapture,
 	onPointerEnter,
@@ -867,6 +873,8 @@ function PatientCensusCard({
 					</div>
 				) : null}
 			</div>
+
+			{children ? <div className={cn("flex flex-col gap-1", small ? "text-xs" : "text-sm")}>{children}</div> : null}
 
 			{!compact && vitals.length > 0 ? (
 				<div className='flex gap-2 border-y border-border-muted px-2 py-1.5'>

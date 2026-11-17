@@ -231,6 +231,8 @@ export {
 	DensityToggle,
 	MonitorPlotToggle,
 	MonitorViewToggle,
+	SegmentedToggle,
+	type ToggleOption,
 	type MonitorPlot,
 	type MonitorView,
 	type PanelDensity,

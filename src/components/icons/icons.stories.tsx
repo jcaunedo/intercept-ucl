@@ -1,26 +1,31 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
 	BoxIcon,
+	CalendarIcon,
 	ChartColumnIcon,
 	CircleUserIcon,
 	EyeIcon,
 	HeartCrackIcon,
 	HouseIcon,
+	InboxIcon,
 	LayoutGridIcon,
 	MessageCircleIcon,
 	MessageCircleMoreIcon,
 	ShieldIcon,
+	SparklesIcon,
 	SquareActivityIcon,
 	TriangleAlertIcon,
 } from "lucide-react";
 
 import { BoxSolidIcon } from "./box-solid-icon";
+import { CalendarSolidIcon } from "./calendar-solid-icon";
 import { ChartColumnSolidIcon } from "./chart-column-solid-icon";
 import { CircleUserSolidIcon } from "./circle-user-solid-icon";
 import { AiSparkleIcon } from "./ai-sparkle-icon";
 import { EyeSolidIcon } from "./eye-solid-icon";
 import { HeartCrackSolidIcon } from "./heart-crack-solid-icon";
 import { HomeSolidIcon } from "./home-solid-icon";
+import { InboxSolidIcon } from "./inbox-solid-icon";
 import { LayoutGridSolidIcon } from "./layout-grid-solid-icon";
 import { MessageCircleMoreSolidIcon } from "./message-circle-more-solid-icon";
 import { MessageCircleSolidIcon } from "./message-circle-solid-icon";
@@ -28,6 +33,7 @@ import { MonitorViewExpandedIcon } from "./monitor-view-expanded-icon";
 import { MonitorViewMinimalIcon } from "./monitor-view-minimal-icon";
 import { MonitorViewMinimizedIcon } from "./monitor-view-minimized-icon";
 import { ShieldSolidIcon } from "./shield-solid-icon";
+import { SparklesSolidIcon } from "./sparkles-solid-icon";
 import { SquareActivitySolidIcon } from "./square-activity-solid-icon";
 import { TriangleAlertSolidIcon } from "./triangle-alert-solid-icon";
 
@@ -46,6 +52,9 @@ const pairs = [
 	["shield", ShieldIcon, ShieldSolidIcon],
 	["chart-column", ChartColumnIcon, ChartColumnSolidIcon],
 	["house (home-line)", HouseIcon, HomeSolidIcon],
+	["inbox", InboxIcon, InboxSolidIcon],
+	["sparkles", SparklesIcon, SparklesSolidIcon],
+	["calendar", CalendarIcon, CalendarSolidIcon],
 ] as const;
 
 const meta = {

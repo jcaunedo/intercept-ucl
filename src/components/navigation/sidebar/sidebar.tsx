@@ -69,6 +69,11 @@ type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 	/** Marks the item as the current page. */
 	active?: boolean;
 	/**
+	 * Marks a panel the item opens as open (`aria-pressed`), e.g. Ask Intercept Live's column: the solid icon in the
+	 * active icon color, but no semibold label, so it never reads as the current page.
+	 */
+	pressed?: boolean;
+	/**
 	 * Icon-only layout for the collapsed Sidebar. The label stays for screen readers (`aria-label`) and shows in a
 	 * SidebarTooltip on hover and focus.
 	 */
@@ -130,6 +135,7 @@ function SidebarMenuButton({
 	label,
 	suffix,
 	active = false,
+	pressed,
 	collapsed = false,
 	menu,
 	alert,
@@ -147,6 +153,7 @@ function SidebarMenuButton({
 			data-slot='sidebar-menu-button'
 			data-active={active || undefined}
 			aria-current={active ? "page" : undefined}
+			aria-pressed={pressed}
 			aria-label={accessibleName}
 			className={cn(
 				// The row hugs its content: 32px tall (6px vertical padding around the 20px label line). The label is 15px, a
@@ -165,6 +172,7 @@ function SidebarMenuButton({
 				collapsed ? "size-8 shrink-0 justify-center p-0 hover:bg-sidebar-hover" : "w-full",
 				// While its menu is open, the row keeps its hover look. `aria-expanded`, not `data-state`: the tooltip sets its
 				// own `data-state` on the same button.
+				pressed && !active && "[&_svg]:text-icon",
 				menu && "aria-expanded:text-foreground aria-expanded:[&_svg]:text-icon",
 				menu && (collapsed ? "aria-expanded:bg-sidebar-hover" : "aria-expanded:bg-active"),
 				className,
@@ -172,7 +180,7 @@ function SidebarMenuButton({
 			{...props}
 		>
 			<span className='relative flex shrink-0'>
-				{active && ActiveIcon ? <ActiveIcon /> : <Icon />}
+				{(active || pressed) && ActiveIcon ? <ActiveIcon /> : <Icon />}
 				<SidebarAlertDot alert={alert} />
 			</span>
 			{collapsed ? null : (
@@ -244,6 +252,8 @@ type SidebarNavItem = {
 	 * `resolved` or none shows no dot.
 	 */
 	alert?: SidebarAlert;
+	/** The panel this item opens is open (SidebarMenuButton's `pressed`), e.g. Ask Intercept Live's column. */
+	pressed?: boolean;
 };
 
 type SidebarProps = Omit<
@@ -325,6 +335,7 @@ function Sidebar({
 			label={item.label}
 			suffix={item.suffix}
 			active={activeItem === item.label}
+			pressed={item.pressed}
 			collapsed={collapsed}
 			menu={item.menu}
 			alert={item.alert}

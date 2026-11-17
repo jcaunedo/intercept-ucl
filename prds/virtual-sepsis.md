@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 13, 2026
 Created by: Julio Caunedo
-Last updated: Nov 13, 2026
+Last updated: Nov 17, 2026
 Scope: The Virtual Sepsis page in Intercept Live (Sidebar › Virtual Sepsis): which patients it lists, how it shows them, and what it doesn't do yet. Governs the "Virtual Sepsis" page in `monitoring/monitoring.tsx`. The patient's own Sepsis tab is PRD Patient details'.
 Purpose: the page was built on Nov 13, 2026 from the Monitoring page; this PRD records what it does and lists what the spec asks of it that's still open.
 -->
@@ -19,7 +19,7 @@ Purpose: the page was built on Nov 13, 2026 from the Monitoring page; this PRD r
 **Surface:** Sidebar › Virtual Sepsis  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 13, 2026
+**Last updated:** November 17, 2026
 
 ---
 
@@ -82,7 +82,7 @@ A patient is on the page when they're **on sepsis watch** (the census's flag, th
 |---|---|
 | **Hospital tabs** | All hospitals, then each hospital with a sepsis patient, with its patient count and active alert count |
 | **Heading** | The panel summary, e.g. "3 patients at Sidney Regional · 1 active alert" |
-| **Filter bar** | My patients, Active alerts, Rising score, Outside limits, Not reporting; the views, sort and Filters |
+| **Filter bar** | ✅ **Resolved:** Search and Filters (an icon button right of the search), then My patients, Active alerts, Rising score, Outside limits, Not reporting; ~~the views, sort and Filters~~ sort, then the views |
 | **Cards** | Live bedside monitor, NEWS2, the alert bar, flags (e.g. **Sepsis candidate**) |
 | **Live feed** | The page's alerts only |
 

@@ -229,7 +229,8 @@ function FiltersButton({
 	filters: PatientFilters;
 	onClick: () => void;
 }) {
-	return <FilterPanelButton panelId={panelId} open={open} count={filterCount(filters)} onClick={onClick} />;
+	// The icon alone, right of the search (Nov 17, 2026, user's call), on every page with a patient filter bar.
+	return <FilterPanelButton panelId={panelId} open={open} count={filterCount(filters)} onClick={onClick} iconOnly />;
 }
 
 export {

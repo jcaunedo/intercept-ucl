@@ -1,55 +1,52 @@
 import * as React from "react";
-import { GermIcon, HandHeartIcon, TriangleIcon, UserPlusIcon, XIcon } from "lucide-react";
+import { ChevronDownIcon, CircleDotIcon, HistoryIcon, LayoutGridIcon, RotateCwIcon, Rows3Icon, XIcon } from "lucide-react";
 
+import { Button } from "@/components/buttons/button";
 import { PatientCensusCard, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import { EmptyState } from "@/components/feedback/empty-state";
-import { FilterBar, FilterBarControls, FilterBarFilters } from "@/components/forms/filter-bar";
+import { FilterBar, FilterBarChip, FilterBarControls, FilterBarFilters } from "@/components/forms/filter-bar";
 import { SearchInput } from "@/components/forms/search-input";
-import { Switch } from "@/components/forms/switch";
 import type { AppHeaderUser } from "@/components/navigation/app-header";
+import {
+	DropdownMenu,
+	DropdownMenuCheckboxItem,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/overlays/dropdown-menu";
 import { Typography } from "@/components/typography/typography";
+import { mediaAbove } from "@/lib/breakpoints";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 
 import {
-	hasActiveAlert,
-	hasOrganSupport,
-	hasRisingAcuity,
-	HospitalTabs,
-	matchesSearch,
 	MyPatientsChip,
 	PanelEmpty,
 	PanelGrid,
-	QuickViewChips,
-	StickyFilterBar,
-	PanelBoard,
-	useChangedSinceMount,
-	panelOrder,
-	patientCardActions,
-	resolvedTimes,
-	useGrouping,
-	type GroupedView,
 	SortSelect,
-	shownAlert,
-	useFadingResolvedAlerts,
-	useHeldOrder,
+	StickyFilterBar,
+	panelOrder,
 	useRecentActivity,
-	useResolvedHolds,
 	usePatientScope,
 	useSortBy,
 	type PanelHospital,
-	type PatientScope,
-	type QuickView,
 	type SortOrderId,
 } from "../shared/patient-panel";
-import { useLocationFlag } from "../location-state";
 import { usePatientNavigation } from "../patient-navigation";
 import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
-import { LiveFeedButton, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
+import { useLocationFlag } from "../location-state";
 import type { PatientRecord } from "../patient-details/patient-details";
-import { isOpenAlert, type EscalationTarget, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
-import { DensityToggle, type PanelDensity } from "../monitoring/view-controls";
-import { FiltersButton, FiltersPanel, passesFilters, type PatientFilters } from "../shared/patient-filters";
-import { patientsFilterGroups } from "./patients-filters";
-import { PatientsList } from "./patients-list";
+import { SegmentedToggle, type ToggleOption } from "../monitoring/view-controls";
+import { FiltersButton, FiltersPanel, passesFilters, type FilterGroup, type PatientFilters } from "../shared/patient-filters";
+import { patientStatus, type PatientCensusStatus } from "./patient-status";
+import { isRecentlyViewed, patientsFilterGroups } from "./patients-filters";
+import { Attending, PatientStatus, RelativeTime, copyPatientLink, directoryName } from "./patients-parts";
+import { PatientsTable, PatientsTableSkeleton } from "./patients-table";
+
+// Patients (PRD Patients): the directory of every patient the clinician is authorized to see, in hospital or not, to
+// find a patient and open their record. It answers "how do I find or return to a patient's record?". Monitoring
+// answers "who needs my clinical attention right now?", so nothing here is live, ranked by acuity or about alerts: no
+// live feed, no score-first order, no NEWS2 column, no Monitoring chips (Nov 17, 2026, product).
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -57,407 +54,469 @@ import { PatientsList } from "./patients-list";
 
 type CensusHospital = PanelHospital;
 
-type CensusPatient = Omit<PatientCensusCardProps, "onOpen" | "href" | "alertRing" | "onMoreActions" | "className"> & {
+type CensusPatient = Omit<PatientCensusCardProps, "onOpen" | "href" | "alertRing" | "onMoreActions" | "className" | "children"> & {
 	id: string;
 	hospitalId: string;
 	/** Assigned to the signed-in clinician this shift. */
 	mine?: boolean;
+	/**
+	 * Where the patient is in their stay (ADT; Requirements Specification, Patient / Encounter: "Census status"). Missing
+	 * reads "Status unknown", never Current (PRD Patients CEN-040).
+	 */
+	status?: PatientCensusStatus;
+	/** When the status last changed, ISO 8601: when a transferred or discharged patient left. */
+	statusAt?: string;
+	/** Where a transferred patient went, e.g. "Denver Health". */
+	transferredTo?: string;
+	/** When the patient was admitted to the hospital, ISO 8601. Without it, the patient's record's `admittedAt`. */
+	admittedAt?: string;
+	/**
+	 * The latest meaningful chart activity (a note, an order, a charted result), ISO 8601. ⚠️ Data dependency (PRD Patients
+	 * CEN-014): no API field gives it yet; without it, the latest entry of the record's `activity`.
+	 */
+	lastActivityAt?: string;
 	/** On the Virtual Sepsis watch list. */
 	sepsisWatch?: boolean;
 	/** The acuity score's change over the last 4 h, which ranks patients within an alert severity (DU-09). */
 	scoreChange4h?: number;
-	/** When the patient arrived on their unit, admitted or moved in (ADT), ISO 8601. For New patients. */
+	/** When the patient arrived on their unit, admitted or moved in (ADT), ISO 8601. */
 	arrivedAt?: string;
-	/** When the signed-in clinician last opened the patient's details, ISO 8601. For the Recently viewed sort. */
+	/** When the signed-in clinician last opened the patient's details, ISO 8601. For Recently viewed. */
 	lastViewedAt?: string;
-	/** When the patient's most recent alert was resolved, ISO 8601. For the Recently resolved sort. */
+	/** When the patient's most recent alert was resolved, ISO 8601. For Monitoring's Recently resolved sort. */
 	lastResolvedAt?: string;
-	/** Unread messages from the patient's family. For the Family messages sort. */
+	/** Unread messages from the patient's family. For Monitoring's Family messages sort. */
 	unreadMessages?: number;
 };
 
-// The Census's sorts: managing patients (PRD Patients). No Alerts sort (Oct 31, 2026, user's call): its cards show no
-// alert, so the order wouldn't explain itself; no Recently resolved, alert history is Monitoring's (Nov 1, 2026, user's
-// call). Family messages, a patient-management task, joins Monitoring's (Nov 1, 2026, user's call).
-const sortOrderIds: readonly SortOrderId[] = ["acuity", "change", "name", "viewed", "messages"];
-
-// Comfortable, beside the collapsed rail: 2 a row above md (768), 3 above lg (1024), 4 above xl (1280), still 4 at
-// 2.5xl (Nov 4, 2026, user's call), 5 above 2.5xl (1728), at 3xl (Oct 30, 2026, user's call), and 6 above 3xl (1920); then one more every 296px (a ~280px card
-// and its gap), 7 from a 2168px window to 13 from 3944px. The page is 112px narrower than the window (64px rail, 24px padding each side). An open side
-// panel takes its width off, so it drops columns. Compact (`sm` cards, 12px gaps) shows one more card a row at every
-// width, from 2 at 520px, as on Monitoring. All in px: Tailwind can't order container queries in mixed units, and a px
-// one placed before a rem one loses to it.
-const gridClassNames: Record<Exclude<PanelDensity, "list">, string> = {
-	comfortable:
-		"@min-[657px]:grid-cols-2 @min-[913px]:grid-cols-3 @min-[1169px]:grid-cols-4 @min-[1617px]:grid-cols-5 @min-[1809px]:grid-cols-6 @min-[2056px]:grid-cols-7 @min-[2352px]:grid-cols-8 @min-[2648px]:grid-cols-9 @min-[2944px]:grid-cols-10 @min-[3240px]:grid-cols-11 @min-[3536px]:grid-cols-12 @min-[3832px]:grid-cols-13",
-	compact:
-		"gap-3 @min-[520px]:grid-cols-2 @min-[657px]:grid-cols-3 @min-[913px]:grid-cols-4 @min-[1169px]:grid-cols-5 @min-[1617px]:grid-cols-6 @min-[1809px]:grid-cols-7 @min-[2056px]:grid-cols-8 @min-[2352px]:grid-cols-9 @min-[2648px]:grid-cols-10 @min-[2944px]:grid-cols-11 @min-[3240px]:grid-cols-12 @min-[3536px]:grid-cols-13 @min-[3832px]:grid-cols-14",
-};
-
-// The Kanban board's columns share the width, at least one card wide each (Compact's small card is narrower).
-const boardClassNames: Record<Exclude<PanelDensity, "list">, string> = {
-	comfortable: "[--board-column:minmax(320px,1fr)]",
-	compact: "[--board-column:minmax(240px,1fr)]",
+/** A patient as the directory shows them: the API's data plus what their record says about the clinician's relationship. */
+type DirectoryPatient = CensusPatient & {
+	/** The signed-in clinician is on the patient's care team (the record's `careTeam`, `you`). */
+	onCareTeam?: boolean;
+	/** The attending of record, from the record's care team. */
+	attending?: string;
 };
 
 type CensusUser = AppHeaderUser;
 
 type PatientsPanelProps = {
 	hospitals: CensusHospital[];
+	/** Every patient the clinician is authorized to see: the census and the patients treated before. */
 	patients: CensusPatient[];
 	onOpenPatient?: (patientId: string) => void;
-	/** Every alert on the census, for the live feed panel's triage queue. Resolved and declined ones show under Resolved. */
-	alerts?: TriageAlert[];
-	/** Who the queue's Escalate can send an alert to. Without any, rows don't offer Escalate. */
-	escalationTargets?: EscalationTarget[];
-	/** An action on an alert in the queue. The layout applies it at once; the app sends it to Clinical Alerting. */
-	onAlertAction?: (alertId: string, action: TriageAlertAction) => void;
-	/** The latest change from the live feed, e.g. "Moore worsens: Medium becomes Critical". Shown at the right of the
-	 * hospital bar as "Live feed: …"; just "Live feed" without it. */
-	liveFeed?: string;
-	/** The patients' records, for the live feed's log (each one's timeline, activity and earlier alerts). */
+	/** The patients' records: their care team (the attending, and whether the clinician is on it), admission and activity. */
 	records?: PatientRecord[];
-	/** How Group by hospital shows: `board`, a Kanban column per hospital (default), or `sections` in the grid. */
-	groupedView?: GroupedView;
-	/** Called when the hospital bar's "Live feed" opens or closes the live feed panel (the triage queue). */
-	onOpenLiveFeed?: () => void;
+	/** The directory is loading: placeholder rows in its layout. */
+	loading?: boolean;
+	/** The directory couldn't load: an error state, with Try again when `onRetry` is given. */
+	loadError?: boolean;
+	onRetry?: () => void;
+	/** A link to a patient's page, for Copy patient link. Without it, this page's address with `?patient=` (the prototype). */
+	patientHref?: (patientId: string) => string;
 };
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
 /* -------------------------------------------------------------------------- */
 
-// New patients: arrived on their unit in the last 24 h, admitted or moved in (Nov 3, 2026, user's call; PRD Patients CEN-030).
-const newPatientWindow = 24 * 3_600_000;
-const isNewPatient = (patient: CensusPatient) =>
-	patient.arrivedAt !== undefined && Date.now() - Date.parse(patient.arrivedAt) < newPatientWindow;
+type DirectoryView = "table" | "cards";
 
-// Quick views. At most one is active; pressing it again turns it off. My patients is its own chip before them, so it
-// combines with any quick view. Only what the card shows: Out of range and Data gap are live monitoring data, so they're
-// Monitoring's (Nov 1, 2026, PRD Patients CEN-OD-07), and so is Active alerts (Nov 1, 2026, user's call): its cards show
-// no alert, and the Filters panel's Highest alert still finds them.
-// New patients first, beside My patients (Nov 3, 2026, user's call).
-const quickViews: QuickView<CensusPatient>[] = [
-	{ id: "new", label: "New patients", icon: UserPlusIcon, matches: isNewPatient },
-	{ id: "rising", label: "Rising score", icon: TriangleIcon, matches: hasRisingAcuity },
-	{ id: "organ", label: "Organ support", icon: HandHeartIcon, matches: hasOrganSupport },
-	{ id: "sepsis", label: "Sepsis watch", icon: GermIcon, matches: (patient) => Boolean(patient.sepsisWatch) },
+const views: ToggleOption<DirectoryView>[] = [
+	{ id: "table", label: "Table", icon: Rows3Icon },
+	{ id: "cards", label: "Cards", icon: LayoutGridIcon },
 ];
 
+// Sorts (PRD Patients CEN-013), in the menu's order: Recently viewed first (the default). No NEWS2 sort: ranking by acuity
+// is Monitoring's (Nov 17, 2026, user's call).
+const sortOrderIds: readonly SortOrderId[] = ["viewed", "name", "activity", "admitted", "hospital", "unit"];
+
+// How many patients show before Show more (PRD Patients CEN-012): the table stays quick past the census's few dozen.
+const pageSize = 50;
+
+
+const searchable = (text: string) => text.toLowerCase().replace(/[−–]/g, "-");
+
+/** Every word typed (commas ignored, so "Miller, Sarah" works) appears in the patient's name, MRN, hospital, unit, room or bed. */
+const matchesDirectorySearch = (patient: DirectoryPatient, query: string) => {
+	const words = searchable(query).split(/[\s,]+/).filter(Boolean);
+	if (!words.length) return true;
+	const text = searchable(
+		[patient.lastName, patient.firstName, patient.mrn, patient.hospital, patient.unit, patient.room, patient.bed]
+			.filter(Boolean)
+			.join(" "),
+	);
+	return words.every((word) => text.includes(word));
+};
+
+// The cards' grid, as Patients' Comfortable cards were: 2 a row above 657px of page, then one more every ~256px.
+const gridClassName =
+	"@min-[657px]:grid-cols-2 @min-[913px]:grid-cols-3 @min-[1169px]:grid-cols-4 @min-[1617px]:grid-cols-5 @min-[1809px]:grid-cols-6 @min-[2056px]:grid-cols-7 @min-[2352px]:grid-cols-8";
+
+/** The latest of a record's activity times. */
+const latestActivity = (record?: PatientRecord) =>
+	record?.activity?.reduce<string | undefined>((latest, entry) => (!latest || entry.at > latest ? entry.at : latest), undefined);
+
 /* -------------------------------------------------------------------------- */
-/* Census                                                                     */
+/* Hospital and Unit menus                                                    */
 /* -------------------------------------------------------------------------- */
 
 /**
- * The Census page's content: every patient across the user's hospitals as cards, with its filter bar, and the live feed
- * panel of their alerts.
+ * A filter bar menu over one Filters group (Hospital, Unit): its options as checkboxes, "All …" to clear. The trigger
+ * names what's picked: "All hospitals", the one picked, or "2 hospitals". The Filters panel shows the same group.
+ */
+function FilterGroupMenu({
+	group,
+	picked,
+	allLabel,
+	plural,
+	onPickedChange,
+}: {
+	group: FilterGroup<DirectoryPatient>;
+	picked: string[];
+	allLabel: string;
+	plural: string;
+	onPickedChange: (picked: string[]) => void;
+}) {
+	const label =
+		picked.length === 0
+			? allLabel
+			: picked.length === 1
+				? (group.options.find((option) => option.id === picked[0])?.label ?? picked[0])
+				: `${picked.length} ${plural}`;
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button variant='outline' aria-label={`${group.title}: ${label}`} className='font-semibold'>
+					{label}
+					<ChevronDownIcon aria-hidden='true' className='text-icon-muted' />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='start' className='min-w-56'>
+				<DropdownMenuItem onSelect={() => onPickedChange([])}>{allLabel}</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				{group.options.map((option) => (
+					<DropdownMenuCheckboxItem
+						key={option.id}
+						checked={picked.includes(option.id)}
+						// Stays open, so several can be picked.
+						onSelect={(event) => event.preventDefault()}
+						onCheckedChange={(checked) =>
+							onPickedChange(checked ? [...picked, option.id] : picked.filter((id) => id !== option.id))
+						}
+					>
+						{option.label}
+					</DropdownMenuCheckboxItem>
+				))}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Patients                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The Patients page's content: the patient directory. Search first, then My patients, Current and Recently viewed, the
+ * Hospital and Unit menus and Filters; the count, Sort and the Table / Cards switch; then the patients. A row or card
+ * opens the patient's page.
  */
 function PatientsPanel({
 	hospitals,
 	patients: patientsProp,
 	onOpenPatient,
-	alerts: alertsProp = [],
-	escalationTargets = [],
-	onAlertAction,
-	liveFeed,
 	records,
-	onOpenLiveFeed,
-	groupedView = "board",
+	loading = false,
+	loadError = false,
+	onRetry,
+	patientHref,
 }: PatientsPanelProps) {
-	// Alerts resolved in this session: opening a card with an active alert resolves it (prototype behavior; an app
-	// resolves through Clinical Alerting). Applied before filtering, so counters and filters see it. Kept with when, for the
-	// Recently resolved sort.
-	const [resolvedIds, setResolvedIds] = React.useState<ReadonlyMap<string, string>>(() => new Map());
-	// Every patient's avatar color, from the whole roster, so the page's sort and filters don't change them.
+	// Every patient's avatar color, from the whole directory, so sorting and filtering don't change them.
 	const tones = React.useMemo(() => avatarTones(patientsProp), [patientsProp]);
-	const withResolved = React.useMemo(
-		() =>
-			patientsProp.map((patient) =>
-				resolvedIds.has(patient.id) && hasActiveAlert(patient) ? { ...patient, alert: { variant: "resolved" as const } } : patient,
-			),
-		[patientsProp, resolvedIds],
-	);
-	// The Census is for managing patients, not watching them (Monitoring is): its cards hold still and show no alert. The
-	// order is taken when the user changes the sort, grouping or filters (or a patient joins what they show), not when
-	// alerts change. In the List, a "Resolved" pill shows for a moment where its row is, then fades.
-	const patients = useFadingResolvedAlerts(withResolved, false);
-	const resolvedHolds = useResolvedHolds(patients, () => {});
-	const ownAlerts = new Map(patients.map((patient) => [patient.id, patient.alert]));
-	// Inside the shell, a card opens the patient's details over the page, stepping through the grid as it's shown now; an
-	// alert in the live feed opens them with the page's list as it stands (PRD PD-015).
+	// The API's data with what the record adds: the clinician's relationship, the attending, admission and activity.
+	const directory = React.useMemo<DirectoryPatient[]>(() => {
+		const recordById = new Map((records ?? []).map((record) => [record.id, record]));
+		return patientsProp.map((patient) => {
+			const record = recordById.get(patient.id);
+			const team = record?.careTeam ?? [];
+			return {
+				...patient,
+				tone: patient.tone ?? tones.get(patient.id) ?? avatarTone(patient.id),
+				photo: patient.photo ?? record?.photo,
+				admittedAt: patient.admittedAt ?? record?.admittedAt,
+				lastActivityAt: patient.lastActivityAt ?? latestActivity(record),
+				onCareTeam: team.some((member) => member.you),
+				attending: team.find((member) => /attending/i.test(member.role))?.name,
+			};
+		});
+	}, [patientsProp, records, tones]);
+	// Recently viewed counts this session's views too (the patients opened in the shell).
+	const patients = useRecentActivity(directory, {});
+
 	const navigation = usePatientNavigation();
+	const [scope, setScope] = usePatientScope("patients");
+	const [currentOnly, setCurrentOnly] = React.useState(false);
+	const [recentOnly, setRecentOnly] = React.useState(false);
+	const [filters, setFilters] = React.useState<PatientFilters>({});
+	const [query, setQuery] = React.useState("");
+	const [sortBy, setSortBy] = useSortBy("patients", "viewed");
+	// Table by default on a desktop; cards where a table can't fit (below md), until the clinician picks one.
+	const wide = useMediaQuery(mediaAbove("md"));
+	const [viewChoice, setViewChoice] = React.useState<DirectoryView | null>(null);
+	const view = viewChoice ?? (wide ? "table" : "cards");
+	const [filtersOpen, setFiltersOpen] = useLocationFlag("filters");
+	const [limit, setLimit] = React.useState(pageSize);
+
+	const filterGroups = patientsFilterGroups(patients, hospitals, filters);
+	const hospitalGroup = filterGroups.find((group) => group.id === "hospital") as FilterGroup<DirectoryPatient>;
+	const unitGroup = filterGroups.find((group) => group.id === "unit") as FilterGroup<DirectoryPatient>;
+	const setGroupPicked = (groupId: string) => (picked: string[]) =>
+		setFilters((current) => {
+			const next = { ...current, [groupId]: picked };
+			// A unit outside the hospitals picked no longer applies.
+			if (groupId === "hospital" && picked.length) {
+				const units = new Set(patients.filter((patient) => picked.includes(patient.hospitalId)).map((patient) => patient.unit));
+				next.unit = (current.unit ?? []).filter((unit) => units.has(unit));
+			}
+			return next;
+		});
+
+	// The chips, each a test; a chip's count is with the others as they are.
+	const chips = {
+		mine: (patient: DirectoryPatient) => scope !== "mine" || Boolean(patient.mine),
+		current: (patient: DirectoryPatient) => !currentOnly || patientStatus(patient) === "admitted",
+		recent: (patient: DirectoryPatient) => !recentOnly || isRecentlyViewed(patient),
+	};
+	const searched = patients.filter((patient) => matchesDirectorySearch(patient, query));
+	const inPanel = searched.filter((patient) => passesFilters(patient, filterGroups, filters));
+	const passesChips = (patient: DirectoryPatient, except?: keyof typeof chips) =>
+		(Object.keys(chips) as (keyof typeof chips)[]).every((key) => key === except || chips[key](patient));
+	const chipCount = (key: keyof typeof chips, matches: (patient: DirectoryPatient) => boolean) =>
+		inPanel.filter((patient) => passesChips(patient, key) && matches(patient)).length;
+	// Before the Filters panel: what its counts count.
+	const inView = searched.filter((patient) => passesChips(patient));
+	const visible = inPanel.filter((patient) => passesChips(patient)).sort(panelOrder(sortBy, false));
+	const shown = visible.slice(0, limit);
+
+	// A new search, filter or sort starts from the first page again.
+	const resultsKey = `${query}|${JSON.stringify(filters)}|${scope}|${currentOnly}|${recentOnly}|${sortBy}`;
+	React.useEffect(() => setLimit(pageSize), [resultsKey]);
+
+	// Tells the shell what the page shows, so a patient opened here steps through this list (PRD PD-015).
+	const setPageList = navigation?.setPageList;
+	const visibleKey = visible.map((patient) => patient.id).join(",");
+	React.useLayoutEffect(() => {
+		setPageList?.(visibleKey ? visibleKey.split(",") : []);
+	}, [setPageList, visibleKey]);
+
 	const openPatient = (patientId: string) => {
-		const resolvesAlert = patientsProp.some((patient) => patient.id === patientId && hasActiveAlert(patient));
-		setResolvedIds((current) =>
-			current.has(patientId) || !resolvesAlert ? current : new Map(current).set(patientId, new Date().toISOString()),
-		);
 		navigation?.openPatient(
 			patientId,
 			visible.map((patient) => patient.id),
 		);
 		onOpenPatient?.(patientId);
 	};
-	const openAlertPatient = (patientId: string) => {
-		navigation?.openPatient(patientId);
-		onOpenPatient?.(patientId);
-	};
-	const [hospitalId, setHospitalId] = React.useState("all");
-	const [quickView, setQuickView] = React.useState<string | null>(null);
-	const [scope, setScope] = usePatientScope("patients");
-	// The Filters panel's options, by group (unit among them since Oct 30, 2026: the Unit menu moved there).
-	const [filters, setFilters] = React.useState<PatientFilters>({});
-	// The filter bar's search: everything the card shows.
-	const [query, setQuery] = React.useState("");
-	// The score first (Oct 31, 2026, user's call): the cards show no alert, so Alert isn't offered here; Monitoring keeps it.
-	const [sortBy, setSortBy] = useSortBy("patients", "acuity");
-	// Comfortable and Compact cards, or the List table, as on Monitoring.
-	const [density, setDensity] = React.useState<PanelDensity>("comfortable");
-	// Where the board's header row sticks: under the sticky filter bar, which reports it as its height changes.
-	const [boardTop, setBoardTop] = React.useState(0);
-	// Group by hospital: a Kanban column per hospital, the sort inside each; or, with the sections view, a grid section each.
-	// A view picked in the Prototype menu shows at once: cards, across all hospitals.
-	const [groupedChoice, setGrouped] = useGrouping(groupedView, () => {
-		setDensity((current) => (current === "list" ? "comfortable" : current));
-		setHospitalId("all");
-	});
-	// One hospital has nothing to group: picking it on its tab turns grouping off (and the switch, disabled), and All
-	// hospitals brings back the user's choice (Oct 30, 2026, user's call).
-	const grouped = groupedChoice && hospitalId === "all";
-	const board = grouped && groupedView === "board" && density !== "list";
-	// The board fades its columns in when the user switches to it, not when the page opens on it.
-	const boardSwitched = useChangedSinceMount(board);
-	// The panel right of the canvas: the live feed (the triage queue, as on Monitoring; the cards keep their own alert
-	// pills) or Filters, one at a time.
-	// The live feed sits beside the canvas; Filters floats over everything (a Sheet), so the two no longer take turns.
-	// Both in the address (`feed`, `filters`), so a shared link opens them.
-	const [feedOpen, setFeedOpen] = useLocationFlag("feed");
-	const rightPanel = feedOpen ? "feed" : null;
-	const toggleRightPanel = (panel: "feed") => setFeedOpen((current) => (panel === "feed" ? !current : current));
-	const [filtersOpen, setFiltersOpen] = useLocationFlag("filters");
-	const { alerts, handleAlertAction } = useAddressedAlerts(alertsProp, onAlertAction);
 
-	const inTab = (scoped: CensusPatient[]) =>
-		hospitalId === "all" ? scoped : scoped.filter((patient) => patient.hospitalId === hospitalId);
-	// The Filters panel's groups, from the hospital tab's patients (its units, its score's bands).
-	const filterGroups = patientsFilterGroups(inTab(patients), filters);
-	// My patients narrows everything below it, the tab counters included. The other filters run on both scopes, so the
-	// title can say "6 of 14 patients": the user's own among everyone the filters match. `inView` is before the Filters
-	// panel (its counts start there); `inUnit`, after it, is what the chips count.
-	const filtered = (scoped: CensusPatient[]) => {
-		const searched = inTab(scoped).filter((patient) => matchesSearch(patient, query));
-		const activeView = quickViews.find((view) => view.id === quickView);
-		const inView = activeView ? searched.filter(activeView.matches) : searched;
-		const inUnit = searched.filter((patient) => passesFilters(patient, filterGroups, filters));
-		return { inView, inUnit, visible: activeView ? inUnit.filter(activeView.matches) : inUnit };
+	const filtered = Boolean(scope === "mine" || currentOnly || recentOnly || Object.values(filters).some((picked) => picked?.length));
+	const clearFilters = () => {
+		setScope("all");
+		setCurrentOnly(false);
+		setRecentOnly(false);
+		setFilters({});
 	};
-	// The Recently viewed and Recently resolved sorts count what happened in this session too: the patients opened, and the
-	// alerts resolved here or in the live feed.
-	const recent = useRecentActivity(patients, { ...resolvedTimes(alerts), ...Object.fromEntries(resolvedIds) });
-	const assigned = scope === "mine" ? recent.filter((patient) => patient.mine) : recent;
-	const { inView, inUnit, visible: unsorted } = filtered(assigned);
-	const visible = useHeldOrder(unsorted.sort(panelOrder(sortBy, grouped)), 0, `${sortBy}:${grouped}`);
-	// Tells the shell what the page shows, so a patient opened from an alert, a toast or the chat gets this list too.
-	const setPageList = navigation?.setPageList;
-	const visibleKey = visible.map((patient) => patient.id).join(",");
-	React.useLayoutEffect(() => {
-		setPageList?.(visibleKey ? visibleKey.split(",") : []);
-	}, [setPageList, visibleKey]);
-	const everyoneCount = scope === "mine" ? filtered(patients).visible.length : visible.length;
-	const hospitalCount = new Set(visible.map((patient) => patient.hospitalId)).size;
-	// One hospital, picked on its tab or the only one the filters leave, reads by name: "7 patients at Sidney".
-	const singleHospital =
-		hospitalId !== "all"
-			? hospitals.find((hospital) => hospital.id === hospitalId)
-			: hospitalCount === 1
-				? hospitals.find((hospital) => hospital.id === visible[0].hospitalId)
-				: undefined;
-	// A hospital tab with no patients at all (a hospital whose patients have all left, say) says so, rather than
-	// blaming the filters.
-	const emptyHospital = hospitalId !== "all" && !patients.some((patient) => patient.hospitalId === hospitalId) ? singleHospital : undefined;
+	// Matches the status filters hide (Current, Patient status): a search for someone discharged must not read as "no
+	// such patient" (PRD Patients CEN-050).
+	const hiddenByStatus =
+		visible.length === 0 && query
+			? searched.filter(
+					(patient) =>
+						chips.mine(patient) &&
+						chips.recent(patient) &&
+						passesFilters(patient, filterGroups, { ...filters, status: [] }),
+				).length
+			: 0;
+	const showAllStatuses = () => {
+		setCurrentOnly(false);
+		setFilters((current) => ({ ...current, status: [] }));
+	};
 
-	// The cards show no alert, badge or ring (Oct 31, 2026, intercept.ds patient-card-compact; again Nov 2, 2026,
-	// `patient-census-card` 1108:3964, user's call): the Census is for managing patients; Monitoring and the live feed show
-	// alerts. The List keeps its Alert column.
-	const renderCard = ({
-		id,
-		hospitalId: _hospitalId,
-		mine: _mine,
-		sepsisWatch: _sepsisWatch,
-		alert: _alert,
-		scoreChange4h: _scoreChange4h,
-		lastViewedAt: _lastViewedAt,
-		lastResolvedAt: _lastResolvedAt,
-		unreadMessages: _unreadMessages,
-		arrivedAt: _arrivedAt,
-		...card
-	}: CensusPatient) => (
-		// The avatar (Oct 31, 2026, user request; intercept.ds `patient-card-compact`): the patient's photo, or their initials
-		// in their own color, the same as on their Patient details header (`shared/patient-avatar.ts`).
+	const renderCard = (patient: DirectoryPatient) => (
 		<PatientCensusCard
-			{...card}
-			initials={patientInitials(card)}
-			tone={tones.get(id) ?? avatarTone(id)}
-			size={density === "compact" ? "sm" : "md"}
-			// The "…" menu on hover, as on Monitoring's cards (Nov 3, 2026, user's call). The card shows no alert, so no
-			// View alert.
-			moreActions={patientCardActions(navigation, {
-				id,
-				name: `${card.lastName}, ${card.firstName}`,
-				tags: card.tags,
-			})}
-			onOpen={() => openPatient(id)}
-		/>
+			lastName={patient.lastName}
+			firstName={patient.firstName}
+			mrn={patient.mrn}
+			sex={patient.sex}
+			age={patient.age}
+			hospital={patient.hospital}
+			unit={patient.unit}
+			room={patient.room}
+			bed={patient.bed}
+			photo={patient.photo}
+			initials={patientInitials(patient)}
+			tone={patient.tone}
+			tags={patient.tags}
+			// No score, alert or ring: identity, status, location and relationship lead (PRD Patients CEN-010).
+			alertRing={false}
+			moreActions={[
+				{ label: "Open patient", onSelect: () => openPatient(patient.id) },
+				{ label: "Copy patient link", onSelect: () => void copyPatientLink(patient.id, directoryName(patient), patientHref) },
+			]}
+			onOpen={() => openPatient(patient.id)}
+		>
+			<div className='flex'>
+				<PatientStatus patient={patient} detail={false} />
+			</div>
+			<Attending patient={patient} labeled />
+			<p className='text-muted-foreground'>
+				Last activity <RelativeTime value={patient.lastActivityAt} className='text-foreground' />
+			</p>
+		</PatientCensusCard>
 	);
 
-	const clearFilters = () => {
-		setHospitalId("all");
-		setQuickView(null);
-		setFilters({});
-		setScope("all");
-		setQuery("");
-	};
+	const results = loading ? (
+		view === "table" ? (
+			<PatientsTableSkeleton />
+		) : (
+			<div aria-hidden='true' className={`grid gap-4 ${gridClassName}`}>
+				{Array.from({ length: 8 }, (_, index) => (
+					<div key={index} className='h-48 rounded-card border border-border bg-muted/40 motion-safe:animate-pulse' />
+				))}
+			</div>
+		)
+	) : loadError ? null : view === "table" ? (
+		<PatientsTable patients={shown} onOpenPatient={openPatient} patientHref={patientHref} />
+	) : (
+		<PanelGrid patients={shown} hospitals={hospitals} grouped={false} className={gridClassName} renderCard={renderCard} />
+	);
 
 	return (
 		<>
-			{/* The hospital bar, right under the header (Intercept-Live Census `83:2515`), with Group by hospital at its right
-			    (label first). */}
-			<div className='flex items-center justify-between gap-6 border-b border-border pr-6 pl-4'>
-				<HospitalTabs
-					hospitals={hospitals}
-					patients={assigned}
-					value={hospitalId}
-					onValueChange={setHospitalId}
-					// A tab's alert count opens Monitoring on that tab with Active alerts on, with this page's My patients.
-					onShowAlerts={
-						navigation?.showActiveAlerts
-							? (id) => navigation.showActiveAlerts?.(id, scope)
-							: undefined
-					}
-				/>
-				<div className='shrink-0'>
-					<Switch
-						label='Group by hospital'
-						labelSide='left'
-						checked={grouped}
-						disabled={hospitalId !== "all"}
-						onCheckedChange={setGrouped}
-					/>
-				</div>
-			</div>
-
-			{/* A size container, so the grid's columns follow the room the live feed panel leaves. */}
-			<main className='@container flex flex-1 flex-col gap-6 p-6'>
-				{/* Two rows, 24px apart (Intercept-Live Census `167:5543`): the summary with the live feed's latest change at its
-				    right, which opens the live feed panel; then the filter chips, with the page's actions at the right, 8px
-				    apart. */}
+			{/* A size container, so the filter bar and the cards follow the page's width. */}
+			<main className='@container flex flex-1 flex-col gap-6 p-6' aria-busy={loading || undefined}>
+				{/* The page summary, styled as Monitoring's (Nov 17, 2026, user's call): a 2xl regular h1 whose bold part is the
+				    count, "36 patients", "11 of 36 patients" while filtered. No hospital count (PRD Patients §3). */}
 				<div className='flex min-h-9 items-center gap-2'>
 					<Typography as='h1' size='2xl' weight='regular' aria-live='polite' className='min-w-0 flex-1'>
-						{/* "6 of 14 patients" with My patients: the user's own among everyone the other filters match. */}
-						<span className='font-bold'>
-							{scope === "mine" ? `${visible.length} of ${everyoneCount}` : visible.length}{" "}
-							{everyoneCount === 1 ? "patient" : "patients"}{" "}
-							{singleHospital
-								? `at ${singleHospital.name}`
-								: `across ${hospitalCount} ${hospitalCount === 1 ? "hospital" : "hospitals"}`}
+						<span data-results-count='' className='font-bold'>
+							{loading
+								? "Loading patients…"
+								: `${visible.length === patients.length ? visible.length : `${visible.length} of ${patients.length}`} ${patients.length === 1 ? "patient" : "patients"}`}
 						</span>
 					</Typography>
-					<LiveFeedButton
-						change={liveFeed}
-						open={rightPanel === "feed"}
-						onOpen={() => {
-							toggleRightPanel("feed");
-							onOpenLiveFeed?.();
-						}}
-					/>
 				</div>
 
-				{/* Sticks under the page header while the page scrolls (StickyFilterBar). */}
-				<StickyFilterBar onBoardTopChange={setBoardTop}>
+				{/* One row, as on Monitoring (Nov 17, 2026, user's call): the search, Filters (the icon alone), then the
+				    chips; on the right Sort, Hospital, Unit and the view. Sticks under the page header while the page scrolls (StickyFilterBar). */}
+				<StickyFilterBar>
 					<FilterBar aria-label='Patient filters'>
-						{/* The search leads the chips (Intercept-Live Census `183:9503`) and pushes them along as it opens. */}
 						<FilterBarFilters>
-							<SearchInput label='Search patients' value={query} onValueChange={setQuery} />
-							<MyPatientsChip
-								value={scope}
-								onValueChange={setScope}
-								count={filtered(patients).inUnit.filter((patient) => patient.mine).length}
-							/>
-							<QuickViewChips
-								views={quickViews}
-								value={quickView}
-								onValueChange={setQuickView}
-								patients={inUnit}
-							/>
-						</FilterBarFilters>
-						<FilterBarControls>
-							<DensityToggle value={density} onValueChange={setDensity} />
-							<SortSelect
-								value={sortBy}
-								onValueChange={setSortBy}
-								orders={sortOrderIds}
-								scoreName={patients.find((patient) => patient.acuity)?.acuity?.label}
-							/>
-							{/* Opens the Filters panel (Unit is one of its groups). */}
+							{/* As on Monitoring (Nov 17, 2026, user's call): a magnifier while empty and unfocused, opening to 240px and
+							    pushing the chips along. It covers name, MRN, hospital, unit, room and bed (PRD Patients CEN-005); date of
+							    birth isn't in the data yet. */}
+							<div role='search' className='contents'>
+								<SearchInput label='Search patients' value={query} onValueChange={setQuery} />
+							</div>
+							{/* Filters, the icon alone, right of the search (Nov 17, 2026, user's call); its panel holds every group. */}
 							<FiltersButton
 								panelId='patients-filters'
 								open={filtersOpen}
 								filters={filters}
 								onClick={() => setFiltersOpen((current) => !current)}
 							/>
+							<MyPatientsChip
+								value={scope}
+								onValueChange={setScope}
+								count={chipCount("mine", (patient) => Boolean(patient.mine))}
+							/>
+							<FilterBarChip
+								pressed={currentOnly}
+								onPressedChange={setCurrentOnly}
+								count={chipCount("current", (patient) => patientStatus(patient) === "admitted")}
+							>
+								<CircleDotIcon aria-hidden='true' />
+								Current
+							</FilterBarChip>
+							<FilterBarChip
+								pressed={recentOnly}
+								onPressedChange={setRecentOnly}
+								count={chipCount("recent", isRecentlyViewed)}
+							>
+								<HistoryIcon aria-hidden='true' />
+								Recently viewed
+							</FilterBarChip>
+						</FilterBarFilters>
+						<FilterBarControls>
+							<SortSelect value={sortBy} onValueChange={setSortBy} orders={sortOrderIds} />
+							{/* Hospital and Unit filter the directory; they never change the page. Narrower, they're in Filters only. */}
+							<div className='hidden items-center gap-2 @min-[1400px]:flex'>
+								<FilterGroupMenu
+									group={hospitalGroup}
+									picked={filters.hospital ?? []}
+									allLabel='All hospitals'
+									plural='hospitals'
+									onPickedChange={setGroupPicked("hospital")}
+								/>
+								<FilterGroupMenu
+									group={unitGroup}
+									picked={filters.unit ?? []}
+									allLabel='All units'
+									plural='units'
+									onPickedChange={setGroupPicked("unit")}
+								/>
+							</div>
+							{/* The view last, as Monitoring's view controls follow its Sort (Nov 17, 2026, user's call). */}
+							<SegmentedToggle label='View' options={views} value={view} onValueChange={setViewChoice} iconOnly />
 						</FilterBarControls>
 					</FilterBar>
 				</StickyFilterBar>
 
-				{density === "list" ? (
-					<PatientsList
-						patients={visible.map((patient) => ({
-							...patient,
-							tone: tones.get(patient.id) ?? avatarTone(patient.id),
-							alert: shownAlert(ownAlerts.get(patient.id), resolvedHolds[patient.id]),
-						}))}
-						hospitals={hospitals}
-						grouped={grouped}
-						onOpenPatient={openPatient}
-					/>
-				) : board ? (
-					<PanelBoard
-						stickyTop={boardTop}
-						animateIn={boardSwitched}
-						patients={visible}
-						hospitals={hospitals}
-						className={boardClassNames[density]}
-						spareColumns={density === "compact" ? 1 : 0}
-						renderCard={renderCard}
-					/>
-				) : (
-					<PanelGrid
-						patients={visible}
-						hospitals={hospitals}
-						grouped={grouped}
-						className={gridClassNames[density]}
-						renderCard={renderCard}
-					/>
-				)}
+				{results}
 
-				{/* Nothing to show: no patients at all, or filters that match none (with a way back). */}
-				{visible.length === 0 ? (
+				{!loading && !loadError && visible.length > shown.length ? (
+					<div className='flex justify-center'>
+						<Button variant='outline' onClick={() => setLimit((current) => current + pageSize)}>
+							Show {Math.min(pageSize, visible.length - shown.length)} more
+						</Button>
+					</div>
+				) : null}
+
+				{/* The states with nothing to list: an error, no patients at all, or a search or filters that match none. */}
+				{loadError ? (
+					<PanelEmpty>
+						<EmptyState
+							title="Patients couldn't load"
+							description='Check your connection and try again.'
+							buttonLabel={onRetry ? "Try again" : undefined}
+							buttonIcon={<RotateCwIcon aria-hidden='true' />}
+							buttonProps={{ onClick: onRetry }}
+						/>
+					</PanelEmpty>
+				) : !loading && visible.length === 0 ? (
 					<PanelEmpty>
 						{patients.length === 0 ? (
 							<EmptyState
-								title='No patients on the census'
-								description='Patients admitted to your hospitals will appear here.'
+								title='No patients yet'
+								description='Patients from your authorized hospitals will appear here.'
 							/>
-						) : emptyHospital ? (
+						) : hiddenByStatus ? (
 							<EmptyState
-								title={`No patients at ${emptyHospital.name}`}
-								description='Patients admitted there will appear here.'
-								buttonLabel='Show all hospitals'
-								buttonProps={{ onClick: () => setHospitalId("all") }}
+								title='No current patients found'
+								description={`${hiddenByStatus} ${hiddenByStatus === 1 ? "patient who is" : "patients who are"} no longer in hospital ${hiddenByStatus === 1 ? "matches" : "match"} your search.`}
+								buttonLabel='Show all statuses'
+								buttonProps={{ onClick: showAllStatuses }}
+							/>
+						) : query ? (
+							<EmptyState
+								title='No patients found'
+								description='Try another name, MRN, hospital, unit, or adjust your filters.'
+								buttonLabel={filtered ? "Clear filters" : undefined}
+								buttonIcon={<XIcon aria-hidden='true' />}
+								buttonProps={{ onClick: clearFilters }}
 							/>
 						) : (
 							<EmptyState
 								title='No patients match these filters'
-								description='Try another hospital, unit or filter.'
+								description='Try another hospital, unit or status.'
 								buttonLabel='Clear filters'
 								buttonIcon={<XIcon aria-hidden='true' />}
 								buttonProps={{ onClick: clearFilters }}
@@ -476,14 +535,6 @@ function PatientsPanel({
 				onFiltersChange={setFilters}
 				patients={inView}
 			/>
-			<LiveFeedPanel
-				open={rightPanel === "feed"}
-				onOpenChange={setFeedOpen}
-				alerts={alerts}
-				patients={patients}
-				records={records}
-				onOpenPatient={openAlertPatient}
-			/>
 		</>
 	);
 }
@@ -491,7 +542,8 @@ function PatientsPanel({
 export {
 	PatientsPanel,
 	type CensusHospital,
-	type PatientsPanelProps,
 	type CensusPatient,
 	type CensusUser,
+	type DirectoryPatient,
+	type PatientsPanelProps,
 };

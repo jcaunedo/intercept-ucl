@@ -35,13 +35,14 @@ type SidebarTooltipProps = Omit<
 
 /**
  * Pill-shaped label for a collapsed sidebar item, shown on hover and focus. Built on Radix's tooltip (hover, focus,
- * Escape, `role="tooltip"`) and opens without delay.
+ * Escape, `role="tooltip"`) and opens without delay. It contrasts with the page: a dark bubble with light text in light
+ * mode, a light one with dark text in dark mode (its tokens invert with the theme).
  *
  * Motion (same as bethere-ucl): fades in while gliding `motionDistance.subtle` (8px) out from the trigger on
  * `enterTransition`, and leaves the same way on the shorter `exitTransition` (MOTION.md "Menus/dropdowns": short fade,
  * small movement from the trigger). Opacity only under reduced motion.
  *
- * Figma: [intercept.ds › sidebar-tooltip](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1003-1512)
+ * Figma: [intercept.ds › sidebar-tooltip](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1571-5282)
  */
 function SidebarTooltip({
 	label,
@@ -95,7 +96,7 @@ function SidebarTooltip({
 									animate={{ opacity: 1, x: 0, y: 0, transition: resolve(enterTransition) }}
 									exit={{ opacity: 0, ...offset, transition: resolve(exitTransition) }}
 									className={cn(
-										"pointer-events-none z-(--z-floating) inline-flex items-center justify-center rounded-full border border-border bg-background px-4 py-2 text-base/5 font-medium whitespace-nowrap text-foreground shadow-xl",
+										"pointer-events-none z-(--z-floating) inline-flex items-center justify-center rounded-full border border-sidebar-foreground bg-foreground px-4 py-2 text-base/5 font-medium whitespace-nowrap text-on-foreground shadow-xl",
 										className,
 									)}
 								>

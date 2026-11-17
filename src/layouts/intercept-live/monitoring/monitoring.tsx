@@ -12,6 +12,9 @@ import type { DischargeDecision } from "../alert-panel/discharge-plan";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import { PatientsPanel, type CensusPatient } from "../patients/patients-panel";
+import { InboxPanel, type InboxPanelProps } from "../inbox/inbox-panel";
+import { MessagesPanel, type MessagesPanelProps } from "../messages/messages-panel";
+import { SchedulePanel, type SchedulePanelProps } from "../schedule/schedule-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
 import { AlertToasts, useClosedResolutions, type AlertNotice } from "../shared/alert-toasts";
@@ -70,6 +73,15 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		onConsultNote?: (alertId: string, note: string, detail: AlertDetailData) => void;
 		/** Things to act on, each a toast unless its alert is open (Scenario 2's social needs; `AlertToasts`). */
 		notices?: AlertNotice[];
+		/** The clinician's schedule. With it, the Sidebar's Schedule opens the calendar of their shifts and open shifts. */
+		schedule?: Omit<SchedulePanelProps, "hospitals">;
+		/** Every thread with the bedside. With them, the Sidebar's Messages opens the inbox (PRD Messages MSG-018). */
+		messages?: Omit<MessagesPanelProps, "hospitals">;
+		/**
+		 * Work besides alerts (drafts to sign, suggested orders, failed write-backs, handed-over items). With it, the
+		 * Sidebar's Inbox opens the queue, with this layout's alerts in it.
+		 */
+		inbox?: Pick<InboxPanelProps, "items" | "onItemAction">;
 	};
 
 /**
@@ -101,6 +113,9 @@ function Monitoring({
 	onConsultChange,
 	onConsultNote,
 	notices,
+	schedule,
+	messages,
+	inbox,
 	...shell
 }: MonitoringProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on Monitoring and the Census.
@@ -211,18 +226,23 @@ function Monitoring({
 						closedResolutions={closedResolutions}
 					/>
 				) : undefined,
+				Schedule: schedule ? <SchedulePanel hospitals={hospitals} {...schedule} /> : undefined,
+				Messages: messages ? <MessagesPanel hospitals={hospitals} {...messages} /> : undefined,
+				// The same alerts as Monitoring's, so acknowledging one in the Inbox acknowledges it everywhere.
+				Inbox: inbox ? (
+					<InboxPanel
+						{...inbox}
+						alerts={alerts}
+						patients={[...(censusPatients ?? []), ...patients]}
+						onAlertAction={handleAlertAction}
+					/>
+				) : undefined,
 				Patients: flaggedCensusPatients ? (
 					<PatientsPanel
 						records={patientRecords}
 						hospitals={hospitals}
 						patients={flaggedCensusPatients}
 						onOpenPatient={onOpenPatient}
-						alerts={alerts}
-						escalationTargets={escalationTargets}
-						onAlertAction={handleAlertAction}
-						liveFeed={liveFeed}
-						onOpenLiveFeed={onOpenLiveFeed}
-						groupedView={groupedView}
 					/>
 				) : undefined,
 			}}

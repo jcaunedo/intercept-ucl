@@ -28,11 +28,14 @@ import {
 	UsersIcon,
 } from "lucide-react";
 
+import { CalendarSolidIcon } from "@/components/icons/calendar-solid-icon";
 import { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
 import { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
 import { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
 import { HomeSolidIcon } from "@/components/icons/home-solid-icon";
+import { InboxSolidIcon } from "@/components/icons/inbox-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
+import { SparklesSolidIcon } from "@/components/icons/sparkles-solid-icon";
 import { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
 import {
 	DropdownMenuGroup,
@@ -45,20 +48,20 @@ import { Sidebar, SidebarMenuButton, type SidebarNavItem } from "./sidebar";
 // Each workspace passes its own items (intercept.ds `sidebar` Role=Clinical, Marketplace, Administration; Left Nav Spec,
 // PRD Sidebar). Solid icons show while an item is active; items without one keep their outline icon. lucide has no AI
 // icon for Ask Intercept; Sparkles stands in.
-const ask: SidebarNavItem = { icon: SparklesIcon, label: "Ask Intercept" };
+const ask: SidebarNavItem = { icon: SparklesIcon, activeIcon: SparklesSolidIcon, label: "Ask Intercept" };
 
 const clinicalGroups: SidebarNavItem[][] = [
 	[ask],
 	[
 		{ icon: SquareActivityIcon, activeIcon: SquareActivitySolidIcon, label: "Monitoring" },
-		{ icon: InboxIcon, label: "Inbox" },
+		{ icon: InboxIcon, activeIcon: InboxSolidIcon, label: "Inbox" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages" },
 		{ icon: ListCheckIcon, label: "Protocols" },
 		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis" },
 	],
 	[
 		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Patients" },
-		{ icon: CalendarIcon, label: "Schedule" },
+		{ icon: CalendarIcon, activeIcon: CalendarSolidIcon, label: "Schedule" },
 		{ icon: ChartColumnIcon, activeIcon: ChartColumnSolidIcon, label: "Analytics" },
 	],
 ];
@@ -214,6 +217,9 @@ export const MenuButtonStates: Story = {
 				<SidebarMenuButton icon={HomeIcon} activeIcon={HomeSolidIcon} label='Active' active />
 			</div>
 			<div className='w-[232px]'>
+				<SidebarMenuButton icon={SparklesIcon} activeIcon={SparklesSolidIcon} label='Pressed (panel open)' pressed />
+			</div>
+			<div className='w-[232px]'>
 				<SidebarMenuButton icon={HomeIcon} label='With suffix' suffix='Suffix' />
 			</div>
 			<SidebarMenuButton icon={HomeIcon} label='Collapsed' collapsed />
@@ -227,6 +233,21 @@ export const MenuButtonStates: Story = {
 			))}
 		</div>
 	),
+};
+
+/**
+ * Ask Intercept opens a column, never a page: while it's open its row is pressed (`aria-pressed`), with the solid
+ * sparkles but no semibold label, and Monitoring stays the current page.
+ */
+export const AskOpen: Story = {
+	args: {
+		className: "h-full",
+		groups: clinicalGroups.map((group) => group.map((item) => (item === ask ? { ...item, pressed: true } : item))),
+	},
+	play: async ({ canvas }) => {
+		await expect(canvas.getByRole("button", { name: "Ask Intercept", pressed: true })).toBeVisible();
+		await expect(canvas.getByRole("button", { name: "Monitoring" })).toHaveAttribute("aria-current", "page");
+	},
 };
 
 /**

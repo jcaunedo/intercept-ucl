@@ -6,9 +6,12 @@ import { useLivePatients } from "@/components/data-display/patient-monitor/use-l
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
-import { samplePatients } from "../sample-data/sample-census";
+import { samplePastPatients, samplePatients, sampleUncertainStatusPatients } from "../sample-data/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-schedule";
+import { sampleMessageThreads } from "../messages/sample-messages";
+import { sampleInboxItems } from "../inbox/sample-inbox";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
@@ -36,11 +39,18 @@ const meta = {
 	},
 	args: {
 		hospitals: sampleHospitals,
+		// The Sidebar's Schedule: the clinician's shifts and the open shifts they can take.
+		schedule: { shifts: sampleScheduleShifts, openShifts: sampleOpenShifts, onShiftAction: fn(), onNewRequest: fn() },
+		// The Sidebar's Messages: every thread with the bedside, across the hospitals.
+		messages: { threads: sampleMessageThreads, onSendMessage: fn() },
+		// The Sidebar's Inbox: work besides alerts (the alerts come from `alerts`).
+		inbox: { items: sampleInboxItems, onItemAction: fn() },
 		patients: sampleMonitoringPatients,
 		alerts: sampleMonitoringAlerts,
 		escalationTargets: sampleEscalationTargets,
 		onAlertAction: fn(),
-		censusPatients: samplePatients,
+		// The Patients page's directory: the census, the patients treated before and two with an uncertain status.
+		censusPatients: [...samplePatients, ...samplePastPatients, ...sampleUncertainStatusPatients],
 		patientRecords: samplePatientRecords,
 		onPatientDetailsAction: fn(),
 		user: sampleUser,
@@ -211,7 +221,8 @@ export const Scenario1HeartFailure: Story = {
 		// Opened from the alert, her page still has the patient list: Monitoring's, as it shows now.
 		await userEvent.click(canvas.getByRole("button", { name: "Patient list" }));
 		const list = within(await canvas.findByRole("complementary", { name: "Census" }));
-		await expect(list.getByText(/^From Monitoring, in its order · \d+ of \d+$/)).toBeInTheDocument();
+		// The list has no "From Monitoring · n of n" line since Nov 16, 2026 (PRD Census list CNL-011): she is marked in it.
+		await expect(list.getByRole("list").querySelector("[aria-current]")).not.toBeNull();
 		// Ended on her page (the panel's ×, as the header's), the call is logged as ended, against her alert.
 		await userEvent.click(pageCall.getByRole("button", { name: "Close video consult" }));
 		await expect(await events().findByText(/^Video consult ended/)).toBeInTheDocument();

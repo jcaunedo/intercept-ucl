@@ -763,6 +763,13 @@ function MonitoringPanel({
 							{/* The search leads the chips, as on the Census, and pushes them along as it opens. */}
 							<FilterBarFilters>
 								<SearchInput label='Search patients' value={query} onValueChange={setQuery} />
+								{/* Filters, the icon alone, right of the search (Nov 17, 2026, user's call); its panel holds every group. */}
+								<FiltersButton
+									panelId='monitoring-filters'
+									open={filtersOpen}
+									filters={filters}
+									onClick={() => setFiltersOpen((current) => !current)}
+								/>
 								<MyPatientsChip
 									value={scope}
 									onValueChange={setScope}
@@ -776,9 +783,10 @@ function MonitoringPanel({
 									counts={heldStatusCounts}
 								/>
 							</FilterBarFilters>
-							{/* View controls (PRD MON-015): card monitor, monitor view, then density, the switches of one view, and the
-							    cards' details; then Sort and Filters, as on the Census. */}
+							{/* Sort first (Nov 17, 2026, user's call), then the view controls (PRD MON-015): card monitor, monitor view,
+							    then density. Filters is right of the search. */}
 							<FilterBarControls>
+								<SortSelect value={sortBy} onValueChange={setSortBy} orders={sortOrderIds} />
 								<MonitorPlotToggle value={plot} onValueChange={setPlot} density={density} monitorView={monitorView} />
 								<MonitorViewToggle
 									density={density}
@@ -786,14 +794,6 @@ function MonitoringPanel({
 									onValueChange={(view) => view && setMonitorView(view)}
 								/>
 								<DensityToggle value={density} onValueChange={setDensity} />
-								<SortSelect value={sortBy} onValueChange={setSortBy} orders={sortOrderIds} />
-								{/* Opens the Filters panel (Unit is one of its groups). */}
-								<FiltersButton
-									panelId='monitoring-filters'
-									open={filtersOpen}
-									filters={filters}
-									onClick={() => setFiltersOpen((current) => !current)}
-								/>
 							</FilterBarControls>
 						</FilterBar>
 					</StickyFilterBar>

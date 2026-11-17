@@ -1,6 +1,6 @@
 req_id,artifact_path,repo_ids,evidence,notes
-PD-01,src/layouts/intercept-live/patients/patients-panel.tsx,,Partial,"Grouped + per-hospital tabs; missing EHR / time zone / connection status per group; ""across hospitals"" headline (I-17)"
-PD-03,src/layouts/intercept-live/patients/patients-panel.tsx,,Met (design),Quick views + empty state (EmptyState)
+PD-01,src/layouts/intercept-live/patients/patients-panel.tsx,CEN-001,Partial,"Directory across authorized hospitals, current and past (Nov 17, 2026); hospital is a filter; missing EHR / time zone / connection status per hospital"
+PD-03,src/layouts/intercept-live/patients/patients-panel.tsx,CEN-003;CEN-005;CEN-006,Met (design),"Search, My patients / Current / Recently viewed chips, Hospital and Unit menus, Filters panel, empty states (Nov 17, 2026); watchlist first not built"
 PD-04,src/components/cards/patient-census-card/,PC-*,Partial,Card anatomy per prds/patient-card.md; acuity = NEWS2-style score (DU-14)
 PD-05,src/layouts/intercept-live/intercept-live.tsx,,Partial,Shell switches pages; workspace with census rail not built
 PD-07,src/layouts/intercept-live/intercept-live.tsx,,Met (design),Live shift countdown (AppHeader)
@@ -17,11 +17,11 @@ CC-04,src/layouts/intercept-live/shared/live-feed.tsx,MON-*,Partial,Triage queue
 AL-02,src/layouts/intercept-live/monitoring/triage-queue.tsx,MON-*,Partial (UI),Alert tiers per CX-01 §4.1
 AL-03,src/layouts/intercept-live/monitoring/monitoring-panel.tsx,MON-*,Met (UI),ack -> escalate -> resolve / decline
 AL-04,src/layouts/intercept-live/monitoring/,MON-*,Partial,Alert origin / evidence per CX-01 §4.1
-VS-07,src/layouts/intercept-live/patients/patients-panel.tsx,,Partial,"""Sepsis watch"" quick view only"
+VS-07,src/layouts/intercept-live/monitoring/monitoring-panel.tsx,,Partial,"Sepsis watch is Monitoring's and Virtual Sepsis's; removed from Patients (Nov 17, 2026)"
 SC-09,src/components/navigation/sidebar/,,Held,Marketplace nav is an empty state; no pricing
 CH-01,src/layouts/intercept-live/ask-intercept-panel.tsx,,Partial (UI),Panel UI only
 BR-06,repo-wide (CX-01 §3.5),,Held,No pre-accepted AI action in UI
-BR-09,src/layouts/intercept-live/patients/patients-panel.tsx,,Met (design),No cross-tenant joins; headline fix pending (I-17)
+BR-09,src/layouts/intercept-live/patients/patients-panel.tsx,CEN-004,Met (design),"No cross-tenant joins; the ""across hospitals"" headline is gone (Nov 17, 2026)"
 UX-06,src/components/feedback/empty-state/,,Partial,Empty + missing states
 UX-07,src/layouts/intercept-live/intercept-live.tsx,,Met (design),Modules render in the shell
 NFR-09,src/styles/theme.css,,Partial,Severity tokens below AA for white text (R-24)
@@ -35,3 +35,4 @@ BR-06,src/layouts/intercept-live/alert-panel/care-pathway.tsx,AMM-*,Met (UI),"Su
 CC-09,src/layouts/intercept-live/patient-details/activity.tsx,,Partial (UI),"Activity log per patient on Patient details (Overview and Timeline): who did what and when; synthetic, a design element"
 OE-03,src/layouts/intercept-live/patient-details/sections/orders-section.tsx,,Partial (UI),"Care pathway recommendation from an alert: accepted with edits, sent for local co-signature, signed; orders active"
 CD-05,src/layouts/intercept-live/sample-data/use-sample-live-feed.ts,,Partial (UI),"AI Notetaker consult note approved into Notes as a draft for signature"
+SV-11,src/layouts/intercept-live/patients/patient-status.ts,CEN-040,Met (design),"Census status on Patients: Current, Pending reconciliation, Transferred (where to), Discharged, Status unknown; a transfer never reads as a discharge"

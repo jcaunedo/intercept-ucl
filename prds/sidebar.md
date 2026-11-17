@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 16, 2026
+Last updated: Nov 17, 2026
 Scope: The left navigation (UCL Sidebar): its three workspaces (Clinical, Administration, Marketplace), the items each one shows, the workspace switcher, Ask Intercept Live's place in it, and the rail's states. Source: documents/Intercept Live — Left Nav Spec.md and intercept.ds `sidebar` (1001:544).
 Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, records where the design follows it and where it doesn't yet, and lists what's still open.
 -->
@@ -18,7 +18,7 @@ Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, reco
 **Surface:** a component, not a page: the **Sidebar** (UCL `Sidebar`, `SidebarMenuButton`), the left navigation of every workspace  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 16, 2026
+**Last updated:** November 17, 2026
 
 ---
 
@@ -122,7 +122,7 @@ Seven items in two groups, Monitoring the landing page (intercept.ds Role=Clinic
 
 ⚠️ **Decision needed:** in UCL, clicking the expanded wordmark collapses the Sidebar (DESIGN.md "Sidebar", decided because the first item is an action). The spec wants it to return to the role's default Monitoring view. One of the two has to give.
 
-~~⚠️ **Gap:** Intercept Live's shell still shows the earlier nav (Monitoring, Census, Alert Queue, Messages, Virtual Sepsis / Compliance, Analytics, Marketplace, Administration). It moves to these items once Monitoring absorbs the Census and Inbox is designed; until then only the Sidebar's stories show them.~~ ✅ **Resolved:** Intercept Live's shell shows these items. Today's **Census page becomes Patients**: the Census is about active patients, which Monitoring covers; Patients is the full historical list, in hospital or not. Alert Queue becomes Inbox. Inbox, Protocols and Schedule show their empty states until they're designed. Old links to `census` and `alert queue` open Patients and Inbox.
+~~⚠️ **Gap:** Intercept Live's shell still shows the earlier nav (Monitoring, Census, Alert Queue, Messages, Virtual Sepsis / Compliance, Analytics, Marketplace, Administration). It moves to these items once Monitoring absorbs the Census and Inbox is designed; until then only the Sidebar's stories show them.~~ ✅ **Resolved:** Intercept Live's shell shows these items. Today's **Census page becomes Patients**: the Census is about active patients, which Monitoring covers; Patients is the full historical list, in hospital or not. Alert Queue becomes Inbox. ~~Inbox, Protocols and Schedule show their empty states until they're designed.~~ ~~✅ **Resolved:** Schedule opens the clinician's calendar (My shifts and Open shifts; PRD Schedule); Inbox and Protocols show their empty states until they're designed.~~ ✅ **Resolved:** Schedule opens the clinician's calendar (PRD Schedule) and Inbox the one work queue (PRD Inbox); Protocols shows its empty state until it's designed. Old links to `census` and `alert queue` open Patients and Inbox.
 
 ⚠️ **Gap:** the Patients page still lists only the patients in hospital now (the Census's roster); discharged and transferred-out patients aren't in it yet (PRD Patients CEN-001).
 
@@ -189,7 +189,7 @@ Ask Intercept Live opens a column next to the Sidebar rather than a page, so it'
 
 ℹ️ intercept.ds labels the row "Ask Intercept"; the app says "Ask Intercept Live" (DESIGN.md "Brand names").
 
-⚠️ **Gap:** the spec gives the row an **open** state (blue fill and border, `aria-pressed="true"`) that must never look like the current page. intercept.ds doesn't draw it, and UCL doesn't show it.
+⚠️ **Gap:** the spec gives the row an **open** state (blue fill and border, `aria-pressed="true"`) that must never look like the current page. intercept.ds doesn't draw it~~, and UCL doesn't show it~~. ✅ **Resolved:** while the column is open, the row shows the solid sparkles (archielabs.ds `sparkles-solid`) in the icon color and is `aria-pressed="true"`, with no fill and no semibold label, so the page in view stays the only current item. The spec's blue fill and border wait for design.
 
 ⚠️ **Decision needed:** the column's width, whether opening it collapses the Sidebar, and its keyboard shortcut.
 
@@ -198,11 +198,11 @@ Ask Intercept Live opens a column next to the Sidebar rather than a page, so it'
 One item at a time is the current page: a semibold `foreground` label and the item's solid icon, no fill (intercept.ds `sidebar-menu-button` Active), with `aria-current="page"`. It shows in both the expanded and the collapsed rail.
 
 - While a patient's page is open, no item is current; the page underneath comes back current on Back (DESIGN.md "Sidebar").
-- Items with no solid icon keep their outline icon when current: Ask Intercept Live, Inbox, Protocols, Schedule, every Marketplace and Administration item, and the footer.
+- Items with no solid icon keep their outline icon when current: ~~Ask Intercept Live, Inbox,~~ Protocols, ~~Schedule,~~ every Marketplace and Administration item, and the footer. ✅ **Resolved:** Inbox and Schedule show their solid icons when current (archielabs.ds `inbox-solid`, `calendar-solid`), and Ask Intercept Live has one too (`sparkles-solid`), shown while its column is open, as Ask is never the current page (NAV-030).
 
 ⚠️ **Decision needed:** the spec's current page is a white fill, a grey ring, a blue icon and a semibold label. intercept.ds keeps no fill and a solid icon; UCL follows intercept.ds until design takes the spec's look.
 
-⚠️ **Gap:** archielabs.ds has no solid icons for the new items (inbox, list-check, calendar, user-search, calendar-clock, users, file-text, radar, calendar-check, contact, building, shield-check, settings).
+⚠️ **Gap:** archielabs.ds has no solid icons for the new items (~~inbox,~~ list-check, ~~calendar,~~ user-search, calendar-clock, users, file-text, radar, calendar-check, contact, building, shield-check, settings).
 
 ### NAV-041 — Alert and unread dots
 
@@ -221,6 +221,8 @@ The spec gives three counts, as badges after the label:
 | **Red** | A count that includes critical items | Inbox |
 | **Grey** | An unread count | Messages |
 | **Orange** | Needs attention, not urgent | Coverage gaps |
+
+✅ **Resolved:** Messages' unread is in the brand color (blue), not the spec's grey (PRD Messages MSG-012).
 
 ⚠️ **Gap:** intercept.ds draws a hidden plain-text suffix, no badge, and UCL's `suffix` is plain muted text. Action: design the badges (likely UCL Counter's `critical`, `secondary` and `high` variants), then decide whether a count replaces the alert and unread dots on the same item or sits with them.
 
@@ -279,12 +281,12 @@ Documentation and Support, pinned to the bottom in every workspace. In the proto
 | **Menu open** (Prototype) | The row keeps its hover look while its menu is open (NAV-060). |
 | **On a patient's page** | No item current (NAV-040). |
 | **Single-workspace user** | No switcher; the Sidebar starts at Ask Intercept Live (NAV-011). |
-| **Ask Intercept Live open** | Not built: blue fill and border, `aria-pressed="true"` (NAV-030). |
+| **Ask Intercept Live open** | ~~Not built~~ The solid sparkles and `aria-pressed="true"`, no fill; the spec's blue fill and border aren't built (NAV-030). |
 
 ## 6. Accessibility
 
 - The Sidebar is a `nav` named "Main"; every item is a real button or link.
-- The current page is `aria-current="page"`; an open Ask Intercept Live will be `aria-pressed="true"`.
+- The current page is `aria-current="page"`; an open Ask Intercept Live is `aria-pressed="true"`.
 - On the collapsed rail, every item keeps its label for screen readers and shows it in a tooltip on hover and focus.
 - Alerts and unread are read after the label, not from the dot.
 - The whole Sidebar works by keyboard: Tab between items, Enter to open, Escape to close a menu or the switcher. The rail's empty space and the wordmark are mouse shortcuts; the Collapse and Expand buttons are the keyboard path.
@@ -314,7 +316,7 @@ The width animates between 280 and 64px and the rail's fill follows it; hovering
 | Depends on | For |
 |---|---|
 | PRD Monitoring, PRD Patients (PRD Census until Nov 16, 2026) | Monitoring covering the patients in hospital, and the Census page becoming Patients, the full historical list (NAV-020) |
-| Inbox (no PRD yet) | Replacing Alert Queue (NAV-020) |
+| PRD Inbox | Replacing Alert Queue (NAV-020); the red count (NAV-042) |
 | Authorization and Role Management (§6.3) | Which workspaces and items a user gets (NAV-010) |
 | Eligibility Rules Engine (§6.7) | Open shifts and Request specialist (NAV-022, NAV-070) |
 | UCL Counter, Badge | Counts and tags, once designed (NAV-042, NAV-043) |
