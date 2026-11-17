@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 2, 2026
 Created by: Julio Caunedo
-Last updated: Nov 11, 2026
+Last updated: Nov 17, 2026
 Scope: The alert maximized modal of Intercept Live: one alert opened in full from a Monitoring card, an alert toast or a card's "…" menu, with its evidence, a one-click video consult to the bedside and a suggested care pathway.
 Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-panel/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines the modal's structure, behavior, states, data and acceptance cr
 **Surface:** a modal over the Monitoring and Census pages, and over a patient's details  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 11, 2026
+**Last updated:** November 17, 2026
 
 ---
 
@@ -137,6 +137,8 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 | AMM-024 | **Checkpoints** | Keeping sets checkpoints at 1 h and 4 h, each with what has to hold by then (from the pathway's targets) and its due time; once due, Passed or Missed with the readings behind it. A missed checkpoint raises a High alert (requirements spec, keep-or-transfer checkpoints) and the panel says so. |
 | AMM-025 | **Transfer avoided** | Kept, with every checkpoint passed, the panel logs **Transfer avoided**: the trip the family didn't make, the estimated transfer cost avoided (a placeholder until sourced) and the ICU-level care delivered at the hospital (Scenario 1, step 6; its metrics). |
 | AMM-026 | **Social needs at discharge** | For a patient the discharge workflow has flagged (Scenario 2, step 6), **Social needs at discharge** opens under keep or transfer: the needs it found in the chart ("Uninsured", "Can't afford home oxygen"), each with what's behind it and where from, the payer on record, and a drafted referral for each need (Medicaid eligibility screening; pulmonary rehab closer to home). The same panel is the patient's page's **Discharge** section; a decision in one shows in the other. The flags join the patient's card. |
+| AMM-028 | **Overflow to backup coverage** | When the hub's intensivist is on another emergency, the alert offers itself to the backup coverage (Intercept's backup intensivist) under the lifecycle buttons: who it would go to, why now, and what goes with it (the full panel, the images, the scores), then **Send to Intercept backup**, one click (Demo Use Cases, Scenario 5, step 3). ✅ **Resolved:** sending it is the alert's **Escalate** to the backup (an escalation target), so the state line reads "Escalated to Intercept backup intensivist by you", the activity log and the triage queue say the same, and Escalate leaves the row. The offer then becomes the backup's log as it comes in: sent, accepted, on video with the bedside (with how long after the offer, against "under 5 min"), and what the backup did (labetalol, tenecteplase, the CTA). Not shown once the alert is closed or escalated elsewhere without it. ⚠️ **Decision needed:** when the platform offers it (two Critical alerts at once, the clinician on a call) and whether the backup's acceptance comes back from Intercept's coverage service. |
+| AMM-029 | **A transfer the patient needs** | When the patient needs what no hospital nearby can give (a thrombectomy for a large-vessel occlusion), keep or transfer becomes **Transfer**: no Keep, the platform supports the transfer that should happen (Scenario 5, step 4; mock). ✅ **Resolved:** it opens with the alert, in the Pathway column, with or without a pathway: what the patient needs against the hospital tonight; the **receiving centers** with what each can do ("Comprehensive stroke center · thrombectomy 24/7"), distance and bed, one that can't take her listed but not pickable; the transport; the **transfer packet** the platform builds from the record (images, NIHSS, times, the thrombolytic, BP log, labs, meds, consent, face sheet), sent with the request ("Sent to … · time"); and **door-in-door-out** at the sending hospital against its 2 h goal, green once out under it. **Request transfer** asks for the center, the transport and why. Once the packet is sent, the decision can't be changed here. |
 | AMM-027 | **Send with consent, or skip with a reason** | Nothing goes out on its own (PD-061). Each referral is sent once someone says **who agreed**: the patient, a family member (optionally named) or consent already on file (Nov 4, 2026, user's call: an ICU patient may not be able to agree). **Skip** asks why (required) and can be undone. Each is logged in the patient's activity with who agreed. |
 
 ---

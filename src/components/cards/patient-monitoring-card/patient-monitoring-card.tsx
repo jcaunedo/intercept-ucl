@@ -9,6 +9,7 @@ import { Button } from "@/components/buttons/button";
 import {
 	PatientCardMoreActions,
 	PatientCardScore,
+	PatientCardSource,
 	PatientCardTags,
 	patientCardInteractiveClassName,
 	patientCardOpenTargetClassName,
@@ -111,6 +112,7 @@ type PatientMonitoringCardProps = Omit<
 		| "unit"
 		| "room"
 		| "bed"
+		| "source"
 		| "alert"
 		| "acuity"
 		| "trajectory"
@@ -333,6 +335,7 @@ function PatientMonitoringCard({
 	unit,
 	room,
 	bed,
+	source,
 	alert,
 	acuity,
 	trajectory,
@@ -506,6 +509,7 @@ function PatientMonitoringCard({
 								<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
 							) : null}
 						</span>
+						{source ? <PatientCardSource source={source} /> : null}
 					</p>
 					{/* A line the page can show or hide: it opens and closes in place, with its 4px gap. */}
 					<AnimatePresence initial={false}>

@@ -135,6 +135,9 @@ figcaption::before {
 .gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .table-wrap { overflow-x: auto; }
+/* A caption in three lines: what's on screen, when it appears, what the presenter does. */
+.cap { display: grid; gap: 4px; }
+.cap b { font-weight: 600; }
 footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 </style>
 </head>
@@ -186,7 +189,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames one">
-		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Dale Reynolds arrives." loading="lazy"><figcaption>Monitoring before the scenario starts. Alliance has 3 patients.</figcaption></figure>
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Dale Reynolds arrives." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Monitoring before the scenario: 26 patients across four hospitals. Alliance has 3 patients, and Dale isn't there yet.</span><span><b>When:</b> As the prototype opens, or after Prototype › Reset prototype.</span><span><b>You:</b> Nothing yet. Point at Alliance's tab.</span></span></figcaption></figure>
 	</div>
 	<div class="callout note"><strong>The clock shows today's time, not 22:15.</strong> The prototype runs on the real clock, and the two hours on BiPAP pass in a few seconds. Ask the audience to picture a winter night.</div>
 </section>
@@ -210,10 +213,10 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 2: COPD." loading="lazy"><figcaption>Prototype › Scenario 2: COPD.</figcaption></figure>
-		<figure><img src="frames/02-call.jpg" alt="Dr. Brian Keller's call ringing at the bottom right, in front of Dale's Critical alert toast: Urgent video consult request, the patient Reynolds, Dale, the reason, the latest values, Decline and Answer; Dale's card first on Monitoring." loading="lazy"><figcaption>Dr. Keller's consult request rings in front of Dale's alert toast, with who, why and the latest values. Dale's card leads the page.</figcaption></figure>
-		<figure><img src="frames/03-answered.jpg" alt="Answered: his alert open with the video consult live beside it, Megan Foster, RN, at Bay 3." loading="lazy"><figcaption>Answered: his alert, with the call already on.</figcaption></figure>
-		<figure><img src="frames/03b-flag.jpg" alt="The COPD exacerbation flag open during the call: hypercapnic respiratory failure, severe COPD, on BiPAP, with their numbers." loading="lazy"><figcaption>His COPD exacerbation flag: the findings behind the consult.</figcaption></figure>
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 2: COPD." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Prototype menu, with Scenario 2: COPD.</span><span><b>When:</b> Before anything happens.</span><span><b>You:</b> Click Prototype at the bottom of the Sidebar, then Scenario 2: COPD.</span></span></figcaption></figure>
+		<figure><img src="frames/02-call.jpg" alt="Dr. Brian Keller's call ringing at the bottom right, in front of Dale's Critical alert toast: Urgent video consult request, the patient Reynolds, Dale, the reason, the latest values, Decline and Answer; Dale's card first on Monitoring." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Dr. Keller's consult request rings in front of Dale's alert toast, with who, why and the latest values. Dale's card leads the page.</span><span><b>When:</b> Dale's card and alert toast 1.5 s after you pick the scenario, the call 4 s after that.</span><span><b>You:</b> Point out that the call rings until it's answered or declined. Then click Answer.</span></span></figcaption></figure>
+		<figure><img src="frames/03-answered.jpg" alt="Answered: his alert open with the video consult live beside it, Megan Foster, RN, at Bay 3." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Dale's alert with the video consult already on: Megan Foster, RN, at ED Bay 3, NEWS2 7 and his live monitor.</span><span><b>When:</b> As soon as you click Answer. The call is live at once.</span><span><b>You:</b> Nothing. Point at the call and his monitor.</span></span></figcaption></figure>
+		<figure><img src="frames/03b-flag.jpg" alt="The COPD exacerbation flag open during the call: hypercapnic respiratory failure, severe COPD, on BiPAP, with their numbers." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> His COPD exacerbation flag: the arrival gas, GOLD 3, no oxygen for 4 days, and his BiPAP settings.</span><span><b>When:</b> When you click it, during the call.</span><span><b>You:</b> Click COPD exacerbation under his monitor, then Esc. Be quick: the connection drops 6 s into the call.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -234,8 +237,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/05a-freeze.jpg" alt="The call frozen and greyed, Connection weak · switching to audio only; the Low-bandwidth mode banner; his monitor showing 1 h trends with Low bandwidth: vitals every 30 s." loading="lazy"><figcaption>The connection drops: the picture freezes, the banner shows the mode, the monitor says its numbers are held.</figcaption></figure>
-		<figure><img src="frames/05c-photo.jpg" alt="The call audio only with Megan Foster, RN; beside it, Messages: Megan's note that the video froze, then Rachel Lindgren's photo of the BiPAP screen with its readings." loading="lazy"><figcaption>Audio only. In Messages, Megan's note, then the BiPAP screen's photo, sent as it was taken.</figcaption></figure>
+		<figure><img src="frames/05a-freeze.jpg" alt="The call frozen and greyed, Connection weak · switching to audio only; the Low-bandwidth mode banner; his monitor showing 1 h trends with Low bandwidth: vitals every 30 s." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The connection drops: the picture freezes, greyed, the Low-bandwidth mode banner shows, and the monitor says its numbers are held.</span><span><b>When:</b> 6 s after you answer the call. The freeze lasts about 2.5 s.</span><span><b>You:</b> Nothing. Point at the banner and the monitor's “vitals every 30 s” line.</span></span></figcaption></figure>
+		<figure><img src="frames/05c-photo.jpg" alt="The call audio only with Megan Foster, RN; beside it, Messages: Megan's note that the video froze, then Rachel Lindgren's photo of the BiPAP screen with its readings." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Audio only with Megan Foster, RN. In Messages, Megan's note, then Rachel Lindgren's photo of the BiPAP screen with its readings.</span><span><b>When:</b> Megan's note 9 s after you answer, opening Messages; the photo at 14 s.</span><span><b>You:</b> Nothing. Point at the photo's readings: IPAP 12, EPAP 5, FiO₂ 35%, RR 28.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -255,8 +258,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/06-pathway.jpg" alt="The COPD exacerbation pathway suggested: BiPAP, ipratropium-albuterol, methylprednisolone, with Decline and Accept." loading="lazy"><figcaption>The COPD exacerbation pathway, suggested.</figcaption></figure>
-		<figure><img src="frames/07-transport.jpg" alt="Keep or transfer: Alliance's nurse capacity limited; if transferred, Regional West Medical Center, Air grounded by the storm, Ground highway to Scottsbluff closed, ETA unknown." loading="lazy"><figcaption>Keep or transfer: Regional West has a bed, but neither air nor ground can get him there.</figcaption></figure>
+		<figure><img src="frames/06-pathway.jpg" alt="The COPD exacerbation pathway suggested: BiPAP, ipratropium-albuterol, methylprednisolone, with Decline and Accept." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The COPD exacerbation pathway, suggested: BiPAP, nebulizers, steroids, an antibiotic and intubation readiness.</span><span><b>When:</b> When you open it.</span><span><b>You:</b> Click Pathway at the right end of his NEWS2 line.</span></span></figcaption></figure>
+		<figure><img src="frames/07-transport.jpg" alt="Keep or transfer: Alliance's nurse capacity limited; if transferred, Regional West Medical Center, Air grounded by the storm, Ground highway to Scottsbluff closed, ETA unknown." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Keep or transfer: Regional West has a bed, but Air reads Grounded and Ground Highway closed · ETA unknown.</span><span><b>When:</b> 4 s after you click Accept, once Dr. Keller co-signs.</span><span><b>You:</b> Click Accept, then scroll the Pathway panel down.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -277,8 +280,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/08a-checkpoints.jpg" alt="Keep at Alliance: the 1 h and 2 h checkpoints, repeat ABG with what has to hold, and Why keep at Alliance? filled in." loading="lazy"><figcaption>The checkpoints keeping him sets: repeat gases at 1 h and 2 h.</figcaption></figure>
-		<figure><img src="frames/08b-intubation.jpg" alt="The pathway's Intubation readiness order, active: checklist done, ventilator settings, prepared with Dr. Keller, used only if NIV fails at a checkpoint." loading="lazy"><figcaption>The failure plan, prepared in advance: intubation readiness and his starting ventilator settings.</figcaption></figure>
+		<figure><img src="frames/08a-checkpoints.jpg" alt="Keep at Alliance: the 1 h and 2 h checkpoints, repeat ABG with what has to hold, and Why keep at Alliance? filled in." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The 1 h and 2 h checkpoints keeping him sets, each a repeat blood gas with what has to hold.</span><span><b>When:</b> When you pick Keep at Alliance.</span><span><b>You:</b> Click Keep at Alliance.</span></span></figcaption></figure>
+		<figure><img src="frames/08b-intubation.jpg" alt="The pathway's Intubation readiness order, active: checklist done, ventilator settings, prepared with Dr. Keller, used only if NIV fails at a checkpoint." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The failure plan, prepared in advance: intubation readiness and his starting ventilator settings.</span><span><b>When:</b> Always there in his pathway.</span><span><b>You:</b> Scroll up to Intubation readiness, then back to Why keep at Alliance?, type a reason and click Keep at Alliance.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -299,7 +302,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/09a-resolved.jpg" alt="His alert resolved by Megan Foster, RN, NEWS2 5 Medium; back on Pathway after the blood gas photos opened Messages: both checkpoints passed and Transfer avoided." loading="lazy"><figcaption>At 2 h: resolved, both checkpoints passed with his gases, transfer avoided. The cost is a placeholder until it's sourced.</figcaption></figure>
+		<figure><img src="frames/09a-resolved.jpg" alt="His alert resolved by Megan Foster, RN, NEWS2 5 Medium; back on Pathway after the blood gas photos opened Messages: both checkpoints passed and Transfer avoided." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> His alert Resolved by Megan Foster, RN, NEWS2 5 Medium, both checkpoints Passed with his gases, and Transfer avoided. The cost is a placeholder until it's sourced.</span><span><b>When:</b> 6 s after you click Keep at Alliance, with the blood gas photos opening Messages.</span><span><b>You:</b> Click Pathway at the end of his NEWS2 line.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -322,13 +325,13 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/10a-social.jpg" alt="Social needs at discharge, 2 to send: Uninsured and Can't afford home oxygen flagged, Payer on record: Uninsured; his flags now include both." loading="lazy"><figcaption>The discharge workflow's flags, from his chart, and the payer.</figcaption></figure>
-		<figure><img src="frames/10b-consent.jpg" alt="Medicaid eligibility screening sent with the patient's consent; Pulmonary rehab with Who agreed? set to Family, his daughter, Amy Reynolds, and Send referral." loading="lazy"><figcaption>Each referral says who agreed: the patient, family, or consent on file.</figcaption></figure>
-		<figure><img src="frames/10c-sent.jpg" alt="Both referrals sent: to Alliance financial counseling, consent: the patient; to Alliance outpatient pulmonary rehab, consent: family (his daughter, Amy Reynolds)." loading="lazy"><figcaption>Both referrals sent, with who agreed.</figcaption></figure>
-		<figure><img src="frames/11-monitoring.jpg" alt="Monitoring: Dale Reynolds's card, Resolved, NEWS2 5 Medium, among Alliance's patients." loading="lazy"><figcaption>Back on Monitoring: his card has settled.</figcaption></figure>
-		<figure><img src="frames/12a-patient.jpg" alt="Dale Reynolds's page: the brief, NEWS2 5 Medium, his flags Uninsured and Can't afford home oxygen, and the Discharge tab." loading="lazy"><figcaption>His page, with the new flags and the Discharge tab.</figcaption></figure>
-		<figure><img src="frames/12b-discharge.jpg" alt="His Discharge section: Social needs at discharge, Done, both referrals sent with who agreed." loading="lazy"><figcaption>His Discharge section: the same referrals, sent from his alert.</figcaption></figure>
-		<figure><img src="frames/13-activity.jpg" alt="His Activity, newest first: video consult ended, the two referrals sent with their consent, social needs flagged for discharge." loading="lazy"><figcaption>His Activity: the night, and the referrals with who agreed.</figcaption></figure>
+		<figure><img src="frames/10a-social.jpg" alt="Social needs at discharge, 2 to send: Uninsured and Can't afford home oxygen flagged, Payer on record: Uninsured; his flags now include both." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Social needs at discharge, 2 to send: Uninsured and Can't afford home oxygen, from his chart, and the payer on record.</span><span><b>When:</b> 10 s after you click Keep at Alliance. His flags gain both.</span><span><b>You:</b> Scroll the Pathway panel down to it.</span></span></figcaption></figure>
+		<figure><img src="frames/10b-consent.jpg" alt="Medicaid eligibility screening sent with the patient's consent; Pulmonary rehab with Who agreed? set to Family, his daughter, Amy Reynolds, and Send referral." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Each referral asks who agreed: the patient, family, or consent on file.</span><span><b>When:</b> When you pick who agreed on a referral.</span><span><b>You:</b> Pick The patient on Medicaid eligibility screening and click Send referral. On Pulmonary rehab, pick Family, type his daughter, Amy Reynolds, and click Send referral.</span></span></figcaption></figure>
+		<figure><img src="frames/10c-sent.jpg" alt="Both referrals sent: to Alliance financial counseling, consent: the patient; to Alliance outpatient pulmonary rehab, consent: family (his daughter, Amy Reynolds)." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Both referrals sent, each with who agreed. The badge reads Done.</span><span><b>When:</b> As soon as you send the second one.</span><span><b>You:</b> Nothing. Point at the consent on each.</span></span></figcaption></figure>
+		<figure><img src="frames/11-monitoring.jpg" alt="Monitoring: Dale Reynolds's card, Resolved, NEWS2 5 Medium, among Alliance's patients." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Back on Monitoring: Dale's card reads Resolved, NEWS2 5 Medium, among Alliance's patients.</span><span><b>When:</b> When you close his alert.</span><span><b>You:</b> Close his alert.</span></span></figcaption></figure>
+		<figure><img src="frames/12a-patient.jpg" alt="Dale Reynolds's page: the brief, NEWS2 5 Medium, his flags Uninsured and Can't afford home oxygen, and the Discharge tab." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Dale's page: the brief, NEWS2 5 Medium, the new flags Uninsured and Can't afford home oxygen, and the Discharge tab.</span><span><b>When:</b> When you open it.</span><span><b>You:</b> Click his card.</span></span></figcaption></figure>
+		<figure><img src="frames/12b-discharge.jpg" alt="His Discharge section: Social needs at discharge, Done, both referrals sent with who agreed." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> His Discharge section: the same referrals, already sent from his alert.</span><span><b>When:</b> When you open the tab.</span><span><b>You:</b> Click Discharge.</span></span></figcaption></figure>
+		<figure><img src="frames/13-activity.jpg" alt="His Activity, newest first: video consult ended, the two referrals sent with their consent, social needs flagged for discharge." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> His Activity, newest first: the night with who did what, the referrals and who agreed to them included.</span><span><b>When:</b> Any time after the referrals are sent.</span><span><b>You:</b> Click Overview and scroll to Activity. His chest X-ray is under Labs.</span></span></figcaption></figure>
 	</div>
 </section>
 

@@ -96,6 +96,11 @@ export const WithAvatar: Story = {
  * (`inLast24h`), and how long ago it started (`since`), ticking each second; "Resolved" in green; "No active alerts".
  * With `onOpenAlert`, every alert's bar opens it, with a maximize icon at its end.
  */
+/** `source`: the record system badge at the end of the location line, as on PatientCensusCard (Scenario 5, step 1). */
+export const RecordSystem: Story = {
+	args: { source: "Epic" },
+};
+
 export const AlertBar: Story = {
 	args: { onOpenAlert: fn() },
 	decorators: [

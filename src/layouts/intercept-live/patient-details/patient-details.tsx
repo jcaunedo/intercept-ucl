@@ -1045,12 +1045,13 @@ function withAlertConnection(consult: PatientConsultData | undefined, details: A
 }
 
 /**
- * A patient's alerts that come with a pathway, a sepsis bundle or a protocol, with each alert as it stands now: the
- * open ones first, most urgent first (the alert their cards show), then the rest, newest first.
+ * A patient's alerts that come with a pathway, a sepsis bundle, a protocol or a transfer they need (Scenario 5's stroke),
+ * with each alert as it stands now: the open ones first, most urgent first (the alert their cards show), then the rest,
+ * newest first.
  */
 function patientPathwayDetails(patientId: string, details: AlertDetailData[], alerts: TriageAlert[]) {
 	return details
-		.filter((detail) => detail.alert.patientId === patientId && (detail.pathway || detail.bundle || detail.protocol))
+		.filter((detail) => detail.alert.patientId === patientId && (detail.pathway || detail.bundle || detail.protocol || detail.transfer?.mode === "transfer"))
 		.map((detail) => ({ ...detail, alert: alerts.find((alert) => alert.id === detail.alert.id) ?? detail.alert }))
 		.sort(
 			(a, b) =>

@@ -24,6 +24,8 @@ import {
 	sampleScenario3Tasks,
 	sampleScenario4AlertDetail,
 	sampleScenario4Protocol,
+	sampleScenario5LindaAlertDetail,
+	sampleScenario5LindaTransfer,
 } from "./sample-alert-panel";
 
 /**
@@ -89,6 +91,13 @@ function Demo(props: AlertPanelProps) {
 						}));
 					if (action.type === "unacknowledge")
 						setAlert((current) => ({ ...current, status: "active", addressed: undefined }));
+					// Escalate, as the app records it: who it went to, so the overflow offer reads as sent.
+					if (action.type === "escalate")
+						setAlert((current) => ({
+							...current,
+							status: "escalated",
+							addressed: { at: new Date().toISOString(), to: action.targetId, note: action.note },
+						}));
 				}}
 				className='max-h-[calc(100dvh-32px)] min-h-[min(720px,calc(100dvh-32px))]'
 			/>
@@ -741,6 +750,61 @@ export const DkaProtocol: Story = {
  * Rosa Medina prefers Spanish (Scenario 3, step 2): once the video consult is on, it offers a medical interpreter. Add
  * interpreter connects one, who joins the call.
  */
+/**
+ * Exploration, Scenario 5 step 3 (overflow): Linda Shaw's stroke code while the hub intensivist is on Walter Pierce's
+ * consult. The panel offers it to Intercept's backup intensivist with what goes with it; one click sends it (the alert
+ * escalated to the backup), and the offer turns into the backup's log.
+ */
+export const Overflow: Story = {
+	args: { data: sampleScenario5LindaAlertDetail() },
+	play: async ({ args, canvas }) => {
+		const region = await canvas.findByRole("region", { name: "Overflow to backup coverage" });
+		const offer = within(region);
+		await expect(offer.getByText("CT head (03:05) and CTA images")).toBeInTheDocument();
+		await userEvent.click(offer.getByRole("button", { name: "Send to Intercept backup" }));
+		await expect(args.onAction).toHaveBeenCalledWith(expect.objectContaining({ type: "escalate", targetId: "intercept-backup" }));
+		await waitFor(() => expect(region).toHaveAttribute("data-state", "sent"));
+		await expect(offer.getByText("Sent to Intercept")).toBeInTheDocument();
+	},
+};
+
+/**
+ * Exploration, Scenario 5 step 4 (the right transfer): Linda's CTA shows a right M1 occlusion, so the Pathway column
+ * supports the transfer she needs, without Keep: the receiving centers and what each can do, the packet built from her
+ * record and door-in-door-out against its 2 h goal.
+ */
+export const StrokeTransfer: Story = {
+	render: pathwayRender,
+	args: {
+		data: (() => {
+			const start = Date.now() - 40 * 60_000;
+			return {
+				...sampleScenario5LindaAlertDetail(),
+				transfer: sampleScenario5LindaTransfer((minutes) => new Date(start + minutes * 60_000).toISOString()),
+			};
+		})(),
+	},
+	play: async ({ args, canvas }) => {
+		const region = await canvas.findByRole("region", { name: "Transfer" });
+		const panel = within(region);
+		await expect(panel.queryByRole("button", { name: /Keep at/ })).not.toBeInTheDocument();
+		await expect(panel.getByRole("list", { name: "Transfer packet" })).toBeInTheDocument();
+		await expect(panel.getByText("Door-in-door-out")).toBeInTheDocument();
+		await userEvent.click(panel.getByRole("button", { name: "Request transfer" }));
+		await userEvent.type(await panel.findByRole("textbox", { name: "Why transfer?" }), "Right M1 occlusion: thrombectomy");
+		// The form's own Request transfer, once the button that opened it has gone.
+		await waitFor(() => expect(panel.getAllByRole("button", { name: "Request transfer" })).toHaveLength(1));
+		await userEvent.click(panel.getByRole("button", { name: "Request transfer" }));
+		await expect(args.onTransferDecision).toHaveBeenCalledWith({
+			type: "transfer",
+			rationale: "Right M1 occlusion: thrombectomy",
+			receivingId: "front-range",
+			transportId: "rotor",
+		});
+		await expect(await panel.findByText(/Transfer requested to Front Range Comprehensive Stroke Center/)).toBeInTheDocument();
+	},
+};
+
 export const Interpreter: Story = {
 	args: { data: sampleScenario3AlertDetail(), defaultConsult: "live" },
 	play: async ({ canvas, userEvent }) => {

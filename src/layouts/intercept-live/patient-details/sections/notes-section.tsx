@@ -50,8 +50,12 @@ type PatientNote = {
 	writtenBackAt?: string;
 	/** For a failed write-back: what failed and what to do, in words. */
 	failure?: string;
-	/** Drafted by AI Scribe from a camera session: always a draft for the clinician to review and sign (PRD PD-073). */
-	scribe?: { sessionAt: string };
+	/**
+	 * Drafted by AI Scribe from a camera session: always a draft for the clinician to review and sign (PRD PD-073). The
+	 * session it was written from, and about how many minutes of typing it saved the clinician (the shift's documentation
+	 * counter, Scenario 5, step 6).
+	 */
+	scribe?: { sessionAt: string; minutesSaved?: number };
 	/** Signed with sections an AI drafted and the clinician reviewed: "AI-drafted, clinician-signed" (PRD Notes NTE-007). */
 	aiDrafted?: boolean;
 	sections: { heading?: string; text: string }[];

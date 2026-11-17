@@ -503,6 +503,27 @@ const reasonExplanations: {
 			return `**HFrEF:** "heart failure with reduced ejection fraction," a weak heart that pumps out only ${ef ? `${ef}%` : "a small share"} of its blood with each beat, so it can't handle the extra fluid.`;
 		},
 	},
+	// Scenario 5's two events: Walter Pierce on the ventilator, Linda Shaw's stroke code.
+	{
+		matches: /rising airway pressure/i,
+		explain: () =>
+			"**Rising airway pressure:** the ventilator needs more pressure to push each breath in (peak 48, up from 32). With the plateau still 26, that points to narrowed airways or a mucus plug, not stiffer lungs.",
+	},
+	{
+		matches: /air trapping/i,
+		explain: (_patient, { their }) =>
+			`**Air trapping:** in severe COPD the lungs can't empty before the next breath, so pressure stays in them (auto-PEEP 9). It lowers ${their} oxygen and strains the heart; more time to breathe out helps.`,
+	},
+	{
+		matches: /thrombolysis window/i,
+		explain: (_patient, { they }) =>
+			`**Inside the thrombolysis window:** a clot-dissolving drug can be given up to 4.5 h after ${they} was last known well (02:30), so until 07:00. The sooner, the more brain is saved.`,
+	},
+	{
+		matches: /off anticoagulation/i,
+		explain: (_patient, { their }) =>
+			`**Atrial fibrillation off anticoagulation:** an irregular heartbeat lets clots form in the heart. ${their.charAt(0).toUpperCase()}${their.slice(1)} blood thinner stopped 4 months ago because of cost, so a clot could have traveled to the brain.`,
+	},
 ];
 
 /**
@@ -649,7 +670,15 @@ function overviewOf(patient: Patient): AskInterceptAnswer {
 		...(record?.infusions?.length && (flags.lines.length || bedsideChanges(record)?.length) ? ["Pump"] : []),
 	]);
 	const actions = overviewActions(patient);
-	if (!recentCrossing(patient)) return { text: glance, sources, actions };
+	// A Critical alert that just fired with a reason the chat can explain leads with the ranking too, though the score
+	// didn't cross (Scenario 5: a stroke code barely moves NEWS2).
+	const freshCritical = patient.alerts.some(
+		(alert) =>
+			alert.severity === "critical" &&
+			Date.now() - Date.parse(alert.firedAt) <= 15 * MINUTE &&
+			reasonExplanations.some((item) => alert.reason && item.matches.test(alert.reason)),
+	);
+	if (!recentCrossing(patient) && !freshCritical) return { text: glance, sources, actions };
 	const ranking = rankingFor(patient);
 	const consult = consultFor(patient);
 	return {
@@ -1296,8 +1325,27 @@ function shiftHandoff(): AskInterceptAnswer {
 		return `${who(patient)}${why ? `, ${why}` : ""}`;
 	});
 	const { text, more } = capped(lines);
+	// The shift's events and its documentation, so the report builds itself from the night (Scenario 5, step 6): each
+	// patient's outcomes in the last 12 h, then the notes the AI drafted and the minutes they saved.
+	const since = Date.now() - 12 * 60 * MINUTE;
+	const overnight = patients.flatMap((patient) => {
+		const outcomes = (patient.record?.activity ?? []).filter((entry) => entry.kind === "outcome" && Date.parse(entry.at) >= since);
+		// The latest outcome says it best: the event and the numbers written for the outcomes report.
+		const latest = [...outcomes].sort((a, b) => b.at.localeCompare(a.at))[0];
+		return latest ? [`${who(patient)}: ${latest.title.replace(/\.$/, "")}${latest.detail ? ` (${latest.detail})` : ""}`] : [];
+	});
+	// The AI drafts that say how much typing they saved (each encounter's, Scenario 5).
+	const drafts = patients.flatMap((patient) =>
+		(patient.record?.notes?.notes ?? []).filter((note) => note.scribe?.minutesSaved && Date.parse(note.at) >= since),
+	);
+	const minutesSaved = drafts.reduce((total, note) => total + (note.scribe?.minutesSaved ?? 0), 0);
 	return {
 		text: [
+			// The night first, then the patients (Scenario 5: the report leads with what happened).
+			overnight.length ? `**Overnight:**\n${list(overnight)}` : undefined,
+			drafts.length
+				? `**Documentation:** ${drafts.length} ${drafts.length === 1 ? "note" : "notes"} drafted by AI this shift${minutesSaved ? `, about ${minutesSaved} min of typing saved` : ""}. Review and sign them in each patient's Notes.`
+				: undefined,
 			`**Your handoff:** ${ranked.length} ${ranked.length === 1 ? "patient" : "patients"}${mine.length ? " assigned to you" : ""}, sickest first.`,
 			text,
 			"Draft one's I-PASS handoff with **/handoff** and their name, like **/handoff Miller**. Drafts aren't saved or sent.",
@@ -1305,7 +1353,7 @@ function shiftHandoff(): AskInterceptAnswer {
 			.filter(Boolean)
 			.join("\n"),
 		more,
-		sources: ["Census", "Alerts"],
+		sources: unique(["Census", "Alerts", ...(overnight.length ? ["Activity"] : []), ...(drafts.length ? ["Notes"] : [])]),
 	};
 }
 

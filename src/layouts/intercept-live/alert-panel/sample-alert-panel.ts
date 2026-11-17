@@ -6,7 +6,11 @@ import {
 	sampleScenario2Monitoring,
 	sampleScenario3Monitoring,
 	sampleScenario4Monitoring,
+	sampleScenario5LindaMonitoring,
+	sampleScenario5WalterMonitoringAt,
+	sampleBackupTargetId,
 } from "../monitoring/sample-monitoring";
+import { samplePatients, sampleScenario5LindaCensus } from "../sample-data/sample-census";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { sampleCameraVideo } from "../sample-data/sample-camera-video";
 import { avatarTones, patientInitials } from "../shared/patient-avatar";
@@ -15,6 +19,7 @@ import type { BedsideTasks } from "./bedside-tasks";
 import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
 import type { DischargePlan } from "./discharge-plan";
 import type { DkaProtocol, DkaRules } from "./dka-protocol";
+import type { KeepOrTransfer, TransferPacket } from "./keep-or-transfer";
 import type { SepsisBundle } from "./sepsis-bundle";
 import { sampleBedsideThread } from "./sample-bedside-messages";
 import { sampleBedsideReplier } from "./sample-bedside-replies";
@@ -1077,6 +1082,307 @@ function samplePatientConsults(patients: SamplePatients): PatientConsultData[] {
 	return ids.flatMap((id) => samplePatientParts(id, patients, tones) ?? []);
 }
 
+
+/* -------------------------------------------------------------------------- */
+/* Scenario 5: surge night (Walter Pierce and Linda Shaw)                     */
+/* -------------------------------------------------------------------------- */
+
+// Demo Use Cases, Scenario 5, "Surge night across five hospitals and four EHRs": at 03:10 Walter Pierce desaturates on
+// the ventilator in Regional West's ICU, and a minute later Sidney's ED calls a stroke code for Linda Shaw. The hub
+// intensivist takes Walter; the platform offers Linda to Intercept's backup intensivist. Times are the scenario's, from
+// `at(minutes after 03:10)` (`sample-scenario-5.ts` sets the clock).
+
+/** Walter Pierce's alert as it fires (03:10): SpO₂ 86% on the ventilator, with the vent and bronchodilator pathway. */
+const sampleScenario5WalterAlertDetail = (firedAt = new Date().toISOString()): AlertDetailData => {
+	const census = samplePatients.find((patient) => patient.id === "p30");
+	const base = sampleMonitoringPatients.find((patient) => patient.id === "p30");
+	const monitor = { ...base, ...sampleScenario5WalterMonitoringAt("desat") };
+	return {
+		alert: {
+			id: "live-pierce",
+			patientId: "p30",
+			severity: "critical",
+			title: "SpO₂ 86% on the ventilator: down 6 in 20 min",
+			reason: "Desaturating on the ventilator with rising airway pressure and air trapping, in severe COPD",
+			source: { kind: "rule", name: "Deterioration score" },
+			firedAt,
+		},
+		patient: {
+			lastName: census?.lastName ?? "Pierce",
+			firstName: census?.firstName ?? "Walter",
+			initials: "PW",
+			tone: census?.tone,
+			sex: "M",
+			age: census?.age ?? 71,
+			mrn: census?.mrn,
+			hospital: "Regional West",
+			unit: census?.unit ?? "MICU",
+			bed: census?.bed ?? "Bed 4",
+		},
+		inLast24h: 1,
+		acuity: monitor.acuity,
+		trajectory: monitor.trajectory,
+		monitor: { vitals: monitor.vitals, limits: monitor.limits, alarmPriorities: monitor.alarmPriorities, trends: monitor.trends },
+		reasons: [
+			{ label: "SpO₂ 86%", lead: "FiO₂ 0.40", detail: "92% 20 min ago, on PEEP 5. His target is 88 to 92%" },
+			{ label: "Peak pressure 48", detail: "Plateau 26: airway resistance, not stiff lungs. Auto-PEEP 9" },
+			{ label: "Breathing over the vent", lead: "RR 30", detail: "Set rate 18. HR 118, BP 158/90" },
+			{ label: "Severe COPD, obesity", detail: "GOLD 3 on 2 L at home, BMI 41. Intubated 2 days ago for hypercapnia" },
+		],
+		flag: "Ventilator desaturation",
+		tags: monitor.tags,
+		history: [
+			{
+				label: "Home meds",
+				items: [
+					{ name: "Tiotropium", detail: "18 mcg inhaled daily" },
+					{ name: "Fluticasone-salmeterol", detail: "250/50, twice daily" },
+					{ name: "Oxygen", detail: "2 L/min at home, 24 h" },
+				],
+			},
+			{ label: "ABG", value: "pH 7.31, PaCO₂ 58", detail: "At 22:00 on these settings; his baseline PaCO₂ is about 55" },
+			{ label: "Peak / plateau", value: "48 / 26 cmH₂O", detail: "Peak was 32 at 23:00", severity: "critical" },
+			{ label: "Chest X-ray", value: "Yesterday", detail: "Hyperinflation, no infiltrate; tube 4 cm above the carina" },
+			{ label: "Secretions", value: "Thick, tan", detail: "Last suctioned at 01:00" },
+		],
+		bedside: { name: "Lauren Fisher", role: "RN", initials: "LF", tone: 5, presence: "online", activity: "At the bedside" },
+		transcript: sampleConsultTranscript({ patientId: "p30", firstName: "Walter", sex: "M", nurse: "Lauren Fisher" }),
+		room: { airway: "ventilator", pumps: 2 },
+		video: sampleCameraVideo,
+		pathway: sampleScenario5WalterPathway(),
+	};
+};
+
+/** Walter's pathway: ventilator changes for air trapping and the bronchodilator plan (Scenario 5, step 5). */
+const sampleScenario5WalterPathway = (): CarePathway => ({
+	title: "Ventilated COPD: desaturation",
+	reason: "Desaturation on the ventilator from bronchospasm, secretions and air trapping",
+	source: "Reference protocol, ventilated COPD exacerbation (configurable per hospital)",
+	orders: [
+		{
+			id: "fio2",
+			name: "FiO₂",
+			dose: "0.40 → 0.60 now, then down to keep SpO₂ 88–92%",
+			detail: "Back to 0.40 once he's at 92% for 30 min",
+			evidence: "SpO₂ 86% on 0.40",
+		},
+		{
+			id: "rate",
+			name: "Ventilator rate and I:E",
+			dose: "Rate 18 → 14, inspiratory flow 60 → 80 L/min (I:E 1:4)",
+			detail: "More time to breathe out; auto-PEEP under 5 within 1 h",
+			evidence: "Auto-PEEP 9, plateau 26",
+		},
+		{
+			id: "nebs",
+			name: "Albuterol and ipratropium, in-line",
+			dose: "Albuterol 2.5 mg + ipratropium 0.5 mg now and every 2 h ×3, then every 4 h",
+			evidence: "Peak 48, wheeze on both sides",
+		},
+		{
+			id: "steroid",
+			name: "Methylprednisolone",
+			dose: "40 mg IV every 12 h",
+			evidence: "COPD exacerbation, day 2",
+		},
+		{
+			id: "airway",
+			name: "Suction, chest X-ray, ABG",
+			dose: "Suction now; portable chest X-ray; ABG 30 min after the changes",
+			detail: "Rule out a plug, a pneumothorax and the tube's position",
+			evidence: "Thick secretions, last suctioned at 01:00",
+		},
+	],
+	cosigner: { name: "Neil Foster, MD", role: "attending of record" },
+});
+
+/**
+ * Linda's pathway: thrombolysis for an acute ischemic stroke inside the window (Scenario 5, step 4: "Linda receives
+ * thrombolysis at Sidney under remote direction"). Suggested with the alert, so Pathway is on her score line from the
+ * start; whoever runs the stroke code (the hub, or the backup once she's sent) accepts it. Sidney's hospitalist APP
+ * co-signs.
+ */
+const sampleScenario5LindaPathway = (): CarePathway => ({
+	title: "Acute ischemic stroke: thrombolysis",
+	reason: "Disabling stroke (NIHSS 9) inside the 4.5 h window, no bleed on CT",
+	source: "Reference protocol, acute ischemic stroke (configurable per hospital)",
+	orders: [
+		{
+			id: "bp",
+			name: "Labetalol IV",
+			dose: "10 mg IV now, repeat once in 10 min if BP is still 185/110 or more",
+			detail: "BP under 185/110 before the drug, under 180/105 for 24 h after",
+			evidence: "BP 192/104",
+		},
+		{
+			id: "tnk",
+			name: "Tenecteplase IV",
+			dose: "0.25 mg/kg, 18 mg (72 kg) as one bolus",
+			detail: "Once BP is under 185/110. No antithrombotics for 24 h after",
+			evidence: "Last known well 02:30, CT no bleed, INR 1.0, platelets 214, glucose 128",
+		},
+		{
+			id: "cta",
+			name: "CT angiogram, head and neck",
+			dose: "Now, read for a large-vessel occlusion",
+			detail: "An occlusion means a thrombectomy: transfer to a center that can do one",
+			evidence: "NIHSS 9, gaze to the right",
+		},
+		{
+			id: "neuro",
+			name: "Neuro checks and NIHSS",
+			dose: "Every 15 min for 2 h, then every 30 min for 6 h",
+			detail: "Worse by 4 points or a new headache: stop the drug's effects and repeat the CT",
+			evidence: "NIHSS 9 at 02:58",
+		},
+		{
+			id: "npo",
+			name: "Nothing by mouth",
+			dose: "Until a bedside swallow screen is passed",
+			evidence: "Dysarthria, left face weakness",
+		},
+	],
+	cosigner: { name: "Jenna Collins, NP", role: "Sidney's hospitalist APP" },
+});
+
+/** Intercept's backup intensivist, who takes Linda's stroke code (Scenario 5, step 3). */
+const sampleScenario5Backup = { name: "Mark Sullivan, MD", role: "Backup intensivist", organization: "Intercept", initials: "MS", tone: 4 } as const;
+
+/** Linda Shaw's stroke alert as Sidney's ED calls it (03:11), with the overflow offer. */
+const sampleScenario5LindaAlertDetail = (firedAt = new Date().toISOString()): AlertDetailData => {
+	const census = sampleScenario5LindaCensus();
+	const monitor = sampleScenario5LindaMonitoring();
+	return {
+		alert: {
+			id: "live-shaw",
+			patientId: "p31",
+			severity: "critical",
+			title: "Stroke alert: NIHSS 9, last known well 02:30",
+			reason: "Sudden left-sided weakness in atrial fibrillation off anticoagulation, inside the thrombolysis window",
+			source: { kind: "manual", name: "Sidney ED · stroke code" },
+			firedAt,
+		},
+		patient: {
+			lastName: census.lastName,
+			firstName: census.firstName,
+			initials: "SL",
+			tone: census.tone,
+			sex: "F",
+			age: census.age,
+			mrn: census.mrn,
+			hospital: census.hospital,
+			unit: census.unit,
+			bed: census.bed,
+		},
+		inLast24h: 1,
+		acuity: monitor.acuity,
+		trajectory: monitor.trajectory,
+		monitor: { vitals: monitor.vitals, limits: monitor.limits, alarmPriorities: monitor.alarmPriorities, trends: monitor.trends },
+		reasons: [
+			{ label: "Left-sided weakness", lead: "NIHSS 9", detail: "Face and arm more than leg, slurred speech, eyes to the right" },
+			{ label: "Last known well 02:30", detail: "In the ED at 02:52. Thrombolysis window open until 07:00" },
+			{ label: "CT head: no bleed", detail: "ASPECTS 9 at 03:05. CTA is being read" },
+			{ label: "AFib off apixaban", lead: "HR 112", detail: "Stopped 4 months ago for cost. BP 192/104" },
+		],
+		flag: "Stroke code",
+		tags: monitor.tags,
+		history: [
+			{
+				label: "Home meds",
+				items: [
+					{ name: "Apixaban", detail: "5 mg twice daily; stopped 4 months ago, cost" },
+					{ name: "Lisinopril", detail: "20 mg daily; most days" },
+					{ name: "Amlodipine", detail: "10 mg daily" },
+				],
+			},
+			{ label: "Glucose", value: "128 mg/dL", detail: "Fingerstick at 02:55" },
+			{ label: "INR", value: "1.0", detail: "Platelets 214: no bar to thrombolysis" },
+			{ label: "BP", value: "192/104", detail: "Must be under 185/110 before thrombolysis", severity: "critical" },
+			{ label: "Creatinine", value: "0.9 mg/dL", detail: "Fine for CT contrast" },
+		],
+		bedside: { name: "Ashley Brooks", role: "RN", initials: "AB", tone: 2, presence: "online", activity: "At the bedside" },
+		transcript: sampleConsultTranscript({ patientId: "p31", firstName: "Linda", sex: "F", nurse: "Ashley Brooks" }),
+		room: { airway: "none", pumps: 1 },
+		video: sampleCameraVideo,
+		pathway: sampleScenario5LindaPathway(),
+		overflow: {
+			targetId: sampleBackupTargetId,
+			to: sampleScenario5Backup,
+			reason:
+				"Two Critical alerts at once, and Walter Pierce at Regional West is ranked first. Intercept's backup intensivist can run this stroke code now, inside the thrombolysis window.",
+			sends: ["Full panel: vitals, labs, meds and history", "CT head (03:05) and CTA images", "NIHSS 9 at 02:58, last known well 02:30"],
+			goal: "Intercept connects in under 5 min",
+		},
+	};
+};
+
+/**
+ * The transfer packet the platform builds from Linda's record (Scenario 5, step 4; mock). Its times are the
+ * scenario's, written as the record has them.
+ */
+const sampleScenario5LindaPacket = (): TransferPacket => ({
+	items: [
+		{ id: "images", label: "CT head and CTA images", detail: "3 series, shared through the image exchange: right M1 occlusion" },
+		{ id: "nihss", label: "NIHSS 9 at 02:58, 6 at 04:15", detail: "Left face and arm weakness, dysarthria, gaze to the right" },
+		{ id: "times", label: "Last known well 02:30 · door 02:52", detail: "Tenecteplase 18 mg IV at 03:31: door-to-needle 39 min" },
+		{ id: "bp", label: "BP log and labetalol", detail: "192/104 on arrival, 172/94 after labetalol 10 mg" },
+		{ id: "labs", label: "Labs", detail: "Glucose 128, INR 1.0, platelets 214, creatinine 0.9" },
+		{ id: "meds", label: "Meds, allergies and history", detail: "AFib off apixaban 4 months (cost), hypertension. No known allergies" },
+		{ id: "consent", label: "Code status and consent", detail: "Full code. Transfer consent from Linda, her daughter by phone" },
+		{ id: "face", label: "Face sheet", detail: "Medicaid · emergency contact: Karen Shaw, daughter" },
+	],
+});
+
+/**
+ * Linda's transfer once the CTA shows a large-vessel occlusion (Scenario 5, step 4; mock): Sidney can't do a
+ * thrombectomy, so the panel supports the transfer, the centers, the packet and door-in-door-out (goal 2 h).
+ */
+const sampleScenario5LindaTransfer = (at: (minutes: number) => string): KeepOrTransfer => ({
+	mode: "transfer",
+	hospital: "Sidney",
+	source: "Sidney's resources tonight · regional stroke network bed board (mock)",
+	needs: [
+		{ id: "lysis", label: "Thrombolysis", available: "Tenecteplase given at Sidney, under Intercept's direction", status: "met" },
+		{ id: "thrombectomy", label: "Thrombectomy", available: "No neuro-interventional team at Sidney", status: "unmet" },
+		{ id: "neuro-icu", label: "Neuro ICU after", available: "No neuro ICU; 2 ED nurses tonight", status: "unmet" },
+		{ id: "imaging", label: "CT and CTA", available: "Done at Sidney, images shared", status: "met" },
+	],
+	receiving: [
+		{
+			id: "front-range",
+			name: "Front Range Comprehensive Stroke Center",
+			capability: "Comprehensive stroke center · thrombectomy 24/7",
+			place: "Denver, CO · 175 mi",
+			bed: "Neuro ICU, 2 beds open",
+			accepting: true,
+		},
+		{
+			id: "platte-valley",
+			name: "Platte Valley Medical Center",
+			capability: "Thrombectomy-capable · neuro-IR on call, 45 min to assemble",
+			place: "Kearney, NE · 215 mi",
+			bed: "ICU, 1 bed open",
+			accepting: true,
+		},
+		{
+			id: "regional-west",
+			name: "Regional West",
+			capability: "Primary stroke center · no thrombectomy overnight",
+			place: "Scottsbluff, NE · 70 mi",
+			bed: "ICU, 1 bed open",
+			accepting: false,
+		},
+	],
+	transport: [
+		{ id: "rotor", label: "Air, helicopter", status: "Regional West's helicopter · 25 min to Sidney, 55 min to Denver", available: true },
+		{ id: "ground", label: "Ground, ALS", status: "Sidney's ambulance · about 3 h to Denver", available: true },
+		{ id: "fixed", label: "Air, fixed wing", status: "Not before 06:00: crew rest", available: false },
+	],
+	checkpoints: [],
+	packet: sampleScenario5LindaPacket(),
+	doorInDoorOut: { doorIn: at(-18), goalMinutes: 120 },
+});
+
 // The scenarios' alerts, written out in full: Hayes's (Scenario 1) and Reynolds's (Scenario 2).
 // Each gets the alert as it fired, for what counts from it (Scenario 3's bundle timer starts at time zero).
 const scenarioAlertDetails: Record<string, (firedAt: string) => AlertDetailData> = {
@@ -1084,6 +1390,8 @@ const scenarioAlertDetails: Record<string, (firedAt: string) => AlertDetailData>
 	"live-reynolds": sampleScenario2AlertDetail,
 	"live-medina": sampleScenario3AlertDetail,
 	"live-kessler": sampleScenario4AlertDetail,
+	"live-pierce": sampleScenario5WalterAlertDetail,
+	"live-shaw": sampleScenario5LindaAlertDetail,
 };
 
 /**
@@ -1208,4 +1516,11 @@ export {
 	sampleScenario4Overlap,
 	sampleScenario4Pathway,
 	sampleScenario4Protocol,
+	sampleScenario5Backup,
+	sampleScenario5LindaAlertDetail,
+	sampleScenario5LindaPacket,
+	sampleScenario5LindaPathway,
+	sampleScenario5LindaTransfer,
+	sampleScenario5WalterAlertDetail,
+	sampleScenario5WalterPathway,
 };

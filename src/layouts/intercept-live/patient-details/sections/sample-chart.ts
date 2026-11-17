@@ -149,6 +149,8 @@ const radiologists = {
 	"Sidney Regional": "Farah Hadley, MD, Radiology",
 	"Chadron Memorial": "Neil Carver, MD, Teleradiology",
 	"Bridgeport Valley": "Claire Donovan, MD, Teleradiology",
+	// The hub's own radiologists read Regional West's studies (Scenario 5).
+	"Regional West": "Paul Hendricks, MD, Radiology",
 } as Record<string, string>;
 
 const report = (
@@ -297,9 +299,53 @@ const alliance = radiologists["Alliance Community"];
 const sidney = radiologists.Sidney;
 const chadron = radiologists["Chadron Memorial"];
 const bridgeport = radiologists["Bridgeport Valley"];
+const regionalWest = radiologists["Regional West"];
 const day = 1520;
 
+// Walter Pierce (Regional West, Scenario 5): severe COPD on home oxygen, obesity with sleep apnea, ventilated 2 days.
+// Penicillin allergy, so azithromycin alone for the exacerbation. Respiratory panel negative.
+const pierceChart: ChartSpec = {
+	onsets: ["2014", "2009", "2006"],
+	medical: [
+		"COPD, severe (GOLD 3) · FEV₁ 38% predicted, home oxygen 2 L since 2022",
+		"Obesity, BMI 41, with obstructive sleep apnea · CPAP at home, not always worn",
+		"Hypertension",
+		"Two exacerbations in the last year, one intubated (2025)",
+	],
+	surgical: ["Cholecystectomy · 2011"],
+	social: ["Former smoker, 50 pack-years, quit 2019", "No alcohol", "Lives with his wife in Scottsbluff", "Retired rail yard worker", "Medicare"],
+	home: [
+		["Tiotropium", "18 mcg inhaled daily", "continued"],
+		["Budesonide-formoterol", "160/4.5 mcg, 2 puffs twice a day", "changed"],
+		["Albuterol", "2 puffs every 4 h as needed", "changed"],
+		["Home oxygen", "2 L/min by nasal cannula", "held"],
+		["Lisinopril", "20 mg by mouth daily", "held"],
+		["CPAP", "10 cmH₂O at night", "held"],
+	],
+	extras: [
+		["Sodium", "139", { minutes: 300 }],
+		["Magnesium", "2.0", { minutes: 300 }],
+		["Platelets", "248", { minutes: 300 }],
+		["Procalcitonin", "0.12", { minutes: 1700 }],
+	],
+	abgBefore: ["pH 7.21 · PaCO₂ 82 · PaO₂ 58 · HCO₃ 33", 50],
+	cultures: [
+		culture("Respiratory pathogen panel", 51, "final", "Negative for influenza, RSV and SARS-CoV-2.", { updatedHours: 48 }),
+		culture("Sputum culture", 50, "final", "Normal respiratory flora.", { updatedHours: 26 }),
+	],
+	imaging: [
+		report(
+			"Chest X-ray, portable",
+			20,
+			"Endotracheal tube 4 cm above the carina. Hyperinflation. No pneumothorax or consolidation.",
+			"Tube in good position. Hyperinflated lungs, flattened diaphragms. No focal consolidation, effusion or pneumothorax. Heart size normal.",
+			regionalWest,
+		),
+	],
+};
+
 const chartSpecs: Record<string, ChartSpec> = {
+	p30: pierceChart,
 	// Sarah Miller: cultures ×2 drawn just before vancomycin and aztreonam went in, 30 min ago.
 	p1: {
 		onsets: [30, 26, "2019"],
@@ -960,4 +1006,67 @@ const kesslerChart: ChartSpec = {
 /** Tyler Kessler's chart, from his record at Scenario 4's first beat. */
 const sampleScenario4Chart = (record: PatientRecord) => buildChart(record, kesslerChart);
 
-export { sampleChartByPatient, sampleScenario2Chart, sampleScenario3Chart, sampleScenario4Chart };
+// Linda Shaw (Scenario 5, `p31`): atrial fibrillation off apixaban for 4 months because of cost, uncontrolled
+// hypertension. Built when the scenario plays, from her record then: the stroke code's labs and CT head before the alert
+// (`alert`), the CTA once she's thrombolysed (`lysed`, `transferred`).
+const shawChart = (stage: "alert" | "lysed" | "transferred"): ChartSpec => ({
+	sex: "F",
+	hospital: "Sidney Regional",
+	notedBy: "Jenna Collins, NP",
+	onsets: ["2019", "2008", "2012"],
+	medical: [
+		"Atrial fibrillation · CHA₂DS₂-VASc 4; apixaban stopped 4 months ago because of the cost",
+		"Hypertension · on two drugs, often out of range",
+		"Hyperlipidemia",
+	],
+	surgical: ["Hysterectomy · 2004"],
+	social: ["Never smoker", "A glass of wine on weekends", "Lives with her husband, Ron", "Medicaid", "Stopped apixaban when she couldn't afford it"],
+	home: [
+		["Apixaban", "5 mg by mouth twice a day; not taken for 4 months", "held"],
+		["Metoprolol succinate", "50 mg by mouth daily", "held"],
+		["Amlodipine", "10 mg by mouth daily", "held"],
+		["Atorvastatin", "40 mg by mouth nightly"],
+	],
+	extras: [
+		["Sodium", "139", { minutes: 10 }],
+		["Potassium", "4.1", { minutes: 10 }],
+		["aPTT", "29", { minutes: 10 }],
+		["WBC", "8.6", { minutes: 10 }],
+	],
+	cultures: [],
+	imaging: [
+		...(stage === "alert"
+			? []
+			: [
+					report(
+						"CT angiogram, head and neck",
+						0.1,
+						"Occlusion of the right middle cerebral artery, M1 segment: a large-vessel occlusion, a thrombectomy candidate.",
+						"Abrupt cutoff of the proximal right M1. Collaterals moderate. Carotids patent without significant stenosis. No dissection.",
+						radiologists["Sidney Regional"],
+					),
+				]),
+		report(
+			"CT head without contrast",
+			stage === "alert" ? 0.1 : 0.2,
+			"No intracranial hemorrhage. ASPECTS 9. Hyperdense right MCA.",
+			"Subtle loss of gray-white differentiation in the right insula. Hyperdense right middle cerebral artery. No hemorrhage, mass or midline shift.",
+			radiologists["Sidney Regional"],
+		),
+	],
+});
+
+/** Linda Shaw's chart at a stage of Scenario 5, from her record then. */
+const sampleScenario5LindaChart = (record: PatientRecord, stage: "alert" | "lysed" | "transferred") => buildChart(record, shawChart(stage));
+
+/** Walter Pierce's chart from his record at a stage of Scenario 5 (his base chart is in `sampleChartByPatient`). */
+const sampleScenario5WalterChart = (record: PatientRecord) => buildChart(record, pierceChart);
+
+export {
+	sampleChartByPatient,
+	sampleScenario2Chart,
+	sampleScenario3Chart,
+	sampleScenario4Chart,
+	sampleScenario5LindaChart,
+	sampleScenario5WalterChart,
+};

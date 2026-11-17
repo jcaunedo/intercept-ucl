@@ -54,7 +54,16 @@ import { isPressorFlag } from "./pressors";
 /* Data shapes (the app's API fills these)                                    */
 /* -------------------------------------------------------------------------- */
 
-type PanelHospital = { id: string; name: string };
+type PanelHospital = {
+	id: string;
+	name: string;
+	/**
+	 * The record system the hospital's patients come from ("Epic", "Cerner", "Meditech", "TruBridge"): each card shows it
+	 * as a small badge, so one census drawn from several systems reads the same for every patient (Demo Use Cases,
+	 * Scenario 5, step 1). Without it, no badge.
+	 */
+	ehr?: string;
+};
 
 type PanelPatient = Pick<
 	PatientCensusCardProps,

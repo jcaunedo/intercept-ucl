@@ -834,6 +834,8 @@ function InterceptLive({
 				setChatOpen(true);
 			},
 			setPageList: reportPageList,
+			// Declared below; called only on a click, by then defined. Its setters are stable.
+			startHandoff: () => startHandoff(),
 			alertPatientId,
 			compact: headerCompact,
 			patientOpen: openPatientId !== null,

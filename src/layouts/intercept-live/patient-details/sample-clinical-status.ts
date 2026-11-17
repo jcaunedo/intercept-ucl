@@ -34,10 +34,13 @@ const statuses: Record<string, [status: PatientHeaderClinicalStatusValue, assess
 	p27: ["stable", 50],
 	p28: ["stable", 24],
 	p29: ["improving", 8],
+	// Regional West's (Nov 17, 2026): holding on the ventilator until Scenario 5's desaturation.
+	p30: ["stable", 30],
 	// The scenario patients, on arrival.
 	p21: ["deteriorating", 3],
 	p23: ["deteriorating", 3],
 	p24: ["deteriorating", 3],
+	p31: ["deteriorating", 3],
 };
 
 /** A patient's clinical status, assessed relative to now. */

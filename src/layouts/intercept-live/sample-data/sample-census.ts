@@ -1,8 +1,9 @@
 import { samplePatientPhotos } from "./sample-patient-photos";
 import type { CensusPatient } from "../patients/patients";
 
-// Synthetic data (PRD PC-180). The first eight patients are Figma's; eighteen more fill the hospital counts (Sidney 14,
-// Chadron 4, Alliance 3, Bridgeport 5: 26). Eight of Sidney's were at Harbor Point General until Nov 6, 2026, when it
+// Synthetic data (PRD PC-180). The first eight patients are Figma's; nineteen more fill the hospital counts (Sidney 14,
+// Chadron 4, Alliance 3, Bridgeport 5, Regional West 1: 27). Regional West, the hub's own ICU on Epic, joined on Nov 17,
+// 2026 (user's call) with Walter Pierce, Scenario 5's ventilated patient, so the census shows five sites and four EHRs. Eight of Sidney's were at Harbor Point General until Nov 6, 2026, when it
 // became Bridgeport, a critical access hospital with no ICU (user's call). Bridgeport's five (Med-Surg, a swing bed, an
 // observation bed and its ED) joined it the same day (user's call). Scenario 2's Dale Reynolds joins Alliance when it
 // plays, and Scenario 4's Tyler Kessler joins Bridgeport's five (Med-Surg Bed 3). My patients (`mine`) are Chadron's
@@ -641,6 +642,34 @@ const censusPatients: CensusPatient[] = [
 			{ label: "Resp. Rate", shortLabel: "RR", value: 20 },
 		],
 	},
+	{
+		// Scenario 5 (Demo Use Cases, "Surge night across five hospitals and four EHRs"), just before it starts: COPD and
+		// obesity, intubated 2 days ago, holding on the ventilator in the hub's own ICU. At 03:10 he desaturates to 86%: the
+		// Prototype menu's Scenario 5 plays that (`sampleScenario5WalterCensusAt`). NEWS2 5 (Medium, SpO₂ scale 1, as every
+		// patient but Dale Reynolds): SpO₂ 92% 2, the ventilator's oxygen 2, HR 92 1; awake on light sedation, so Alert. 6
+		// yesterday. Regional West isn't one of "my" hospitals, so no `mine`.
+		id: "p30",
+		hospitalId: "regional-west",
+		lastName: "Pierce",
+		firstName: "Walter",
+		mrn: "01250417",
+		sex: "M",
+		age: 71,
+		hospital: "Regional West",
+		unit: "MICU",
+		bed: "Bed 4",
+		arrivedAt: hoursAgo(50),
+		acuity: { label: news2, score: 5, level: "medium" },
+		trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
+		scoreChange4h: 0,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 92 },
+			{ label: "MAP", value: 98 },
+			{ label: "SpO₂", value: "92%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 18 },
+		],
+		tags: sampleScenario5WalterFlags(),
+	},
 ];
 
 // Minutes since each patient's latest chart activity (a note, an order, a charted result; PRD Patients CEN-014): what the
@@ -648,7 +677,7 @@ const censusPatients: CensusPatient[] = [
 const lastActivityMinutes: Record<string, number> = {
 	p1: 18, p2: 6, p3: 41, p4: 12, p5: 3, p6: 95, p7: 27, p8: 64, p9: 9, p10: 2, p11: 130, p12: 52, p13: 210,
 	p14: 15, p15: 33, p16: 75, p19: 160, p20: 240, p17: 22, p18: 48, p22: 85, p25: 300, p26: 11, p27: 190, p28: 36,
-	p29: 58,
+	p29: 58, p30: 14,
 };
 
 const samplePatients: CensusPatient[] = censusPatients.map((patient) => ({
@@ -1184,6 +1213,165 @@ function sampleScenario4CensusAt(stage: Scenario4Stage): Partial<CensusPatient> 
 	}
 }
 
+/* -------------------------------------------------------------------------- */
+/* Scenario 5: Walter Pierce and Linda Shaw                                   */
+/* -------------------------------------------------------------------------- */
+
+// Every synthetic patient carries a payer tag that feeds reporting only, never the risk score (Demo Use Cases, "Demo
+// rules"). Scenario 5 shows it on its two patients; the rest of the census doesn't carry one yet.
+// A function declaration, as Walter's flags are: the census above calls them as the module loads.
+function payerFlag(payer: string, minutes: number): NonNullable<CensusPatient["tags"]>[number] {
+	return {
+		label: payer,
+		details: {
+			items: [
+				{ label: "Payer", value: payer },
+				{ term: "Reporting only:", label: "Payer tags feed reporting only, never the risk score" },
+			],
+			source: "Registration",
+			updatedAt: hoursAgo(minutes / 60),
+		},
+	};
+}
+
+/** Walter Pierce's flags, on his cards and his alert: ventilated, and his payer (Medicare), from admission 2 days ago. */
+function sampleScenario5WalterFlags(): NonNullable<CensusPatient["tags"]> {
+	return [{ label: "Ventilated" }, payerFlag("Medicare", 52 * 60)];
+}
+
+/**
+ * Linda Shaw's flags, the same on her Census card, her monitor card and her alert. Triage recorded that she stopped her
+ * apixaban 4 months ago because of its cost, as a structured social need (Z91.120, intentional underdosing due to
+ * financial hardship): with atrial fibrillation, the likely source of tonight's stroke. Medicaid from registration on
+ * arrival (02:52, 19 min before the alert). Built when the beat plays, so the times read from then.
+ */
+const sampleScenario5LindaFlags = (): NonNullable<CensusPatient["tags"]> => [
+	{
+		label: "Off anticoagulation",
+		details: {
+			items: [
+				{ term: "Social need, structured:", label: "Stopped apixaban 4 months ago because of cost (Z91.120)" },
+				{ term: "Why it matters:", label: "Atrial fibrillation, untreated: the likely source of tonight's stroke" },
+				{ term: "Before discharge:", label: "An anticoagulant she can afford" },
+			],
+			source: "ED triage note · Ashley Brooks, RN",
+			updatedAt: hoursAgo(14 / 60),
+		},
+	},
+	payerFlag("Medicaid", 19),
+];
+
+/** The stages of Scenario 5 after its first beat (Demo Use Cases, "Surge night across five hospitals and four EHRs"). */
+type Scenario5WalterStage = "desat" | "stabilized";
+type Scenario5LindaStage = "lysed" | "transferred";
+
+/**
+ * Walter Pierce's card at each stage of Scenario 5 (his base card is the census's `p30`). The change in 24 h is against
+ * yesterday's 6; the 4 h change against his score about 4 h before the stage (5 both times).
+ * - `desat` (03:10): mucus plug, bronchospasm and air trapping (auto-PEEP 9). SpO₂ 86% on FiO₂ 40%, RR 30 over the
+ *   ventilator's 18, HR 118, BP 158/90 (MAP 113): NEWS2 10, High (SpO₂ 3, oxygen 2, RR 3, HR 2), up 5 in 4 h. His ICU's
+ *   limits flag SpO₂ under 88% and RR over 28.
+ * - `stabilized` (about 04:30): suctioned, bronchodilators, methylprednisolone, rate 14 with I:E 1:4, FiO₂ 45%. SpO₂ 92%,
+ *   RR 20, HR 96, BP 134/76 (MAP 95): NEWS2 5, Medium (SpO₂ 2, oxygen 2, HR 1), so he drops down the list.
+ */
+function sampleScenario5WalterCensusAt(stage: Scenario5WalterStage): Partial<CensusPatient> {
+	switch (stage) {
+		case "desat":
+			return {
+				acuity: { label: news2, score: 10, level: "high" },
+				trajectory: { label: change, value: "+4", trend: "up", trendVariant: "critical" },
+				scoreChange4h: 5,
+				vitals: [
+					{ label: "Heart Rate", shortLabel: "HR", value: 118 },
+					{ label: "MAP", value: 113 },
+					{ label: "SpO₂", value: "86%", variant: "destructive", range: "below" },
+					{ label: "Resp. Rate", shortLabel: "RR", value: 30, variant: "destructive", range: "above" },
+				],
+			};
+		case "stabilized":
+			return {
+				acuity: { label: news2, score: 5, level: "medium" },
+				trajectory: { label: change, value: "−1", trend: "down", trendVariant: "success" },
+				scoreChange4h: 0,
+				vitals: [
+					{ label: "Heart Rate", shortLabel: "HR", value: 96 },
+					{ label: "MAP", value: 95 },
+					{ label: "SpO₂", value: "92%" },
+					{ label: "Resp. Rate", shortLabel: "RR", value: 20 },
+				],
+			};
+	}
+}
+
+/**
+ * Linda Shaw (Scenario 5): 66, uncontrolled hypertension, atrial fibrillation off apixaban for 4 months because of cost,
+ * Medicaid. Sudden left-sided weakness, last known well 02:30; in Sidney's ED (Bay 4) from 02:52. Not on the Census until
+ * her stroke alert (03:11), the scenario's first beat, so her card is built then. NEWS2 3, Low (HR 112 2, SpO₂ 95% 1),
+ * the same as at triage: NEWS2 doesn't see a stroke, so her alert comes from the stroke code, not the score. BP 192/104
+ * (MAP 133) is over the ED's 185 for thrombolysis (her monitor's ▲), but the card shows MAP. Sidney isn't one of "my"
+ * hospitals, so no `mine`.
+ */
+const sampleScenario5LindaCensus = (): CensusPatient => ({
+	id: "p31",
+	status: "admitted",
+	lastActivityAt: hoursAgo(5 / 60),
+	hospitalId: "sidney",
+	lastName: "Shaw",
+	firstName: "Linda",
+	mrn: "01262093",
+	sex: "F",
+	age: 66,
+	hospital: "Sidney Regional",
+	unit: "ED",
+	bed: "Bay 4",
+	arrivedAt: hoursAgo(19 / 60),
+	acuity: { label: news2, score: 3, level: "low" },
+	trajectory: { label: change, value: "0" },
+	scoreChange4h: 0,
+	vitals: [
+		{ label: "Heart Rate", shortLabel: "HR", value: 112 },
+		{ label: "MAP", value: 133 },
+		{ label: "SpO₂", value: "95%" },
+		{ label: "Resp. Rate", shortLabel: "RR", value: 18 },
+	],
+	tags: sampleScenario5LindaFlags(),
+});
+
+/**
+ * Linda Shaw's card at each later stage of Scenario 5. The changes are against triage's 3 (she has no score before).
+ * - `lysed` (about 04:15): tenecteplase at 03:31 after labetalol; HR 104, BP 172/94 (MAP 120), SpO₂ 96%: NEWS2 1 (HR).
+ *   NIHSS 6, but the CTA shows a right M1 occlusion, so she goes for thrombectomy.
+ * - `transferred` (04:38): door-out by helicopter to Front Range Comprehensive Stroke Center, Denver; door-in-door-out
+ *   1 h 46 min. HR 98, BP 168/92 (MAP 117): NEWS2 1. She leaves the census (Patients lists her as transferred).
+ */
+function sampleScenario5LindaCensusAt(stage: Scenario5LindaStage): Partial<CensusPatient> {
+	const lysed: Partial<CensusPatient> = {
+		acuity: { label: news2, score: 1, level: "low" },
+		trajectory: { label: change, value: "−2", trend: "down", trendVariant: "success" },
+		scoreChange4h: -2,
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 104 },
+			{ label: "MAP", value: 120 },
+			{ label: "SpO₂", value: "96%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+	};
+	if (stage === "lysed") return lysed;
+	return {
+		...lysed,
+		status: "transferred",
+		statusAt: hoursAgo(0),
+		lastActivityAt: hoursAgo(0),
+		transferredTo: "Front Range Comprehensive Stroke Center",
+		vitals: [
+			{ label: "Heart Rate", shortLabel: "HR", value: 98 },
+			{ label: "MAP", value: 117 },
+			{ label: "SpO₂", value: "97%" },
+			{ label: "Resp. Rate", shortLabel: "RR", value: 16 },
+		],
+	};
+}
+
 export {
 	samplePastPatients,
 	sampleUncertainStatusPatients,
@@ -1198,6 +1386,13 @@ export {
 	sampleScenario4Census,
 	sampleScenario4CensusAt,
 	sampleScenario4Flags,
+	sampleScenario5LindaCensus,
+	sampleScenario5LindaCensusAt,
+	sampleScenario5LindaFlags,
+	sampleScenario5WalterCensusAt,
+	sampleScenario5WalterFlags,
 	type Scenario3Stage,
 	type Scenario4Stage,
+	type Scenario5LindaStage,
+	type Scenario5WalterStage,
 };

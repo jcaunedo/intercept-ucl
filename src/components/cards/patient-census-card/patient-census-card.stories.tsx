@@ -88,6 +88,19 @@ export const WithAvatar: Story = {
 };
 
 /** `variant="expanded"`: the vitals get their own row of metrics, for monitoring dashboards. */
+/**
+ * `source`: the record system the patient's data comes from, a small badge at the end of the location line, so a census
+ * drawn from several hospitals' systems reads the same for everyone (Demo Use Cases, Scenario 5, step 1). The hospital
+ * truncates before the badge does.
+ */
+export const RecordSystem: Story = {
+	args: { source: "Meditech" },
+	play: async ({ canvas }) => {
+		await expect(canvas.getByText("Meditech")).toBeInTheDocument();
+		await expect(canvas.getByText(/record from/)).toHaveClass("sr-only");
+	},
+};
+
 export const Expanded: Story = {
 	args: { variant: "expanded" },
 };

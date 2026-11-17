@@ -84,6 +84,11 @@ type AlertNotice = {
 	actionLabel: string;
 	/** The part of the alert the button opens at: the discharge referrals. */
 	focus?: "discharge";
+	/**
+	 * What the button opens: the alert (default), the patient's page (e.g. an AI-drafted note to sign, Scenario 5), or the
+	 * shift handoff in Ask Intercept Live (Scenario 5's 07:00 handoff report).
+	 */
+	opens?: "alert" | "patient" | "handoff";
 };
 
 /**
@@ -385,14 +390,20 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 						photo={patient.photo}
 						initials={patientInitials(patient)}
 						tone={tones.get(patient.id) ?? avatarTone(patient.id)}
-						onAction={
-							openAlert
+						onAction={(() => {
+							const act =
+								notice.opens === "handoff"
+									? navigation?.startHandoff
+									: notice.opens === "patient"
+										? openPatient && (() => openPatient(notice.patientId))
+										: openAlert && (() => openAlert(notice.patientId, notice.alertId, { focus: notice.focus }));
+							return act
 								? () => {
-										openAlert(notice.patientId, notice.alertId, { focus: notice.focus });
+										act();
 										close();
 									}
-								: undefined
-						}
+								: undefined;
+						})()}
 						onClose={close}
 					/>
 				),
@@ -401,7 +412,7 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 			);
 			if (toastsOnScreen()) pingUnlessMuted(pingAllowed);
 		}
-	}, [notices, patients, tones, openAlert, openAlertPatient]);
+	}, [notices, patients, tones, openAlert, openPatient, navigation, openAlertPatient]);
 	React.useEffect(() => {
 		if (!openAlertPatient) return;
 		for (const [id, patientId] of shownNotices.current)

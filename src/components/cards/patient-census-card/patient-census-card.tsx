@@ -333,6 +333,11 @@ type PatientCensusCardProps = Omit<
 	unit?: string;
 	room?: string;
 	bed?: string;
+	/**
+	 * The record system the patient's data comes from, e.g. "Epic": a small badge at the end of the location line, so a
+	 * census drawn from several hospitals' systems shows where each patient comes from without changing how they read.
+	 */
+	source?: string;
 	/** The highest-priority unresolved alert, or unread messages. */
 	alert?: {
 		variant: PatientCardAlertVariant;
@@ -436,6 +441,26 @@ function scoreChangeSummary(trajectory: PatientCensusCardProps["trajectory"], pe
 				? `${points} ${points === 1 ? "point" : "points"} ${direction} in ${period}`
 				: `No change in ${period}`;
 	return { direction, text };
+}
+
+/**
+ * The record system a patient's data comes from ("Epic", "Meditech"), as a small badge at the end of the location line,
+ * after the place, which truncates first. Read after the place: "Sidney Regional · ED · Bay 2, record from Meditech".
+ * Shared by PatientCensusCard and PatientMonitoringCard.
+ */
+function PatientCardSource({ source, className }: { source: string; className?: string }) {
+	return (
+		<span
+			data-slot='patient-card-source'
+			className={cn(
+				"ml-auto shrink-0 rounded-sm border border-border px-1 text-xs leading-4 font-medium text-muted-foreground",
+				className,
+			)}
+		>
+			<span className='sr-only'>, record from </span>
+			{source}
+		</span>
+	);
 }
 
 /**
@@ -677,6 +702,7 @@ function PatientCensusCard({
 	unit,
 	room,
 	bed,
+	source,
 	alert,
 	acuity,
 	trajectory,
@@ -867,6 +893,7 @@ function PatientCensusCard({
 										<span className='shrink-0 whitespace-pre'>{hospital ? ` · ${placeInHospital}` : placeInHospital}</span>
 									) : null}
 								</span>
+								{source ? <PatientCardSource source={source} /> : null}
 							</p>
 						) : null}
 						{acuity || trajectory ? <PatientCardScore acuity={acuity} trajectory={trajectory} size={size} /> : null}
@@ -906,6 +933,7 @@ export {
 	PatientCardAlert,
 	PatientCardMetric,
 	PatientCardScore,
+	PatientCardSource,
 	PatientCardTags,
 	acuityLevels as patientCardAcuityLevels,
 	scoreChangeSummary,

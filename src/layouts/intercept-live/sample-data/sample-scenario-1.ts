@@ -43,9 +43,16 @@ type ScenarioChanges = {
 type ScenarioBeat = {
 	/**
 	 * When it plays: when the scenario starts, once the scenario's video consult is on (its first time in a run), once
-	 * the clinician keeps the patient (keep or transfer), or once they accept the scenario's pathway (Scenario 3).
+	 * the clinician keeps the patient (keep or transfer), once they accept the scenario's pathway (Scenario 3), once they
+	 * send an alert to the backup coverage (Scenario 5's overflow: the alert escalated to the backup), or once they
+	 * request a transfer (Scenario 5's stroke).
 	 */
-	after: "start" | "consult" | "keep" | "pathway";
+	after: "start" | "consult" | "keep" | "pathway" | "overflow" | "transfer";
+	/**
+	 * Only for this alert's trigger, in a scenario with two (Scenario 5: Walter's consult and pathway, Linda's overflow and
+	 * transfer). Without it, any of the scenario's alerts triggers it.
+	 */
+	alertId?: string;
 	/**
 	 * Seconds after that. By default 1.5 s after the start, 6 s after the consult is on, 6 s after the keep and 6 s after
 	 * the pathway is accepted.

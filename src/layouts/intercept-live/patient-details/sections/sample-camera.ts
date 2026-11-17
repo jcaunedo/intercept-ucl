@@ -24,6 +24,8 @@ const hospitals = {
 	sidney: { presets: [preset.bed, preset.monitor, preset.pumps, preset.door], talk: true, consent: "all-party" },
 	chadron: { presets: [preset.bed, preset.monitor], talk: true, consent: "one-party" },
 	bridgeport: { presets: [preset.bed, preset.monitor], talk: false, consent: "one-party" },
+	// The hub's own ICU (Scenario 5): every preset, two-way audio, one-party consent.
+	regionalWest: { presets: [preset.bed, preset.monitor, preset.pumps, preset.door], talk: true, consent: "one-party" },
 } satisfies Record<string, Pick<PatientCamera, "presets" | "talk" | "consent">>;
 
 const presenceOrder: CameraPerson["presence"][] = ["online", "away", "offline"];
@@ -98,6 +100,8 @@ const visitor = (name: string, role: string, initials: string, tone: CameraPerso
 });
 
 const sampleCameraByPatient: Record<string, PatientCamera> = {
+	// Pierce (Regional West, Scenario 5): awake on the ventilator, his nurse charting outside the room.
+	p30: sampleScenario5WalterCamera(),
 	// Miller: septic shock, ventilated, on pressors.
 	p1: camera("p1", "sidney", "Bed 11", { "Kelly Ortiz": "At the bedside", "Laura Mitchell": "Away · in the OR", "James Turner": "Viewing the chart" }, [
 		["look-in", "James Turner", 48, 4],
@@ -239,4 +243,45 @@ const sampleScenario4Camera = () =>
 		[],
 	);
 
-export { sampleCameraByPatient, sampleScenario2Camera, sampleScenario3Camera, sampleScenario4Camera };
+/**
+ * Walter Pierce (Scenario 5): Regional West MICU Bed 4. Before it (`base`), his nurse charting outside and his
+ * respiratory therapist on rounds; at the desaturation and after, both at the bedside, with the hub's look-in from
+ * yesterday evening. His pulmonologist is off until morning.
+ */
+function sampleScenario5WalterCamera(stage: "base" | "desat" | "stabilized" = "base") {
+	const bedside = stage !== "base";
+	return camera(
+		"p30",
+		"regionalWest",
+		"Bed 4",
+		{
+			"Lauren Fisher": bedside ? "At the bedside" : "Charting outside the room",
+			"Kevin Doyle": bedside ? "At the ventilator" : "On rounds",
+			"Neil Foster": "Off until 07:00",
+		},
+		[["look-in", "Joanna Smith", 480, 6]],
+	);
+}
+
+/**
+ * Linda Shaw (Scenario 5): Sidney ED Bay 4 (Sidney's cameras, all-party consent), at her stroke alert. Her two ED nurses
+ * and the hospitalist APP at the bedside, with her husband Ron. No one from Intercept has looked in yet.
+ */
+const sampleScenario5LindaCamera = () =>
+	camera(
+		"p31",
+		"sidney",
+		"Bay 4",
+		{ "Ashley Brooks": "At the bedside · NIHSS", "Kristen Webb": "At the bedside · labetalol", "Jenna Collins": "At the bedside" },
+		[],
+		[visitor("Ron Shaw", "Husband", "RS", 6, "At the bedside")],
+	);
+
+export {
+	sampleCameraByPatient,
+	sampleScenario2Camera,
+	sampleScenario3Camera,
+	sampleScenario4Camera,
+	sampleScenario5LindaCamera,
+	sampleScenario5WalterCamera,
+};

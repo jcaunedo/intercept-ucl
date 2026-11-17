@@ -135,6 +135,9 @@ figcaption::before {
 .gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .table-wrap { overflow-x: auto; }
+/* A caption in three lines: what's on screen, when it appears, what the presenter does. */
+.cap { display: grid; gap: 4px; }
+.cap b { font-weight: 600; }
 footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 </style>
 </head>
@@ -185,7 +188,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames one">
-		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Tyler Kessler arrives." loading="lazy"><figcaption>Monitoring before the scenario starts. Bridgeport has 5 patients, all stable.</figcaption></figure>
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Tyler Kessler arrives." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Monitoring before the scenario: patients across four hospitals with live monitors. Bridgeport has 5, all stable, and Tyler isn't there yet.</span><span><b>When:</b> As the prototype opens, or after Prototype › Reset prototype.</span><span><b>You:</b> Nothing yet. Point at Bridgeport's tab, which reads 5.</span></span></figcaption></figure>
 	</div>
 	<div class="callout note"><strong>The checklist shows the night's times; the screen's clock shows today's.</strong> The protocol's checks read 11:00 PM to 1:00 PM, as the night happened, while 14 hours pass in under two minutes on the real clock. Ask the audience to picture the night going by.</div>
 </section>
@@ -207,10 +210,10 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 4: DKA." loading="lazy"><figcaption>Prototype › Scenario 4: DKA.</figcaption></figure>
-		<figure><img src="frames/02-alert.jpg" alt="Tyler Kessler's card first on Monitoring: Bridgeport, Med-Surg, Bed 3, a Critical bar, NEWS2 7 High, HR 123 and RR 30 flagged, Coverage lapsed." loading="lazy"><figcaption>Tyler arrives with a Critical alert from his labs.</figcaption></figure>
-		<figure><img src="frames/03-pathway.jpg" alt="His alert open: pH 7.08, bicarbonate 6 and glucose 520 in type 1 diabetes; beside it the DKA pathway, suggested, with Decline and Accept." loading="lazy"><figcaption>The DKA pathway, for the hub to start.</figcaption></figure>
-		<figure><img src="frames/04-protocol.jpg" alt="The DKA pathway co-signed and, under it, the DKA insulin protocol running: insulin 7 units/h, the first check done, the next due." loading="lazy"><figcaption>Accepted: the protocol starts, and the checklist is on both screens.</figcaption></figure>
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 4: DKA." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Prototype menu, with Scenario 4: DKA.</span><span><b>When:</b> Before anything happens.</span><span><b>You:</b> Click Prototype at the bottom of the Sidebar, then Scenario 4: DKA.</span></span></figcaption></figure>
+		<figure><img src="frames/02-alert.jpg" alt="Tyler Kessler's card first on Monitoring: Bridgeport, Med-Surg, Bed 3, a Critical bar, NEWS2 7 High, HR 123 and RR 30 flagged, Coverage lapsed." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Tyler's card joins the page first: Bridgeport, Med-Surg, Bed 3, a red Critical bar, NEWS2 7 High, HR and RR flagged, and a Coverage lapsed flag.</span><span><b>When:</b> 1.5 s after you pick the scenario, with the toast “Severe DKA: pH 7.08, gap 28”.</span><span><b>You:</b> Nothing. Point at the Critical bar and the Coverage lapsed flag.</span></span></figcaption></figure>
+		<figure><img src="frames/03-pathway.jpg" alt="His alert open: pH 7.08, bicarbonate 6 and glucose 520 in type 1 diabetes; beside it the DKA pathway, suggested, with Decline and Accept." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> His alert: pH 7.08, bicarbonate 6 and glucose 520 in type 1 diabetes. Beside it, the DKA pathway, suggested, with Decline and Accept.</span><span><b>When:</b> When you open his alert and its pathway.</span><span><b>You:</b> Click his card's alert bar, then Pathway at the right end of his NEWS2 line.</span></span></figcaption></figure>
+		<figure><img src="frames/04-protocol.jpg" alt="The DKA pathway co-signed and, under it, the DKA insulin protocol running: insulin 7 units/h, the first check done, the next due." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The pathway accepted and sent to Derek Lawson, PA-C, for co-signature. Under it, the DKA insulin protocol: insulin 7 units/h, the first check done, the next due.</span><span><b>When:</b> 2 s after you accept the pathway.</span><span><b>You:</b> Click Accept. Point at “Same checklist on Bridgeport's screen”.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -230,10 +233,10 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/05-rate-up.jpg" alt="The 02:00 check: glucose 386, K 3.9, gap 22; the calculator: glucose fell 29, under 50 an hour, up 1 unit/h; rate 7 to 8 units/h, signed on the phone in 38 s." loading="lazy"><figcaption>02:00: the calculator raises the rate.</figcaption></figure>
-		<figure><img src="frames/06-hard-stop.jpg" alt="The 03:00 check: K 3.1 in red; resumes at 8 units/h; a red Insulin held hard stop and a Replace potassium prompt." loading="lazy"><figcaption>03:00: potassium 3.1 holds insulin, a hard stop.</figcaption></figure>
-		<figure><img src="frames/07-dextrose.jpg" alt="The summary: 8 units/h running, 3.5 units/h waiting for sign-off; glucose 238, K 3.9, gap 17, HCO3 14; the gap's bar two-thirds of the way." loading="lazy"><figcaption>05:00: glucose under 250, the new rate waits for sign-off.</figcaption></figure>
-		<figure><img src="frames/07b-dextrose-check.jpg" alt="The 05:00 check: Add dextrose prompt, and rate 8 to 3.5 units/h, waiting for sign-off, sent to Dr. Smith's phone." loading="lazy"><figcaption>The dextrose prompt and the rate change.</figcaption></figure>
+		<figure><img src="frames/05-rate-up.jpg" alt="The 02:00 check: glucose 386, K 3.9, gap 22; the calculator: glucose fell 29, under 50 an hour, up 1 unit/h; rate 7 to 8 units/h, signed on the phone in 38 s." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The 02:00 check: glucose fell only 29, so the calculator raises the rate from 7 to 8 units/h, signed on the phone in 38 s.</span><span><b>When:</b> 20 s after you accept the pathway.</span><span><b>You:</b> Nothing. Point at the calculator's line.</span></span></figcaption></figure>
+		<figure><img src="frames/06-hard-stop.jpg" alt="The 03:00 check: K 3.1 in red; resumes at 8 units/h; a red Insulin held hard stop and a Replace potassium prompt." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The 03:00 check: potassium 3.1 in red, the Insulin held hard stop and a Replace potassium prompt. The summary reads Held.</span><span><b>When:</b> 27 s after you accept the pathway. KCl starts 5 s later, and insulin is back on at 38 s.</span><span><b>You:</b> Nothing. Point at the hard stop.</span></span></figcaption></figure>
+		<figure><img src="frames/07-dextrose.jpg" alt="The summary: 8 units/h running, 3.5 units/h waiting for sign-off; glucose 238, K 3.9, gap 17, HCO3 14; the gap's bar two-thirds of the way." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The summary: 8 units/h running, 3.5 units/h waiting for sign-off, glucose 238 and the gap's bar two-thirds of the way.</span><span><b>When:</b> 45 s after you accept the pathway, with the 05:00 check.</span><span><b>You:</b> Nothing. Point at “3.5 units/h waiting for sign-off”.</span></span></figcaption></figure>
+		<figure><img src="frames/07b-dextrose-check.jpg" alt="The 05:00 check: Add dextrose prompt, and rate 8 to 3.5 units/h, waiting for sign-off, sent to Dr. Smith's phone." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The 05:00 check: the Add dextrose prompt, and the rate from 8 to 3.5 units/h, sent to Dr. Smith's phone.</span><span><b>When:</b> 45 s after you accept the pathway.</span><span><b>You:</b> Nothing. Scroll the column to the 05:00 check.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -253,9 +256,9 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/08-signed.jpg" alt="The 05:00 check: Add dextrose done by Brittany Cole, RN; rate 8 to 3.5 units/h signed by Joanna Smith, MD on their phone, 41 s after the request." loading="lazy"><figcaption>Signed from the phone in 41 seconds.</figcaption></figure>
-		<figure><img src="frames/09-overdue.jpg" alt="The summary reads Overdue · 6:00 AM in red; the 06:00 check red and overdue: nudged Brittany Cole, RN and Ava Brooks, tele-RN." loading="lazy"><figcaption>06:10: the check is overdue; both nurses are nudged.</figcaption></figure>
-		<figure><img src="frames/09b-late.jpg" alt="The 06:00 check done at 6:14 AM, 14 min late; glucose 182, rate stays 3.5 units/h." loading="lazy"><figcaption>The check comes in, 14 minutes late.</figcaption></figure>
+		<figure><img src="frames/08-signed.jpg" alt="The 05:00 check: Add dextrose done by Brittany Cole, RN; rate 8 to 3.5 units/h signed by Joanna Smith, MD on their phone, 41 s after the request." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The 05:00 check: Add dextrose done by Brittany Cole, RN, and the new rate signed by Joanna Smith, MD on her phone, 41 s after the request.</span><span><b>When:</b> 50 s after you accept the pathway, 5 s after the 05:00 check.</span><span><b>You:</b> Nothing. Point at the signature line.</span></span></figcaption></figure>
+		<figure><img src="frames/09-overdue.jpg" alt="The summary reads Overdue · 6:00 AM in red; the 06:00 check red and overdue: nudged Brittany Cole, RN and Ava Brooks, tele-RN." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The summary reads Overdue · 6:00 AM in red, and the 06:00 check says Brittany Cole, RN and Ava Brooks, tele-RN were nudged.</span><span><b>When:</b> 56 s after you accept the pathway. With his alert closed, the nudge toasts at the hub instead.</span><span><b>You:</b> Nothing. Point at the nudge.</span></span></figcaption></figure>
+		<figure><img src="frames/09b-late.jpg" alt="The 06:00 check done at 6:14 AM, 14 min late; glucose 182, rate stays 3.5 units/h." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The 06:00 check done at 6:14 AM, 14 min late. Glucose 182, and the rate stays 3.5 units/h.</span><span><b>When:</b> 61 s after you accept the pathway.</span><span><b>You:</b> Nothing. Point at “14 min late”.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -275,8 +278,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/11-gap-closed.jpg" alt="The summary: 4 units/h, glucose 164, gap 11, HCO3 19, the bar green, gap closed at hour 13; Moving to subcutaneous insulin, the first two steps done by Hannah Price, RN." loading="lazy"><figcaption>12:00: the gap closes; the overlap begins.</figcaption></figure>
-		<figure><img src="frames/12-stopped.jpg" alt="The protocol: Off, drip stopped after 14 h; the four overlap steps done." loading="lazy"><figcaption>13:00: the drip stops after 14 hours.</figcaption></figure>
+		<figure><img src="frames/11-gap-closed.jpg" alt="The summary: 4 units/h, glucose 164, gap 11, HCO3 19, the bar green, gap closed at hour 13; Moving to subcutaneous insulin, the first two steps done by Hannah Price, RN." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The summary: 4 units/h, glucose 164, gap 11, HCO3 19, the bar green, Gap closed at hour 13. Moving to subcutaneous insulin opens, its first two steps done by Hannah Price, RN.</span><span><b>When:</b> 82 s after you accept the pathway, 7 s after hours 8 to 12 arrive.</span><span><b>You:</b> Nothing. Point at the green bar.</span></span></figcaption></figure>
+		<figure><img src="frames/12-stopped.jpg" alt="The protocol: Off, drip stopped after 14 h; the four overlap steps done." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The protocol Off: the drip stopped after 14 h, the four overlap steps done. His alert is Resolved by Derek Lawson, PA-C.</span><span><b>When:</b> 89 s after you accept the pathway.</span><span><b>You:</b> Nothing. Point at Drip stopped.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -295,8 +298,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/10-flag.jpg" alt="His alert after the 06:00 check, with his tags now DKA, Insulin rationing and Coverage lapsed." loading="lazy"><figcaption>The Insulin rationing flag, from the admission note.</figcaption></figure>
-		<figure><img src="frames/16-note.jpg" alt="His History and physical by Derek Lawson, PA-C, signed in TruBridge, ending with Structured fields: Social need, Cost-related insulin rationing, Z91.120; Coverage, lapsed." loading="lazy"><figcaption>The note's structured fields.</figcaption></figure>
+		<figure><img src="frames/10-flag.jpg" alt="His alert after the 06:00 check, with his tags now DKA, Insulin rationing and Coverage lapsed." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> His alert with his tags now DKA, Insulin rationing and Coverage lapsed. The flag shows on every card too.</span><span><b>When:</b> 68 s after you accept the pathway.</span><span><b>You:</b> Nothing. Point at the Insulin rationing flag.</span></span></figcaption></figure>
+		<figure><img src="frames/16-note.jpg" alt="His History and physical by Derek Lawson, PA-C, signed in TruBridge, ending with Structured fields: Social need, Cost-related insulin rationing, Z91.120; Coverage, lapsed." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> His History and physical by Derek Lawson, PA-C, signed in TruBridge. It ends with Structured fields: Social need, Cost-related insulin rationing (Z91.120); Coverage, lapsed.</span><span><b>When:</b> On his page, from 68 s after you accept the pathway.</span><span><b>You:</b> On his page, click Notes, then History and physical.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -316,10 +319,10 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/13-referrals.jpg" alt="His alert resolved by Derek Lawson, PA-C; Social needs at discharge: Insulin rationing and Coverage lapsed flagged, payer uninsured; the Medicaid re-enrollment referral to send, with Who agreed?" loading="lazy"><figcaption>The referrals that address the cause.</figcaption></figure>
-		<figure><img src="frames/14-monitoring.jpg" alt="Monitoring after the scenario: his Resolved toast, Severe DKA, Bridgeport, Med-Surg, Bed 3, in the stack." loading="lazy"><figcaption>Back on Monitoring: his Resolved toast.</figcaption></figure>
-		<figure><img src="frames/15-patient.jpg" alt="Tyler Kessler's page: Bridgeport, Med-Surg, Bed 3, 70 kg; flags Insulin rationing and Coverage lapsed; NEWS2 0 Low; the brief; the care plan with the DKA pathway active." loading="lazy"><figcaption>His page, at 13:00.</figcaption></figure>
-		<figure><img src="frames/17-activity.jpg" alt="His log: DKA outcomes recorded, the drip stopped, the gap closed, the checks, the hard stop and the signed rate changes." loading="lazy"><figcaption>The night in his log, with the outcomes.</figcaption></figure>
+		<figure><img src="frames/13-referrals.jpg" alt="His alert resolved by Derek Lawson, PA-C; Social needs at discharge: Insulin rationing and Coverage lapsed flagged, payer uninsured; the Medicaid re-enrollment referral to send, with Who agreed?" loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Social needs at discharge: Insulin rationing and Coverage lapsed flagged, payer uninsured, and the Medicaid re-enrollment referral to send, with Who agreed?</span><span><b>When:</b> 96 s after you accept the pathway, 7 s after the drip stops. With his alert closed, a toast says “3 referrals to send”.</span><span><b>You:</b> Scroll to the bottom of the Pathway column. Pick The patient, then Send referral.</span></span></figcaption></figure>
+		<figure><img src="frames/14-monitoring.jpg" alt="Monitoring after the scenario: his Resolved toast, Severe DKA, Bridgeport, Med-Surg, Bed 3, in the stack." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Back on Monitoring: his Resolved toast, Severe DKA, Bridgeport, Med-Surg, Bed 3, in the stack.</span><span><b>When:</b> When you close his alert after the drip stops.</span><span><b>You:</b> Close his alert. Point at the Resolved toast.</span></span></figcaption></figure>
+		<figure><img src="frames/15-patient.jpg" alt="Tyler Kessler's page: Bridgeport, Med-Surg, Bed 3, 70 kg; flags Insulin rationing and Coverage lapsed; NEWS2 0 Low; the brief; the care plan with the DKA pathway active." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Tyler's page: Bridgeport, Med-Surg, Bed 3, his Insulin rationing and Coverage lapsed flags, NEWS2 0 Low, the brief, and the care plan with the DKA pathway active.</span><span><b>When:</b> Any time after the drip stops, 89 s after you accept the pathway.</span><span><b>You:</b> Close his alert, then click his card.</span></span></figcaption></figure>
+		<figure><img src="frames/17-activity.jpg" alt="His log: DKA outcomes recorded, the drip stopped, the gap closed, the checks, the hard stop and the signed rate changes." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> His log: DKA outcomes recorded, the drip stopped, the gap closed, the checks, the hard stop and the signed rate changes.</span><span><b>When:</b> Any time after the drip stops, 89 s after you accept the pathway.</span><span><b>You:</b> On Overview, scroll to his log.</span></span></figcaption></figure>
 	</div>
 </section>
 

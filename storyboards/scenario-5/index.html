@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenario 5 Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* A presenter's script: one column of beats, each with what to click, what to say, and the screen it lands on.
+   Colors follow Intercept Live's tokens (theme.css): neutral surfaces, the severity red as the only accent. */
+:root {
+	--bg: oklch(0.985 0.002 250);
+	--surface: oklch(1 0 0);
+	--fg: oklch(0.21 0.01 260);
+	--muted: oklch(0.5 0.012 260);
+	--border: oklch(0.91 0.005 260);
+	--critical: oklch(0.58 0.22 27);
+	--critical-subtle: oklch(0.96 0.025 20);
+	--success: oklch(0.55 0.14 150);
+	--success-subtle: oklch(0.96 0.035 150);
+	--note: oklch(0.96 0.03 85);
+	--note-fg: oklch(0.42 0.09 70);
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Roboto Mono", ui-monospace, monospace;
+	color-scheme: light;
+	/* archielabs.ds icons (lucide paths): `mouse-pointer` before Steps, `text` before each screenshot's note. */
+	--icon-pointer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 12.586 19 19'/%3E%3Cpath d='M3.688 3.037a.497.497 0 0 0-.651.651l6.5 15.999a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z'/%3E%3C/svg%3E");
+	--icon-text: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 6.1H3'/%3E%3Cpath d='M21 12.1H3'/%3E%3Cpath d='M15.1 18H3'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: oklch(0.17 0.006 260);
+		--surface: oklch(0.21 0.008 260);
+		--fg: oklch(0.96 0.003 260);
+		--muted: oklch(0.7 0.01 260);
+		--border: oklch(0.32 0.01 260);
+		--critical: oklch(0.68 0.19 25);
+		--critical-subtle: oklch(0.27 0.06 25);
+		--success: oklch(0.72 0.14 150);
+		--success-subtle: oklch(0.26 0.05 150);
+		--note: oklch(0.28 0.04 85);
+		--note-fg: oklch(0.85 0.08 85);
+		color-scheme: dark;
+	}
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font: 400 16px/1.55 var(--font-sans);
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 4px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: max(16px, 4vw); }
+
+header.top { padding-block: 48px 32px; }
+.eyebrow { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 10px 0 12px; text-wrap: balance; }
+/* The line under the title: the title's type, muted. */
+h1:has(+ .h1-sub) { margin-bottom: 0; }
+.h1-sub { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 400; margin: 0 0 12px; color: var(--muted); }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; }
+.setting { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+
+nav.beats {
+	position: sticky; top: 0; z-index: 5;
+	background: color-mix(in oklch, var(--bg) 92%, transparent);
+	backdrop-filter: blur(8px);
+	border-block: 1px solid var(--border);
+}
+nav.beats ol { list-style: none; display: flex; gap: 4px; margin: 0 auto; padding-block: 10px; overflow-x: auto; }
+nav.beats li:first-child a { margin-left: -12px; }
+nav.beats a { display: block; white-space: nowrap; text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 10px; color: var(--muted); }
+nav.beats a:hover { background: var(--surface); color: var(--fg); }
+nav.beats .num { font-family: var(--font-mono); margin-right: 6px; }
+
+section.prep, section.beat, section.gaps { padding-block: 72px; border-bottom: 1px solid var(--border); }
+h2 { font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.beat-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.time { font: 500 14px/1 var(--font-mono); color: var(--muted); }
+
+/* One column: what to say under the title, then what to do. */
+.script { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px; max-width: 72ch; }
+.script > div { min-width: 0; }
+.label { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.label.steps { display: flex; align-items: center; gap: 6px; }
+.label.steps::before {
+	content: "";
+	flex: none;
+	width: 14px;
+	height: 14px;
+	background: currentColor;
+	-webkit-mask: var(--icon-pointer) center / contain no-repeat;
+	mask: var(--icon-pointer) center / contain no-repeat;
+}
+.script ol, .script ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.say { margin: 0; font-size: 16px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+kbd, .ui { font: 600 0.92em var(--font-sans); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+
+/* One screenshot per row, full width, so the screen can be read. */
+.frames { display: grid; grid-template-columns: 1fr; gap: 40px; }
+figure { margin: 0; min-width: 0; }
+figure img { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+figure.narrow img { max-width: 420px; }
+figcaption { font-size: 16px; color: var(--fg); margin-top: 16px; display: flex; align-items: flex-start; gap: 8px; }
+/* archielabs.ds `text`, as a mask so it takes the caption's color; centered on the first line. */
+figcaption::before {
+	content: "";
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin-top: 4px;
+	background: currentColor;
+	-webkit-mask: var(--icon-text) center / contain no-repeat;
+	mask: var(--icon-text) center / contain no-repeat;
+}
+
+.callout { border-radius: 12px; padding: 14px 16px; font-size: 15px; margin-top: 16px; }
+.callout.note { background: var(--note); color: var(--note-fg); }
+.callout.done { background: var(--success-subtle); }
+.callout strong { font-weight: 600; }
+.pending { display: inline-block; font: 600 12px/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--note-fg); background: var(--note); border-radius: 999px; padding: 6px 10px; }
+
+.prep ol { display: grid; gap: 8px; padding-left: 20px; max-width: 72ch; }
+.prep ol ol { list-style: upper-alpha; margin-top: 8px; }
+.gaps table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+/* A caption in three lines: what's on screen, when it appears, what the presenter does. */
+.cap { display: grid; gap: 4px; }
+.cap b { font-weight: 600; }
+footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header class="top wrap">
+	<p class="eyebrow">Intercept Live · Demo storyboard</p>
+	<h1>Scenario 5: Surge night across five hospitals and four EHRs</h1>
+	<p class="h1-sub">Patients: Walter Pierce and Linda Shaw</p>
+	<p class="lede">One hub intensivist handles two emergencies at once across a five-site census, with overflow to Intercept's backup intensivist and AI-drafted notes. It's the unmet-need scenario: a rural hospital running its own regional program, which no incumbent platform is built to support. Follow the beats in order: each one says what to click, what to say, and what the screen should look like.</p>
+	<div class="setting">
+		<span class="chip">Regional West hub, Scottsbluff</span>
+		<span class="chip">03:10</span>
+		<span class="chip">A Regional West intensivist on the console</span>
+		<span class="chip">Intercept as backup</span>
+		<span class="chip">5 sites · Epic, Cerner, Meditech, TruBridge</span>
+	</div>
+</header>
+
+<nav class="beats" aria-label="Beats">
+	<ol class="wrap">
+		<li><a href="#prep">Before you start</a></li>
+		<li><a href="#beat-1"><span class="num">1</span>One census, four EHRs</a></li>
+		<li><a href="#beat-2"><span class="num">2</span>Two events at once</a></li>
+		<li><a href="#beat-3"><span class="num">3</span>Overflow</a></li>
+		<li><a href="#beat-4"><span class="num">4</span>The right transfer</a></li>
+		<li><a href="#beat-5"><span class="num">5</span>Walter stabilized</a></li>
+		<li><a href="#beat-6"><span class="num">6</span>Documentation</a></li>
+		<li><a href="#gaps">Known gaps</a></li>
+	</ol>
+</nav>
+
+<main>
+<section class="prep wrap" id="prep">
+	<div class="beat-head"><h2>Before you start, a few things to know</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">This is the hub in year 3 of the program: a Regional West intensivist runs the console for five hospitals, and Intercept backs them up. Tonight the census comes from four different record systems.</p>
+		</div>
+		<div>
+			<ol>
+				<li>Open the prototype on <strong>Monitoring</strong>. If you've already played it, use <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span> first.</li>
+				<li>Walter Pierce is already on the page, at <strong>Regional West</strong> (the hub's own ICU), stable on the ventilator. Linda Shaw isn't: she arrives at Sidney's ED with the scenario.</li>
+				<li>New to the page? The <a href="../scenario-1/index.html#prep">Scenario 1 storyboard</a> walks through the hospital tabs, the quick filters, the monitoring cards and the alert notifications.</li>
+				<li>Two patients, two threads: Walter's plays from his alert's pathway, Linda's from her overflow and her transfer. Follow the beats in order and both finish in about two minutes.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/00-start.jpg" alt="Monitoring before the scenario: patients across five hospitals with live monitors." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Monitoring before the scenario: 28 patients across five hospitals, Regional West among them. Walter is already there, stable.</span><span><b>When:</b> As the prototype opens, or after Prototype › Reset prototype.</span><span><b>You:</b> Nothing yet. Point at the Regional West tab.</span></span></figcaption></figure>
+	</div>
+	<div class="callout note"><strong>The alerts show the night's times; the screen's clock shows today's.</strong> The backup's steps, the packet and door-in-door-out read 03:10 to 04:38, as the night happened, while it passes in seconds on the real clock.</div>
+</section>
+
+<section class="beat wrap" id="beat-1">
+	<div class="beat-head"><h2>1. One census, four EHRs</h2><span class="time">03:10</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Every patient shows in the same panel layout, whichever hospital they're at and whichever record system it runs. A small badge says where the data comes from: Epic at Regional West, Cerner at Alliance, Meditech at Chadron and Sidney, TruBridge at Bridgeport. Nothing in the intensivist's workflow changes by site.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Point at the hospital tabs: <strong>Regional West</strong> is one of five.</li>
+				<li>Point at the badge at the end of any card's location line: <span class="ui">Epic</span>, <span class="ui">Meditech</span>, <span class="ui">TruBridge</span>, <span class="ui">Cerner</span>.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure class="narrow"><img src="frames/00b-badge.jpg" alt="Walter Pierce's card: Regional West, MICU, Bed 4, with an Epic badge at the end of the location line; NEWS2 5 Medium; Ventilated and Medicare flags." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Walter's card, with Epic at the end of the location line. Every card shows its hospital's record system.</span><span><b>When:</b> Always, before and during the scenario.</span><span><b>You:</b> Point at the badge. No click.</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-2">
+	<div class="beat-head"><h2>2. Two events at once</h2><span class="time">03:10 – 03:11</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Walter Pierce, 71, COPD and obesity, on a ventilator in Regional West's ICU, desaturates to 86%. A minute later Sidney's ED calls a stroke code: Linda Shaw, 66, sudden left-sided weakness, last known well 02:30, NIHSS 9. She has atrial fibrillation and stopped her blood thinner four months ago because of cost. Both escalate within two minutes. The ranking puts them first and says why.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Open <span class="ui">Prototype</span> at the bottom of the Sidebar and pick <span class="ui">Scenario 5: Surge night</span>.</li>
+				<li>About 2 seconds later Walter's card turns red: <strong>Critical</strong>, NEWS2 10 High, SpO₂ 85–86% flagged. 6 seconds later Linda joins Sidney's ED with her own Critical alert.</li>
+				<li>A toast, <strong>2 Critical alerts in a minute</strong>, says how they rank and why: Walter #1 (SpO₂ 86% on the ventilator, NEWS2 up 5 in 4 h); Linda after him, because NEWS2 doesn't score a stroke.</li>
+				<li>Press <span class="ui">Active alerts</span>: the alerts in priority order, Walter first.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 5: Surge night." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Prototype menu.</span><span><b>When:</b> Before anything happens.</span><span><b>You:</b> Click Prototype at the bottom of the Sidebar, then Scenario 5: Surge night.</span></span></figcaption></figure>
+		<figure><img src="frames/02-two-alerts.jpg" alt="Walter Pierce and Linda Shaw's cards both Critical, Epic and Meditech badges, and the toast: 2 Critical alerts in a minute, #1 Pierce, Shaw after him." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Walter's and Linda's cards turn Critical, and the toast “2 Critical alerts in a minute” ranks them and says why.</span><span><b>When:</b> Walter's alert 1.5 s after you pick the scenario, Linda's at 6 s, the toast at 9 s.</span><span><b>You:</b> Wait for the toast and read it out. No click.</span></span></figcaption></figure>
+		<figure><img src="frames/02b-ranked.jpg" alt="Active alerts on: Pierce first, then Sarah Miller's older Critical alert, then Shaw." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Active alerts in priority order: Walter first, Linda after him (here behind Sarah Miller's older Critical alert too).</span><span><b>When:</b> Right after the toast.</span><span><b>You:</b> Click Active alerts in the filter row.</span></span></figcaption></figure>
+	</div>
+	<div class="callout note"><strong>If someone asks why Linda isn't second:</strong> the ranking is severity, then the score's band, then its 4 h rise. Her NEWS2 is 3, so an older Critical alert on a High score (Sarah Miller's) can sit between them. See Known gaps.</div>
+</section>
+
+<section class="beat wrap" id="beat-3">
+	<div class="beat-head"><h2>3. Overflow</h2><span class="time">03:12 – 03:31</span></div>
+	<div class="script">
+		<div>
+			<p class="say">The hub intensivist takes Walter. The platform offers Linda's stroke alert to Intercept's backup intensivist with one click, sending the full panel, the CT images and the NIHSS. Intercept connects in under 5 minutes and runs the stroke code, while the hub stays on Walter.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Click Walter's alert bar, then the camera button right of his name. Lauren Fisher, RN answers at the bedside and the AI Notetaker starts.</li>
+				<li>About 5 seconds after the call connects, a toast: <strong>Send Shaw to Intercept's backup?</strong></li>
+				<li>Click <span class="ui">Pathway</span> on his NEWS2 line and <span class="ui">Accept</span> his ventilator and bronchodilator plan (beat 5 plays on its own from here). Close his alert.</li>
+				<li>Click Linda's alert bar. <span class="ui">Pathway</span> on her NEWS2 line has her suggested <strong>Acute ischemic stroke: thrombolysis</strong> pathway (labetalol, tenecteplase, CT angiogram, neuro checks). Leave it: the backup runs it. Under her alert, <strong>Overflow to backup coverage</strong>: Mark Sullivan, MD, Intercept's backup intensivist, why now, and what goes with it.</li>
+				<li>Click <span class="ui">Send to Intercept backup</span>. The alert reads "Escalated to Intercept backup intensivist", and the backup's steps come in: accepted at 03:13, on video with Sidney's ED at 03:16 (3 min 50 s after the offer), labetalol, then tenecteplase at 03:31, door-to-needle 39 min.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/03-walter-alert.jpg" alt="Walter's alert: desaturating on the ventilator with rising airway pressure and air trapping, in severe COPD; SpO₂ 86%." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Walter's alert: why it fired, its source, Acknowledge · Escalate · Resolve, and his live monitor.</span><span><b>When:</b> When you open it.</span><span><b>You:</b> Click the red Critical bar on Walter's card.</span></span></figcaption></figure>
+		<figure><img src="frames/04-consult.jpg" alt="Walter's alert with the video consult on: Lauren Fisher, RN at the bedside, the AI Notetaker capturing." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Video consult panel: Lauren Fisher, RN at the bedside, the AI Notetaker capturing.</span><span><b>When:</b> It rings for about 4 s, then connects. 5 s after it connects, a toast offers Linda to Intercept's backup.</span><span><b>You:</b> Click the camera button right of Walter's name.</span></span></figcaption></figure>
+		<figure><img src="frames/06-overflow-offer.jpg" alt="Linda's alert: Overflow to backup coverage, Suggested: Mark Sullivan, MD, Backup intensivist, Intercept; sends the full panel, CT and CTA images, NIHSS 9; Send to Intercept backup." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Overflow to backup coverage, on Linda's alert: Mark Sullivan, MD (Intercept), why now, and what goes with it.</span><span><b>When:</b> On her alert from the moment it fires; open it after you've taken Walter.</span><span><b>You:</b> Close Walter's alert, click the red Critical bar on Linda's card, then Send to Intercept backup.</span></span></figcaption></figure>
+		<figure><img src="frames/07-backup-connected.jpg" alt="Overflow Sent: sent to Intercept at 3:12 AM, accepted by Mark Sullivan, MD at 3:13 AM, on video with Sidney's ED at 3:16 AM, 3 min 50 s after the offer." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The offer becomes the backup's log: sent 03:12, accepted 03:13, on video with Sidney's ED at 03:16 (3 min 50 s). The alert reads “Escalated to Intercept backup intensivist”.</span><span><b>When:</b> Accepted 3 s after you send her, on video at 7 s, labetalol and tenecteplase at 14 s.</span><span><b>You:</b> Nothing. Keep her alert open and watch the steps come in.</span></span></figcaption></figure>
+	</div>
+	<div class="callout note"><strong>When the overflow offer shows.</strong> The card is part of Linda's alert from the moment it fires (about 6 seconds after you start the scenario), whether or not you've opened Walter. It goes away once you send her (it turns into the backup's log, <strong>Sent</strong>), escalate her to someone else or resolve her alert. Only the toast, <strong>Send Shaw to Intercept's backup?</strong>, waits: it comes 5 seconds after Walter's video consult connects. So follow the steps in order: take Walter first, then open Linda. <span class="pending">Open decision</span> Show the card only while the hub is busy (on another patient's consult, as the toast is), saying so ("You're on Walter Pierce's consult…"), and leave Escalate for the rest of the time. That's the scenario's order: the hub takes Walter, then the platform offers Linda.</div>
+</section>
+
+<section class="beat wrap" id="beat-4">
+	<div class="beat-head"><h2>4. The right transfer, faster</h2><span class="time">03:40 – 04:38</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Linda gets thrombolysis at Sidney under remote direction. Then the CT angiogram shows a right M1 occlusion, a large-vessel stroke that needs a thrombectomy Sidney can't do. So the platform supports the transfer that should happen: it shows the receiving centers and what each can do, builds the transfer packet from her record, and logs door-in-door-out.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>About 20 seconds after you sent her, the backup's log adds <strong>CTA: right M1 occlusion</strong> and a toast says <strong>Transfer needed</strong>.</li>
+				<li>Click <span class="ui">Pathway</span> on her NEWS2 line. First her stroke pathway, now <strong>Active</strong>: the backup ran it and Sidney's APP, Jenna Collins, NP, co-signed. Scroll down to <strong>Transfer</strong>, Transfer needed: what she needs against Sidney tonight, the receiving centers (Front Range Comprehensive Stroke Center, Platte Valley; Regional West listed, no thrombectomy overnight), the transport, the <strong>transfer packet</strong> built from the record, and door-in-door-out from 02:52.</li>
+				<li>Click <span class="ui">Request transfer</span>, keep Front Range and the helicopter, write why ("Right M1 occlusion: needs a thrombectomy, not available at Sidney") and click <span class="ui">Request transfer</span>.</li>
+				<li>The packet is sent to Front Range. About 15 seconds later she leaves Sidney at 04:38: <strong>Door-in-door-out 1 h 46 min</strong>, under the 2 h goal, and her alert resolves (Transferred).</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/08a-linda-pathway.jpg" alt="Linda's alert with the backup's log, and the Pathway column: Acute ischemic stroke: thrombolysis, Active; labetalol, tenecteplase, CT angiogram, neuro checks, nothing by mouth." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her stroke pathway, Active: labetalol, tenecteplase 18 mg, the CT angiogram, neuro checks, nothing by mouth. The backup ran it; Sidney's APP co-signed.</span><span><b>When:</b> Suggested from the moment her alert fires; Active once the backup gives tenecteplase, 14 s after you send her.</span><span><b>You:</b> Click Pathway on her NEWS2 line. Nothing to accept: the backup did.</span></span></figcaption></figure>
+		<figure><img src="frames/08-transfer.jpg" alt="Linda's alert with the backup's log through the CTA, and the Pathway column: Transfer, Transfer needed; what she needs against Sidney; receiving centers with their capabilities." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> “CTA: right M1 occlusion” in the log, and the Transfer panel: what she needs against Sidney, the receiving centers and what each can do, the transport, the packet and door-in-door-out.</span><span><b>When:</b> 20 s after you sent her, with a “Transfer needed” toast.</span><span><b>You:</b> With Pathway open, scroll down past her stroke pathway (it opens on its own if you reopen her alert).</span></span></figcaption></figure>
+		<figure><img src="frames/09-transfer-form.jpg" alt="Request transfer: Front Range Comprehensive Stroke Center picked, helicopter, and the reason." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The transfer form: the receiving center (Front Range picked), the transport (helicopter) and why.</span><span><b>When:</b> When you click Request transfer.</span><span><b>You:</b> Keep the defaults, write why, then click Request transfer.</span></span></figcaption></figure>
+		<figure><img src="frames/10-packet-sent.jpg" alt="The transfer packet: CT and CTA images, NIHSS, times and tenecteplase, BP log, labs, meds, consent, face sheet; sent to Front Range at 3:44 AM; door-in-door-out from 2:52 AM." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The packet sent to Front Range at 03:44, “Transfer requested”, and door-in-door-out counting from 02:52.</span><span><b>When:</b> 3 s after you request the transfer.</span><span><b>You:</b> Nothing. Scroll the column to show the packet.</span></span></figcaption></figure>
+		<figure><img src="frames/11-door-out.jpg" alt="Linda's alert resolved by Mark Sullivan, MD: Transferred; door-in-door-out 1 h 46 min, in 2:52 AM, out 4:38 AM, goal under 2 h." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her alert resolved by Mark Sullivan, MD (Transferred), and door-in-door-out 1 h 46 min, under the 2 h goal.</span><span><b>When:</b> About 14 s after you request the transfer.</span><span><b>You:</b> Nothing. Close her alert when you're done.</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-5">
+	<div class="beat-head"><h2>5. Walter stabilized</h2><span class="time">03:20 – 04:30</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Back at Regional West, the ventilator changes and the bronchodilator plan are in: more oxygen, a slower rate so he can breathe out, nebulizers in line, a steroid, and his nurse suctions a thick plug. By 04:30 he's at 92% and his score drops back down the list.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>(Accepted in beat 3.) His pathway: FiO₂ 0.40 → 0.60, rate 18 → 14 with I:E 1:4, albuterol and ipratropium in line, methylprednisolone, suction, chest X-ray and ABG. It goes to Neil Foster, MD for co-signature.</li>
+				<li>About 12 seconds after you accept it his alert resolves: SpO₂ 92%, auto-PEEP 3, NEWS2 5. With Active alerts on, his card leaves the list.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/05b-walter-accepted.jpg" alt="Walter's alert with the video consult and his pathway: FiO₂, ventilator rate and I:E, albuterol and ipratropium, methylprednisolone, suction, chest X-ray and ABG; sent to Neil Foster, MD for co-signature." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Walter's pathway beside the call, accepted and sent to Neil Foster, MD for co-signature.</span><span><b>When:</b> As soon as you accept it. His recovery then plays on its own.</span><span><b>You:</b> Click Pathway on his NEWS2 line, then Accept. Then close his alert (beat 3, step 3).</span></span></figcaption></figure>
+		<figure><img src="frames/05c-walter-stable.jpg" alt="Active alerts after he stabilized: Walter is gone from the list; Miller, Shaw, Erickson and Moore lead." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Active alerts without Walter: his alert resolved, SpO₂ 92%, NEWS2 5.</span><span><b>When:</b> About 12 s after you accepted his pathway.</span><span><b>You:</b> Nothing. Point out that he's left the list.</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-6">
+	<div class="beat-head"><h2>6. Documentation returned</h2><span class="time">05:00 – 07:00</span></div>
+	<div class="script">
+		<div>
+			<p class="say">For each encounter, the AI drafts a note from the data and the call; the intensivist edits and signs. The handoff counts the minutes of documentation saved this shift, and the 07:00 handoff report builds itself from the night.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>A few seconds after each patient's thread ends, their note is drafted. A toast says <strong>Pierce's event note is drafted</strong>, with <span class="ui">Open patient</span>; Linda's is drafted for Mark Sullivan, MD to sign.</li>
+				<li>Once both are in, a toast: <strong>07:00 handoff report is ready</strong>. If the stack hides it, click the stack to spread it, then <span class="ui">Open handoff</span>.</li>
+				<li>Ask Intercept Live opens on the report: <strong>Overnight</strong> (each patient's outcomes with the numbers written for the report), <strong>Documentation</strong> (2 notes drafted by AI, about 42 min of typing saved), then the patients, sickest first.</li>
+				<li>Open Walter's page › <span class="ui">Notes</span>: the <strong>Tele-ICU event note</strong>, AI Scribe, Draft, with <span class="ui">Review and sign</span>.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/12b-stack.jpg" alt="The toast stack spread: 07:00 handoff report is ready, built from the night across five hospitals, 2 notes drafted by AI, 42 min saved; Open handoff." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The toast stack spread: “07:00 handoff report is ready”, with “Pierce's event note is drafted” nearby.</span><span><b>When:</b> Walter's note 18 s after his pathway, Linda's 20 s after her transfer; the handoff toast 26 s after whichever came last.</span><span><b>You:</b> If the stack hides it, click the stack to spread it, then Open handoff.</span></span></figcaption></figure>
+		<figure><img src="frames/13-handoff.jpg" alt="Ask Intercept Live: Overnight, Pierce's and Shaw's outcomes; Documentation, 2 notes drafted by AI this shift, about 42 min of typing saved; Your handoff, the patients sickest first." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Ask Intercept Live with the report: Overnight (each patient's outcomes), Documentation (2 notes, about 42 min saved), then the patients, sickest first.</span><span><b>When:</b> When you click Open handoff; the answer writes itself in a few seconds.</span><span><b>You:</b> Scroll to read it. Nothing to send.</span></span></figcaption></figure>
+		<figure><img src="frames/14-walter-page.jpg" alt="Walter Pierce's page: Regional West, MICU, Bed 4; NEWS2 5 Medium; the brief, Plug cleared, air trapping down; the care plan with his pathway active." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Walter's page: NEWS2 5, the brief “Plug cleared, air trapping down”, his pathway active in the care plan.</span><span><b>When:</b> Any time after he stabilizes.</span><span><b>You:</b> Close the chat, then click Walter's card.</span></span></figcaption></figure>
+		<figure><img src="frames/15-walter-note.jpg" alt="Walter's Notes: the Tele-ICU event note, AI Scribe, Draft, drafted from the camera session, with Issue, Camera exam, Assessment and plan, Discussed with, and Review and sign." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Notes: the Tele-ICU event note, AI Scribe, Draft, written from the data and the call.</span><span><b>When:</b> There from 18 s after you accepted his pathway.</span><span><b>You:</b> Click Notes. Review and sign opens it to edit and sign (optional in the demo).</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="gaps wrap" id="gaps">
+	<div class="beat-head"><h2>Known gaps</h2></div>
+	<p style="margin:0 0 16px;color:var(--muted);max-width:68ch">Where the prototype differs from the scenario, in case someone asks.</p>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>What the audience sees</th><th>The scenario</th><th>Why</th></tr></thead>
+			<tbody>
+				<tr><td>Linda ranks after Walter, and can rank after an older Critical alert on a High score (Sarah Miller's)</td><td>"The risk ranking puts both at the top and shows why"</td><td>The ranking is severity, then the score's band, then its 4 h rise; NEWS2 doesn't score a stroke. Whether a time-critical alert (a stroke code) should rank by its window is an open decision</td></tr>
+				<tr><td>A census of 28 patients across five hospitals</td><td>12 patients across five sites</td><td>The prototype keeps its fuller census; Regional West has one patient, Walter</td></tr>
+				<tr><td>The night passes in about two minutes; the alerts' steps show the night's times, the rest of the screen today's</td><td>03:10 to 07:00</td><td>The prototype runs on the real clock</td></tr>
+				<tr><td>The overflow offer is on Linda's alert as soon as it fires; only its toast waits for Walter's consult</td><td>The hub takes Walter, then the platform offers Linda</td><td>When the platform offers overflow is open (PRD Alert maximized modal, AMM-028); see beat 3</td></tr>
+				<tr><td>The backup's steps are scripted; the hub sees them on Linda's alert</td><td>Intercept connects and directs thrombolysis</td><td>Routing to Intercept's coverage and its acceptance are mock; the backup's own console isn't built</td></tr>
+				<tr><td>The hub picks the receiving center and requests the transfer</td><td>The platform supports the transfer</td><td>Who requests it (hub, backup, Sidney) is open; centers, distances and the bed board are illustrative (Mock)</td></tr>
+				<tr><td>The minutes saved show in the notices and the handoff</td><td>"A shift counter shows minutes of documentation saved"</td><td>Where a standing counter lives (My shift, the header) is open</td></tr>
+				<tr><td>Payer tags show as flags on Walter (Medicare) and Linda (Medicaid) only</td><td>Payer tags on every patient, marked "reporting only"</td><td>The census-wide payer tags of the demo's run order aren't built yet</td></tr>
+				<tr><td>Tenecteplase dose, BP thresholds, vent settings and the 2 h door-in-door-out goal</td><td>—</td><td>Illustrative values; they need the scenario's clinical review</td></tr>
+			</tbody>
+		</table>
+	</div>
+</section>
+</main>
+
+<footer class="wrap">
+	Source: InterceptLIVE Demo Use Cases, Scenario 5 (NETECH Rural Health Catalyst Fund). Walter Pierce, Linda Shaw and everyone in the prototype are synthetic. To run it again: <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span>.
+</footer>
+</body>
+</html>

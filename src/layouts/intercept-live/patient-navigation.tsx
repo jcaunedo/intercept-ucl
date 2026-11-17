@@ -47,6 +47,11 @@ type PatientNavigation = {
 	 */
 	askAboutPatient: (patientId: string, patientName: string, tags?: string[], question?: string) => void;
 	/**
+	 * Starts the shift handoff (the account menu's Start handoff): Ask Intercept Live asked "/handoff". A notice's Open
+	 * handoff uses it (Scenario 5, step 6: the 07:00 handoff report).
+	 */
+	startHandoff?: () => void;
+	/**
 	 * Opens Monitoring on a hospital tab (`"all"` for All hospitals) with the Active alerts chip on, from a hospital tab's
 	 * alert count on any page (Nov 5, 2026, user's call). `scope` carries the source page's My patients, so Monitoring
 	 * shows the patients the count counted. Undefined when the layout has no Monitoring page.

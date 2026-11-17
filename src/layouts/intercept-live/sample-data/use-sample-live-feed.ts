@@ -15,7 +15,7 @@ import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import type { CensusPatient } from "../patients/patients-panel";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleLiveScenario } from "../monitoring/sample-live-scenario";
-import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { sampleBackupTargetId, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
 import type { EscalationTarget, TriageAlertAction } from "../monitoring/triage-queue";
 import type { PatientActivity, PatientCarePlan } from "../patient-details/activity";
 import type { PatientRecord } from "../patient-details/patient-details";
@@ -25,6 +25,7 @@ import { sampleScenario1, type ScenarioBeat, type ScenarioChanges, type Scenario
 import { sampleScenario2 } from "./sample-scenario-2";
 import { sampleScenario3 } from "./sample-scenario-3";
 import { sampleScenario4 } from "./sample-scenario-4";
+import { sampleScenario5 } from "./sample-scenario-5";
 import { sampleUser } from "./sample-workspace";
 
 // Story-only helpers: they play the scripted live feed into the Census and Monitoring stories. Apps get the same data
@@ -43,6 +44,7 @@ const sampleScenarios = {
 	"scenario-2": sampleScenario2,
 	"scenario-3": sampleScenario3,
 	"scenario-4": sampleScenario4,
+	"scenario-5": sampleScenario5,
 } satisfies Record<string, ScenarioDefinition>;
 
 type ScenarioId = keyof typeof sampleScenarios;
@@ -56,7 +58,7 @@ const scenarioOfAlert = (alertId: string) => scenarioIds.find((id) => sampleScen
 // re-sort when the menu opens Monitoring, so the change shows in the order at once. After the consult is on: time to see
 // the call before something happens to it. The resolution: time to read "Keeping at …" and its checkpoints before they
 // pass; the night goes by in these seconds.
-const beatDelays: Record<ScenarioBeat["after"], number> = { start: 1.5, consult: 6, keep: 6, pathway: 6 };
+const beatDelays: Record<ScenarioBeat["after"], number> = { start: 1.5, consult: 6, keep: 6, pathway: 6, overflow: 3, transfer: 4 };
 
 /**
  * What the clinician decided in an alert's modal: where its pathway is, the orders as sent (an edited dose, or their own
@@ -310,7 +312,7 @@ function useSampleLiveFeed() {
 	// The scenarios' beats played so far, each built when it played, and the clinician's decisions in the alert modal. A
 	// scenario's new run starts its own from none.
 	const [beats, setBeats] = React.useState<
-		{ scenario: ScenarioId; after: ScenarioBeat["after"]; changes: ScenarioChanges; at: string }[]
+		{ scenario: ScenarioId; after: ScenarioBeat["after"]; alertId?: string; changes: ScenarioChanges; at: string }[]
 	>([]);
 	const [decisions, setDecisions] = React.useState<Record<string, ScenarioDecision>>({});
 	// Each call's connection, by alert, over what the beats set (Nov 4, 2026, user's call): a dropped connection belongs to
@@ -335,7 +337,7 @@ function useSampleLiveFeed() {
 	// Co-signatures still to come, by alert, so a new run cancels its own.
 	const timers = React.useRef<{ alertId: string; timer: number }[]>([]);
 	// Each scenario's beats still to come, by their trigger.
-	const beatTimers = React.useRef<{ scenario: ScenarioId; after: ScenarioBeat["after"]; timer: number }[]>([]);
+	const beatTimers = React.useRef<{ scenario: ScenarioId; after: ScenarioBeat["after"]; alertId?: string; timer: number }[]>([]);
 	React.useEffect(
 		() => () => {
 			for (const { timer } of [...timers.current, ...beatTimers.current]) window.clearTimeout(timer);
@@ -351,30 +353,46 @@ function useSampleLiveFeed() {
 		(scenario: ScenarioId, beat: ScenarioBeat) => {
 			const at = new Date().toISOString();
 			const changes = beat.changes();
-			setBeats((current) => [...current, { scenario, after: beat.after, changes, at }]);
+			// A beat with nothing to change doesn't play (Scenario 5's handoff waits for both encounters' notes).
+			if (!Object.keys(changes).length) return;
+			setBeats((current) => [...current, { scenario, after: beat.after, alertId: beat.alertId, changes, at }]);
 			setCaption(beat.label);
 			for (const { patientId, ...entry } of changes.log ?? []) addActivity(patientId, entry);
 		},
 		[addActivity],
 	);
-	/** Plays the scenario's beats for a trigger, each after its delay. */
+	/**
+	 * Plays the scenario's beats for a trigger, each after its delay; with `alertId`, only the beats for that alert's
+	 * trigger and those for any alert (Scenario 5 has two alerts with their own consult and pathway).
+	 */
 	const schedule = React.useCallback(
-		(scenario: ScenarioId, after: ScenarioBeat["after"]) => {
-			for (const beat of sampleScenarios[scenario].beats.filter((item) => item.after === after)) {
+		(scenario: ScenarioId, after: ScenarioBeat["after"], alertId?: string) => {
+			for (const beat of sampleScenarios[scenario].beats.filter(
+				(item) => item.after === after && (!item.alertId || !alertId || item.alertId === alertId),
+			)) {
 				const timer = window.setTimeout(() => playBeat(scenario, beat), (beat.delay ?? beatDelays[after]) * 1000);
-				beatTimers.current.push({ scenario, after, timer });
+				beatTimers.current.push({ scenario, after, alertId: beat.alertId, timer });
 			}
 		},
 		[playBeat],
 	);
-	/** Cancels the scenario's beats still to come, for a trigger or all of them. */
-	const cancel = React.useCallback((scenario: ScenarioId, after?: ScenarioBeat["after"]) => {
+	/** Cancels the scenario's beats still to come, for a trigger (and alert) or all of them. */
+	const cancel = React.useCallback((scenario: ScenarioId, after?: ScenarioBeat["after"], alertId?: string) => {
 		beatTimers.current = beatTimers.current.filter((item) => {
 			if (item.scenario !== scenario || (after && item.after !== after)) return true;
+			if (alertId && item.alertId && item.alertId !== alertId) return true;
 			window.clearTimeout(item.timer);
 			return false;
 		});
 	}, []);
+	/** Whether the scenario's beats for a trigger (and alert) have played this run. */
+	const played = (scenario: ScenarioId, after: ScenarioBeat["after"], alertId?: string) =>
+		beatsPlayed.current.some(
+			(beat) => beat.scenario === scenario && beat.after === after && (!alertId || !beat.alertId || beat.alertId === alertId),
+		);
+	/** Whether the scenario has beats for a trigger (and alert). */
+	const hasBeats = (scenario: ScenarioId, after: ScenarioBeat["after"], alertId?: string) =>
+		sampleScenarios[scenario].beats.some((beat) => beat.after === after && (!alertId || !beat.alertId || beat.alertId === alertId));
 	const startScenario = React.useCallback(
 		(scenario: ScenarioId) => {
 			const { patientIds, alertIds } = sampleScenarios[scenario];
@@ -432,9 +450,9 @@ function useSampleLiveFeed() {
 			// Accepting the scenario's pathway plays what follows it (Scenario 3: pressors, then the resolution); declining it
 			// cancels them. Only a run's first acceptance plays them; once they've played, they stay.
 			const scenario = scenarioOfAlert(alertId);
-			if (scenario && !beatsPlayed.current.some((beat) => beat.scenario === scenario && beat.after === "pathway")) {
-				cancel(scenario, "pathway");
-				if (decision.type === "accept" || decision.type === "create") schedule(scenario, "pathway");
+			if (scenario && !played(scenario, "pathway", alertId)) {
+				cancel(scenario, "pathway", alertId);
+				if (decision.type === "accept" || decision.type === "create") schedule(scenario, "pathway", alertId);
 			}
 			if (!detail) return;
 			const patientId = detail.alert.patientId;
@@ -529,13 +547,16 @@ function useSampleLiveFeed() {
 					addActivity(patientId, { kind: "decision", title: "Keep or transfer decision taken back", by: YOU });
 				}
 			}
-			// Keeping the patient plays the scenario's resolution; taking it back, or transferring, cancels it. Only a run's
-			// first keep plays it; once it has played, it stays.
+			// Keeping the patient plays the scenario's resolution, and requesting a transfer the transfer's beats (Scenario 5's
+			// stroke); taking it back, or the other decision, cancels them. Only a run's first decision plays them; once they
+			// have played, they stay.
 			const scenario = scenarioOfAlert(alertId);
 			if (!scenario) return;
-			if (beats.some((beat) => beat.scenario === scenario && beat.after === "keep")) return;
-			cancel(scenario, "keep");
-			if (decision.type === "keep") schedule(scenario, "keep");
+			for (const after of ["keep", "transfer"] as const) {
+				if (played(scenario, after, alertId)) continue;
+				cancel(scenario, after, alertId);
+				if (decision.type === after) schedule(scenario, after, alertId);
+			}
 		},
 		[beats, addActivity, cancel, schedule],
 	);
@@ -581,14 +602,16 @@ function useSampleLiveFeed() {
 		(alertId: string, state: AlertConsultState, detail?: AlertDetailData) => {
 			// The scenario's consult beats, the first time its call is on in a run (Scenario 2: the network drops).
 			const scenario = scenarioOfAlert(alertId);
-			const consultBeats = scenario ? sampleScenarios[scenario].beats.some((beat) => beat.after === "consult") : false;
-			const dropPlayed = beatsPlayed.current.some((beat) => beat.scenario === scenario && beat.after === "consult");
-			const dropPending = beatTimers.current.some((item) => item.scenario === scenario && item.after === "consult");
+			const consultBeats = scenario ? hasBeats(scenario, "consult", alertId) : false;
+			const dropPlayed = scenario ? played(scenario, "consult", alertId) : false;
+			const dropPending = beatTimers.current.some(
+				(item) => item.scenario === scenario && item.after === "consult" && (!item.alertId || item.alertId === alertId),
+			);
 			if (state === "live" && scenario && consultBeats) {
 				if (!dropPlayed) {
 					// The first call: the beat drops it (still to come if an earlier call ended before it did).
 					setCallConnections(({ [alertId]: _, ...rest }) => rest);
-					if (!dropPending) schedule(scenario, "consult");
+					if (!dropPending) schedule(scenario, "consult", alertId);
 				} else if (detail?.connection) {
 					// A later call starts on video, and the connection, still bad, drops again as the first call's did (only a
 					// scenario whose beats dropped it: Scenario 2).
@@ -733,8 +756,22 @@ function useSampleLiveFeed() {
 		(alertId: string, action: TriageAlertAction, targets: EscalationTarget[] = []) => {
 			const alert = everyAlert.current.find((item) => item.id === alertId);
 			if (alert) addActivity(alert.patientId, alertActionEntry(alert, action, targets));
+			// An alert sent to the backup coverage plays the scenario's overflow (Scenario 5, step 3): the backup accepts,
+			// connects and takes it from there. Once a run.
+			const scenario = scenarioOfAlert(alertId);
+			if (
+				action.type === "escalate" &&
+				action.targetId === sampleBackupTargetId &&
+				scenario &&
+				hasBeats(scenario, "overflow", alertId) &&
+				!played(scenario, "overflow", alertId)
+			) {
+				cancel(scenario, "overflow", alertId);
+				schedule(scenario, "overflow", alertId);
+			}
 		},
-		[addActivity],
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- `played` and `hasBeats` read refs and constants.
+		[addActivity, cancel, schedule],
 	);
 
 	// The scenarios' arrivals join the lists last, so everyone else keeps their place.

@@ -42,6 +42,8 @@ const glucose: Record<string, GlucoseSpec> = {
 	p27: { every: 6, range: [144, 128], last: 150 },
 	p28: { every: 12, range: [104, 98], last: 330 },
 	p29: { every: 6, range: [142, 142], last: 150 },
+	// Pierce (Scenario 5): methylprednisolone pushes his over 160, with correction insulin.
+	p30: { every: 6, range: [188, 164], last: 120 },
 	// The scenario patients, from arrival.
 	p21: { every: 6, range: [132, 132], last: 30 },
 };

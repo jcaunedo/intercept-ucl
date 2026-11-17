@@ -9,7 +9,7 @@ import type { PatientPlanOfCare, PatientPlanOfCareItem, PatientPlanOfCareStatus 
 // progressing; their records' later stages turn it (`planOfCareWith`).
 
 type PlanSpec = {
-	/** The record system: Sidney and Chadron Meditech, Alliance Cerner, Bridgeport TruBridge. */
+	/** The record system: Sidney and Chadron Meditech, Alliance Cerner, Bridgeport TruBridge, Regional West Epic. */
 	source: string;
 	/** Hours since the plan was last reviewed (morning rounds, or the admitting nurse for a new patient). */
 	reviewedHoursAgo: number;
@@ -27,6 +27,7 @@ const sidney = "Meditech";
 const chadron = "Meditech";
 const alliance = "Cerner";
 const bridgeport = "TruBridge";
+const regionalWest = "Epic";
 
 const glucose = (interventions = "Insulin before meals and at bedtime · glucose checks before meals") =>
 	item("Type 2 diabetes", "Glucose 140–180 mg/dL", interventions);
@@ -426,6 +427,20 @@ const plans: Record<string, PlanSpec> = {
 			item("Tobacco use", "Nicotine replacement offered", "Nicotine patch"),
 		],
 	},
+	// Walter Pierce (Regional West, Scenario 5): holding on the ventilator until 03:10.
+	p30: {
+		source: regionalWest,
+		reviewedHoursAgo: 7,
+		items: [
+			item(
+				"Acute on chronic hypercapnic respiratory failure, COPD exacerbation",
+				"SpO₂ 88–92% and PaCO₂ near his baseline, then a breathing trial",
+				"Ventilator, AC/VC · nebulizers in line · methylprednisolone · azithromycin",
+			),
+			item("Obesity with obstructive sleep apnea", "CPAP after extubation", "Head of bed up 30° · respiratory therapy to fit his home CPAP"),
+			item("Sedation", "RASS 0 to −1, awake and comfortable", "Light propofol · daily sedation pause"),
+		],
+	},
 	p23: {
 		source: sidney,
 		reviewedHoursAgo: 0.3,
@@ -453,6 +468,21 @@ const plans: Record<string, PlanSpec> = {
 			),
 			item("Acute kidney injury from dehydration", "Creatinine back to his baseline of 0.9", "IV fluids · strict intake and output"),
 			item("Type 1 diabetes", "Insulin he can afford, before discharge", "Social work · diabetes educator"),
+		],
+	},
+	// Linda Shaw (Sidney ED, Scenario 5): the stroke code from arrival.
+	p31: {
+		source: sidney,
+		reviewedHoursAgo: 0.2,
+		items: [
+			item(
+				"Acute ischemic stroke, right hemisphere",
+				"Reperfusion: thrombolysis inside 4.5 h, thrombectomy for a large-vessel occlusion",
+				"Stroke code: CT, NIHSS, BP under 185/110, tenecteplase · neuro checks every 15 min",
+				"not-progressing",
+			),
+			item("Atrial fibrillation", "Rate under 110; an anticoagulant she can afford, later", "Telemetry · no antithrombotics for 24 h after thrombolysis"),
+			item("Swallowing", "No aspiration", "Nothing by mouth until a swallow screen"),
 		],
 	},
 };

@@ -68,4 +68,4 @@ const samplePatientRecords: PatientRecord[] = samplePatientBaseRecords.map((reco
 	camera: sampleCameraByPatient[record.id],
 }));
 
-export { samplePatientRecords };
+export { samplePatientRecords, withEtco2Lane };

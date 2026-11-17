@@ -4,6 +4,7 @@ export {
 	PatientCardAlert,
 	PatientCardMetric,
 	PatientCardScore,
+	PatientCardSource,
 	PatientCardTags,
 	patientCardAcuityLevels,
 	patientCardAlertVariants,

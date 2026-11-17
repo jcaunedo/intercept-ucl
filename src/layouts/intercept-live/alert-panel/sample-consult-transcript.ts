@@ -6,8 +6,8 @@ import type { ConsultTranscript, ConsultTranscriptSegment } from "./consult-tran
 // Story-only: what the AI Notetaker hears on a video consult, as speech recognition writes it (prototype only; an app
 // gets real segments from its transcription service). Each conversation is the intensivist and the bedside nurse going
 // over the patient: how they're doing, the numbers, the plan and what the pathway could be, and the family. Sarah Miller
-// (p1), Margaret Hayes (Scenario 1), Dale Reynolds (Scenario 2), Rosa Medina (Scenario 3) and Tyler Kessler (Scenario 4)
-// have their own, from their charts and scenarios; every other patient's is built from their record. Doses and settings are illustrative until clinical review. A `heard` line
+// (p1), Margaret Hayes (Scenario 1), Dale Reynolds (Scenario 2), Rosa Medina (Scenario 3), Tyler Kessler (Scenario 4),
+// and Walter Pierce and Linda Shaw (Scenario 5) have their own, from their charts and scenarios; every other patient's is built from their record. Doses and settings are illustrative until clinical review. A `heard` line
 // is recognition's first guess at a word it mishears, corrected as the segment ends, as Whisper does.
 // Nobody says the clinician's name or Intercept's (Nov 5, 2026, user's call: "so it is agnostic"): the script fits
 // whoever is on the call; the transcript labels them You.
@@ -289,6 +289,81 @@ function tylerKessler(nurse: string, clinician: string): ConsultTranscript {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Scenario 5: Walter Pierce (p30) and Linda Shaw (p31)                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Walter Pierce (Scenario 5): Regional West's ICU at 03:10, with his nurse and his respiratory therapist, Kevin Doyle,
+ * at the ventilator. SpO₂ 86%, peak pressure 48 with a plateau of 26 and auto-PEEP 9: resistance and air trapping, not
+ * a pneumothorax. Suction, FiO₂ up, a longer time to breathe out, bronchodilators and steroids.
+ */
+function walterPierce(nurse: string, clinician: string): ConsultTranscript {
+	const n = firstOf(nurse);
+	return {
+		speakers: [
+			{ id: "you", name: clinician, you: true },
+			{ id: "nurse", name: `${nurse}, RN` },
+			{ id: "rt", name: "Kevin Doyle, RRT" },
+		],
+		segments: segments([
+			["you", `Hi ${n}. I see Walter at 86 percent. What's he doing?`],
+			["nurse", "Coughing and fighting the vent, breathing about 30. Heart rate 118. He was fine at midnight."],
+			["rt", "Peak's 48, it was 32. Plateau is only 26. I did an expiratory hold: auto-PEEP 9."],
+			["you", "So the problem is getting air out, not the lungs going stiff. Equal breath sounds?", "So the problem is getting air out, not the lungs going stiff. Equal breath sounds?"],
+			["nurse", "Equal, wheezy on both sides. Chest rises on both sides."],
+			["you", "Then it's a plug or bronchospasm more than a pneumothorax. Pass a suction catheter first; does it go down easily?"],
+			["nurse", "Going now.", undefined, 1.5],
+			["nurse", "Big thick plug. Came right up."],
+			["you", "Good. FiO₂ to 60 for now. Kevin, drop the rate to 14, tidal volume 480, and give him an I:E of 1 to 4 so he can breathe out.", "Good. FIO2 to 60 for now. Kevin, drop the rate to 14, tidal volume 480, and give him an I to E of 1 to 4 so he can breathe out."],
+			["rt", "Rate 14, 480, 1 to 4. Albuterol and ipratropium in line?"],
+			["you", "Yes, every two hours for the next six. And methylprednisolone 40 IV now, then every twelve."],
+			["you", "He's breathing over the vent, so bump the propofol to 30 and fentanyl to 50. A portable chest film to check the tube."],
+			["nurse", "X-ray's called. He's settling. 89 percent."],
+			["rt", "Auto-PEEP's down to 4 on the hold. Peak 36."],
+			["you", "That's it. Once he holds 92, bring FiO₂ back to 45. Gas in 30 minutes."],
+			["you", "Call me if the peak goes over 40 again or he drops under 88."],
+		]),
+	};
+}
+
+/**
+ * Linda Shaw (Scenario 5): Sidney's ED at 03:16, the stroke code sent to Intercept's backup coverage while the hub
+ * intensivist is on Walter Pierce's emergency. Her nurse and the hospitalist APP, Jenna Collins, NP. NIHSS, the CT,
+ * blood pressure before tenecteplase, then the CTA.
+ */
+function lindaShaw(nurse: string, clinician: string): ConsultTranscript {
+	const n = firstOf(nurse);
+	return {
+		speakers: [
+			{ id: "you", name: clinician, you: true },
+			{ id: "nurse", name: `${nurse}, RN` },
+			{ id: "app", name: "Jenna Collins, NP" },
+			{ id: "patient", name: "Linda Shaw" },
+		],
+		segments: segments([
+			["you", `Hi ${n}, hi Jenna. I've got Linda's panel, the CT and the NIHSS. Last known well 02:30?`, `Hi ${n}, hi Jenna. I've got Linda's panel, the CT and the NIH SS. Last known well 02:30?`],
+			["app", "02:30. Her husband heard her fall. CT's clean, ASPECTS 9. Glucose 128, INR 1.0, platelets 214."],
+			["you", "Let me look at her. Linda, can you lift both arms for me and hold them up?"],
+			["patient", "I'm trying. The left one won't stay.", undefined, 1.0],
+			["nurse", "Left arm drifts to the bed. Face droop on the left, speech is slurred. Eyes to the right."],
+			["you", "I agree with a 9. Any reason she can't get a clot-buster? Bleeding, surgery, a fall with a head strike?", "I agree with a 9. Any reason she can't get a clot buster? Bleeding, surgery, a fall with a head strike?"],
+			["app", "No. And she's not on a blood thinner. She stopped her apixaban four months ago, couldn't afford it."],
+			["you", "Then the only thing in the way is her pressure. 192 over 104. Labetalol 10 IV now, recheck in five.", "Then the only thing in the way is her pressure. 192 over 104. Labetalol 10 IV now, recheck in 5."],
+			["nurse", "Labetalol's in.", undefined, 2.0],
+			["nurse", "176 over 98."],
+			["you", "Under 185. Tenecteplase 18 milligrams, that's 0.25 per kilo at 72 kilos, as one push. Double-check it with Kristen.", "Under 185. Tenecteplase 18 milligrams, that's 0.25 per kilo at 72 kilos, as one push. Double check it with Kristen."],
+			["nurse", "18 milligrams, checked with Kristen. Pushed at 03:31."],
+			["you", "Good. Neuro checks every 15 minutes and keep her under 180 over 105. Now the CTA, head and neck, as soon as she's back in the scanner.", "Good. Neuro checks every 15 minutes and keep her under 180 over 105. Now the CTA, head and neck, as soon as she's back in the scanner."],
+			["app", "Calling it now.", undefined, 2.0],
+			["app", "CTA's read. Right M1 occlusion."],
+			["you", "That's a large-vessel occlusion. She needs a thrombectomy, and Sidney can't do it. Let's get her to a center that can, fast."],
+			["you", "Linda, the medicine is in. There's still a clot in a big artery, so we're sending you to a team that can pull it out. Your husband can come with you."],
+			["patient", "Okay. Thank you."],
+		]),
+	};
+}
+
+/* -------------------------------------------------------------------------- */
 /* Every other patient, from their chart                                      */
 /* -------------------------------------------------------------------------- */
 
@@ -378,6 +453,8 @@ function sampleConsultTranscript(context: ConsultTranscriptContext): ConsultTran
 	if (context.patientId === "p21") return daleReynolds(nurse, clinician);
 	if (context.patientId === "p23") return rosaMedina(nurse, clinician);
 	if (context.patientId === "p24") return tylerKessler(nurse, clinician);
+	if (context.patientId === "p30") return walterPierce(nurse, clinician);
+	if (context.patientId === "p31") return lindaShaw(nurse, clinician);
 	return fromRecord(context, nurse, clinician);
 }
 

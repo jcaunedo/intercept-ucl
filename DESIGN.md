@@ -1237,6 +1237,7 @@ Built Nov 13, 2026 from intercept.ds **Table Row** (`1531:4265`; Variant Header,
 - ✅ **Resolved (Oct 26, 2026):** the 36px Button now uses Figma's radius (10px then, 12px since Oct 28, 2026; see "Button md follows intercept.ds lg · 36").
 
 ---
+- ✅ **Record system badge (Nov 17, 2026, Demo Use Cases Scenario 5; code ahead of Figma, not drawn):** `source` ("Epic") is `PatientCardSource`, shared by PatientCensusCard and PatientMonitoringCard: the last child of the location line, `ml-auto shrink-0`, `text-xs leading-4 font-medium text-muted-foreground` in a 1px `border-border` outline (`rounded-sm`, `px-1`), with a screen-reader ", record from " before the name. **Keep:** the hospital truncates before the badge (`shrink-0`), and the badge stays right-aligned so the systems line up down a grid column. A Figma resync of the location line must keep it until Figma draws it. Check against `PatientCardSource` in `patient-census-card.tsx`.
 
 ## Typography specs live in three places (`typography.tsx`, `typography.mdx`, `foundations/typography.mdx`)
 

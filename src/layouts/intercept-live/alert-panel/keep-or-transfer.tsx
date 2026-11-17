@@ -1,5 +1,5 @@
 import * as React from "react";
-import { AmbulanceIcon, CircleCheckIcon, CircleXIcon, ClockIcon, RotateCcwIcon, TriangleAlertIcon } from "lucide-react";
+import { AmbulanceIcon, CircleCheckIcon, CircleXIcon, ClockIcon, FileCheckIcon, RotateCcwIcon, TriangleAlertIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
@@ -18,6 +18,11 @@ import { Expand } from "./care-pathway";
 // bed, transport and its time). The intensivist decides, with a reason: keep, with checkpoints at 1 h and 4 h (a missed
 // one raises a High alert and brings transfer back), or transfer. The platform lays out the facts and doesn't pick one
 // (DU-22).
+//
+// Scenario 5, step 4 ("The right transfer, faster"; mock): when the patient needs what no hospital nearby has (a
+// thrombectomy for a large-vessel occlusion), `mode: "transfer"` drops Keep and supports the transfer that should
+// happen: the receiving centers with what each can do, the transfer packet the platform builds from the record, and
+// door-in-door-out at the sending hospital against its goal.
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -47,6 +52,8 @@ type TransferReceiving = {
 	bed: string;
 	/** One that can't take the patient now is listed, but can't be picked. */
 	accepting: boolean;
+	/** What it can do for this patient, e.g. "Comprehensive stroke center · thrombectomy 24/7". */
+	capability?: string;
 };
 
 /** A way to get there, from the transfer center. */
@@ -92,6 +99,11 @@ type TransferOutcome = {
 };
 
 type KeepOrTransfer = {
+	/**
+	 * `keep-or-transfer` (default): the intensivist weighs keeping against transferring. `transfer`: the patient needs
+	 * what the hospital can't give, so there's no Keep; the panel supports the transfer (Scenario 5, step 4).
+	 */
+	mode?: "keep-or-transfer" | "transfer";
 	/** The hospital's short name, e.g. "Chadron", for "Keep at Chadron". */
 	hospital: string;
 	/** Where the needs and the transfer options come from. */
@@ -104,6 +116,37 @@ type KeepOrTransfer = {
 	decided?: TransferChoice;
 	/** "Transfer avoided", once the patient was kept and every checkpoint passed. */
 	outcome?: TransferOutcome;
+	/** The transfer packet, built from the record (Scenario 5). */
+	packet?: TransferPacket;
+	/** Door-in-door-out at this hospital, against its goal (Scenario 5). */
+	doorInDoorOut?: DoorInDoorOut;
+};
+
+/** One item of the transfer packet, from the record, e.g. "CT head and CTA images", "NIHSS 9 at 2:58 AM". */
+type TransferPacketItem = {
+	id: string;
+	label: string;
+	detail?: string;
+};
+
+/**
+ * The transfer packet the platform builds from the record, ready to go with the request (Scenario 5, step 4; mock): the
+ * images, scores, times, drugs and consent the receiving team needs, without anyone faxing them. Sent with the request.
+ */
+type TransferPacket = {
+	items: TransferPacketItem[];
+	/** When it went, and to whom (the receiving hospital's name), once the transfer was requested. */
+	sent?: { at: string; to: string };
+};
+
+/**
+ * Door-in-door-out at the sending hospital (Scenario 5): when the patient arrived, when they left, and the goal in
+ * minutes. Logged for the outcomes.
+ */
+type DoorInDoorOut = {
+	doorIn: string;
+	doorOut?: string;
+	goalMinutes: number;
 };
 
 /** What the intensivist did: decided (without the time, which the app records), or took the decision back. */
@@ -137,6 +180,12 @@ const needIcons: Record<TransferNeedStatus, { icon: typeof CircleCheckIcon; clas
 
 const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 const formatAfter = (minutes: number) => (minutes % 60 ? `${minutes} min` : `${minutes / 60} h`);
+/** "1 h 46 min", "52 min", "2 h". */
+const formatMinutes = (minutes: number) => {
+	const hours = Math.floor(minutes / 60);
+	const rest = minutes % 60;
+	return hours ? `${hours} h${rest ? ` ${rest} min` : ""}` : `${rest} min`;
+};
 
 /* -------------------------------------------------------------------------- */
 /* Parts                                                                      */
@@ -192,6 +241,59 @@ function Checkpoints({ checkpoints, from }: { checkpoints: TransferCheckpoint[];
 	);
 }
 
+/** The transfer packet: what it holds, then where it went once sent. */
+function Packet({ packet }: { packet: TransferPacket }) {
+	return (
+		<div className='flex flex-col gap-3'>
+			<ul aria-label='Transfer packet' className='flex flex-col gap-2'>
+				{packet.items.map((item) => (
+					<li key={item.id} className='flex items-start gap-2 text-sm'>
+						<CircleCheckIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-success' />
+						<div className='flex min-w-0 flex-col'>
+							<span className='font-semibold text-foreground'>{item.label}</span>
+							{item.detail ? <span className='text-muted-foreground'>{item.detail}</span> : null}
+						</div>
+					</li>
+				))}
+			</ul>
+			<p role='status' className='flex items-start gap-2 text-sm text-foreground'>
+				<FileCheckIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-icon-muted' />
+				{packet.sent
+					? `Sent to ${packet.sent.to} · ${formatTime(new Date(packet.sent.at))}`
+					: "Built from the record. It goes with the transfer request."}
+			</p>
+		</div>
+	);
+}
+
+/** Door-in-door-out: in, the goal, and once out, how long it took against the goal. */
+function DoorToDoor({ times }: { times: DoorInDoorOut }) {
+	const doorIn = new Date(times.doorIn);
+	const doorOut = times.doorOut ? new Date(times.doorOut) : undefined;
+	const minutes = doorOut ? Math.round((doorOut.getTime() - doorIn.getTime()) / 60_000) : undefined;
+	const met = minutes !== undefined && minutes <= times.goalMinutes;
+	return (
+		<div className='flex items-start gap-2 text-sm'>
+			<ClockIcon
+				aria-hidden='true'
+				className={cn("mt-0.5 size-4 shrink-0", minutes === undefined ? "text-icon-muted" : met ? "text-success" : "text-destructive")}
+			/>
+			<div className='flex min-w-0 flex-col'>
+				<span className='font-semibold text-foreground'>
+					Door-in-door-out
+					{minutes !== undefined ? (
+						<span className={cn("font-medium", met ? "text-success" : "text-destructive")}> · {formatMinutes(minutes)}</span>
+					) : null}
+				</span>
+				<span className='text-muted-foreground'>
+					In {formatTime(doorIn)}
+					{doorOut ? ` · out ${formatTime(doorOut)}` : ""} · goal under {formatMinutes(times.goalMinutes)}
+				</span>
+			</div>
+		</div>
+	);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Keep or transfer                                                           */
 /* -------------------------------------------------------------------------- */
@@ -213,7 +315,14 @@ function KeepOrTransferPanel({
 	escapeRef?: React.RefObject<(() => boolean) | null>;
 	className?: string;
 }) {
+	const transferOnly = data.mode === "transfer";
 	const [choice, setChoice] = React.useState<TransferChoice | null>(data.decided ?? null);
+	// The decision made elsewhere (the beats, or the alert reopened) lands here too.
+	const givenDecisionAt = data.decided?.at;
+	React.useEffect(() => {
+		if (data.decided) setChoice(data.decided);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- only a new decision.
+	}, [givenDecisionAt]);
 	const [form, setForm] = React.useState<"keep" | "transfer" | null>(null);
 	const [rationale, setRationale] = React.useState("");
 	const accepting = data.receiving.filter((receiving) => receiving.accepting);
@@ -273,12 +382,16 @@ function KeepOrTransferPanel({
 					variant: "green" as const,
 				}
 			: choice?.type === "transfer"
-				? {
-						key: "transfer",
-						label: "Transfer requested",
-						variant: "amber" as const,
-					}
-				: { key: "open", label: "To decide", variant: "yellow" as const };
+				? data.doorInDoorOut?.doorOut
+					? { key: "out", label: "Transferred", variant: "green" as const }
+					: {
+							key: "transfer",
+							label: "Transfer requested",
+							variant: "amber" as const,
+						}
+				: transferOnly
+					? { key: "open", label: "Transfer needed", variant: "yellow" as const }
+					: { key: "open", label: "To decide", variant: "yellow" as const };
 	const decidedAt = choice ? new Date(choice.at) : undefined;
 	const receiving =
 		choice?.type === "transfer" ? data.receiving.find((item) => item.id === choice.receivingId) : undefined;
@@ -305,7 +418,7 @@ function KeepOrTransferPanel({
 
 	return (
 		<section
-			aria-label='Keep or transfer'
+			aria-label={transferOnly ? "Transfer" : "Keep or transfer"}
 			data-decision={choice?.type ?? "open"}
 			className={cn("relative flex flex-col gap-4", className)}
 		>
@@ -313,7 +426,7 @@ function KeepOrTransferPanel({
 			<div ref={endRef} aria-hidden='true' className='pointer-events-none absolute inset-x-0 bottom-0 h-px scroll-mb-4' />
 			<div className='flex flex-col gap-1'>
 				<div className='flex flex-wrap items-center gap-2'>
-					<h3 className='text-base font-bold text-foreground'>Keep or transfer</h3>
+					<h3 className='text-base font-bold text-foreground'>{transferOnly ? "Transfer" : "Keep or transfer"}</h3>
 					<AnimatePresence mode='wait' initial={false}>
 						<motion.span key={badge.key} variants={fadeVariants} initial='initial' animate='animate' exit='exit'>
 							<Badge variant={badge.variant} size='xs'>
@@ -349,12 +462,13 @@ function KeepOrTransferPanel({
 			<AnimatePresence initial={false}>
 				{form !== "transfer" || choice ? (
 					<Expand key='options'>
-						<Group title='If transferred'>
+						<Group title={transferOnly ? "Receiving centers" : "If transferred"}>
 							<div className='flex flex-col gap-3'>
 								<ul aria-label='Receiving hospitals' className='flex flex-col gap-2'>
 									{data.receiving.map((item) => (
 										<li key={item.id} className='flex flex-col text-sm'>
 											<span className='font-bold text-foreground'>{item.name}</span>
+											{item.capability ? <span className='text-foreground'>{item.capability}</span> : null}
 											<span className='text-muted-foreground'>
 												{item.place} · {item.bed}
 											</span>
@@ -389,23 +503,43 @@ function KeepOrTransferPanel({
 				) : null}
 			</AnimatePresence>
 
+			{data.packet ? (
+				<Group title='Transfer packet'>
+					<Packet packet={data.packet} />
+				</Group>
+			) : null}
+			{data.doorInDoorOut ? <DoorToDoor times={data.doorInDoorOut} /> : null}
+
 			{/* The decision and what follows it. */}
 			<AnimatePresence initial={false} mode='popLayout'>
 				{!choice && !form ? (
 					<Expand key='decide'>
 						<div className='flex flex-col gap-3'>
-							<p className='text-sm text-muted-foreground'>
-								Keeping sets checkpoints at{" "}
-								{data.checkpoints.map((checkpoint) => formatAfter(checkpoint.after)).join(" and ")}. A missed one raises
-								a High alert.
-							</p>
+							{transferOnly ? (
+								<p className='text-sm text-muted-foreground'>
+									Pick the receiving center and the transport. The packet goes with the request.
+								</p>
+							) : (
+								<p className='text-sm text-muted-foreground'>
+									Keeping sets checkpoints at{" "}
+									{data.checkpoints.map((checkpoint) => formatAfter(checkpoint.after)).join(" and ")}. A missed one raises
+									a High alert.
+								</p>
+							)}
 							<div className='flex gap-2'>
-								<Button variant='outline' size='md' onClick={() => setForm("transfer")} className='flex-1'>
-									Transfer
+								<Button
+									variant={transferOnly ? "neutral" : "outline"}
+									size='md'
+									onClick={() => setForm("transfer")}
+									className='flex-1'
+								>
+									{transferOnly ? "Request transfer" : "Transfer"}
 								</Button>
-								<Button variant='outline' size='md' onClick={() => setForm("keep")} className='flex-1'>
-									Keep at {data.hospital}
-								</Button>
+								{transferOnly ? null : (
+									<Button variant='outline' size='md' onClick={() => setForm("keep")} className='flex-1'>
+										Keep at {data.hospital}
+									</Button>
+								)}
 							</div>
 						</div>
 					</Expand>
@@ -435,6 +569,7 @@ function KeepOrTransferPanel({
 													/>
 													<Label htmlFor={`${fieldId}-${item.id}`} className='flex flex-col items-start gap-0'>
 														<span className='font-semibold'>{item.name}</span>
+														{item.capability ? <span className='text-xs font-normal'>{item.capability}</span> : null}
 														<span className='text-xs font-normal text-muted-foreground'>
 															{item.place} · {item.bed}
 														</span>
@@ -480,7 +615,9 @@ function KeepOrTransferPanel({
 									placeholder={
 										form === "keep"
 											? "E.g. BiPAP and RT are here; a 2 h ride is the bigger risk tonight"
-											: "E.g. needs more than the floor can give overnight"
+											: transferOnly
+												? "E.g. right M1 occlusion: needs a thrombectomy, not available here"
+												: "E.g. needs more than the floor can give overnight"
 									}
 									autoFocus={form === "keep"}
 								/>
@@ -521,7 +658,7 @@ function KeepOrTransferPanel({
 										<span className='text-muted-foreground'>Why: </span>
 										{choice.rationale}
 									</span>
-									{choice.type === "transfer" ? (
+									{choice.type === "transfer" && !data.doorInDoorOut?.doorOut ? (
 										<span className='text-muted-foreground'>The transfer center confirms the bed and the crew.</span>
 									) : null}
 								</div>
@@ -558,7 +695,7 @@ function KeepOrTransferPanel({
 										</span>
 									) : null}
 								</div>
-							) : (
+							) : data.doorInDoorOut?.doorOut || data.packet?.sent ? null : (
 								<Button variant='link' size='sm' onClick={undo} className='h-auto self-start px-0 has-[>svg]:px-0'>
 									<RotateCcwIcon />
 									Change decision
@@ -577,10 +714,13 @@ export {
 	type KeepOrTransfer,
 	type KeepOrTransferDecision,
 	type TransferCheckpoint,
+	type DoorInDoorOut,
 	type TransferChoice,
 	type TransferNeed,
 	type TransferNeedStatus,
 	type TransferOutcome,
+	type TransferPacket,
+	type TransferPacketItem,
 	type TransferReceiving,
 	type TransferTransport,
 };

@@ -16,7 +16,13 @@ import { sampleEhrFor } from "../../sample-data/sample-ehr";
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 const hoursAgo = (hours: number) => minutesAgo(hours * 60);
 
-const writesBack: Record<string, boolean> = { "Alliance Community": true, "Sidney Regional": true, "Bridgeport Valley": false };
+// Regional West, the hub's own ICU on Epic (Scenario 5), takes its intensivists' notes into its record.
+const writesBack: Record<string, boolean> = {
+	"Alliance Community": true,
+	"Sidney Regional": true,
+	"Bridgeport Valley": false,
+	"Regional West": true,
+};
 
 const sarahNotes: PatientNote[] = [
 	{
@@ -789,6 +795,7 @@ const notesFor = (id: string, notes: PatientNote[]): PatientNotes => ({
 
 const sampleNotesByPatient: Record<string, PatientNotes> = {
 	p1: notesFor("p1", sarahNotes),
+	p30: notesFor("p30", sampleScenario5WalterNotes()),
 	p15: notesFor("p15", hayesNotes),
 	p16: notesFor("p16", ericksonNotes),
 	p19: notesFor("p19", carlsonNotes),
@@ -1014,4 +1021,231 @@ const sampleScenario4Notes = (stage: "admission" | "noted" = "admission"): Patie
 	];
 };
 
-export { sampleNotesByPatient, sampleScenario2Notes, sampleScenario3Notes, sampleScenario4Notes };
+/* -------------------------------------------------------------------------- */
+/* Scenario 5: Walter Pierce and Linda Shaw                                   */
+/* -------------------------------------------------------------------------- */
+
+// The AI drafts for Scenario 5's two encounters (step 6, "Documentation returned"): a Tele-ICU event note each, written
+// by the AI from the data and the call, a draft until the clinician reviews, edits and signs it (PRD Notes NTE-007). Its
+// sections are the event note's template's, so the draft opens in them. Each says how many minutes of writing it saved
+// the clinician (`scribe.minutesSaved`), for the shift's documentation counter: the time a clinician takes to write an
+// event note like it by hand, illustrative until it's measured.
+const sampleScenario5DocumentationMinutes = { walter: 18, linda: 24 };
+
+/**
+ * Walter Pierce's notes (Regional West, Epic, which takes Intercept notes back). Before the scenario (`base`): the hub's
+ * progress note from yesterday evening, written back; his pulmonologist's progress note; his respiratory therapist's and
+ * nurse's tonight. `drafted`: the AI's event note for the 03:10 desaturation, for Joanna Smith to sign. Built when a
+ * beat plays, so the times read from then.
+ */
+function sampleScenario5WalterNotes({ drafted = false }: { drafted?: boolean } = {}): PatientNote[] {
+	const regionalWest = "Regional West";
+	const notes: PatientNote[] = [
+		{
+			id: "p30-n1",
+			type: "Nursing note",
+			author: { name: "Lauren Fisher", role: "RN", organization: regionalWest },
+			at: minutesAgo(70),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "Awake on propofol 15, nods to questions, follows commands. Suctioned twice this shift for moderate thick white secretions. SpO₂ 91–93% on FiO₂ 40%. Tube feeds at goal. Skin intact; turned every 2 h. Wife called at 21:00, updated.",
+				},
+			],
+		},
+		{
+			id: "p30-n2",
+			type: "Respiratory therapy note",
+			author: { name: "Kevin Doyle", role: "RRT", organization: regionalWest },
+			at: minutesAgo(180),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "AC/VC 18, tidal volume 520, PEEP 5, FiO₂ 40%. Peak 32, plateau 22, no auto-PEEP on an expiratory hold. Albuterol and ipratropium in line; mild expiratory wheeze before, less after. Cuff pressure 26. Not ready for a breathing trial yet.",
+				},
+			],
+		},
+		{
+			id: "p30-n3",
+			type: "Tele-ICU progress note",
+			author: { name: "Joanna Smith", role: "Intercept intensivist" },
+			at: hoursAgo(8),
+			origin: "intercept",
+			status: "written-back",
+			writtenBackAt: hoursAgo(8),
+			sections: [
+				{
+					heading: "Assessment",
+					text: "71-year-old man, ICU day 2, acute on chronic hypercapnic respiratory failure from a COPD exacerbation, likely viral; obesity with sleep apnea. Improving: PaCO₂ 82 → 58, FiO₂ 50 → 40%, PEEP 8 → 5. Awake on light propofol.",
+				},
+				{
+					heading: "Plan",
+					text: "Keep SpO₂ 88–92%. Nebulizers in line every 4 h, methylprednisolone 40 mg daily, azithromycin day 2 of 5. Lighten sedation; breathing trial when FiO₂ 40% and PEEP 5 hold overnight. CPAP after extubation.",
+				},
+			],
+		},
+		{
+			id: "p30-n4",
+			type: "Progress note",
+			author: { name: "Neil Foster", role: "MD, Pulmonology", organization: regionalWest },
+			at: hoursAgo(16),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{ heading: "Assessment", text: "COPD exacerbation with hypercapnic respiratory failure, day 2 on the ventilator. Respiratory panel negative; procalcitonin 0.12." },
+				{ heading: "Plan", text: "Continue steroids and azithromycin. Wean FiO₂ to 40%. Daily sedation pause. Discussed with his wife: full code." },
+			],
+		},
+	];
+	if (!drafted) return notes;
+	return [
+		{
+			id: "p30-n5",
+			type: "Tele-ICU event note",
+			author: { name: "Joanna Smith", role: "Intercept intensivist" },
+			at: minutesAgo(0),
+			origin: "intercept",
+			status: "draft",
+			scribe: { sessionAt: minutesAgo(9), minutesSaved: sampleScenario5DocumentationMinutes.walter },
+			sections: [
+				{
+					heading: "Issue",
+					text: "Acute desaturation on the ventilator at 03:10: SpO₂ 92% → 86% over 20 min on FiO₂ 40%, RR 30 over the set 18, HR 118, BP 158/90. Peak pressure 48 from 32 with plateau 26 and auto-PEEP 9. Ranked first of two simultaneous Critical alerts on the network.",
+				},
+				{
+					heading: "Camera / physical exam",
+					text: "By camera with Lauren Fisher, RN and Kevin Doyle, RRT at the bedside: agitated, breathing against the ventilator, diffuse expiratory wheeze on both sides, equal chest rise. Thick plug suctioned from the tube. Tube at 24 cm at the lip, unchanged.",
+				},
+				{
+					heading: "Assessment and plan",
+					text: "Mucus plugging and bronchospasm with dynamic hyperinflation in severe COPD; no pneumothorax on chest X-ray, tube 4 cm above the carina. Suctioned; FiO₂ 60% briefly, now 45%. Rate 18 → 14, tidal volume 520 → 480, I:E 1:4: auto-PEEP 9 → 3, peak 34. Albuterol and ipratropium in line every 2 h for 6 h, then every 4 h; methylprednisolone 40 mg IV now, then every 12 h. Propofol 30, fentanyl 50 for the overbreathing. ABG pH 7.32, PaCO₂ 64, PaO₂ 68. SpO₂ 92%, NEWS2 10 → 5. Recheck the plateau and auto-PEEP in 1 h; call for a peak over 40 or SpO₂ under 88%.",
+				},
+				{ heading: "Discussed with", text: "Lauren Fisher, RN; Kevin Doyle, RRT. Dr. Foster to be updated at 07:00." },
+			],
+		},
+		...notes,
+	];
+}
+
+/**
+ * Linda Shaw's notes (Sidney, Meditech, which takes Intercept notes back). At the alert: the ED triage note with her
+ * NIHSS and the social need, and the APP's stroke code note. `lysed` and `transferred` add the nurse's thrombolysis
+ * note; `transferred` the transfer note. `drafted`: the AI's event note for the stroke code, for Mark Sullivan, MD,
+ * Intercept's backup intensivist who directed it, to sign. Built when a beat plays, so the times read from then.
+ */
+function sampleScenario5LindaNotes(stage: "alert" | "lysed" | "transferred" = "alert", { drafted = false }: { drafted?: boolean } = {}): PatientNote[] {
+	const sidney = "Sidney Regional";
+	const back = stage === "transferred" ? 12 : stage === "lysed" ? 8 : 0;
+	const notes: PatientNote[] = [
+		{
+			id: "p31-n1",
+			type: "ED provider note",
+			author: { name: "Jenna Collins", role: "NP, Hospitalist", organization: sidney },
+			at: minutesAgo(back + 2),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					heading: "History",
+					text: "66-year-old woman with atrial fibrillation and hypertension. Her husband heard her fall getting up at 02:30; left arm and face weak, speech slurred. Stopped apixaban 4 months ago because she couldn't afford it. Ambulance to us, at the door 02:52.",
+				},
+				{
+					heading: "Assessment",
+					text: "Acute ischemic stroke, right hemisphere. NIHSS 9. CT head: no hemorrhage, ASPECTS 9, hyperdense right MCA. Glucose 128, INR 1.0, platelets 214. BP 192/104, atrial fibrillation 112. Inside the thrombolysis window until 07:00.",
+				},
+				{ heading: "Plan", text: "Stroke code. Labetalol for BP under 185/110. Hub consult for thrombolysis now." },
+			],
+		},
+		{
+			id: "p31-n2",
+			type: "ED triage note",
+			author: { name: "Ashley Brooks", role: "RN", organization: sidney },
+			at: minutesAgo(back + 13),
+			origin: "hospital",
+			status: "signed",
+			sections: [
+				{
+					text: "Left face droop, left arm drift, left leg weak, slurred speech, eyes to the right. NIHSS 9 at 02:58. Glucose 128. Last known well 02:30 (husband). Not on a blood thinner: stopped apixaban 4 months ago, cost. ESI 1.",
+				},
+			],
+			fields: [{ label: "Social need", value: "Stopped apixaban because of cost", code: "Z91.120" }],
+		},
+	];
+	const lysed: PatientNote[] =
+		stage === "alert"
+			? []
+			: [
+					{
+						id: "p31-n3",
+						type: "Nursing note",
+						author: { name: "Ashley Brooks", role: "RN", organization: sidney },
+						at: minutesAgo(stage === "transferred" ? 6 : 1),
+						origin: "hospital",
+						status: "signed",
+						sections: [
+							{
+								text: "Labetalol 10 mg IV at 03:24, BP 176/98. Tenecteplase 18 mg IV push at 03:31, double-checked with Kristen Webb, RN. No bleeding, no angioedema. Neuro checks every 15 min: NIHSS 6 at 04:15, the arm better. BP 172/94.",
+							},
+						],
+					},
+				];
+	const transferred: PatientNote[] =
+		stage === "transferred"
+			? [
+					{
+						id: "p31-n4",
+						type: "Transfer note",
+						author: { name: "Jenna Collins", role: "NP, Hospitalist", organization: sidney },
+						at: minutesAgo(1),
+						origin: "hospital",
+						status: "signed",
+						sections: [
+							{
+								text: "Transferred by helicopter to Front Range Comprehensive Stroke Center, Denver, for thrombectomy of a right M1 occlusion, accepted by its neurointerventional team at 03:52. Door-out 04:38; door-in-door-out 1 h 46 min. Transfer packet sent ahead: images, NIHSS 9 and 6, tenecteplase 18 mg at 03:31, labs, medications. Husband driving to Denver.",
+							},
+						],
+					},
+				]
+			: [];
+	const all = [...transferred, ...lysed, ...notes];
+	if (!drafted) return all;
+	return [
+		{
+			id: "p31-n5",
+			type: "Tele-ICU event note",
+			author: { name: "Mark Sullivan", role: "Intercept backup intensivist" },
+			at: minutesAgo(0),
+			origin: "intercept",
+			status: "draft",
+			scribe: { sessionAt: minutesAgo(back + 7), minutesSaved: sampleScenario5DocumentationMinutes.linda },
+			sections: [
+				{
+					heading: "Issue",
+					text: "Stroke alert from Sidney's ED at 03:11, sent to Intercept's backup coverage at 03:12 while the hub intensivist was on another emergency; connected at 03:16. Acute left hemiparesis, NIHSS 9, last known well 02:30.",
+				},
+				{
+					heading: "Camera / physical exam",
+					text: "By camera with Ashley Brooks, RN and Jenna Collins, NP: awake, dysarthric, right gaze preference, left face droop, left arm drifts to the bed, left leg drifts. NIHSS 9 confirmed.",
+				},
+				{
+					heading: "Assessment and plan",
+					text: "Acute ischemic stroke, right MCA, in atrial fibrillation off apixaban for 4 months because of cost. CT: no hemorrhage, ASPECTS 9. No contraindication to thrombolysis. Labetalol 10 mg IV, BP 176/98; tenecteplase 18 mg IV (0.25 mg/kg) at 03:31, door-to-needle 39 min. CTA: right M1 occlusion, so transfer for thrombectomy: Front Range Comprehensive Stroke Center accepted at 03:52; helicopter, door-out 04:38, door-in-door-out 1 h 46 min. NIHSS 6 at 04:15. BP under 180/105 for 24 h, neuro checks every 15 min, no antithrombotics for 24 h. Anticoagulation she can afford before discharge.",
+				},
+				{ heading: "Discussed with", text: "Ashley Brooks, RN; Jenna Collins, NP; the patient and her husband; Front Range's neurointerventional team." },
+			],
+		},
+		...all,
+	];
+}
+
+export {
+	sampleNotesByPatient,
+	sampleScenario2Notes,
+	sampleScenario3Notes,
+	sampleScenario4Notes,
+	sampleScenario5DocumentationMinutes,
+	sampleScenario5LindaNotes,
+	sampleScenario5WalterNotes,
+};

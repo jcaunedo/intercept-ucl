@@ -135,6 +135,9 @@ figcaption::before {
 .gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .table-wrap { overflow-x: auto; }
+/* A caption in three lines: what's on screen, when it appears, what the presenter does. */
+.cap { display: grid; gap: 4px; }
+.cap b { font-weight: 600; }
 footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 </style>
 <body>
@@ -184,7 +187,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames one">
-		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Rosa Medina arrives." loading="lazy"><figcaption>Monitoring before the scenario starts. Sidney has 6 patients.</figcaption></figure>
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: patients across 4 hospitals with live monitors, before Rosa Medina arrives." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Monitoring before the scenario: patients across four hospitals with live monitors. Sidney has 6 patients, and Rosa isn't there yet.</span><span><b>When:</b> As the prototype opens, or after Prototype › Reset prototype.</span><span><b>You:</b> Nothing yet. Point at the Sidney tab.</span></span></figcaption></figure>
 	</div>
 	<div class="callout note"><strong>The clock shows today's time, not 15:30.</strong> The prototype runs on the real clock, so the hour-1 timer counts real seconds and twelve hours pass in about a minute. Ask the audience to picture an afternoon turning into night.</div>
 </section>
@@ -205,9 +208,9 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 3: Sepsis." loading="lazy"><figcaption>Prototype › Scenario 3: Sepsis.</figcaption></figure>
-		<figure><img src="frames/02-alert.jpg" alt="Rosa Medina's card first on Monitoring with a Critical bar, and her alert toast: Probable septic shock, hour-1 bundle started." loading="lazy"><figcaption>Rosa arrives with a Critical alert from the Sepsis Sniffer.</figcaption></figure>
-		<figure><img src="frames/03-bundle.jpg" alt="Her alert open: BP 84/48 and lactate 3.8 with fever and a urinary source, on diabetes and CKD 4; beside it the Hour-1 bundle, 59:55 left in hour 1, 1 of 5 done, Lactate green." loading="lazy"><figcaption>Her alert opens on the hour-1 bundle: the timer, and the lactate already in.</figcaption></figure>
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 3: Sepsis." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Prototype menu.</span><span><b>When:</b> Before anything happens.</span><span><b>You:</b> Click Prototype at the bottom of the Sidebar, then Scenario 3: Sepsis.</span></span></figcaption></figure>
+		<figure><img src="frames/02-alert.jpg" alt="Rosa Medina's card first on Monitoring with a Critical bar, and her alert toast: Probable septic shock, hour-1 bundle started." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Rosa's card joins the page first, with a red Critical bar from the Sepsis Sniffer, and her toast: “Probable septic shock: hour-1 bundle started”.</span><span><b>When:</b> 1.5 s after you pick the scenario.</span><span><b>You:</b> Nothing. Point at the toast and at Sidney's tab, which now counts her.</span></span></figcaption></figure>
+		<figure><img src="frames/03-bundle.jpg" alt="Her alert open: BP 84/48 and lactate 3.8 with fever and a urinary source, on diabetes and CKD 4; beside it the Hour-1 bundle, 59:55 left in hour 1, 1 of 5 done, Lactate green." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her alert with Pathway already out: the Hour-1 bundle, its timer counting down from 60:00, 1 of 5 done, Lactate green.</span><span><b>When:</b> When you open it.</span><span><b>You:</b> Click the alert bar on her card.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -227,8 +230,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/05a-interpreter.jpg" alt="The video consult live with Ashley Brooks, RN; under it, Rosa prefers Spanish. Add a medical interpreter to the call? with Add interpreter." loading="lazy"><figcaption>The call offers an interpreter as soon as it's on.</figcaption></figure>
-		<figure><img src="frames/05b-joined.jpg" alt="Lucía Herrera joined the call, medical interpreter, Spanish, under the live call." loading="lazy"><figcaption>The interpreter on the call.</figcaption></figure>
+		<figure><img src="frames/05a-interpreter.jpg" alt="The video consult live with Ashley Brooks, RN; under it, Rosa prefers Spanish. Add a medical interpreter to the call? with Add interpreter." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The video consult live with Ashley Brooks, RN, and under it “Rosa prefers Spanish. Add a medical interpreter to the call?”</span><span><b>When:</b> As soon as the call connects, about 4.5 s after you click Video consult.</span><span><b>You:</b> Click Video consult, then Add interpreter.</span></span></figcaption></figure>
+		<figure><img src="frames/05b-joined.jpg" alt="Lucía Herrera joined the call, medical interpreter, Spanish, under the live call." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Lucía Herrera joined the call, medical interpreter, Spanish.</span><span><b>When:</b> 3 s after you click Add interpreter.</span><span><b>You:</b> Nothing. Point at the transcript: Rosa speaks Spanish and Lucía gives it in English.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -247,7 +250,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/06-green.jpg" alt="The bundle with Lactate, Blood cultures before antibiotics and Broad-spectrum antibiotics green, each with what was documented and by whom." loading="lazy"><figcaption>Cultures before antibiotics, then the antibiotic: green as they're documented.</figcaption></figure>
+		<figure><img src="frames/06-green.jpg" alt="The bundle with Lactate, Blood cultures before antibiotics and Broad-spectrum antibiotics green, each with what was documented and by whom." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The bundle with Lactate, Blood cultures before antibiotics and Broad-spectrum antibiotics green, each with what was documented and by whom.</span><span><b>When:</b> Cultures 8 s after the call connects, the antibiotic at 15 s.</span><span><b>You:</b> Nothing. Keep her alert open.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -266,9 +269,9 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/04a-renal.jpg" alt="The antibiotic element with the Renal dose review: eGFR 22, CKD stage 4, the suggested doses, the pharmacy rule, and Confirm dose." loading="lazy"><figcaption>The renal dose review on the antibiotic.</figcaption></figure>
-		<figure><img src="frames/04b-reviewed.jpg" alt="The Renal dose review confirmed: Reviewed by you, with Undo." loading="lazy"><figcaption>Confirmed by the intensivist.</figcaption></figure>
-		<figure><img src="frames/07-boluses.jpg" alt="Crystalloid 30 mL/kg in progress: 1,500 mL of 2,040 mL, three boluses each tolerated with its reassessment, and the fluid-tolerance check." loading="lazy"><figcaption>Fluids toward the target, reassessed after each bolus.</figcaption></figure>
+		<figure><img src="frames/04a-renal.jpg" alt="The antibiotic element with the Renal dose review: eGFR 22, CKD stage 4, the suggested doses, the pharmacy rule, and Confirm dose." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Renal dose review on Broad-spectrum antibiotics: eGFR 22, CKD stage 4, the suggested doses, the pharmacy rule, and Confirm dose.</span><span><b>When:</b> On her alert from when you open it, before or during the call.</span><span><b>You:</b> Read it out, then click Confirm dose.</span></span></figcaption></figure>
+		<figure><img src="frames/04b-reviewed.jpg" alt="The Renal dose review confirmed: Reviewed by you, with Undo." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The renal dose review confirmed: “Reviewed by you”, with Undo.</span><span><b>When:</b> When you click Confirm dose.</span><span><b>You:</b> Nothing. Point at “Reviewed by you”.</span></span></figcaption></figure>
+		<figure><img src="frames/07-boluses.jpg" alt="Crystalloid 30 mL/kg in progress: 1,500 mL of 2,040 mL, three boluses each tolerated with its reassessment, and the fluid-tolerance check." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Crystalloid 30 mL/kg in progress: 1,500 of 2,040 mL, three boluses each tolerated with its reassessment, and the fluid-tolerance check.</span><span><b>When:</b> The boluses come 22, 29 and 36 s after the call connects. This is after the third.</span><span><b>You:</b> Scroll the Pathway panel to Crystalloid 30 mL/kg and read the fluid-tolerance check.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -287,8 +290,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/08-pathway.jpg" alt="Septic shock after fluids, suggested: norepinephrine peripheral IV, insulin infusion, piperacillin-tazobactam renal dose, hold amlodipine; Decline and Accept." loading="lazy"><figcaption>MAP still under 65 after fluids: the pathway suggests peripheral norepinephrine.</figcaption></figure>
-		<figure><img src="frames/09-tasks.jpg" alt="Co-signed by Jenna Collins, NP; Bedside tasks: IV site check, norepinephrine; blood pressure while titrating; glucose check; each with its nurse and the order it comes from." loading="lazy"><figcaption>The accepted orders become the nurses' tasks, shared with the ED.</figcaption></figure>
+		<figure><img src="frames/08-pathway.jpg" alt="Septic shock after fluids, suggested: norepinephrine peripheral IV, insulin infusion, piperacillin-tazobactam renal dose, hold amlodipine; Decline and Accept." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Septic shock after fluids, suggested: norepinephrine peripheral IV, the insulin infusion, piperacillin-tazobactam at the renal dose, amlodipine held. Decline and Accept.</span><span><b>When:</b> 43 s after the call connects, when the fourth bolus completes fluids. It scrolls into view.</span><span><b>You:</b> Read the orders out, then click Accept.</span></span></figcaption></figure>
+		<figure><img src="frames/09-tasks.jpg" alt="Co-signed by Jenna Collins, NP; Bedside tasks: IV site check, norepinephrine; blood pressure while titrating; glucose check; each with its nurse and the order it comes from." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> “Co-signed by Jenna Collins, NP”, and Bedside tasks under it: IV site check, blood pressure while titrating, glucose, each with its nurse and its order.</span><span><b>When:</b> 4 s after you click Accept.</span><span><b>You:</b> Nothing. Point out that the ED sees the same list.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -308,13 +311,13 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/10-complete.jpg" alt="The bundle complete: 5 of 5 done, every element green; her NEWS2 3 on norepinephrine." loading="lazy"><figcaption>The repeat lactate completes the bundle.</figcaption></figure>
-		<figure><img src="frames/10b-tasks-done.jpg" alt="Bedside tasks with the IV site check, blood pressure and glucose checked off by the nurses." loading="lazy"><figcaption>The nurses check tasks off at the bedside; the hub sees it.</figcaption></figure>
-		<figure><img src="frames/11-resolved.jpg" alt="Her alert resolved by Jenna Collins, NP: off norepinephrine since 11 h, MAP 83, lactate 1.6, admitted at Sidney under hub co-management; NEWS2 0." loading="lazy"><figcaption>At 12 h: off pressors, admitted locally, resolved.</figcaption></figure>
-		<figure><img src="frames/12-monitoring.jpg" alt="Monitoring after the scenario: the live feed reads Medina at 12 h, off pressors, admitted at Sidney; her Resolved toast at the bottom right, Sidney · Med-Surg · Bed 6." loading="lazy"><figcaption>Back on Monitoring: the live feed and her Resolved toast tell the same story.</figcaption></figure>
-		<figure><img src="frames/13-patient.jpg" alt="Rosa Medina's page: Sidney, Med-Surg, Bed 6; NEWS2 0 Low; the brief; the care plan with the septic shock pathway active." loading="lazy"><figcaption>Her page, at 12 h.</figcaption></figure>
-		<figure><img src="frames/14-sepsis.jpg" alt="Her Sepsis tab: validated and tracking, time zero, SIRS 4 of 4, and the SEP-1 bundle's 3-hour elements done." loading="lazy"><figcaption>The Sepsis tab: the same case, as SEP-1 counts it.</figcaption></figure>
-		<figure><img src="frames/15-activity.jpg" alt="Her log: admitted at Sidney, sepsis outcomes recorded, alert resolved, lactate 1.6 at 6 h, repeat lactate, insulin infusion started." loading="lazy"><figcaption>The night in her log, with the outcomes.</figcaption></figure>
+		<figure><img src="frames/10-complete.jpg" alt="The bundle complete: 5 of 5 done, every element green; her NEWS2 3 on norepinephrine." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The bundle Complete: 5 of 5, every element green. Her NEWS2 3 on norepinephrine.</span><span><b>When:</b> 12 s after you click Accept, when the repeat lactate turns green.</span><span><b>You:</b> Nothing. Point at 5 of 5.</span></span></figcaption></figure>
+		<figure><img src="frames/10b-tasks-done.jpg" alt="Bedside tasks with the IV site check, blood pressure and glucose checked off by the nurses." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Bedside tasks with the IV site check, blood pressure and glucose checked off by the nurses.</span><span><b>When:</b> IV site and blood pressure 6 s after you click Accept, glucose at 12 s.</span><span><b>You:</b> Nothing. Point out that the hub sees each check as the nurses make it.</span></span></figcaption></figure>
+		<figure><img src="frames/11-resolved.jpg" alt="Her alert resolved by Jenna Collins, NP: off norepinephrine since 11 h, MAP 83, lactate 1.6, admitted at Sidney under hub co-management; NEWS2 0." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her alert resolved by Jenna Collins, NP: off norepinephrine since 11 h, MAP 83, lactate 1.6, admitted at Sidney under hub co-management. NEWS2 0.</span><span><b>When:</b> 24 s after you click Accept.</span><span><b>You:</b> Nothing. Read out the outcome, then close her alert.</span></span></figcaption></figure>
+		<figure><img src="frames/12-monitoring.jpg" alt="Monitoring after the scenario: the live feed reads Medina at 12 h, off pressors, admitted at Sidney; her Resolved toast at the bottom right, Sidney · Med-Surg · Bed 6." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Monitoring after the scenario: the live feed reads Medina at 12 h, off pressors, admitted at Sidney. Her Resolved toast at the bottom right, Sidney · Med-Surg · Bed 6.</span><span><b>When:</b> When you close her alert after she's resolved.</span><span><b>You:</b> Nothing. Point at the live feed and the toast.</span></span></figcaption></figure>
+		<figure><img src="frames/13-patient.jpg" alt="Rosa Medina's page: Sidney, Med-Surg, Bed 6; NEWS2 0 Low; the brief; the care plan with the septic shock pathway active." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Rosa's page at 12 h: Sidney, Med-Surg, Bed 6; NEWS2 0 Low; the brief; the care plan with the septic shock pathway active.</span><span><b>When:</b> When you click her card, any time after she's resolved.</span><span><b>You:</b> Click Rosa's card.</span></span></figcaption></figure>
+		<figure><img src="frames/14-sepsis.jpg" alt="Her Sepsis tab: validated and tracking, time zero, SIRS 4 of 4, and the SEP-1 bundle's 3-hour elements done." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her Sepsis tab: validated and tracking, time zero, SIRS 4 of 4, and the SEP-1 bundle's 3-hour elements done.</span><span><b>When:</b> When you open the tab.</span><span><b>You:</b> Click Sepsis.</span></span></figcaption></figure>
+		<figure><img src="frames/15-activity.jpg" alt="Her log: admitted at Sidney, sepsis outcomes recorded, alert resolved, lactate 1.6 at 6 h, repeat lactate, insulin infusion started." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her log: admitted at Sidney, sepsis outcomes recorded, alert resolved, lactate 1.6 at 6 h, the repeat lactate, the insulin infusion.</span><span><b>When:</b> When you open Overview. The outcomes are there from 24 s after you click Accept.</span><span><b>You:</b> Click Overview, then point at the outcomes entry.</span></span></figcaption></figure>
 	</div>
 </section>
 

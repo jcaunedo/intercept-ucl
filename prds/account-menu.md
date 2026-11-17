@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 16, 2026
+Last updated: Nov 17, 2026
 Scope: The account menu the user's name opens in the app header (UCL AccountMenu, AppHeader `accountMenu`): who's signed in, the workspace switcher, status, the shift and its handoff, preferences, profile, keyboard shortcuts and sign out. Sources: documents/Intercept Live — Left Nav Spec.md (workspaces, switcher, "Status and user"), the System Specification §5.1, §6.12, §6.21, and the Requirements Specification.
 Purpose: Records what the menu holds and why, the decision to move the workspace switcher into it, and what's still open.
 -->
@@ -18,7 +18,7 @@ Purpose: Records what the menu holds and why, the decision to move the workspace
 **Surface:** a component, not a page: the **account menu** (UCL `AccountMenu`), opened from the user's name at the right of the app header (AppHeader `default`), in every workspace  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 16, 2026
+**Last updated:** November 17, 2026
 
 ---
 
@@ -132,7 +132,10 @@ Shown while the user is on shift. A submenu: when the shift ends ("Shift ends in
 
 Under My shift, while on shift. Opens Ask Intercept Live, about no patient in particular, asking **/handoff**: it lists the clinician's patients, sickest first (the triage order), each with its open alert or score, and says how to draft one's I-PASS handoff ("/handoff Miller"; PRD Chat composer CC-022). Drafts aren't saved or sent.
 
+✅ **Resolved:** the report builds itself from the shift (Demo Use Cases, Scenario 5, step 6: "the 07:00 handoff report builds itself"): after the patients, **Overnight** lists each patient's outcomes in the last 12 h (the events, the transfer, the times written for the outcomes report), and **Documentation** counts the notes the AI drafted this shift and about how many minutes of typing they saved ("2 notes drafted by AI this shift, about 42 min of typing saved. Review and sign them in each patient's Notes."). A notice's **Open handoff** starts it too, once the night's events are in.
+
 - ⚠️ **Gap:** the handoff surface itself (DU-31, HO-01 to HO-03: a summary by patient that the incoming clinician acknowledges, its items moving to their Inbox) isn't built. Start handoff should open it when it is.
+- ⚠️ **Decision needed:** where the shift's documentation counter lives besides the handoff (the scenario's "a shift counter shows minutes of documentation saved"): My shift, the app header or the notes themselves.
 
 ### ACM-040 — Preferences
 

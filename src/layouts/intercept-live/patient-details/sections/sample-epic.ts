@@ -7,7 +7,7 @@ import type { PatientNote } from "./notes-section";
 import { sampleNotesByPatient } from "./sample-notes";
 
 // Synthetic data (PRD Patient details PD-150): each Census patient's hospital record (Cerner at Alliance, Meditech at
-// Sidney and Chadron, TruBridge at Bridgeport). Each hospital tells a different data-depth story, in plain words (PD-121,
+// Sidney and Chadron, TruBridge at Bridgeport, Epic at Regional West). Each hospital tells a different data-depth story, in plain words (PD-121,
 // PD-134):
 // - Alliance (Cerner): everything is up to date, and signed Intercept notes are written back.
 // - Sidney (Meditech): lab results arrive late and charted vitals are behind, so a charted temperature can read stale
@@ -17,6 +17,8 @@ import { sampleNotesByPatient } from "./sample-notes";
 //   take Intercept notes back yet.
 // - Bridgeport (TruBridge, a critical access hospital, Demo Use Cases Scenario 4): results are current, vitals are
 //   charted hourly with one RN on at night, and it doesn't take Intercept notes back.
+// - Regional West (Epic, the hub's own ICU, Demo Use Cases Scenario 5): everything is up to date, and signed Intercept
+//   notes are written back.
 // Orders are read-only everywhere. Write-backs come from each patient's notes in `sample-notes.ts`, so the two agree.
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -66,6 +68,13 @@ const profiles: Record<string, HospitalProfile> = {
 			access: "read",
 			note: "Chadron doesn't take Intercept notes back yet. Signed Intercept notes stay in Intercept.",
 		},
+	},
+	"Regional West": {
+		prefix: "RWMC",
+		state: "connected",
+		results: (latest) => ({ state: "current", updatedAt: latest }),
+		vitals: { state: "current", updatedAt: minutesAgo(4) },
+		notes: { access: "write" },
 	},
 	"Bridgeport Valley": {
 		prefix: "BRG",

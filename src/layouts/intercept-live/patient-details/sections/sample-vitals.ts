@@ -267,8 +267,27 @@ const hayesBefore: VitalsSpec = {
 	rr: holdLast(hayesAt0140.rr),
 };
 
+// Walter Pierce (Regional West, Scenario 5): ventilated 2 days for a COPD exacerbation, arterial line, steady overnight
+// at SpO₂ 92% inside his 88–92% target; EtCO₂ high, as his PaCO₂ is. Every hourly reading written out, so Scenario 5's
+// stages can change the newest ones.
+const pierceBase: VitalsSpec = {
+	seed: 30,
+	hr: [100, 99, 99, 98, 98, 97, 97, 96, 96, 95, 95, 95, 94, 94, 94, 93, 93, 93, 93, 92, 92, 92, 92, 92],
+	systolic: [146, 145, 144, 144, 143, 142, 142, 141, 141, 140, 140, 140, 139, 139, 139, 139, 138, 138, 138, 138, 138, 138, 138, 138],
+	diastolic: [82, 82, 81, 81, 81, 80, 80, 80, 80, 79, 79, 79, 79, 79, 78, 78, 78, 78, 78, 78, 78, 78, 78, 78],
+	spo2: [91, 91, 92, 92, 91, 92, 92, 92, 93, 92, 92, 92, 93, 92, 92, 92, 92, 93, 92, 92, 92, 92, 92, 92],
+	rr: [20, 20, 19, 19, 19, 19, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18],
+	etco2: [56, 52],
+	arterialLine: true,
+	ventilated: true,
+	nurse: "Lauren Fisher",
+	temps: [37.9, 37.7, 37.6, 37.4, 37.5, 37.4],
+	lastTemp: 60,
+};
+
 const sampleVitalsByPatient: Record<string, PatientVitals> = {
 	p1: millerVitals,
+	p30: buildVitals(pierceBase),
 	// Johnson: severe ARDS from influenza, desaturating on FiO₂ 80% with permissive hypercapnia.
 	p2: buildVitals({
 		seed: 2,
@@ -756,6 +775,67 @@ function sampleScenario4Vitals(stage: "alert" | "closed") {
 	});
 }
 
+/**
+ * Walter Pierce's vitals at a stage of Scenario 5, over his 24 hourly readings: at `desat` the newest is the
+ * desaturation (SpO₂ 86%, RR 30, HR 118, BP 158/90); at `stabilized` the desaturation moves an hour back and the
+ * newest is the recovery (SpO₂ 92%, RR 20, HR 96, BP 134/76), as the prototype's night passes in a few beats. The
+ * values follow `sample-monitoring.ts`. Built when the beat plays so the last reading is "now".
+ */
+function sampleScenario5WalterVitals(stage: "base" | "desat" | "stabilized") {
+	if (stage === "base") return buildVitals(pierceBase);
+	const next = (values: number[], ...latest: number[]) => [...values.slice(latest.length - 1, -1), ...latest];
+	const points = {
+		desat: { hr: [118], systolic: [158], diastolic: [90], spo2: [86], rr: [30] },
+		stabilized: { hr: [118, 96], systolic: [158, 134], diastolic: [90, 76], spo2: [86, 92], rr: [30, 20] },
+	}[stage];
+	return buildVitals({
+		...pierceBase,
+		hr: next(pierceBase.hr, ...points.hr),
+		systolic: next(pierceBase.systolic, ...points.systolic),
+		diastolic: next(pierceBase.diastolic, ...points.diastolic),
+		spo2: next(pierceBase.spo2, ...points.spo2),
+		rr: next(pierceBase.rr, ...points.rr),
+		etco2: stage === "desat" ? [56, 58] : [56, 54],
+	});
+}
+
+// Linda Shaw (Scenario 5): in Sidney's ED since 02:52, on a cuff and room air. Two hourly readings at the alert: triage
+// (BP 198/108, HR 116, SpO₂ 95%) and now (BP 192/104, HR 112). Afebrile.
+const shawAt0311: VitalsSpec = {
+	seed: 31,
+	hours: 2,
+	hr: [116, 112],
+	systolic: [198, 192],
+	diastolic: [108, 104],
+	spo2: [95, 95],
+	rr: [18, 18],
+	arterialLine: false,
+	ventilated: false,
+	nurse: "Ashley Brooks",
+	temps: [36.9],
+	lastTemp: 15,
+};
+
+/**
+ * Linda Shaw's vitals at a stage of Scenario 5: at her alert, after thrombolysis (`lysed`: BP 172/94, HR 104) and at
+ * door-out (`transferred`: 168/92, HR 98), each an hourly reading as the night passes in a few beats.
+ */
+function sampleScenario5LindaVitals(stage: "alert" | "lysed" | "transferred") {
+	if (stage === "alert") return buildVitals(shawAt0311);
+	const lysed = stage === "lysed";
+	return buildVitals({
+		...shawAt0311,
+		hours: lysed ? 3 : 4,
+		hr: lysed ? [116, 112, 104] : [116, 112, 104, 98],
+		systolic: lysed ? [198, 192, 172] : [198, 192, 172, 168],
+		diastolic: lysed ? [108, 104, 94] : [108, 104, 94, 92],
+		spo2: lysed ? [95, 95, 96] : [95, 95, 96, 97],
+		rr: lysed ? [18, 18, 16] : [18, 18, 16, 16],
+		temps: [36.9, 36.8],
+		lastTemp: 10,
+	});
+}
+
 export {
 	sampleScenario1ResolvedVitals,
 	sampleScenario1Vitals,
@@ -763,5 +843,7 @@ export {
 	sampleScenario2Vitals,
 	sampleScenario3Vitals,
 	sampleScenario4Vitals,
+	sampleScenario5LindaVitals,
+	sampleScenario5WalterVitals,
 	sampleVitalsByPatient,
 };

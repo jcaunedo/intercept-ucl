@@ -57,6 +57,38 @@ const charted = (support: string, minutes: number, settings: PatientVentilator["
 	updatedAt: minutesAgo(minutes),
 });
 
+/**
+ * NEWS2 inputs for a patient on oxygen or a ventilator (scale 1): RR, SpO₂, HR and systolic with their points, the
+ * oxygen (2 points), consciousness and temperature (Scenario 5's Walter Pierce and Linda Shaw).
+ */
+function pierceInputs(
+	rr: [number, number],
+	spo2: [number, number],
+	oxygen: string | undefined,
+	hr: [number, number],
+	sbp: [number, number],
+	consciousness: string,
+	temp: number,
+) {
+	return [
+		{ label: "Respiratory rate", value: `${rr[0]}/min`, points: rr[1] },
+		{ label: "SpO₂", value: `${spo2[0]}%`, points: spo2[1] },
+		{ label: "Oxygen", value: oxygen ?? "Room air", points: oxygen ? 2 : 0 },
+		{ label: "Heart rate", value: `${hr[0]} bpm`, points: hr[1] },
+		{ label: "Systolic BP", value: `${sbp[0]} mmHg`, points: sbp[1] },
+		{ label: "Consciousness", value: consciousness, points: 0 },
+		{ label: "Temperature", value: `${temp} °C`, points: 0 },
+	];
+}
+
+// Walter Pierce (Scenario 5): Regional West's ICU at night. His nurse and respiratory therapist at the bedside (the
+// video consult calls the nurse), and the pulmonologist of record, off until morning.
+const pierceCareTeam: CareTeamMember[] = [
+	...hospitalStaff("Regional West", ["Lauren Fisher", "LF", 3, "online"], ["Neil Foster", "NF", 9, "offline"]),
+	{ role: "Respiratory therapist", name: "Kevin Doyle", initials: "KD", tone: 5, organization: "Regional West", presence: "online" },
+	...interceptTeam,
+];
+
 const baseRecords: PatientRecord[] = [
 	{
 		id: "p1",
@@ -1175,6 +1207,79 @@ const baseRecords: PatientRecord[] = [
 			...interceptTeam,
 		],
 	},
+	{
+		// Scenario 5 (Demo Use Cases, "Surge night across five hospitals and four EHRs"), just before it starts: in the
+		// hub's own ICU, Regional West (Epic; Nov 17, 2026, user's call). COPD and obesity, intubated 2 days ago for
+		// hypercapnic failure from an exacerbation (influenza negative, likely viral). Holding on the ventilator, awake on
+		// light sedation. At 03:10 he desaturates: the Prototype menu's Scenario 5 plays that (`sampleScenario5WalterRecordAt`).
+		id: "p30",
+		account: "9E41C07",
+		weight: "128 kg",
+		brief: {
+			title: "Holding on the ventilator, day 2",
+			text: "COPD (GOLD 3, home oxygen 2 L) and obesity with sleep apnea, intubated 2 days ago for hypercapnic respiratory failure from an exacerbation; influenza and COVID negative. On AC/VC, FiO₂ 40% and PEEP 5: SpO₂ 92%, inside his 88–92% target. PaCO₂ came down from 82 to 58 with pH 7.36. Awake on light propofol, nodding to questions. Day 2 of methylprednisolone and azithromycin, nebulizers in line. NEWS2 is 5 (Medium), down from 6 yesterday.",
+			sourceCount: 14,
+			updatedAt: minutesAgo(35),
+		},
+		codeStatus: "Full code",
+		allergies: ["Penicillin"],
+		diagnosis: "Acute on chronic hypercapnic respiratory failure, COPD exacerbation",
+		problems: ["COPD, severe (GOLD 3) · home oxygen 2 L", "Obesity, BMI 41, with obstructive sleep apnea", "Hypertension"],
+		admittedAt: hoursAgo(52),
+		admittedFrom: "Emergency department",
+		icuAdmittedAt: hoursAgo(50),
+		ventilator: {
+			support: "Invasive",
+			mode: "Volume control (AC/VC)",
+			source: "Ventilator",
+			updatedAt: minutesAgo(2),
+			settings: [
+				{ label: "FiO₂", value: "40%", change: { from: "50%", at: hoursAgo(9) } },
+				{ label: "PEEP", value: "5", unit: "cmH₂O" },
+				{ label: "Tidal volume", value: "520", unit: "mL", set: "520" },
+				{ label: "Rate", value: "18", unit: "/min", set: "18" },
+				{ label: "Peak pressure", value: "32", unit: "cmH₂O" },
+				{ label: "Plateau pressure", value: "22", unit: "cmH₂O" },
+			],
+			abg: { values: "pH 7.36 · PaCO₂ 58 · PaO₂ 64 · HCO₃ 32", collectedAt: minutesAgo(300) },
+		},
+		// NEWS2 from his vitals in `sample-vitals.ts` (scale 1): 6 yesterday, 5 overnight, below High (7). Awake on light
+		// sedation (RASS 0), so Alert.
+		earlyWarning: {
+			score: "NEWS2",
+			value: 5,
+			band: "Medium",
+			alertBand: "High",
+			threshold: 7,
+			updatedAt: minutesAgo(2),
+			trend: [
+				{ at: hoursAgo(24), value: 6 },
+				{ at: hoursAgo(8), value: 5 },
+				{ at: hoursAgo(4), value: 5 },
+				{ at: minutesAgo(2), value: 5 },
+			],
+			inputs: pierceInputs([18, 0], [92, 2], "Ventilator, FiO₂ 40%", [92, 1], [138, 0], "Alert (RASS 0)", 37.4),
+		},
+		infusions: [
+			{ drug: "Propofol", rate: "15 mcg/kg/min", change: { direction: "down", from: "30", at: hoursAgo(10) }, updatedAt: minutesAgo(1) },
+			{ drug: "Fentanyl", rate: "25 mcg/h", updatedAt: minutesAgo(1) },
+		],
+		labs: [
+			lab("Bicarbonate", "32", "mmol/L", 300, "high", ["34", 1700]),
+			lab("WBC", "11.8", "K/µL", 300, "high", ["13.6", 1700]),
+			lab("Glucose", "164", "mg/dL", 300, "high", ["188", 1700]),
+			lab("Potassium", "4.0", "mmol/L", 300, undefined, ["3.7", 1700]),
+			lab("Creatinine", "1.0", "mg/dL", 300, undefined, ["1.1", 1700]),
+			lab("Hemoglobin", "14.6", "g/dL", 300, undefined, ["15.0", 1700]),
+		],
+		// What his ventilation turns on: oxygen against his target, the airway pressure, and the last gas.
+		findings: [
+			{ name: "SpO₂", value: "92", unit: "%", context: "Target 88–92%" },
+			{ name: "Ventilator", value: "40% · 5", since: hoursAgo(9), note: "FiO₂ · PEEP" },
+			{ name: "Peak pressure", value: "32", unit: "cmH₂O", context: "Plateau 22" },
+		],
+		careTeam: pierceCareTeam,
+	},
 ];
 
 // Every patient's plan of care, from their hospital's record system (`sample-plan-of-care.ts`), and clinical status
@@ -1316,8 +1421,24 @@ const kesslerCareTeam: CareTeamMember[] = [
 	{ role: "Intercept tele-RN", name: "Ava Brooks", initials: "AB", tone: 2, presence: "online" },
 ];
 
+// Linda Shaw (Scenario 5, below): Sidney ED's night shift, Scenario 3's nurses and APP. Her bedside nurse (the one the
+// video consult calls), the second ED nurse and the hospitalist APP leading her case, who co-signs the remote orders.
+// Once the hub sends her stroke to Intercept's backup intensivist (step 3), he joins her team.
+const shawCareTeam: CareTeamMember[] = [
+	{ role: "Bedside nurse", name: "Ashley Brooks", initials: "AB", tone: 4, organization: "Sidney Regional", presence: "online" },
+	{ role: "ED nurse", name: "Kristen Webb", initials: "KW", tone: 2, organization: "Sidney Regional", presence: "online" },
+	{ role: "Hospitalist APP", name: "Jenna Collins", initials: "JC", tone: 7, organization: "Sidney Regional", presence: "online" },
+	...interceptTeam,
+];
+const shawBackup: CareTeamMember = { role: "Intercept backup intensivist", name: "Mark Sullivan", initials: "MS", tone: 10, presence: "online" };
+
 /** Care teams of the patients a scenario adds to the Census, by id, for the sections that look a record up by id. */
-const sampleScenarioCareTeams: Record<string, CareTeamMember[]> = { p21: reynoldsCareTeam, p23: medinaCareTeam, p24: kesslerCareTeam };
+const sampleScenarioCareTeams: Record<string, CareTeamMember[]> = {
+	p21: reynoldsCareTeam,
+	p23: medinaCareTeam,
+	p24: kesslerCareTeam,
+	p31: shawCareTeam,
+};
 
 /**
  * Dale Reynolds's record at Scenario 2's first beat (22:15): in the ED 40 min, blood gas 30 min ago (pH 7.24, PaCO₂
@@ -1853,6 +1974,246 @@ function sampleScenario4RecordAt(stage: Scenario4RecordStage): Partial<PatientRe
 	}
 }
 
+/* -------------------------------------------------------------------------- */
+/* Scenario 5: Walter Pierce and Linda Shaw                                   */
+/* -------------------------------------------------------------------------- */
+
+// Scenario 5 (Demo Use Cases, "Surge night across five hospitals and four EHRs"): two events within two minutes at 03:10.
+// Walter Pierce (`p30`, in the base records) desaturates on the ventilator in the hub's ICU; Linda Shaw (`p31`) has a
+// stroke and comes into Sidney's ED, so her record is built when the scenario plays (its times read "just now") and
+// isn't in `samplePatientBaseRecords`. The night's 1.5 h pass in a few beats, so each later stage's earlier points sit a
+// few minutes apart, as in Scenarios 1 to 4; the briefs say the real times. Every value is illustrative until clinical
+// review.
+
+/**
+ * Walter Pierce's record at a stage of Scenario 5, over his base record:
+ * - `desat` (03:10): SpO₂ 86% on FiO₂ 40%, RR 30 over the set 18, HR 118, BP 158/90. Peak pressure 48 from 32 with the
+ *   plateau only 26, and auto-PEEP 9: a mucus plug and bronchospasm, with air trapping. NEWS2 10 (High), from 5.
+ * - `stabilized` (about 04:30): suctioned (a thick plug), in-line albuterol and ipratropium, methylprednisolone 40 mg
+ *   IV, FiO₂ up to 60% then back to 45%, rate 18 → 14 and tidal volume 520 → 480 with I:E 1:4 to let him breathe out,
+ *   deeper sedation; chest X-ray without a pneumothorax. Auto-PEEP 3, SpO₂ 92%, RR 20: NEWS2 5 (Medium).
+ */
+function sampleScenario5WalterRecordAt(stage: "desat" | "stabilized"): Partial<PatientRecord> {
+	const trend = (latest: number[]): PatientEarlyWarning["trend"] => [
+		{ at: hoursAgo(24), value: 6 },
+		{ at: hoursAgo(8), value: 5 },
+		{ at: hoursAgo(4), value: 5 },
+		...latest.map((value, index) => ({ at: minutesAgo((latest.length - 1 - index) * 4), value })),
+	];
+	if (stage === "desat") {
+		return {
+			planOfCare: planOfCareWith("p30", { 0: "not-progressing" }, 1),
+			clinicalStatus: clinicalStatusAt("deteriorating", 1),
+			brief: {
+				title: "Desaturating on the ventilator",
+				text: "SpO₂ fell from 92% to 86% over 20 min on FiO₂ 40%, with RR 30 over the set 18, HR 118 and BP 158/90. Peak pressure jumped to 48 from 32 while the plateau is 26, and auto-PEEP is 9: high airway resistance and air trapping, a mucus plug or bronchospasm more than a pneumothorax. Wheezing on both sides per his nurse. NEWS2 is 10 (High), up from 5.",
+				sourceCount: 15,
+				updatedAt: minutesAgo(0),
+			},
+			findings: [
+				{ name: "SpO₂", value: "86", unit: "%", context: "Target 88–92%", previous: { value: "92", at: minutesAgo(20) } },
+				{ name: "Peak pressure", value: "48", unit: "cmH₂O", context: "Plateau 26 · auto-PEEP 9", previous: { value: "32", at: minutesAgo(30) } },
+				{ name: "Ventilator", value: "40% · 5", since: hoursAgo(9), note: "FiO₂ · PEEP" },
+			],
+			earlyWarning: {
+				score: "NEWS2",
+				value: 10,
+				band: "High",
+				alertBand: "High",
+				threshold: 7,
+				updatedAt: minutesAgo(0),
+				crossedAt: minutesAgo(0),
+				trend: trend([10]),
+				inputs: pierceInputs([30, 3], [86, 3], "Ventilator, FiO₂ 40%", [118, 2], [158, 0], "Alert, agitated (RASS +2)", 37.6),
+			},
+			ventilator: {
+				support: "Invasive",
+				mode: "Volume control (AC/VC)",
+				source: "Ventilator",
+				updatedAt: minutesAgo(0),
+				settings: [
+					{ label: "FiO₂", value: "40%" },
+					{ label: "PEEP", value: "5", unit: "cmH₂O" },
+					{ label: "Tidal volume", value: "520", unit: "mL", set: "520" },
+					{ label: "Rate", value: "30", unit: "/min", set: "18" },
+					{ label: "Peak pressure", value: "48", unit: "cmH₂O" },
+					{ label: "Plateau pressure", value: "26", unit: "cmH₂O" },
+					{ label: "Auto-PEEP", value: "9", unit: "cmH₂O" },
+				],
+				abg: { values: "pH 7.36 · PaCO₂ 58 · PaO₂ 64 · HCO₃ 32", collectedAt: minutesAgo(300) },
+			},
+		};
+	}
+	return {
+		planOfCare: planOfCareWith("p30", { 0: "progressing" }, 2),
+		clinicalStatus: clinicalStatusAt("improving", 2),
+		brief: {
+			title: "Plug cleared, air trapping down",
+			text: "Back to SpO₂ 92% on FiO₂ 45% after the 03:10 desaturation. His nurse and respiratory therapist suctioned a thick plug; in-line albuterol and ipratropium went in, then methylprednisolone 40 mg IV. Rate 18 → 14 and tidal volume 520 → 480 with I:E 1:4 give him time to breathe out: auto-PEEP 9 → 3, peak pressure 34. Chest X-ray: no pneumothorax, the tube 4 cm above the carina. Propofol up to 30 for the overbreathing. Gas pH 7.32, PaCO₂ 64, PaO₂ 68. NEWS2 5 (Medium), down from 10.",
+			sourceCount: 21,
+			updatedAt: minutesAgo(0),
+		},
+		findings: [
+			{ name: "SpO₂", value: "92", unit: "%", context: "Target 88–92%", previous: { value: "86", at: minutesAgo(8) } },
+			{ name: "Peak pressure", value: "34", unit: "cmH₂O", context: "Plateau 23 · auto-PEEP 3", previous: { value: "48", at: minutesAgo(8) } },
+			{ name: "Ventilator", value: "45% · 5", since: minutesAgo(3), note: "FiO₂ · PEEP" },
+		],
+		earlyWarning: {
+			score: "NEWS2",
+			value: 5,
+			band: "Medium",
+			alertBand: "High",
+			threshold: 7,
+			updatedAt: minutesAgo(0),
+			trend: trend([10, 8, 5]),
+			inputs: pierceInputs([20, 0], [92, 2], "Ventilator, FiO₂ 45%", [96, 1], [134, 0], "Alert (RASS −1)", 37.5),
+		},
+		ventilator: {
+			support: "Invasive",
+			mode: "Volume control (AC/VC)",
+			source: "Ventilator",
+			updatedAt: minutesAgo(0),
+			settings: [
+				{ label: "FiO₂", value: "45%", change: { from: "60%", at: minutesAgo(3) } },
+				{ label: "PEEP", value: "5", unit: "cmH₂O" },
+				{ label: "Tidal volume", value: "480", unit: "mL", set: "480", change: { from: "520", at: minutesAgo(6) } },
+				{ label: "Rate", value: "20", unit: "/min", set: "14", change: { from: "18", at: minutesAgo(6) } },
+				{ label: "I:E", value: "1:4", change: { from: "1:2", at: minutesAgo(6) } },
+				{ label: "Peak pressure", value: "34", unit: "cmH₂O" },
+				{ label: "Plateau pressure", value: "23", unit: "cmH₂O" },
+				{ label: "Auto-PEEP", value: "3", unit: "cmH₂O" },
+			],
+			abg: { values: "pH 7.32 · PaCO₂ 64 · PaO₂ 68 · HCO₃ 32", collectedAt: minutesAgo(2) },
+		},
+		infusions: [
+			{ drug: "Propofol", rate: "30 mcg/kg/min", change: { direction: "up", from: "15", at: minutesAgo(6) }, updatedAt: minutesAgo(1) },
+			{ drug: "Fentanyl", rate: "50 mcg/h", change: { direction: "up", from: "25", at: minutesAgo(6) }, updatedAt: minutesAgo(1) },
+		],
+	};
+}
+
+/** Her labs drawn at the door (02:55), resulted before CT: no reason to hold thrombolysis. */
+const shawLabs = (back: number): PatientLab[] => [
+	lab("Glucose", "128", "mg/dL", back + 14),
+	lab("Platelets", "214", "K/µL", back + 10),
+	lab("INR", "1.0", "", back + 10),
+	lab("Creatinine", "0.9", "mg/dL", back + 10),
+	lab("Hemoglobin", "13.2", "g/dL", back + 10),
+	lab("Troponin I", "0.02", "ng/mL", back + 8),
+];
+
+/**
+ * Linda Shaw's record at her stroke alert (Sidney ED Bay 4, 03:11): left face and arm weaker than leg, slurred speech,
+ * eyes to the right; last known well 02:30 when her husband heard her fall, at the door 02:52, NIHSS 9 at 02:58, CT head
+ * at 03:05 without bleeding (ASPECTS 9). BP 192/104, over 185, so it comes down before thrombolysis. Atrial fibrillation
+ * at 112, off apixaban for 4 months because of cost. NEWS2 3 (Low).
+ */
+const sampleScenario5LindaBaseRecord = (): PatientRecord => ({
+	id: "p31",
+	planOfCare: samplePlanOfCare("p31"),
+	clinicalStatus: sampleClinicalStatus("p31"),
+	account: "4B7E2D9",
+	weight: "72 kg",
+	brief: {
+		title: "Acute stroke, inside the thrombolysis window",
+		text: "Sudden left-sided weakness, face and arm more than leg, with slurred speech and her eyes to the right. Last known well 02:30, when her husband heard her fall; at the door 02:52. NIHSS 9 at 02:58. CT head at 03:05: no bleeding, ASPECTS 9. Glucose 128, INR 1.0, platelets 214. Atrial fibrillation at 112, off apixaban for 4 months because of the cost. BP 192/104, over 185, so it has to come down before thrombolysis. Inside the 4.5 h window until 07:00. NEWS2 3 (Low): the score doesn't see a stroke.",
+		sourceCount: 11,
+		updatedAt: minutesAgo(0),
+	},
+	codeStatus: "Full code",
+	allergies: [],
+	diagnosis: "Acute ischemic stroke, right hemisphere",
+	problems: ["Atrial fibrillation · off apixaban 4 months, cost", "Hypertension, uncontrolled", "Hyperlipidemia"],
+	admittedAt: minutesAgo(19),
+	admittedFrom: "Ambulance from home",
+	ventilator: charted("Room air", 6),
+	earlyWarning: {
+		score: "NEWS2",
+		value: 3,
+		band: "Low",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		trend: [
+			{ at: minutesAgo(19), value: 3 },
+			{ at: minutesAgo(0), value: 3 },
+		],
+		inputs: pierceInputs([18, 0], [95, 1], undefined, [112, 2], [192, 0], "Alert", 36.9),
+	},
+	labs: shawLabs(0),
+	// What the stroke code turns on: the clock, the deficit and the pressure before thrombolysis.
+	findings: [
+		{ name: "Last known well", value: "02:30", context: "Thrombolysis window to 07:00" },
+		{ name: "NIHSS", value: "9", note: "02:58 · Ashley Brooks, RN" },
+		{ name: "BP", value: "192/104", unit: "mmHg", context: "Under 185/110 for thrombolysis" },
+	],
+	careTeam: shawCareTeam,
+});
+
+/**
+ * Linda Shaw's record at a later stage of Scenario 5, over her base record:
+ * - `lysed` (about 04:15): labetalol 10 mg IV at 03:24 (BP 176/98), tenecteplase 18 mg IV (0.25 mg/kg) at 03:31,
+ *   door-to-needle 39 min, under Intercept's backup intensivist. CTA at 03:40: right M1 occlusion, a large-vessel
+ *   occlusion, so thrombectomy. NIHSS 6 at 04:15. BP 172/94, HR 104. NEWS2 1.
+ * - `transferred` (04:38): door-out by helicopter to Front Range Comprehensive Stroke Center, Denver; door-in-door-out
+ *   1 h 46 min. NEWS2 1.
+ */
+function sampleScenario5LindaRecordAt(stage: "lysed" | "transferred"): Partial<PatientRecord> {
+	const back = stage === "transferred" ? 4 : 0;
+	const earlyWarning: PatientEarlyWarning = {
+		score: "NEWS2",
+		value: 1,
+		band: "Low",
+		alertBand: "High",
+		threshold: 7,
+		updatedAt: minutesAgo(0),
+		trend: [
+			{ at: minutesAgo(back + 27), value: 3 },
+			{ at: minutesAgo(back + 8), value: 3 },
+			...(stage === "transferred" ? [{ at: minutesAgo(4), value: 1 }] : []),
+			{ at: minutesAgo(0), value: 1 },
+		],
+		inputs:
+			stage === "transferred"
+				? pierceInputs([16, 0], [97, 0], undefined, [98, 1], [168, 0], "Alert", 36.9)
+				: pierceInputs([16, 0], [96, 0], undefined, [104, 1], [172, 0], "Alert", 36.9),
+	};
+	const lysed: Partial<PatientRecord> = {
+		planOfCare: planOfCareWith("p31", { 0: "progressing" }, 2),
+		clinicalStatus: clinicalStatusAt("improving", 2),
+		brief: {
+			title: "Thrombolysed; large-vessel occlusion on CTA",
+			text: "Tenecteplase 18 mg IV (0.25 mg/kg) at 03:31, door-to-needle 39 min, after labetalol 10 mg IV brought BP to 176/98; directed remotely by Intercept's backup intensivist. CTA at 03:40: right M1 occlusion, a large-vessel occlusion, so she needs thrombectomy, which Sidney doesn't do. NIHSS 6 at 04:15, from 9. BP 172/94, under 180/105; neuro checks every 15 min. No antithrombotics for 24 h. Atrial fibrillation at 104. NEWS2 1 (Low).",
+			sourceCount: 18,
+			updatedAt: minutesAgo(0),
+		},
+		earlyWarning,
+		labs: shawLabs(back + 8),
+		findings: [
+			{ name: "NIHSS", value: "6", note: "04:15 · Ashley Brooks, RN", previous: { value: "9", at: minutesAgo(back + 27) } },
+			{ name: "Tenecteplase", value: "18 mg", context: "03:31 · door-to-needle 39 min" },
+			{ name: "BP", value: "172/94", unit: "mmHg", context: "Under 180/105 for 24 h" },
+		],
+		careTeam: [...shawCareTeam, shawBackup],
+	};
+	if (stage === "lysed") return lysed;
+	return {
+		...lysed,
+		clinicalStatus: clinicalStatusAt("stable", 1),
+		brief: {
+			title: "Flown to Denver for thrombectomy",
+			text: "Left Sidney by helicopter at 04:38 for Front Range Comprehensive Stroke Center, Denver: door-in-door-out 1 h 46 min, under the 2 h goal. Tenecteplase at 03:31 (door-to-needle 39 min); CTA right M1 occlusion; NIHSS 6 at 04:15, from 9. The transfer packet went ahead with the images, the NIHSS scores, the tenecteplase dose and time, and her labs. BP 168/92, HR 98 in atrial fibrillation at door-out.",
+			sourceCount: 22,
+			updatedAt: minutesAgo(0),
+		},
+		findings: [
+			{ name: "Door-in-door-out", value: "1 h 46 min", context: "Goal under 2 h" },
+			{ name: "NIHSS", value: "6", note: "04:15 · Ashley Brooks, RN", previous: { value: "9", at: minutesAgo(back + 27) } },
+			{ name: "Tenecteplase", value: "18 mg", context: "03:31 · door-to-needle 39 min" },
+		],
+	};
+}
+
 export {
 	samplePatientBaseRecords,
 	sampleScenario1Record,
@@ -1863,6 +2224,9 @@ export {
 	sampleScenario3RecordAt,
 	sampleScenario4BaseRecord,
 	sampleScenario4RecordAt,
+	sampleScenario5LindaBaseRecord,
+	sampleScenario5LindaRecordAt,
+	sampleScenario5WalterRecordAt,
 	sampleScenarioCareTeams,
 	type Scenario4RecordStage,
 };

@@ -549,11 +549,12 @@ export const Filters: Story = {
 		await expect(canvas.queryByRole("combobox", { name: "Unit" })).not.toBeInTheDocument();
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
 		await userEvent.click(await screen.findByRole("checkbox", { name: "Ventilated" }));
-		await expect(screen.getByText(`5 of ${sampleMonitoringPatients.length} patients in this view`)).toBeInTheDocument();
+		// Six ventilated: Walter Pierce (Regional West, Scenario 5) joined the five on Nov 17, 2026.
+		await expect(screen.getByText(`6 of ${sampleMonitoringPatients.length} patients in this view`)).toBeInTheDocument();
 		// A modal: the page behind is hidden from assistive tech until Done closes the sheet.
 		await userEvent.click(screen.getByRole("button", { name: "Done" }));
 		await waitFor(() => expect(screen.queryByRole("dialog", { name: "Filters" })).not.toBeInTheDocument());
-		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^5 patients/);
+		await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(/^6 patients/);
 		const filtersButton = canvas.getByRole("button", { name: "Filters, 1 picked" });
 		await expect(filtersButton).toHaveAttribute("aria-expanded", "false");
 		await userEvent.click(filtersButton);

@@ -3,13 +3,19 @@ import {
 	sampleScenario3Flags,
 	sampleScenario4CensusAt,
 	sampleScenario4Flags,
+	sampleScenario5LindaCensusAt,
+	sampleScenario5LindaFlags,
+	sampleScenario5WalterCensusAt,
+	sampleScenario5WalterFlags,
 	type Scenario3Stage,
 	type Scenario4Stage,
+	type Scenario5LindaStage,
+	type Scenario5WalterStage,
 } from "../sample-data/sample-census";
 import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
 import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
 
-// Synthetic data (PRD MON-080): the Census's 26 patients on the monitoring panel, with live bedside values, and the
+// Synthetic data (PRD MON-080): the Census's 27 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags
 // match the Census too. MAP is (systolic + 2 × diastolic) / 3. Outside the default alarm limits: Miller and Johnson
 // (with alerts), Walker, Moore and Clark (without one, so "Outside limits" finds them first). Carter has no SpO₂ and
@@ -18,7 +24,9 @@ import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitor
 // (`sampleScenario1Monitoring`, `sample-data/sample-scenario-1.ts`).
 // Erickson, Carlson and Hansen (Chadron) are the floor's other patients, Ortega, Norman and Jensen (Alliance's med-surg floor) fill its
 // count, and Peterson, Lambert, Jacobs, Hughes and Ramirez are Bridgeport's (Med-Surg, a swing bed, observation and
-// the ED; Nov 6, 2026, user's call); all eleven inside the limits. Erickson, Carlson, Lambert and Hughes have an
+// the ED; Nov 6, 2026, user's call); all eleven inside the limits. Walter Pierce is Regional West's (the hub's own ICU,
+// Nov 17, 2026, user's call), Scenario 5 just before it starts: ventilated, holding at SpO₂ 92% inside his ICU's
+// 88% limit; the Prototype menu's Scenario 5 plays his desaturation at 03:10. Erickson, Carlson, Lambert and Hughes have an
 // open alert (Nov 11, 2026), the rest none. My patients are the same as on the
 // Census (`sample-census.ts`).
 //
@@ -32,6 +40,17 @@ const change = "Change in last 24 h";
 // When the clinician last opened a patient (the Recently viewed sort): Thompson, Davis, Miller and Clark. Unread family
 // messages (the card's message icon): Davis 2, Bennett and Moore 1.
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3_600_000).toISOString();
+
+/**
+ * Walter Pierce's monitor values at each point of Scenario 5 (Demo Use Cases, "Surge night across five hospitals and four
+ * EHRs"), from the scenario's facts: holding before it, desaturating at 03:10 (mucus plug, bronchospasm, auto-PEEP 9),
+ * stabilized about 04:30. MAP is (systolic + 2 × diastolic) / 3. `sample-census.ts` works out each NEWS2.
+ */
+const pierceVitals: Record<"base" | Scenario5WalterStage, NonNullable<MonitoringPatient["vitals"]>> = {
+	base: { hr: 92, spo2: 92, systolic: 138, diastolic: 78, map: 98, rr: 18 },
+	desat: { hr: 118, spo2: 86, systolic: 158, diastolic: 90, map: 113, rr: 30 },
+	stabilized: { hr: 96, spo2: 92, systolic: 134, diastolic: 76, map: 95, rr: 20 },
+};
 
 const monitoringPatients: MonitoringPatient[] = [
 	{
@@ -491,6 +510,25 @@ const monitoringPatients: MonitoringPatient[] = [
 		scoreChange4h: -4,
 		vitals: { hr: 104, spo2: 96, systolic: 124, diastolic: 70, map: 88, rr: 20 },
 	},
+	{
+		id: "p30",
+		hospitalId: "regional-west",
+		lastName: "Pierce",
+		firstName: "Walter",
+		mrn: "01250417",
+		sex: "M",
+		age: 71,
+		hospital: "Regional West",
+		unit: "MICU",
+		bed: "Bed 4",
+		// His ICU's limits for a COPD patient on the ventilator: SpO₂ target 88–92%, so the alarm is under 88; RR over 28.
+		limits: { spo2: [88, 100], rr: [8, 28] },
+		acuity: { label: news2, score: 5, level: "medium" },
+		trajectory: { label: change, value: "−1", trend: "down" },
+		scoreChange4h: 0,
+		tags: sampleScenario5WalterFlags(),
+		vitals: pierceVitals.base,
+	},
 ];
 
 // The last hour of each primary numeric, one point a minute, ending at the current value: a rising acuity drifts in
@@ -667,9 +705,15 @@ const sampleMonitoringAlerts: TriageAlert[] = [
 	},
 ];
 
+/** The escalation target for overflow to backup coverage (Scenario 5). */
+const sampleBackupTargetId = "intercept-backup";
+
 const sampleEscalationTargets: EscalationTarget[] = [
 	{ id: "intensivist", name: "James Turner", description: "Intensivist on call, Tele-ICU" },
 	{ id: "bedside", name: "Bedside charge nurse", description: "The patient's unit, through Messages" },
+	// Overflow (Demo Use Cases, Scenario 5, step 3): the hub's backup coverage, Intercept's intensivist on now. The
+	// alert panel's overflow offer escalates to it in one click.
+	{ id: sampleBackupTargetId, name: "Intercept backup intensivist", description: "Mark Sullivan, MD · overflow coverage, Intercept" },
 ];
 
 /**
@@ -707,8 +751,9 @@ const sampleScenario1ResolvedMonitoring: Partial<MonitoringPatient> = {
 	},
 };
 
-// Dale Reynolds (Scenario 2): his monitor's seed, after everyone on the Census.
-const reynoldsSeed = monitoringPatients.length;
+// Dale Reynolds (Scenario 2): his monitor's seed, after everyone on the Census but Walter Pierce, who joined it on Nov
+// 17, 2026 last: so the scenarios' traces stay as they were.
+const reynoldsSeed = monitoringPatients.length - 1;
 
 /**
  * Dale Reynolds's monitor at Scenario 2's first beat (Alliance ED, 22:15): on BiPAP 20 min, RR 30, HR 112, BP 156/88,
@@ -903,7 +948,98 @@ function sampleScenario4MonitoringAt(stage: Scenario4Stage): Partial<MonitoringP
 	};
 }
 
+/* -------------------------------------------------------------------------- */
+/* Scenario 5: Walter Pierce and Linda Shaw                                   */
+/* -------------------------------------------------------------------------- */
+
+// Walter Pierce's seed is his place on the panel, as everyone's on the Census; Linda Shaw's comes after Tyler Kessler's.
+const pierceSeed = monitoringPatients.findIndex((patient) => patient.id === "p30");
+const shawSeed = kesslerSeed + 4;
+
+/** A last hour moving from one point's values to the next's (the next's are the end). */
+const trendsBetween = (from: MonitorVitals, to: MonitorVitals, seed: number): MonitoringPatient["trends"] => ({
+	hr: lastHour(to.hr, (to.hr ?? 0) - (from.hr ?? 0), 2, seed),
+	spo2: lastHour(to.spo2, (to.spo2 ?? 0) - (from.spo2 ?? 0), 0.6, seed + 1)?.map((value) => Math.min(100, value)),
+	systolic: lastHour(to.systolic, (to.systolic ?? 0) - (from.systolic ?? 0), 2.5, seed + 2),
+	rr: lastHour(to.rr, (to.rr ?? 0) - (from.rr ?? 0), 1, seed + 3),
+});
+
+/**
+ * Walter Pierce's monitor at each stage of Scenario 5, as on his Census card (`sampleScenario5WalterCensusAt` says how
+ * the scores are worked out). At `desat` SpO₂ 86% is under his 88% limit (▼, red for the device's high-priority SpO₂
+ * alarm) and RR 30 over 28 (▲). Each stage's last hour moves from the one before.
+ */
+function sampleScenario5WalterMonitoringAt(stage: Scenario5WalterStage): Partial<MonitoringPatient> {
+	const census = sampleScenario5WalterCensusAt(stage);
+	const previous = { desat: "base", stabilized: "desat" } as const;
+	return {
+		acuity: census.acuity,
+		// Monitoring's change arrow takes its color from the value, so no `trendVariant` here.
+		trajectory: census.trajectory && { label: census.trajectory.label, value: census.trajectory.value, trend: census.trajectory.trend },
+		scoreChange4h: census.scoreChange4h,
+		vitals: pierceVitals[stage],
+		trends: trendsBetween(pierceVitals[previous[stage]], pierceVitals[stage], pierceSeed),
+	};
+}
+
+/**
+ * Linda Shaw's monitor values at each point of Scenario 5. Triage (02:52) BP 198/108, HR 116 in atrial fibrillation;
+ * the alert (03:11) 192/104, HR 112; after labetalol and tenecteplase (`lysed`) 172/94, HR 104; at door-out
+ * (`transferred`, 04:38) 168/92, HR 98. Triage scores NEWS2 3 too (HR 2, SpO₂ 95% 1).
+ */
+const shawVitals: Record<"triage" | "alert" | Scenario5LindaStage, MonitorVitals> = {
+	triage: { hr: 116, spo2: 95, systolic: 198, diastolic: 108, map: 138, rr: 18 },
+	alert: { hr: 112, spo2: 95, systolic: 192, diastolic: 104, map: 133, rr: 18 },
+	lysed: { hr: 104, spo2: 96, systolic: 172, diastolic: 94, map: 120, rr: 16 },
+	transferred: { hr: 98, spo2: 97, systolic: 168, diastolic: 92, map: 117, rr: 16 },
+};
+
+/**
+ * Linda Shaw's monitor at her stroke alert (Sidney ED Bay 4, 03:11). Not on the Census until then. The ED set her
+ * systolic alarm to the thrombolysis limit, 185 (BP has to be under 185/110 before tenecteplase), so 192 shows ▲; HR 112
+ * in atrial fibrillation is under the default 120. Her last hour: from triage, 19 min ago, to now.
+ */
+const sampleScenario5LindaMonitoring = (): MonitoringPatient => ({
+	id: "p31",
+	hospitalId: "sidney",
+	lastName: "Shaw",
+	firstName: "Linda",
+	mrn: "01262093",
+	sex: "F",
+	age: 66,
+	hospital: "Sidney Regional",
+	unit: "ED",
+	bed: "Bay 4",
+	limits: { systolic: [90, 185], hr: [50, 120] },
+	alarmPriorities: sampleAlarmPriorities,
+	acknowledgedAlarms: [],
+	acuity: { label: news2, score: 3, level: "low" },
+	trajectory: { label: change, value: "0" },
+	scoreChange4h: 0,
+	tags: sampleScenario5LindaFlags(),
+	vitals: shawVitals.alert,
+	trends: trendsBetween(shawVitals.triage, shawVitals.alert, shawSeed),
+});
+
+/**
+ * Linda Shaw's monitor at each later stage, as on her Census card (`sampleScenario5LindaCensusAt`). After
+ * thrombolysis the limit is 180 (under 180/105 for 24 h), and she's under it.
+ */
+function sampleScenario5LindaMonitoringAt(stage: Scenario5LindaStage): Partial<MonitoringPatient> {
+	const census = sampleScenario5LindaCensusAt(stage);
+	const previous = { lysed: "alert", transferred: "lysed" } as const;
+	return {
+		acuity: census.acuity,
+		trajectory: census.trajectory && { label: census.trajectory.label, value: census.trajectory.value, trend: census.trajectory.trend },
+		scoreChange4h: census.scoreChange4h,
+		limits: { systolic: [90, 180], hr: [50, 120] },
+		vitals: shawVitals[stage],
+		trends: trendsBetween(shawVitals[previous[stage]], shawVitals[stage], shawSeed),
+	};
+}
+
 export {
+	sampleBackupTargetId,
 	sampleEscalationTargets,
 	sampleMonitoringAlerts,
 	sampleMonitoringPatients,
@@ -915,4 +1051,7 @@ export {
 	sampleScenario3MonitoringAt,
 	sampleScenario4Monitoring,
 	sampleScenario4MonitoringAt,
+	sampleScenario5LindaMonitoring,
+	sampleScenario5LindaMonitoringAt,
+	sampleScenario5WalterMonitoringAt,
 };

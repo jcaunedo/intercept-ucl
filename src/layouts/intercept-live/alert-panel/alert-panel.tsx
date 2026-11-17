@@ -99,6 +99,7 @@ import {
 	type ConsultMessage,
 	type ConsultReplies,
 } from "./consult-messages";
+import { OverflowOffer, type AlertOverflow } from "./overflow";
 import { InterpreterPrompt, type ConsultInterpreter } from "./interpreter";
 import { KeepOrTransferPanel, type KeepOrTransfer, type KeepOrTransferDecision } from "./keep-or-transfer";
 import {
@@ -264,6 +265,12 @@ type AlertDetailData = {
 	 * shows under the pathway once its orders are sent, or at once when a decision was already made.
 	 */
 	transfer?: KeepOrTransfer;
+	/**
+	 * Overflow to backup coverage (Scenario 5, step 3; exploration): the platform offers the alert to the backup
+	 * intensivist while the clinician is busy with another emergency. Sending it escalates the alert to `targetId`; the
+	 * backup's steps come in `steps`.
+	 */
+	overflow?: AlertOverflow;
 	/**
 	 * Social needs at discharge (Scenario 2, step 6; exploration): the needs the discharge workflow flagged and its
 	 * referrals. Shows under keep or transfer once the patient is kept; the patient's page shows the same.
@@ -1256,7 +1263,9 @@ function PathwayContent({
 		data.pathwayStatus ?? "suggested",
 	);
 	const pathwaySent = pathwayStatus === "pending" || pathwayStatus === "active";
-	const showTransfer = Boolean(data.transfer && (data.transfer.decided || pathwaySent));
+	// A transfer the patient needs (`mode: "transfer"`) shows at once, without a pathway first (Scenario 5, step 4).
+	const transferNeeded = data.transfer?.mode === "transfer";
+	const showTransfer = Boolean(data.transfer && (data.transfer.decided || pathwaySent || transferNeeded));
 	const showTasks = Boolean(data.tasks && pathwaySent);
 	// Scenario 3: the pathway arrives under the bundle while the column is open (fluids in, MAP still under 65), so the
 	// column brings it into view as it opens, under its sticky label. Not when the panel opens on it.
@@ -1313,7 +1322,8 @@ function PathwayContent({
 					) : null}
 				</AnimatePresence>
 			) : (
-				(pathwayPanel ?? <p className='text-sm text-muted-foreground'>No care pathway suggested for this alert.</p>)
+				(pathwayPanel ??
+					(transferNeeded ? null : <p className='text-sm text-muted-foreground'>No care pathway suggested for this alert.</p>))
 			)}
 			<AnimatePresence initial={false}>
 				{data.protocol ? (
@@ -1334,8 +1344,9 @@ function PathwayContent({
 				) : null}
 				{showTransfer && data.transfer ? (
 					<Expand key='transfer'>
-						<div className='flex flex-col gap-4 pt-4'>
-							<hr className='border-border' />
+						{/* First in the column when there's no pathway above it (Scenario 5's stroke transfer). */}
+						<div className={cn("flex flex-col gap-4", (data.pathway || data.bundle) && "pt-4")}>
+							{data.pathway || data.bundle ? <hr className='border-border' /> : null}
 							<KeepOrTransferPanel data={data.transfer} onDecision={onTransferDecision} escapeRef={transferEscape} />
 						</div>
 					</Expand>
@@ -1750,7 +1761,9 @@ function AlertPanelContent({
 		Boolean(data.bundle) ||
 		Boolean(data.protocol) ||
 		(data.pathwayStatus !== undefined && data.pathwayStatus !== "suggested") ||
-		Boolean(data.transfer?.decided),
+		Boolean(data.transfer?.decided) ||
+		// A transfer the patient needs opens with the alert (Scenario 5, step 4), so its centers and packet are in view.
+		data.transfer?.mode === "transfer",
 	titleAs,
 	descriptionAs,
 	close,
@@ -1780,7 +1793,8 @@ function AlertPanelContent({
 	// nurse, or the pathway, one at a time (Nov 5, 2026, user's call; the pathway back Nov 11, 2026, user's call). The
 	// messages open from the header, with or without a call, and stay when the call ends. Which one is open goes with the
 	// consult session, both ways between here and the patient's page (its Pathway panel shows this alert's pathway).
-	const hasPathway = Boolean(data.pathway || data.bundle);
+	// A transfer the patient needs (Scenario 5's stroke) is in the Pathway panel too, with or without a pathway.
+	const hasPathway = Boolean(data.pathway || data.bundle || data.transfer?.mode === "transfer");
 	const [sharedMessagesOpen, setSharedMessagesOpen] = useSessionState("messagesOpen", false);
 	const [sharedPathwayOpen, setSharedPathwayOpen] = useSessionState("pathwayOpen", false);
 	const [sharedPathwayAlert, setSharedPathwayAlert] = useSessionState<string | undefined>("pathwayAlert", undefined);
@@ -1993,6 +2007,28 @@ function AlertPanelContent({
 			className={className}
 		>
 			{lifecycle.formNode}
+			{data.overflow ? (
+				<OverflowOffer
+					overflow={data.overflow}
+					sentAt={
+						data.alert.status === "escalated" && data.alert.addressed?.to === data.overflow.targetId
+							? data.alert.addressed.at
+							: undefined
+					}
+					open={isOpenAlert(data.alert) && data.alert.status !== "escalated"}
+					// One click: the alert escalated to the backup, with why (Scenario 5, step 3).
+					onSend={
+						onAction && data.overflow
+							? () =>
+									onAction({
+										type: "escalate",
+										targetId: data.overflow!.targetId,
+										note: "Overflow: the hub intensivist is on another emergency",
+									})
+							: undefined
+					}
+				/>
+			) : null}
 		</AlertModal>
 		</TagsPopoverActionsProvider>
 	);

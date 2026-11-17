@@ -145,6 +145,8 @@ const hospitals = {
 	// TruBridge, as in `sample-data/sample-ehr.ts` (Demo Use Cases, Scenario 4). Was Harbor Point General (Epic) until
 	// Nov 6, 2026; its patients moved to Sidney.
 	bridgeport: { hospital: "Bridgeport Valley", source: "TruBridge" },
+	// Epic, the hub's own ICU (Demo Use Cases, Scenario 5; Nov 17, 2026).
+	regionalWest: { hospital: "Regional West", source: "Epic" },
 };
 
 /** An evidence value with its source, `minutes` ago or at a clock time. */
@@ -217,6 +219,9 @@ function patientOrders(
 
 const sampleOrdersByPatient: Record<string, PatientOrders> = {
 	p1: sarahOrders,
+
+	// Pierce (Regional West, Scenario 5): COPD exacerbation on the ventilator. Electrolytes in range, no sepsis screen.
+	p30: pierceOrders("base"),
 
 	// Severe ARDS from influenza, paralyzed and proned. Electrolytes are in range, so nothing to recommend.
 	p2: patientOrders("p2", {
@@ -935,4 +940,106 @@ const sampleScenario4Orders = () =>
 		],
 	});
 
-export { sampleOrdersByPatient, sampleScenario2Orders, sampleScenario3Orders, sampleScenario4Orders };
+/**
+ * Walter Pierce (Regional West, Scenario 5): the ICU's orders for his COPD exacerbation on the ventilator, by Neil
+ * Foster, his pulmonologist, and the hub. At `stabilized` the hub's plan after the 03:10 desaturation joins them: the
+ * ventilator's new settings (the Vent-Order Mismatch check reads them), bronchodilators every 2 h, an extra
+ * methylprednisolone dose, the chest X-ray and the repeat gas. Ordered times are the scenario's, a few minutes apart.
+ */
+function pierceOrders(stage: "base" | "desat" | "stabilized"): PatientOrders {
+	const plan = stage === "stabilized";
+	return patientOrders("p30", {
+		hospital: "regionalWest",
+		checks: [
+			plan
+				? ventMatches("AC/VC, rate 14, tidal volume 480 mL, I:E 1:4, FiO₂ 45%, PEEP 5")
+				: stage === "desat"
+					? {
+							agent: "Vent-Order Mismatch",
+							result: "No mismatch",
+							detail: "Settings match the active order: AC/VC, rate 18, tidal volume 520 mL, FiO₂ 40%, PEEP 5. Measured rate 30 is his breathing over the set rate; peak pressure 48 with auto-PEEP 9.",
+							at: minutesAgo(0),
+						}
+					: ventMatches("AC/VC, rate 18, tidal volume 520 mL, FiO₂ 40%, PEEP 5"),
+			nothingToRecommend("Potassium 4.0 and magnesium 2.0 need no replacement, and there's no sepsis screen."),
+		],
+		active: [
+			...(plan
+				? ([
+						["respiratory", "Mechanical ventilation", "AC/VC · rate 14 · tidal volume 480 mL · I:E 1:4 · FiO₂ 45% · PEEP 5 · SpO₂ 88–92%", "Joanna Smith", 6],
+						["medication", "Ipratropium-albuterol", "0.5 mg / 2.5 mg in line every 2 h for 6 h, then every 4 h", "Joanna Smith", 5],
+						["medication", "Methylprednisolone", "40 mg IV now, then every 12 h", "Joanna Smith", 5],
+						["imaging", "Chest X-ray, portable", "Now · tube position, pneumothorax", "Joanna Smith", 7, "Resulted"],
+						["lab", "Arterial blood gas", "30 min after the ventilator change", "Joanna Smith", 6, "Resulted"],
+					] as OrderSpec[])
+				: [["respiratory", "Mechanical ventilation", "AC/VC · rate 18 · tidal volume 520 mL · FiO₂ 40% · PEEP 5 · SpO₂ 88–92%", "Neil Foster", 540]] as OrderSpec[]),
+			["medication", "Propofol infusion", "5–50 mcg/kg/min IV · RASS 0 to −1", "Neil Foster", 2900],
+			["medication", "Fentanyl infusion", "25–100 mcg/h IV · CPOT under 3", "Neil Foster", 2900],
+			...(plan ? [] : ([["medication", "Ipratropium-albuterol", "0.5 mg / 2.5 mg in line every 4 h", "Neil Foster", 2900]] as OrderSpec[])),
+			["medication", "Budesonide", "0.5 mg in line every 12 h", "Neil Foster", 2900],
+			...(plan ? [] : ([["medication", "Methylprednisolone", "40 mg IV every 24 h", "Neil Foster", 2900]] as OrderSpec[])),
+			["medication", "Azithromycin", "500 mg IV every 24 h · penicillin allergy", "Neil Foster", 2900],
+			["medication", "Heparin", "5,000 units subcut every 8 h", "Neil Foster", 2900],
+			["lab", "Basic metabolic panel", "Daily at 04:00", "Neil Foster", 2900, "Scheduled"],
+			["imaging", "Chest X-ray, portable", "Daily at 05:00", "Neil Foster", 2900, "Scheduled"],
+			["nursing", "Head of bed 30° or more", "Ventilator bundle", "Neil Foster", 2900],
+			["nursing", "Daily sedation pause and breathing trial", "When FiO₂ 40% or less and PEEP 5", "Neil Foster", 2900],
+			["diet", "Tube feeds", "Standard formula at 50 mL/h", "Neil Foster", 1500],
+		],
+	});
+}
+
+/**
+ * Linda Shaw (Scenario 5): Sidney ED's stroke code, by Jenna Collins, NP, the hospitalist APP, and, once Intercept's
+ * backup intensivist directs her care (`lysed`, `transferred`), his: BP under 185/110 before thrombolysis, then
+ * tenecteplase, the CTA, neuro checks every 15 min and BP under 180/105, nothing by mouth, no antithrombotics for 24 h,
+ * and at `transferred` the transfer. Ordered times are the scenario's, a few minutes apart.
+ */
+function sampleScenario5LindaOrders(stage: "alert" | "lysed" | "transferred") {
+	const lysed = stage !== "alert";
+	const back = stage === "transferred" ? 4 : 0;
+	return patientOrders("p31", {
+		hospital: "sidney",
+		checks: [
+			noVentilator("Room air, SpO₂ 95%"),
+			{
+				agent: "Order-Entry Suggestion",
+				result: "Stroke code in the alert",
+				detail: "Thrombolysis and blood pressure follow the stroke code in her alert, so nothing is suggested here. Glucose 128, INR 1.0 and platelets 214 don't hold tenecteplase.",
+				at: minutesAgo(back),
+			},
+		],
+		active: [
+			...(stage === "transferred"
+				? ([["nursing", "Transfer for thrombectomy", "Front Range Comprehensive Stroke Center, Denver · helicopter", "Mark Sullivan", 3, "Completed"]] as OrderSpec[])
+				: []),
+			...(lysed
+				? ([
+						["medication", "Tenecteplase", "18 mg IV push once (0.25 mg/kg)", "Mark Sullivan", back + 6, "Completed"],
+						["imaging", "CT angiogram, head and neck", "Now · large-vessel occlusion", "Mark Sullivan", back + 6, "Resulted"],
+						["nursing", "Neuro checks and NIHSS", "Every 15 min for 2 h, then every 30 min", "Mark Sullivan", back + 5],
+						["nursing", "Blood pressure", "Every 15 min · keep under 180/105 for 24 h", "Mark Sullivan", back + 5],
+						["nursing", "No antithrombotics", "For 24 h after tenecteplase", "Mark Sullivan", back + 5],
+					] as OrderSpec[])
+				: []),
+			["medication", "Labetalol", lysed ? "10 mg IV every 10 min as needed · SBP over 180 or DBP over 105" : "10 mg IV every 10 min as needed · SBP over 185 or DBP over 110", "Jenna Collins", back + 12],
+			["imaging", "CT head without contrast", "Stroke code", "Jenna Collins", back + 16, "Resulted"],
+			["lab", "Glucose, point of care", "Stroke code", "Jenna Collins", back + 17, "Resulted"],
+			["lab", "CBC, BMP, PT/INR, aPTT and troponin", "Stroke code", "Jenna Collins", back + 16, "Resulted"],
+			["nursing", "Telemetry", "Atrial fibrillation", "Jenna Collins", back + 16],
+			["diet", "Nothing by mouth", "Until a bedside swallow screen", "Jenna Collins", back + 16],
+		],
+	});
+}
+
+/** Walter Pierce's orders at a stage of Scenario 5 (his base orders are in `sampleOrdersByPatient`). */
+const sampleScenario5WalterOrders = (stage: "base" | "desat" | "stabilized") => pierceOrders(stage);
+
+export {
+	sampleOrdersByPatient,
+	sampleScenario2Orders,
+	sampleScenario3Orders,
+	sampleScenario4Orders,
+	sampleScenario5LindaOrders,
+	sampleScenario5WalterOrders,
+};

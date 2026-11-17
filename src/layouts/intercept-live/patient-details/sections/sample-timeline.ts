@@ -482,6 +482,8 @@ function reynoldsTimeline(stage: "alert" | "resolved"): PatientTimeline {
 
 const sampleTimelineByPatient: Record<string, PatientTimeline> = {
 	p1: millerTimeline,
+	// Pierce: Regional West's, Scenario 5's ventilated patient, holding before it.
+	p30: pierceTimeline("base"),
 
 	// Johnson: severe ARDS from influenza. FiO₂ and PEEP went up as SpO₂ fell; it has sat at 82–86% for 20 min on FiO₂
 	// 80% and PEEP 14. Steady pressure, no pressors.
@@ -1281,6 +1283,120 @@ function kesslerTimeline(stage: "alert" | "closed"): PatientTimeline {
 
 const sampleScenario4Timeline = (stage: "alert" | "closed") => kesslerTimeline(stage);
 
+/**
+ * Walter Pierce (Regional West, Scenario 5): ventilated for a COPD exacerbation, intubated 50 h ago. Over the last day
+ * FiO₂ came down 50 → 40% and PEEP 8 → 5, PaCO₂ 66 → 58, propofol lightened; he's held at SpO₂ 92% (`base`). At 03:10
+ * (`desat`) SpO₂ falls to 86% over 20 min with RR 30, HR 118 and the peak pressure up. By `stabilized` (about 04:30) the
+ * desaturation sits 8 min back, as the night passes in seconds, and each step after it a few minutes apart: suction,
+ * FiO₂ 60%, bronchodilators, the rate and I:E changed, methylprednisolone, the chest X-ray, FiO₂ back to 45%. The labels
+ * give the scenario's times.
+ */
+function pierceTimeline(stage: "base" | "desat" | "stabilized"): PatientTimeline {
+	const zero = stage === "stabilized" ? 8 : 0;
+	const before = (minutes: number) => zero + minutes;
+	const latest = (base: number, desat: number, stabilized: number): [number, number][] =>
+		stage === "base" ? [[0, base]] : stage === "desat" ? [[20, base], [0, desat]] : [[before(20), base], [zero, desat], [4, desat], [0, stabilized]];
+	const after = (...keys: [number, number][]): [number, number][] => (stage === "stabilized" ? keys : []);
+	return timeline({
+		seed: 301,
+		hr: [[1440, 100], [600, 95], ...latest(92, 118, 96)],
+		map: [[1440, 103], [600, 99], ...latest(98, 113, 95)],
+		bp: stage === "desat" ? [158, 90] : stage === "stabilized" ? [134, 76] : [138, 78],
+		spo2: [[1440, 91], [900, 92], [600, 93], ...latest(92, 86, 92)],
+		rr: [[1440, 20], [900, 18], ...latest(18, 30, 20)],
+		temp: [[1300, 37.9], [1060, 37.7], [820, 37.6], [580, 37.4], [340, 37.5], [60, 37.4]],
+		lanes: [
+			pump("Propofol", "mcg/kg/min", [[1440, 30], [600, 15], ...after([6, 30])], "sedation"),
+			pump("Fentanyl", "mcg/h", [[1440, 50], [900, 25], ...after([6, 50])], "sedation"),
+			ventilator("FiO₂", "%", [[1440, 50], [540, 40], ...after([7, 60], [3, 45])], "fio2"),
+			ventilator("PEEP", "cmH₂O", [[1440, 8], [900, 5]], "peep"),
+			ventilator("Rate", "/min", [[1440, 18], ...after([6, 14])], "other"),
+			labLane("PaCO₂", "mmHg", [[1500, 82], [1000, 66], [300, 58], ...after([2, 64])], { high: 45 }),
+			labLane("WBC", "K/µL", [[1700, 13.6], [300, 11.8]], { high: 11 }, "lab-2"),
+		],
+		events: [
+			[1420, "note", "Tele-ICU progress note signed"],
+			[900, "ventilator", "PEEP 8 → 5 cmH₂O"],
+			[600, "drip", "Propofol 30 → 15 mcg/kg/min: awake, RASS 0"],
+			[540, "ventilator", "FiO₂ 50 → 40%"],
+			[300, "lab", "ABG: pH 7.36, PaCO₂ 58, PaO₂ 64"],
+			[180, "care", "In-line albuterol and ipratropium"],
+			...(stage === "base"
+				? []
+				: ([
+						[before(20), "care", "Coughing on the vent, SpO₂ 92 → 89%"],
+						[before(2), "ventilator", "Peak pressure 48 cmH₂O, plateau 26, auto-PEEP 9"],
+						[zero, "alert", "SpO₂ 86% on FiO₂ 40% · Critical"],
+					] as PatientSpec["events"])),
+			...(stage === "stabilized"
+				? ([
+						[7, "care", "Suctioned: thick plug · FiO₂ 40 → 60% (03:16)"],
+						[6, "ventilator", "Rate 18 → 14, tidal volume 520 → 480 mL, I:E 1:4 (03:22)"],
+						[6, "drip", "Propofol 15 → 30 mcg/kg/min, fentanyl 25 → 50 mcg/h"],
+						[5, "care", "Albuterol and ipratropium in line, methylprednisolone 40 mg IV (03:25)"],
+						[4, "note", "Chest X-ray: no pneumothorax, tube 4 cm above the carina (03:40)"],
+						[3, "ventilator", "FiO₂ 60 → 45%: SpO₂ 92%, auto-PEEP 3 (04:10)"],
+						[2, "lab", "ABG: pH 7.32, PaCO₂ 64, PaO₂ 68 (04:25)"],
+					] as PatientSpec["events"])
+				: []),
+		],
+	});
+}
+
+/**
+ * Linda Shaw (Scenario 5), in Sidney's ED since 02:52 (19 min before the alert): NIHSS 9 at 02:58, labs, CT at 03:05,
+ * the stroke code now. After it (`lysed`, `transferred`) the scenario's 1.5 h are compressed, as Tyler Kessler's 14 h
+ * are: the alert sits 8 min back (12 at door-out) and each step a minute or two after the last; the labels give the
+ * scenario's times.
+ */
+function shawTimeline(stage: "alert" | "lysed" | "transferred"): PatientTimeline {
+	const zero = stage === "transferred" ? 12 : stage === "lysed" ? 8 : 0;
+	const before = (minutes: number) => zero + minutes;
+	const lysed = stage !== "alert";
+	const after = (...keys: [number, number][]): [number, number][] => (lysed ? keys : []);
+	const out = stage === "transferred";
+	return timeline({
+		span: before(19),
+		seed: 311,
+		hr: [[before(19), 116], [zero, 112], ...after([zero - 6, 104], [0, out ? 98 : 104])],
+		map: [[before(19), 138], [zero, 133], ...after([zero - 6, 120], [0, out ? 117 : 120])],
+		mapLimits: { low: 65, high: 130 },
+		bp: out ? [168, 92] : lysed ? [172, 94] : [192, 104],
+		spo2: [[before(19), 95], [zero, 95], ...after([0, out ? 97 : 96])],
+		rr: [[before(19), 18], [zero, 18], ...after([0, 16])],
+		temp: [[before(15), 36.9], ...after([zero - 6, 36.8])],
+		lanes: [labLane("Glucose", "mg/dL", [[before(5), 128]], { high: 180 })],
+		events: [
+			[before(19), "care", "Ambulance from home: left arm and face weak, slurred speech. Last known well 02:30"],
+			[before(17), "care", "Stroke code called · glucose 128 (point of care)"],
+			[before(13), "note", "NIHSS 9: left face, arm and leg weakness, dysarthria, right gaze preference"],
+			[before(10), "care", "Labs drawn · CT head"],
+			[before(6), "note", "CT head: no hemorrhage, ASPECTS 9"],
+			[before(5), "lab", "INR 1.0 · platelets 214 · creatinine 0.9"],
+			[zero, "alert", "Stroke alert: NIHSS 9, last known well 02:30 · Critical"],
+			...(lysed
+				? ([
+						[zero - 1, "care", "Sent to Intercept's backup intensivist; connected in 3 min 50 s (03:16)"],
+						[zero - 2, "care", "Labetalol 10 mg IV: BP 192/104 → 176/98 (03:24)"],
+						[zero - 3, "drip", "Tenecteplase 18 mg IV (0.25 mg/kg): door-to-needle 39 min (03:31)"],
+						[zero - 4, "note", "CTA head and neck: right M1 occlusion (03:40)"],
+						[zero - 5, "care", "Transfer for thrombectomy requested (03:44)"],
+						[zero - 6, "note", "NIHSS 6 (04:15)"],
+					] as PatientSpec["events"])
+				: []),
+			...(out
+				? ([
+						[3, "care", "Helicopter crew at the bedside; transfer packet sent (04:30)"],
+						[1, "care", "Door-out to Front Range Comprehensive Stroke Center: door-in-door-out 1 h 46 min (04:38)"],
+					] as PatientSpec["events"])
+				: []),
+		],
+	});
+}
+
+const sampleScenario5WalterTimeline = (stage: "base" | "desat" | "stabilized") => pierceTimeline(stage);
+const sampleScenario5LindaTimeline = (stage: "alert" | "lysed" | "transferred") => shawTimeline(stage);
+
 export {
 	sampleScenario1ResolvedTimeline,
 	sampleScenario1Timeline,
@@ -1288,5 +1404,7 @@ export {
 	sampleScenario2Timeline,
 	sampleScenario3Timeline,
 	sampleScenario4Timeline,
+	sampleScenario5LindaTimeline,
+	sampleScenario5WalterTimeline,
 	sampleTimelineByPatient,
 };

@@ -620,9 +620,11 @@ function MonitoringPanel({
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- only a new request applies.
 	}, [activeAlertsRequest]);
 	const alertCount = activeAlertCount(visible);
+	// Each card's record system, from its hospital (Scenario 5, step 1).
+	const sourceOf = (hospitalId: string) => hospitals.find((hospital) => hospital.id === hospitalId)?.ehr;
 	const renderCard = ({
 		id,
-		hospitalId: _hospitalId,
+		hospitalId,
 		mine: _mine,
 		scoreChange4h: _scoreChange4h,
 		lastViewedAt: _lastViewedAt,
@@ -659,6 +661,7 @@ function MonitoringPanel({
 			return (
 				<PatientCensusCard
 					{...censusCard}
+					source={sourceOf(hospitalId)}
 					initials={patientInitials(card)}
 					tone={tones.get(id) ?? avatarTone(id)}
 					acuity={acuity}
@@ -677,6 +680,7 @@ function MonitoringPanel({
 			// patient's color (`shared/patient-avatar.ts`).
 			<PatientMonitoringCard
 				{...card}
+				source={sourceOf(hospitalId)}
 				initials={patientInitials(card)}
 				tone={tones.get(id) ?? avatarTone(id)}
 				// A patient without tags says "No tags", so the cards line up.

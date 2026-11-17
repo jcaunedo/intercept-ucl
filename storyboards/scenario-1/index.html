@@ -135,6 +135,9 @@ figcaption::before {
 .gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
 .gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .table-wrap { overflow-x: auto; }
+/* A caption in three lines: what's on screen, when it appears, what the presenter does. */
+.cap { display: grid; gap: 4px; }
+.cap b { font-weight: 600; }
 footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 </style>
 </head>
@@ -192,7 +195,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames one">
-		<figure><img src="frames/00-start.jpg" alt="Monitoring: 20 patients across 4 hospitals, 3 active alerts, cards with live monitors." loading="lazy"><figcaption>Monitoring before the scenario starts.</figcaption></figure>
+		<figure><img src="frames/00-start.jpg" alt="Monitoring: 20 patients across 4 hospitals, 3 active alerts, cards with live monitors." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Monitoring before the scenario: patients across four hospitals, 3 active alerts, each card with its live monitor. Margaret, at Chadron, looks stable.</span><span><b>When:</b> As the prototype opens, or after Prototype › Reset prototype.</span><span><b>You:</b> Nothing yet. Point at the hospital tabs, the quick filters bar and a monitoring card.</span></span></figcaption></figure>
 	</div>
 	<div class="callout note"><strong>The clock shows today's time, not 01:40.</strong> The prototype runs on the real clock. Ask the audience to picture 1:40 in the morning.</div>
 </section>
@@ -213,8 +216,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 1: Heart failure." loading="lazy"><figcaption>Prototype › Scenario 1: Heart failure.</figcaption></figure>
-		<figure><img src="frames/02-alert.jpg" alt="A Critical toast: NEWS2 10, High: up 5 in 4 h, Hayes, Margaret, Chadron." loading="lazy"><figcaption>Her Critical alert arrives as a toast: NEWS2 10, up 5 in 4 h.</figcaption></figure>
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 1: Heart failure." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Prototype menu, with Scenario 1: Heart failure.</span><span><b>When:</b> Before anything happens.</span><span><b>You:</b> Click Prototype at the bottom of the Sidebar, then Scenario 1: Heart failure.</span></span></figcaption></figure>
+		<figure><img src="frames/02-alert.jpg" alt="A Critical toast: NEWS2 10, High: up 5 in 4 h, Hayes, Margaret, Chadron." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Margaret's Critical toast at the bottom right: NEWS2 10, High: up 5 in 4 h, Hayes, Margaret, Chadron.</span><span><b>When:</b> 1.5 s after you pick the scenario.</span><span><b>You:</b> Nothing. Read the toast out.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -235,8 +238,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/03-ask.jpg" alt="Ask Intercept Live answering about Hayes, Margaret: history and labs, and at a glance." loading="lazy"><figcaption>Ask, from her toast: why she's #1, then her history and labs. Her card now leads the grid.</figcaption></figure>
-		<figure><img src="frames/04-feed.jpg" alt="The Live feed panel with Hayes's Critical alert first." loading="lazy"><figcaption>The live feed: her alert first, above Miller's.</figcaption></figure>
+		<figure><img src="frames/03-ask.jpg" alt="Ask Intercept Live answering about Hayes, Margaret: history and labs, and at a glance." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Ask Intercept Live about Margaret: why she's #1, then her history and labs. Her card now leads the grid.</span><span><b>When:</b> When you click Ask Intercept Live on her toast.</span><span><b>You:</b> Click Ask Intercept Live on her toast. Close the chat with its × when you're done.</span></span></figcaption></figure>
+		<figure><img src="frames/04-feed.jpg" alt="The Live feed panel with Hayes's Critical alert first." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Live feed panel: Margaret's Critical alert first, above Sarah Miller's older Critical sepsis alert.</span><span><b>When:</b> When you open it.</span><span><b>You:</b> Click Live feed, on the right of the page title. Close it when you're done.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -258,10 +261,10 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/05-modal.jpg" alt="Her alert: Hayes, Margaret, Critical, the reason line, Acknowledge, Escalate and Resolve, Video consult and Pathway, her score and monitor." loading="lazy"><figcaption>Her alert, opened from her card.</figcaption></figure>
-		<figure><img src="frames/05b-findings-flag.jpg" alt="The CHF exacerbation flag open: rising work of breathing, positive fluid balance and HFrEF with their numbers; Rule · Deterioration score." loading="lazy"><figcaption>Her CHF exacerbation flag: the findings that drove the alert.</figcaption></figure>
-		<figure><img src="frames/06-consult.jpg" alt="The video consult live beside the alert: Kayla Brandt, RN, at Bed 4, and the AI Notetaker under the call." loading="lazy"><figcaption>Kayla Brandt, RN, live from Bed 4.</figcaption></figure>
-		<figure><img src="frames/06c-notetaker.jpg" alt="The AI Notetaker capturing the consultation." loading="lazy"><figcaption>The AI Notetaker capturing the consult.</figcaption></figure>
+		<figure><img src="frames/05-modal.jpg" alt="Her alert: Hayes, Margaret, Critical, the reason line, Acknowledge, Escalate and Resolve, Video consult and Pathway, her score and monitor." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Margaret's alert: Critical, the reason line, Acknowledge, Escalate and Resolve, Video consult and Pathway, her score and her live monitor.</span><span><b>When:</b> When you open it.</span><span><b>You:</b> Click the red Critical bar on Margaret's card, first in the grid.</span></span></figcaption></figure>
+		<figure><img src="frames/05b-findings-flag.jpg" alt="The CHF exacerbation flag open: rising work of breathing, positive fluid balance and HFrEF with their numbers; Rule · Deterioration score." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her CHF exacerbation flag open: the findings that drove the alert, RR 18 → 26, SpO₂ 89% on 4 L, +1.8 L and +2.1 kg in 48 h, EF 25%.</span><span><b>When:</b> On her alert and her card from the moment the alert fires.</span><span><b>You:</b> Click her CHF exacerbation flag, first under her monitor. <kbd>Esc</kbd> closes it.</span></span></figcaption></figure>
+		<figure><img src="frames/06-consult.jpg" alt="The video consult live beside the alert: Kayla Brandt, RN, at Bed 4, and the AI Notetaker under the call." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The video consult beside her alert: Kayla Brandt, RN, live from Bed 4, the AI Notetaker under the call.</span><span><b>When:</b> It rings for about 4 s, then connects.</span><span><b>You:</b> Click Video consult under her alert.</span></span></figcaption></figure>
+		<figure><img src="frames/06c-notetaker.jpg" alt="The AI Notetaker capturing the consultation." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The AI Notetaker capturing the consult, the conversation streaming in under it.</span><span><b>When:</b> It starts as the call connects and records once Kayla approves, about 2.5 s later.</span><span><b>You:</b> Nothing. Point at the transcript. Stop pauses it; Prepare notes drafts the consult note.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -283,8 +286,8 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/07a-edited.jpg" alt="The pathway with Furosemide IV edited to 120 mg, the suggestion struck through." loading="lazy"><figcaption>One dose edited; the suggestion stays visible.</figcaption></figure>
-		<figure><img src="frames/07b-active.jpg" alt="The pathway Active, co-signed by Dr. Tom Weller; Keep or transfer appears below." loading="lazy"><figcaption>Co-signed and active. Keep or transfer appears under it.</figcaption></figure>
+		<figure><img src="frames/07a-edited.jpg" alt="The pathway with Furosemide IV edited to 120 mg, the suggestion struck through." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The CHF exacerbation pathway with Furosemide IV edited to 120 mg and marked Edited, the suggestion struck through but still visible.</span><span><b>When:</b> When you save the new dose.</span><span><b>You:</b> Click Pathway at the right end of her NEWS2 line, then the pencil on Furosemide IV. Change the dose and click Save.</span></span></figcaption></figure>
+		<figure><img src="frames/07b-active.jpg" alt="The pathway Active, co-signed by Dr. Tom Weller; Keep or transfer appears below." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The pathway Active, co-signed by Dr. Tom Weller, with Keep or transfer under it.</span><span><b>When:</b> About 4 s after you click Accept.</span><span><b>You:</b> Click Accept, then wait for the co-signature.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -306,12 +309,12 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/08a-transfer.jpg" alt="Keep or transfer: what the plan needs against Chadron tonight, and if transferred." loading="lazy"><figcaption>Needs against what Chadron has tonight.</figcaption></figure>
-		<figure><img src="frames/08b-kept.jpg" alt="Keeping at Chadron, with the reason and the 1 h and 4 h checkpoints." loading="lazy"><figcaption>Kept at Chadron, with checkpoints.</figcaption></figure>
+		<figure><img src="frames/08a-transfer.jpg" alt="Keep or transfer: what the plan needs against Chadron tonight, and if transferred." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Keep or transfer: what the plan needs against what Chadron has tonight, and the transfer to Regional West in Scottsbluff, about 2 h by ground.</span><span><b>When:</b> Once the pathway is co-signed.</span><span><b>You:</b> Scroll the Pathway panel down to Keep or transfer and walk through it.</span></span></figcaption></figure>
+		<figure><img src="frames/08b-kept.jpg" alt="Keeping at Chadron, with the reason and the 1 h and 4 h checkpoints." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Keeping at Chadron, with your reason and the 1 h and 4 h checkpoints with their due times.</span><span><b>When:</b> As soon as you confirm.</span><span><b>You:</b> Click Keep at Chadron, type a reason and confirm. Keep her alert open.</span></span></figcaption></figure>
 	</div>
 	<div class="callout note"><strong>Optional, before you keep her:</strong> click her name, <span class="ui">Hayes, Margaret ↗</span>, to show her page: the brief written by Intercept and the live monitor, and under her alert the <strong>Care plan</strong> with the pathway you just sent (your dose marked Edited, co-signed) and the <strong>Activity</strong> so far, with who did what. Then go back and reopen her alert from her card: the pathway opens with it, with your dose. Leaving ends the call.</div>
 	<div class="frames one" style="margin-top:16px">
-		<figure><img src="frames/09-patient.jpg" alt="Patient details for Hayes, Margaret mid-plan: the brief, the monitor, her Critical alert and, under it, the Care plan with the CHF exacerbation pathway active." loading="lazy"><figcaption>Her page mid-plan: the pathway in her Care plan, under her alert.</figcaption></figure>
+		<figure><img src="frames/09-patient.jpg" alt="Patient details for Hayes, Margaret mid-plan: the brief, the monitor, her Critical alert and, under it, the Care plan with the CHF exacerbation pathway active." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Margaret's page mid-plan: the brief, the monitor, her Critical alert and, under it, the Care plan with the CHF exacerbation pathway active.</span><span><b>When:</b> Any time after the pathway is co-signed, before you keep her.</span><span><b>You:</b> Optional: click her name, Hayes, Margaret ↗. Leaving ends the call; reopen her alert from her card.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -333,10 +336,10 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 		</div>
 	</div>
 	<div class="frames">
-		<figure><img src="frames/10-resolved-modal.jpg" alt="Her alert at 06:00: resolved by Kayla Brandt, RN, NEWS2 3 Low, both checkpoints passed and Transfer avoided." loading="lazy"><figcaption>06:00 in her alert: resolved, NEWS2 3, both checkpoints passed, transfer avoided. The cost is a placeholder until it's sourced.</figcaption></figure>
-		<figure><img src="frames/11-resolved-monitoring.jpg" alt="Monitoring after her alert closes: Hayes's Resolved toast and the live feed caption about 06:00." loading="lazy"><figcaption>Back on Monitoring: her Resolved toast and the live feed's 06:00 line.</figcaption></figure>
-		<figure><img src="frames/12-patient-plan.jpg" alt="Her page at 06:00: the brief, NEWS2 3, and the Care plan: the CHF exacerbation pathway active with furosemide edited, Keeping at Chadron, both checkpoints passed, Transfer avoided." loading="lazy"><figcaption>Her page at 06:00: the Care plan, from the pathway to Transfer avoided.</figcaption></figure>
-		<figure><img src="frames/13-patient-activity.jpg" alt="Her Activity, newest first: Transfer avoided, Alert resolved by Kayla Brandt, RN, the 4 h and 1 h checkpoints passed, Keeping at Chadron by You." loading="lazy"><figcaption>Her Activity: what was done and decided, with who and when.</figcaption></figure>
+		<figure><img src="frames/10-resolved-modal.jpg" alt="Her alert at 06:00: resolved by Kayla Brandt, RN, NEWS2 3 Low, both checkpoints passed and Transfer avoided." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her alert at 06:00: resolved by Kayla Brandt, RN, NEWS2 3 Low, both checkpoints passed and Transfer avoided. The cost is a placeholder until it's sourced.</span><span><b>When:</b> About 6 s after you click Keep at Chadron.</span><span><b>You:</b> Nothing. Point at Resolved, her score and Transfer avoided at the bottom of the Pathway panel.</span></span></figcaption></figure>
+		<figure><img src="frames/11-resolved-monitoring.jpg" alt="Monitoring after her alert closes: Hayes's Resolved toast and the live feed caption about 06:00." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Back on Monitoring: Margaret's Resolved toast and the live feed's line “06:00: Hayes is stable on 2 L, transfer avoided”. Her card has settled.</span><span><b>When:</b> When you close her alert.</span><span><b>You:</b> Close her alert.</span></span></figcaption></figure>
+		<figure><img src="frames/12-patient-plan.jpg" alt="Her page at 06:00: the brief, NEWS2 3, and the Care plan: the CHF exacerbation pathway active with furosemide edited, Keeping at Chadron, both checkpoints passed, Transfer avoided." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her page at 06:00: the brief, NEWS2 3, and the Care plan from the pathway (furosemide edited) to Keeping at Chadron, both checkpoints Passed and Transfer avoided.</span><span><b>When:</b> Any time after she's resolved.</span><span><b>You:</b> Click her card.</span></span></figcaption></figure>
+		<figure><img src="frames/13-patient-activity.jpg" alt="Her Activity, newest first: Transfer avoided, Alert resolved by Kayla Brandt, RN, the 4 h and 1 h checkpoints passed, Keeping at Chadron by You." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her Activity, newest first: Transfer avoided, Alert resolved by Kayla Brandt, RN, the 4 h and 1 h checkpoints passed, Keeping at Chadron by You.</span><span><b>When:</b> Any time after she's resolved.</span><span><b>You:</b> Nothing. Point at who did what and when. View on Timeline puts it beside her vitals.</span></span></figcaption></figure>
 	</div>
 </section>
 

@@ -1,4 +1,4 @@
-import type { PatientInfusion } from "../patient-details";
+import type { PatientInfusion, PatientRecord } from "../patient-details";
 import { samplePatientBaseRecords, sampleScenarioCareTeams } from "../sample-patient-records";
 import type { ContinuousMedication, PatientMedications, PrnMedication, ScheduledMedication } from "./medications-section";
 
@@ -293,6 +293,8 @@ function medicationsFor(id: string, scheduledMeds: ScheduledMedication[], prnMed
 
 const sampleMedicationsByPatient: Record<string, PatientMedications> = {
 	p1: millerMedications,
+	// Pierce (Regional West): COPD exacerbation on the ventilator, day 2. Penicillin allergy, so azithromycin alone.
+	p30: pierceMedications(),
 	// Johnson: influenza ARDS, no known allergies; vancomycin due in 20 min.
 	p2: medicationsFor(
 		"p2",
@@ -796,4 +798,87 @@ const sampleScenario4Medications = (stage: "alert" | "dextrose" | "closed" = "al
 	return { ...medications, updatedAt: minutesAgo(1), continuous };
 };
 
-export { sampleMedicationsByPatient, sampleScenario2Medications, sampleScenario3Medications, sampleScenario4Medications };
+/**
+ * Walter Pierce (Regional West, Scenario 5): his COPD exacerbation's medications on the ventilator, day 2. At `desat`
+ * (03:10) his nurse has just given an extra in-line albuterol; at `stabilized` (about 04:30) the hub's plan is in:
+ * albuterol and ipratropium every 2 h for 6 h, then every 4 h, an extra methylprednisolone 40 mg IV, and deeper
+ * sedation (the record's infusions, passed in).
+ */
+function pierceMedications(stage: "base" | "desat" | "stabilized" = "base", record?: PatientRecord): PatientMedications {
+	const plan = stage === "stabilized";
+	const medications = medicationsFor(
+		"p30",
+		[
+			plan
+				? scheduled("Ipratropium-albuterol", "0.5 mg / 2.5 mg", "In line, nebulized", ["Every 2 h for 6 h, then every 4 h", 2], 5, "Bronchospasm · the hub's plan")
+				: scheduled("Ipratropium-albuterol", "0.5 mg / 2.5 mg", "In line, nebulized", every(4), 180, "COPD exacerbation"),
+			scheduled("Budesonide", "0.5 mg", "In line, nebulized", every(12), 420, "COPD exacerbation"),
+			scheduled("Methylprednisolone", "40 mg", "IV", plan ? every(12) : daily, plan ? 5 : 900, plan ? "COPD exacerbation · extra dose at 03:25" : "COPD exacerbation"),
+			scheduled("Azithromycin", "500 mg", "IV", daily, 600, "COPD exacerbation · penicillin allergy"),
+			scheduled("Heparin", "5,000 units", "SC", every(8), 300, "VTE prophylaxis"),
+			scheduled("Pantoprazole", "40 mg", "IV", daily, 600, "Stress ulcer prophylaxis"),
+			scheduled("Chlorhexidine 0.12% oral rinse", "15 mL", "Oral", every(12), 320, "Ventilator bundle"),
+			scheduled("Insulin lispro", "Per correction scale", "SC", every(6), 120, "Steroid hyperglycemia"),
+		],
+		[
+			prn("Albuterol", "2.5 mg", "In line, nebulized", "Every 1 h as needed", "Wheezing or high airway pressure", stage === "base" ? 420 : stage === "desat" ? 2 : 9, stage === "base" ? 1 : 2),
+			prn("Acetaminophen", "650 mg", "Feeding tube", "Every 6 h as needed", "Fever or pain", 700, 1),
+		],
+	);
+	return stage === "base" ? medications : { ...medications, updatedAt: minutesAgo(1), continuous: continuousFrom(record?.infusions) };
+}
+
+/**
+ * Linda Shaw (Scenario 5): Sidney ED's stroke code. At the alert, labetalol as needed to bring BP under 185/110 before
+ * thrombolysis, and nothing by mouth. Once `lysed` (and `transferred`): labetalol given at 03:24 and tenecteplase 18 mg
+ * at 03:31, then BP under 180/105 for 24 h with labetalol, or nicardipine if it isn't enough; no antithrombotics.
+ */
+function sampleScenario5LindaMedications(stage: "alert" | "lysed" | "transferred" = "alert"): PatientMedications {
+	const lysed = stage !== "alert";
+	const back = stage === "transferred" ? 4 : 0;
+	return {
+		...medicationsFor(
+			"p31",
+			lysed
+				? [
+						{
+							drug: "Tenecteplase",
+							dose: "18 mg (0.25 mg/kg)",
+							route: "IV push over 5 seconds",
+							frequency: "Once",
+							indication: "Acute ischemic stroke · door-to-needle 39 min",
+							lastGivenAt: minutesAgo(back + 5),
+							source: "MAR",
+							updatedAt: minutesAgo(back + 5),
+						},
+					]
+				: [],
+			[
+				prn(
+					"Labetalol",
+					"10 mg",
+					"IV",
+					"Every 10 min as needed",
+					lysed ? "SBP over 180 or DBP over 105, after thrombolysis" : "SBP over 185 or DBP over 110, before thrombolysis",
+					lysed ? back + 6 : undefined,
+					1,
+				),
+				prn("Nicardipine", "5 mg/h IV, up to 15", "IV infusion", "If labetalol isn't enough", "BP over the limit after two doses"),
+				prn("Acetaminophen", "650 mg", "Rectal", "Every 6 h as needed", "Fever or headache · nothing by mouth"),
+			],
+		),
+		updatedAt: minutesAgo(1),
+	};
+}
+
+/** Walter Pierce's medications at a stage of Scenario 5, with the infusions from his record then. */
+const sampleScenario5WalterMedications = (stage: "base" | "desat" | "stabilized", record?: PatientRecord) => pierceMedications(stage, record);
+
+export {
+	sampleMedicationsByPatient,
+	sampleScenario2Medications,
+	sampleScenario3Medications,
+	sampleScenario4Medications,
+	sampleScenario5LindaMedications,
+	sampleScenario5WalterMedications,
+};
