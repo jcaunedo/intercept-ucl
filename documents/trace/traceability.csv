@@ -13,7 +13,8 @@ SV-08,src/layouts/intercept-live/sample-data/sample-census.ts,,Partial,missing v
 SV-09,src/layouts/intercept-live/sample-data/sample-census.ts,PC-*,Partial,"NEWS2-style score + band + 24 h change (DU-14); contributing factors only in alert evidence, not on card (G0-5, CI-06)"
 SV-10,src/layouts/intercept-live/monitoring/triage-queue.tsx,MON-*,Met (UI),Escalate + targets
 SV-13,src/components/cards/patient-monitoring-card/,MON-*,Partial,Monitor panel only; no vent / pump class templates
-CC-04,src/layouts/intercept-live/shared/live-feed.tsx,MON-*,Partial,Triage queue opens patient; Messages page is an empty state
+CC-04,src/layouts/intercept-live/shared/live-feed.tsx,MON-*,Partial,Triage queue opens patient; Messages page opens each message's patient (messages-panel.tsx)
+CC-01,src/layouts/intercept-live/messages/messages-panel.tsx,MSG-001;MSG-018;MSG-019,Partial,"One conversation per person from every covered hospital, each message's patient as context, hospital and channel per conversation (Nov 17, 2026); no real bridge; channel label open (Q-09)"
 AL-02,src/layouts/intercept-live/monitoring/triage-queue.tsx,MON-*,Partial (UI),Alert tiers per CX-01 §4.1
 AL-03,src/layouts/intercept-live/monitoring/monitoring-panel.tsx,MON-*,Met (UI),ack -> escalate -> resolve / decline
 AL-04,src/layouts/intercept-live/monitoring/,MON-*,Partial,Alert origin / evidence per CX-01 §4.1

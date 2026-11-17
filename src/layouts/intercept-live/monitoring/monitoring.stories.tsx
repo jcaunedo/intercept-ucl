@@ -10,7 +10,7 @@ import { samplePastPatients, samplePatients, sampleUncertainStatusPatients } fro
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-schedule";
-import { sampleMessageThreads } from "../messages/sample-messages";
+import { sampleMessageConversations } from "../messages/sample-messages";
 import { sampleInboxItems } from "../inbox/sample-inbox";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
@@ -42,7 +42,7 @@ const meta = {
 		// The Sidebar's Schedule: the clinician's shifts and the open shifts they can take.
 		schedule: { shifts: sampleScheduleShifts, openShifts: sampleOpenShifts, onShiftAction: fn(), onNewRequest: fn() },
 		// The Sidebar's Messages: every thread with the bedside, across the hospitals.
-		messages: { threads: sampleMessageThreads, onSendMessage: fn() },
+		messages: { conversations: sampleMessageConversations, onSendMessage: fn() },
 		// The Sidebar's Inbox: work besides alerts (the alerts come from `alerts`).
 		inbox: { items: sampleInboxItems, onItemAction: fn() },
 		patients: sampleMonitoringPatients,

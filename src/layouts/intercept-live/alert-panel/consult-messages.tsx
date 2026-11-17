@@ -33,6 +33,11 @@ type ConsultMessage = {
 	text?: string;
 	/** A photo sent with it (store-and-forward: a device's screen, a blood gas), shown with its readings. */
 	photo?: BedsidePhoto;
+	/**
+	 * The patient it's about, in a conversation with a person that spans patients (the Messages page, PRD Messages
+	 * MSG-001); none for a message about no patient. A patient's own thread (the alert panel, the patient page) leaves it out.
+	 */
+	patientId?: string;
 	/** When it was sent, ISO 8601. */
 	sentAt: string;
 };
@@ -68,7 +73,7 @@ const replyTypedMs = 2400;
 function useConsultMessages(
 	incoming: readonly ConsultMessage[] = [],
 	photos: readonly BedsidePhoto[] = [],
-	onSend?: (text: string) => void,
+	onSend?: (text: string, patientId?: string) => void,
 	replies: ConsultReplies = [],
 ) {
 	// The clinician's messages and the replies, in the patient's consult session: the thread goes on where the patient is
@@ -88,9 +93,10 @@ function useConsultMessages(
 		]);
 	}, []);
 	const send = React.useCallback(
-		(text: string) => {
-			add({ from: "you", text });
-			onSend?.(text);
+		// `patientId`: the patient the message is about (the Messages page); the reply is about the same one.
+		(text: string, patientId?: string) => {
+			add({ from: "you", text, patientId });
+			onSend?.(text, patientId);
 			const current = repliesRef.current;
 			const reply = typeof current === "function" ? current(text) : current[nextReply.current];
 			if (reply === undefined) return;
@@ -99,7 +105,7 @@ function useConsultMessages(
 			timers.current.push(
 				window.setTimeout(() => setTyping(true), replyTypingAfterMs),
 				window.setTimeout(() => {
-					add({ from: "bedside", text: reply });
+					add({ from: "bedside", text: reply, patientId });
 					pending.current -= 1;
 					if (pending.current === 0) setTyping(false);
 				}, replyTypingAfterMs + replyTypedMs),
@@ -271,6 +277,8 @@ function ConsultMessages({
 	typing = false,
 	autoFocus = false,
 	filter,
+	patientLabel,
+	placeholder = "Send a message…",
 }: {
 	messages: readonly ConsultMessage[];
 	onSend: (text: string) => void;
@@ -285,6 +293,13 @@ function ConsultMessages({
 	 * thread says so; the field stays.
 	 */
 	filter?: (message: ConsultMessage) => boolean;
+	/**
+	 * In a conversation that spans patients (the Messages page): names a message's patient ("Sarah Miller · MICU · Bed
+	 * 7"), and the thread marks each change of patient with "About …" ("Not about a patient" for none). Without it, no marks.
+	 */
+	patientLabel?: (patientId: string) => string;
+	/** The field's placeholder, e.g. "Message about Sarah Miller…". */
+	placeholder?: string;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const now = useCurrentMinute();
@@ -338,6 +353,11 @@ function ConsultMessages({
 								// Live feed's style (14/20 semibold `foreground`).
 								const day = now !== null ? formatDayLabel(message.sentAt, now) : undefined;
 								const newDay = day && (index === 0 || formatDayLabel(shown[index - 1].sentAt, now ?? undefined) !== day);
+								// Which patient the messages are about, marked where it changes (and before the first message when it has
+								// one), so a message is never read against the wrong patient (PRD Messages MSG-003).
+								const newPatient =
+									patientLabel &&
+									(index === 0 ? Boolean(message.patientId) : message.patientId !== shown[index - 1].patientId);
 								return [
 									...(newDay
 										? [
@@ -351,6 +371,24 @@ function ConsultMessages({
 													className={cn(index > 0 && "pt-1")}
 												>
 													<h3 className='text-sm font-semibold text-foreground'>{day}</h3>
+												</motion.li>,
+											]
+										: []),
+									...(newPatient
+										? [
+												<motion.li
+													key={`about-${message.id}`}
+													role='presentation'
+													variants={prefersReducedMotion ? fadeVariants : revealVariants}
+													initial='initial'
+													animate='animate'
+													className='flex items-center gap-3 text-xs text-muted-foreground'
+												>
+													<span aria-hidden='true' className='h-px flex-1 bg-border' />
+													<span className='min-w-0 truncate'>
+														{message.patientId ? `About ${patientLabel(message.patientId)}` : "Not about a patient"}
+													</span>
+													<span aria-hidden='true' className='h-px flex-1 bg-border' />
 												</motion.li>,
 											]
 										: []),
@@ -430,7 +468,7 @@ function ConsultMessages({
 				value={draft}
 				onValueChange={setDraft}
 				onSubmit={submit}
-				placeholder='Send a message…'
+				placeholder={placeholder}
 				label={`Message ${nurse}`}
 				submitLabel='Send'
 			/>

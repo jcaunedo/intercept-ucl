@@ -75,7 +75,7 @@ type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		notices?: AlertNotice[];
 		/** The clinician's schedule. With it, the Sidebar's Schedule opens the calendar of their shifts and open shifts. */
 		schedule?: Omit<SchedulePanelProps, "hospitals">;
-		/** Every thread with the bedside. With them, the Sidebar's Messages opens the inbox (PRD Messages MSG-018). */
+		/** Every conversation, one per person at the hospitals. With them, the Sidebar's Messages opens the inbox (PRD Messages MSG-018). */
 		messages?: Omit<MessagesPanelProps, "hospitals">;
 		/**
 		 * Work besides alerts (drafts to sign, suggested orders, failed write-backs, handed-over items). With it, the

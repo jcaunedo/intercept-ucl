@@ -10,7 +10,7 @@ import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatien
 import { samplePatientRecords } from "../patient-details/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-schedule";
-import { sampleMessageThreads } from "../messages/sample-messages";
+import { sampleMessageConversations } from "../messages/sample-messages";
 import { sampleInboxItems } from "../inbox/sample-inbox";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
@@ -50,7 +50,7 @@ const meta = {
 		// The Sidebar's Schedule: the clinician's shifts and the open shifts they can take.
 		schedule: { shifts: sampleScheduleShifts, openShifts: sampleOpenShifts, onShiftAction: fn(), onNewRequest: fn() },
 		// The Sidebar's Messages: every thread with the bedside, across the hospitals.
-		messages: { threads: sampleMessageThreads, onSendMessage: fn() },
+		messages: { conversations: sampleMessageConversations, onSendMessage: fn() },
 		// The Sidebar's Inbox: work besides alerts (the alerts come from `alerts`).
 		inbox: { items: sampleInboxItems, onItemAction: fn() },
 		// The directory: the census, the patients treated before (discharged, transferred) and two with an uncertain status (pending reconciliation, unknown).
@@ -588,17 +588,16 @@ export const Empty: Story = {
 };
 
 /**
- * The Messages page from the Patients layout: every thread with the bedside, the same as the Messages layout shows (the
- * threads come in through `messages`). The first thread, Sarah Miller's urgent one, is open; the Sidebar moves back to
- * Patients.
+ * The Messages page from the Patients layout: every conversation, one per person, the same as the Messages layout shows
+ * (they come in through `messages`). The first, Kelly Ortiz's urgent one, is open; the Sidebar moves back to Patients.
  */
 export const MessagesPage: Story = {
 	args: { defaultPage: "Messages" },
 	play: async ({ canvas, canvasElement, userEvent }) => {
-		const threads = within(await canvas.findByRole("region", { name: "Threads" }));
-		const first = threads.getAllByRole("button")[0];
+		const conversations = within(await canvas.findByRole("region", { name: "Conversations" }));
+		const first = conversations.getAllByRole("button")[0];
 		await expect(first).toHaveAttribute("aria-current", "true");
-		await expect(first).toHaveAccessibleName(/^Sarah Miller, Urgent/);
+		await expect(first).toHaveAccessibleName(/^Kelly Ortiz, RN, Urgent/);
 		await expect(await canvas.findByRole("log", { name: "Messages with Kelly Ortiz, RN" })).toBeVisible();
 		await userEvent.click(canvas.getByRole("button", { name: "Patients" }));
 		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${directory.length} patients`));
