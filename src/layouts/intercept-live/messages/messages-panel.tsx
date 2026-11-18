@@ -628,7 +628,7 @@ function ConversationDetails({
 	return (
 		<aside
 			aria-label='Conversation details'
-			className='hidden w-80 shrink-0 flex-col gap-6 overflow-y-auto border-l border-border p-6 xl:flex'
+			className='hidden w-[22rem] shrink-0 flex-col gap-6 overflow-y-auto border-l border-border p-6 xl:flex'
 		>
 			<div className='flex items-center gap-3'>
 				<ContactAvatar contact={contact} size='lg' />
