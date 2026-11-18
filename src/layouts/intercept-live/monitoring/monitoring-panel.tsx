@@ -74,7 +74,8 @@ import {
 } from "./triage-queue";
 import { LiveFeedButton, LiveFeedPanel, useAddressedAlerts } from "../shared/live-feed";
 import type { PatientRecord } from "../patient-details/patient-details";
-import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
+import { avatarTone, patientInitials } from "../shared/patient-avatar";
+import { usePatientTones } from "../shared/patient-tones";
 import {
 	alertFilterGroup,
 	FiltersButton,
@@ -454,8 +455,8 @@ function MonitoringPanel({
 		onOpenPatient?.(patientId);
 	};
 	const canOpenPatient = Boolean(navigation || onOpenPatient);
-	// Every patient's avatar color, from the whole roster, so the page's sort and filters don't change them.
-	const tones = React.useMemo(() => avatarTones(patientsProp), [patientsProp]);
+	// Every patient's avatar color, the app's (`patient-tones.tsx`), so the page's sort and filters don't change them.
+	const tones = usePatientTones(patientsProp);
 	const withAlerts = patientsProp.map((patient) => {
 		const own = alerts.filter((alert) => alert.patientId === patient.id);
 		return { ...patient, alert: alertPill(own), lastAlertAt: lastFiredAt(own.filter(isOpenAlert)) };

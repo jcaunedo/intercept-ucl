@@ -12,6 +12,7 @@ import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser
 import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-schedule";
 import { sampleMessageConversations } from "../messages/sample-messages";
 import { sampleInboxItems } from "../inbox/sample-inbox";
+import { sampleOutcomes } from "../analytics/sample-analytics";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
@@ -53,6 +54,8 @@ const meta = {
 		messages: { conversations: sampleMessageConversations, onSendMessage: fn() },
 		// The Sidebar's Inbox: work besides alerts (the alerts come from `alerts`).
 		inbox: { items: sampleInboxItems, onItemAction: fn() },
+		// The Sidebar's Analytics: the outcomes dashboard, one synthetic month (Scenario 6 ends on it).
+		analytics: { data: sampleOutcomes, onExport: fn() },
 		// The directory: the census, the patients treated before (discharged, transferred) and two with an uncertain status (pending reconciliation, unknown).
 		patients: [...samplePatients, ...samplePastPatients, ...sampleUncertainStatusPatients],
 		monitoringPatients: sampleMonitoringPatients,
@@ -595,11 +598,11 @@ export const MessagesPage: Story = {
 };
 
 /**
- * A page that isn't built yet (here Analytics): its title and an empty state. Inbox, Messages and Schedule are built
- * (this layout passes their data), so they're no longer empty pages.
+ * A page that isn't built yet (here Protocols): its title and an empty state. Inbox, Messages, Schedule and Analytics are
+ * built (this layout passes their data), so they're no longer empty pages.
  */
 export const EmptyPage: Story = {
-	args: { defaultPage: "Analytics" },
+	args: { defaultPage: "Protocols" },
 };
 
 /** Plays the sample live feed into the shell: its alerts and the Monitoring page's values. Patients holds still. */
@@ -618,6 +621,8 @@ function LiveDirectory(props: React.ComponentProps<typeof Patients>) {
 		onPathwayDecision,
 		onTransferDecision,
 		onDischargeDecision,
+		onTransitionDecision,
+		withScenarioInbox,
 		onBundleDecision,
 		onConsultChange,
 		onConsultNote,
@@ -658,6 +663,9 @@ function LiveDirectory(props: React.ComponentProps<typeof Patients>) {
 			onPathwayDecision={onPathwayDecision}
 			onTransferDecision={onTransferDecision}
 			onDischargeDecision={onDischargeDecision}
+			onTransitionDecision={onTransitionDecision}
+			// Scenario 6 adds a follow-up to the Inbox (the hub tele-RN's phone check), then marks it done.
+			inbox={props.inbox && { ...props.inbox, items: withScenarioInbox(props.inbox.items) }}
 			onBundleDecision={onBundleDecision}
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}

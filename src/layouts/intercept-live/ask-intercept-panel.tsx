@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import aiIcon from "./patient-details/images/ai-brief.svg";
+import { usePatientTone } from "./shared/patient-tones";
 import { SourceLabel } from "./shared/source-label";
 import { SidePanel } from "./side-panel";
 
@@ -334,6 +335,8 @@ function AnswerPatientList({
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const clip = useExpandClip();
+	// The app's colors (`shared/patient-tones.tsx`), as on the cards.
+	const toneOf = usePatientTone();
 	return (
 		<motion.div
 			{...clip}
@@ -351,7 +354,7 @@ function AnswerPatientList({
 							{patient.photo || patient.initials ? (
 								<Avatar size='sm' className='shrink-0'>
 									{patient.photo ? <AvatarImage src={patient.photo} alt='' /> : null}
-									<AvatarFallback tone={patient.tone}>{patient.initials}</AvatarFallback>
+									<AvatarFallback tone={toneOf(patient.id, patient.tone)}>{patient.initials}</AvatarFallback>
 								</Avatar>
 							) : null}
 							<span className='min-w-0 flex-1'>
@@ -432,6 +435,8 @@ function AnswerText({
 	/** Makes the lists' element ids unique on the page. */
 	idPrefix?: string;
 }) {
+	// The app's colors (`shared/patient-tones.tsx`), as on the cards.
+	const toneOf = usePatientTone();
 	const [expanded, setExpanded] = React.useState<ReadonlySet<string>>(new Set());
 	const toggle = (id: string) =>
 		setExpanded((current) => {
@@ -538,7 +543,7 @@ function AnswerText({
 										{avatar ? (
 											<Avatar size='sm' className='shrink-0'>
 												{avatar.photo ? <AvatarImage src={avatar.photo} alt='' /> : null}
-												<AvatarFallback tone={avatar.tone}>{avatar.initials}</AvatarFallback>
+												<AvatarFallback tone={toneOf(avatar.id, avatar.tone)}>{avatar.initials}</AvatarFallback>
 											</Avatar>
 										) : (
 											<span aria-hidden='true' className='size-8 shrink-0' />

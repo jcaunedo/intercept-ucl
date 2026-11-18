@@ -118,6 +118,8 @@ Seven items in two groups, Monitoring the landing page (intercept.ds Role=Clinic
 | Reference | **Schedule** | The clinician's own shifts across hospitals, plus an Open shifts tab | §5.15 |
 | Reference | **Analytics** | The clinician's own clinical and documentation metrics | §5.11 |
 
+⚠️ **Decision needed:** the prototype's Clinical **Analytics** shows the program's outcomes dashboard (PRD Outcomes dashboard; Scenario 6 ends on it): network-wide outcomes against the baseline, by payer and rurality, and the quarterly export, not the clinician's own metrics. Whether it stays here, moves to Administration's Analytics (Governance), or both, is open (Outcomes dashboard OUT-OD-04).
+
 **Default Monitoring view by role:** Waveforms for Critical Care RNs, Cards for intensivists and APPs (§9.1 #4, PD-10). Clicking the logo returns to the role's default.
 
 ⚠️ **Decision needed:** in UCL, clicking the expanded wordmark collapses the Sidebar (DESIGN.md "Sidebar", decided because the first item is an action). The spec wants it to return to the role's default Monitoring view. One of the two has to give.

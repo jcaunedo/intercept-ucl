@@ -12,6 +12,7 @@ import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser
 import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-schedule";
 import { sampleMessageConversations } from "../messages/sample-messages";
 import { sampleInboxItems } from "../inbox/sample-inbox";
+import { sampleOutcomes } from "../analytics/sample-analytics";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
@@ -45,6 +46,8 @@ const meta = {
 		messages: { conversations: sampleMessageConversations, onSendMessage: fn() },
 		// The Sidebar's Inbox: work besides alerts (the alerts come from `alerts`).
 		inbox: { items: sampleInboxItems, onItemAction: fn() },
+		// The Sidebar's Analytics: the outcomes dashboard, one synthetic month (Scenario 6 ends on it).
+		analytics: { data: sampleOutcomes, onExport: fn() },
 		patients: sampleMonitoringPatients,
 		alerts: sampleMonitoringAlerts,
 		escalationTargets: sampleEscalationTargets,
@@ -364,6 +367,58 @@ export const Scenario1Resolution: Story = {
 		const plan = within(await screen.findByRole("region", { name: "Care plan" }, { timeout: 5000 }));
 		await expect(plan.getByText("Keeping at Chadron")).toBeInTheDocument();
 		await expect(plan.getByText("Transfer avoided")).toBeInTheDocument();
+	},
+};
+
+/**
+ * The Prototype menu's "Scenario 6: After the ICU": Margaret Hayes is ready to go home on day 4. Her notice opens her
+ * page's Discharge section, where the intensivist sends her primary-care handoff; her readmission risk is High, so the
+ * next notice opens the Inbox, with the hub tele-RN's 72-hour phone check on it. Days later she's back at Chadron's ED,
+ * matched to her stay, with a High alert: accepting the ED's diuretic pathway sends her home without admission, and the
+ * last notice opens Analytics, the month's outcomes.
+ */
+export const Scenario6AfterTheIcu: Story = {
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas, userEvent }) => {
+		const hayes = () => canvas.queryAllByRole("article").find((article) => within(article).queryByText("Hayes, Margaret"));
+		// Her avatar's color, the same on every page, toast and alert, before and after she leaves Monitoring.
+		const toneIn = (element: Element | null | undefined) =>
+			element?.querySelector("[data-slot='avatar-fallback']")?.getAttribute("data-tone");
+		await waitFor(() => expect(toneIn(hayes())).toBeTruthy());
+		const tone = toneIn(hayes());
+		await userEvent.click(canvas.getByRole("button", { name: "Prototype" }));
+		await userEvent.click(await screen.findByRole("menuitem", { name: "Scenario 6: After the ICU" }));
+		// 1. The handoff, in her Discharge section.
+		await userEvent.click(await screen.findByRole("button", { name: "Review handoff" }, { timeout: 5000 }));
+		const transition = within(await canvas.findByRole("region", { name: "Transition of care" }, { timeout: 5000 }));
+		await expect(transition.getByRole("article", { name: "Margaret Hayes, 72, F" })).toBeInTheDocument();
+		await expect(transition.getByText("High")).toBeInTheDocument();
+		await userEvent.click(transition.getByRole("button", { name: "Send to clinic" }));
+		await expect(await transition.findByText(/Sent to Chadron Rural Health Clinic/)).toBeInTheDocument();
+		// 2. The follow-up, on the hub tele-RN's list: its row links to the Inbox (the notice waits while her page is open).
+		await userEvent.click(await transition.findByRole("button", { name: "Open Inbox" }, { timeout: 8000 }));
+		const todo = within(await canvas.findByRole("table", { name: "To do" }, { timeout: 5000 }));
+		await expect(todo.getByText("72-hour nurse phone check")).toBeInTheDocument();
+		await expect(todo.getByText(/For Ava Brooks, RN/)).toBeInTheDocument();
+		await expect(toneIn(todo.getByText("72-hour nurse phone check").closest("tr"))).toBe(tone);
+		// 3. Day 11: back at Chadron's ED, matched, with a High alert.
+		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
+		await waitFor(() => expect(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ })).toBeInTheDocument(), {
+			timeout: 35000,
+		});
+		await expect(toneIn(hayes())).toBe(tone);
+		await userEvent.click(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ }));
+		const dialog = await screen.findByRole("dialog", { name: "Weight up 1.5 kg since discharge, new orthopnea, HFrEF" });
+		await expect(toneIn(dialog)).toBe(tone);
+		const modal = within(dialog);
+		await userEvent.click(modal.getByRole("button", { name: "Pathway" }));
+		const pathway = within(await modal.findByRole("complementary", { name: "Pathway" }));
+		await expect(await pathway.findByText("Heart failure: diuretic adjustment in the ED")).toBeInTheDocument();
+		await userEvent.click(await pathway.findByRole("button", { name: "Accept" }));
+		await userEvent.keyboard("{Escape}");
+		// 4. Home without admission; the last notice opens the outcomes.
+		await userEvent.click(await screen.findByRole("button", { name: "Open outcomes" }, { timeout: 12000 }));
+		await expect(await canvas.findByRole("heading", { level: 1, name: "Outcomes" }, { timeout: 5000 })).toBeInTheDocument();
 	},
 };
 
@@ -695,6 +750,8 @@ function LiveMonitoring(props: MonitoringProps) {
 		onPathwayDecision,
 		onTransferDecision,
 		onDischargeDecision,
+		onTransitionDecision,
+		withScenarioInbox,
 		onBundleDecision,
 		onConsultChange,
 		onConsultNote,
@@ -741,6 +798,9 @@ function LiveMonitoring(props: MonitoringProps) {
 			onPathwayDecision={onPathwayDecision}
 			onTransferDecision={onTransferDecision}
 			onDischargeDecision={onDischargeDecision}
+			onTransitionDecision={onTransitionDecision}
+			// Scenario 6 adds a follow-up to the Inbox (the hub tele-RN's phone check), then marks it done.
+			inbox={props.inbox && { ...props.inbox, items: withScenarioInbox(props.inbox.items) }}
 			onBundleDecision={onBundleDecision}
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}

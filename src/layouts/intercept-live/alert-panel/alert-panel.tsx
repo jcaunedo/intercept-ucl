@@ -100,6 +100,7 @@ import {
 	type ConsultReplies,
 } from "./consult-messages";
 import { OverflowOffer, type AlertOverflow } from "./overflow";
+import { usePatientTone } from "../shared/patient-tones";
 import { InterpreterPrompt, type ConsultInterpreter } from "./interpreter";
 import { KeepOrTransferPanel, type KeepOrTransfer, type KeepOrTransferDecision } from "./keep-or-transfer";
 import {
@@ -1772,6 +1773,7 @@ function AlertPanelContent({
 	onSendMessage,
 	className,
 }: AlertPanelProps) {
+	const toneOf = usePatientTone();
 	// Opened to call the bedside (a card's Video consult, the Prototype menu's Alert with video consult, `?consult=1`): it
 	// starts idle and calls once the modal has come in, so the Video consult panel slides out as it does from the button
 	// (Nov 5, 2026, user's call). Opened already on (a consult request answered) shows the panel at once.
@@ -1876,6 +1878,8 @@ function AlertPanelContent({
 		<TagsPopoverActionsProvider resolve={tagActions}>
 		<AlertModal
 			{...expandedContent(data, lifecycle.status)}
+			// The app's color for the patient, as on their card (`shared/patient-tones.tsx`).
+			tone={toneOf(data.alert.patientId, data.patient.tone)}
 			monitor={connectionMonitor.monitor}
 			monitorStatus={connectionMonitor.monitorStatus}
 			tags={alertFlag ? [alertFlag, ...(data.tags ?? [])] : data.tags}
@@ -2147,6 +2151,7 @@ function PatientConsultDialogContent({
 	}
 	const unread = useUnreadMessages(messages, messagesOpen);
 	const { patient } = data;
+	const toneOf = usePatientTone();
 	const connectionMonitor = useConnectionMonitor(data.monitor, data.connection);
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -2162,7 +2167,7 @@ function PatientConsultDialogContent({
 					firstName={patient.firstName}
 					photo={patient.photo}
 					initials={patient.initials}
-					tone={patient.tone}
+					tone={toneOf(data.patientId, patient.tone)}
 					sex={patient.sex}
 					age={patient.age}
 					mrn={patient.mrn}

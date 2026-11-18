@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 17, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 18, 2026
 Scope: Intercept Live's Inbox page in the Clinical workspace (src/layouts/intercept-live/inbox/: InboxPanel and its sample items): what's in the queue, To do and Done, the order, each kind's actions, filters, sorting, several at once, and how its alerts relate to Monitoring's. Sources: documents/Intercept Live — Left Nav Spec.md (Inbox), the System Specification §6.21 Work Management and Inbox and §5.6, PRD Sidebar NAV-020 and NAV-042, intercept.ds Inbox table (`1531:7584`).
 Purpose: Records what the first Inbox layout does, so the team can confirm or change it, and lists what's still open.
 -->
@@ -18,7 +18,7 @@ Purpose: Records what the first Inbox layout does, so the team can confirm or ch
 **Surface:** the **Inbox** page, the Clinical Sidebar's shift-work group (Monitoring, Inbox, Messages, Protocols)  
 **Version:** 0.1  
 **Status:** Draft — a first layout in the prototype, pending product validation with Intercept  
-**Last updated:** November 17, 2026
+**Last updated:** November 18, 2026
 
 ---
 
@@ -71,7 +71,7 @@ The Inbox is a queue, not a feed: each item stays until it's done, and what's le
 |---|---|
 | **Tab bar** | **To do** (with a count, red while anything critical waits) and **Done**, under the app header as the Patients page's hospital bar; at its right, "What's left goes to the next shift at handoff" (INB-010). |
 | **Summary** | "13 items to act on · 1 critical" (the critical part in the Critical color); on Done, "2 done". |
-| **Filter bar** | A search, **Unread** (To do only), then a chip per kind with its count (**Alerts**, **To sign**, **Suggested orders**, **Write-backs**, **Handoff**), and the sort at the right on To do (INB-030, INB-031). |
+| **Filter bar** | A search, **Unread** (To do only), then a chip per kind with its count (**Alerts**, **To sign**, **Suggested orders**, **Write-backs**, **Handoff**, **Follow-ups**), and the sort at the right on To do (INB-030, INB-031). |
 | **Selection bar** | With rows picked: "2 selected", **Mark done**, **Clear** (INB-040). |
 | **Table** | intercept.ds's Inbox table (Table `lg`, flat heading row): **Patient** (checkbox, the unread dot, avatar, name, hospital · unit · bed), **Item** (title, then source · detail), **Type** (a Badge), **Received** (how long ago; under it the due time or Overdue), then the row's action and "…" (INB-020). |
 
@@ -88,6 +88,9 @@ Every work item waiting on the signed-in clinician, whatever produced it:
 | **Suggested order** | AI order suggestions and pathways (OE-03) | "Vasopressin 0.03 units/min · Sepsis bundle" |
 | **Write-back failed** | A signed note or order that didn't reach the hospital's EHR (OE-06) | "Progress note didn't reach the EHR" |
 | **Handoff** | Items the last clinician handed over and this one acknowledged (HO-02) | "Follow up the 4 PM blood gas · James Turner, night shift" |
+| **Follow-up** | A follow-up after discharge that the readmission risk scheduled, e.g. a nurse phone check on the hub tele-RN's list (PRD Transitions of care TOC-021) | "72-hour nurse phone check · Readmission risk · For Ava Brooks, RN (hub tele-RN)" |
+
+✅ **Resolved:** a follow-up after discharge is its own kind, **Follow-up** (a chip, "Follow-ups", and a sky Badge). When it's for someone else, its row says who ("For Ava Brooks, RN (hub tele-RN)"); its button, **Open**, opens the patient's Discharge section, where it's recorded; once done it moves to Done "by" whoever did it.
 
 - ⚠️ **Decision needed:** the spec's other work types (eligibility exceptions, credentialing, schedule approvals, integration approvals, audit prompts) belong to other roles; which reach a clinician's Inbox, if any (INB-OD-05).
 

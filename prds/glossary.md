@@ -423,6 +423,10 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Take rate** | The platform's share of a Marketplace transaction. | Spec Appendix A |
 | **Value-based purchasing** | CMS payment adjustments tied to quality measures such as SEP-1 compliance. | Spec §5.9 |
 | **WCAG** | Web Content Accessibility Guidelines. ⚠️ **Gap:** the spec commits to WCAG 2.1 AA; the Patient card PRD targets 2.2 AA. | Spec §10.4, PRD PC-165 |
+| **DHHS quarterly report** | The quarterly report to the state's Department of Health and Human Services on the program's metrics, for the NETECH Rural Health Catalyst Fund. Exported from the outcomes dashboard. | Demo Use Cases S6 |
+| **Milestone evidence pack** | The evidence the fund needs for the next milestone payment: the period's events from the outcomes layer and each hospital's share. Exported with the quarterly report. | Demo Use Cases S6 |
+| **Payer tag** | The patient's payer (Medicare, dual-eligible, Medicaid, commercial, uninsured). Reporting only: never an input to a score or a ranking. | Demo Use Cases (demo rules), Requirements §8 |
+| **RUCC (Rural-Urban Continuum Code)** | The USDA's county rurality code, 1 (metro) to 9 (most rural); the patient's county code is reporting only. The outcomes dashboard breaks metrics down by it. | Demo Use Cases (demo rules), PRD OUT-010 |
 
 ---
 
@@ -509,6 +513,16 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Draft schedule** | *Proposed* shifts past the published horizon, which the Scheduling Coordinator can still change; dashed on Schedule. The published schedule is final unless a swap or give-away changes it. | Spec §5.15 (draft / approval / publish), PRD SCH-031 |
 | **Work item** | *Proposed* one thing in the Inbox waiting on a clinician, whatever produced it: an alert to acknowledge, an AI Scribe draft to sign, a suggested order, a failed EMR write-back or an item handed over. It stays in To do until it's done; what's left goes to the next shift at handoff. | Spec §6.21, PRD INB-001 |
 | **Write-back failed** | *Proposed* an Inbox item for a signed note or order that didn't reach the hospital's EHR, to retry. | Spec §6.21, OE-06, PRD INB-001 |
+| **Transition of care** | *Proposed* what happens when a patient leaves the hospital and if they come back: the primary-care handoff, the readmission risk, the follow-up it schedules and a return matched to the stay. The Discharge section of the patient's page. | Demo Use Cases S6, PRD Transitions of care |
+| **Primary-care handoff** | *Proposed* the one-page document the platform drafts at discharge for the patient's clinic: what happened, medication changes, daily weights, follow-up, who to call. A clinician sends it; the clinic reads it without a shared EHR. | Demo Use Cases S6, PRD TOC-001 |
+| **Readmission risk** | *Proposed* the patient's risk of coming back after discharge (Low, Medium, High), with the factors found in the record. Payer and rurality are never inputs. High schedules a nurse phone check and a clinic visit. | Demo Use Cases S6, PRD TOC-010 |
+| **Follow-up (Inbox)** | *Proposed* an Inbox kind: a follow-up after discharge, e.g. the hub tele-RN's 72-hour phone check, assigned to whoever does it. | PRD INB-001, TOC-021 |
+| **Readmission watch** | *Proposed* the rule that alerts the hub when a recently discharged, high-risk patient comes back to a network hospital; the alert's source. | PRD TOC-031 |
+| **Return match** | *Proposed* matching a patient who registers at a network hospital to their earlier stay (name, date of birth, address, insurance ID), across hospitals and EHRs. "Back in the network" on the patient's page. | Demo Use Cases S6 (cross-site patient matching), PRD TOC-030 |
+| **Readmission avoided** | *Proposed* the outcome written when a returning patient is treated and sent home without admission. | Demo Use Cases S6, PRD TOC-032 |
+| **Outcomes dashboard** | *Proposed* the Analytics page: the program's outcomes for a period against the baseline, in Access, Quality and Affordability, broken down by payer or rurality, with the quarterly export. | Demo Use Cases S6, PRD Outcomes dashboard |
+| **Outcomes layer** | Where every scenario (and in production, every encounter) writes its events and outcomes, so the dashboard and the reports count them. | Demo Use Cases (demo rules), SIM-14 |
+| **Baseline** | What the pilot's metrics are compared with: the same period before the pilot. ⚠️ **Decision needed:** which period (PRD OUT-002). | PRD OUT-002 |
 
 ---
 

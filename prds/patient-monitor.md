@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 11, 2026
 Created by: Julio Caunedo
-Last updated: Nov 11, 2026
+Last updated: Nov 18, 2026
 Scope: The patient monitor (UCL PatientMonitor): the live bedside monitor shown on Patient details, in the alert modal and in the Monitoring card's full view. Its lanes, numerics, alarm limits and device alarms.
 Purpose: Defines the monitor's behavior, states and acceptance criteria in one place, so every surface that shows a patient's bedside monitor shows the same thing, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines the monitor's behavior, states and acceptance criteria in one p
 **Surface:** a component, not a page: the **patient monitor** (UCL `PatientMonitor`), wherever a patient's live bedside monitor is shown  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 11, 2026
+**Last updated:** November 18, 2026
 
 ---
 
@@ -102,7 +102,9 @@ HR, SpO₂, ABP (systolic/diastolic, MAP in the label row) and RR, the largest t
 
 ### PMN-021 — Missing values
 
-A value that isn't coming in shows "--", never zero or blank (PC-143, BR-08). ABP shows "--" unless both systolic and diastolic are there. ⚠️ **Gap:** the monitor doesn't show a value's source or age, or mark it stale (SV-08); the surface around it does where it's needed.
+A value that isn't coming in shows "--", never zero or blank (PC-143, BR-08). ABP shows "--" unless both systolic and diastolic are there.
+
+✅ **Resolved:** its waveform lane goes flat too, whatever paces it: a missing SpO₂ flattens Pleth and a missing ABP flattens its lane even while the heart rate (which sets their speed) is there, as a probe off does at the bedside. ECG is flat without a heart rate, Resp without a breathing rate. ⚠️ **Gap:** the monitor doesn't show a value's source or age, or mark it stale (SV-08); the surface around it does where it's needed.
 
 ### PMN-030 — Alarm limits
 
@@ -142,7 +144,7 @@ Once the bedside acknowledges the alarm (SD-15), the box clears and the ▲ / �
 | **Device alarm** | The value in its priority's box, flashing for high and medium (PMN-032). |
 | **Acknowledged at the bedside** | ▲ / ▼, no box. |
 | **Limit off** | OFF in place of that side's number (PMN-030). |
-| **Missing value** | "--"; a flat lane without a rate (PMN-021). |
+| **Missing value** | "--"; its own lane flat (PMN-021). |
 | **Connecting** | A pulsing block in a lane for half a second as it comes on screen (PMN-011). |
 | **Trends** | Each lane's last hour (PMN-012). |
 

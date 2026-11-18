@@ -31,7 +31,8 @@ import {
 import { ConsultSessionScope } from "../alert-panel/consult-session";
 import { usePatientNavigation } from "../patient-navigation";
 import type { CensusPatient } from "../patients/patients-panel";
-import { avatarTones, patientInitials } from "../shared/patient-avatar";
+import { patientInitials } from "../shared/patient-avatar";
+import { usePatientTones } from "../shared/patient-tones";
 import type { PanelHospital } from "../shared/patient-panel";
 
 /** The person a conversation is with, at a client hospital: a bedside nurse, a charge nurse, a pharmacist… */
@@ -184,10 +185,11 @@ function MessagesPanel({
 	const unreadOf = (conversation: MessageConversation) =>
 		read.has(conversation.id) ? 0 : (conversation.unread ?? 0);
 	// Patients keep the color they have on every other page: the tones come from every patient mentioned.
-	const tones = React.useMemo(
-		() => avatarTones(conversations.flatMap((conversation) => (conversation.patient ? [conversation.patient] : []))),
+	const mentioned = React.useMemo(
+		() => conversations.flatMap((conversation) => (conversation.patient ? [conversation.patient] : [])),
 		[conversations],
 	);
+	const tones = usePatientTones(mentioned);
 
 	const needle = query.trim().toLowerCase();
 	const shown = sorted.filter((conversation) => {
@@ -435,7 +437,7 @@ function ConversationRow({
 	unread: number;
 	now: number | null;
 	selected: boolean;
-	tones: Map<string, AvatarFallbackProps["tone"]>;
+	tones: ReadonlyMap<string, AvatarFallbackProps["tone"]>;
 	onSelect: () => void;
 }) {
 	const last = lastMessage(conversation);
@@ -530,7 +532,7 @@ function ConversationView({
 	onOpenPatient,
 }: {
 	conversation: MessageConversation;
-	tones: Map<string, AvatarFallbackProps["tone"]>;
+	tones: ReadonlyMap<string, AvatarFallbackProps["tone"]>;
 	onSendMessage?: (conversationId: string, text: string, patientId?: string) => void;
 	onOpenPatient?: (patientId: string) => void;
 }) {
@@ -616,7 +618,7 @@ function ConversationDetails({
 	onAsk,
 }: {
 	conversation: MessageConversation;
-	tones: Map<string, AvatarFallbackProps["tone"]>;
+	tones: ReadonlyMap<string, AvatarFallbackProps["tone"]>;
 	onOpenPatient?: (patientId: string) => void;
 	onAsk?: (patient: CensusPatient) => void;
 }) {

@@ -14,7 +14,10 @@ import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { MonitoringPanel, type MonitoringPanelProps, type MonitoringPatient } from "../monitoring/monitoring-panel";
 import { worstOpenSeverity } from "../monitoring/triage-queue";
+import { AnalyticsPanel, type AnalyticsPanelProps } from "../analytics/analytics-panel";
 import { InboxPanel, type InboxPanelProps } from "../inbox/inbox-panel";
+import { PatientTonesProvider, usePatientToneStore } from "../shared/patient-tones";
+import type { TransitionDecision } from "../patient-details/sections/transition-section";
 import { MessagesPanel, type MessagesPanelProps } from "../messages/messages-panel";
 import { SchedulePanel, type SchedulePanelProps } from "../schedule/schedule-panel";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
@@ -68,6 +71,8 @@ type PatientsProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		 * Discharge section.
 		 */
 		onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
+		/** A primary-care handoff sent from a patient's Discharge section, by patient (Scenario 6). */
+		onTransitionDecision?: (patientId: string, decision: TransitionDecision) => void;
 		/** A sepsis bundle check (Scenario 3's renal dose review) confirmed or undone in the alert modal, by alert. */
 		onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
 		/** The alert modal's video consult rang, went live or ended, by alert. */
@@ -85,6 +90,8 @@ type PatientsProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 		 * Sidebar's Inbox opens the queue, with this layout's alerts in it.
 		 */
 		inbox?: Pick<InboxPanelProps, "items" | "onItemAction">;
+		/** The outcomes dashboard (PRD Outcomes dashboard). With it, the Sidebar's Analytics opens it. */
+		analytics?: AnalyticsPanelProps;
 	};
 
 /**
@@ -117,6 +124,7 @@ function Patients({
 	onPathwayDecision,
 	onTransferDecision,
 	onDischargeDecision,
+	onTransitionDecision,
 	onBundleDecision,
 	onConsultChange,
 	onConsultNote,
@@ -124,6 +132,7 @@ function Patients({
 	schedule,
 	messages,
 	inbox,
+	analytics,
 	...shell
 }: PatientsProps) {
 	// Alert actions apply here, above the pages, so one taken on a patient's details shows on the Census and Monitoring.
@@ -131,6 +140,9 @@ function Patients({
 	// Closing a Resolved toast resets that patient's Monitoring card to no alert.
 	const { closedResolutions, closeResolved } = useClosedResolutions();
 	// Each flag opens what it means and what's behind it now, from the patient's record.
+	// One avatar color per patient on every page, toast and alert (`shared/patient-tones.tsx`): dealt over everyone the
+	// layout knows, the directory and the monitors, and kept as patients come and go.
+	const toneStore = usePatientToneStore(React.useMemo(() => [...patients, ...(monitoringPatients ?? [])], [patients, monitoringPatients]));
 	const flaggedPatients = React.useMemo(() => withFlagDetails(patients, patientRecords), [patients, patientRecords]);
 	const flaggedMonitoringPatients = React.useMemo(
 		() => monitoringPatients && withFlagDetails(monitoringPatients, patientRecords),
@@ -143,99 +155,104 @@ function Patients({
 	);
 
 	return (
-		<InterceptLive
-			{...shell}
-			// For the flags whose popover leads to an alert's pathway (Fall risk's fall prevention pathway).
-			alerts={alerts}
-			// The Sidebar's Monitoring shows the worst open alert, flashing, from any page.
-			navAlerts={shell.navAlerts ?? { Monitoring: worstOpenSeverity(alerts) }}
-			defaultPage={defaultPage}
-			defaultPatient={defaultPatient}
-			renderAlert={
-				alertDetails
-					? alertPanelRenderer({
-							details: alertDetails,
-							consults: patientConsults,
-							records: patientRecords,
-							alerts,
-							escalationTargets,
-							onAlertAction: handleAlertAction,
-							onPathwayDecision,
-							onTransferDecision,
-							onDischargeDecision,
-							onBundleDecision,
-							onConsultChange,
-							onConsultNote,
-						})
-					: shell.renderAlert
-			}
-			renderPatientDetails={(patientId, stepper) =>
-				patientDetailsView(patientId, stepper, {
-					patients: flaggedPatients,
-					monitoringPatients: flaggedMonitoringPatients,
-					records: patientRecords,
-					alerts,
-					escalationTargets,
-					onAlertAction: handleAlertAction,
-					onAction: onPatientDetailsAction,
-					onDischargeDecision,
-					consults: patientConsults,
-					// The alerts' pathways, on the patient's page too (its Pathway panel and Care plan).
-					alertDetails,
-					onPathwayDecision,
-					onTransferDecision,
-					onBundleDecision,
-				})
-			}
-			pages={{
-				Patients: (
-					<PatientsPanel
-						records={patientRecords}
-						hospitals={hospitals}
-						patients={flaggedPatients}
-						onOpenPatient={onOpenPatient}
-						loading={loading}
-						loadError={loadError}
-						onRetry={onRetry}
-						patientHref={patientHref}
-					/>
-				),
-				Schedule: schedule ? <SchedulePanel hospitals={hospitals} {...schedule} /> : undefined,
-				Messages: messages ? <MessagesPanel hospitals={hospitals} {...messages} /> : undefined,
-				// The same alerts as Monitoring's, so acknowledging one in the Inbox acknowledges it everywhere.
-				Inbox: inbox ? (
-					<InboxPanel
-						{...inbox}
-						alerts={alerts}
-						patients={[...patients, ...(monitoringPatients ?? [])]}
-						onAlertAction={handleAlertAction}
-					/>
-				) : undefined,
-				Monitoring: monitoringCards ? (
-					<MonitoringPanel
-						records={patientRecords}
-						hospitals={hospitals}
-						patients={monitoringCards}
-						alerts={alerts}
-						escalationTargets={escalationTargets}
-						onOpenPatient={onOpenPatient}
-						onAlertAction={handleAlertAction}
-						liveFeed={liveFeed}
-						onOpenLiveFeed={onOpenLiveFeed}
-						groupedView={groupedView}
-						closedResolutions={closedResolutions}
-					/>
-				) : undefined,
-			}}
-		>
-			{/* The feed's alerts, so the clinician's own actions don't toast. */}
-			<AlertToasts
-				alerts={alertsProp}
-				patients={patients}
-				onCloseResolved={closeResolved}
-				notices={notices}
-			/>
-		</InterceptLive>
+		<PatientTonesProvider value={toneStore}>
+			<InterceptLive
+				{...shell}
+				// For the flags whose popover leads to an alert's pathway (Fall risk's fall prevention pathway).
+				alerts={alerts}
+				// The Sidebar's Monitoring shows the worst open alert, flashing, from any page.
+				navAlerts={shell.navAlerts ?? { Monitoring: worstOpenSeverity(alerts) }}
+				defaultPage={defaultPage}
+				defaultPatient={defaultPatient}
+				renderAlert={
+					alertDetails
+						? alertPanelRenderer({
+								details: alertDetails,
+								consults: patientConsults,
+								records: patientRecords,
+								alerts,
+								escalationTargets,
+								onAlertAction: handleAlertAction,
+								onPathwayDecision,
+								onTransferDecision,
+								onDischargeDecision,
+								onBundleDecision,
+								onConsultChange,
+								onConsultNote,
+							})
+						: shell.renderAlert
+				}
+				renderPatientDetails={(patientId, stepper) =>
+					patientDetailsView(patientId, stepper, {
+						tones: toneStore.tones,
+						patients: flaggedPatients,
+						monitoringPatients: flaggedMonitoringPatients,
+						records: patientRecords,
+						alerts,
+						escalationTargets,
+						onAlertAction: handleAlertAction,
+						onAction: onPatientDetailsAction,
+						onDischargeDecision,
+						onTransitionDecision,
+						consults: patientConsults,
+						// The alerts' pathways, on the patient's page too (its Pathway panel and Care plan).
+						alertDetails,
+						onPathwayDecision,
+						onTransferDecision,
+						onBundleDecision,
+					})
+				}
+				pages={{
+					Patients: (
+						<PatientsPanel
+							records={patientRecords}
+							hospitals={hospitals}
+							patients={flaggedPatients}
+							onOpenPatient={onOpenPatient}
+							loading={loading}
+							loadError={loadError}
+							onRetry={onRetry}
+							patientHref={patientHref}
+						/>
+					),
+					Schedule: schedule ? <SchedulePanel hospitals={hospitals} {...schedule} /> : undefined,
+					Messages: messages ? <MessagesPanel hospitals={hospitals} {...messages} /> : undefined,
+					// The same alerts as Monitoring's, so acknowledging one in the Inbox acknowledges it everywhere.
+					Analytics: analytics ? <AnalyticsPanel {...analytics} /> : undefined,
+					Inbox: inbox ? (
+						<InboxPanel
+							{...inbox}
+							alerts={alerts}
+							patients={[...patients, ...(monitoringPatients ?? [])]}
+							onAlertAction={handleAlertAction}
+						/>
+					) : undefined,
+					Monitoring: monitoringCards ? (
+						<MonitoringPanel
+							records={patientRecords}
+							hospitals={hospitals}
+							patients={monitoringCards}
+							alerts={alerts}
+							escalationTargets={escalationTargets}
+							onOpenPatient={onOpenPatient}
+							onAlertAction={handleAlertAction}
+							liveFeed={liveFeed}
+							onOpenLiveFeed={onOpenLiveFeed}
+							groupedView={groupedView}
+							closedResolutions={closedResolutions}
+						/>
+					) : undefined,
+				}}
+			>
+				{/* The feed's alerts, so the clinician's own actions don't toast. */}
+				<AlertToasts
+					alerts={alertsProp}
+					patients={patients}
+					onCloseResolved={closeResolved}
+					notices={notices}
+				/>
+			</InterceptLive>
+		</PatientTonesProvider>
 	);
 }
 

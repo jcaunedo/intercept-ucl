@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenario 6 Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap">
+<style>
+/* A presenter's script: one column of beats, each with what to click, what to say, and the screen it lands on.
+   Colors follow Intercept Live's tokens (theme.css): neutral surfaces, the severity red as the only accent. */
+:root {
+	--bg: oklch(0.985 0.002 250);
+	--surface: oklch(1 0 0);
+	--fg: oklch(0.21 0.01 260);
+	--muted: oklch(0.5 0.012 260);
+	--border: oklch(0.91 0.005 260);
+	--critical: oklch(0.58 0.22 27);
+	--critical-subtle: oklch(0.96 0.025 20);
+	--success: oklch(0.55 0.14 150);
+	--success-subtle: oklch(0.96 0.035 150);
+	--note: oklch(0.96 0.03 85);
+	--note-fg: oklch(0.42 0.09 70);
+	--font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+	--font-mono: "Roboto Mono", ui-monospace, monospace;
+	color-scheme: light;
+	/* archielabs.ds icons (lucide paths): `mouse-pointer` before Steps, `text` before each screenshot's note. */
+	--icon-pointer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 12.586 19 19'/%3E%3Cpath d='M3.688 3.037a.497.497 0 0 0-.651.651l6.5 15.999a.501.501 0 0 0 .947-.062l1.569-6.083a2 2 0 0 1 1.448-1.479l6.124-1.579a.5.5 0 0 0 .063-.947z'/%3E%3C/svg%3E");
+	--icon-text: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 6.1H3'/%3E%3Cpath d='M21 12.1H3'/%3E%3Cpath d='M15.1 18H3'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: oklch(0.17 0.006 260);
+		--surface: oklch(0.21 0.008 260);
+		--fg: oklch(0.96 0.003 260);
+		--muted: oklch(0.7 0.01 260);
+		--border: oklch(0.32 0.01 260);
+		--critical: oklch(0.68 0.19 25);
+		--critical-subtle: oklch(0.27 0.06 25);
+		--success: oklch(0.72 0.14 150);
+		--success-subtle: oklch(0.26 0.05 150);
+		--note: oklch(0.28 0.04 85);
+		--note-fg: oklch(0.85 0.08 85);
+		color-scheme: dark;
+	}
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font: 400 16px/1.55 var(--font-sans);
+}
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+a:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 4px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: max(16px, 4vw); }
+
+header.top { padding-block: 48px 32px; }
+.eyebrow { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 10px 0 12px; text-wrap: balance; }
+/* The line under the title: the title's type, muted. */
+h1:has(+ .h1-sub) { margin-bottom: 0; }
+.h1-sub { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; font-weight: 400; margin: 0 0 12px; color: var(--muted); }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; }
+.setting { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.chip { border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 14px; }
+
+nav.beats {
+	position: sticky; top: 0; z-index: 5;
+	background: color-mix(in oklch, var(--bg) 92%, transparent);
+	backdrop-filter: blur(8px);
+	border-block: 1px solid var(--border);
+}
+nav.beats ol { list-style: none; display: flex; gap: 4px; margin: 0 auto; padding-block: 10px; overflow-x: auto; }
+nav.beats li:first-child a { margin-left: -12px; }
+nav.beats a { display: block; white-space: nowrap; text-decoration: none; font-size: 14px; font-weight: 500; padding: 6px 12px; border-radius: 10px; color: var(--muted); }
+nav.beats a:hover { background: var(--surface); color: var(--fg); }
+nav.beats .num { font-family: var(--font-mono); margin-right: 6px; }
+
+section.prep, section.beat, section.gaps { padding-block: 72px; border-bottom: 1px solid var(--border); }
+h2 { font-size: 24px; line-height: 1.25; margin: 0; text-wrap: balance; }
+.beat-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.time { font: 500 14px/1 var(--font-mono); color: var(--muted); }
+
+/* One column: what to say under the title, then what to do. */
+.script { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px; max-width: 72ch; }
+.script > div { min-width: 0; }
+.label { font: 600 12px/1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.label.steps { display: flex; align-items: center; gap: 6px; }
+.label.steps::before {
+	content: "";
+	flex: none;
+	width: 14px;
+	height: 14px;
+	background: currentColor;
+	-webkit-mask: var(--icon-pointer) center / contain no-repeat;
+	mask: var(--icon-pointer) center / contain no-repeat;
+}
+.script ol, .script ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.say { margin: 0; font-size: 16px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+kbd, .ui { font: 600 0.92em var(--font-sans); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+
+/* One screenshot per row, full width, so the screen can be read. */
+.frames { display: grid; grid-template-columns: 1fr; gap: 40px; }
+figure { margin: 0; min-width: 0; }
+figure img { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+figure.narrow img { max-width: 420px; }
+figcaption { font-size: 16px; color: var(--fg); margin-top: 16px; display: flex; align-items: flex-start; gap: 8px; }
+/* archielabs.ds `text`, as a mask so it takes the caption's color; centered on the first line. */
+figcaption::before {
+	content: "";
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin-top: 4px;
+	background: currentColor;
+	-webkit-mask: var(--icon-text) center / contain no-repeat;
+	mask: var(--icon-text) center / contain no-repeat;
+}
+
+.callout { border-radius: 12px; padding: 14px 16px; font-size: 15px; margin-top: 16px; }
+.callout.note { background: var(--note); color: var(--note-fg); }
+.callout.done { background: var(--success-subtle); }
+.callout strong { font-weight: 600; }
+.pending { display: inline-block; font: 600 12px/1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase; color: var(--note-fg); background: var(--note); border-radius: 999px; padding: 6px 10px; }
+
+.prep ol { display: grid; gap: 8px; padding-left: 20px; max-width: 72ch; }
+.prep ol ol { list-style: upper-alpha; margin-top: 8px; }
+.gaps table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.gaps th, .gaps td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.gaps th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+/* A caption in three lines: what's on screen, when it appears, what the presenter does. */
+.cap { display: grid; gap: 4px; }
+.cap b { font-weight: 600; }
+footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+
+
+<header class="top wrap">
+	<p class="eyebrow">Intercept Live · Demo storyboard</p>
+	<h1>Scenario 6: After the ICU, a readmission caught early</h1>
+	<p class="h1-sub">Patient: Margaret Hayes, then the outcomes report</p>
+	<p class="lede">Margaret from Scenario 1 goes home with a primary-care handoff, comes back 11 days later and is caught before readmission. Then the demo closes on the dashboard that reports all six scenarios. It ties the product to measurable quality, affordability and access, and to the fund's quarterly reporting. Follow the beats in order: each one says what to click, what to say, and what the screen should look like.</p>
+	<div class="setting">
+		<span class="chip">Chadron Memorial and Chadron Rural Health Clinic</span>
+		<span class="chip">Days 4 to 11 after Scenario 1</span>
+		<span class="chip">The hub's outcomes dashboard</span>
+		<span class="chip">Synthetic data</span>
+	</div>
+</header>
+
+<nav class="beats" aria-label="Beats">
+	<ol class="wrap">
+		<li><a href="#prep">Before you start</a></li>
+		<li><a href="#beat-1"><span class="num">1</span>Primary-care handoff</a></li>
+		<li><a href="#beat-2"><span class="num">2</span>Readmission risk</a></li>
+		<li><a href="#beat-3"><span class="num">3</span>The catch</a></li>
+		<li><a href="#beat-4"><span class="num">4</span>Outcomes</a></li>
+		<li><a href="#beat-5"><span class="num">5</span>Priority populations</a></li>
+		<li><a href="#beat-6"><span class="num">6</span>Reporting</a></li>
+		<li><a href="#gaps">Known gaps</a></li>
+	</ol>
+</nav>
+
+<main>
+<section class="prep wrap" id="prep">
+	<div class="beat-head"><h2>Before you start, a few things to know</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">In Scenario 1 the intensivist kept Margaret at Chadron instead of transferring her. Four days later she's ready to go home. This is what happens after the ICU, and how the program proves it worked.</p>
+		</div>
+		<div>
+			<ol>
+				<li>Open the prototype on <strong>Monitoring</strong>. If you've already played it, use <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span> first.</li>
+				<li>Click the <strong>Chadron Memorial</strong> tab: Margaret Hayes is there, on Med-Surg Bed 4. You don't need to play Scenario 1 first.</li>
+				<li>The days pass in seconds. Her handoff and follow-up show the scenario's dates (her discharge is today); the lists show when each step happened on the real clock.</li>
+				<li>It takes about a minute and a half to the outcomes, then as long as you want on the dashboard.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/00-start.jpg" alt="Monitoring on Chadron Memorial: four patients, Margaret Hayes on Med-Surg Bed 4, NEWS2 1 Low." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Chadron Memorial before the scenario: Margaret on Med-Surg Bed 4.</span><span><b>When:</b> As the prototype opens, after you click the Chadron Memorial tab.</span><span><b>You:</b> Nothing yet. Point at Margaret's card.</span></span></figcaption></figure>
+	</div>
+	<div class="callout note"><strong>Some toasts come from the live feed.</strong> Other patients' alerts keep changing while you present. If a toast covers the one you want, click the stack to spread it.</div>
+</section>
+
+<section class="beat wrap" id="beat-1">
+	<div class="beat-head"><h2>1. Primary-care handoff</h2><span class="time">Day 4</span></div>
+	<div class="script">
+		<div>
+			<p class="say">At discharge the platform builds a one-page handoff to Margaret's clinic: what happened, the medication changes, daily-weight instructions and a 7-day follow-up. It goes to the clinic in a format it can read without a shared EHR. Nothing goes out on its own: the intensivist reviews it and sends it.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Open <span class="ui">Prototype</span> at the bottom of the Sidebar and pick <span class="ui">Scenario 6: After the ICU</span>.</li>
+				<li>About 2 seconds later a toast: <strong>Primary-care handoff ready</strong>. Click <span class="ui">Review handoff</span>.</li>
+				<li>Her page opens on <strong>Discharge</strong>: <strong>Transition of care</strong>, Handoff to send. Read the page out: what happened, furosemide up to 60 mg, spironolactone held, the discharge weight and when to call.</li>
+				<li>Scroll down: <span class="ui">Send to clinic</span>.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 6: After the ICU." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Prototype menu.</span><span><b>When:</b> Before anything happens.</span><span><b>You:</b> Click Prototype at the bottom of the Sidebar, then Scenario 6: After the ICU.</span></span></figcaption></figure>
+		<figure><img src="frames/02-notice.jpg" alt="A toast: Primary-care handoff ready, Hayes goes home today, with Review handoff." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The toast “Primary-care handoff ready”, about Margaret, with Review handoff. Her card has settled at NEWS2 1, Low.</span><span><b>When:</b> 1.5 s after you pick the scenario.</span><span><b>You:</b> Click Review handoff (spread the stack first if another toast is in front).</span></span></figcaption></figure>
+		<figure><img src="frames/03-handoff.jpg" alt="Margaret's page on Discharge: Transition of care, Handoff to send; the handoff to Chadron Rural Health Clinic, a one-page document: what happened, medication changes." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her Discharge section: the handoff to Chadron Rural Health Clinic (Dr. Tom Weller) as the clinic will read it, delivery marked Preview.</span><span><b>When:</b> When you click Review handoff.</span><span><b>You:</b> Read out what happened and the medication changes.</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-2">
+	<div class="beat-head"><h2>2. Readmission risk</h2><span class="time">Days 4 to 9</span></div>
+	<div class="script">
+		<div>
+			<p class="say">Her readmission risk is high: heart failure with a reduced ejection fraction, she lives alone, and she just had ICU-level care. Payer and rurality never enter that score; they're for reporting only. So the platform schedules a 72-hour nurse phone check and puts it on the hub tele-RN's list, and books her clinic visit within 7 days.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Point at <strong>Readmission risk</strong>: High, its three factors, and "Payer and county rurality aren't inputs".</li>
+				<li>Click <span class="ui">Send to clinic</span>. It's sent, and a moment later it says the clinic opened it. She goes home: her card leaves Monitoring.</li>
+				<li>Under <strong>Follow-up</strong>, the 72-hour phone check (Ava Brooks, RN, hub tele-RN) and the clinic visit are Scheduled. Click <span class="ui">Open Inbox</span>.</li>
+				<li>The Inbox: <strong>72-hour nurse phone check</strong>, a Follow-up "For Ava Brooks, RN (hub tele-RN)", due in 72 h.</li>
+				<li>About 16 seconds after you sent it, it's day 7: the call is done. Click <span class="ui">Done</span>: the row is there, by Ava Brooks. On day 9 her clinic visit is done too, 5 days after discharge.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/04-risk.jpg" alt="The end of the handoff with Send to clinic, then Readmission risk: High, 3 factors in the record: HFrEF, lives alone, ICU-level care this stay; payer and county rurality aren't inputs." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Send to clinic, then Readmission risk: High, its three factors, what it schedules, and that payer and rurality aren't inputs.</span><span><b>When:</b> Below the handoff, from the start.</span><span><b>You:</b> Point at the risk, then click Send to clinic.</span></span></figcaption></figure>
+		<figure><img src="frames/05-sent.jpg" alt="Sent to Chadron Rural Health Clinic, opened by the clinic; Readmission risk High; Follow-up: 72-hour nurse phone check, Scheduled." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> “Sent to Chadron Rural Health Clinic” and “Opened by the clinic” that afternoon; the follow-up Scheduled, with Open Inbox on the phone check.</span><span><b>When:</b> Sent at once; the rest 3 s after you click Send to clinic.</span><span><b>You:</b> Scroll to Follow-up, then click Open Inbox.</span></span></figcaption></figure>
+		<figure><img src="frames/06-inbox.jpg" alt="The Inbox, To do: 72-hour nurse phone check for Margaret Hayes, Follow-up, Readmission risk High; the Follow-ups chip." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Inbox with the 72-hour nurse phone check, a Follow-up for Ava Brooks, RN (hub tele-RN), and a toast saying the same.</span><span><b>When:</b> When you click Open Inbox.</span><span><b>You:</b> Point at the row and the Follow-ups chip.</span></span></figcaption></figure>
+		<figure><img src="frames/07-inbox-done.jpg" alt="The Inbox, Done: 72-hour nurse phone check, weight 71.6 kg, no orthopnea, done by Ava Brooks." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Done: the phone check, “Weight 71.6 kg, no orthopnea”, by Ava Brooks.</span><span><b>When:</b> Day 7, 16 s after you sent the handoff.</span><span><b>You:</b> Click the Done tab.</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-3">
+	<div class="beat-head"><h2>3. The catch</h2><span class="time">Day 11</span></div>
+	<div class="script">
+		<div>
+			<p class="say">On day 11 Margaret comes to the Chadron ED with her weight up 1.5 kg and new orthopnea. The platform matches her to the earlier stay and alerts the hub. Her diuretic is adjusted in the ED and she goes home without admission.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Click <span class="ui">Monitoring</span> in the Sidebar, then the <strong>Chadron Memorial</strong> tab.</li>
+				<li>About 30 seconds after you sent the handoff, Margaret is back: <strong>ED · Bay 1</strong>, NEWS2 5, and a <strong>High</strong> alert, "Back 7 days after discharge, matched to her Chadron stay".</li>
+				<li>Click her alert bar. Then <span class="ui">Pathway</span> on her NEWS2 line: <strong>Heart failure: diuretic adjustment in the ED</strong> (furosemide 80 mg IV, 80 mg by mouth from tomorrow, labs before she leaves, the criteria to go home). Click <span class="ui">Accept</span>, then close the alert.</li>
+				<li>About 6 seconds later she goes home: her card leaves Monitoring and a toast says <strong>Readmission avoided</strong>.</li>
+				<li>Optional: <span class="ui">Inbox</span> › the new <strong>Phone check the day after the ED visit</strong> › <span class="ui">Open</span> shows her Discharge section with <strong>Back in the network</strong>: the match, why she came, and Readmission avoided.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/08-return.jpg" alt="Chadron Memorial: Margaret Hayes back, ED Bay 1, NEWS2 5 Medium, a High alert; the toast: Back 7 days after discharge, matched to her Chadron stay." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Margaret back on Monitoring at Chadron's ED, NEWS2 5, with a High alert and its toast.</span><span><b>When:</b> Day 11, about 30 s after you sent the handoff.</span><span><b>You:</b> Click the High bar on her card.</span></span></figcaption></figure>
+		<figure><img src="frames/09-return-alert.jpg" alt="Her alert: Weight up 1.5 kg since discharge, new orthopnea, HFrEF; Back 7 days after discharge, matched to her Chadron stay; Source: Readmission watch." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Her alert: what brought her back, “matched to her Chadron stay”, the readmission watch as its source, her live ED monitor.</span><span><b>When:</b> When you open it.</span><span><b>You:</b> Read the reason out, then click Pathway.</span></span></figcaption></figure>
+		<figure><img src="frames/10-pathway.jpg" alt="The Pathway column: Heart failure: diuretic adjustment in the ED; furosemide IV 80 mg, furosemide by mouth 80 mg daily, basic metabolic panel, home from the ED if; Accept." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The ED's pathway, each order with the values behind it.</span><span><b>When:</b> When you click Pathway.</span><span><b>You:</b> Click Accept.</span></span></figcaption></figure>
+		<figure><img src="frames/11-accepted.jpg" alt="The pathway Awaiting co-signature, sent to Dr. Tom Weller for co-signature." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The pathway sent to Dr. Tom Weller for co-signature.</span><span><b>When:</b> As soon as you accept it. Her 4 hours in the ED then play on their own.</span><span><b>You:</b> Close her alert.</span></span></figcaption></figure>
+		<figure><img src="frames/12-avoided-notice.jpg" alt="Margaret's card gone from Chadron; the toast: Readmission avoided, with Open outcomes." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> She's gone home: her card has left Monitoring, and the toast “Readmission avoided” offers Open outcomes.</span><span><b>When:</b> About 6 s after you accept the pathway.</span><span><b>You:</b> Read the toast out. Click Open outcomes for beat 4, or first take the optional step below.</span></span></figcaption></figure>
+		<figure><img src="frames/13-avoided-page.jpg" alt="Her Discharge section: Transition of care, Readmission avoided; Back in the network: Chadron Memorial ED, 7 days after discharge, matched on name, date of birth, address, Medicare ID." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Back in the network: where and when, what matched her to the stay, what brought her, and “Readmission avoided”.</span><span><b>When:</b> Any time after she goes home.</span><span><b>You:</b> Optional: Inbox › Phone check the day after the ED visit › Open.</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-4">
+	<div class="beat-head"><h2>4. Outcomes dashboard</h2><span class="time">The pilot's month</span></div>
+	<div class="script">
+		<div>
+			<p class="say">This is the pilot dashboard, with one synthetic month that includes tonight's scenarios. Access: ICU-level coverage hours at the spoke sites, and the median time from alert to intensivist. Quality: transfers kept, bundle compliance, ICU-level length of stay, 30-day readmissions, mortality against benchmark. Affordability: transfer costs avoided and the revenue each hospital kept. Every number is against the baseline before the pilot. And it's synthetic: one made-up month for the demo.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Click <span class="ui">Open outcomes</span> on the toast (or <span class="ui">Analytics</span> in the Sidebar).</li>
+				<li>Say the month is synthetic (the page has no label for it), then point at the four headline tiles: 6 min to an intensivist, 61% kept at their hospital, 13.1% readmissions, $487K in transfer costs avoided.</li>
+				<li>Scroll through Access, Quality and Affordability, then <strong>By hospital</strong> and <strong>Events this month includes</strong>: Margaret's two lines are there, with the other scenarios'.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/14-outcomes.jpg" alt="Analytics: Outcomes; the headline tiles; Access and Quality tables with baseline, pilot and change." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Outcomes: the headline tiles, then each group's metrics against the baseline.</span><span><b>When:</b> When you click Open outcomes.</span><span><b>You:</b> Say it's synthetic, read the tiles out, then scroll.</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-5">
+	<div class="beat-head"><h2>5. Priority populations</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">One toggle stratifies every metric by payer and by county rurality, showing who benefited. The uninsured and the most rural counties started furthest behind and gained the most. And again: payer and rurality are used for reporting only, never in a score.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Click <span class="ui">By payer</span>: every table shows Medicare, Dual-eligible, Medicaid, Commercial and Uninsured, each group's value and its change from its own baseline.</li>
+				<li>Click <span class="ui">By rurality</span>: the same by county rurality code, RUCC 5 (Scotts Bluff) to RUCC 9 (Morrill).</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/15-by-payer.jpg" alt="Outcomes by payer: Medicare, Dual-eligible, Medicaid, Commercial, Uninsured; each group's pilot value and change." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> By payer: each group's patient count, then every metric for each payer. Coverage hours show “—”: a site measure, not a patient's.</span><span><b>When:</b> When you click By payer.</span><span><b>You:</b> Point at Uninsured: the biggest gains.</span></span></figcaption></figure>
+		<figure><img src="frames/16-by-rurality.jpg" alt="Outcomes by rurality: RUCC 5, RUCC 7, RUCC 9." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> By rurality: RUCC 5, 7 and 9.</span><span><b>When:</b> When you click By rurality.</span><span><b>You:</b> Point at RUCC 9, the most rural county.</span></span></figcaption></figure>
+	</div>
+</section>
+
+<section class="beat wrap" id="beat-6">
+	<div class="beat-head"><h2>6. Reporting</h2></div>
+	<div class="script">
+		<div>
+			<p class="say">One click exports the quarterly DHHS report and the evidence pack for the next milestone payment. Measurement is built in, not a spreadsheet at the end of the quarter.</p>
+		</div>
+		<div>
+			<p class="label steps">Steps</p>
+			<ol>
+				<li>Click <span class="ui">Export quarterly report</span>. A moment later, the <strong>Q4 2026 DHHS quarterly report</strong> and the <strong>Milestone 2 evidence pack</strong>, each with what it holds.</li>
+				<li>Optional: click <span class="ui">CSV</span> on either to download it.</li>
+			</ol>
+		</div>
+	</div>
+	<div class="frames">
+		<figure><img src="frames/17-export.jpg" alt="The Quarterly report dialog: Q4 2026 DHHS quarterly report and Milestone 2 evidence pack, each with a CSV download; Ready to send with the quarterly filing." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The quarterly report and the milestone evidence pack, ready, built from synthetic data.</span><span><b>When:</b> About 1 s after you click Export quarterly report.</span><span><b>You:</b> Read what each holds. Close to finish.</span></span></figcaption></figure>
+	</div>
+	<div class="callout done"><strong>Close here.</strong> Only the measured cohort results from Intercept's existing service belong in the application as real outcomes; everything on this screen is synthetic.</div>
+</section>
+
+<section class="gaps wrap" id="gaps">
+	<div class="beat-head"><h2>Known gaps</h2></div>
+	<p style="margin:0 0 16px;color:var(--muted);max-width:68ch">Where the prototype differs from the scenario, in case someone asks.</p>
+	<div class="table-wrap">
+		<table>
+			<thead><tr><th>What the audience sees</th><th>The scenario</th><th>Why</th></tr></thead>
+			<tbody>
+				<tr><td>The handoff's delivery is labeled Preview; nothing really reaches the clinic</td><td>"It goes to the clinic in a format it can read without a shared EHR"</td><td>Delivery to clinics outside the EHR is Funded (built during the award year)</td></tr>
+				<tr><td>The hub intensivist sends the handoff</td><td>The platform builds it</td><td>Who sends it in production is open (PRD Transitions of care, TOC-002)</td></tr>
+				<tr><td>The phone check shows in the intensivist's Inbox, marked as the tele-RN's</td><td>"On the hub tele-RN's list"</td><td>The tele-RN's own view isn't designed yet (TOC-021)</td></tr>
+				<tr><td>The risk shows its factors, without points</td><td>A readmission risk score</td><td>The model and its thresholds need Intercept's clinical review (TOC-012)</td></tr>
+				<tr><td>Eleven days pass in about 40 seconds</td><td>Days 4 to 11</td><td>The prototype runs on the real clock; her handoff and follow-up show the scenario's dates</td></tr>
+				<tr><td>The dashboard's numbers are one static synthetic month; the downloads are CSVs</td><td>Mock dashboard, stratification and export</td><td>Live calculation from production data is Funded; the DHHS template is open (PRD Outcomes dashboard)</td></tr>
+				<tr><td>No "Synthetic data" label on screen; only the export says so</td><td>Label the dashboard "synthetic data" on screen; a watermark on every screen</td><td>The page's badge was removed (Nov 18, 2026); the presenter says it. The app-wide label (DU-05) isn't built</td></tr>
+				<tr><td>The By hospital table compares the hospitals</td><td>"Revenue retained by each hospital"</td><td>Clinical screens never compare hospitals (hospital isolation); whether a network report may is open</td></tr>
+				<tr><td>Diuretic doses, discharge criteria, weights and the dashboard's figures</td><td>—</td><td>Illustrative values; they need the scenario's clinical review</td></tr>
+			</tbody>
+		</table>
+	</div>
+</section>
+</main>
+
+<footer class="wrap">
+	Source: InterceptLIVE Demo Use Cases, Scenario 6 (NETECH Rural Health Catalyst Fund). Margaret Hayes, the dashboard's month and everyone in the prototype are synthetic. To run it again: <span class="ui">Prototype</span> › <span class="ui">Reset prototype</span>.
+</footer>
+</body>
+</html>

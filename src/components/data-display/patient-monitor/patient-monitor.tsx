@@ -136,6 +136,12 @@ const parameters: Record<
 };
 const parameterOrder: ParameterKey[] = ["hr", "spo2", "bp", "rr"];
 
+/** Whether a lane's own reading is coming in: ABP needs both its systolic and diastolic, as its number does. */
+function laneReporting(parameter: ParameterKey, vitals: MonitorVitals) {
+	if (parameter === "bp") return vitals.systolic != null && vitals.diastolic != null;
+	return vitals[parameter] != null;
+}
+
 // The readings each numeric alarms on, in order: ABP on its systolic, then its mean.
 const alarmReadings: Record<ParameterKey, readonly MonitorAlarmParameter[]> = {
 	hr: ["hr"],
@@ -295,10 +301,13 @@ function MonitorNumeric({
  */
 function MonitorLane({ parameter, vitals, className }: { parameter: ParameterKey; vitals: MonitorVitals; className?: string }) {
 	const { wave, color, kind } = parameters[parameter];
-	const rate = kind === "resp" ? vitals.rr : vitals.hr;
+	// Each lane follows its own reading (PRD Patient monitor PMN-021): one that isn't coming in ("--") flattens its lane,
+	// as a probe off does at the bedside, even while the heart rate that paces it is there. Pleth and ABP sweep at the
+	// heart rate, Resp at the breathing rate.
+	const rate = laneReporting(parameter, vitals) ? (kind === "resp" ? vitals.rr : vitals.hr) : undefined;
 
 	return (
-		<div className={cn("relative min-h-0 min-w-0 flex-1", className)}>
+		<div data-reporting={rate === undefined ? "false" : undefined} className={cn("relative min-h-0 min-w-0 flex-1", className)}>
 			<span className={cn("absolute top-0.5 left-2 text-xs font-semibold", color)}>{wave}</span>
 			<div className={cn("absolute inset-x-0 top-4 bottom-1", color)}>
 				<MonitorWaveform kind={kind} rate={rate} />

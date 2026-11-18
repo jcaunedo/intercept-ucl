@@ -1,6 +1,7 @@
 import type { AlertDetailData } from "../alert-panel/alert-panel";
 import { sampleScenario1ResolvedDetail } from "../alert-panel/sample-alert-panel";
 import type { CensusPatient } from "../patients/patients-panel";
+import type { InboxItem } from "../inbox/inbox-panel";
 import { sampleScenario1Census, sampleScenario1ResolvedCensus } from "./sample-census";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleScenario1Monitoring, sampleScenario1ResolvedMonitoring } from "../monitoring/sample-monitoring";
@@ -31,8 +32,18 @@ type ScenarioChanges = {
 	resolve?: Record<string, Omit<NonNullable<TriageAlert["addressed"]>, "at">>;
 	/** Changes to an alert's modal, by alert id. */
 	details?: Record<string, (detail: AlertDetailData) => AlertDetailData>;
-	/** Lines for the patients' activity logs, e.g. the consult falling back to audio (`at` is when the beat plays). */
-	log?: (Omit<PatientActivity, "id" | "at"> & { patientId: string })[];
+	/**
+	 * Lines for the patients' activity logs, e.g. the consult falling back to audio. `at` is when the beat plays, unless the
+	 * line has its own (Scenario 6's days pass in seconds, so its lines carry the scenario's dates).
+	 */
+	log?: (Omit<PatientActivity, "id" | "at"> & { patientId: string; at?: string })[];
+	/** Items for the Inbox, added or replaced by id (Scenario 6's follow-up on the hub tele-RN's list, then done). */
+	inbox?: InboxItem[];
+	/**
+	 * Patients who leave Monitoring now (`true`: discharged home, Scenario 6) or come back to it (`false`: back in the
+	 * ED). Their Census card's `status` says the same, through `census`.
+	 */
+	leave?: Record<string, boolean>;
 	/**
 	 * Something for the clinician to act on, shown as a toast unless its alert is open (Scenario 2's social needs). Its
 	 * `id` is made unique per run when the beat plays.
@@ -44,10 +55,10 @@ type ScenarioBeat = {
 	/**
 	 * When it plays: when the scenario starts, once the scenario's video consult is on (its first time in a run), once
 	 * the clinician keeps the patient (keep or transfer), once they accept the scenario's pathway (Scenario 3), once they
-	 * send an alert to the backup coverage (Scenario 5's overflow: the alert escalated to the backup), or once they
-	 * request a transfer (Scenario 5's stroke).
+	 * send an alert to the backup coverage (Scenario 5's overflow: the alert escalated to the backup), once they
+	 * request a transfer (Scenario 5's stroke), or once they send a primary-care handoff (Scenario 6).
 	 */
-	after: "start" | "consult" | "keep" | "pathway" | "overflow" | "transfer";
+	after: "start" | "consult" | "keep" | "pathway" | "overflow" | "transfer" | "handoff";
 	/**
 	 * Only for this alert's trigger, in a scenario with two (Scenario 5: Walter's consult and pathway, Linda's overflow and
 	 * transfer). Without it, any of the scenario's alerts triggers it.

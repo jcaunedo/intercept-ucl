@@ -1383,6 +1383,93 @@ const sampleScenario5LindaTransfer = (at: (minutes: number) => string): KeepOrTr
 	doorInDoorOut: { doorIn: at(-18), goalMinutes: 120 },
 });
 
+/**
+ * Hayes's alert on her return (Scenario 6, step 3): day 11, Chadron's ED, 7 days after her discharge. The platform matched
+ * her ED registration to her Chadron stay (name, date of birth, address, Medicare ID) and alerted the hub: weight up
+ * 1.5 kg since discharge and new orthopnea, with a readmission risk of High at discharge. The pathway is the ED's diuretic
+ * adjustment, so she can go home without admission; doses and the discharge criteria are illustrative until clinical
+ * review. Her Scenario 1 detail gives her identity, history and room; the rest is the return's.
+ */
+const sampleScenario6ReturnAlertDetail = (firedAt = new Date().toISOString()): AlertDetailData => {
+	const base = sampleScenario1AlertDetail();
+	return {
+		...base,
+		alert: {
+			id: "live-hayes-return",
+			patientId: "p15",
+			severity: "high",
+			title: "Back 7 days after discharge, matched to her Chadron stay",
+			reason: "Weight up 1.5 kg since discharge, new orthopnea, HFrEF",
+			source: { kind: "rule", name: "Readmission watch" },
+			firedAt,
+		},
+		patient: { ...base.patient, unit: "ED", bed: "Bay 1" },
+		reasons: [
+			{
+				label: "Matched to her Chadron stay",
+				detail: "ED registration matched on name, date of birth, address and Medicare ID: discharged from Med-Surg 7 days ago",
+			},
+			{ label: "Weight +1.5 kg since discharge", lead: "73.4 kg", detail: "71.9 kg at discharge; 72.0 kg at her clinic visit 2 days ago" },
+			{ label: "New orthopnea", detail: "Two pillows to sleep since last night, crackles at both bases, SpO₂ 93% on room air" },
+		],
+		flag: "Return after discharge",
+		tags: [{ label: "Fall risk" }],
+		history: [
+			{
+				label: "Discharge meds",
+				items: [
+					{ name: "Furosemide", detail: "60 mg PO daily (was 40 mg before the stay)" },
+					{ name: "Carvedilol", detail: "6.25 mg BID" },
+					{ name: "Sacubitril-valsartan", detail: "24/26 mg BID" },
+					{ name: "Spironolactone", detail: "Held since the stay" },
+				],
+			},
+			{ label: "Creatinine", value: "1.6 mg/dL", detail: "Now · 1.5 at discharge · baseline 1.5 (CKD 3)", severity: "low" },
+			{ label: "BNP", value: "1,420 pg/mL", detail: "Now · 980 at discharge · normal < 100", severity: "critical" },
+			{ label: "Potassium", value: "4.1 mmol/L", detail: "Now" },
+		],
+		bedside: { name: "Lisa Grant", role: "RN", initials: "LG", tone: 4, presence: "online", activity: "In the ED" },
+		transcript: sampleConsultTranscript({ patientId: "p15", firstName: "Margaret", sex: "F", nurse: "Lisa Grant" }),
+		room: { airway: "none", pumps: 0 },
+		pathway: {
+			title: "Heart failure: diuretic adjustment in the ED",
+			source: "Reference protocol, heart failure return within 30 days (configurable per hospital)",
+			orders: [
+				{
+					id: "furosemide-iv",
+					name: "Furosemide IV",
+					dose: "80 mg IV once, now",
+					detail: "Target urine output ≥ 1 L over 4 h",
+					evidence: "weight +1.5 kg since discharge, orthopnea, crackles at both bases",
+				},
+				{
+					id: "furosemide-po",
+					name: "Furosemide by mouth",
+					dose: "80 mg daily from tomorrow (was 60 mg)",
+					detail: "Back on her discharge weight, 71.9 kg, within a week",
+					evidence: "weight up on 60 mg daily",
+				},
+				{
+					id: "bmp",
+					name: "Basic metabolic panel",
+					dose: "In 4 h, before she leaves",
+					detail: "Potassium and creatinine after the IV dose",
+					evidence: "creatinine 1.6 mg/dL, CKD 3",
+				},
+				{
+					id: "home-if",
+					name: "Home from the ED if",
+					dose: "Urine output ≥ 1 L, lies flat, SpO₂ ≥ 94% on room air",
+					detail: "With a nurse call tomorrow and a clinic visit in 2 days",
+					evidence: "readmission risk High at discharge",
+				},
+			],
+			cosigner: { name: "Dr. Tom Weller", role: "family physician, Chadron" },
+		},
+		transfer: undefined,
+	};
+};
+
 // The scenarios' alerts, written out in full: Hayes's (Scenario 1) and Reynolds's (Scenario 2).
 // Each gets the alert as it fired, for what counts from it (Scenario 3's bundle timer starts at time zero).
 const scenarioAlertDetails: Record<string, (firedAt: string) => AlertDetailData> = {
@@ -1392,6 +1479,7 @@ const scenarioAlertDetails: Record<string, (firedAt: string) => AlertDetailData>
 	"live-kessler": sampleScenario4AlertDetail,
 	"live-pierce": sampleScenario5WalterAlertDetail,
 	"live-shaw": sampleScenario5LindaAlertDetail,
+	"live-hayes-return": sampleScenario6ReturnAlertDetail,
 };
 
 /**
@@ -1451,7 +1539,7 @@ function sampleAlertDetails({
 							firstName: scenario.patient.firstName,
 							sex: scenario.patient.sex,
 							vitals: live.monitor?.vitals ?? scenario.monitor?.vitals,
-							scenario: alert.id === "live-reynolds" ? "copd" : alert.id === "live-hayes" ? "chf" : undefined,
+							scenario: alert.id === "live-reynolds" ? "copd" : alert.id === "live-hayes" || alert.id === "live-hayes-return" ? "chf" : undefined,
 							ventilated: (live.tags ?? scenario.tags)?.some((tag) => tag.label === "Ventilated"),
 						}),
 					messages: scenario.messages,
@@ -1506,6 +1594,7 @@ export {
 	samplePatientConsults,
 	sampleScenario1AlertDetail,
 	sampleScenario1ResolvedDetail,
+	sampleScenario6ReturnAlertDetail,
 	sampleScenario2AlertDetail,
 	sampleScenario2ResolvedDetail,
 	sampleScenario3AlertDetail,

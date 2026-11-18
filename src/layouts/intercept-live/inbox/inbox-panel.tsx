@@ -9,6 +9,7 @@ import {
 	FileSignatureIcon,
 	HandHelpingIcon,
 	InboxIcon,
+	PhoneIcon,
 	PillIcon,
 	type LucideIcon,
 } from "lucide-react";
@@ -39,7 +40,8 @@ import { cn } from "@/lib/utils";
 
 import type { TriageAlert, TriageAlertAction, TriageAlertSeverity } from "../monitoring/triage-queue";
 import { usePatientNavigation } from "../patient-navigation";
-import { avatarTones, patientInitials } from "../shared/patient-avatar";
+import { patientInitials } from "../shared/patient-avatar";
+import { usePatientTones } from "../shared/patient-tones";
 
 /* -------------------------------------------------------------------------- */
 /* Data                                                                       */
@@ -47,9 +49,10 @@ import { avatarTones, patientInitials } from "../shared/patient-avatar";
 
 /**
  * What a work item asks for (Spec §6.21; Left Nav Spec: "alerts to acknowledge, AI Scribe drafts to sign, suggested
- * orders, failed EMR write-backs"), plus items handed over from the last shift. Alerts come from the alerts themselves.
+ * orders, failed EMR write-backs"), plus items handed over from the last shift and follow-ups after discharge (a nurse
+ * phone check the readmission risk scheduled, Scenario 6; PRD Inbox INB-002). Alerts come from the alerts themselves.
  */
-type InboxItemKind = "signature" | "order" | "write-back" | "handoff";
+type InboxItemKind = "signature" | "order" | "write-back" | "handoff" | "follow-up";
 
 /** One work item that isn't an alert. */
 type InboxItem = {
@@ -73,6 +76,13 @@ type InboxItem = {
 	unread?: boolean;
 	/** Completed: when, and by whom when it wasn't the signed-in clinician. */
 	done?: { at: string; by?: string };
+	/**
+	 * Who it's for when that isn't the signed-in clinician, e.g. "Ava Brooks, RN (hub tele-RN)": the row says so, and the
+	 * team sees it (a follow-up on the hub tele-RN's list).
+	 */
+	assignee?: string;
+	/** The patient page's tab the item opens on, e.g. `"discharge"` (a follow-up). The Overview without it. */
+	section?: string;
 };
 
 /** What the clinician did to an item from the Inbox. */
@@ -116,8 +126,9 @@ const filterLabels: Record<InboxFilter, { label: string; icon: LucideIcon }> = {
 	order: { label: "Suggested orders", icon: PillIcon },
 	"write-back": { label: "Write-backs", icon: CloudOffIcon },
 	handoff: { label: "Handoff", icon: HandHelpingIcon },
+	"follow-up": { label: "Follow-ups", icon: PhoneIcon },
 };
-const filterOrder: InboxFilter[] = ["alerts", "signature", "order", "write-back", "handoff"];
+const filterOrder: InboxFilter[] = ["alerts", "signature", "order", "write-back", "handoff", "follow-up"];
 
 const severityBadges: Record<TriageAlertSeverity, { label: string; variant: BadgeProps["variant"] }> = {
 	critical: { label: "Critical alert", variant: "red" },
@@ -131,6 +142,7 @@ const kindBadges: Record<InboxItemKind, { label: string; variant: BadgeProps["va
 	order: { label: "Suggested order", variant: "blue" },
 	"write-back": { label: "Write-back failed", variant: "outline" },
 	handoff: { label: "Handoff", variant: "green" },
+	"follow-up": { label: "Follow-up", variant: "sky" },
 };
 
 /** Each item's main action, and what it does. */
@@ -139,6 +151,8 @@ const primaryActions: Record<InboxItemKind, { label: string; opens?: boolean }> 
 	order: { label: "Accept" },
 	"write-back": { label: "Retry" },
 	handoff: { label: "Accept" },
+	// A follow-up is done where it's recorded (the patient's Discharge section), so its button opens it there.
+	"follow-up": { label: "Open", opens: true },
 };
 
 type SortBy = "priority" | "newest" | "due";
@@ -199,7 +213,7 @@ function itemRow(item: InboxItem): Row {
 		filter: item.kind,
 		patientId: item.patientId,
 		title: item.title,
-		detail: item.detail,
+		detail: [item.detail, item.assignee && `For ${item.assignee}`].filter(Boolean).join(" · ") || undefined,
 		source: item.source,
 		badge: kindBadges[item.kind],
 		rank: item.priority === "high" ? 1 : 3,
@@ -261,7 +275,9 @@ function InboxPanel({ items, alerts = [], patients, onAlertAction, onItemAction 
 
 	// A patient can come from both the census and Monitoring: once each.
 	const patientById = React.useMemo(() => new Map(patients.map((patient) => [patient.id, patient])), [patients]);
-	const tones = React.useMemo(() => avatarTones([...patientById.values()]), [patientById]);
+	const roster = React.useMemo(() => [...patientById.values()], [patientById]);
+	// The app's colors (`patient-tones.tsx`), as on the cards.
+	const tones = usePatientTones(roster);
 
 	const rows = [...alerts.map((alert) => alertRow(alert, now)), ...items.map(itemRow)].map((row) => {
 		const done = undone.has(row.id) ? undefined : doneHere[row.id] ? { at: doneHere[row.id] } : row.done;
@@ -310,7 +326,7 @@ function InboxPanel({ items, alerts = [], patients, onAlertAction, onItemAction 
 		setSeen((ids) => new Set(ids).add(row.id));
 		if (!row.patientId || !navigation) return;
 		if (row.alert) navigation.openAlert(row.patientId, row.alert.id);
-		else navigation.openPatient(row.patientId);
+		else navigation.openPatient(row.patientId, undefined, row.item?.section ? { section: row.item.section } : undefined);
 	};
 
 	const toggleSelected = (id: string, checked: boolean) =>

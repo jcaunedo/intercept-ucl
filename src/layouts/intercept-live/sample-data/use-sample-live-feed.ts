@@ -13,6 +13,8 @@ import { consentText, type DischargeDecision, type DischargePlan, type ReferralO
 import type { KeepOrTransferDecision, TransferChoice } from "../alert-panel/keep-or-transfer";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import type { CensusPatient } from "../patients/patients-panel";
+import type { InboxItem } from "../inbox/inbox-panel";
+import type { TransitionDecision } from "../patient-details/sections/transition-section";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
 import { sampleLiveScenario } from "../monitoring/sample-live-scenario";
 import { sampleBackupTargetId, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
@@ -26,6 +28,7 @@ import { sampleScenario2 } from "./sample-scenario-2";
 import { sampleScenario3 } from "./sample-scenario-3";
 import { sampleScenario4 } from "./sample-scenario-4";
 import { sampleScenario5 } from "./sample-scenario-5";
+import { sampleScenario6 } from "./sample-scenario-6";
 import { sampleUser } from "./sample-workspace";
 
 // Story-only helpers: they play the scripted live feed into the Census and Monitoring stories. Apps get the same data
@@ -45,6 +48,7 @@ const sampleScenarios = {
 	"scenario-3": sampleScenario3,
 	"scenario-4": sampleScenario4,
 	"scenario-5": sampleScenario5,
+	"scenario-6": sampleScenario6,
 } satisfies Record<string, ScenarioDefinition>;
 
 type ScenarioId = keyof typeof sampleScenarios;
@@ -53,12 +57,27 @@ const scenarioIds = Object.keys(sampleScenarios) as ScenarioId[];
 
 /** The scenario an alert belongs to. */
 const scenarioOfAlert = (alertId: string) => scenarioIds.find((id) => sampleScenarios[id].alertIds.includes(alertId));
+/** The scenario a patient belongs to, the latest when several have them (Margaret: Scenarios 1 and 6). */
+const scenarioOfPatient = (patientId: string, after: ScenarioBeat["after"]) =>
+	[...scenarioIds]
+		.reverse()
+		.find(
+			(id) => sampleScenarios[id].patientIds.includes(patientId) && sampleScenarios[id].beats.some((beat) => beat.after === after),
+		);
 
 // How long after its trigger a beat plays, unless it says (`delay`). The first beat: just before the panel's first
 // re-sort when the menu opens Monitoring, so the change shows in the order at once. After the consult is on: time to see
 // the call before something happens to it. The resolution: time to read "Keeping at …" and its checkpoints before they
 // pass; the night goes by in these seconds.
-const beatDelays: Record<ScenarioBeat["after"], number> = { start: 1.5, consult: 6, keep: 6, pathway: 6, overflow: 3, transfer: 4 };
+const beatDelays: Record<ScenarioBeat["after"], number> = {
+	start: 1.5,
+	consult: 6,
+	keep: 6,
+	pathway: 6,
+	overflow: 3,
+	transfer: 4,
+	handoff: 3,
+};
 
 /**
  * What the clinician decided in an alert's modal: where its pathway is, the orders as sent (an edited dose, or their own
@@ -321,6 +340,8 @@ function useSampleLiveFeed() {
 		Record<string, { mode: "video" } | { mode: "low-bandwidth"; since: string }>
 	>({});
 	const redrops = React.useRef<Record<string, number>>({});
+	// The primary-care handoffs sent (Scenario 6), by patient: when.
+	const [handoffsSent, setHandoffsSent] = React.useState<Record<string, string>>({});
 	// The discharge referrals sent or skipped, by patient, then by referral.
 	const [dischargeDecisions, setDischargeDecisions] = React.useState<Record<string, Record<string, ReferralOutcome>>>({});
 	// The sepsis bundle's checks confirmed (Scenario 3's renal dose review), by alert, then by element; `null` is one undone.
@@ -344,10 +365,10 @@ function useSampleLiveFeed() {
 		},
 		[],
 	);
-	const addActivity = React.useCallback((patientId: string, entry: Omit<PatientActivity, "id" | "at">) => {
+	const addActivity = React.useCallback((patientId: string, entry: Omit<PatientActivity, "id" | "at"> & { at?: string }) => {
 		logCount.current += 1;
 		const id = `log-${logCount.current}`;
-		setLog((current) => [...current, { ...entry, id, at: new Date().toISOString(), patientId }]);
+		setLog((current) => [...current, { ...entry, id, at: entry.at ?? new Date().toISOString(), patientId }]);
 	}, []);
 	const playBeat = React.useCallback(
 		(scenario: ScenarioId, beat: ScenarioBeat) => {
@@ -400,6 +421,9 @@ function useSampleLiveFeed() {
 			setDecisions((current) => Object.fromEntries(Object.entries(current).filter(([alertId]) => !alertIds.includes(alertId))));
 			setBundleReviews((current) => Object.fromEntries(Object.entries(current).filter(([alertId]) => !alertIds.includes(alertId))));
 			setDischargeDecisions((current) =>
+				Object.fromEntries(Object.entries(current).filter(([patientId]) => !patientIds.includes(patientId))),
+			);
+			setHandoffsSent((current) =>
 				Object.fromEntries(Object.entries(current).filter(([patientId]) => !patientIds.includes(patientId))),
 			);
 			setCallConnections((current) =>
@@ -597,6 +621,32 @@ function useSampleLiveFeed() {
 		},
 		[addActivity],
 	);
+	// The primary-care handoff sent from the patient's Discharge section (Scenario 6, step 1): kept, logged, and the
+	// scenario's next days play (the follow-up, the clinic visit, the return). Once a run.
+	const onTransitionDecision = React.useCallback(
+		(patientId: string, decision: TransitionDecision) => {
+			if (decision.type !== "send-handoff") return;
+			const scenario = scenarioOfPatient(patientId, "handoff");
+			if (scenario && played(scenario, "handoff")) return;
+			setHandoffsSent((current) => (current[patientId] ? current : { ...current, [patientId]: new Date().toISOString() }));
+			const plan = beatsPlayed.current
+				.map((beat) => beat.changes.records?.[patientId]?.transition)
+				.filter(Boolean)
+				.at(-1);
+			addActivity(patientId, {
+				kind: "order",
+				title: "Primary-care handoff sent",
+				detail: plan ? `To ${plan.handoff.to.clinic}` : undefined,
+				by: YOU,
+			});
+			if (scenario) {
+				cancel(scenario, "handoff");
+				schedule(scenario, "handoff");
+			}
+		},
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- `played` reads a ref.
+		[addActivity, cancel, schedule],
+	);
 	// The video consult: its start (ringing the bedside) and its end, with how long it lasted.
 	const onConsultChange = React.useCallback(
 		(alertId: string, state: AlertConsultState, detail?: AlertDetailData) => {
@@ -689,7 +739,11 @@ function useSampleLiveFeed() {
 		const fired: TriageAlert[] = [];
 		const resolved: Record<string, NonNullable<TriageAlert["addressed"]>> = {};
 		const details: Record<string, ((detail: AlertDetailData) => AlertDetailData)[]> = {};
+		const inbox: Record<string, InboxItem> = {};
+		const away: Record<string, boolean> = {};
 		for (const { changes, at } of beats) {
+			for (const item of changes.inbox ?? []) inbox[item.id] = item;
+			for (const [id, left] of Object.entries(changes.leave ?? {})) away[id] = left;
 			for (const patient of changes.admit ?? []) {
 				if (!admitted.some((item) => item.census.id === patient.census.id)) admitted.push(patient);
 			}
@@ -700,7 +754,7 @@ function useSampleLiveFeed() {
 			for (const [id, addressed] of Object.entries(changes.resolve ?? {})) resolved[id] = { ...addressed, at };
 			for (const [id, change] of Object.entries(changes.details ?? {})) details[id] = [...(details[id] ?? []), change];
 		}
-		return { admitted, census, monitoring, records, fired, resolved, details };
+		return { admitted, census, monitoring, records, fired, resolved, details, inbox, away };
 	}, [beats]);
 
 	const feed = React.useMemo(() => {
@@ -734,9 +788,12 @@ function useSampleLiveFeed() {
 					scenario.admitted.map((patient) => patient.monitoring),
 				),
 				scenario.monitoring,
-			).map((patient) =>
-				vitals[patient.id] ? { ...patient, vitals: { ...patient.vitals, ...vitals[patient.id] } } : patient,
-			),
+			)
+				// Discharged home (Scenario 6): off Monitoring until they're back.
+				.filter((patient) => !scenario.away[patient.id])
+				.map((patient) =>
+					vitals[patient.id] ? { ...patient, vitals: { ...patient.vitals, ...vitals[patient.id] } } : patient,
+				),
 			alerts: [...sampleMonitoringAlerts, ...fired, ...scenario.fired]
 				.filter((alert) => !resolved.has(alert.id))
 				.map((alert) => ({ ...alert, ...updates[alert.id] })),
@@ -802,8 +859,25 @@ function useSampleLiveFeed() {
 					scenario.admitted.map((patient) => patient.record),
 				),
 				scenario.records,
-			).map((record) => withDischargeDecisions(record, record.id)),
-		[scenario, withDischargeDecisions],
+			).map((record) => {
+				// The handoff as sent from the Discharge section (Scenario 6): the beats change the rest of the transition.
+				const sentAt = handoffsSent[record.id];
+				const sent =
+					sentAt && record.transition && !record.transition.handoff.sent
+						? { ...record, transition: { ...record.transition, handoff: { ...record.transition.handoff, sent: { at: sentAt, by: YOU } } } }
+						: record;
+				return withDischargeDecisions(sent, record.id);
+			}),
+		[scenario, withDischargeDecisions, handoffsSent],
+	);
+	// The Inbox's items with the scenarios' (Scenario 6's follow-up), added or replaced by id; the newest last.
+	const withScenarioInbox = React.useCallback(
+		(items: InboxItem[]) => {
+			const added = Object.values(scenario.inbox);
+			if (!added.length) return items;
+			return [...items.filter((item) => !scenario.inbox[item.id]), ...added];
+		},
+		[scenario],
 	);
 	// The modal's data with what the clinician decided (so it reopens as they left it), then the beats' changes.
 	const withScenarioAlertDetails = React.useCallback(
@@ -997,6 +1071,8 @@ function useSampleLiveFeed() {
 		onPathwayDecision,
 		onTransferDecision,
 		onDischargeDecision,
+		onTransitionDecision,
+		withScenarioInbox,
 		onBundleDecision,
 		onConsultChange,
 		onConsultNote,

@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 16, 2026
+Last updated: Nov 18, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Patient details page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 16, 2026
+**Last updated:** November 18, 2026
 
 ---
 
@@ -171,7 +171,7 @@ The page uses the Provider Desktop shell (Sidebar, sticky AppHeader, canvas, sid
 | **Labs** | Results by panel, cultures, pending | |
 | **Medications** | Active medications and infusions | |
 | **Orders** | Active orders (read-only) and recommendations | Intensivist, APP |
-| **Discharge** | Social needs the discharge workflow flagged from the chart, the payer, and a referral for each, sent with who agreed or skipped with a reason (PRD Alert maximized modal AMM-026, AMM-027) | Only once the workflow has flagged social needs. ✅ **Built in the prototype (Nov 4, 2026, Scenario 2 step 6):** after Orders, the same panel as the alert's Pathway panel |
+| **Discharge** | Social needs the discharge workflow flagged from the chart, the payer, and a referral for each, sent with who agreed or skipped with a reason (PRD Alert maximized modal AMM-026, AMM-027) | Only once the workflow has flagged social needs. ✅ **Built in the prototype (Nov 4, 2026, Scenario 2 step 6):** after Orders, the same panel as the alert's Pathway panel. ✅ **Resolved:** the section also shows once the patient has a transition of care (PRD Transitions of care): **Transition of care** first (a return matched to the stay, the primary-care handoff with Send to clinic, the readmission risk, the follow-up), then the social needs and referrals. A notice or an Inbox follow-up opens the page on this tab |
 | **Notes** | Imported and Intercept notes; new note | |
 | **Sepsis** | Screening and bundle tracking | Only when the patient has a screening or tracking event (PC-080) |
 

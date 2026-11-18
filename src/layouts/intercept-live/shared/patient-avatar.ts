@@ -54,8 +54,11 @@ const nameWindow = 7;
  * look-alike tones stay off name neighbors. So a hospital's patients all differ (up to ten without photos), and the same
  * color rarely meets itself whatever the sort. It depends on the roster only, not on the page's sort or filters, so
  * pass every patient: the same roster gives a patient the same color on every page.
+ *
+ * `fixed` keeps the tones patients already have (the shell's `usePatientToneStore`): they hold theirs, and only the
+ * others are dealt, around them. So a patient who arrives later (a scenario's arrival) never changes anyone's color.
  */
-function avatarTones(patients: AvatarPatient[]): Map<string, AvatarTone> {
+function avatarTones(patients: AvatarPatient[], fixed?: ReadonlyMap<string, AvatarTone>): Map<string, AvatarTone> {
 	const roster = [...new Map(patients.map((patient) => [patient.id, patient])).values()].sort(
 		(a, b) =>
 			a.lastName.localeCompare(b.lastName) ||
@@ -68,6 +71,13 @@ function avatarTones(patients: AvatarPatient[]): Map<string, AvatarTone> {
 
 	roster.forEach((patient, index) => {
 		if (patient.photo) return;
+		const kept = fixed?.get(patient.id);
+		if (kept) {
+			tones.set(patient.id, kept);
+			uses.set(kept, (uses.get(kept) ?? 0) + 1);
+			dealt.push({ index, hospital: patient.hospital, tone: kept });
+			return;
+		}
 		const cost = (tone: AvatarTone) => {
 			let total = (uses.get(tone) ?? 0) * 1000;
 			for (const other of dealt) {
@@ -91,4 +101,4 @@ function avatarTones(patients: AvatarPatient[]): Map<string, AvatarTone> {
 	return tones;
 }
 
-export { avatarTone, avatarTones, patientInitials };
+export { avatarTone, avatarTones, patientInitials, type AvatarPatient, type AvatarTone };

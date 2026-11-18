@@ -79,6 +79,7 @@ import {
 	type AskInterceptResponder,
 } from "./ask-intercept-panel";
 import { avatarTone, patientInitials } from "./shared/patient-avatar";
+import { usePatientTone } from "./shared/patient-tones";
 import { CensusListPanel, type CensusListEntry } from "./census-list-panel";
 import { LocationStateProvider, useLocationStateStore, type LocationState } from "./location-state";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
@@ -363,6 +364,8 @@ type PatientStepper = {
 	consult?: "answered";
 	/** Opened at an alert's pathway (`openPatient`'s `pathway`): the page opens with its Pathway panel out. */
 	pathway?: PatientPathwayTarget;
+	/** Opened on a tab (`openPatient`'s `section`): the page opens there instead of the Overview. */
+	section?: string;
 };
 
 /**
@@ -372,7 +375,14 @@ type PatientStepper = {
 type PatientPathwayTarget = { alertId?: string; focus?: "discharge" };
 
 /** The patient whose details are open, and the list they were opened from. */
-type OpenPatient = { id: string; list?: string[]; consult?: "answered"; pathway?: PatientPathwayTarget };
+type OpenPatient = {
+	id: string;
+	list?: string[];
+	consult?: "answered";
+	pathway?: PatientPathwayTarget;
+	/** The tab the page opens on (`openPatient`'s `section`), e.g. a notice's Review handoff opens Discharge (Scenario 6). */
+	section?: string;
+};
 
 type InterceptLiveProps = {
 	/**
@@ -546,6 +556,8 @@ function InterceptLive({
 }: InterceptLiveProps) {
 	// Collapsed to the rail by default, and always at lg (1024) and below.
 	const { sidebarCollapsed, handleSidebarCollapsedChange } = useLayoutSidebar(true);
+	// The app's avatar colors (`shared/patient-tones.tsx`), for the chat's patient chip.
+	const toneOf = usePatientTone();
 	const [page, setPage] = React.useState<InterceptLivePage>(defaultPage);
 	// The workspace on screen: the one the page belongs to, kept on a page outside the sidebars (Profile). Switching it
 	// in the account menu lands on its first page (PRD Account menu ACM-010).
@@ -807,7 +819,14 @@ function InterceptLive({
 			clearActiveAlertsRequest: () => setActiveAlertsRequest(null),
 			openPatient: (patientId, list, options) => {
 				if (!renderPatientDetails) return;
-				setOpenPatient({ id: patientId, list, consult: options?.consult, pathway: options?.pathway });
+				setOpenPatient({ id: patientId, list, consult: options?.consult, pathway: options?.pathway, section: options?.section });
+			},
+			// A page of the Sidebar, over whatever is open (a notice's Open Inbox or Open outcomes, Scenario 6).
+			openPage: (target) => {
+				if (!pages[target as InterceptLivePage]) return;
+				setOpenAlert((current) => (current ? { ...current, open: false } : current));
+				setOpenPatient(null);
+				setPage(target as InterceptLivePage);
 			},
 			// The alert modal (`renderAlert`), opened at a part of its pathway when asked (a notice's Review referrals: its
 			// Pathway panel at the referrals; the alert's pathway is back since Nov 11, 2026, user's call). Without a modal,
@@ -850,6 +869,7 @@ function InterceptLive({
 			viewedAt,
 			setChatOpen,
 			hasMonitoring,
+			pages,
 			activeAlertsRequest,
 			alertPatientId,
 		],
@@ -888,11 +908,12 @@ function InterceptLive({
 	}, [alertMissing, openAlert, renderPatientDetails]);
 	const patientView = (() => {
 		if (!openPatient || !renderPatientDetails) return null;
-		const { id, list, consult, pathway } = openPatient;
+		const { id, list, consult, pathway, section } = openPatient;
 		const index = list ? list.indexOf(id) : -1;
 		return renderPatientDetails(id, {
 			consult,
 			pathway,
+			section,
 			previousId: index > 0 ? list?.[index - 1] : undefined,
 			nextId: index >= 0 ? list?.[index + 1] : undefined,
 			position: list && index >= 0 ? { index: index + 1, count: list.length } : undefined,
@@ -926,7 +947,7 @@ function InterceptLive({
 				? patientView.avatar
 				: (() => {
 						const [lastName = "", firstName] = chatPatientName.split(", ");
-						return { initials: patientInitials({ lastName, firstName }), tone: avatarTone(chatPatient.id) };
+						return { initials: patientInitials({ lastName, firstName }), tone: toneOf(chatPatient.id, avatarTone(chatPatient.id)) };
 					})();
 	// Their tags, from the same place as the name.
 	const chatPatientTags =

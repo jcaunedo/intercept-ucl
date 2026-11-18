@@ -19,7 +19,8 @@ import type { PatientRecord } from "../patient-details/patient-details";
 import { usePatientNavigation } from "../patient-navigation";
 import { PagePanel, SidePanel, sidePanelWidth, useHideToasts } from "../side-panel";
 import { patientFeedEntries } from "./live-feed-entries";
-import { avatarTones, patientInitials } from "./patient-avatar";
+import { patientInitials } from "./patient-avatar";
+import { usePatientTones } from "./patient-tones";
 
 // The live feed, on the Census and Monitoring pages: the "Live feed: …" button right of the page's summary, and the
 // panel it opens right of the canvas: everyone's log (UCL LiveFeed, the same lines as a patient's page, each with its
@@ -189,8 +190,9 @@ function LiveFeedPanel({ open, onOpenChange, alerts, patients, records = [], onO
 	const navigation = usePatientNavigation();
 	// The feed lists every alert, so the toasts wait (hidden, timers paused) while it's open.
 	useHideToasts(open);
+	// The app's colors (`patient-tones.tsx`), as on the cards.
+	const tones = usePatientTones(patients);
 	const entries = React.useMemo(() => {
-		const tones = avatarTones(patients);
 		return patients.flatMap((patient) => {
 			const record = records.find((item) => item.id === patient.id);
 			return patientFeedEntries({
@@ -209,7 +211,7 @@ function LiveFeedPanel({ open, onOpenChange, alerts, patients, records = [], onO
 				onOpenPatient: onOpenPatient ? () => onOpenPatient(patient.id) : undefined,
 			});
 		});
-	}, [alerts, patients, records, navigation, onOpenPatient]);
+	}, [alerts, patients, records, navigation, onOpenPatient, tones]);
 
 	return (
 		<PagePanel>

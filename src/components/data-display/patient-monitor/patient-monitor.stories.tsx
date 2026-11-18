@@ -106,11 +106,16 @@ export const OneSidedLimits: Story = {
 	},
 };
 
-/** A reading that isn't coming in shows "--", never zero, and its lane is a flat line. */
+/**
+ * A reading that isn't coming in shows "--", never zero, and its own lane is a flat line, even when the heart rate that
+ * paces it is there (SpO₂ here: Pleth is flat while II and ABP sweep).
+ */
 export const MissingValues: Story = {
 	args: { vitals: { hr: 88, systolic: 112, diastolic: 70, map: 84 } },
 	play: async ({ canvasElement }) => {
 		await expect(within(canvasElement).getAllByText("--")).toHaveLength(2);
+		const flat = [...canvasElement.querySelectorAll("[data-reporting='false']")].map((lane) => lane.textContent);
+		await expect(flat).toEqual(["Pleth", "Resp"]);
 	},
 };
 

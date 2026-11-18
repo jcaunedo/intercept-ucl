@@ -33,7 +33,8 @@ import {
 	type SortOrderId,
 } from "../shared/patient-panel";
 import { usePatientNavigation } from "../patient-navigation";
-import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
+import { avatarTone, patientInitials } from "../shared/patient-avatar";
+import { usePatientTones } from "../shared/patient-tones";
 import { useLocationFlag } from "../location-state";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { SegmentedToggle, type ToggleOption } from "../monitoring/view-controls";
@@ -226,8 +227,8 @@ function PatientsPanel({
 	onRetry,
 	patientHref,
 }: PatientsPanelProps) {
-	// Every patient's avatar color, from the whole directory, so sorting and filtering don't change them.
-	const tones = React.useMemo(() => avatarTones(patientsProp), [patientsProp]);
+	// Every patient's avatar color, the app's (`patient-tones.tsx`), so sorting and filtering don't change them.
+	const tones = usePatientTones(patientsProp);
 	// The API's data with what the record adds: the clinician's relationship, the attending and admission; then the last
 	// encounter, from the admission and the status.
 	const directory = React.useMemo<DirectoryPatient[]>(() => {

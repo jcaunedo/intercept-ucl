@@ -47,7 +47,7 @@ import {
 	type TriageAlertAction,
 } from "../monitoring/triage-queue";
 import { fallPathwayActions, flagDetails } from "../shared/flag-details";
-import { avatarTone, avatarTones, patientInitials } from "../shared/patient-avatar";
+import { avatarTone, avatarTones, patientInitials, type AvatarTone } from "../shared/patient-avatar";
 import { patientStatuses, type PatientCensusStatus } from "../patients/patient-status";
 import type { AlertConsultState, AlertDetailData, PatientConsultData } from "../alert-panel/alert-panel";
 import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-panel/care-pathway";
@@ -84,6 +84,7 @@ import { noteContextFrom } from "./sections/note-chart";
 import { OrdersSection, type PatientOrders } from "./sections/orders-section";
 import { SepsisSection, type SepsisCase } from "./sections/sepsis-section";
 import { TimelineSection, type PatientTimeline } from "./sections/timeline-section";
+import { TransitionSection, type CareTransition, type TransitionDecision } from "./sections/transition-section";
 import { LatestVitals, type PatientVitals } from "./sections/vitals-section";
 
 // Patient details (PRD Patient details): one patient's page, opened over the Census or Monitoring. Follows
@@ -366,6 +367,11 @@ type PatientRecord = {
 	 * section, the same panel as in the alert's Pathway panel.
 	 */
 	discharge?: DischargePlan;
+	/**
+	 * The transition of care at discharge (Scenario 6; PRD Transitions of care): the primary-care handoff, the readmission
+	 * risk, the follow-up it scheduled and a return to the network matched to the stay. Adds the Discharge section.
+	 */
+	transition?: CareTransition;
 };
 
 /** The patient's live bedside values, from Monitoring. */
@@ -393,6 +399,10 @@ type PatientDetailsProps = {
 	onAction?: (action: PatientAction) => void;
 	/** A referral in the Discharge section sent (with who agreed to it) or skipped, or a skip taken back. */
 	onDischargeDecision?: (decision: DischargeDecision) => void;
+	/** The primary-care handoff sent from the Discharge section (Scenario 6). */
+	onTransitionDecision?: (decision: TransitionDecision) => void;
+	/** The tab the page opens on, e.g. `"discharge"` (a notice's Review handoff). The Overview by default. */
+	defaultSection?: string;
 	/**
 	 * Who the patient's video consult reaches and their thread with the bedside nurse: with it, the app header's Video
 	 * consult and Messages open their panels right of the page (`consult-panels.tsx`). Without it, they only report the
@@ -500,7 +510,7 @@ const pendingSections: { id: Exclude<SectionId, "overview">; label: string; icon
 		label: "Discharge",
 		icon: DoorOpenIcon,
 		title: "No discharge plan yet",
-		description: "Social needs and referrals for discharge will appear here.",
+		description: "The primary-care handoff, follow-up, social needs and referrals for discharge will appear here.",
 	},
 	{
 		id: "medications",
@@ -637,9 +647,10 @@ function sectionContent(
 		monitor,
 		onAction,
 		onDischargeDecision,
+		onTransitionDecision,
 		onShowSection,
 		pathway,
-	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction" | "onDischargeDecision"> & {
+	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction" | "onDischargeDecision" | "onTransitionDecision"> & {
 		onShowSection: (id: SectionId) => void;
 		/** The pathway an open alert brought, for the Care Plan tab as on the Overview. */
 		pathway?: OverviewPathway;
@@ -674,8 +685,22 @@ function sectionContent(
 		case "orders":
 			return record?.orders ? <OrdersSection orders={record.orders} /> : null;
 		case "discharge":
-			return record?.discharge ? (
-				<DischargePlanPanel plan={record.discharge} onDecision={onDischargeDecision} headingLevel='h2' className='max-w-2xl' />
+			// The transition of care first (Scenario 6), then the social needs and referrals (Scenario 2).
+			return record?.discharge || record?.transition ? (
+				<div className='flex max-w-2xl flex-col gap-10'>
+					{record.transition ? (
+						<TransitionSection
+							transition={record.transition}
+							patientName={[`${patient.firstName ?? ""} ${patient.lastName}`.trim(), patient.age, patient.sex]
+								.filter(Boolean)
+								.join(", ")}
+							onDecision={onTransitionDecision}
+						/>
+					) : null}
+					{record.discharge ? (
+						<DischargePlanPanel plan={record.discharge} onDecision={onDischargeDecision} headingLevel='h2' />
+					) : null}
+				</div>
 			) : null;
 		case "emr":
 			return record?.emr ? <EpicSection emr={record.emr} /> : null;
@@ -736,6 +761,8 @@ function PatientDetailsContent({
 	onAlertAction,
 	onAction,
 	onDischargeDecision,
+	onTransitionDecision,
+	defaultSection,
 	consult,
 	defaultConsult,
 	defaultPathway,
@@ -743,7 +770,7 @@ function PatientDetailsContent({
 }: PatientDetailsProps) {
 	// The tab is in the address (`tab`), so a shared link opens it; one the page doesn't know opens the Overview.
 	// An older link's `tab=vitals` opens the Timeline, where the vitals are now.
-	const [section, setSection] = useLocationState<SectionId>("tab", "overview", (value) =>
+	const [section, setSection] = useLocationState<SectionId>("tab", (defaultSection as SectionId | undefined) ?? "overview", (value) =>
 		value === "vitals"
 			? "timeline"
 			: value === "overview" || pendingSections.some((item) => item.id === value)
@@ -831,12 +858,12 @@ function PatientDetailsContent({
 			}
 		: undefined;
 	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080), Discharge only once the
-	// discharge workflow has flagged social needs (Scenario 2, step 6).
+	// discharge workflow has something for it: a transition of care (Scenario 6) or social needs (Scenario 2, step 6).
 	// The hospital's record tab is always "EMR", whatever its system (Meditech, Epic, Cerner…; Nov 11, 2026, user's call);
 	// its empty state names the system when the record knows it.
 	const sections = pendingSections
 		.filter((item) => item.id !== "sepsis" || patient.sepsisWatch)
-		.filter((item) => item.id !== "discharge" || record?.discharge)
+		.filter((item) => item.id !== "discharge" || record?.discharge || record?.transition)
 		.map((item) => (item.id === "emr" && record?.emr ? { ...item, title: `Nothing from ${record.emr.name} yet` } : item));
 	const shownSection = sections.some((item) => item.id === section) ? section : "overview";
 
@@ -969,6 +996,7 @@ function PatientDetailsContent({
 						monitor,
 						onAction,
 						onDischargeDecision,
+						onTransitionDecision,
 						onShowSection: setSection,
 						pathway: overviewPathway,
 					});
@@ -1019,6 +1047,8 @@ type PatientDetailsSources = {
 	onAction?: (patientId: string, action: PatientAction) => void;
 	/** A referral in a patient's Discharge section, by patient. */
 	onDischargeDecision?: (patientId: string, decision: DischargeDecision) => void;
+	/** A primary-care handoff sent from a patient's Discharge section, by patient (Scenario 6). */
+	onTransitionDecision?: (patientId: string, decision: TransitionDecision) => void;
 	/** Each patient's video consult and thread with the bedside nurse, for the page's Video consult and Messages panels. */
 	consults?: PatientConsultData[];
 	/**
@@ -1032,6 +1062,8 @@ type PatientDetailsSources = {
 	onTransferDecision?: (alertId: string, decision: KeepOrTransferDecision, detail: AlertDetailData) => void;
 	/** A sepsis bundle check confirmed or undone on a patient's page, by alert. */
 	onBundleDecision?: (alertId: string, decision: BundleDecision) => void;
+	/** The app's avatar colors (`shared/patient-tones.tsx`). Without them, dealt over `patients` and `monitoringPatients`. */
+	tones?: ReadonlyMap<string, AvatarTone>;
 };
 
 /**
@@ -1078,11 +1110,13 @@ function patientDetailsView(
 		onAlertAction,
 		onAction,
 		onDischargeDecision,
+		onTransitionDecision,
 		consults = [],
 		alertDetails = [],
 		onPathwayDecision,
 		onTransferDecision,
 		onBundleDecision,
+		tones: appTones,
 	}: PatientDetailsSources,
 ): PatientDetailsView | null {
 	const find = (id?: string) => patients.find((item) => item.id === id) ?? monitoringPatients.find((item) => item.id === id);
@@ -1104,7 +1138,7 @@ function patientDetailsView(
 	// The list the patient was opened from, as the source page shows it (PRD PD-015). Patients none of the sources has
 	// are left out.
 	// Each with their avatar and score line as on their card (Nov 16, 2026, user's call).
-	const tones = avatarTones([...patients, ...monitoringPatients]);
+	const tones = appTones ?? avatarTones([...patients, ...monitoringPatients]);
 	const patientList = stepper.list
 		?.map((id) => find(id))
 		.filter((item): item is NonNullable<typeof item> => Boolean(item))
@@ -1173,6 +1207,8 @@ function patientDetailsView(
 				onAlertAction={onAlertAction}
 				onAction={onAction ? (action) => onAction(patientId, action) : undefined}
 				onDischargeDecision={onDischargeDecision ? (decision) => onDischargeDecision(patientId, decision) : undefined}
+				onTransitionDecision={onTransitionDecision ? (decision) => onTransitionDecision(patientId, decision) : undefined}
+				defaultSection={stepper.section}
 				consult={withAlertConnection(
 					consults.find((item) => item.patientId === patientId),
 					pathwayDetails,

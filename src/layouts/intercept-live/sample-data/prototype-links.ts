@@ -20,6 +20,9 @@ import type { ScenarioId } from "./use-sample-live-feed";
  * accepting his DKA pathway starts the hourly protocol. Scenario 5: Surge night ("Surge night across five hospitals and
  * four EHRs"): Walter Pierce desaturates on the ventilator at Regional West and Linda Shaw joins Sidney's ED with a
  * stroke code a minute later; her alert offers her to Intercept's backup intensivist (overflow), then her transfer.
+ * Scenario 6: After the ICU ("After the ICU, a readmission caught early and the outcomes report"): Margaret Hayes, ready
+ * to go home, has her primary-care handoff to send; her follow-up lands in the Inbox, she comes back to Chadron's ED on
+ * day 11 and is caught before readmission, and the last notice opens Analytics.
  * Alert expanded opens Sarah Miller's Critical alert (Sepsis candidate) in the alert modal over Monitoring, and Alert
  * with video consult the same with its video consult calling, as its Video consult button does (Nov 5, 2026, user's
  * call); the address's `alert` and `consult` do the same. (Sections by hospital, the grid's hospital sections in place of
@@ -31,12 +34,14 @@ const prototypeShortcuts = ({ startScenario }: { startScenario: (scenario: Scena
 	{ group: "Scenarios", label: "Scenario 3: Sepsis", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-3") },
 	{ group: "Scenarios", label: "Scenario 4: DKA", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-4") },
 	{ group: "Scenarios", label: "Scenario 5: Surge night", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-5") },
+	{ group: "Scenarios", label: "Scenario 6: After the ICU", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-6") },
 	// Served by Storybook from `storyboards/` (`.storybook/main.ts`), relative to the story frame.
 	{ group: "Storyboard", label: "Scenario 1", href: "storyboards/scenario-1/index.html" },
 	{ group: "Storyboard", label: "Scenario 2", href: "storyboards/scenario-2/index.html" },
 	{ group: "Storyboard", label: "Scenario 3", href: "storyboards/scenario-3/index.html" },
 	{ group: "Storyboard", label: "Scenario 4", href: "storyboards/scenario-4/index.html" },
 	{ group: "Storyboard", label: "Scenario 5", href: "storyboards/scenario-5/index.html" },
+	{ group: "Storyboard", label: "Scenario 6", href: "storyboards/scenario-6/index.html" },
 	{ group: "Views", label: "Alert expanded", page: "Monitoring", alert: { patientId: alertViewPatient } },
 	{
 		group: "Views",

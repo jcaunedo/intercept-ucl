@@ -10,13 +10,19 @@ type PatientNavigation = {
 	 * filters, so the details page can step to the previous and next one; without it (e.g. from an alert) the patient gets
 	 * the page's list as `setPageList` last set it. `consult: "answered"` opens it with the video consult already on: a
 	 * consult request answered on the patient's page (Nov 9, 2026, user's call). `pathway` opens it with an alert's
-	 * pathway out in its Pathway panel, at `focus` (e.g. the discharge referrals).
+	 * pathway out in its Pathway panel, at `focus` (e.g. the discharge referrals). `section` opens it on a tab, e.g.
+	 * `"discharge"` (a notice's Review handoff, Scenario 6).
 	 */
 	openPatient: (
 		patientId: string,
 		list?: string[],
-		options?: { consult?: "answered"; pathway?: { alertId?: string; focus?: "discharge" } },
+		options?: { consult?: "answered"; pathway?: { alertId?: string; focus?: "discharge" }; section?: string },
 	) => void;
+	/**
+	 * Opens a Sidebar page by its name ("Inbox", "Analytics"), closing a patient's page or an alert open over it: a
+	 * notice's Open Inbox or Open outcomes (Scenario 6). Does nothing for a page the layout doesn't render.
+	 */
+	openPage?: (page: string) => void;
 	/**
 	 * The patients the page shows now, in its order and filters. A patient opened without a list (an alert, a toast, the
 	 * live feed, the chat) gets this one, so the patient list is always there (Nov 3, 2026, user's call).

@@ -16,7 +16,8 @@ import {
 import { usePagePreferences } from "../page-preferences";
 import { usePatientNavigation } from "../patient-navigation";
 import { alertChanges, type AlertChange } from "./alert-changes";
-import { avatarTone, avatarTones, patientInitials } from "./patient-avatar";
+import { avatarTone, patientInitials } from "./patient-avatar";
+import { usePatientTones } from "./patient-tones";
 
 // A toast for every change in any patient's alert (Nov 2, 2026, user's call): a new alert, a severity going up or down,
 // someone else acknowledging or escalating it, or its resolution. Render it inside InterceptLive, which shows the toasts
@@ -69,6 +70,11 @@ type AlertToastsProps = {
 	 * alert is open, where the clinician already sees it. Its button opens the alert at the part it's about.
 	 */
 	notices?: AlertNotice[];
+	/**
+	 * Patients a notice can name besides `patients`, e.g. a discharged patient from the Patients directory, who has left
+	 * Monitoring (Scenario 6's handoff and follow-up). `patients` wins for a patient in both.
+	 */
+	noticePatients?: AlertToastPatient[];
 };
 
 /** Something for the clinician to act on about a patient's alert, e.g. referrals to send at discharge. */
@@ -85,10 +91,15 @@ type AlertNotice = {
 	/** The part of the alert the button opens at: the discharge referrals. */
 	focus?: "discharge";
 	/**
-	 * What the button opens: the alert (default), the patient's page (e.g. an AI-drafted note to sign, Scenario 5), or the
-	 * shift handoff in Ask Intercept Live (Scenario 5's 07:00 handoff report).
+	 * What the button opens: the alert (default), the patient's page (e.g. an AI-drafted note to sign, Scenario 5; on
+	 * `section`, e.g. the Discharge section's handoff, Scenario 6), the shift handoff in Ask Intercept Live (Scenario 5's
+	 * 07:00 handoff report), or a Sidebar page (`page`: the Inbox's follow-up, the Analytics outcomes, Scenario 6).
 	 */
-	opens?: "alert" | "patient" | "handoff";
+	opens?: "alert" | "patient" | "handoff" | "page";
+	/** With `opens: "patient"`, the tab the patient's page opens on, e.g. `"discharge"`. */
+	section?: string;
+	/** With `opens: "page"`, the Sidebar page it opens, e.g. `"Analytics"`. */
+	page?: string;
 };
 
 /**
@@ -185,7 +196,7 @@ function useClosedResolutions() {
  * alert: a later change to the same alert replaces its toast (AL-11). With My patients on in the page on screen, only
  * their patients toast, and turning it on closes the toasts of the others.
  */
-function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertToastsProps) {
+function AlertToasts({ alerts, patients, onCloseResolved, notices = [], noticePatients = [] }: AlertToastsProps) {
 	const navigation = usePatientNavigation();
 	const openPatient = navigation?.openPatient;
 	const askAboutPatient = navigation?.askAboutPatient;
@@ -197,7 +208,8 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 	// Off too when the user turned Alert sounds off in the account menu (PRD Account menu ACM-040).
 	pingOn.current = Boolean(preferences?.activeAlerts) && preferences?.alertSounds !== false;
 	const pingAllowed = React.useCallback(() => pingOn.current, []);
-	const tones = React.useMemo(() => avatarTones(patients), [patients]);
+	// The app's colors (`patient-tones.tsx`): a notice's patient who left Monitoring keeps theirs.
+	const tones = usePatientTones(patients);
 	const previous = React.useRef(alerts);
 	// The patient behind each toast shown, by alert id (the toast's id), so My patients can close the others' toasts.
 	const shown = React.useRef(new Map<string, string>());
@@ -374,7 +386,9 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 			if (seenNotices.current.has(notice.id)) continue;
 			seenNotices.current.add(notice.id);
 			if (openAlertPatient === notice.patientId) continue;
-			const patient = patients.find((item) => item.id === notice.patientId);
+			const patient =
+				patients.find((item) => item.id === notice.patientId) ??
+				noticePatients.find((item) => item.id === notice.patientId);
 			if (!patient) continue;
 			shownNotices.current.set(notice.id, notice.patientId);
 			const close = () => {
@@ -394,9 +408,13 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 							const act =
 								notice.opens === "handoff"
 									? navigation?.startHandoff
-									: notice.opens === "patient"
-										? openPatient && (() => openPatient(notice.patientId))
-										: openAlert && (() => openAlert(notice.patientId, notice.alertId, { focus: notice.focus }));
+									: notice.opens === "page"
+										? navigation?.openPage && notice.page && (() => navigation.openPage?.(notice.page!))
+										: notice.opens === "patient"
+											? openPatient &&
+												(() =>
+													openPatient(notice.patientId, undefined, notice.section ? { section: notice.section } : undefined))
+											: openAlert && (() => openAlert(notice.patientId, notice.alertId, { focus: notice.focus }));
 							return act
 								? () => {
 										act();
@@ -412,7 +430,7 @@ function AlertToasts({ alerts, patients, onCloseResolved, notices = [] }: AlertT
 			);
 			if (toastsOnScreen()) pingUnlessMuted(pingAllowed);
 		}
-	}, [notices, patients, tones, openAlert, openPatient, navigation, openAlertPatient]);
+	}, [notices, patients, noticePatients, tones, openAlert, openPatient, navigation, openAlertPatient]);
 	React.useEffect(() => {
 		if (!openAlertPatient) return;
 		for (const [id, patientId] of shownNotices.current)
