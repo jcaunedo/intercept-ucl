@@ -96,7 +96,7 @@ Everything in a `sample-*` file (and `use-sample-live-feed.ts`) is made-up data 
 
 | Data | File | Used by |
 | --- | --- | --- |
-| Hospitals (each with its record system, `ehr`: the cards' badge; `sample-ehr.ts` reads it), the user, their team, shift end | `sample-data/sample-workspace.ts` | Every screen |
+| Hospitals (each with its record system, `ehr`: the cards' `source` badge, not shown for now; `sample-ehr.ts` reads it), the user, their team, shift end | `sample-data/sample-workspace.ts` | Every screen |
 | Census patients (in hospital now) and past patients | `sample-data/sample-census.ts` | `samplePatients` (the census, each `status: "admitted"` with a `lastActivityAt`): Patients, Monitoring, Ask Intercept Live, the scenarios. `samplePastPatients` (8 discharged or transferred) and `sampleUncertainStatusPatients` (Rebecca Ward, pending reconciliation; Gregory Mason, no status): no record or alert, Patients only, passed with the census in the Patients stories, so every status shows |
 | Monitoring patients, vitals, alerts, escalation targets | `monitoring/sample-monitoring.ts` | Monitoring, the live feed, patient details |
 | Scripted live feed | `monitoring/sample-live-scenario.ts`, played by `sample-data/use-sample-live-feed.ts` (stories only). Margaret Hayes and Dale Reynolds aren't in it | The Live stories |
