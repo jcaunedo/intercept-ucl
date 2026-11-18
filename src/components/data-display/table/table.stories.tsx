@@ -333,7 +333,7 @@ export const WithTotal: Story = {
 };
 
 /**
- * `lg`: an inbox. A 44px heading row with a checkbox that selects every message, then 70px rows, 12px from the edges:
+ * `lg`: an inbox. A 44px heading row with a checkbox that selects every message, then 68px rows, 12px from the edges:
  * a checkbox, the unread dot (`inbox-unread`), who it's from with their role, the subject over a one-line preview, its type,
  * its date with when it's due, the row's action and "…". An unread row shows the dot and bolds who and the subject.
  * intercept.ds Table Row, Variant=Inbox, State=Default and Unread
@@ -382,7 +382,7 @@ export const Inbox: Story = {
 									<Avatar size='md'>
 										<AvatarFallback tone={message.tone}>{message.initials}</AvatarFallback>
 									</Avatar>
-									<div className='flex min-w-0 flex-col gap-1'>
+									<div className='flex min-w-0 flex-col gap-0.5'>
 										<span className={message.unread ? "truncate font-bold" : "truncate"}>{message.from}</span>
 										<span className='truncate font-normal text-muted-foreground'>{message.role}</span>
 									</div>
@@ -390,7 +390,7 @@ export const Inbox: Story = {
 							</div>
 						</TableCell>
 						<TableCell>
-							<div className='flex min-w-0 flex-col gap-1'>
+							<div className='flex min-w-0 flex-col gap-0.5'>
 								<span className={message.unread ? "truncate font-bold" : "truncate font-semibold"}>
 									{message.subject}
 								</span>
@@ -403,7 +403,7 @@ export const Inbox: Story = {
 							</Badge>
 						</TableCell>
 						<TableCell>
-							<div className='flex flex-col gap-1'>
+							<div className='flex flex-col gap-0.5'>
 								<span>{message.at}</span>
 								{message.due ? (
 									<span className={message.due.overdue ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>

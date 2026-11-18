@@ -530,7 +530,7 @@ function InboxPanel({ items, alerts = [], patients, onAlertAction, onItemAction 
 															{patient.photo ? <AvatarImage src={patient.photo} alt='' /> : null}
 															<AvatarFallback tone={tones.get(patient.id)}>{patientInitials(patient)}</AvatarFallback>
 														</Avatar>
-														<div className='flex min-w-0 flex-col gap-1'>
+														<div className='flex min-w-0 flex-col gap-0.5'>
 															{/* Unread: the name bold, as the title (Inbox row State=Unread). */}
 															<span className={cn("truncate", row.unread && "font-bold")}>{fullName(patient)}</span>
 															<span className='truncate font-normal text-muted-foreground'>{place(patient)}</span>
@@ -546,7 +546,7 @@ function InboxPanel({ items, alerts = [], patients, onAlertAction, onItemAction 
 											<button
 												type='button'
 												onClick={() => open(row)}
-												className='flex w-full min-w-0 flex-col gap-1 rounded-sm text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+												className='flex w-full min-w-0 flex-col gap-0.5 rounded-sm text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
 											>
 												<span
 													className={cn(
@@ -569,7 +569,7 @@ function InboxPanel({ items, alerts = [], patients, onAlertAction, onItemAction 
 											</Badge>
 										</TableCell>
 										<TableCell>
-											<div className='flex flex-col gap-1'>
+											<div className='flex flex-col gap-0.5'>
 												<time dateTime={row.done?.at ?? row.receivedAt} title={received.title}>
 													{received.label}
 												</time>

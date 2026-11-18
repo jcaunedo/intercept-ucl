@@ -23,10 +23,6 @@ const within = (iso: string | undefined, days: number | "today") => {
 	return Date.now() - time < days * dayMs;
 };
 
-/** Recently viewed, the filter bar's chip: opened by the clinician in the last 7 days. */
-const recentlyViewedDays = 7;
-const isRecentlyViewed = (patient: DirectoryPatient) => within(patient.lastViewedAt, recentlyViewedDays);
-
 const tagged = (match: (label: string) => boolean) => (patient: DirectoryPatient) =>
 	(patient.tags ?? []).some((tag) => match(tag.label));
 
@@ -96,15 +92,16 @@ function patientsFilterGroups(
 		},
 		{
 			id: "recency",
-			title: "Last activity",
+			title: "Last encounter",
 			options: [
-				{ id: "today", label: "Today", matches: (patient) => within(patient.lastActivityAt, "today") },
-				{ id: "7d", label: "Last 7 days", matches: (patient) => within(patient.lastActivityAt, 7) },
-				{ id: "30d", label: "Last 30 days", matches: (patient) => within(patient.lastActivityAt, 30) },
+				// A stay still going is in every window; one that ended, by when it ended.
+				{ id: "today", label: "Today", matches: (patient) => patient.encounterOngoing || within(patient.lastEncounterAt, "today") },
+				{ id: "7d", label: "Last 7 days", matches: (patient) => patient.encounterOngoing || within(patient.lastEncounterAt, 7) },
+				{ id: "30d", label: "Last 30 days", matches: (patient) => patient.encounterOngoing || within(patient.lastEncounterAt, 30) },
 			],
 		},
 		{ id: "clinical", title: "Clinical context", options: clinicalOptions },
 	];
 }
 
-export { isClinicalContextFlag, isRecentlyViewed, patientsFilterGroups, recentlyViewedDays };
+export { isClinicalContextFlag, patientsFilterGroups };

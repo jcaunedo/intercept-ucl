@@ -1,8 +1,6 @@
 import * as React from "react";
 import {
 	ArrowUpRightIcon,
-	CheckIcon,
-	ChevronDownIcon,
 	ChevronLeftIcon,
 	ImageIcon,
 	MessageCircleIcon,
@@ -17,14 +15,6 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { SearchInput } from "@/components/forms/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/forms/select";
 import { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@/components/overlays/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
 import { Typography } from "@/components/typography/typography";
 import { PatientCardScore, PatientCardTags } from "@/components/cards/patient-census-card";
@@ -38,7 +28,7 @@ import {
 	type ConsultMessage,
 	type ConsultReplies,
 } from "../alert-panel/consult-messages";
-import { ConsultSessionScope, useSessionState } from "../alert-panel/consult-session";
+import { ConsultSessionScope } from "../alert-panel/consult-session";
 import { usePatientNavigation } from "../patient-navigation";
 import type { CensusPatient } from "../patients/patients-panel";
 import { avatarTones, patientInitials } from "../shared/patient-avatar";
@@ -58,10 +48,10 @@ type MessageContact = {
 };
 
 /**
- * The clinician's conversation with one person at a client hospital (PRD Messages MSG-001, MSG-018), as their hospital's
- * messaging has it: one per person, whatever patients it's about. Each message can be about a patient (`patientId`);
- * some are about none (staffing, a drug shortage). A patient's own thread (the alert panel, the patient page) is that
- * patient's messages across conversations.
+ * The clinician's conversation with one person at a client hospital about one patient (PRD Messages MSG-001, MSG-018),
+ * or about none (staffing, a drug shortage). Never about two patients: a nurse with three patients has three
+ * conversations, so no message can be read or sent against the wrong patient. A patient's own thread (the alert panel,
+ * the patient page) is that patient's conversations.
  */
 type MessageConversation = {
 	id: string;
@@ -71,16 +61,16 @@ type MessageConversation = {
 	hospital: string;
 	/** How the conversation reaches the hospital, as a generic label, never a vendor's name ("Hospital messaging"; MSG-019). */
 	channel: string;
-	/** The conversation as the API has it, oldest first, each message with the patient it's about, if any. */
+	/** The one patient the conversation is about; none for a conversation about no patient. */
+	patient?: CensusPatient;
+	/** The conversation as the API has it, oldest first, every message about its patient. */
 	messages: ConsultMessage[];
-	/** The patients its messages are about, to show and to pick from when writing. */
-	patients?: CensusPatient[];
 	/** How many of the person's latest messages the clinician hasn't read. */
 	unread?: number;
 	/** An urgent clinical message is in it, apart from routine chat (MSG-020, CC-03). */
 	urgent?: boolean;
-	/** Prototype only: the person's simulated replies, by the patient the message is about (MSG-008). */
-	replies?: (patient: CensusPatient | undefined) => ConsultReplies | undefined;
+	/** Prototype only: the person's simulated replies (MSG-008). */
+	replies?: ConsultReplies;
 };
 
 /** All conversations, the unread ones or the urgent ones. */
@@ -94,11 +84,22 @@ type MessagesPanelProps = {
 	defaultConversationId?: string;
 	defaultTab?: MessagesTab;
 	/**
-	 * A message the clinician sent, by conversation, with the patient it's about (none: about no patient), for the app to
-	 * send through the hospital's messaging.
+	 * A message the clinician sent, by conversation, with the conversation's patient (none: about no patient), for the app
+	 * to send through the hospital's messaging.
 	 */
 	onSendMessage?: (conversationId: string, text: string, patientId?: string) => void;
+	/**
+	 * The conversations read, when the app keeps them (Intercept Live's layout does, so the Sidebar's Messages dot leaves
+	 * once nothing is unread). Without it the page keeps them itself, for as long as it's open.
+	 */
+	readIds?: ReadonlySet<string>;
+	/** A conversation was opened, so it's read: its unread count clears. */
+	onRead?: (conversationId: string) => void;
 };
+
+/** How many messages are still unread: each conversation's count, unless it's been read. */
+const unreadMessageCount = (conversations: readonly MessageConversation[], readIds: ReadonlySet<string>) =>
+	conversations.reduce((total, conversation) => total + (readIds.has(conversation.id) ? 0 : (conversation.unread ?? 0)), 0);
 
 const presenceLabels: Record<NonNullable<MessageContact["presence"]>, string> = {
 	online: "Online",
@@ -122,9 +123,6 @@ const contactLabel = (contact: MessageContact) => `${contact.name}, ${contact.cr
 
 const lastMessage = (conversation: MessageConversation) => conversation.messages.at(-1);
 
-const patientOf = (conversation: MessageConversation, patientId: string | undefined) =>
-	patientId ? conversation.patients?.find((patient) => patient.id === patientId) : undefined;
-
 /** The list's preview of a message: its text, or the photo's title; "You: " or someone else's name first. */
 function preview(message: ConsultMessage | undefined) {
 	if (!message) return "No messages yet";
@@ -135,10 +133,10 @@ function preview(message: ConsultMessage | undefined) {
 
 /**
  * Intercept Live's Messages page (PRD Messages MSG-018): every conversation with the people at every hospital the
- * clinician covers, in one inbox, one per person. The list (search, hospital, All / Unread / Urgent) on the left, each row
- * leading with who wrote and where, the patient as context when there is one; the open conversation in the middle, the
- * alert panel's own thread and message box, with the patient each message is about; who it's with and the patients it
- * mentions on the right. Opening a conversation reads it. Replies go back through each hospital's own messaging.
+ * clinician covers, in one inbox, one per person and patient. The list (search, hospital, All / Unread / Urgent) on the
+ * left, each row leading with who wrote and where, then the patient it's about; the open conversation in the middle,
+ * its patient fixed above the alert panel's own thread and message box; who it's with and its patient on the right.
+ * Opening a conversation reads it. Replies go back through each hospital's own messaging.
  */
 function MessagesPanel({
 	conversations,
@@ -146,6 +144,8 @@ function MessagesPanel({
 	defaultConversationId,
 	defaultTab = "all",
 	onSendMessage,
+	readIds,
+	onRead,
 }: MessagesPanelProps) {
 	const navigation = usePatientNavigation();
 	const now = useCurrentMinute();
@@ -163,8 +163,21 @@ function MessagesPanel({
 	// Below md one column shows at a time: the list, or the conversation once one is picked.
 	const [conversationShown, setConversationShown] = React.useState(false);
 	const [detailsOpen, setDetailsOpen] = React.useState(true);
-	// Conversations opened here, read: their unread count clears.
-	const [read, setRead] = React.useState<ReadonlySet<string>>(() => new Set(selectedId ? [selectedId] : []));
+	// Conversations opened, read: their unread count clears. The app's when it keeps them (`readIds`), else the page's.
+	const [ownRead, setOwnRead] = React.useState<ReadonlySet<string>>(() => new Set(selectedId ? [selectedId] : []));
+	const read = readIds ?? ownRead;
+	const markRead = React.useCallback(
+		(id: string) => {
+			setOwnRead((ids) => (ids.has(id) ? ids : new Set(ids).add(id)));
+			onRead?.(id);
+		},
+		[onRead],
+	);
+	// The conversation open on arrival is read too.
+	React.useEffect(() => {
+		if (selectedId) markRead(selectedId);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- only the one open on arrival.
+	}, []);
 	// Conversations opened this visit keep their session, so a message sent in one is still there on coming back to it.
 	const [visited, setVisited] = React.useState<string[]>(() => (selectedId ? [selectedId] : []));
 
@@ -172,7 +185,7 @@ function MessagesPanel({
 		read.has(conversation.id) ? 0 : (conversation.unread ?? 0);
 	// Patients keep the color they have on every other page: the tones come from every patient mentioned.
 	const tones = React.useMemo(
-		() => avatarTones(conversations.flatMap((conversation) => conversation.patients ?? [])),
+		() => avatarTones(conversations.flatMap((conversation) => (conversation.patient ? [conversation.patient] : []))),
 		[conversations],
 	);
 
@@ -186,7 +199,7 @@ function MessagesPanel({
 			conversation.with.name,
 			conversation.with.role,
 			conversation.hospital,
-			...(conversation.patients ?? []).map(patientName),
+			conversation.patient ? patientName(conversation.patient) : "",
 			...conversation.messages.map((message) => message.text ?? message.photo?.title ?? ""),
 		]
 			.join(" ")
@@ -200,15 +213,11 @@ function MessagesPanel({
 	const select = (id: string) => {
 		setSelectedId(id);
 		setConversationShown(true);
-		setRead((ids) => new Set(ids).add(id));
+		markRead(id);
 		setVisited((ids) => (ids.includes(id) ? ids : [...ids, id]));
 	};
 
-	const openPatient = (conversation: MessageConversation, patientId: string) =>
-		navigation?.openPatient(
-			patientId,
-			(conversation.patients ?? []).map((patient) => patient.id),
-		);
+	const openPatient = (patientId: string) => navigation?.openPatient(patientId, [patientId]);
 
 	if (!conversations.length) {
 		return (
@@ -287,7 +296,7 @@ function MessagesPanel({
 							</Select>
 						</div>
 						{shown.length ? (
-							<ul className='flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2'>
+							<ul className='flex min-h-0 flex-1 flex-col overflow-y-auto p-2'>
 								{shown.map((conversation) => (
 									<ConversationRow
 										key={conversation.id}
@@ -323,7 +332,12 @@ function MessagesPanel({
 					{/* The open conversation */}
 					{selected ? (
 						<section
-							aria-label={`Conversation with ${contactLabel(selected.with)}`}
+							aria-label={[
+								`Conversation with ${contactLabel(selected.with)}`,
+								selected.patient ? `about ${patientName(selected.patient)}` : undefined,
+							]
+								.filter(Boolean)
+								.join(" ")}
 							className={cn("flex min-w-0 flex-1 flex-col", !conversationShown && "max-md:hidden")}
 						>
 							<header className='flex shrink-0 items-center gap-3 border-b border-border px-6 py-3'>
@@ -368,7 +382,7 @@ function MessagesPanel({
 									conversation={selected}
 									tones={tones}
 									onSendMessage={onSendMessage}
-									onOpenPatient={navigation ? (patientId) => openPatient(selected, patientId) : undefined}
+									onOpenPatient={navigation ? openPatient : undefined}
 								/>
 							</ConsultSessionScope>
 						</section>
@@ -379,12 +393,12 @@ function MessagesPanel({
 						</div>
 					)}
 
-					{/* Who it's with and the patients it's about, from xl up. */}
+					{/* Who it's with and the patient it's about, from xl up. */}
 					{selected && detailsOpen ? (
 						<ConversationDetails
 							conversation={selected}
 							tones={tones}
-							onOpenPatient={navigation ? (patientId) => openPatient(selected, patientId) : undefined}
+							onOpenPatient={navigation ? openPatient : undefined}
 							onAsk={
 								navigation
 									? (patient) => navigation.askAboutPatient(patient.id, patientName(patient))
@@ -399,14 +413,15 @@ function MessagesPanel({
 }
 
 /**
- * A conversation's session key: apart from the patients' consult sessions, since a conversation isn't one patient's (the
- * alert panel and the patient page key theirs by patient).
+ * A conversation's session key: apart from the patients' consult sessions (the alert panel and the patient page key
+ * theirs by patient), since a patient can have conversations with several people.
  */
 const sessionKey = (conversationId: string) => `conversation:${conversationId}`;
 
 /**
- * One row of the list: who wrote and where first, then the last message, then the patient it's about (none for a
- * message about no patient), Urgent and the unread count.
+ * One row of the list: who wrote and where first, then the last message, then the patient the conversation is about
+ * (none for a conversation about no patient) and Urgent. Unread shows as the bold name and the brand-colored time; the
+ * count is in the row's name for screen readers only (no Counter on the row since Nov 18, 2026, user's call).
  */
 function ConversationRow({
 	conversation,
@@ -425,9 +440,11 @@ function ConversationRow({
 }) {
 	const last = lastMessage(conversation);
 	const when = last && now !== null ? formatRelativeDate(last.sentAt, now) : undefined;
-	const about = patientOf(conversation, last?.patientId);
+	const about = conversation.patient;
 	return (
-		<li>
+		// A divider between rows, inset to the content's edges (12px), clear of the rows' hover and selected fills by the
+		// 4px around each row (Nov 18, 2026, user's call).
+		<li className='relative py-1 first:pt-0 last:pb-0 not-last:after:absolute not-last:after:inset-x-3 not-last:after:bottom-0 not-last:after:h-px not-last:after:bg-border'>
 			<button
 				type='button'
 				onClick={onSelect}
@@ -443,35 +460,41 @@ function ConversationRow({
 					.filter(Boolean)
 					.join(", ")}
 				className={cn(
-					"flex w-full gap-3 rounded-lg p-3 text-left transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+					"flex w-full flex-col gap-2 rounded-lg p-3 text-left transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
 					selected && "bg-accent",
 				)}
 			>
-				<ContactAvatar contact={conversation.with} />
-				<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
-					<span className='flex items-baseline gap-2'>
-						<span className={cn("min-w-0 flex-1 truncate text-sm", unread ? "font-bold" : "font-semibold")}>
-							{contactLabel(conversation.with)}
+				{/* The avatar heads the row beside who and where; the message and the patient run the row's full width under
+				    them, not indented past the avatar (Nov 18, 2026, user's call). */}
+				<span className='flex w-full items-center gap-3'>
+					<ContactAvatar contact={conversation.with} />
+					<span className='flex min-w-0 flex-1 flex-col gap-0.5'>
+						<span className='flex items-baseline gap-2'>
+							<span className={cn("min-w-0 flex-1 truncate text-sm", unread ? "font-bold" : "font-semibold")}>
+								{contactLabel(conversation.with)}
+							</span>
+							{when ? (
+								<time
+									dateTime={last?.sentAt}
+									title={when.title}
+									className={cn("shrink-0 text-xs", unread ? "font-medium text-primary" : "text-muted-foreground")}
+								>
+									{when.label}
+								</time>
+							) : null}
 						</span>
-						{when ? (
-							<time
-								dateTime={last?.sentAt}
-								title={when.title}
-								className={cn("shrink-0 text-xs", unread ? "font-medium text-primary" : "text-muted-foreground")}
-							>
-								{when.label}
-							</time>
-						) : null}
+						<span className='truncate text-xs text-muted-foreground'>
+							{conversation.with.role} · {conversation.hospital}
+						</span>
 					</span>
-					<span className='truncate text-xs text-muted-foreground'>
-						{conversation.with.role} · {conversation.hospital}
-					</span>
-					<span className={cn("line-clamp-2 pt-0.5 text-sm", unread ? "text-foreground" : "text-muted-foreground")}>
+				</span>
+				<span className='flex w-full min-w-0 flex-col gap-1.5'>
+					<span className={cn("line-clamp-2 text-sm", unread ? "text-foreground" : "text-muted-foreground")}>
 						{last?.photo && !last.text ? <ImageIcon aria-hidden className='mr-1 inline size-3.5 align-[-2px]' /> : null}
 						{preview(last)}
 					</span>
-					{about || conversation.urgent || unread ? (
-						<span className='flex items-center gap-2 pt-1'>
+					{about || conversation.urgent ? (
+						<span className='flex items-center gap-2'>
 							<span className='flex min-w-0 flex-1 items-center gap-1.5'>
 								{about ? (
 									<>
@@ -488,7 +511,6 @@ function ConversationRow({
 									Urgent
 								</Badge>
 							) : null}
-							{unread ? <Counter count={unread} /> : null}
 						</span>
 					) : null}
 				</span>
@@ -498,9 +520,8 @@ function ConversationRow({
 }
 
 /**
- * The open conversation: who the next message is about (the patient of the latest message to start with, changeable
- * to another of its patients or to none), the messages with each change of patient marked, and the alert panel's own
- * message box.
+ * The open conversation: its patient, fixed (a conversation is about one patient, never another: PRD Messages MSG-001),
+ * with Open patient; then the alert panel's own thread and message box, every message about that patient.
  */
 function ConversationView({
 	conversation,
@@ -513,66 +534,29 @@ function ConversationView({
 	onSendMessage?: (conversationId: string, text: string, patientId?: string) => void;
 	onOpenPatient?: (patientId: string) => void;
 }) {
-	const patients = conversation.patients ?? [];
-	// Who the next message is about: kept with the conversation's session, "" for no patient.
-	const [aboutId, setAboutId] = useSessionState<string>("messagesAbout", lastMessage(conversation)?.patientId ?? "");
-	const about = patientOf(conversation, aboutId || undefined);
+	const about = conversation.patient;
 	const [messages, send, typing] = useConsultMessages(
 		conversation.messages,
 		[],
 		onSendMessage ? (text, patientId) => onSendMessage(conversation.id, text, patientId) : undefined,
-		conversation.replies?.(about),
+		conversation.replies,
 	);
-	const label = (patientId: string) => {
-		const patient = patientOf(conversation, patientId);
-		return patient ? `${patientName(patient)} · ${patientPlace(patient)}` : "another patient";
-	};
 	return (
 		<>
-			{/* About: who the next message is about, so it's never sent against the wrong patient. Only in a conversation
-			    that mentions a patient. */}
-			{patients.length ? (
+			{/* About: the patient this conversation is about, so it's never read or answered as another's. Only in a
+			    conversation about a patient. */}
+			{about ? (
 				<div className='flex shrink-0 items-center gap-3 border-b border-border px-6 py-2'>
 					<span className='shrink-0 text-xs text-muted-foreground'>About</span>
-					{about ? (
-						<span className='flex min-w-0 items-center gap-2'>
-							<PatientAvatar patient={about} tone={tones.get(about.id)} size='xs' />
-							<span className='min-w-0 truncate text-sm'>
-								<span className='font-semibold'>{patientName(about)}</span>
-								<span className='text-muted-foreground'> · {patientPlace(about)}</span>
-							</span>
+					<span className='flex min-w-0 items-center gap-2'>
+						<PatientAvatar patient={about} tone={tones.get(about.id)} size='xs' />
+						<span className='min-w-0 truncate text-sm'>
+							<span className='font-semibold'>{patientName(about)}</span>
+							<span className='text-muted-foreground'> · {patientPlace(about)}</span>
 						</span>
-					) : (
-						<span className='text-sm text-muted-foreground'>No patient</span>
-					)}
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button variant='ghost' size='xs' aria-label='Change who the message is about' className='shrink-0'>
-								Change
-								<ChevronDownIcon />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align='start' className='w-72'>
-							<DropdownMenuLabel>About</DropdownMenuLabel>
-							{patients.map((patient) => (
-								<DropdownMenuItem key={patient.id} onSelect={() => setAboutId(patient.id)}>
-									<PatientAvatar patient={patient} tone={tones.get(patient.id)} size='xs' />
-									<span className='min-w-0 flex-1 truncate'>
-										{patientName(patient)}
-										<span className='text-muted-foreground'> · {patientPlace(patient)}</span>
-									</span>
-									{patient.id === aboutId ? <CheckIcon aria-label='Picked' /> : null}
-								</DropdownMenuItem>
-							))}
-							<DropdownMenuSeparator />
-							<DropdownMenuItem onSelect={() => setAboutId("")}>
-								<span className='flex-1'>No patient</span>
-								{!aboutId ? <CheckIcon aria-label='Picked' /> : null}
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
+					</span>
 					<span className='flex-1' />
-					{about && onOpenPatient ? (
+					{onOpenPatient ? (
 						<Button variant='outline' size='xs' onClick={() => onOpenPatient(about.id)} className='shrink-0'>
 							Open patient
 							<ArrowUpRightIcon />
@@ -588,7 +572,6 @@ function ConversationView({
 					onSend={(text) => send(text, about?.id)}
 					nurse={contactLabel(conversation.with)}
 					typing={typing}
-					patientLabel={patients.length ? label : undefined}
 					placeholder={about ? `Message about ${patientName(about)}…` : "Send a message…"}
 				/>
 			</div>
@@ -625,7 +608,7 @@ function PatientAvatar({
 	);
 }
 
-/** The right column: who the conversation is with, where it goes, and the patients it's about (score, flags). */
+/** The right column: who the conversation is with, where it goes, and the patient it's about (score, flags). */
 function ConversationDetails({
 	conversation,
 	tones,
@@ -638,7 +621,7 @@ function ConversationDetails({
 	onAsk?: (patient: CensusPatient) => void;
 }) {
 	const contact = conversation.with;
-	const patients = conversation.patients ?? [];
+	const patient = conversation.patient;
 	const photos = conversation.messages.filter((message) => message.photo).length;
 	return (
 		<aside
@@ -669,56 +652,49 @@ function ConversationDetails({
 
 			<hr className='border-border' />
 
-			<section aria-labelledby='conversation-patients' className='flex flex-col gap-4'>
-				<Typography as='h3' id='conversation-patients' size='sm' weight='semibold'>
-					Patients
+			<section aria-labelledby='conversation-patient' className='flex flex-col gap-4'>
+				<Typography as='h3' id='conversation-patient' size='sm' weight='semibold'>
+					Patient
 				</Typography>
-				{patients.length ? (
-					<ul className='flex flex-col gap-5'>
-						{patients.map((patient) => {
-							const name = patientName(patient);
-							return (
-								<li key={patient.id} className='flex flex-col gap-2'>
-									<div className='flex items-center gap-3'>
-										<PatientAvatar patient={patient} tone={tones.get(patient.id)} />
-										<div className='flex min-w-0 flex-col'>
-											<Typography size='sm' weight='semibold' className='truncate'>
-												{name}
-											</Typography>
-											<Typography size='xs' className='truncate text-muted-foreground'>
-												{[[patient.sex, patient.age].filter(Boolean).join(", "), patientPlace(patient)]
-													.filter(Boolean)
-													.join(" · ")}
-											</Typography>
-										</div>
-									</div>
-									<PatientCardScore acuity={patient.acuity} trajectory={patient.trajectory} size='sm' />
-									{patient.tags?.length ? <PatientCardTags tags={patient.tags} name={name} size='sm' /> : null}
-									{onOpenPatient || onAsk ? (
-										<div className='flex gap-2'>
-											{onOpenPatient ? (
-												<Button variant='outline' size='xs' onClick={() => onOpenPatient(patient.id)}>
-													Open patient
-													<ArrowUpRightIcon />
-												</Button>
-											) : null}
-											{onAsk ? (
-												<Button
-													variant='outline'
-													size='xs'
-													onClick={() => onAsk(patient)}
-													aria-label={`Ask Intercept Live about ${name}`}
-												>
-													<AiSparkleIcon />
-													Ask Intercept Live
-												</Button>
-											) : null}
-										</div>
-									) : null}
-								</li>
-							);
-						})}
-					</ul>
+				{patient ? (
+					<div className='flex flex-col gap-2'>
+						<div className='flex items-center gap-3'>
+							<PatientAvatar patient={patient} tone={tones.get(patient.id)} />
+							<div className='flex min-w-0 flex-col'>
+								<Typography size='sm' weight='semibold' className='truncate'>
+									{patientName(patient)}
+								</Typography>
+								<Typography size='xs' className='truncate text-muted-foreground'>
+									{[[patient.sex, patient.age].filter(Boolean).join(", "), patientPlace(patient)]
+										.filter(Boolean)
+										.join(" · ")}
+								</Typography>
+							</div>
+						</div>
+						<PatientCardScore acuity={patient.acuity} trajectory={patient.trajectory} size='sm' />
+						{patient.tags?.length ? <PatientCardTags tags={patient.tags} name={patientName(patient)} size='sm' /> : null}
+						{onOpenPatient || onAsk ? (
+							<div className='flex gap-2'>
+								{onOpenPatient ? (
+									<Button variant='outline' size='xs' onClick={() => onOpenPatient(patient.id)}>
+										Open patient
+										<ArrowUpRightIcon />
+									</Button>
+								) : null}
+								{onAsk ? (
+									<Button
+										variant='outline'
+										size='xs'
+										onClick={() => onAsk(patient)}
+										aria-label={`Ask Intercept Live about ${patientName(patient)}`}
+									>
+										<AiSparkleIcon />
+										Ask Intercept Live
+									</Button>
+								) : null}
+							</div>
+						) : null}
+					</div>
 				) : (
 					<p className='text-sm text-muted-foreground'>Not about a patient</p>
 				)}
@@ -729,6 +705,7 @@ function ConversationDetails({
 
 export {
 	MessagesPanel,
+	unreadMessageCount,
 	type MessageContact,
 	type MessageConversation,
 	type MessagesPanelProps,

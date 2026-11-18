@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ChevronDownIcon, CircleDotIcon, HistoryIcon, LayoutGridIcon, RotateCwIcon, Rows3Icon, XIcon } from "lucide-react";
+import { ChevronDownIcon, CircleDotIcon, LayoutGridIcon, RotateCwIcon, Rows3Icon, XIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
 import { PatientCensusCard, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
@@ -38,9 +38,9 @@ import { useLocationFlag } from "../location-state";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { SegmentedToggle, type ToggleOption } from "../monitoring/view-controls";
 import { FiltersButton, FiltersPanel, passesFilters, type FilterGroup, type PatientFilters } from "../shared/patient-filters";
-import { patientStatus, type PatientCensusStatus } from "./patient-status";
-import { isRecentlyViewed, patientsFilterGroups } from "./patients-filters";
-import { Attending, PatientStatus, RelativeTime, copyPatientLink, directoryName } from "./patients-parts";
+import { patientStatus, patientStatuses, type PatientCensusStatus } from "./patient-status";
+import { patientsFilterGroups } from "./patients-filters";
+import { Attending, LastEncounter, PatientStatus, copyPatientLink, directoryName } from "./patients-parts";
 import { PatientsTable, PatientsTableSkeleton } from "./patients-table";
 
 // Patients (PRD Patients): the directory of every patient the clinician is authorized to see, in hospital or not, to
@@ -70,11 +70,6 @@ type CensusPatient = Omit<PatientCensusCardProps, "onOpen" | "href" | "alertRing
 	transferredTo?: string;
 	/** When the patient was admitted to the hospital, ISO 8601. Without it, the patient's record's `admittedAt`. */
 	admittedAt?: string;
-	/**
-	 * The latest meaningful chart activity (a note, an order, a charted result), ISO 8601. ⚠️ Data dependency (PRD Patients
-	 * CEN-014): no API field gives it yet; without it, the latest entry of the record's `activity`.
-	 */
-	lastActivityAt?: string;
 	/** On the Virtual Sepsis watch list. */
 	sepsisWatch?: boolean;
 	/** The acuity score's change over the last 4 h, which ranks patients within an alert severity (DU-09). */
@@ -95,6 +90,10 @@ type DirectoryPatient = CensusPatient & {
 	onCareTeam?: boolean;
 	/** The attending of record, from the record's care team. */
 	attending?: string;
+	/** The latest stay is still going: the patient is in hospital (their status's `inHospital`). */
+	encounterOngoing: boolean;
+	/** When the latest stay started (ongoing: the admission) or ended (when the patient left), ISO 8601. */
+	lastEncounterAt?: string;
 };
 
 type CensusUser = AppHeaderUser;
@@ -104,7 +103,7 @@ type PatientsPanelProps = {
 	/** Every patient the clinician is authorized to see: the census and the patients treated before. */
 	patients: CensusPatient[];
 	onOpenPatient?: (patientId: string) => void;
-	/** The patients' records: their care team (the attending, and whether the clinician is on it), admission and activity. */
+	/** The patients' records: their care team (the attending, and whether the clinician is on it) and admission. */
 	records?: PatientRecord[];
 	/** The directory is loading: placeholder rows in its layout. */
 	loading?: boolean;
@@ -128,7 +127,7 @@ const views: ToggleOption<DirectoryView>[] = [
 
 // Sorts (PRD Patients CEN-013), in the menu's order: Recently viewed first (the default). No NEWS2 sort: ranking by acuity
 // is Monitoring's (Nov 17, 2026, user's call).
-const sortOrderIds: readonly SortOrderId[] = ["viewed", "name", "activity", "admitted", "hospital", "unit"];
+const sortOrderIds: readonly SortOrderId[] = ["viewed", "name", "encounter", "admitted", "hospital", "unit"];
 
 // How many patients show before Show more (PRD Patients CEN-012): the table stays quick past the census's few dozen.
 const pageSize = 50;
@@ -151,10 +150,6 @@ const matchesDirectorySearch = (patient: DirectoryPatient, query: string) => {
 // The cards' grid, as Patients' Comfortable cards were: 2 a row above 657px of page, then one more every ~256px.
 const gridClassName =
 	"@min-[657px]:grid-cols-2 @min-[913px]:grid-cols-3 @min-[1169px]:grid-cols-4 @min-[1617px]:grid-cols-5 @min-[1809px]:grid-cols-6 @min-[2056px]:grid-cols-7 @min-[2352px]:grid-cols-8";
-
-/** The latest of a record's activity times. */
-const latestActivity = (record?: PatientRecord) =>
-	record?.activity?.reduce<string | undefined>((latest, entry) => (!latest || entry.at > latest ? entry.at : latest), undefined);
 
 /* -------------------------------------------------------------------------- */
 /* Hospital and Unit menus                                                    */
@@ -217,7 +212,7 @@ function FilterGroupMenu({
 /* -------------------------------------------------------------------------- */
 
 /**
- * The Patients page's content: the patient directory. Search first, then My patients, Current and Recently viewed, the
+ * The Patients page's content: the patient directory. Search first, then My patients and Current, the
  * Hospital and Unit menus and Filters; the count, Sort and the Table / Cards switch; then the patients. A row or card
  * opens the patient's page.
  */
@@ -233,30 +228,33 @@ function PatientsPanel({
 }: PatientsPanelProps) {
 	// Every patient's avatar color, from the whole directory, so sorting and filtering don't change them.
 	const tones = React.useMemo(() => avatarTones(patientsProp), [patientsProp]);
-	// The API's data with what the record adds: the clinician's relationship, the attending, admission and activity.
+	// The API's data with what the record adds: the clinician's relationship, the attending and admission; then the last
+	// encounter, from the admission and the status.
 	const directory = React.useMemo<DirectoryPatient[]>(() => {
 		const recordById = new Map((records ?? []).map((record) => [record.id, record]));
 		return patientsProp.map((patient) => {
 			const record = recordById.get(patient.id);
 			const team = record?.careTeam ?? [];
+			const admittedAt = patient.admittedAt ?? record?.admittedAt;
+			const encounterOngoing = patientStatuses[patientStatus(patient)].inHospital;
 			return {
 				...patient,
 				tone: patient.tone ?? tones.get(patient.id) ?? avatarTone(patient.id),
 				photo: patient.photo ?? record?.photo,
-				admittedAt: patient.admittedAt ?? record?.admittedAt,
-				lastActivityAt: patient.lastActivityAt ?? latestActivity(record),
+				admittedAt,
+				encounterOngoing,
+				lastEncounterAt: encounterOngoing ? admittedAt : patient.statusAt,
 				onCareTeam: team.some((member) => member.you),
 				attending: team.find((member) => /attending/i.test(member.role))?.name,
 			};
 		});
 	}, [patientsProp, records, tones]);
-	// Recently viewed counts this session's views too (the patients opened in the shell).
+	// The Recently viewed sort counts this session's views too (the patients opened in the shell).
 	const patients = useRecentActivity(directory, {});
 
 	const navigation = usePatientNavigation();
 	const [scope, setScope] = usePatientScope("patients");
 	const [currentOnly, setCurrentOnly] = React.useState(false);
-	const [recentOnly, setRecentOnly] = React.useState(false);
 	const [filters, setFilters] = React.useState<PatientFilters>({});
 	const [query, setQuery] = React.useState("");
 	const [sortBy, setSortBy] = useSortBy("patients", "viewed");
@@ -285,7 +283,6 @@ function PatientsPanel({
 	const chips = {
 		mine: (patient: DirectoryPatient) => scope !== "mine" || Boolean(patient.mine),
 		current: (patient: DirectoryPatient) => !currentOnly || patientStatus(patient) === "admitted",
-		recent: (patient: DirectoryPatient) => !recentOnly || isRecentlyViewed(patient),
 	};
 	const searched = patients.filter((patient) => matchesDirectorySearch(patient, query));
 	const inPanel = searched.filter((patient) => passesFilters(patient, filterGroups, filters));
@@ -299,7 +296,7 @@ function PatientsPanel({
 	const shown = visible.slice(0, limit);
 
 	// A new search, filter or sort starts from the first page again.
-	const resultsKey = `${query}|${JSON.stringify(filters)}|${scope}|${currentOnly}|${recentOnly}|${sortBy}`;
+	const resultsKey = `${query}|${JSON.stringify(filters)}|${scope}|${currentOnly}|${sortBy}`;
 	React.useEffect(() => setLimit(pageSize), [resultsKey]);
 
 	// Tells the shell what the page shows, so a patient opened here steps through this list (PRD PD-015).
@@ -317,11 +314,10 @@ function PatientsPanel({
 		onOpenPatient?.(patientId);
 	};
 
-	const filtered = Boolean(scope === "mine" || currentOnly || recentOnly || Object.values(filters).some((picked) => picked?.length));
+	const filtered = Boolean(scope === "mine" || currentOnly || Object.values(filters).some((picked) => picked?.length));
 	const clearFilters = () => {
 		setScope("all");
 		setCurrentOnly(false);
-		setRecentOnly(false);
 		setFilters({});
 	};
 	// Matches the status filters hide (Current, Patient status): a search for someone discharged must not read as "no
@@ -331,7 +327,6 @@ function PatientsPanel({
 			? searched.filter(
 					(patient) =>
 						chips.mine(patient) &&
-						chips.recent(patient) &&
 						passesFilters(patient, filterGroups, { ...filters, status: [] }),
 				).length
 			: 0;
@@ -354,8 +349,8 @@ function PatientsPanel({
 			photo={patient.photo}
 			initials={patientInitials(patient)}
 			tone={patient.tone}
-			tags={patient.tags}
-			// No score, alert or ring: identity, status, location and relationship lead (PRD Patients CEN-010).
+			// No score, alert, ring or tags: identity, status, location and relationship lead (PRD Patients CEN-010). The
+			// flags stay in the table's Clinical context column and the Filters panel.
 			alertRing={false}
 			moreActions={[
 				{ label: "Open patient", onSelect: () => openPatient(patient.id) },
@@ -368,7 +363,7 @@ function PatientsPanel({
 			</div>
 			<Attending patient={patient} labeled />
 			<p className='text-muted-foreground'>
-				Last activity <RelativeTime value={patient.lastActivityAt} className='text-foreground' />
+				Last encounter: <LastEncounter patient={patient} className='text-foreground' />
 			</p>
 		</PatientCensusCard>
 	);
@@ -435,14 +430,6 @@ function PatientsPanel({
 							>
 								<CircleDotIcon aria-hidden='true' />
 								Current
-							</FilterBarChip>
-							<FilterBarChip
-								pressed={recentOnly}
-								onPressedChange={setRecentOnly}
-								count={chipCount("recent", isRecentlyViewed)}
-							>
-								<HistoryIcon aria-hidden='true' />
-								Recently viewed
 							</FilterBarChip>
 						</FilterBarFilters>
 						<FilterBarControls>

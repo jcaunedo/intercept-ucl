@@ -13,7 +13,7 @@ import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import { PatientsPanel, type CensusPatient } from "../patients/patients-panel";
 import { InboxPanel, type InboxPanelProps } from "../inbox/inbox-panel";
-import { MessagesPanel, type MessagesPanelProps } from "../messages/messages-panel";
+import { MessagesPanel, unreadMessageCount, type MessagesPanelProps } from "../messages/messages-panel";
 import { SchedulePanel, type SchedulePanelProps } from "../schedule/schedule-panel";
 import { InterceptLive, type InterceptLivePage, type InterceptLiveProps, type OpenPatient } from "../intercept-live";
 import { patientDetailsView, type PatientAction, type PatientRecord } from "../patient-details/patient-details";
@@ -150,9 +150,24 @@ function Monitoring({
 		};
 	}, [censusPatients, patientRecords, monitoringCards, alerts, hospitals]);
 
+	// The conversations read, kept here above the pages, so the Sidebar's Messages dot follows them: it leaves once
+	// nothing is unread (Nov 18, 2026, user's call), and reading survives leaving the Messages page.
+	const [ownReadConversations, setReadConversations] = React.useState<ReadonlySet<string>>(() => new Set());
+	const readConversations = messages?.readIds ?? ownReadConversations;
+	const onReadConversation = messages?.onRead;
+	const readConversation = React.useCallback(
+		(id: string) => {
+			setReadConversations((ids) => (ids.has(id) ? ids : new Set(ids).add(id)));
+			onReadConversation?.(id);
+		},
+		[onReadConversation],
+	);
+
 	return (
 		<InterceptLive
 			{...shell}
+			// With the conversations, the Sidebar's dot counts what's still unread in them; without, the app's number.
+			unreadMessages={messages ? unreadMessageCount(messages.conversations, readConversations) : shell.unreadMessages}
 			// For the flags whose popover leads to an alert's pathway (Fall risk's fall prevention pathway).
 			alerts={alerts}
 			// The Sidebar's Monitoring shows the worst open alert, flashing, from any page.
@@ -227,7 +242,9 @@ function Monitoring({
 					/>
 				) : undefined,
 				Schedule: schedule ? <SchedulePanel hospitals={hospitals} {...schedule} /> : undefined,
-				Messages: messages ? <MessagesPanel hospitals={hospitals} {...messages} /> : undefined,
+				Messages: messages ? (
+					<MessagesPanel hospitals={hospitals} {...messages} readIds={readConversations} onRead={readConversation} />
+				) : undefined,
 				// The same alerts as Monitoring's, so acknowledging one in the Inbox acknowledges it everywhere.
 				Inbox: inbox ? (
 					<InboxPanel

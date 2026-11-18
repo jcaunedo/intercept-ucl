@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 18, 2026
 Scope: The Patient card component (compact and expanded variants) for Provider Desktop / Tele-Critical Care Clinical Surveillance.
 Purpose: Defines proposed presentation behavior, states and acceptance criteria for the Patient card, pending clinical and product validation.
 -->
@@ -18,7 +18,7 @@ Purpose: Defines proposed presentation behavior, states and acceptance criteria 
 **Component:** Patient card  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 17, 2026
+**Last updated:** November 18, 2026
 
 ---
 
@@ -118,7 +118,7 @@ The card shows the patient's avatar before the name: their photo, or their initi
 
 Monitoring's **Minimal view** shows this card too (MON-015), keeping the alert: the badge and the ring in the severity's color, pulsing until the alert is addressed, and the badge opens the alert. The Patients page still passes no alert.
 
-✅ **Resolved:** on **Patients** (the directory, PRD Patients CEN-010) the card is the Cards view's, and it shows no score line either: identity and location, then its new content slot with the patient's status (Current, Transferred, Discharged…), the attending ("Attending: …") and last activity, then the flags. The score line stays on Monitoring's cards. The slot (`children`) is the card's own, so the directory doesn't need a card of its own.
+✅ **Resolved:** on **Patients** (the directory, PRD Patients CEN-010) the card is the Cards view's, and it shows no score line either: identity and location, then its new content slot with the patient's status (Current, Transferred, Discharged…), the attending ("Attending: …") and ~~last activity, then the flags~~ the last encounter ("Last encounter: Admitted 3 days ago"). ✅ **Resolved:** no tag row on it, not even "No tags": the card takes `tags` only where a page passes them (Monitoring does, "No tags" included). The score line stays on Monitoring's cards. The slot (`children`) is the card's own, so the directory doesn't need a card of its own.
 
 - ✅ **Resolved:** Monitoring's Minimal view uses the compact card instead of a monitoring card without its monitor.
 

@@ -663,7 +663,8 @@ function MonitoringPanel({
 					tone={tones.get(id) ?? avatarTone(id)}
 					acuity={acuity}
 					trajectory={trajectory}
-					tags={tags}
+					// A patient without tags says "No tags", so the cards line up.
+					tags={tags ?? []}
 					alert={cardAlert(id)}
 					size={density === "compact" ? "sm" : "md"}
 					moreActions={moreActions}

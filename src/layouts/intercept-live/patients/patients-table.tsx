@@ -15,13 +15,13 @@ import {
 	directoryIdentity,
 	directoryName,
 	directoryPlace,
+	LastEncounter,
 	PatientStatus,
-	RelativeTime,
 } from "./patients-parts";
 import type { DirectoryPatient } from "./patients-panel";
 
 // Patients' Table view, the default (PRD Patients CEN-012): one row per patient, identity first, then status, location,
-// the attending, last activity and clinical context. No score column: NEWS2 isn't how a directory is read (it's
+// the attending, last encounter and clinical context. No score column: NEWS2 isn't how a directory is read (it's
 // Monitoring's); no alert column either. No Last viewed column (Nov 17, 2026, user's call): it drives Recently viewed.
 
 // Up to this many flags show in a row; the rest count as "+n" (all of them are in its accessible name).
@@ -94,7 +94,7 @@ function PatientsTableRow({
 				<Attending patient={patient} />
 			</TableCell>
 			<TableCell>
-				<RelativeTime value={patient.lastActivityAt} />
+				<LastEncounter patient={patient} />
 			</TableCell>
 			<TableCell>
 				{flags.length ? (
@@ -155,7 +155,7 @@ function PatientsTable({
 						<TableHead scope='col'>Status</TableHead>
 						<TableHead scope='col'>Location</TableHead>
 						<TableHead scope='col'>Attending</TableHead>
-						<TableHead scope='col'>Last activity</TableHead>
+						<TableHead scope='col'>Last encounter</TableHead>
 						<TableHead scope='col'>Clinical context</TableHead>
 						<TableHead scope='col'>
 							<span className='sr-only'>Actions</span>

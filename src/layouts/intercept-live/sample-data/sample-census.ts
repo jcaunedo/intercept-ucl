@@ -672,17 +672,8 @@ const censusPatients: CensusPatient[] = [
 	},
 ];
 
-// Minutes since each patient's latest chart activity (a note, an order, a charted result; PRD Patients CEN-014): what the
-// API's last-activity field would return. The census is in hospital now, so every one of them is admitted (Current).
-const lastActivityMinutes: Record<string, number> = {
-	p1: 18, p2: 6, p3: 41, p4: 12, p5: 3, p6: 95, p7: 27, p8: 64, p9: 9, p10: 2, p11: 130, p12: 52, p13: 210,
-	p14: 15, p15: 33, p16: 75, p19: 160, p20: 240, p17: 22, p18: 48, p22: 85, p25: 300, p26: 11, p27: 190, p28: 36,
-	p29: 58, p30: 14,
-};
-
 const samplePatients: CensusPatient[] = censusPatients.map((patient) => ({
 	status: "admitted",
-	lastActivityAt: hoursAgo((lastActivityMinutes[patient.id] ?? 60) / 60),
 	...patient,
 }));
 
@@ -708,7 +699,6 @@ const samplePastPatients: CensusPatient[] = [
 		status: "discharged",
 		statusAt: daysAgo(1.2),
 		admittedAt: daysAgo(6),
-		lastActivityAt: daysAgo(1.2),
 		lastViewedAt: daysAgo(1.5),
 		tags: [{ label: "Fall risk" }],
 	},
@@ -728,7 +718,6 @@ const samplePastPatients: CensusPatient[] = [
 		statusAt: hoursAgo(20),
 		transferredTo: "Denver Health",
 		admittedAt: daysAgo(3),
-		lastActivityAt: hoursAgo(20),
 		lastViewedAt: hoursAgo(21),
 		tags: [{ label: "DNR" }],
 	},
@@ -747,7 +736,6 @@ const samplePastPatients: CensusPatient[] = [
 		status: "discharged",
 		statusAt: daysAgo(3),
 		admittedAt: daysAgo(4),
-		lastActivityAt: daysAgo(3),
 		lastViewedAt: daysAgo(3),
 	},
 	{
@@ -765,7 +753,6 @@ const samplePastPatients: CensusPatient[] = [
 		statusAt: daysAgo(5),
 		transferredTo: "UCHealth Medical Center of the Rockies",
 		admittedAt: daysAgo(8),
-		lastActivityAt: daysAgo(5),
 		tags: [{ label: "Dialysis" }],
 	},
 	{
@@ -782,7 +769,6 @@ const samplePastPatients: CensusPatient[] = [
 		status: "discharged",
 		statusAt: daysAgo(12),
 		admittedAt: daysAgo(26),
-		lastActivityAt: daysAgo(12),
 		tags: [{ label: "Fall risk" }, { label: "DNR" }],
 	},
 	{
@@ -799,7 +785,6 @@ const samplePastPatients: CensusPatient[] = [
 		status: "discharged",
 		statusAt: daysAgo(21),
 		admittedAt: daysAgo(27),
-		lastActivityAt: daysAgo(21),
 	},
 	{
 		id: "h7",
@@ -816,7 +801,6 @@ const samplePastPatients: CensusPatient[] = [
 		status: "discharged",
 		statusAt: daysAgo(9),
 		admittedAt: daysAgo(14),
-		lastActivityAt: daysAgo(9),
 		lastViewedAt: daysAgo(10),
 	},
 	{
@@ -833,7 +817,6 @@ const samplePastPatients: CensusPatient[] = [
 		status: "discharged",
 		statusAt: daysAgo(45),
 		admittedAt: daysAgo(52),
-		lastActivityAt: daysAgo(45),
 		tags: [{ label: "Contact isolation" }],
 	},
 ];
@@ -860,7 +843,6 @@ const sampleUncertainStatusPatients: CensusPatient[] = [
 		bed: "Bay 2",
 		status: "pending-reconciliation",
 		admittedAt: hoursAgo(14),
-		lastActivityAt: hoursAgo(9),
 		lastViewedAt: hoursAgo(10),
 		tags: [{ label: "Fall risk" }],
 	},
@@ -876,7 +858,6 @@ const sampleUncertainStatusPatients: CensusPatient[] = [
 		unit: "Med-Surg",
 		bed: "Bed 7",
 		admittedAt: daysAgo(16),
-		lastActivityAt: daysAgo(15),
 	},
 ];
 
@@ -915,7 +896,6 @@ const sampleScenario1ResolvedCensus: Partial<CensusPatient> = {
 const sampleScenario2Census = (): CensusPatient => ({
 	id: "p21",
 	status: "admitted",
-	lastActivityAt: hoursAgo(10 / 60),
 	hospitalId: "alliance",
 	mine: true,
 	lastName: "Reynolds",
@@ -1002,7 +982,6 @@ const sampleScenario3Flags = (): NonNullable<CensusPatient["tags"]> => [
 const sampleScenario3Census = (): CensusPatient => ({
 	id: "p23",
 	status: "admitted",
-	lastActivityAt: hoursAgo(10 / 60),
 	hospitalId: "sidney",
 	lastName: "Medina",
 	firstName: "Rosa",
@@ -1141,7 +1120,6 @@ const sampleScenario4Flags = (rationing = false): NonNullable<CensusPatient["tag
 const sampleScenario4Census = (): CensusPatient => ({
 	id: "p24",
 	status: "admitted",
-	lastActivityAt: hoursAgo(10 / 60),
 	hospitalId: "bridgeport",
 	lastName: "Kessler",
 	firstName: "Tyler",
@@ -1314,7 +1292,6 @@ function sampleScenario5WalterCensusAt(stage: Scenario5WalterStage): Partial<Cen
 const sampleScenario5LindaCensus = (): CensusPatient => ({
 	id: "p31",
 	status: "admitted",
-	lastActivityAt: hoursAgo(5 / 60),
 	hospitalId: "sidney",
 	lastName: "Shaw",
 	firstName: "Linda",
@@ -1361,7 +1338,6 @@ function sampleScenario5LindaCensusAt(stage: Scenario5LindaStage): Partial<Censu
 		...lysed,
 		status: "transferred",
 		statusAt: hoursAgo(0),
-		lastActivityAt: hoursAgo(0),
 		transferredTo: "Front Range Comprehensive Stroke Center",
 		vitals: [
 			{ label: "Heart Rate", shortLabel: "HR", value: 98 },

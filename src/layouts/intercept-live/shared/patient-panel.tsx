@@ -97,8 +97,10 @@ type PanelPatient = Pick<
 	lastAlertAt?: string;
 	/** When the patient was admitted to the hospital, ISO 8601. For the Admission date sort (Patients). */
 	admittedAt?: string;
-	/** The patient's latest meaningful chart activity, ISO 8601. For the Most recent activity sort (Patients). */
-	lastActivityAt?: string;
+	/** The patient's latest stay is still going (in hospital). For the Most recent encounter sort (Patients). */
+	encounterOngoing?: boolean;
+	/** When the latest stay started (ongoing) or ended, ISO 8601. For the Most recent encounter sort (Patients). */
+	lastEncounterAt?: string;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -236,9 +238,12 @@ const byAlertPriority = (a: PanelPatient, b: PanelPatient) =>
 // The most unread family messages first; patients without any last.
 const byMessages = descending((patient) => patient.unreadMessages || undefined);
 
-// Patients' directory sorts (PRD Patients CEN-013): the latest chart activity first, the latest admission first, and
-// location A–Z (hospital, then unit). Patients without the value last.
-const byActivity = descending((patient) => time(patient.lastActivityAt));
+// Patients' directory sorts (PRD Patients CEN-013): the most recent encounter first (stays still going, the latest
+// admission first, then stays that ended, the latest end first), the latest admission first, and location A–Z
+// (hospital, then unit). Patients without the value last.
+const byEncounterTime = descending((patient) => time(patient.lastEncounterAt));
+const byEncounter = (a: PanelPatient, b: PanelPatient) =>
+	Number(Boolean(b.encounterOngoing)) - Number(Boolean(a.encounterOngoing)) || byEncounterTime(a, b);
 const byAdmitted = descending((patient) => time(patient.admittedAt));
 const byUnit = (a: PanelPatient, b: PanelPatient) => (a.unit ?? "\uffff").localeCompare(b.unit ?? "\uffff");
 const byHospital = (a: PanelPatient, b: PanelPatient) => (a.hospital ?? "\uffff").localeCompare(b.hospital ?? "\uffff");
@@ -273,9 +278,9 @@ const sortOrders = [
 		compare: (a: PanelPatient, b: PanelPatient) => byMessages(a, b) || byName(a, b),
 	},
 	{
-		id: "activity",
-		label: "Most recent activity",
-		compare: (a: PanelPatient, b: PanelPatient) => byActivity(a, b) || byName(a, b),
+		id: "encounter",
+		label: "Most recent encounter",
+		compare: (a: PanelPatient, b: PanelPatient) => byEncounter(a, b) || byName(a, b),
 	},
 	{
 		id: "admitted",

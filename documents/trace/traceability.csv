@@ -1,6 +1,6 @@
 req_id,artifact_path,repo_ids,evidence,notes
 PD-01,src/layouts/intercept-live/patients/patients-panel.tsx,CEN-001,Partial,"Directory across authorized hospitals, current and past (Nov 17, 2026); hospital is a filter; missing EHR / time zone / connection status per hospital"
-PD-03,src/layouts/intercept-live/patients/patients-panel.tsx,CEN-003;CEN-005;CEN-006,Met (design),"Search, My patients / Current / Recently viewed chips, Hospital and Unit menus, Filters panel, empty states (Nov 17, 2026); watchlist first not built"
+PD-03,src/layouts/intercept-live/patients/patients-panel.tsx,CEN-003;CEN-005;CEN-006,Met (design),"Search, My patients / Current chips, Hospital and Unit menus, Filters panel, empty states (Nov 17, 2026); watchlist first not built"
 PD-04,src/components/cards/patient-census-card/,PC-*,Partial,Card anatomy per prds/patient-card.md; acuity = NEWS2-style score (DU-14)
 PD-05,src/layouts/intercept-live/intercept-live.tsx,,Partial,Shell switches pages; workspace with census rail not built
 PD-07,src/layouts/intercept-live/intercept-live.tsx,,Met (design),Live shift countdown (AppHeader)

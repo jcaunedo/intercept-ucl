@@ -21,7 +21,8 @@ type TableProps = React.ComponentProps<"table"> & VariantProps<typeof tableVaria
 /**
  * A data table: shadcn's Table, styled from intercept.ds. `size` sets the body rows: `sm` 40px, `md` 48px (a cell with
  * two lines grows its row, e.g. an avatar with a name and a detail, 56px), `lg` the roomier Inbox rows (13px above and
- * below the content: 70px with two lines of text 4px apart, Figma's 17px around its 16px-tall text boxes; a 44px
+ * below the content: 68px with two lines of text 2px apart (Figma 4px, DESIGN.md "Table"), Figma's 17px around its
+ * 16px-tall text boxes; a 44px
  * heading row). Scrolls sideways when it's wider than its container.
  *
  * Figma: [intercept.ds › Table Row](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1531-4265)

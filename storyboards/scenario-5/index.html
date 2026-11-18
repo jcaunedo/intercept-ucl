@@ -196,18 +196,14 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 	<div class="beat-head"><h2>1. One census, four EHRs</h2><span class="time">03:10</span></div>
 	<div class="script">
 		<div>
-			<p class="say">Every patient shows in the same panel layout, whichever hospital they're at and whichever record system it runs. A small badge says where the data comes from: Epic at Regional West, Cerner at Alliance, Meditech at Chadron and Sidney, TruBridge at Bridgeport. Nothing in the intensivist's workflow changes by site.</p>
+			<p class="say">Every patient shows in the same panel layout, whichever hospital they're at and whichever record system it runs: Epic at Regional West, Cerner at Alliance, Meditech at Chadron and Sidney, TruBridge at Bridgeport. Nothing in the intensivist's workflow changes by site.</p>
 		</div>
 		<div>
 			<p class="label steps">Steps</p>
 			<ol>
-				<li>Point at the hospital tabs: <strong>Regional West</strong> is one of five.</li>
-				<li>Point at the badge at the end of any card's location line: <span class="ui">Epic</span>, <span class="ui">Meditech</span>, <span class="ui">TruBridge</span>, <span class="ui">Cerner</span>.</li>
+				<li>Point at the hospital tabs: <strong>Regional West</strong> is one of five, and every card looks the same whichever system its hospital runs.</li>
 			</ol>
 		</div>
-	</div>
-	<div class="frames">
-		<figure class="narrow"><img src="frames/00b-badge.jpg" alt="Walter Pierce's card: Regional West, MICU, Bed 4, with an Epic badge at the end of the location line; NEWS2 5 Medium; Ventilated and Medicare flags." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Walter's card, with Epic at the end of the location line. Every card shows its hospital's record system.</span><span><b>When:</b> Always, before and during the scenario.</span><span><b>You:</b> Point at the badge. No click.</span></span></figcaption></figure>
 	</div>
 </section>
 
@@ -229,7 +225,7 @@ footer { padding-block: 32px 64px; color: var(--muted); font-size: 14px; }
 	</div>
 	<div class="frames">
 		<figure><img src="frames/01-menu.jpg" alt="The Prototype menu open, with Scenario 5: Surge night." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> The Prototype menu.</span><span><b>When:</b> Before anything happens.</span><span><b>You:</b> Click Prototype at the bottom of the Sidebar, then Scenario 5: Surge night.</span></span></figcaption></figure>
-		<figure><img src="frames/02-two-alerts.jpg" alt="Walter Pierce and Linda Shaw's cards both Critical, Epic and Meditech badges, and the toast: 2 Critical alerts in a minute, #1 Pierce, Shaw after him." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Walter's and Linda's cards turn Critical, and the toast “2 Critical alerts in a minute” ranks them and says why.</span><span><b>When:</b> Walter's alert 1.5 s after you pick the scenario, Linda's at 6 s, the toast at 9 s.</span><span><b>You:</b> Wait for the toast and read it out. No click.</span></span></figcaption></figure>
+		<figure><img src="frames/02-two-alerts.jpg" alt="Walter Pierce and Linda Shaw's cards both Critical, and the toast: 2 Critical alerts in a minute, #1 Pierce, Shaw after him." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Walter's and Linda's cards turn Critical, and the toast “2 Critical alerts in a minute” ranks them and says why.</span><span><b>When:</b> Walter's alert 1.5 s after you pick the scenario, Linda's at 6 s, the toast at 9 s.</span><span><b>You:</b> Wait for the toast and read it out. No click.</span></span></figcaption></figure>
 		<figure><img src="frames/02b-ranked.jpg" alt="Active alerts on: Pierce first, then Sarah Miller's older Critical alert, then Shaw." loading="lazy"><figcaption><span class="cap"><span><b>What:</b> Active alerts in priority order: Walter first, Linda after him (here behind Sarah Miller's older Critical alert too).</span><span><b>When:</b> Right after the toast.</span><span><b>You:</b> Click Active alerts in the filter row.</span></span></figcaption></figure>
 	</div>
 	<div class="callout note"><strong>If someone asks why Linda isn't second:</strong> the ranking is severity, then the score's band, then its 4 h rise. Her NEWS2 is 3, so an older Critical alert on a High score (Sarah Miller's) can sit between them. See Known gaps.</div>

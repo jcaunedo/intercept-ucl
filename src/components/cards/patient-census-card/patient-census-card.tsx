@@ -374,7 +374,10 @@ type PatientCensusCardProps = Omit<
 	trajectory?: PatientCardVital;
 	/** Shown on the `expanded` card only; `compact` doesn't show vitals. */
 	vitals?: PatientCardVital[];
-	/** Interventions and context, e.g. Ventilated, Contact isolation. */
+	/**
+	 * Interventions and context, e.g. Ventilated, Contact isolation. Without it there's no tag row (as on
+	 * PatientMonitoringCard); an empty list shows "No tags", so cards with and without tags line up.
+	 */
 	tags?: PatientCardTag[];
 	/**
 	 * The patient's photo URL. With it or `initials`, an avatar leads the name row (44px; 32px on the small card); without
@@ -707,7 +710,7 @@ function PatientCensusCard({
 	acuity,
 	trajectory,
 	vitals = [],
-	tags = [],
+	tags,
 	photo,
 	initials,
 	tone,
@@ -911,13 +914,16 @@ function PatientCensusCard({
 				</div>
 			) : null}
 
-			{/* With no tags the row stays, so every card in a row or column is the same height (Oct 30, 2026, user's call). */}
+			{/* An empty list keeps the row ("No tags"), so every card in a row or column is the same height (Oct 30, 2026,
+			    user's call); without `tags`, no row (Nov 18, 2026: Patients' cards). */}
 			{/* Pinned to the card's bottom (`mt-auto` takes the spare height), so when a grid row stretches the cards to the
 			    tallest one, every tag row lines up along the bottom. On a wrapper: the row's own `-m-1` (its focus ring's room)
 			    must keep its top margin. */}
-			<div className='mt-auto'>
-				<PatientCardTags tags={tags} name={name} size={size} openRef={interactive ? openRef : undefined} />
-			</div>
+			{tags ? (
+				<div className='mt-auto'>
+					<PatientCardTags tags={tags} name={name} size={size} openRef={interactive ? openRef : undefined} />
+				</div>
+			) : null}
 		</motion.article>
 	);
 }

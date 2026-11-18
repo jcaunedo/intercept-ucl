@@ -86,7 +86,7 @@ async function openedChat(canvas: ReturnType<typeof within>) {
 type Story = StoryObj<typeof meta>;
 
 /**
- * Patients, the directory: search first, then My patients, Current and Recently viewed, the Hospital and Unit menus and
+ * Patients, the directory: search first, then My patients and Current, the Hospital and Unit menus and
  * Filters; the count, Sort (Recently viewed) and Table / Cards. Current and past patients together, each with their
  * status. The live feed plays in the shell (toasts, Monitoring), but nothing on this page moves or ranks by alerts or
  * NEWS2: that's Monitoring's (PRD Patients).
@@ -252,10 +252,6 @@ const directory = [...samplePatients, ...samplePastPatients, ...sampleUncertainS
 const resultsCount = (canvasElement: HTMLElement) =>
 	canvasElement.querySelector("[data-results-count]")?.textContent?.trim() ?? "";
 
-/** Within the last 7 days, as the Recently viewed chip counts. */
-const viewedThisWeek = (patient: { lastViewedAt?: string }) =>
-	Boolean(patient.lastViewedAt && Date.now() - Date.parse(patient.lastViewedAt) < 7 * 24 * 3_600_000);
-
 /** The Table view (the default on a desktop; the test browser is narrow, so cards are its default) and its table. */
 async function showTable(canvas: ReturnType<typeof within>, userEvent: { click: (element: Element) => Promise<void> }) {
 	const button = canvas.getByRole("button", { name: "Table" });
@@ -264,7 +260,7 @@ async function showTable(canvas: ReturnType<typeof within>, userEvent: { click: 
 }
 
 /**
- * The directory's table: identity, status, location, the attending, last activity, clinical context and the "…"
+ * The directory's table: identity, status, location, the attending, last encounter, clinical context and the "…"
  * menu. No NEWS2 or alert column: those are Monitoring's. A row per patient, past patients included.
  */
 export const TableView: Story = {
@@ -276,7 +272,7 @@ export const TableView: Story = {
 			"Status",
 			"Location",
 			"Attending",
-			"Last activity",
+			"Last encounter",
 			"Clinical context",
 			"Actions",
 		]);
@@ -369,18 +365,6 @@ export const CurrentPatients: Story = {
 	},
 };
 
-/** Recently viewed: opened in the last 7 days, the latest first (the default sort). */
-export const RecentlyViewed: Story = {
-	play: async ({ canvas, canvasElement, userEvent }) => {
-		const viewed = directory.filter(viewedThisWeek);
-		await userEvent.click(canvas.getByRole("button", { name: /^Recently viewed/ }));
-		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${viewed.length} of ${directory.length} patients`));
-		const table = within(await showTable(canvas, userEvent));
-		const latest = [...viewed].sort((a, b) => Date.parse(b.lastViewedAt ?? "") - Date.parse(a.lastViewedAt ?? ""))[0];
-		await expect(table.getAllByRole("row")[1]).toHaveTextContent(`${latest.lastName}, ${latest.firstName}`);
-	},
-};
-
 /**
  * Search leads the filter bar, as on Monitoring: a magnifier that opens on click. Name, MRN, hospital, unit, room or bed;
  * Clear brings everyone back.
@@ -417,13 +401,13 @@ export const SearchFindsPastPatients: Story = {
 	},
 };
 
-/** Filters: Hospital, Unit, Care team, Patient status, Last activity and Clinical context. Discharged finds the past stays. */
+/** Filters: Hospital, Unit, Care team, Patient status, Last encounter and Clinical context. Discharged finds the past stays. */
 export const Filters: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
 		const discharged = directory.filter((patient) => patient.status === "discharged").length;
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
 		const dialog = within(await screen.findByRole("dialog", { name: "Filters" }));
-		for (const group of ["Hospital", "Unit", "Care team", "Patient status", "Last activity", "Clinical context"]) {
+		for (const group of ["Hospital", "Unit", "Care team", "Patient status", "Last encounter", "Clinical context"]) {
 			await expect(dialog.getByText(group)).toBeInTheDocument();
 		}
 		await expect(dialog.queryByText("NEWS2")).toBeNull();
@@ -464,17 +448,22 @@ export const FiltersSearch: Story = {
 	},
 };
 
-/** Sort: Recently viewed by default. No NEWS2 sort: ranking by acuity is Monitoring's. */
+/** Sort: Recently viewed by default, the latest first. No NEWS2 sort: ranking by acuity is Monitoring's. */
 export const Sort: Story = {
 	play: async ({ canvas, userEvent }) => {
 		const sort = canvas.getByRole("combobox", { name: "Sort by" });
 		await expect(sort).toHaveTextContent("Recently viewed");
+		const latest = [...directory]
+			.filter((patient) => patient.lastViewedAt)
+			.sort((a, b) => Date.parse(b.lastViewedAt ?? "") - Date.parse(a.lastViewedAt ?? ""))[0];
+		const byViewed = within(await showTable(canvas, userEvent));
+		await expect(byViewed.getAllByRole("row")[1]).toHaveTextContent(`${latest.lastName}, ${latest.firstName}`);
 		await userEvent.click(sort);
 		const options = (await screen.findAllByRole("option")).map((option) => option.textContent);
 		await expect(options).toEqual([
 			"Recently viewed",
 			"Patient name",
-			"Most recent activity",
+			"Most recent encounter",
 			"Admission date",
 			"Hospital",
 			"Unit",
@@ -487,7 +476,7 @@ export const Sort: Story = {
 };
 
 /**
- * Cards: identity, location, status, the attending, last activity, then the flags. No score line: NEWS2 isn't
+ * Cards: identity, location, status, the attending and last encounter, no flags. No score line: NEWS2 isn't
  * how the directory reads.
  */
 export const Cards: Story = {
@@ -498,9 +487,10 @@ export const Cards: Story = {
 		);
 		const cards = [...canvasElement.querySelectorAll("[data-slot='patient-census-card']")];
 		await expect(cards.some((card) => card.textContent?.includes("NEWS2"))).toBe(false);
+		await expect(cards.some((card) => card.textContent?.includes("No tags"))).toBe(false);
 		const miller = cards.find((card) => card.textContent?.includes("Miller, Sarah")) as HTMLElement;
 		await expect(miller).toHaveTextContent("Current");
-		await expect(miller).toHaveTextContent(/Last activity/);
+		await expect(miller).toHaveTextContent(/Last encounter/);
 	},
 };
 

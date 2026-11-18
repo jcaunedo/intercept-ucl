@@ -190,6 +190,23 @@ function DirectoryActions({
 	);
 }
 
+/**
+ * The patient's last encounter, their latest hospital stay (glossary "Admission / encounter"): "Admitted 3 days ago"
+ * while it goes on, "Ended 20 hr ago" once they've left, the exact time in `title`. Updated each minute. Without the
+ * time it reads "—" ("Unknown" to screen readers).
+ */
+function LastEncounter({ patient, className }: { patient: DirectoryPatient; className?: string }) {
+	const now = useCurrentMinute() ?? Date.now();
+	if (!patient.lastEncounterAt) return <RelativeTime className={className} />;
+	const { label, title } = formatRelativeDate(patient.lastEncounterAt, now);
+	const verb = patient.encounterOngoing ? "Admitted" : "Ended";
+	return (
+		<time dateTime={patient.lastEncounterAt} title={`${verb} ${title}`} className={className}>
+			{verb} {label}
+		</time>
+	);
+}
+
 export {
 	Attending,
 	copyPatientLink,
@@ -197,6 +214,7 @@ export {
 	directoryIdentity,
 	directoryName,
 	directoryPlace,
+	LastEncounter,
 	PatientStatus,
 	RelativeTime,
 };

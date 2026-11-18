@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 18, 2026
 Scope: The left navigation (UCL Sidebar): its three workspaces (Clinical, Administration, Marketplace), the items each one shows, the workspace switcher, Ask Intercept Live's place in it, and the rail's states. Source: documents/Intercept Live — Left Nav Spec.md and intercept.ds `sidebar` (1001:544).
 Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, records where the design follows it and where it doesn't yet, and lists what's still open.
 -->
@@ -18,7 +18,7 @@ Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, reco
 **Surface:** a component, not a page: the **Sidebar** (UCL `Sidebar`, `SidebarMenuButton`), the left navigation of every workspace  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 17, 2026
+**Last updated:** November 18, 2026
 
 ---
 
@@ -296,7 +296,7 @@ Documentation and Support, pinned to the bottom in every workspace. In the proto
 
 ## 7. Motion
 
-The width animates between 280 and 64px and the rail's fill follows it; hovering the collapsed rail swaps the mark for the expand icon; tooltips glide out from the item; alert dots fade and scale in and out and flash on the Urgency clock, unread dots on the Unread pattern. Everything is instant or still under reduced motion (MOTION.md, DESIGN.md "Sidebar").
+The width animates between 280 and 64px and the rail's fill follows it; hovering the collapsed rail swaps the mark for the expand icon; tooltips glide out from the item; alert dots fade and scale in and out and flash on the Urgency clock, unread dots on the Unread pattern. ✅ **Resolved:** while an alert dot flashes, an unread dot flashes with it, on the Urgency clock; alone, it keeps the Unread pattern. Everything is instant or still under reduced motion (MOTION.md, DESIGN.md "Sidebar").
 
 ## 8. Acceptance criteria
 

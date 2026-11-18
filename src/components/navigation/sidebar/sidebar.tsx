@@ -88,23 +88,36 @@ type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 };
 
 /**
+ * Whether a Sidebar item shows a severity dot (critical, high, medium or low), which flashes on the Urgency clock. While
+ * one does, an `unread` dot flashes on that clock too, in step with it (Nov 18, 2026, user's call).
+ */
+const SidebarUrgencyContext = React.createContext(false);
+
+/** An alert that flashes on the Urgency clock: any severity, not `unread` or `resolved`. */
+const isUrgentAlert = (alert?: SidebarAlert) => Boolean(alert) && alert !== "unread" && alert !== "resolved";
+
+/**
  * The alert dot on a row's icon. Always mounted, so it fades and scales in and out (`iconSwapVariants`) instead of
  * popping, and keeps its last color while it fades out after the alert resolves. A new severity fades the color. While
  * shown it flashes (MOTION.md Urgency), on the clock the alert cards' rings share, so they flash together; an `unread` dot
- * flashes on the calmer Unread pattern instead (every 2 s). Steady under reduced motion.
+ * flashes on the calmer Unread pattern instead (every 2 s), unless another item's severity dot is flashing: then it
+ * joins the Urgency clock, so every dot in the Sidebar flashes together. Steady under reduced motion.
  */
 function SidebarAlertDot({ alert }: { alert?: SidebarAlert }) {
 	const { prefersReducedMotion } = useMotionPreference();
+	const sidebarUrgent = React.useContext(SidebarUrgencyContext);
 	const active = alert && alert !== "resolved" ? alert : undefined;
 	const [shown, setShown] = React.useState(active);
 	if (active && active !== shown) setShown(active);
 	const unread = shown === "unread";
-	const phase = useUrgencyPhase(Boolean(active) && !unread && !prefersReducedMotion);
+	const onUrgencyClock = !unread || sidebarUrgent;
+	const phase = useUrgencyPhase(Boolean(active) && onUrgencyClock && !prefersReducedMotion);
 
 	return (
 		<motion.span
 			data-slot='sidebar-menu-button-alert'
 			data-severity={active}
+			data-clock={onUrgencyClock ? "urgency" : "unread"}
 			aria-hidden='true'
 			variants={prefersReducedMotion ? iconSwapReducedVariants : iconSwapVariants}
 			initial={false}
@@ -112,9 +125,11 @@ function SidebarAlertDot({ alert }: { alert?: SidebarAlert }) {
 			className='pointer-events-none absolute -top-1.25 -right-1 flex size-1.5'
 		>
 			<motion.span
-				variants={unread ? unreadFlashVariants : urgencyRingVariants}
+				// A new key when the dot changes clocks, so it starts the new one at rest rather than mid-swell.
+				key={onUrgencyClock ? "urgency" : "unread"}
+				variants={onUrgencyClock ? urgencyRingVariants : unreadFlashVariants}
 				initial={false}
-				animate={unread ? (active && !prefersReducedMotion ? "flash" : "rest") : phase}
+				animate={onUrgencyClock ? phase : active && !prefersReducedMotion ? "flash" : "rest"}
 				className={cn(
 					"size-full rounded-full transition-colors duration-160 ease-in-out",
 					shown && sidebarAlertDot[shown].className,
@@ -311,6 +326,7 @@ function Sidebar({
 	const [isRailHovered, setIsRailHovered] = React.useState(false);
 	const { resolve, prefersReducedMotion } = useMotionPreference();
 	const iconSwapMotion = prefersReducedMotion ? iconSwapReducedVariants : iconSwapVariants;
+	const urgent = [...groups.flat(), ...footerItems].some((item) => isUrgentAlert(item.alert));
 
 	const handleItemClick = (item: SidebarNavItem) => {
 		setActiveItem(item.label);
@@ -344,126 +360,128 @@ function Sidebar({
 	);
 
 	return (
-		<motion.div
-			data-slot='sidebar'
-			data-collapsed={collapsed}
-			// `initial={false}`: mount at the target width. Without it Motion animates from the natural width on every
-			// mount, so the rail would slide in on each page load.
-			initial={false}
-			animate={{ width: collapsed ? 64 : 280 }}
-			transition={resolve(enterTransition)}
-			className={cn(
-				// Collapsed, the rail takes the page's subtle fill. The fill change runs with the width (motionDuration.slow).
-				"relative flex h-screen shrink-0 flex-col justify-between overflow-hidden transition-[background-color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
-				collapsed ? "bg-background-subtle" : "bg-sidebar",
-				// Expanded only: the 1px right stroke, drawn over the edge rather than as a border so it doesn't narrow the
-				// rows to 247px. The collapsed rail has none; its subtle fill separates it from the page.
-				!collapsed && "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-input",
-				// 8px over the logo, 16px under the footer (DESIGN.md "Sidebar", Nov 6, 2026).
-				collapsed ? "items-center px-2 pt-2 pb-4" : "items-start px-4 pt-2 pb-4",
-				className,
-			)}
-			{...props}
-		>
-			{/* The rail's empty space toggles it. Mouse only: the logo and collapse buttons are the keyboard path. */}
-			<button
-				type='button'
-				data-slot='sidebar-rail-toggle'
-				tabIndex={-1}
-				aria-hidden='true'
-				onClick={handleToggleCollapsed}
-				onMouseEnter={() => setIsRailHovered(true)}
-				onMouseLeave={() => setIsRailHovered(false)}
-				className={cn("absolute inset-0 z-0 outline-none", collapsed ? "cursor-e-resize" : "cursor-w-resize")}
-			/>
-
-			<div
-				data-slot='sidebar-header'
-				// 10px from the logo row to the nav, the nav's own gap (DESIGN.md "Sidebar", Nov 6, 2026).
-				className={cn("relative z-10 flex flex-col gap-2.5", collapsed ? "w-9 items-center" : "w-full items-start")}
-			>
-				{collapsed ? (
-					<div className='flex h-12 items-center'>
-						<button
-							type='button'
-							data-slot='sidebar-expand'
-							aria-label='Expand sidebar'
-							onClick={handleToggleCollapsed}
-							onMouseEnter={() => setIsRailHovered(true)}
-							onMouseLeave={() => setIsRailHovered(false)}
-							className='relative flex size-8 shrink-0 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar'
-						>
-							{/* Hovering the rail swaps the mark for the expand icon in place (iconSwapVariants: the leaving one
-							    dissolves while the arriving one fades in and grows). Instant under reduced motion. */}
-							<motion.span
-								aria-hidden='true'
-								variants={iconSwapMotion}
-								initial={false}
-								animate={isRailHovered ? "hidden" : "shown"}
-								className='pointer-events-none absolute inset-0 flex items-center justify-center'
-							>
-								<LogoSymbol />
-							</motion.span>
-							<motion.span
-								aria-hidden='true'
-								variants={iconSwapMotion}
-								initial={false}
-								animate={isRailHovered ? "shown" : "hidden"}
-								className='pointer-events-none absolute inset-0 flex items-center justify-center'
-							>
-								<PanelLeftIcon className='size-4 text-icon' />
-							</motion.span>
-						</button>
-					</div>
-				) : (
-					<div className='flex h-12 w-full items-center justify-between py-2 pr-1 pl-0.5'>
-						{/* Clicking the wordmark collapses the rail, as clicking the collapsed mark expands it. Mouse only, like the
-						    rail's empty space: the collapse button beside it is the keyboard path. It used to go to the first
-						    item, which is an action in Intercept Live (Ask Intercept Live) and opened the chat. */}
-						<button
-							type='button'
-							data-slot='sidebar-logo-toggle'
-							tabIndex={-1}
-							aria-hidden='true'
-							onClick={handleToggleCollapsed}
-							className='peer/logo flex shrink-0 cursor-w-resize rounded-md outline-none'
-						>
-							<Logo />
-						</button>
-
-						{/* Hover matches Button's ghost variant. Hovering the wordmark darkens the icon (no fill), since a click
-						    there does the same thing. */}
-						<button
-							type='button'
-							data-slot='sidebar-collapse'
-							aria-label='Collapse sidebar'
-							onClick={handleToggleCollapsed}
-							className='flex size-6 shrink-0 items-center justify-center rounded-md text-icon-subtle outline-none transition-colors duration-160 ease-in-out hover:bg-accent hover:text-accent-foreground peer-hover/logo:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar'
-						>
-							<PanelLeftAltIcon className='size-4' />
-						</button>
-					</div>
+		<SidebarUrgencyContext.Provider value={urgent}>
+			<motion.div
+				data-slot='sidebar'
+				data-collapsed={collapsed}
+				// `initial={false}`: mount at the target width. Without it Motion animates from the natural width on every
+				// mount, so the rail would slide in on each page load.
+				initial={false}
+				animate={{ width: collapsed ? 64 : 280 }}
+				transition={resolve(enterTransition)}
+				className={cn(
+					// Collapsed, the rail takes the page's subtle fill. The fill change runs with the width (motionDuration.slow).
+					"relative flex h-screen shrink-0 flex-col justify-between overflow-hidden transition-[background-color] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+					collapsed ? "bg-background-subtle" : "bg-sidebar",
+					// Expanded only: the 1px right stroke, drawn over the edge rather than as a border so it doesn't narrow the
+					// rows to 247px. The collapsed rail has none; its subtle fill separates it from the page.
+					!collapsed && "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-input",
+					// 8px over the logo, 16px under the footer (DESIGN.md "Sidebar", Nov 6, 2026).
+					collapsed ? "items-center px-2 pt-2 pb-4" : "items-start px-4 pt-2 pb-4",
+					className,
 				)}
+				{...props}
+			>
+				{/* The rail's empty space toggles it. Mouse only: the logo and collapse buttons are the keyboard path. */}
+				<button
+					type='button'
+					data-slot='sidebar-rail-toggle'
+					tabIndex={-1}
+					aria-hidden='true'
+					onClick={handleToggleCollapsed}
+					onMouseEnter={() => setIsRailHovered(true)}
+					onMouseLeave={() => setIsRailHovered(false)}
+					className={cn("absolute inset-0 z-0 outline-none", collapsed ? "cursor-e-resize" : "cursor-w-resize")}
+				/>
 
-				<nav aria-label='Main' className={cn("flex w-full flex-col gap-2.5", collapsed ? "items-center" : "items-start")}>
-					{groups.map((group, index) => (
-						<React.Fragment key={group[0]?.label ?? index}>
-							{index > 0 ? <SidebarDivider /> : null}
-							{group.map(renderItem)}
-						</React.Fragment>
-					))}
-				</nav>
-			</div>
-
-			{footerItems.length > 0 ? (
 				<div
-					data-slot='sidebar-footer'
-					className={cn("relative z-10 flex w-full flex-col gap-3", collapsed ? "items-center" : "items-start")}
+					data-slot='sidebar-header'
+					// 10px from the logo row to the nav, the nav's own gap (DESIGN.md "Sidebar", Nov 6, 2026).
+					className={cn("relative z-10 flex flex-col gap-2.5", collapsed ? "w-9 items-center" : "w-full items-start")}
 				>
-					{footerItems.map(renderItem)}
+					{collapsed ? (
+						<div className='flex h-12 items-center'>
+							<button
+								type='button'
+								data-slot='sidebar-expand'
+								aria-label='Expand sidebar'
+								onClick={handleToggleCollapsed}
+								onMouseEnter={() => setIsRailHovered(true)}
+								onMouseLeave={() => setIsRailHovered(false)}
+								className='relative flex size-8 shrink-0 items-center justify-center rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar'
+							>
+								{/* Hovering the rail swaps the mark for the expand icon in place (iconSwapVariants: the leaving one
+								    dissolves while the arriving one fades in and grows). Instant under reduced motion. */}
+								<motion.span
+									aria-hidden='true'
+									variants={iconSwapMotion}
+									initial={false}
+									animate={isRailHovered ? "hidden" : "shown"}
+									className='pointer-events-none absolute inset-0 flex items-center justify-center'
+								>
+									<LogoSymbol />
+								</motion.span>
+								<motion.span
+									aria-hidden='true'
+									variants={iconSwapMotion}
+									initial={false}
+									animate={isRailHovered ? "shown" : "hidden"}
+									className='pointer-events-none absolute inset-0 flex items-center justify-center'
+								>
+									<PanelLeftIcon className='size-4 text-icon' />
+								</motion.span>
+							</button>
+						</div>
+					) : (
+						<div className='flex h-12 w-full items-center justify-between py-2 pr-1 pl-0.5'>
+							{/* Clicking the wordmark collapses the rail, as clicking the collapsed mark expands it. Mouse only, like the
+							    rail's empty space: the collapse button beside it is the keyboard path. It used to go to the first
+							    item, which is an action in Intercept Live (Ask Intercept Live) and opened the chat. */}
+							<button
+								type='button'
+								data-slot='sidebar-logo-toggle'
+								tabIndex={-1}
+								aria-hidden='true'
+								onClick={handleToggleCollapsed}
+								className='peer/logo flex shrink-0 cursor-w-resize rounded-md outline-none'
+							>
+								<Logo />
+							</button>
+
+							{/* Hover matches Button's ghost variant. Hovering the wordmark darkens the icon (no fill), since a click
+							    there does the same thing. */}
+							<button
+								type='button'
+								data-slot='sidebar-collapse'
+								aria-label='Collapse sidebar'
+								onClick={handleToggleCollapsed}
+								className='flex size-6 shrink-0 items-center justify-center rounded-md text-icon-subtle outline-none transition-colors duration-160 ease-in-out hover:bg-accent hover:text-accent-foreground peer-hover/logo:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar'
+							>
+								<PanelLeftAltIcon className='size-4' />
+							</button>
+						</div>
+					)}
+
+					<nav aria-label='Main' className={cn("flex w-full flex-col gap-2.5", collapsed ? "items-center" : "items-start")}>
+						{groups.map((group, index) => (
+							<React.Fragment key={group[0]?.label ?? index}>
+								{index > 0 ? <SidebarDivider /> : null}
+								{group.map(renderItem)}
+							</React.Fragment>
+						))}
+					</nav>
 				</div>
-			) : null}
-		</motion.div>
+
+				{footerItems.length > 0 ? (
+					<div
+						data-slot='sidebar-footer'
+						className={cn("relative z-10 flex w-full flex-col gap-3", collapsed ? "items-center" : "items-start")}
+					>
+						{footerItems.map(renderItem)}
+					</div>
+				) : null}
+			</motion.div>
+		</SidebarUrgencyContext.Provider>
 	);
 }
 

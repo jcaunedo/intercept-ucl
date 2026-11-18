@@ -253,7 +253,8 @@ export const AskOpen: Story = {
 /**
  * An item with an active alert shows a dot on its icon in the severity's color; a resolved alert, or none, shows no dot.
  * Here Monitoring has a critical alert and Inbox a medium one. The page shell passes the most severe open alert.
- * Messages has unread messages: `unread`, a brand-colored dot that flashes every 2 s (MOTION.md Unread).
+ * Messages has unread messages: `unread`, a brand-colored dot. While a severity dot flashes, as here, it flashes with it
+ * on the Urgency clock; on its own it flashes every 2 s (MOTION.md Unread; story UnreadAlone).
  */
 export const ItemAlerts: Story = {
 	args: {
@@ -279,6 +280,23 @@ export const ItemAlerts: Story = {
 		const dot = dots[0].getBoundingClientRect();
 		const row = canvas.getByRole("button", { name: "Monitoring, Critical alert" }).getBoundingClientRect();
 		await expect([dot.width, dot.left - row.left, dot.top - row.top]).toEqual([6, 24, 2]);
+		// Every dot flashes together: the unread one joins the severity dots' Urgency clock.
+		for (const each of dots) await expect(each).toHaveAttribute("data-clock", "urgency");
+	},
+};
+
+/** Unread messages and no alert: the Messages dot flashes on its own, calmer Unread pattern, every 2 s. */
+export const UnreadAlone: Story = {
+	args: {
+		className: "h-full",
+		groups: clinicalGroups.map((group) =>
+			group.map((item) => (item.label === "Messages" ? { ...item, alert: "unread" as const } : item)),
+		),
+	},
+	play: async ({ canvas, canvasElement }) => {
+		await expect(canvas.getByRole("button", { name: "Messages, Unread" })).toBeInTheDocument();
+		const dot = canvasElement.querySelector("[data-slot=sidebar-menu-button-alert][data-severity=unread]");
+		await expect(dot).toHaveAttribute("data-clock", "unread");
 	},
 };
 

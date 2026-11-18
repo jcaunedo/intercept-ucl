@@ -277,7 +277,6 @@ function ConsultMessages({
 	typing = false,
 	autoFocus = false,
 	filter,
-	patientLabel,
 	placeholder = "Send a message…",
 }: {
 	messages: readonly ConsultMessage[];
@@ -293,11 +292,6 @@ function ConsultMessages({
 	 * thread says so; the field stays.
 	 */
 	filter?: (message: ConsultMessage) => boolean;
-	/**
-	 * In a conversation that spans patients (the Messages page): names a message's patient ("Sarah Miller · MICU · Bed
-	 * 7"), and the thread marks each change of patient with "About …" ("Not about a patient" for none). Without it, no marks.
-	 */
-	patientLabel?: (patientId: string) => string;
 	/** The field's placeholder, e.g. "Message about Sarah Miller…". */
 	placeholder?: string;
 }) {
@@ -353,11 +347,6 @@ function ConsultMessages({
 								// Live feed's style (14/20 semibold `foreground`).
 								const day = now !== null ? formatDayLabel(message.sentAt, now) : undefined;
 								const newDay = day && (index === 0 || formatDayLabel(shown[index - 1].sentAt, now ?? undefined) !== day);
-								// Which patient the messages are about, marked where it changes (and before the first message when it has
-								// one), so a message is never read against the wrong patient (PRD Messages MSG-003).
-								const newPatient =
-									patientLabel &&
-									(index === 0 ? Boolean(message.patientId) : message.patientId !== shown[index - 1].patientId);
 								return [
 									...(newDay
 										? [
@@ -371,24 +360,6 @@ function ConsultMessages({
 													className={cn(index > 0 && "pt-1")}
 												>
 													<h3 className='text-sm font-semibold text-foreground'>{day}</h3>
-												</motion.li>,
-											]
-										: []),
-									...(newPatient
-										? [
-												<motion.li
-													key={`about-${message.id}`}
-													role='presentation'
-													variants={prefersReducedMotion ? fadeVariants : revealVariants}
-													initial='initial'
-													animate='animate'
-													className='flex items-center gap-3 text-xs text-muted-foreground'
-												>
-													<span aria-hidden='true' className='h-px flex-1 bg-border' />
-													<span className='min-w-0 truncate'>
-														{message.patientId ? `About ${patientLabel(message.patientId)}` : "Not about a patient"}
-													</span>
-													<span aria-hidden='true' className='h-px flex-1 bg-border' />
 												</motion.li>,
 											]
 										: []),
