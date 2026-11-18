@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- PRD Monitoring card (`prds/monitoring-card.md`, new `PMC-` IDs), the Monitoring panel's card (`PatientMonitoringCard`) in one place: identity, location, score line, alert bar, condensed and full monitor, flags, family messages and the "…" menu, with its states, acceptance criteria and open decisions; Storybook page `PRDs/Monitoring card`. PRD Monitoring MON-011 now points to it (it still described the expanded Patient card). Docs only. [PMC-010]
 - PatientMonitor (and PatientMonitoringCard's monitor): a lane whose own reading isn't coming in is flat, e.g. Pleth with SpO₂ "--" while the heart rate is there; it was flat only without the rate that paces it. The lane carries `data-reporting='false'`. Visual fix (patch). [PMN-021]
 - Intercept Live: **one avatar color per patient everywhere** (`shared/patient-tones.tsx`): the layouts deal colors once over the directory and the monitors and every page, toast, alert and chat row reads them (`PatientTonesProvider`, `usePatientTones`, `usePatientTone`; `patientDetailsView`'s `tones`); a patient keeps their color when they leave Monitoring or someone new arrives (`avatarTones(patients, fixed)`). Layouts only.
 - Intercept Live Analytics: no Synthetic data badge beside the title (Nov 18, 2026); the export still says the month is synthetic. Layouts only. [OUT-020]

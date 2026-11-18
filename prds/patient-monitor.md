@@ -32,9 +32,9 @@ It's one component used on several surfaces, so the monitor reads the same every
 |---|---|
 | **Patient details** › Overview › Live monitoring | The monitor on its own, beside the patient's other data. |
 | **Alert modal** (and a video consult without an alert) | The monitor fills the alert column's spare height, under the patient and the alert. |
-| **Monitoring** › patient card, Full monitors | The card's full view is this monitor, inside the card (PRD Monitoring MON-084). |
+| **Monitoring** › patient card, Full monitors | The card's full view is this monitor, inside the card (PRD Monitoring card PMC-031). |
 
-ℹ️ The Monitoring card's **condensed** view (an ECG strip over four numbers, or a sparkline under each number) is the card's own layout, built from the same numerics and waveform. It's covered by PRD Monitoring and PRD Patient card, not here.
+ℹ️ The Monitoring card's **condensed** view (an ECG strip over four numbers, or a sparkline under each number) is the card's own layout, built from the same numerics and waveform. It's covered by PRD Monitoring card (PMC-030), not here.
 
 ### 1.1 Product objectives
 

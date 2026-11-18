@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 18, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -19,7 +19,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Surface:** Monitoring page  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 17, 2026
+**Last updated:** November 18, 2026
 
 ---
 
@@ -188,9 +188,9 @@ A filter on live status would also add and remove cards as readings change, whic
 
 ### MON-011 — Patient cards
 
-Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, location, top alert, acuity and 24h change, vitals with range markers, and tags. Values update in place as telemetry arrives.
+~~Each patient appears as an **expanded** Patient card (PRD PC §3.1): identity, location, top alert, acuity and 24h change, vitals with range markers, and tags. Values update in place as telemetry arrives.~~
 
-- Reuses the UCL `PatientCard` (`variant="expanded"`) with its alert pill, acuity levels and severity border, so a patient reads the same on Census and Monitoring (PRD PC-001, PC-002).
+- ~~Reuses the UCL `PatientCard` (`variant="expanded"`) with its alert pill, acuity levels and severity border, so a patient reads the same on Census and Monitoring (PRD PC-001, PC-002).~~ ✅ **Resolved:** each patient appears as a **Monitoring card** (UCL `PatientMonitoringCard`, MON-084): the Patients card's identity, location, score line and flags, plus an alert bar and the live monitor. Values update in place as telemetry arrives. What the card shows and does is in **PRD Monitoring card** (`prds/monitoring-card.md`, PMC-010–PMC-070); Minimal view shows the Patients card instead (MON-015).
 - ✅ **Resolved (Oct 29, 2026):** acuity reads Low / Moderate / High / Critical, without "risk", replacing the earlier rule that it never shares a word with alert severities. It stays apart from an alert as colored text after its score, not a pill (DESIGN.md "Patient census card").
 
 ### MON-012 — Density
@@ -439,7 +439,7 @@ WCAG 2.1 AA (Spec §9.1 Principle 13).
 | **MON-081 Simulator** | The real-time data simulator streams vitals and fires alerts so a deterioration scenario runs end to end: values drift, acuity rises, an alert enters the queue, the clinician looks in and escalates. |
 | **MON-082 Scenarios** | ⚠️ **Decision needed:** which of the ~6 demo scenarios run on this page (MON-OD-09). Candidates: deterioration to escalation, sepsis candidate review, vent-order mismatch, intuition alert carried through handoff, hospital feed down. |
 | **MON-083 Reuse** | Built from existing UCL components: Sidebar, AppHeader, Tabs, Select, Switch, Badge chips, PatientCard (expanded), HospitalSectionHeader, EmptyState, Counter. New components (queue row, focus sheet, trend chart, camera frame) go through `ucl-generate-component` from intercept.ds. |
-| **MON-084 Monitoring card** | A draft `PatientMonitoringCard` (UCL `cards/patient-monitoring-card`, intercept.ds `1125:4328`) applies §3.3: condensed ECG strip + HR · SpO₂ · BP · RR, expandable to a four-lane monitor with limits and alarm marking, on a draft parameter palette (MON-OD-10). |
+| **MON-084 Monitoring card** | A draft `PatientMonitoringCard` (UCL `cards/patient-monitoring-card`, intercept.ds `1125:4328`) applies §3.3: condensed ECG strip + HR · SpO₂ · BP · RR, expandable to a four-lane monitor with limits and alarm marking, on a draft parameter palette (MON-OD-10). ℹ️ The card has its own PRD since Nov 18, 2026: PRD Monitoring card (`prds/monitoring-card.md`). |
 
 ### 12.1 Exploration (Oct 27, 2026)
 
