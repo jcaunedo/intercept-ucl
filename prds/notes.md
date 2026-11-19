@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Nov 13, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 18, 2026
 Scope: Clinical notes in Intercept Live (Clinical Documentation, Spec §5.4): what a note is, the note types and their templates, writing, signing, co-signing and attesting a note, AI drafts, and write-back to the hospital's record. Governs the note itself and its editor (`sections/note-editor.tsx`, `note-templates.ts`, `note-chart.ts`); the Notes tab's list and reader stay in PRD Patient details (PD-070).
 Purpose: The client sent Intercept's current Epic note templates (`documents/notes/`). This PRD records what they show, how a tele-ICU clinician works with notes, and what Intercept's note editor has to do, with what's still open.
 -->
@@ -284,7 +284,7 @@ All proposed until the editor is built.
 | NTE-OD-09 | ⚠️ **The AI draft's structure** | The AI draft fills the note type's sections (CD-02's HPI, Exam, Assessment, Plan map onto Issue / HPI, Camera exam, A/P), not a free-text summary (VID-015). |
 | NTE-OD-10 | ⚠️ **The client's screenshots** | Confirm they show a test patient before committing `documents/notes/`, or keep them out of git. |
 | NTE-OD-11 | ⚠️ **RN notes** | Whether Intercept Critical Care RNs write notes, and which types (PD-OD-12). |
-| NTE-OD-12 | ~~⚠️ **Where the editor opens** · A panel beside the patient's page, the Notes tab's right pane, or a page of its own; and whether it can stay open beside the video consult.~~ ✅ **Resolved:** the Notes tab's right pane (NTE-016). ⚠️ **Open question:** whether it can stay open beside the video consult. |
+| NTE-OD-12 | ~~⚠️ **Where the editor opens** · A panel beside the patient's page, the Notes tab's right pane, or a page of its own; and whether it can stay open beside the video consult.~~ ✅ **Resolved:** the Notes tab's right pane (NTE-016). 🙋 **Open question:** whether it can stay open beside the video consult. |
 | NTE-OD-13 | ⚠️ **ID prefix** | `NTE-`, `NTE-AC-`, `NTE-UC-` and `NTE-OD-` are new repo-local IDs, to confirm with the team. |
 
 ---

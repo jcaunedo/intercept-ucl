@@ -84,14 +84,17 @@ Conventions for every doc under `prds/`. When a change settles a product decisio
 Every inline prose note that flags a gap, risk, decision, confirmation or fix gets an emoji **plus a bold word label**, right after the emoji and before the explanation.
 
 - ⚠️ for anything unresolved, misaligned or needing attention, with a bold label naming the kind of issue: `**Gap:**`, `**Constraint:**`, `**Risk:**`, `**Decision needed:**`, `**Accessibility:**`, or another word that fits. Don't default to "Gap" when a more specific word fits better.
+- 🙋 for an open question: something nobody has answered yet. Each bullet in an "Open questions" list starts with it, and an open question written inline reads `🙋 **Open question:**`. It's a question for someone to answer, where ⚠️ flags a known problem. A table of open questions or decisions keyed by ID needs no emoji.
 - ✅ for anything resolved, decided or confirmed. The tag is always `✅ **Resolved:**`, and only that: no date, no who decided, no requirement ID, no other word (`Decision`, `Built`, `Confirmed in Figma`, `Copy fix`…). The note follows the tag as before; its design rationale, functionality and rules go in that text or in the PRD's sections, never in the tag.
-- ℹ️ for purely informative or framing notes (context, scope, why a note exists), with **no bold label**. If it doesn't flag a problem or a fix, it isn't ⚠️ or ✅.
+- ℹ️ for purely informative or framing notes (context, scope, why a note exists), with **no bold label**. If it doesn't flag a problem, a question or a fix, it isn't ⚠️, 🙋 or ✅.
 
 Lists where every line already starts with the same emoji don't need labels.
 
 Examples:
 
 > ⚠️ **Gap:** in the prototype the typing line shows only for simulated replies; whether a hospital's messaging tool reports typing at all is unknown.
+>
+> 🙋 **Open question:** whether the note editor can stay open beside the video consult.
 >
 > ✅ **Resolved:** the page panel's header has × after the notetaker's button; like the app header's pressed Video consult, it closes the panel and ends the call.
 >
