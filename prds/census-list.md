@@ -160,6 +160,6 @@ When PD-015's Previous / next buttons (↑/↓, J/K) are built, they step throug
 
 | ID | Decision | Owner | Notes |
 |---|---|---|---|
-| CNL-OD-01 | The list's design in intercept.ds | Design | Only the header's button is drawn |
-| CNL-OD-02 | On the page of a patient not in hospital (from Patients): show the list button (census, nothing marked) or hide it | Product | Depends on PRD Patients CEN-OD-09 |
-| CNL-OD-03 | Should the rows show more (flags, unread messages, the alert again)? | Product, clinicians | Today: avatar, name, location, score and its 24 h change. ✅ **Resolved:** the score's 24 h change shows (CNL-013) |
+| CNL-OD-01 | ⚠️ **Gap:** the list's design in intercept.ds | Design | Only the header's button is drawn |
+| CNL-OD-02 | 🙋 On the page of a patient not in hospital (from Patients): show the list button (census, nothing marked) or hide it | Product | Depends on PRD Patients CEN-OD-09 |
+| CNL-OD-03 | 🙋 Should the rows show more (flags, unread messages, the alert again)? | Product, clinicians | Today: avatar, name, location, score and its 24 h change. ✅ **Resolved:** the score's 24 h change shows (CNL-013) |

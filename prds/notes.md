@@ -90,7 +90,7 @@ The client's screenshots (`documents/notes/`) are **Intercept's note templates a
 |---|---|
 | **Intensivist** | Writes initial, progress and event notes; reviews and signs AI drafts; writes the attending attestation on an APP's note. |
 | **Advanced Practice Provider (APP)** | Writes the same notes; their notes go to the attending for an attestation. The client's templates call them **APC** (advanced practice clinician). |
-| **Critical Care RN** | ⚠️ Whether Intercept RNs write notes here is open (PD-OD-12). |
+| **Critical Care RN** | 🙋 **Open question:** whether Intercept RNs write notes here (PD-OD-12). |
 | **Bedside team** | Reads the signed note in their hospital's EMR. Not a user of Intercept's screens. |
 | **Coders and revenue cycle** | Bill the clinician's time from the attestation. Not a user of the editor (Spec §8.12). |
 
@@ -275,18 +275,18 @@ All proposed until the editor is built.
 | ID | Topic | Decision needed |
 |---|---|---|
 | NTE-OD-01 | ⚠️ **Note types** | The client's five types vs CD-07 and DU-24 (§4.4): the overnight-events section, ICU recommendations by system vs the best-practices checklist, H&P, Procedure, Consult. Send to Cowork. |
-| NTE-OD-02 | ⚠️ **The workflow** | Confirm §3 with the client: how templates are inserted (SmartText list or dot-phrase); when notes are written (during the call, right after, or at the end of the shift); how critical-care minutes are tracked today; whether every hospital has the same templates; whether APPs or physicians write most notes; how many of each type per shift. |
-| NTE-OD-03 | ⚠️ **"Encounter" in CD-04 and BR-10** | "Opt-out ends capture for the encounter": the session (one consult) or the whole stay. The specs use "encounter" both ways (glossary). |
-| NTE-OD-04 | ⚠️ **AI Scribe vs AI Notetaker** | One name for the AI that drafts notes. Notes badges drafts **AI Scribe**; the video consult calls it **AI Notetaker** (PRD Patient details, Care plan and activity). |
-| NTE-OD-05 | ⚠️ **Routing to the attending** | How an APP's note reaches the attending (assigned by the APP, by coverage, or by pairing), and where the attending sees what's waiting. |
-| NTE-OD-06 | ⚠️ **Which encounter** | Whether Intercept's notes file under the hospital's inpatient encounter, or a separate telemedicine or professional-billing encounter. It decides where write-back lands (PD-072). |
-| NTE-OD-07 | ⚠️ **Critical-care time** | What counts toward the minutes (video consults, chart review, messages) and whether a running daily total per patient is shown (Spec §6.21 time-on-task). |
-| NTE-OD-08 | ⚠️ **Data freshness** | Whether chart sections refresh on their own until signing, or only on Refresh, and whether a change since insertion is flagged. The prototype reads them once and on Refresh. |
+| NTE-OD-02 | 🙋 **The workflow** | Confirm §3 with the client: how templates are inserted (SmartText list or dot-phrase); when notes are written (during the call, right after, or at the end of the shift); how critical-care minutes are tracked today; whether every hospital has the same templates; whether APPs or physicians write most notes; how many of each type per shift. |
+| NTE-OD-03 | 🙋 **"Encounter" in CD-04 and BR-10** | "Opt-out ends capture for the encounter": the session (one consult) or the whole stay. The specs use "encounter" both ways (glossary). |
+| NTE-OD-04 | 🙋 **AI Scribe vs AI Notetaker** | One name for the AI that drafts notes. Notes badges drafts **AI Scribe**; the video consult calls it **AI Notetaker** (PRD Patient details, Care plan and activity). |
+| NTE-OD-05 | 🙋 **Routing to the attending** | How an APP's note reaches the attending (assigned by the APP, by coverage, or by pairing), and where the attending sees what's waiting. |
+| NTE-OD-06 | 🙋 **Which encounter** | Whether Intercept's notes file under the hospital's inpatient encounter, or a separate telemedicine or professional-billing encounter. It decides where write-back lands (PD-072). |
+| NTE-OD-07 | 🙋 **Critical-care time** | What counts toward the minutes (video consults, chart review, messages) and whether a running daily total per patient is shown (Spec §6.21 time-on-task). |
+| NTE-OD-08 | 🙋 **Data freshness** | Whether chart sections refresh on their own until signing, or only on Refresh, and whether a change since insertion is flagged. The prototype reads them once and on Refresh. |
 | NTE-OD-09 | ⚠️ **The AI draft's structure** | The AI draft fills the note type's sections (CD-02's HPI, Exam, Assessment, Plan map onto Issue / HPI, Camera exam, A/P), not a free-text summary (VID-015). |
-| NTE-OD-10 | ⚠️ **The client's screenshots** | Confirm they show a test patient before committing `documents/notes/`, or keep them out of git. |
-| NTE-OD-11 | ⚠️ **RN notes** | Whether Intercept Critical Care RNs write notes, and which types (PD-OD-12). |
+| NTE-OD-10 | 🙋 **The client's screenshots** | Confirm they show a test patient before committing `documents/notes/`, or keep them out of git. |
+| NTE-OD-11 | 🙋 **RN notes** | Whether Intercept Critical Care RNs write notes, and which types (PD-OD-12). |
 | NTE-OD-12 | ~~⚠️ **Where the editor opens** · A panel beside the patient's page, the Notes tab's right pane, or a page of its own; and whether it can stay open beside the video consult.~~ ✅ **Resolved:** the Notes tab's right pane (NTE-016). 🙋 **Open question:** whether it can stay open beside the video consult. |
-| NTE-OD-13 | ⚠️ **ID prefix** | `NTE-`, `NTE-AC-`, `NTE-UC-` and `NTE-OD-` are new repo-local IDs, to confirm with the team. |
+| NTE-OD-13 | 🙋 **ID prefix** | `NTE-`, `NTE-AC-`, `NTE-UC-` and `NTE-OD-` are new repo-local IDs, to confirm with the team. |
 
 ---
 

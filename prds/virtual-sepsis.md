@@ -121,11 +121,11 @@ What the spec asks of Virtual Sepsis that the page doesn't do yet. Each is a can
 
 | ID | Question | Notes |
 |---|---|---|
-| VSP-OD-01 | Should the page lead with a **screening queue** (candidates to review), then the patients being tracked, instead of one grid? | Spec §8.1 names "the Virtual Sepsis screening queue". |
-| VSP-OD-02 | Do patients whose case was **rejected or excluded** leave the page, and when? | See VSP-001. |
-| VSP-OD-03 | Should the card show the **sepsis state and bundle clock** (VS-04), and where on the card? | Glossary: Sepsis screening, validation and bundle tracking states (proposed). |
-| VSP-OD-04 | Should the page **sort by the nearest bundle deadline** by default? | Monitoring sorts by patient name or score. |
-| VSP-OD-05 | Where does the **compliance summary** (VS-08) live: on this page, or in Compliance? | |
+| VSP-OD-01 | 🙋 Should the page lead with a **screening queue** (candidates to review), then the patients being tracked, instead of one grid? | Spec §8.1 names "the Virtual Sepsis screening queue". |
+| VSP-OD-02 | 🙋 Do patients whose case was **rejected or excluded** leave the page, and when? | See VSP-001. |
+| VSP-OD-03 | 🙋 Should the card show the **sepsis state and bundle clock** (VS-04), and where on the card? | Glossary: Sepsis screening, validation and bundle tracking states (proposed). |
+| VSP-OD-04 | 🙋 Should the page **sort by the nearest bundle deadline** by default? | Monitoring sorts by patient name or score. |
+| VSP-OD-05 | 🙋 Where does the **compliance summary** (VS-08) live: on this page, or in Compliance? | |
 
 ## 7. Design and code
 

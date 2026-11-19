@@ -55,7 +55,7 @@ That distinction drives the page's data hierarchy, filters, sorts and visual emp
 | **When** | ~~Start of shift, planning, between tasks, handoff~~ ✅ **Resolved:** Finding a patient, returning to one, reviewing who's related to the clinician, looking back at a stay | Continuously, through the shift (Spec §5.2: "a sustained workflow loop") |
 | **Focus** | Patient identity, current and historical records, location, the attending, admission and status, ~~recent activity~~ last encounter, record retrieval | Active coverage, NEWS2, deterioration, alerts, organ support, clinical state, real-time monitoring |
 | **Clinical status** | ~~A general picture, current but not live: the score, its band and 24 h change, support and flags (CEN-016)~~ ✅ **Resolved:** Secondary clinical context only: a few flags (CEN-016). No score, no change, no vitals | Live: vitals and waveforms as they arrive, trends, alerts as they fire |
-| **Patients** | ~~Everyone in the clinician's scope, across their hospitals (PD-01)~~ ✅ **Resolved:** everyone ever treated in the clinician's scope, in hospital or not (CEN-001) | The census: the patients in hospital now, across the hospitals the clinician covers ⚠️ (CEN-OD-02, MON-OD-01) |
+| **Patients** | ~~Everyone in the clinician's scope, across their hospitals (PD-01)~~ ✅ **Resolved:** everyone ever treated in the clinician's scope, in hospital or not (CEN-001) | The census: the patients in hospital now, across the hospitals the clinician covers (⚠️ **Decision needed:** CEN-OD-02, MON-OD-01) |
 | **Default view** | ~~Compact PatientCard: identity, location, score and 24 h change, flags~~ ✅ **Resolved:** a table (CEN-012); cards as an alternate view, without the score line | PatientMonitoringCard: identity, the alert bar, a live bedside monitor, score, flags |
 | **Alerts** | ~~Orientation only (CEN-020): no alert on the cards (no badge, no ring); the hospital tabs' counts, Highest alert and the List's Alert column ⚠️ (CEN-OD-01)~~ ✅ **Resolved:** none (CEN-020) | Primary: the card's alert bar, ring, the triage queue |
 | **Hospitals** | ~~Tabs~~ ✅ **Resolved:** a filter (CEN-007) | Tabs |
@@ -230,7 +230,7 @@ The page uses the Provider Desktop shell shared with Monitoring: Sidebar (Patien
 | ID | Requirement | Status |
 |---|---|---|
 | **CEN-030 Roster changes** | An admission, transfer or discharge from ADT changes the patient's status on Patients (CEN-040). ~~A new patient joins with a "New" mark, a transfer moves with a "Transferred from …" note, a discharge leaves after a short "Discharged" state.~~ ✅ **Resolved:** seeing roster changes as they happen is Monitoring's (the census); Patients shows where each patient now stands. A transfer is never read as a discharge (SV-11). | ✅ Built (status). ⚠️ **Gap:** on Monitoring, the "New" mark and transfer notes aren't built (PRD Monitoring) |
-| **CEN-031 Reconciliation** | Where ADT isn't automated, a patient whose census state is uncertain shows **Pending reconciliation** (Spec §5.2), and the clinician can confirm it. | ✅ Built (the status). ⚠️ Not built: confirming it |
+| **CEN-031 Reconciliation** | Where ADT isn't automated, a patient whose census state is uncertain shows **Pending reconciliation** (Spec §5.2), and the clinician can confirm it. | ✅ Built (the status). ⚠️ **Not built:** confirming it |
 | **CEN-032 Watchlist** | The clinician flags a patient to watch; the flag persists across views and feeds the handoff (PD-09). | ⚠️ Not built. ⚠️ **Decision needed:** whether it's Monitoring's (CEN-OD-02) |
 | ~~**CEN-033 Handoff**~~ | ~~From the Census, the clinician starts the end-of-shift handoff for their patients (HO-01, DU-31).~~ | ✅ **Resolved:** handoff starts from the account menu (PRD Account menu ACM-031) |
 
@@ -323,17 +323,17 @@ What the design needs, and where it comes from today. Nothing is invented for th
 | ID | Decision | Options | Proposal |
 |---|---|---|---|
 | CEN-OD-01 | How much alert information stays on ~~the Census~~ Patients | (a) Counts, filters and the List column only; (b) today's set, with the live feed panel; (c) nothing: alerts only on Monitoring | ✅ **Resolved:** (c). |
-| CEN-OD-02 | Who is on the Monitoring panel, against Patients | (a) The same patients on both; (b) Monitoring shows a watchlist the clinician builds from Patients; (c) Monitoring shows the shift assignment | **(b)** or **(c)**. Settles MON-OD-01 too |
+| CEN-OD-02 | 🙋 Who is on the Monitoring panel, against Patients | (a) The same patients on both; (b) Monitoring shows a watchlist the clinician builds from Patients; (c) Monitoring shows the shift assignment | **(b)** or **(c)**. Settles MON-OD-01 too |
 | CEN-OD-03 | Opening a patient from the Census resolves their alert (prototype) | Keep; remove | ✅ **Resolved:** removed. |
-| CEN-OD-04 | PD-04's fields not on the row: diagnosis, tier | Add a column; show on the card only; leave to Patient details | Diagnosis as a second line under the name if it fits; ⚠️ **Decision needed** |
+| CEN-OD-04 | 🙋 PD-04's fields not on the row: diagnosis, tier | Add a column; show on the card only; leave to Patient details | Diagnosis as a second line under the name if it fits; ⚠️ **Decision needed** |
 | CEN-OD-05 | PD-02's "rail by tier" view | Build; drop | ✅ **Resolved:** not on Patients; the views are Table and Cards. If it means acuity tiers, it's Monitoring's. |
 | CEN-OD-06 | Default sort | ~~Score; Score change; Name~~ Recently viewed; Patient name; ~~Most recent activity~~ Most recent encounter | ~~**Score** (today): the sickest first fits the shift scan~~ ✅ **Resolved:** **Recently viewed**: returning to a patient is the commonest directory job. |
 | CEN-OD-07 | Filters on vitals the card doesn't show (Out of range, Data gap, Vitals out of range) | — | ✅ **Resolved:** Monitoring's (MON-051). |
 | CEN-OD-08 | How a data gap shows on ~~the Census~~ Patients | A note; a mark on the score; nothing | ✅ **Resolved:** nothing: Patients shows no score, so a gap in it has nothing to qualify. Monitoring shows data gaps. |
 | CEN-OD-09 | How patients no longer in hospital show on Patients (CEN-001) | (a) In the same list, with their status and last stay; (b) In hospital by default, with a filter for everyone; (c) Two tabs, In hospital and All | ✅ **Resolved:** (a), with a **Current** chip that narrows to the patients in hospital. |
 | CEN-OD-10 | Which use cases stay on Patients now that Monitoring is the census | Stay here; move to Monitoring; both | ✅ **Resolved:** the shift scan, reviewing a clinical group and roster changes as they happen are Monitoring's; finding, returning to and looking back at patients stay here; handoff starts from the account menu. |
-| CEN-OD-11 | Search by date of birth | Add DOB to the patient data; leave it out | ⚠️ **Decision needed:** needs the data first (§4.6) |
+| CEN-OD-11 | 🙋 Search by date of birth | Add DOB to the patient data; leave it out | ⚠️ **Decision needed:** needs the data first (§4.6) |
 | CEN-OD-12 | Recently viewed's window | 24 h; 7 days; 30 days | ~~**7 days** (built). Confirm with clinicians~~ ✅ **Resolved:** no window needed: the chip is gone, and the sort orders every viewed patient, the latest first |
 | CEN-OD-13 | Whether NEWS2 stays as a sort | Keep, last; remove | ~~Keep, last, until clinical validation says whether lookup ever needs it~~ ✅ **Resolved:** removed. |
-| CEN-OD-14 | What "Care team" means for a past patient | The team during the stay; the team now (none) | ⚠️ **Decision needed:** likely the team during the stay (needs data, §4.6) |
-| CEN-OD-15 | What a discharged or transferred patient's page shows (status, last stay, live sections) | — | ⚠️ **Decision needed:** PRD Patient details |
+| CEN-OD-14 | 🙋 What "Care team" means for a past patient | The team during the stay; the team now (none) | ⚠️ **Decision needed:** likely the team during the stay (needs data, §4.6) |
+| CEN-OD-15 | 🙋 What a discharged or transferred patient's page shows (status, last stay, live sections) | — | ⚠️ **Decision needed:** PRD Patient details |

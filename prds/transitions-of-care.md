@@ -133,8 +133,8 @@ When the patient goes home from the ED, the return says "Readmission avoided" wi
 
 | # | Question |
 |---|---|
-| TOC-OD-01 | Who sends the handoff (TOC-002). |
-| TOC-OD-02 | The readmission model and thresholds (TOC-012). |
-| TOC-OD-03 | The return window and which risk levels alert (TOC-031). |
-| TOC-OD-04 | How a match is confirmed when it isn't certain (e.g. a new address), and who confirms it. |
-| TOC-OD-05 | The hub tele-RN's view of their follow-ups (TOC-021). |
+| TOC-OD-01 | 🙋 Who sends the handoff (TOC-002). |
+| TOC-OD-02 | 🙋 The readmission model and thresholds (TOC-012). |
+| TOC-OD-03 | 🙋 The return window and which risk levels alert (TOC-031). |
+| TOC-OD-04 | 🙋 How a match is confirmed when it isn't certain (e.g. a new address), and who confirms it. |
+| TOC-OD-05 | 🙋 The hub tele-RN's view of their follow-ups (TOC-021). |

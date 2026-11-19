@@ -338,11 +338,11 @@ Per MOTION.md "AI answers": thinking is a soft opacity pulse; streaming arrives 
 
 | ID | Decision | Owner | Notes |
 |---|---|---|---|
-| CC-OD-01 | Do suggested questions adapt to the time of shift, role or the census? | Product | The prototype has fixed sets for the census and a patient's page |
-| CC-OD-02 | The v1 command set, and whether it varies by role | Product / Clinical | /trend with an overlay is a candidate (Spec §8.7) |
-| CC-OD-03 | Where a /handoff draft goes: copied only, or into the handoff surface | Product | Depends on PD-OD-10 (handoff format) |
-| CC-OD-04 | What can be attached, where it's stored, and whether the agent reads it | Product / Security | + is shown but does nothing |
-| CC-OD-05 | Microphone and voice: which hospitals allow them, push-to-talk or not | Clinical / Security | Spec §9.5 |
-| CC-OD-06 | Does the care team thread's composer reuse ChatComposer? | Design | Messages go to people, not the agent |
-| CC-OD-07 | Conversation persistence across sessions and devices, and retention | Product / Compliance | Spec §6.14 |
-| CC-OD-08 | Citations: names only, or links that open the source and its moment on the Timeline | Product / Engineering | PD-100 asks for links |
+| CC-OD-01 | 🙋 Do suggested questions adapt to the time of shift, role or the census? | Product | The prototype has fixed sets for the census and a patient's page |
+| CC-OD-02 | 🙋 The v1 command set, and whether it varies by role | Product / Clinical | /trend with an overlay is a candidate (Spec §8.7) |
+| CC-OD-03 | 🙋 Where a /handoff draft goes: copied only, or into the handoff surface | Product | Depends on PD-OD-10 (handoff format) |
+| CC-OD-04 | 🙋 What can be attached, where it's stored, and whether the agent reads it | Product / Security | + is shown but does nothing |
+| CC-OD-05 | 🙋 Microphone and voice: which hospitals allow them, push-to-talk or not | Clinical / Security | Spec §9.5 |
+| CC-OD-06 | 🙋 Does the care team thread's composer reuse ChatComposer? | Design | Messages go to people, not the agent |
+| CC-OD-07 | 🙋 Conversation persistence across sessions and devices, and retention | Product / Compliance | Spec §6.14 |
+| CC-OD-08 | 🙋 Citations: names only, or links that open the source and its moment on the Timeline | Product / Engineering | PD-100 asks for links |

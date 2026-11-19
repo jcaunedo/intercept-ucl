@@ -282,7 +282,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | Term | Definition | Source |
 | --- | --- | --- |
 | **ABCDEF Bundle** | ICU care bundle: Assessment of pain, Both spontaneous awakening and breathing trials, Choice of analgesia and sedation, Delirium monitoring, Early mobility, Family engagement. | Spec Appendix A |
-| **Admission / encounter** | A patient's hospital stay, admission to discharge, with admission time, encounter identifier (the account number, ACCT) and status. Many notes, orders and results file under one encounter; a note is never the encounter. ⚠️ The specs also say "encounter" for one clinical contact (a consult, a camera session): Open naming conflicts #10. | PRD PC-015, PRD Notes §1.1 |
+| **Admission / encounter** | A patient's hospital stay, admission to discharge, with admission time, encounter identifier (the account number, ACCT) and status. Many notes, orders and results file under one encounter; a note is never the encounter. ⚠️ **Naming conflict:** the specs also say "encounter" for one clinical contact (a consult, a camera session): Open naming conflicts #10. | PRD PC-015, PRD Notes §1.1 |
 | **ADT (Admission, Discharge, Transfer)** | The HL7v2 message family hospitals use for patient movement. Keeps the census aligned with the hospital. Real-time in Integrated mode, manually reconciled in Overlay. | Spec §7.12 |
 | **Anion gap** | The difference between measured cations and anions (Na − Cl − HCO₃), in mEq/L. Raised in DKA by ketoacids; the gap **closing** (12 or under, with bicarbonate 15 or more) is when DKA has resolved and the insulin drip can move to subcutaneous insulin. Scenario 4. | Demo Use Cases, Scenario 4 |
 | **APACHE II / IV (Acute Physiology and Chronic Health Evaluation)** | ICU severity score calculated once, in the first 24 hours of an ICU stay, to predict mortality and benchmark units. APACHE II runs 0–71; higher is sicker. Philips eICU uses APACHE IV. A candidate acuity score (OD-02). | General, PRD PC-030 |
@@ -540,7 +540,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **PC-xxx** | A numbered Patient card requirement. | PRD |
 | **PD-xxx** | A numbered Patient details requirement. PD-AC-xx and PD-OD-xx are its acceptance criteria and open decisions. | PRD Patient details |
 | **Scenario ID** | A Patient card scenario code: a layer letter plus a number (A4, S3, V2). Combined to describe one card state, e.g. A4 + S3 + V2. | PRD §15.1 |
-| **Status labels** | In `prds/` docs, inline notes start with an emoji and a bold label: ⚠️ for unresolved (**Gap:**, **Decision needed:**, **Risk:**), ✅ for resolved, always just **Resolved:** (no date or who decided), ℹ️ for information, with no label. | CONVENTIONS.md |
+| **Status labels** | In `prds/` docs, inline notes start with an emoji and a bold label: ⚠️ for unresolved (**Gap:**, **Decision needed:**, **Risk:**), 🙋 for a question nobody has answered yet (**Open question:**), ✅ for resolved, always just **Resolved:** (no date or who decided), ℹ️ for information, with no label. Each row of an open decisions table starts with its status too: 🙋 alone for a question, ⚠️ with its label for a known problem, ✅ **Resolved:** once settled. | CONVENTIONS.md |
 | **UC-xx** | A numbered use case. | PRD §2.2 |
 
 ---

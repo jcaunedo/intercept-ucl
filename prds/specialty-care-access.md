@@ -137,7 +137,7 @@ The request form never sends itself: every way in ends at the form, with the cli
 | SCA-041 | **Starting it** | Once the specialist accepts, either side can start the session when ready. If it started from a video consult (SCA-010's second entry), the specialist joins that call. Outside the ICU, the cart check (SCA-015) comes first. | SC-03; SC-11 |
 | SCA-042 | **Imaging review** | A panel in the session with the patient's studies (CT head, CT angiogram, chest X-ray, echo), each with its report when there is one. Opening a study shows it to both the specialist and the requesting clinician. ⚠️ **Assumption:** both see the same image while it's open, so they can talk about it. In the prototype the images are synthetic. | SC-06 |
 | SCA-043 | **The specialist's note** | The AI Notetaker drafts the specialist's consult note from the session, with the same consent rule as any video consult (PRD Bedside camera CAM-008a). The specialist is the note's author and signs it. | Proposed; VID-010 |
-| SCA-044 | **Family in the session** | 🙋 **Open question (SCA-OD-06):** whether family or a representative can be invited into the session, and whether they consent to the consult. §5.18 makes it a first-class part of the consult; Q-05 and D-12 leave it to the scenarios. | §5.18; Q-05; D-12 |
+| SCA-044 | **Family in the session** | 🙋 **Open question:** (SCA-OD-06) whether family or a representative can be invited into the session, and whether they consent to the consult. §5.18 makes it a first-class part of the consult; Q-05 and D-12 leave it to the scenarios. | §5.18; Q-05; D-12 |
 | SCA-045 | **In the prototype** | The specialist's video is prerecorded and plays beside the live bedside view, so the demo needs no second clinician. | SC-03 |
 
 ### 4.5 The recommendation
@@ -250,13 +250,13 @@ The request form never sends itself: every way in ends at the form, with the cli
 |---|---|---|
 | SCA-OD-01 | **The demo's consult** | ✅ **Resolved:** Linda in Scenario 5 (Act 3), tele-stroke neurology, after the overflow (§2). |
 | SCA-OD-02 | **Picking or first to accept** | ✅ **Resolved:** by urgency: first to accept for Emergent, the clinician picks for Urgent and Routine (SCA-023). |
-| SCA-OD-03 | **Ranking** | What orders the eligible list. Recommended: available now, then experience at this hospital, then typical time to accept (SCA-025). |
-| SCA-OD-04 | **Curation** | Whether a Marketplace Curator approves a match before it's routed, for hospitals with no standing arrangement (§5.18), and whether the prototype shows it. Recommended: leave it out of the prototype and keep a status for it in the design. |
-| SCA-OD-05 | **The specialist's place in the Sidebar** | A Consults item in the independent clinician's Marketplace sidebar (SCA-033). Changes PRD Sidebar NAV-022. |
-| SCA-OD-06 | **Family** | Whether family or a representative can consent to, join or receive the consult (SCA-044; Q-05, D-12). |
-| SCA-OD-07 | **Specialties** | Which specialties the network covers (SCA-011; Q-05). |
-| SCA-OD-08 | **Urgency and wait times** | The three urgency levels and how long an offer waits before it moves (SCA-012, SCA-024). |
-| SCA-OD-09 | **ID prefix** | `SCA-`, `SCA-AC-` and `SCA-OD-` are new repo-local IDs (`SC-` is Cowork's), to confirm with the team. |
+| SCA-OD-03 | 🙋 **Ranking** | What orders the eligible list. Recommended: available now, then experience at this hospital, then typical time to accept (SCA-025). |
+| SCA-OD-04 | 🙋 **Curation** | Whether a Marketplace Curator approves a match before it's routed, for hospitals with no standing arrangement (§5.18), and whether the prototype shows it. Recommended: leave it out of the prototype and keep a status for it in the design. |
+| SCA-OD-05 | 🙋 **The specialist's place in the Sidebar** | A Consults item in the independent clinician's Marketplace sidebar (SCA-033). Changes PRD Sidebar NAV-022. |
+| SCA-OD-06 | 🙋 **Family** | Whether family or a representative can consent to, join or receive the consult (SCA-044; Q-05, D-12). |
+| SCA-OD-07 | 🙋 **Specialties** | Which specialties the network covers (SCA-011; Q-05). |
+| SCA-OD-08 | 🙋 **Urgency and wait times** | The three urgency levels and how long an offer waits before it moves (SCA-012, SCA-024). |
+| SCA-OD-09 | 🙋 **ID prefix** | `SCA-`, `SCA-AC-` and `SCA-OD-` are new repo-local IDs (`SC-` is Cowork's), to confirm with the team. |
 | SCA-OD-10 | **One label for the entry** | ✅ **Resolved:** **Request specialist** everywhere (the Create menu, PRD Sidebar NAV-070), because "consult request" already names a hospital calling the hub (glossary). |
 
 ---

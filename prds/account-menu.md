@@ -220,10 +220,10 @@ The menu and its submenus open as every DropdownMenu does (MOTION.md "Menus/drop
 
 | ID | Decision | Owner | Notes |
 |---|---|---|---|
-| ACM-OD-01 | The menu's design in intercept.ds | Design | Follows UCL's DropdownMenu until then |
+| ACM-OD-01 | ⚠️ **Gap:** the menu's design in intercept.ds | Design | Follows UCL's DropdownMenu until then |
 | ~~ACM-OD-02~~ | ~~Show the status on the header's trigger (a dot on the avatar)?~~ ✅ **Resolved:** yes, the avatar's dot, in the status's color (ACM-001) | Product, Design | The Left Nav Spec's header shows "online status" |
-| ACM-OD-03 | Theme in Preferences and on the header button, or only one | Design | Both in the prototype |
-| ACM-OD-04 | Default Monitoring view per role (Waveforms → Full view, Cards → Minimal view?) | Product, clinicians | Left Nav Spec; PD-10; same question as PRD Sidebar NAV-OD-04 |
-| ACM-OD-05 | The workspace switch's keyboard shortcut | Product | Left Nav Spec asks for one |
-| ACM-OD-06 | Do preferences persist across sessions and devices? | Product | Same question as MON-015's view settings |
-| ACM-OD-07 | Can a user pick a status during In camera or On a call, or only after? | Product | The prototype lets them |
+| ACM-OD-03 | 🙋 Theme in Preferences and on the header button, or only one | Design | Both in the prototype |
+| ACM-OD-04 | 🙋 Default Monitoring view per role (Waveforms → Full view, Cards → Minimal view?) | Product, clinicians | Left Nav Spec; PD-10; same question as PRD Sidebar NAV-OD-04 |
+| ACM-OD-05 | 🙋 The workspace switch's keyboard shortcut | Product | Left Nav Spec asks for one |
+| ACM-OD-06 | 🙋 Do preferences persist across sessions and devices? | Product | Same question as MON-015's view settings |
+| ACM-OD-07 | 🙋 Can a user pick a status during In camera or On a call, or only after? | Product | The prototype lets them |

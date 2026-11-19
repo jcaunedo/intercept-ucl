@@ -184,8 +184,8 @@ The waveforms sweep at the bedside's speed and the device alarm boxes flash at t
 
 | ID | Question |
 |---|---|
-| PMN-OD-01 | The parameter palette is a draft (PRD Monitoring MON-OD-10); add it to Figma once agreed. |
-| PMN-OD-02 | Which waveform set each patient gets (e.g. capnography in place of Resp), and whether temperature and EtCO₂ join as secondary numbers (PRD Monitoring, patient focus view). |
-| PMN-OD-03 | Whether the trend lanes draw the alarm limits (PMN-012). |
-| PMN-OD-04 | Whether the monitor shows device alarm latching and messages (PMN-032). |
-| PMN-OD-05 | Figma: the small size and the OFF limit aren't drawn in intercept.ds `patient-monitor` yet. |
+| PMN-OD-01 | 🙋 The parameter palette is a draft (PRD Monitoring MON-OD-10); add it to Figma once agreed. |
+| PMN-OD-02 | 🙋 Which waveform set each patient gets (e.g. capnography in place of Resp), and whether temperature and EtCO₂ join as secondary numbers (PRD Monitoring, patient focus view). |
+| PMN-OD-03 | 🙋 Whether the trend lanes draw the alarm limits (PMN-012). |
+| PMN-OD-04 | 🙋 Whether the monitor shows device alarm latching and messages (PMN-032). |
+| PMN-OD-05 | ⚠️ **Gap:** in Figma, the small size and the OFF limit aren't drawn in intercept.ds `patient-monitor` yet. |

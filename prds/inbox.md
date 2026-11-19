@@ -204,10 +204,10 @@ The Clinical Sidebar's **Inbox** (NAV-020). A shared link opens it with `?page=i
 
 | ID | Decision | Owner | Notes |
 |---|---|---|---|
-| INB-OD-01 | The Inbox page in intercept.ds | Design | Only the table and its row are drawn |
-| INB-OD-02 | Low and operational alerts: counted, listed apart, or left out | Product, clinicians | AL-07, AL-09; INB-002 |
-| INB-OD-03 | What "new" (the unread dot) means | Product | INB-011 |
-| INB-OD-04 | Open a draft in Notes and an order in Orders, not just the patient | Product, Design | INB-022 |
-| INB-OD-05 | Which work types reach a clinician (and an RN) vs an operations role | Product, Intercept | §6.21 lists many; INB-001 |
-| INB-OD-06 | Which kinds can be done in bulk; assign and reassign (§6.21) | Product, clinicians | INB-040; AL-06 keeps snooze and assign out of the prototype |
-| INB-OD-07 | The Sidebar's red count and whether Monitoring's alert dot moves to Inbox | Product, Design | NAV-042; PRD Sidebar's open decision on the alert dot |
+| INB-OD-01 | ⚠️ **Gap:** the Inbox page in intercept.ds | Design | Only the table and its row are drawn |
+| INB-OD-02 | 🙋 Low and operational alerts: counted, listed apart, or left out | Product, clinicians | AL-07, AL-09; INB-002 |
+| INB-OD-03 | 🙋 What "new" (the unread dot) means | Product | INB-011 |
+| INB-OD-04 | 🙋 Open a draft in Notes and an order in Orders, not just the patient | Product, Design | INB-022 |
+| INB-OD-05 | 🙋 Which work types reach a clinician (and an RN) vs an operations role | Product, Intercept | §6.21 lists many; INB-001 |
+| INB-OD-06 | 🙋 Which kinds can be done in bulk; assign and reassign (§6.21) | Product, clinicians | INB-040; AL-06 keeps snooze and assign out of the prototype |
+| INB-OD-07 | 🙋 The Sidebar's red count and whether Monitoring's alert dot moves to Inbox | Product, Design | NAV-042; PRD Sidebar's open decision on the alert dot |

@@ -124,11 +124,21 @@ Not prototype users: Scheduling Coordinator, Support Coordinator and Operations 
 Every inline prose note that flags a gap, risk, decision, confirmation or fix gets an emoji **plus a bold word label**, right after the emoji and before the explanation.
 
 - ⚠️ for anything unresolved, misaligned or needing attention, with a bold label naming the kind of issue: `**Gap:**`, `**Constraint:**`, `**Risk:**`, `**Decision needed:**`, `**Accessibility:**`, or another word that fits. Don't default to "Gap" when a more specific word fits better.
-- 🙋 for an open question: something nobody has answered yet. Each bullet in an "Open questions" list starts with it, and an open question written inline reads `🙋 **Open question:**`. It's a question for someone to answer, where ⚠️ flags a known problem. A table of open questions or decisions keyed by ID needs no emoji.
+- 🙋 for an open question: something nobody has answered yet. Each bullet in an "Open questions" list starts with it, and an open question written inline reads `🙋 **Open question:**`. It's a question for someone to answer, where ⚠️ flags a known problem.
 - ✅ for anything resolved, decided or confirmed. The tag is always `✅ **Resolved:**`, and only that: no date, no who decided, no requirement ID, no other word (`Decision`, `Built`, `Confirmed in Figma`, `Copy fix`…). The note follows the tag as before; its design rationale, functionality and rules go in that text or in the PRD's sections, never in the tag.
 - ℹ️ for purely informative or framing notes (context, scope, why a note exists), with **no bold label**. If it doesn't flag a problem, a question or a fix, it isn't ⚠️, 🙋 or ✅.
 
-Lists where every line already starts with the same emoji don't need labels.
+Lists where every line already starts with the same emoji don't need labels. Neither does a table's status column, where the cell is the status itself (`✅ Built`, `✅ Added`, `⚠️ Not built`), nor a heading.
+
+**Open decisions tables.** Every row of a PRD's open decisions or open questions table (the rows keyed `-OD-`) starts its text, in the cell after the ID, with its status:
+
+- 🙋, with no label, for a question nobody has answered yet.
+- ⚠️ with its label (`**Gap:**`, `**Risk:**`…) for a row that's a known problem, not a question, e.g. a state Figma doesn't draw yet.
+- `✅ **Resolved:**` once it's settled: strike the question through and write the answer after the tag ("Superseded decisions"). The row stays in the table. In a table with its own answer column (Proposal, Notes), the tag and the answer go in that column, and the question stays as written.
+
+In a table keyed by topic, with or without an ID, the mark goes before the bold topic, and the topic stands in for ⚠️'s label: `🙋 **Who the consult calls**`, `⚠️ **Triage queue undo**`.
+
+So the table still reads at a glance once some rows are settled, and a row that isn't a question doesn't pass for one.
 
 Examples:
 
@@ -140,6 +150,14 @@ Examples:
 >
 > ℹ️ The Census has no Card monitor or Monitor view controls: those are Monitoring's (MON-015).
 
+Rows of an open decisions table:
+
+| ID | Question |
+|---|---|
+| PMC-OD-03 | 🙋 Whether the family message icon opens the patient's messages on Monitoring, or is removed from the card. |
+| PMC-OD-07 | ⚠️ **Gap:** intercept.ds doesn't draw the condensed monitor or the small size yet. |
+| NAV-OD-12 | ~~When Intercept Live's shell moves to the new Clinical items (NAV-020).~~ ✅ **Resolved:** it shows them now, the Census page as Patients (NAV-020). |
+
 Each of these tags becomes `✅ **Resolved:**`:
 
 - `✅ **Decision (Nov 9, 2026, user's call):**`
@@ -147,7 +165,7 @@ Each of these tags becomes `✅ **Resolved:**`:
 - `✅ **Resolved (Nov 4, 2026, user's call; CAM-012):**`
 - `✅ **Opens only for a new incoming message (Nov 5, 2026, user's call: "…"):**`
 
-Notes written before this rule still carry dates, who decided and other labels. Leave them as they are, and don't copy their form into new notes.
+Every PRD was brought to these labels on Nov 19, 2026. Where an older tag carried a date, who decided, a Figma node or another word, that now follows the tag as the start of the note, so nothing was lost: `✅ **Resolved:** (Nov 9, 2026, user's call) the row under the alert is gone`, `✅ **Resolved:** built in the prototype (Nov 4, 2026): …`. A new note keeps a date or who decided only when it's worth keeping, and always in its text, never in the tag.
 
 **Why:** specs must be scannable for status at a glance. The word names the status, so a reader doesn't rely on the icon alone or mistake framing text for an open risk. A ✅ tag only has to say that the item is resolved.
 

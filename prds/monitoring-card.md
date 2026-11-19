@@ -97,7 +97,9 @@ The patient's name ("Last, First"), bold, on one line; a name too long for the c
 
 The hospital, unit, room and bed on one line after a map pin (PC-013, PC-014). Only the hospital truncates, with its full name on hover; unit, room and bed always show.
 
-The record system the patient's data comes from ("Epic") can show as a small outlined badge at the end of the line, which never truncates and is read "record from Epic". ℹ️ Monitoring shows it on no card for now (PRD Patient card PC-013).
+The record system the patient's data comes from ("Epic") can show as a small outlined badge at the end of the line, which never truncates and is read "record from Epic". Monitoring shows it on no card for now (PRD Patient card PC-013).
+
+🙋 **Open question:** whether Monitoring's cards show the record system badge (PMC-OD-05).
 
 ### PMC-012 — Score line
 
@@ -139,6 +141,8 @@ The Condensed view shows a short monitor: the ECG lead II strip, then HR, SpO₂
 
 On a narrow card (under about 340px, e.g. six a row), the numbers drop their units and ABP gets more room, so "104/56" never truncates.
 
+🙋 **Open question:** whether the condensed monitor keeps both the ECG strip and the 1 h trends, or shows numbers and trends only (PMC-OD-06, MON-OD-12).
+
 ### PMC-031 — Monitor: full
 
 The Full view shows the patient monitor: four lanes (II, Pleth, ABP, Resp), each its waveform or last hour beside its numbers and limits. It's the same component as on Patient details and in the alert modal, with the same rules (PRD Patient monitor).
@@ -155,11 +159,13 @@ The numbers in both views follow PRD Patient monitor: "--" for a value not comin
 
 ℹ️ The device's alarm is never the platform's alert: the alert bar and ring show the alert's severity, and they never recolor a parameter (MON-073, AL-02).
 
+🙋 **Open question:** how a device alarm acknowledged at the bedside shows who acknowledged it, when and how long it was active (DU-10), and whether the card shows the alarm's message ("SpO₂ LOW") (PMC-OD-02).
+
 ### PMC-040 — Flags
 
 The patient's flags (Ventilated, Pressors, DNR, Fall risk…) in one row under the monitor, the Patients card's row. They stay on one line and scroll sideways when they don't fit. A flag with details opens them in a popover without opening the patient: what the bedside team changed in the last 12 hours, what's behind it now, and its source and age (PC-064). With no flags the row reads "No tags", so cards line up.
 
-ℹ️ The product calls these **flags**; the code and parts of the PRDs still say tags.
+⚠️ **Gap:** the product calls these **flags**; the code, the empty row's "No tags" and parts of the PRDs still say tags.
 
 ### PMC-050 — Family messages
 
@@ -260,10 +266,10 @@ Under reduced motion the ring is steady, the traces stand still and the rest is 
 
 | ID | Question |
 |---|---|
-| PMC-OD-01 | How the card shows stale data (MON-050, SV-08): dimmed numbers with their age, frozen waveforms, a Stale tag, as the Oct 27, 2026 exploration proposes. |
-| PMC-OD-02 | How a device alarm acknowledged at the bedside shows its who, when and how long active (DU-10), and whether the card shows the alarm's message ("SpO₂ LOW"). |
-| PMC-OD-03 | Whether the family message icon opens the patient's messages on Monitoring, or is removed from the card (PMC-050). |
-| PMC-OD-04 | Whether the card shows respiratory support by type (DU-16) or leaves it to Patient details. |
-| PMC-OD-05 | Whether the record system badge shows on Monitoring's cards (PMC-011). |
-| PMC-OD-06 | The condensed monitor: a mini waveform, or numbers and trends only (MON-OD-12); and the parameter palette (MON-OD-10). |
-| PMC-OD-07 | Figma: intercept.ds draws the card with an empty monitor frame; the condensed monitor, the small size and the alert bar's Resolved and message states aren't drawn yet. |
+| PMC-OD-01 | 🙋 How the card shows stale data (MON-050, SV-08): dimmed numbers with their age, frozen waveforms, a Stale tag, as the Oct 27, 2026 exploration proposes. |
+| PMC-OD-02 | 🙋 How a device alarm acknowledged at the bedside shows its who, when and how long active (DU-10), and whether the card shows the alarm's message ("SpO₂ LOW"). |
+| PMC-OD-03 | 🙋 Whether the family message icon opens the patient's messages on Monitoring, or is removed from the card (PMC-050). |
+| PMC-OD-04 | 🙋 Whether the card shows respiratory support by type (DU-16) or leaves it to Patient details. |
+| PMC-OD-05 | 🙋 Whether the record system badge shows on Monitoring's cards (PMC-011). |
+| PMC-OD-06 | 🙋 The condensed monitor: a mini waveform, or numbers and trends only (MON-OD-12); and the parameter palette (MON-OD-10). |
+| PMC-OD-07 | ⚠️ **Gap:** in Figma, intercept.ds draws the card with an empty monitor frame; the condensed monitor, the small size and the alert bar's Resolved and message states aren't drawn yet. |

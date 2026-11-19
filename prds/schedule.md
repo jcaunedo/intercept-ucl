@@ -210,11 +210,11 @@ The Clinical Sidebar's **Schedule** (NAV-020). A shared link opens it with `?pag
 
 | ID | Decision | Owner | Notes |
 |---|---|---|---|
-| SCH-OD-01 | Schedule's design in intercept.ds | Design | The layout follows a calendar app pattern; nothing is drawn yet |
-| SCH-OD-02 | Swap and give-away: with whom, when it reaches Open shifts and the Marketplace, how a taken shift shows | Product, Operations | SCH-031, SCH-051 |
-| SCH-OD-03 | Time zones: the clinician's only, or each hospital's local time too | Product | Spec §5.15; SCH-011 |
-| SCH-OD-04 | Open shifts: request (coordinator approves) or instant booking; clashes with own shifts and rest rules | Product, Operations | Spec §5.15 self-scheduling; SCH-070 |
-| SCH-OD-05 | Intercept's real shift types, hours and rotation | Intercept (CMO, Operations Lead) | Today's sample is a 14-day rotation of 12 h days, nights and backup call |
-| SCH-OD-06 | The forms for Time off, Shift swap and Availability | Product, Design | SCH-060 |
-| SCH-OD-07 | Should Schedule show the shift's handoff (PD-12) or the coverage team on each shift? | Product | Not in the first layout |
-| SCH-OD-08 | Below `lg`: a list (agenda) view in place of the month grid? | Design | SCH-040 |
+| SCH-OD-01 | ⚠️ **Gap:** Schedule's design in intercept.ds | Design | The layout follows a calendar app pattern; nothing is drawn yet |
+| SCH-OD-02 | 🙋 Swap and give-away: with whom, when it reaches Open shifts and the Marketplace, how a taken shift shows | Product, Operations | SCH-031, SCH-051 |
+| SCH-OD-03 | 🙋 Time zones: the clinician's only, or each hospital's local time too | Product | Spec §5.15; SCH-011 |
+| SCH-OD-04 | 🙋 Open shifts: request (coordinator approves) or instant booking; clashes with own shifts and rest rules | Product, Operations | Spec §5.15 self-scheduling; SCH-070 |
+| SCH-OD-05 | 🙋 Intercept's real shift types, hours and rotation | Intercept (CMO, Operations Lead) | Today's sample is a 14-day rotation of 12 h days, nights and backup call |
+| SCH-OD-06 | 🙋 The forms for Time off, Shift swap and Availability | Product, Design | SCH-060 |
+| SCH-OD-07 | 🙋 Should Schedule show the shift's handoff (PD-12) or the coverage team on each shift? | Product | Not in the first layout |
+| SCH-OD-08 | 🙋 Below `lg`: a list (agenda) view in place of the month grid? | Design | SCH-040 |

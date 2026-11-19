@@ -330,15 +330,15 @@ The width animates between 280 and 64px and the rail's fill follows it; hovering
 
 | ID | Decision |
 |---|---|
-| NAV-OD-01 | Whether the Marketplace is still Phase 2 scope: it ships as Preview or stays hidden (Left Nav Spec). |
-| NAV-OD-02 | Whether a clinician can start a paid outside consult, or a hospital's Client Admin must turn it on first. |
-| NAV-OD-03 | The hospital Administration sidebar (NAV-021). |
-| NAV-OD-04 | The default Monitoring view per role, checked with clinicians (NAV-020). |
-| NAV-OD-05 | What clicking the logo does: collapse the Sidebar (today) or return to the role's default Monitoring view (NAV-020). |
-| NAV-OD-06 | Ask Intercept Live's column width, whether it collapses the Sidebar, its open state and its shortcut (NAV-030). |
-| NAV-OD-07 | Whether the census column shows only on the patient chart, or anywhere but off by default on Monitoring (NAV-070). |
-| NAV-OD-08 | The current page's look: intercept.ds's or the spec's (NAV-040). |
-| NAV-OD-09 | Counts, tags and the nested item, once designed (NAV-042–NAV-044). |
-| NAV-OD-10 | 280 vs 240px expanded, 32 vs 44px collapsed hit areas (NAV-050). |
-| NAV-OD-11 | Which Marketplace side intercept.ds draws, and Contracts & billing / Earnings against SC-09 (NAV-022). |
+| NAV-OD-01 | 🙋 Whether the Marketplace is still Phase 2 scope: it ships as Preview or stays hidden (Left Nav Spec). |
+| NAV-OD-02 | 🙋 Whether a clinician can start a paid outside consult, or a hospital's Client Admin must turn it on first. |
+| NAV-OD-03 | 🙋 The hospital Administration sidebar (NAV-021). |
+| NAV-OD-04 | 🙋 The default Monitoring view per role, checked with clinicians (NAV-020). |
+| NAV-OD-05 | 🙋 What clicking the logo does: collapse the Sidebar (today) or return to the role's default Monitoring view (NAV-020). |
+| NAV-OD-06 | 🙋 Ask Intercept Live's column width, whether it collapses the Sidebar, its open state and its shortcut (NAV-030). |
+| NAV-OD-07 | 🙋 Whether the census column shows only on the patient chart, or anywhere but off by default on Monitoring (NAV-070). |
+| NAV-OD-08 | 🙋 The current page's look: intercept.ds's or the spec's (NAV-040). |
+| NAV-OD-09 | ⚠️ **Gap:** counts, tags and the nested item, once designed (NAV-042–NAV-044). |
+| NAV-OD-10 | 🙋 280 vs 240px expanded, 32 vs 44px collapsed hit areas (NAV-050). |
+| NAV-OD-11 | 🙋 Which Marketplace side intercept.ds draws, and Contracts & billing / Earnings against SC-09 (NAV-022). |
 | NAV-OD-12 | ~~When Intercept Live's shell moves to the new Clinical items (NAV-020).~~ ✅ **Resolved:** it shows them now, the Census page as Patients (NAV-020). |

@@ -117,7 +117,7 @@ Every scenario writes its events to the outcomes layer, so the month counts them
 
 | # | Question |
 |---|---|
-| OUT-OD-01 | The baseline period (OUT-002). |
-| OUT-OD-02 | Each metric's exact definition and source (e.g. which transfers count as "considered"). |
-| OUT-OD-03 | The DHHS report template and the milestone evidence list (OUT-030). |
-| OUT-OD-04 | Who can see it: Clinical, Administration, or both; per hospital or network-wide (hospital isolation, BR-09). The Left Nav Spec's Clinical Analytics is "the clinician's own clinical and documentation metrics" (PRD Sidebar); the prototype puts the program's outcomes there. |
+| OUT-OD-01 | 🙋 The baseline period (OUT-002). |
+| OUT-OD-02 | 🙋 Each metric's exact definition and source (e.g. which transfers count as "considered"). |
+| OUT-OD-03 | 🙋 The DHHS report template and the milestone evidence list (OUT-030). |
+| OUT-OD-04 | 🙋 Who can see it: Clinical, Administration, or both; per hospital or network-wide (hospital isolation, BR-09). The Left Nav Spec's Clinical Analytics is "the clinician's own clinical and documentation metrics" (PRD Sidebar); the prototype puts the program's outcomes there. |
