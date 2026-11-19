@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 13, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 19, 2026
 Scope: The Virtual Sepsis page in Intercept Live (Sidebar › Virtual Sepsis): which patients it lists, how it shows them, and what it doesn't do yet. Governs the "Virtual Sepsis" page in `monitoring/monitoring.tsx`. The patient's own Sepsis tab is PRD Patient details'.
 Purpose: the page was built on Nov 13, 2026 from the Monitoring page; this PRD records what it does and lists what the spec asks of it that's still open.
 -->
@@ -17,9 +17,10 @@ Purpose: the page was built on Nov 13, 2026 from the Monitoring page; this PRD r
 **Module:** Virtual Sepsis ★ (Spec §5.9), with the Sepsis Sniffer (§8.1) and the Sepsis Tracker (§8.2)  
 **Name:** **Virtual Sepsis**, the page. A patient on it is **on sepsis watch**  
 **Surface:** Sidebar › Virtual Sepsis  
+**Audience:** Intensivists, APPs and Critical Care RNs; intensivists and APPs confirm or exclude sepsis  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 17, 2026
+**Last updated:** November 19, 2026
 
 ---
 

@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 17, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: Intercept Live's Inbox page in the Clinical workspace (src/layouts/intercept-live/inbox/: InboxPanel and its sample items): what's in the queue, To do and Done, the order, each kind's actions, filters, sorting, several at once, and how its alerts relate to Monitoring's. Sources: documents/Intercept Live — Left Nav Spec.md (Inbox), the System Specification §6.21 Work Management and Inbox and §5.6, PRD Sidebar NAV-020 and NAV-042, intercept.ds Inbox table (`1531:7584`).
 Purpose: Records what the first Inbox layout does, so the team can confirm or change it, and lists what's still open.
 -->
@@ -16,9 +16,10 @@ Purpose: Records what the first Inbox layout does, so the team can confirm or ch
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Work Management and Inbox, Spec §6.21 (the clinician's queue), fed by Clinical Alerting (§5.6), Clinical Documentation, Order Entry and Handoff  
 **Surface:** the **Inbox** page, the Clinical Sidebar's shift-work group (Monitoring, Inbox, Messages, Protocols)  
+**Audience:** Intensivists and APPs; Critical Care RNs for the work their role gets (INB-OD-05)  
 **Version:** 0.1  
 **Status:** Draft — a first layout in the prototype, pending product validation with Intercept  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 

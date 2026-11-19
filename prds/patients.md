@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 1, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: The Patients page of Intercept Live (Provider Desktop, Spec §5.1), the Census page until Nov 16, 2026: its purpose, how it differs from Monitoring, the patients it shows, its search, filters, sorts, views and states, and the data it depends on.
 Purpose: Makes Patients the patient directory and record-retrieval surface, with one written purpose next to Monitoring's, so the two pages stop overlapping, and lists the decisions and data dependencies still open.
 Renamed: prds/census.md (PRD Census) → prds/patients.md (PRD Patients) on Nov 16, 2026. Requirement IDs keep the CEN- prefix, already cited in commits, the CHANGELOG and the trace.
@@ -18,9 +18,10 @@ Redesigned: Nov 17, 2026, from a Monitoring-like roster of cards to a patient di
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Provider Desktop (Single Pane of Glass) ★  
 **Surface:** the Sidebar's **Patients** page (page key `Patients`; code in `src/layouts/intercept-live/patients/`: `PatientsPanel`, `PatientsTable`, `patients-filters.tsx`, `patient-status.ts`; the `census/` folder until Nov 16, 2026; the patient data keeps the census name: `CensusPatient`, `sample-data/sample-census.ts`)  
+**Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.2  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 

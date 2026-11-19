@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 16, 2026
+Last updated: Nov 19, 2026
 Scope: The census list on a patient's page (UCL CensusList, in Intercept Live's census-list-panel.tsx): the patients it shows, its title, how it's opened and how picking a patient works. Taken out of PRD Patient details PD-015, which keeps Previous / next. Sources: documents/Intercept Live — Left Nav Spec.md ("Census column"), the System Specification §5.1, PRD Patients, PRD Monitoring.
 Purpose: Gives the census list its own rules, now that it's its own component and only shows the census.
 -->
@@ -16,9 +16,10 @@ Purpose: Gives the census list its own rules, now that it's its own component an
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Provider Desktop (Single Pane of Glass), Spec §5.1  
 **Surface:** a component, not a page: the **census list** (UCL `CensusList`), in a side panel left of a patient's page, opened from the app header's list button  
+**Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 16, 2026
+**Last updated:** November 19, 2026
 
 ---
 

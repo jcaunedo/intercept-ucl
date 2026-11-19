@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 3, 2026
 Created by: Julio Caunedo
-Last updated: Nov 10, 2026
+Last updated: Nov 19, 2026
 Scope: The bedside camera of Intercept Live: one camera session in the patient's room, opened to look in (Live Camera), to call the bedside nurse into it (Video consult) or to huddle with the AI Scribe; where each opens, its states, data and acceptance criteria. Governs `patient-details/sections/camera-section.tsx` and the alert modal's consult (`alert-panel/alert-panel.tsx`).
 Purpose: The specs describe one camera; the prototype built it twice, under three names. This PRD sets the one model the screens follow and lists what's still open.
 -->
@@ -17,9 +17,10 @@ Purpose: The specs describe one camera; the prototype built it twice, under thre
 **Module:** Tele-Critical Care Clinical Surveillance (Spec §5.2, "Camera control and bedside audio-visual session"), with Care Coordination, Communication & Telepresence (Spec §5.3) and Clinical Documentation (Spec §5.4, the AI Scribe)  
 **Name:** the **bedside camera**; a use of it is a **camera session**. In the UI: **Live Camera** (look in) and **Video consult** (call the bedside nurse in)  
 **Surface:** Patient details › Camera view; the alert modal; a patient card's "…" menu  
+**Audience:** Intensivists, APPs and Critical Care RNs. The bedside nurse, the patient and the family are on the other side of the camera, with no Intercept screen  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 10, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -72,7 +73,7 @@ The specs have conference-style video too, for other people. They're separate ex
 | User | Use case |
 |---|---|
 | **Intercept intensivist or APP** | Looks in on a patient after an alert, with the vitals over the picture; calls the bedside nurse into the room to assess together (Scenario 1 step 3). |
-| **Intercept RN** | Looks in on virtual rounds; talks to the patient or the nurse through the room speaker. |
+| **Intercept Critical Care RN** | Looks in on virtual rounds; talks to the patient or the nurse through the room speaker. |
 | **Bedside nurse** (at the client hospital) | Gets the call through her hospital's messaging (CC-07), goes to the room and talks to the clinician through the camera. Not a user of Intercept's screens (roadmap). |
 | **Patient and family in the room** | See that the clinician is in camera and when recording is on. |
 

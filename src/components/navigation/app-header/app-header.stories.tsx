@@ -131,7 +131,7 @@ const patientArgs = {
 		{ label: "New note", icon: FilePenLineIcon, onSelect: fn() },
 		{ label: "New order", icon: ClipboardPlusIcon, onSelect: fn() },
 		{ label: "New task", icon: ListTodoIcon, onSelect: fn() },
-		{ label: "Request consult", icon: StethoscopeIcon, onSelect: fn() },
+		{ label: "Request specialist", icon: StethoscopeIcon, onSelect: fn() },
 		{ label: "New referral", icon: SendIcon, onSelect: fn() },
 		{ label: "Start pathway", icon: GitForkIcon, onSelect: fn() },
 		{ label: "Log critical care time", icon: ClockPlusIcon, onSelect: fn() },
@@ -151,7 +151,7 @@ const patientArgs = {
  * On a patient's page: Back, the patient list and Ask Intercept (shown when the app handles them), then a breadcrumb
  * back to where the user came from; the patient's care team (its first three), then 16px to Video consult, Messages
  * (with its unread count) and Pathway, dark until their panel opens, then "+" and "…", all dark. "…" holds Raise concern, Huddle team and Escalate, then a rule, then
- * Copy link; "+" (Create) holds New note, New order, New task, Request consult, New referral, Start pathway, Log critical care time and Prepare handoff.
+ * Copy link; "+" (Create) holds New note, New order, New task, Request specialist, New referral, Start pathway, Log critical care time and Prepare handoff.
  */
 export const PatientContext: Story = {
 	render: (args) => (
@@ -187,7 +187,7 @@ export const PatientContext: Story = {
 			"New note",
 			"New order",
 			"New task",
-			"Request consult",
+			"Request specialist",
 			"New referral",
 			"Start pathway",
 			"Log critical care time",

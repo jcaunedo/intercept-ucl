@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 18, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: What happens when an Intercept patient leaves the hospital and what happens if they come back: the primary-care handoff, the readmission risk, the follow-up it schedules, and a return matched to the stay (src/layouts/intercept-live/patient-details/sections/transition-section.tsx, the Inbox's Follow-up kind, the return alert). Source: Demo Use Cases, Scenario 6 ("After the ICU, a readmission caught early and the outcomes report"), steps 1 to 3.
 Purpose: Records what the first layout does, so the team can confirm or change it, and lists what's still open.
 -->
@@ -16,9 +16,10 @@ Purpose: Records what the first layout does, so the team can confirm or change i
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Clinical documentation and work management, at discharge and after  
 **Surface:** the patient page's **Discharge** section, the **Inbox** (Follow-up items), the alert on a matched return  
+**Audience:** Intensivists, who send the handoff and get the return alert; Critical Care RNs, who make the follow-up phone checks. The primary-care clinic receives the handoff outside the platform  
 **Version:** 0.1  
 **Status:** Draft — a first layout in the prototype, pending product validation with Intercept  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -51,7 +52,7 @@ Tele-ICU care doesn't end when the patient goes home. A rural patient with heart
 | User | What they use it for |
 |---|---|
 | **Intensivist** | Reviews and sends the handoff at discharge; gets the alert when the patient comes back and accepts the ED's pathway. |
-| **Hub tele-RN** | Makes the phone checks on their list; logs what they found. |
+| **Critical Care RN** (the hub tele-RN) | Makes the phone checks on their list; logs what they found. |
 | **Primary-care clinic** | Receives the handoff and books the visit (outside the platform). |
 
 | Use case | Story |

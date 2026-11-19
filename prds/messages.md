@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 6, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: Messages in Intercept Live: the clinician's conversations with the people at the client hospitals (~~one per person~~ one per person and patient), bridged through each hospital's messaging, and each patient's thread within them. Covers where it opens (the alert panel, the patient consult, the patient page), the thread, the composer, unread counts, the filter, bedside photos, and the Sidebar's Messages page. Governs `alert-panel/consult-messages.tsx`, the Messages column in `alert-panel/alert-panel.tsx`, the Messages panel in `patient-details/consult-panels.tsx` and the Messages page in `messages/messages-panel.tsx`.
 Purpose: Messages was built on Nov 5–6, 2026 from decisions recorded only in DESIGN.md and code comments. This PRD sets the product rules in one place and lists what's still open.
 -->
@@ -17,9 +17,10 @@ Purpose: Messages was built on Nov 5–6, 2026 from decisions recorded only in D
 **Module:** Care Coordination, Communication & Telepresence (Spec §5.3), on the Messaging service (Spec §6.11)  
 **Name:** ~~**Messages**. One patient's conversation with the bedside is the patient's **thread**~~ ✅ **Resolved:** **Messages**. The clinician's exchange with one person at a hospital is a **conversation**; a patient's **thread** is that patient's messages, from the conversations they come up in  
 **Surface:** The alert panel's third column; the patient consult (no alert); Patient details › Messages panel, opened from the app header; Sidebar › Messages  
+**Audience:** Intensivists, APPs and Critical Care RNs. The bedside nurse and others at the bedside write from their hospital's messaging, with no Intercept screen  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 

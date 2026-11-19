@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 6, 2026
 Created by: Julio Caunedo
-Last updated: Nov 10, 2026
+Last updated: Nov 19, 2026
 Scope: The video consult of Intercept Live as an experience: where it opens, the call in its tile, the AI Notetaker and its live transcript, the interpreter prompt, and the consult as one session across the alert panel and the patient's page. Governs the consult parts of `alert-panel/alert-panel.tsx` (`ConsultTile`, `useConsult`, `ConsultPanelContent`, `ConsultNotetaker`, `PatientConsultDialog`), `alert-panel/consult-transcript.tsx`, `consult-session.tsx`, `interpreter.tsx` and `patient-details/consult-panels.tsx`.
 Purpose: PRD Bedside camera sets the camera session model; the video consult grew on top of it (notetaker, transcript, carry-over between places) without a spec of its own. This PRD writes down what the prototype does, the decisions behind it and what's still open.
 -->
@@ -17,9 +17,10 @@ Purpose: PRD Bedside camera sets the camera session model; the video consult gre
 **Module:** Tele-Critical Care Clinical Surveillance (Spec §5.2, "Camera control and bedside audio-visual session"), with Clinical Documentation (Spec §5.4, §8.6, the AI Scribe) and Care Coordination (Spec §5.3)  
 **Name:** **Video consult** (the UI's name everywhere); the AI that drafts its note is the **AI Notetaker**  
 **Surface:** the alert panel's Video consult panel; the video consult without an alert (a dialog); the patient page's Video consult panel  
+**Audience:** Intensivists and APPs. The bedside nurse, others at the bedside and a medical interpreter join the call with no Intercept screen  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 10, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -47,7 +48,7 @@ This PRD builds on PRD Bedside camera and doesn't redefine what it owns:
 | Experience | Why | Where |
 |---|---|---|
 | **Look in** (Live Camera) and **Huddle** | Camera sessions with nobody called, or with the AI Scribe on the Camera view | PRD Bedside camera; PRD Patient details PD-090 |
-| **Specialist consult** | Telepresence with a specialist, its own request → matched → in session lifecycle | Spec §5.3, §5.11; SC-01–SC-11; DU-27 |
+| **Specialist consult** | Telepresence with a specialist, its own request → matched → in session lifecycle | PRD Specialty Care Access ([specialty-care-access.md](specialty-care-access.md)), which uses this PRD's call for its session |
 | **Family update** | A secure link to a family member's phone | CC-08; DU-26 |
 | **The thread with the nurse** | Its messages, filter, replies and unread counts | PRD Messages (`prds/messages.md`); this PRD covers only where its column sits (VID-041) |
 | **The pathway** | Its orders, decision, bundle, protocol, keep or transfer | PRD Alert maximized modal AMM-014, AMM-015; PRD Patient details (Pathway panel) |

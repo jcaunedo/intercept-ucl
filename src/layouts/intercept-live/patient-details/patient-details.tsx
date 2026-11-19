@@ -620,7 +620,9 @@ const createActions: { label: string; icon: LucideIcon; action: PatientAction }[
 	// A follow-up for the bedside or the clinician, with a due time, and a specialist consult for this patient (Nov 13,
 	// 2026, user's call).
 	{ label: "New task", icon: ListTodoIcon, action: "new-task" },
-	{ label: "Request consult", icon: StethoscopeIcon, action: "consult-request" },
+	// "Request specialist", not "Request consult": a consult request is a hospital calling the hub (PRD Specialty Care
+	// Access SCA-OD-10).
+	{ label: "Request specialist", icon: StethoscopeIcon, action: "consult-request" },
 	// A referral outside the discharge workflow, a care pathway without waiting for an alert, and the minutes toward the
 	// critical care attestation (Nov 13, 2026, user's call: "add them now"; whether all belong here is open, PD-014).
 	{ label: "New referral", icon: SendIcon, action: "new-referral" },

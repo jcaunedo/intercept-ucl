@@ -30,7 +30,7 @@ Examples, with the file each one touches:
 
 ## IDs
 
-The chain and the home of every prefix are defined in the Operating Model (§6) and mapped in [`documents/trace/`](documents/trace/README.md).
+The chain and the home of every prefix are defined in the Operating Model (§6) and mapped in [`trace/`](trace/README.md).
 
 **Referenced here, never minted here** (the source of record is the Cowork Requirements Spec / Workbook / RAID):
 
@@ -55,6 +55,7 @@ Each PRD has its own prefix. The same prefix with a suffix numbers the PRD's oth
 | `NAV-` | Sidebar (`prds/sidebar.md`) | Nov 16, 2026 |
 | `ACM-` | Account menu (`prds/account-menu.md`) | Nov 16, 2026 |
 | `CNL-` | Census list (`prds/census-list.md`; `CL-` is Cowork's) | Nov 16, 2026 |
+| `SCA-` | Specialty Care Access (`prds/specialty-care-access.md`; `SC-` is Cowork's) | Nov 19, 2026 |
 
 All are pending the team's OK, and are reconciled into Cowork as below. A new PRD takes a prefix that isn't in either list above, and gets its row here and in CLAUDE.md → "Traceability" in the same change.
 
@@ -78,6 +79,45 @@ A version bump in `package.json` **publishes** the package to GitHub Packages. B
 ## PRD writing
 
 Conventions for every doc under `prds/`. When a change settles a product decision, CLAUDE.md → "Keeping PRDs Current" says which PRD to update and how.
+
+### This project
+
+The project profile: what `ucl-generate-prd` reads before it writes or reviews a PRD. Where CLAUDE.md says more, CLAUDE.md wins.
+
+| Item | Value |
+| --- | --- |
+| PRD folder | `prds/`, one file per screen, component or flow, no category folders. Terms in [prds/glossary.md](prds/glossary.md). Each PRD gets a Storybook page (CLAUDE.md → "PRDs and Documents in Storybook") |
+| Product | Intercept Live, the Clinical workspace (CLAUDE.md → "Project"). The Administration and Marketplace workspaces have no PRDs yet |
+| Requirement IDs | Cowork's, plus the repo-local PRD prefixes (CLAUDE.md → "Traceability") |
+| Copy | Load `intercept-copywriter` before writing UI copy |
+| Screen sizes | The breakpoints in `src/lib/breakpoints.ts`. Clinicians work on multi-monitor desktops, so the desktop is the main case |
+
+#### Users
+
+Who uses Intercept Live, and what PRDs call them. Definitions are in [prds/glossary.md](prds/glossary.md) §3 "Tenancy, roles and access" and §4 "User types and stakeholders"; the sources are the System Specification §3 (User Types) and the Requirements Specification §3–4 (personas and prototype permissions, `documents/specs/requirements-specification.md`).
+
+| User type | Where they meet Intercept Live | Can / can't (Requirements §4) | Called in PRDs |
+| --- | --- | --- | --- |
+| **Intensivist** | Clinical workspace. The primary and most loaded user; the prototype's signed-in user is one (`sample-workspace.ts`) | View patients; acknowledge, escalate and resolve alerts; raise concerns; chat; sign notes and orders; confirm or exclude sepsis; request consults; message. Can't see hospitals outside their scope | the intensivist |
+| **Advanced Practice Provider (APP)** | Clinical workspace | As the intensivist, except orders that need supervising sign-off go to the intensivist | the APP |
+| **Critical Care RN** | Clinical workspace | View; acknowledge; escalate to the intensivist or APP; message; raise concerns. Can't sign orders | the Critical Care RN |
+| **Specialist (consult)** | One consult encounter | View the consult packet, join the session, return a recommendation. Can't browse the census | the specialist |
+| **System Administrator**, **Client Administrator**, **Client Manager** | Administration workspace (no PRDs yet) | Requirements §4 | by their name |
+| **Hospital Bedside Nurse** | No UI of their own: reached through the hospital's messaging and the bedside camera | Counterparty, not a user | the bedside nurse |
+| **Family / patient representative** | No UI of their own; only in some scenarios | Counterparty, not a user | the family |
+| **Demo Operator** | The simulator, internal | Start, stop and reset scenarios; inject events. Never shown externally or named in product copy | — |
+
+Not prototype users: Scheduling Coordinator, Support Coordinator and Operations Lead (deferred modules), and the Independent Clinician (Marketplace, 2027).
+
+**How PRDs use this:**
+
+- **Audience:** names the users in this table's words. Most Clinical workspace PRDs read "Intensivists, APPs and Critical Care RNs".
+- **"The clinician"** means any of the three clinical roles. Name the role only where behavior differs.
+- **The Critical Care RN and the bedside nurse are never merged.** They sit on opposite sides of the service (glossary, "Service-deliverer"); never write "the nurse" alone.
+- **Where behavior differs by role**, the PRD says what each role can do and what a role without the permission sees, with Requirements §4 as the baseline: a table of capabilities against roles when more than two roles differ. No PRD owns permissions as a shared rule; a role rule goes in the PRD of the surface it applies to. Ask before creating a shared Roles PRD.
+- **Open role questions** stay with their PRD's open decisions: the default Monitoring view by role (NAV-OD-04, ACM-OD-04), escalation targets by role (MON-OD-08), which work reaches an RN's Inbox (INB-OD-05), commands and suggestions by role (CC-OD-01, CC-OD-02).
+
+**Model PRDs:** [prds/inbox.md](prds/inbox.md) §2 "Users and use cases" for users by role; [prds/account-menu.md](prds/account-menu.md) for what changes with the user's role and workspace. No PRD has a capability × role table yet; the first one becomes the model.
 
 ### Status labels
 

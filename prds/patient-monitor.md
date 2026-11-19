@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 11, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: The patient monitor (UCL PatientMonitor): the live bedside monitor shown on Patient details, in the alert modal and in the Monitoring card's full view. Its lanes, numerics, alarm limits and device alarms.
 Purpose: Defines the monitor's behavior, states and acceptance criteria in one place, so every surface that shows a patient's bedside monitor shows the same thing, pending clinical and product validation.
 -->
@@ -16,9 +16,10 @@ Purpose: Defines the monitor's behavior, states and acceptance criteria in one p
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Tele-Critical Care Clinical Surveillance ★ and the Provider Desktop (Spec §5.2, §5.1)  
 **Surface:** a component, not a page: the **patient monitor** (UCL `PatientMonitor`), wherever a patient's live bedside monitor is shown  
+**Audience:** Intensivists, APPs and Critical Care RNs; the bedside nurse sees the same monitor on a video consult  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -60,7 +61,7 @@ It's one component used on several surfaces, so the monitor reads the same every
 
 | User | What they need from the monitor |
 |---|---|
-| **Tele-ICU nurse / intensivist** | Read a patient's vitals and rhythm remotely, see what's outside the limits and what the bedside has already acknowledged. |
+| **Critical Care RN, intensivist** | Read a patient's vitals and rhythm remotely, see what's outside the limits and what the bedside has already acknowledged. |
 | **Bedside nurse (on a video consult)** | See the same monitor the remote clinician is talking about. |
 
 | Use case | Flow |

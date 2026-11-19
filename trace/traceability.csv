@@ -37,3 +37,4 @@ CC-09,src/layouts/intercept-live/patient-details/activity.tsx,,Partial (UI),"Act
 OE-03,src/layouts/intercept-live/patient-details/sections/orders-section.tsx,,Partial (UI),"Care pathway recommendation from an alert: accepted with edits, sent for local co-signature, signed; orders active"
 CD-05,src/layouts/intercept-live/sample-data/use-sample-live-feed.ts,,Partial (UI),"AI Notetaker consult note approved into Notes as a draft for signature"
 SV-11,src/layouts/intercept-live/patients/patient-status.ts,CEN-040,Met (design),"Census status on Patients: Current, Pending reconciliation, Transferred (where to), Discharged, Status unknown; a transfer never reads as a discharge"
+SC-10,prds/specialty-care-access.md,SCA-*,Partial,"First draft of the Specialty Care Access specification (Nov 19, 2026): request, eligibility, specialist side, session, recommendation, statuses; pending validation, not designed or built"

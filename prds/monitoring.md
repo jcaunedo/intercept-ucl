@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -17,9 +17,10 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Module:** Tele-Critical Care Clinical Surveillance ★ (rendered inside the Provider Desktop)  
 **Name:** the page is called **Monitoring** in the product, including its Sidebar item (decided Oct 26, 2026: plainer than "Surveillance", which hospitals also use for infection-prevention tracking, next to Virtual Sepsis); *Tele-Critical Care Clinical Surveillance* stays the module's name in the Specification.  
 **Surface:** Monitoring page  
+**Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 

@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 2, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 19, 2026
 Scope: The alert maximized modal of Intercept Live: one alert opened in full from a Monitoring card, an alert toast or a card's "…" menu, with its evidence, a one-click video consult to the bedside and a suggested care pathway.
 Purpose: Defines the modal's structure, behavior, states, data and acceptance criteria, so the build (`src/layouts/intercept-live/alert-panel/`) and the Figma design (intercept.ds `alert-modal`) can be checked against one source.
 -->
@@ -17,9 +17,10 @@ Purpose: Defines the modal's structure, behavior, states, data and acceptance cr
 **Module:** Clinical Alerting & Events (Spec §5.6), opened from Tele-Critical Care Clinical Surveillance (Spec §5.2)  
 **Name:** the **alert maximized modal**, "the alert modal" for short. Code: `AlertPanel` / `AlertPanelDialog` (the alert panel; the three-column `AlertDetailModal` was removed Nov 9, 2026). Figma: intercept.ds › `alert-modal`  
 **Surface:** a modal over the Monitoring and Census pages, and over a patient's details  
+**Audience:** Intensivists, APPs and Critical Care RNs. The bedside nurse joins its video consult from the room and doesn't use the modal  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 17, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -75,7 +76,7 @@ The modal is not the patient's chart. It shows what this alert needs; the patien
 |---|---|
 | **Intercept intensivist** (remote, covering several hospitals) | Sees a Critical alert, opens it, understands why the patient is first, calls the bedside and accepts a pathway (Scenario 1, steps 2–4). |
 | **Intercept APP** | Opens an alert, acknowledges it, escalates it to the intensivist with a note. |
-| **Intercept RN** | Opens a resolved alert from its toast to see who resolved it and why. |
+| **Intercept Critical Care RN** | Opens a resolved alert from its toast to see who resolved it and why. |
 | **Bedside nurse** (receives the call) | Joins the video consult from the room; not a user of the modal itself. |
 | **Local physician** (co-signer) | Receives the accepted orders for co-signature; not a user of the modal itself. |
 

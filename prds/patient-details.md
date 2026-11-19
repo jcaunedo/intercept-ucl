@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -17,9 +17,10 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Module:** Provider Desktop (Single Pane of Glass) ★, "patient detail view" (Spec §5.1). Surfaces from Surveillance, Clinical Alerting, Virtual Sepsis, Order Entry, Clinical Documentation and Care Coordination render inside it (Spec §9.1, Principle 11)  
 **Name:** the page is called **Patient details** in the product (PRD Patient card PC-100). ✅ **Resolved (PD-OD-01, Oct 28, 2026):** the UI names the page by the patient ("Census › Miller, Sarah", the `h1`), and actions that open it say **Open patient**. "Chart" means only the hospital's record: its slice shows in this page's sections (Timeline, Labs, Medications, Orders, Notes), and an action that leaves for the EMR may say it ("Open chart in Epic"). "View" stays for display modes (quick views, Monitoring's views, the focus view), so the page is never "Patient view"  
 **Surface:** Patient details page  
+**Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -253,18 +254,18 @@ The interventions that answer "who's on a vent, who's on pressors" at a glance: 
 | **Raise concern** | Clinician Intuition Alert form (PD-093, MON-041) | All |
 | **New note** | Opens Clinical Documentation in context (PD-071) | Intensivist, APP; ⚠️ RN notes in PD-OD-12 |
 | **More (…)** | Admission note, Share patient link, Open chart in {EMR} (Integrated, where permitted; PD-OD-01) | Per role and tenant |
-| **Create (+)** | A menu of what can be created for the patient, in this order: New note (PD-071), New order (Order Entry in context), New task, Request consult, New referral, Start pathway, Log critical care time, Prepare handoff (PD-110) | Per role, as each item |
+| **Create (+)** | A menu of what can be created for the patient, in this order: New note (PD-071), New order (Order Entry in context), New task, Request specialist, New referral, Start pathway, Log critical care time, Prepare handoff (PD-110) | Per role, as each item |
 
 - ✅ **Decision (Nov 9, 2026, user's call; intercept.ds `app-header` `1169:319`):** a dark **+** after "…" in the app header opens a **Create** menu: New note and Prepare handoff moved there from "…", which keeps Raise concern, Huddle team, Escalate and Copy link.
 - ✅ **Resolved:** the Create menu has **New order** after New note, opening Order Entry in context for the patient.
 - ✅ **Resolved:** the Create menu holds only what the clinician **creates for this patient**; actions on the patient (Raise concern, Escalate, Huddle team) stay in "…". After New order it has:
   - **New task**: a follow-up for the bedside team or the clinician, with a due time ("Recheck lactate at 7 PM"). It joins the bedside tasks that Up next and the Timeline already show (Work Management, Spec §6.21).
-  - **Request consult**: a request to a specialist (cardiology, infectious disease…) for this patient, with the reason (Specialty Care Access; requesting consults is among the intensivist's permissions).
-- ~~ℹ️ Considered for the menu and left out for now: **Log critical care time**, **Referral** and **Pathway**.~~ ✅ **Resolved:** they're in the menu too, after Request consult:
+  - **Request specialist** (~~Request consult~~ ✅ **Resolved:** named for the specialist, because a "consult request" is a hospital calling the hub; glossary): a request to a specialist (cardiology, infectious disease…) for this patient, with the reason (Specialty Care Access; requesting consults is among the intensivist's permissions). ℹ️ What it opens, the request form and the whole consult, is in PRD Specialty Care Access ([specialty-care-access.md](specialty-care-access.md), "4.1 Requesting a consult").
+- ~~ℹ️ Considered for the menu and left out for now: **Log critical care time**, **Referral** and **Pathway**.~~ ✅ **Resolved:** they're in the menu too, after Request specialist:
   - **New referral**: a referral (home health, rehab, a follow-up clinic) outside the discharge workflow, which keeps its own referrals.
   - **Start pathway**: starts a care pathway or protocol (sepsis bundle, DKA) for the patient without waiting for an alert to suggest it.
   - **Log critical care time**: minutes spent on the patient, toward the critical care attestation (30 minutes or more; PRD Notes), so they don't have to be rebuilt when the note is signed.
-- ⚠️ **Gap:** New order, New task, Request consult, New referral, Start pathway and Log critical care time are in the menu but open nothing in the prototype yet: the app receives the action (`new-order`, `new-task`, `consult-request`, `new-referral`, `start-pathway`, `log-time`). Their forms (what each asks for, who receives it, where it shows afterwards) are still to design.
+- ⚠️ **Gap:** New order, New task, Request specialist, New referral, Start pathway and Log critical care time are in the menu but open nothing in the prototype yet: the app receives the action (`new-order`, `new-task`, `consult-request`, `new-referral`, `start-pathway`, `log-time`). Their forms (what each asks for, who receives it, where it shows afterwards) are still to design.
 - ⚠️ **Decision needed:** whether all eight belong in the menu. Eight items make a long list for the clinician to scan; options are grouping them under labels (documents, requests, time), or moving the rarer ones (Start pathway, Log critical care time) elsewhere, e.g. Start pathway to the Care Plan and the time to the note.
 - ✅ **Resolved:** "…" has **Admission note**, before Share patient link: it opens the note the patient was admitted with, the best way to get to the original clinical documentation.
 - ✅ **Resolved:** the link item reads **Share patient link** (it said Copy link), so it’s clear it shares this patient’s page. It still copies the link.

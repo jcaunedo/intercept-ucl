@@ -1,7 +1,7 @@
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 13, 2026
+Last updated: Nov 19, 2026
 Scope: The chat composer (UCL ChatComposer) and the Ask Intercept Live conversation it drives in the Provider Desktop: the message field, its buttons, slash commands, suggested questions, and how answers arrive.
 Purpose: Defines the composer's behavior, states, rules for answers and acceptance criteria, pending clinical and product validation, so design, engineering and the Conversational Clinical Data Agent team build the same thing.
 -->
@@ -11,9 +11,10 @@ Purpose: Defines the composer's behavior, states, rules for answers and acceptan
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Provider Desktop (Single Pane of Glass) ★, "chat with the chart" (Spec §5.1, §6.14, §8.7)  
 **Surface:** Ask Intercept Live, the chat panel; its message box is the **chat composer** (UCL `ChatComposer`)  
+**Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 13, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -68,7 +69,7 @@ The agent retrieves and summarizes. It never diagnoses, recommends therapy or ac
 |---|---|
 | **Intercept intensivist** | Catching up on a patient before acting; census-wide questions across hospitals; drafting a handoff. |
 | **Intercept APP** | The same, within their scope; follow-ups on results and orders. |
-| **Intercept RN** | Checking what's due, pending or not reporting; who's at the bedside. |
+| **Intercept Critical Care RN** | Checking what's due, pending or not reporting; who's at the bedside. |
 | **Clinician starting a shift** | A brief of the census and what was handed over, before opening any patient. |
 
 ### 2.2 Use cases

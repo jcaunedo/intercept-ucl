@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 17, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 19, 2026
 Scope: Intercept Live's Schedule page in the Clinical workspace (src/layouts/intercept-live/schedule/: SchedulePanel, its calendar views and its sample data): what it shows, its tabs and views, shift types and statuses, the shift details and their actions, Open shifts and New request. Sources: documents/Intercept Live — Left Nav Spec.md (Schedule, Open shifts), the System Specification §5.15 Scheduling & Coverage and §3.4 Scheduling Coordinator, PRD Sidebar NAV-020.
 Purpose: Records what the first Schedule layout does, so the team can confirm or change it, and lists what's still open.
 -->
@@ -16,9 +16,10 @@ Purpose: Records what the first Schedule layout does, so the team can confirm or
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Scheduling & Coverage, Spec §5.15 (the clinician's side of it)  
 **Surface:** the **Schedule** page, the Clinical Sidebar's reference group (Patients, Schedule, Analytics)  
+**Audience:** Intensivists, APPs and Critical Care RNs, for their own shifts; Independent Clinicians, for their booked shifts  
 **Version:** 0.1  
 **Status:** Draft — a first layout in the prototype, pending product validation with Intercept  
-**Last updated:** November 17, 2026
+**Last updated:** November 19, 2026
 
 ---
 

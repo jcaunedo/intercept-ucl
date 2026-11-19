@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 18, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: The Monitoring card (UCL PatientMonitoringCard), one patient on the Monitoring page's panel: identity, location, score, alert bar, live monitor, flags, family messages and the "…" menu.
 Purpose: Collects the card's behavior, states and acceptance criteria in one place. Until now they were spread across PRD Monitoring, PRD Patient card and PRD Patient monitor. Pending clinical and product validation.
 -->
@@ -16,9 +16,10 @@ Purpose: Collects the card's behavior, states and acceptance criteria in one pla
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Tele-Critical Care Clinical Surveillance ★ (Spec §5.2)  
 **Component:** Monitoring card (UCL `PatientMonitoringCard`, `cards/patient-monitoring-card`; intercept.ds `patient-monitoring-card-2` `1232:5403`)  
+**Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -62,7 +63,7 @@ It's built from the Patients card's parts (identity, location, score line, flags
 
 | User | What they need from the card |
 |---|---|
-| **Tele-ICU nurse** | Spot who's alerting, read their vitals, open the alert or the patient. |
+| **Critical Care RN** | Spot who's alerting, read their vitals, open the alert or the patient. |
 | **Intensivist / APP** | Scan the panel for deterioration (score, trajectory, values outside limits) and act on it. |
 
 | Use case | Flow |

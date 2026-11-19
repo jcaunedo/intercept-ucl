@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: The left navigation (UCL Sidebar): its three workspaces (Clinical, Administration, Marketplace), the items each one shows, the workspace switcher, Ask Intercept Live's place in it, and the rail's states. Source: documents/Intercept Live — Left Nav Spec.md and intercept.ds `sidebar` (1001:544).
 Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, records where the design follows it and where it doesn't yet, and lists what's still open.
 -->
@@ -16,9 +16,10 @@ Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, reco
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** the Provider Desktop shell and the Administration and Marketplace workspaces (Spec §9.2, §5.1, §5.7, §5.18)  
 **Surface:** a component, not a page: the **Sidebar** (UCL `Sidebar`, `SidebarMenuButton`), the left navigation of every workspace  
+**Audience:** Every signed-in user, in each workspace they have (§2): intensivists, APPs and Critical Care RNs in Clinical; administrators and operations roles in Administration; Independent Clinicians in Marketplace  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 
@@ -173,6 +174,8 @@ Two sides, clinicians who supply coverage and hospitals who need it, each with i
 ℹ️ intercept.ds Role=Marketplace draws the hospital side: Requests, Open shifts, Clinician network · Contracts & billing. The spec's hospital side has no Open shifts; Intercept oversight's does.
 
 ⚠️ **Decision needed:** which side Role=Marketplace is, and whether the hospital side lists Open shifts.
+
+ℹ️ Specialist consults are specified in PRD Specialty Care Access ([specialty-care-access.md](specialty-care-access.md)). It proposes a **Consults** item for specialists who take them (SCA-OD-05) and consults listed in **Requests** next to coverage requests (SCA-070).
 
 ⚠️ **Gap:** neither the New coverage request button nor the clinician side is drawn.
 

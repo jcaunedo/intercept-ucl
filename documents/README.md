@@ -1,6 +1,6 @@
 # `documents/` — scope note
 
-This repository (`@jcaunedo/intercept-ucl`) is the **Intercept Live design-system and reference source**: components, tokens, motion and the two reference screens (Census, Monitoring). The source of record for prose requirements, decisions, RAID and raw client input is the **Archie Labs Cowork project**, not this repo (Operating Model §4). Only requirement **IDs** are mirrored here (in the PRDs and in [`trace/`](trace/README.md)).
+This repository (`@jcaunedo/intercept-ucl`) is the **Intercept Live design-system and reference source**: components, tokens, motion and the two reference screens (Census, Monitoring). The source of record for prose requirements, decisions, RAID and raw client input is the **Archie Labs Cowork project**, not this repo (Operating Model §4). Only requirement **IDs** are mirrored here (in the PRDs and in [`trace/`](../trace/README.md)).
 
 ## What's in this folder
 

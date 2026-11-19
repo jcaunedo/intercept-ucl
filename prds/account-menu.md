@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 17, 2026
+Last updated: Nov 19, 2026
 Scope: The account menu the user's name opens in the app header (UCL AccountMenu, AppHeader `accountMenu`): who's signed in, the workspace switcher, status, the shift and its handoff, preferences, profile, keyboard shortcuts and sign out. Sources: documents/Intercept Live — Left Nav Spec.md (workspaces, switcher, "Status and user"), the System Specification §5.1, §6.12, §6.21, and the Requirements Specification.
 Purpose: Records what the menu holds and why, the decision to move the workspace switcher into it, and what's still open.
 -->
@@ -16,9 +16,10 @@ Purpose: Records what the menu holds and why, the decision to move the workspace
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** the Provider Desktop shell (Spec §5.1), with Presence and Status (§6.12) and Shift Handoff (§6.21)  
 **Surface:** a component, not a page: the **account menu** (UCL `AccountMenu`), opened from the user's name at the right of the app header (AppHeader `default`), in every workspace  
+**Audience:** Every signed-in user. Intensivists, APPs and Critical Care RNs use it in the Clinical workspace; users with more than one workspace (an Operations Lead covering APP shifts, a CMO or CNO with admin rights, an Independent Clinician, Client and System Administrators) also switch workspaces with it  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 17, 2026
+**Last updated:** November 19, 2026
 
 ---
 

@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Nov 13, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: Clinical notes in Intercept Live (Clinical Documentation, Spec §5.4): what a note is, the note types and their templates, writing, signing, co-signing and attesting a note, AI drafts, and write-back to the hospital's record. Governs the note itself and its editor (`sections/note-editor.tsx`, `note-templates.ts`, `note-chart.ts`); the Notes tab's list and reader stay in PRD Patient details (PD-070).
 Purpose: The client sent Intercept's current Epic note templates (`documents/notes/`). This PRD records what they show, how a tele-ICU clinician works with notes, and what Intercept's note editor has to do, with what's still open.
 -->
@@ -17,9 +17,10 @@ Purpose: The client sent Intercept's current Epic note templates (`documents/not
 **Module:** Clinical Documentation (Spec §5.4), on Template and Lexicon Management (Spec §6.19), with the AI Scribe (Spec §8.6) and the Professional Fee Optimization Agent (Spec §8.12)  
 **Name:** **Note**. Its kind is its **note type** (Progress note, Event note…); the structure a type starts from is its **template**  
 **Surface:** Patient details › Notes: the list and the reader (PD-070), and the note editor in the reader's place, opened by **New note** or a draft's **Continue writing**; the video consult's AI Notetaker draft (VID-015, VID-016)  
+**Audience:** Intensivists and APPs; whether Critical Care RNs write notes is open (PD-OD-12). The bedside team reads the signed note in their hospital's EMR  
 **Version:** 0.2  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 17, 2026
+**Last updated:** November 19, 2026
 
 ---
 

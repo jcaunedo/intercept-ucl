@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 18, 2026
 Created by: Julio Caunedo
-Last updated: Nov 18, 2026
+Last updated: Nov 19, 2026
 Scope: Intercept Live's Analytics page in the Clinical workspace, the outcomes dashboard (src/layouts/intercept-live/analytics/: AnalyticsPanel and its sample month): the metrics against the baseline, the payer and rurality breakdown, each hospital's share, the events it includes and the quarterly export. Source: Demo Use Cases, Scenario 6, steps 4 to 6.
 Purpose: Records what the first layout does, so the team can confirm or change it, and lists what's still open.
 -->
@@ -16,9 +16,10 @@ Purpose: Records what the first layout does, so the team can confirm or change i
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Reporting and outcomes  
 **Surface:** the **Analytics** page, the Clinical Sidebar's reference group (Patients, Schedule, Analytics)  
+**Audience:** Program leads and hospital leadership; intensivists, for their own patients' outcomes. ⚠️ **Decision needed:** which User Types the program leads and leadership are (Client Manager, or Hospital Administrator, who has no UI in v1)  
 **Version:** 0.1  
 **Status:** Draft — a first layout in the prototype, pending product validation with Intercept  
-**Last updated:** November 18, 2026
+**Last updated:** November 19, 2026
 
 ---
 

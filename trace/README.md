@@ -1,4 +1,4 @@
-# `documents/trace/` — file-to-requirement map
+# `trace/` — file-to-requirement map
 
 This folder answers one question for each file in the repo: **which requirement does it help prove?** It maps repo artifacts to Cowork requirement IDs. It does **not** track delivery status — that lives in the Cowork Traceability Matrix and is regenerated on Fridays (Operating Model §3.3, §6).
 
