@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 20, 2026
 Created by: Julio Caunedo
-Last updated: Nov 20, 2026 (problem card from intercept.ds: History button, CarePlanProblemCard)
+Last updated: Nov 20, 2026 (problem card from intercept.ds: View history, statuses beside titles, CarePlanProblemCard)
 Scope: The care plan in Intercept Live: the Patient details Care Plan tab (`CarePlanSection`) and the Overview's Care plan card (`CarePlanCard`), in src/layouts/intercept-live/patient-details/sections/care-plan-section.tsx. What a care plan is, how pathways attach to its problems, a problem's details and history, the Completed state, keep or transfer. Moved out of PRD Patient details ("Care plan and activity", "Care Plan tab").
 Purpose: One place for what the care plan is and does, so the tab, the Overview's card and the alert's pathway agree, and the decisions behind them aren't reopened.
 -->
@@ -90,9 +90,11 @@ A card per problem, in this order: a problem with a pathway waiting for review f
 
 ### CPL-012 — A problem's card
 
-The problem, its status under it (Not progressing in red, Progressing in blue, Met in green), "Goal: …", the interventions in grey, then a block per pathway that treats it (CPL-021). A **History** button on the right opens its details (CPL-013). "Evaluated 8 hr ago" at the bottom when the bedside team evaluated the problem before the plan's latest review.
+The problem, its status beside it (Not progressing in red, Progressing in blue, Met in green), "Goal: …", the interventions in grey, then a block per pathway that treats it (CPL-021). A **View history** button on the right opens its details (CPL-013). "Evaluated 8 hr ago" at the bottom when the bedside team evaluated the problem before the plan's latest review.
 
-✅ **Resolved:** the card follows intercept.ds `careplan-card`: the problem as the card's title, its status as a badge under it, then the goal and interventions; the History button on the right, lined up with the pathways' buttons.
+~~✅ **Resolved:** the card follows intercept.ds `careplan-card`: the problem as the card's title, its status as a badge under it, then the goal and interventions; the History button on the right, lined up with the pathways' buttons.~~
+
+✅ **Resolved:** the card follows intercept.ds `careplan-card`: the problem as the card's title with its status as a badge beside it (under it only when a long problem leaves no room), then the goal and interventions; **View history** on the right, lined up with the pathways' buttons.
 
 The problem is read-only: the plan of care is the hospital's, and Intercept changes it only through pathways.
 
@@ -100,7 +102,7 @@ The problem is read-only: the plan of care is the hospital's, and Intercept chan
 
 ~~✅ **Resolved:** the card's top row (the problem, its status and a chevron) opens its details in place, under the card's content, and closes them again. Any number can be open at once; the rest of the tab doesn't move away. A pathway's own buttons stay outside that row.~~
 
-✅ **Resolved:** the card's **History** button (a clock icon, named and tooltipped "History") opens its details in place, under the card's content, and closes them again; it looks pressed while they're open. The problem's title is no longer a button, and there's no chevron. Any number can be open at once; the rest of the tab doesn't move away.
+✅ **Resolved:** the card's **View history** button (a clock icon and its label; ~~an icon alone, named and tooltipped "History"~~) opens its details in place, under the card's content, and closes them again; it looks pressed while they're open. The problem's title is no longer a button, and there's no chevron. Any number can be open at once; the rest of the tab doesn't move away.
 
 The details hold:
 
@@ -126,7 +128,7 @@ Each pathway names the problem it treats, and shows inside that problem's card. 
 - What it runs now, a line each, red when overdue: the hour-1 sepsis bundle (done so far, time left), the DKA protocol (its next check), the bedside tasks (open, overdue). Nothing once it's Completed.
 - **Review pathway** while it's a suggestion, **Open pathway** after. Either opens the page's Pathway panel on that alert's pathway, or the alert when the page has no panel.
 
-✅ **Resolved:** the block follows intercept.ds `careplan-card`: the title, its status as a badge under it, then where it is and its orders, with **Review pathway** / **Open pathway** on the right. What it runs goes under those lines.
+✅ **Resolved:** the block follows intercept.ds `careplan-card`: the title, its status as a badge beside it (~~under it~~), then where it is and its orders, with **Review pathway** / **Open pathway** on the right. What it runs goes under those lines.
 
 A suggestion's block is dashed, as in the alert. Something an alert runs without a pathway (a sepsis bundle before its pathway) shows as its own block, **In progress** or **Overdue**.
 
@@ -166,7 +168,7 @@ Every time follows Patient details' rule ([patient-details.md](patient-details.m
 ## 6. Accessibility
 
 - ~~A problem's top row is a button named by the problem and its status ("Acute on chronic heart failure Progressing"), with `aria-expanded`; it stays inside the problem's heading, so heading navigation still lists the problems.~~
-- Each problem is a region named by its heading (the problem), so heading and landmark navigation list the problems. Its History button is named "History", with `aria-expanded` and `aria-controls` pointing at the details.
+- Each problem is a region named by its heading (the problem), so heading and landmark navigation list the problems. Its **View history** button has `aria-expanded` and `aria-controls` pointing at the details.
 - **Show met (n)** says whether it's open (`aria-expanded`).
 - History times are `<time>` elements with the full date and time.
 - Status is never color alone: every badge has its word.
@@ -177,7 +179,7 @@ Every time follows Patient details' rule ([patient-details.md](patient-details.m
 - **CPL-AC-01:** Given a patient whose plan has a problem a pathway treats, the pathway shows inside that problem's card; given one whose problem isn't on the plan, it shows under **Other pathways**.
 - **CPL-AC-02:** A problem with a pathway that needs review is first, then Not progressing, Progressing, Met.
 - **CPL-AC-03:** With some problems Met and some not, the Met ones are behind **Show met (n)** and open under the others; with every problem Met, all show.
-- **CPL-AC-04:** Clicking a problem's **History** button opens its history, newest first, and its pathway's orders; clicking again closes them. Margaret Hayes's heart failure shows "Co-signed by Dr. Tom Weller", and Furosemide IV marked **Edited**.
+- **CPL-AC-04:** Clicking a problem's **View history** button opens its history, newest first, and its pathway's orders; clicking again closes them. Margaret Hayes's heart failure shows "Co-signed by Dr. Tom Weller", and Furosemide IV marked **Edited**.
 - **CPL-AC-05:** **Review pathway** / **Open pathway** opens the Pathway panel on that pathway.
 - **CPL-AC-06:** **Mark completed** in the Pathway panel turns the pathway **Completed** in the panel, the tab and the Overview's card, and logs it on the Timeline; **Reopen** turns it back to **Active**.
 - **CPL-AC-11:** Signed in as a Critical Care RN, the co-signed banner has no **Mark completed** and the Completed banner no **Reopen**; as an intensivist or APP, both show.

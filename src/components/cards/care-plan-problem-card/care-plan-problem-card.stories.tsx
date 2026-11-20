@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { CarePlanPathway, CarePlanProblemCard } from "./care-plan-problem-card";
 
@@ -60,11 +60,12 @@ export const Default: Story = {
 	},
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const button = canvas.getByRole("button", { name: "History" });
+		const button = canvas.getByRole("button", { name: "View history" });
 		await expect(button).toHaveAttribute("aria-expanded", "false");
 		await userEvent.click(button);
 		await expect(button).toHaveAttribute("aria-expanded", "true");
-		await expect(await canvas.findByText("Critical alert: Sepsis candidate")).toBeVisible();
+		// The details expand in, so they're visible once they have.
+		await waitFor(() => expect(canvas.getByText("Critical alert: Sepsis candidate")).toBeVisible());
 	},
 };
 

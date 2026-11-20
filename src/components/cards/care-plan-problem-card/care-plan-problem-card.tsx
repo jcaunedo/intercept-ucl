@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import { expandVariants, fadeVariants, useExpandClip, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +24,7 @@ const nextHeading: Record<HeadingLevel, "h3" | "h4" | "h5"> = { h2: "h3", h3: "h
 type CarePlanProblemCardProps = Omit<React.ComponentProps<"section">, "children"> & {
 	/** The problem, e.g. "Septic shock from community-acquired pneumonia". The card's heading. */
 	problem: React.ReactNode;
-	/** How its goal is going; the badge under the problem. None: no badge. */
+	/** How its goal is going; the badge beside the problem. None: no badge. */
 	status?: CarePlanProblemStatus;
 	/** The measurable goal, after "Goal: ". */
 	goal?: React.ReactNode;
@@ -36,14 +35,14 @@ type CarePlanProblemCardProps = Omit<React.ComponentProps<"section">, "children"
 	/** Under everything, e.g. "Evaluated 8 hr ago". */
 	footer?: React.ReactNode;
 	/**
-	 * The problem's details (its history, its pathways' orders). With them, a History button on the right opens and closes
-	 * them in place, under the card's content.
+	 * The problem's details (its history, its pathways' orders). With them, a View history button on the right opens and
+	 * closes them in place, under the card's content.
 	 */
 	details?: React.ReactNode;
 	detailsOpen?: boolean;
 	defaultDetailsOpen?: boolean;
 	onDetailsOpenChange?: (open: boolean) => void;
-	/** The History button's name and tooltip. */
+	/** The history button's label. */
 	historyLabel?: string;
 	/** The problem's heading element; the pathways' headings sit one level below. */
 	headingLevel?: HeadingLevel;
@@ -53,7 +52,7 @@ const PathwayHeadingContext = React.createContext<"h3" | "h4" | "h5">("h4");
 
 /**
  * One problem of a patient's plan of care: the problem, how its goal is going, the goal, what the bedside team does toward
- * it, then the pathways that treat it. A History button opens its details in place.
+ * it, then the pathways that treat it. View history opens its details in place.
  *
  * Figma: [intercept.ds › careplan-card](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1590-4164)
  */
@@ -68,7 +67,7 @@ function CarePlanProblemCard({
 	detailsOpen,
 	defaultDetailsOpen = false,
 	onDetailsOpenChange,
-	historyLabel = "History",
+	historyLabel = "View history",
 	headingLevel = "h3",
 	className,
 	...props
@@ -94,10 +93,11 @@ function CarePlanProblemCard({
 			className={cn("flex min-w-0 flex-col gap-3 rounded-card border border-border bg-card px-4 pt-3 pb-3.5 shadow-sm", className)}
 			{...props}
 		>
-			{/* The right padding lines the History button up with the pathways' buttons. */}
+			{/* The right padding lines the history button up with the pathways' buttons. */}
 			<div className='flex items-center gap-3 pr-6'>
-				<div className='flex min-w-0 flex-1 flex-col gap-2'>
-					<div className='flex flex-col items-start gap-1'>
+				<div className='flex min-w-0 flex-1 flex-col gap-1.5'>
+					{/* The status beside the problem; under it when a long problem leaves no room. */}
+					<div className='flex flex-wrap items-center gap-2'>
 						<Heading id={headingId} className='text-lg font-bold text-foreground'>
 							{problem}
 						</Heading>
@@ -115,25 +115,18 @@ function CarePlanProblemCard({
 					) : null}
 				</div>
 				{details ? (
-					<TooltipProvider>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant='outline'
-									size='icon-md'
-									aria-label={historyLabel}
-									aria-expanded={open}
-									aria-controls={detailsId}
-									onClick={() => setOpen(!open)}
-									// While its details are open: the outline button on the hover fill, as the header's open panels.
-									className={cn("shrink-0", open && "bg-accent")}
-								>
-									<HistoryIcon aria-hidden='true' />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent side='bottom'>{historyLabel}</TooltipContent>
-						</Tooltip>
-					</TooltipProvider>
+					<Button
+						variant='outline'
+						size='md'
+						aria-expanded={open}
+						aria-controls={detailsId}
+						onClick={() => setOpen(!open)}
+						// While its details are open: the outline button on the hover fill, as the header's open panels.
+						className={cn("shrink-0", open && "bg-accent")}
+					>
+						<HistoryIcon aria-hidden='true' />
+						{historyLabel}
+					</Button>
 				) : null}
 			</div>
 			{children ? (
@@ -168,7 +161,7 @@ function CarePlanProblemCard({
 type CarePlanPathwayProps = Omit<React.ComponentProps<"div">, "title"> & {
 	/** The pathway, e.g. "Sepsis bundle, hour 1". */
 	title: React.ReactNode;
-	/** Where it is: Needs review, Awaiting co-signature, Active, Completed, Declined… The badge under the title. */
+	/** Where it is: Needs review, Awaiting co-signature, Active, Completed, Declined… The badge beside the title. */
 	status?: { label: string; variant: BadgeProps["variant"] };
 	/** A suggestion waiting for review: a dashed border, as in the alert. */
 	suggested?: boolean;
@@ -201,8 +194,8 @@ function CarePlanPathway({ title, status, suggested = false, line, extra, action
 			)}
 			{...props}
 		>
-			<div className='flex min-w-0 flex-1 flex-col gap-2'>
-				<div className='flex flex-col items-start gap-1'>
+			<div className='flex min-w-0 flex-1 flex-col gap-1.5'>
+				<div className='flex flex-wrap items-start gap-2'>
 					<Heading className='text-base font-bold text-foreground'>{title}</Heading>
 					{status ? (
 						<Badge variant={status.variant} size='xs'>

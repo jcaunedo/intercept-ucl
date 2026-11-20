@@ -633,8 +633,8 @@ function problemHistory(item: PatientPlanOfCareItem, blocks: PathwayBlockData[])
 
 /**
  * One problem of the plan of care: the problem and how it's going, its goal, what the bedside team does toward it, when
- * it was last evaluated, then the pathways that treat it (UCL's CarePlanProblemCard). Its History button opens its details
- * in place (Nov 20, 2026, user's call: read-only, the plan is the hospital's): its history, newest first, and the orders
+ * it was last evaluated, then the pathways that treat it (UCL's CarePlanProblemCard). Its View history button opens its
+ * details in place (Nov 20, 2026, user's call: read-only, the plan is the hospital's): its history, newest first, and the orders
  * its pathways placed.
  */
 function ProblemCard({

@@ -428,11 +428,11 @@ export const CarePlanAndActivity: Story = {
 		await expect(findings.getByText("2 h old")).toBeVisible();
 		await expect(within(canvas.getByRole("region", { name: "Up next" })).getAllByRole("listitem").length).toBeGreaterThan(0);
 
-		// The Care Plan tab: a problem's History button opens its history and its pathway's orders in place, and closes them.
+		// The Care Plan tab: a problem's View history button opens its history and its pathway's orders in place, and closes them.
 		await userEvent.click(canvas.getByRole("tab", { name: "Care Plan" }));
 		const tab = within(await canvas.findByRole("tabpanel", { name: "Care Plan" }));
 		const problem = await tab.findByRole("region", { name: /^Acute on chronic heart failure/ });
-		const heartFailure = within(problem).getByRole("button", { name: "History" });
+		const heartFailure = within(problem).getByRole("button", { name: "View history" });
 		await expect(heartFailure).toHaveAttribute("aria-expanded", "false");
 		await userEvent.click(heartFailure);
 		await expect(heartFailure).toHaveAttribute("aria-expanded", "true");
