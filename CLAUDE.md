@@ -269,14 +269,14 @@ Forms, Overlays and Typography were ported from archie-ucl (same Figma file, Arc
 
 Layouts are reference implementations that the apps rebuild with their own data, so mock data stays separate from the UI. Every developer handoff relies on this: everything in a `sample-*` file gets replaced with API data, and everything else is code to keep.
 
-- **Samples live in typed `sample-*.ts` files** beside the screen or step that uses them (e.g. `<flow>/steps/pricing/sample-pricing.ts`). Use `.tsx` only when the sample renders JSX. Type every sample with the type its screen exports (`export const samplePricing: PricingAnswers = { … }`). Never JSON.
+- **Samples live in typed `sample-*.ts` files, in a `sample-data/` folder inside the folder of the screen or step that uses them** (e.g. `<flow>/steps/pricing/sample-data/sample-pricing.ts`), never loose among its components (Nov 20, 2026, user's call). A screen's subfolders share its `sample-data/` (Patient details' tabs in `patient-details/sections/` use `patient-details/sample-data/`). So a developer finds a screen's samples next to it and sees at a glance which files to replace. Use `.tsx` only when the sample renders JSX. Type every sample with the type its screen exports (`export const samplePricing: PricingAnswers = { … }`). Never JSON.
 - **Screens and steps take their data through props** and never import a `sample-*` file, not even as a default value (`listings = sampleListings` is not allowed). Data props are required, or default to an empty value (`""`, `[]`, `{}`) that represents real, empty data.
 - **Stories pass the samples in**, through `args` or the story's render function (`args: { listings: sampleListings }`).
 - **Shared samples:**
-  - Data used by several steps of one flow goes in that flow's `shared/sample-*.ts` (e.g. `src/layouts/<app>/<flow>/shared/sample-listing.ts`).
+  - Data used by several steps of one flow goes in that flow's `sample-data/` (e.g. `src/layouts/<app>/<flow>/sample-data/sample-listing.ts`).
   - Data shared across screens of one app goes in `src/layouts/<app>/sample-data/`.
   - Data shared across apps goes in `src/layouts/shared/sample-data/`.
-  - Create these folders only once they're needed.
+  - A `sample-data/` folder sits at the level of whatever uses its data. Create one only once it's needed.
 - **People's names (Nov 2, 2026, user's call):** typical American names, with a few Hispanic ones at most (e.g. Maria Ruiz, Daniel Reyes). Scenario names from the source documents (Margaret Hayes, Kayla Brandt, Tom Weller) stay as they are. Every bedside nurse is a woman (Nov 2, 2026, user's call), so the alert modal's video consult clip matches whoever it calls.
 - **What isn't sample data:** product content stays in the screen. That covers option lists (`ageOptions`, `durationOptions`), navigation items, artwork, and Figma copy for labels or step titles. A sample is made-up data that a user or the API would supply: records, answers, profiles, photos, prices.
 - **Exceptions:** a flow component that stitches steps into a clickable prototype may seed itself from `sample-*` files. List each exception here when it's created, and don't add others without agreeing them first.

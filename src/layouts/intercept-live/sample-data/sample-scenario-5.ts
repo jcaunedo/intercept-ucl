@@ -4,7 +4,7 @@ import {
 	sampleScenario5LindaAlertDetail,
 	sampleScenario5LindaTransfer,
 	sampleScenario5WalterAlertDetail,
-} from "../alert-panel/sample-alert-panel";
+} from "../alert-panel/sample-data/sample-alert-panel";
 import {
 	sampleScenario5LindaCensus,
 	sampleScenario5LindaCensusAt,
@@ -14,7 +14,7 @@ import {
 	sampleScenario5LindaMonitoring,
 	sampleScenario5LindaMonitoringAt,
 	sampleScenario5WalterMonitoringAt,
-} from "../monitoring/sample-monitoring";
+} from "../monitoring/sample-data/sample-monitoring";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
 import { pierceRecord, sampleScenario5DocumentationMinutes, sampleScenario5Staff, shawRecord } from "./sample-scenario-5-patients";
 import { sampleUser } from "./sample-workspace";

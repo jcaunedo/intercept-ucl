@@ -133,5 +133,5 @@ What the spec asks of Virtual Sepsis that the page doesn't do yet. Each is a can
 |---|---|
 | Page | `src/layouts/intercept-live/monitoring/monitoring.tsx` (the `"Virtual Sepsis"` page: `MonitoringPanel` given the sepsis patients) |
 | Cards and panel | `monitoring/monitoring-panel.tsx`, UCL `PatientMonitoringCard` |
-| Sepsis cases | `patient-details/sections/sepsis-section.tsx` (`SepsisCase`), `sections/sample-sepsis.ts` |
+| Sepsis cases | `patient-details/sections/sepsis-section.tsx` (`SepsisCase`), `sample-data/sample-sepsis.ts` |
 | Storybook | Layouts › Intercept Live › Monitoring, Sidebar › Virtual Sepsis |

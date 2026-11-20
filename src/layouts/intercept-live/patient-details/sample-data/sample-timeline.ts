@@ -1,4 +1,4 @@
-import type { PatientTimeline, TimelineEventKind, TimelineLane, TimelineLaneColor, TimelinePoint } from "./timeline-section";
+import type { PatientTimeline, TimelineEventKind, TimelineLane, TimelineLaneColor, TimelinePoint } from "../sections/timeline-section";
 
 // Synthetic data (PRD Patient details PD-150): each Census patient's last 24 hours (less when the stay is shorter),
 // telling the same story as their record's brief and alerts and ending at their live values on Monitoring. Lanes follow

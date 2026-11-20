@@ -1,6 +1,6 @@
 import type { PatientRecord } from "../patient-details";
-import { samplePatientBaseRecords } from "../sample-patient-records";
-import type { PatientNote, PatientNotes } from "./notes-section";
+import { samplePatientBaseRecords } from "./sample-patient-records";
+import type { PatientNote, PatientNotes } from "../sections/notes-section";
 import { sampleEhrFor } from "../../sample-data/sample-ehr";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's notes, newest first, written by their own care

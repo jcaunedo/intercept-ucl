@@ -1,6 +1,6 @@
-import type { MonitorVitals } from "@/components/data-display/patient-monitor";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor/index";
 
-import type { TriageAlert } from "./monitoring";
+import type { TriageAlert } from "../monitoring";
 
 // Synthetic data (PRD MON-080, MON-081): a scripted live feed for the Monitoring Live story. Each step changes some
 // patients' vitals and alerts, over `sampleMonitoringPatients` / `sampleMonitoringAlerts`: an alert's severity goes up or

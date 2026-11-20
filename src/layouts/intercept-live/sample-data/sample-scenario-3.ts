@@ -4,24 +4,24 @@ import {
 	sampleScenario3AlertDetail,
 	sampleScenario3Pathway,
 	sampleScenario3Tasks,
-} from "../alert-panel/sample-alert-panel";
+} from "../alert-panel/sample-data/sample-alert-panel";
 import type { BundleElement, FluidBolus } from "../alert-panel/sepsis-bundle";
 import { sampleScenario3Census, sampleScenario3CensusAt } from "./sample-census";
-import { sampleScenario3Monitoring, sampleScenario3MonitoringAt } from "../monitoring/sample-monitoring";
+import { sampleScenario3Monitoring, sampleScenario3MonitoringAt } from "../monitoring/sample-data/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";
-import { sampleScenario3BaseRecord, sampleScenario3RecordAt } from "../patient-details/sample-patient-records";
-import { sampleScenario3Camera } from "../patient-details/sections/sample-camera";
-import { sampleScenario3Chart } from "../patient-details/sections/sample-chart";
-import { sampleScenarioEmr } from "../patient-details/sections/sample-epic";
-import { sampleScenario3Medications } from "../patient-details/sections/sample-medications";
-import { sampleScenario3Notes } from "../patient-details/sections/sample-notes";
-import { sampleScenario3Orders } from "../patient-details/sections/sample-orders";
+import { sampleScenario3BaseRecord, sampleScenario3RecordAt } from "../patient-details/sample-data/sample-patient-records";
+import { sampleScenario3Camera } from "../patient-details/sample-data/sample-camera";
+import { sampleScenario3Chart } from "../patient-details/sample-data/sample-chart";
+import { sampleScenarioEmr } from "../patient-details/sample-data/sample-epic";
+import { sampleScenario3Medications } from "../patient-details/sample-data/sample-medications";
+import { sampleScenario3Notes } from "../patient-details/sample-data/sample-notes";
+import { sampleScenario3Orders } from "../patient-details/sample-data/sample-orders";
 import type { SepsisBundleElement, SepsisCase } from "../patient-details/sections/sepsis-section";
-import { sampleScenario3Timeline } from "../patient-details/sections/sample-timeline";
-import { sampleScenario3Vitals } from "../patient-details/sections/sample-vitals";
+import { sampleScenario3Timeline } from "../patient-details/sample-data/sample-timeline";
+import { sampleScenario3Vitals } from "../patient-details/sample-data/sample-vitals";
 import { sampleEhrByHospital } from "./sample-ehr";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
-import { withGlucose } from "../patient-details/sections/sample-glucose";
+import { withGlucose } from "../patient-details/sample-data/sample-glucose";
 
 // Story-only: Scenario 3 of the Demo Use Cases, "Sepsis in a patient with diabetes and kidney disease", as beats the
 // Prototype menu plays. Rosa Medina (`p23`), 58, type 2 diabetes and CKD stage 4, on Medicaid, prefers Spanish. In

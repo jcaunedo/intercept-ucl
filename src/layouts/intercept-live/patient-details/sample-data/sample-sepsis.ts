@@ -1,4 +1,4 @@
-import type { SepsisCase, SepsisCriterion } from "./sepsis-section";
+import type { SepsisCase, SepsisCriterion } from "../sections/sepsis-section";
 
 // Synthetic data (PRD Patient details PD-150): a case for each patient on sepsis watch in the Census, in step with
 // their record, live values and orders (`sample-orders.ts`). Three states:

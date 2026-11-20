@@ -3,11 +3,11 @@ import { expect, fn, waitFor, within } from "storybook/test";
 
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { samplePatients } from "../sample-data/sample-census";
-import { samplePatientRecords } from "../patient-details/sample-patient-details";
-import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
+import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { Messages } from "./messages";
 import { clearPrototypeLocation } from "../sample-data/prototype-links";
-import { sampleMessageConversations } from "./sample-messages";
+import { sampleMessageConversations } from "./sample-data/sample-messages";
 
 // The Messages layout (`messages.tsx`): Intercept Live's shell opened on Messages, so the Sidebar, the header and
 // opening a patient are the app's. Its content is `MessagesPanel`.

@@ -1,4 +1,4 @@
-import type { PatientAllergy } from "./patient-details";
+import type { PatientAllergy } from "../patient-details";
 
 // Synthetic data (PRD Patient details PD-150): the allergy list behind each patient's Allergy tag, one entry per
 // substance in their record's `allergies` (`sample-patient-records.ts`). Robert Thompson (`p4`) had hives during the

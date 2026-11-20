@@ -5,14 +5,14 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
 
-import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
-import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
-import { samplePatientRecords } from "../patient-details/sample-patient-details";
+import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-data/sample-alert-panel";
+import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
+import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
-import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-schedule";
-import { sampleMessageConversations } from "../messages/sample-messages";
-import { sampleInboxItems } from "../inbox/sample-inbox";
-import { sampleOutcomes } from "../analytics/sample-analytics";
+import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-data/sample-schedule";
+import { sampleMessageConversations } from "../messages/sample-data/sample-messages";
+import { sampleInboxItems } from "../inbox/sample-data/sample-inbox";
+import { sampleOutcomes } from "../analytics/sample-data/sample-analytics";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";

@@ -1,9 +1,9 @@
 import { samplePatients } from "../../sample-data/sample-census";
 import { sampleEhrByHospital } from "../../sample-data/sample-ehr";
 import type { PatientRecord } from "../patient-details";
-import { samplePatientBaseRecords } from "../sample-patient-records";
-import type { EmrFeed, EmrWriteBack, PatientEmr } from "./epic-section";
-import type { PatientNote } from "./notes-section";
+import { samplePatientBaseRecords } from "./sample-patient-records";
+import type { EmrFeed, EmrWriteBack, PatientEmr } from "../sections/epic-section";
+import type { PatientNote } from "../sections/notes-section";
 import { sampleNotesByPatient } from "./sample-notes";
 
 // Synthetic data (PRD Patient details PD-150): each Census patient's hospital record (Cerner at Alliance, Meditech at

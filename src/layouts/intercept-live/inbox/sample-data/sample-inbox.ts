@@ -1,4 +1,4 @@
-import type { InboxItem } from "./inbox-panel";
+import type { InboxItem } from "../inbox-panel";
 
 // Synthetic work for the signed-in clinician (Joanna Smith) besides alerts, which the Inbox takes from the layout's own
 // alerts: AI Scribe drafts to sign, suggested orders, an EMR write-back that failed and items handed over from the last

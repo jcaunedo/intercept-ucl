@@ -4,20 +4,20 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
 
-import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
+import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-data/sample-alert-panel";
 import { Patients } from "../patients/patients";
 import { samplePatients, sampleScenario1ResolvedCensus } from "../sample-data/sample-census";
 import { Monitoring } from "../monitoring/monitoring";
-import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleAskIntercept } from "../sample-data/sample-ask-intercept";
 import { sortOrderById } from "../shared/patient-panel";
-import { sampleScenario1Activity, sampleScenario1CarePlan } from "./sample-patient-activity";
-import { samplePatientRecords } from "./sample-patient-details";
-import { sampleScenario1ResolvedRecord } from "./sample-patient-records";
-import { sampleScenario1ResolvedTimeline } from "./sections/sample-timeline";
-import { sampleScenario1ResolvedVitals } from "./sections/sample-vitals";
-import { withGlucose } from "./sections/sample-glucose";
+import { sampleScenario1Activity, sampleScenario1CarePlan } from "./sample-data/sample-patient-activity";
+import { samplePatientRecords } from "./sample-data/sample-patient-details";
+import { sampleScenario1ResolvedRecord } from "./sample-data/sample-patient-records";
+import { sampleScenario1ResolvedTimeline } from "./sample-data/sample-timeline";
+import { sampleScenario1ResolvedVitals } from "./sample-data/sample-vitals";
+import { withGlucose } from "./sample-data/sample-glucose";
 
 // The Census's grid as it starts (every patient, sorted by Alert), so the details step through it as from a card.
 const censusOrder = [...samplePatients].sort(sortOrderById("alert").compare).map((patient) => patient.id);

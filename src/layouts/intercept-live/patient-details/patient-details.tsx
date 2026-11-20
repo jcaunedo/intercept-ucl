@@ -52,7 +52,7 @@ import { patientStatuses, type PatientCensusStatus } from "../patients/patient-s
 import type { AlertConsultState, AlertDetailData, PatientConsultData } from "../alert-panel/alert-panel";
 import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-panel/care-pathway";
 import { ConsultSessionScope, useSessionState } from "../alert-panel/consult-session";
-import { DischargePlanPanel, type DischargeDecision, type DischargePlan } from "../alert-panel/discharge-plan";
+import type { DischargeDecision, DischargePlan } from "../alert-panel/discharge-plan";
 import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
 import {
@@ -72,19 +72,23 @@ import {
 	useOpenPathwayPanel,
 	type PatientPathways,
 } from "./consult-panels";
-import { AlertsSection, CarePlanSection, PatientOverview, type OverviewPathway } from "./patient-overview";
+import { PatientOverview } from "./patient-overview";
 import { LiveFeedButton } from "../shared/live-feed";
 import { patientFeedEntries } from "../shared/live-feed-entries";
+import { AlertsSection } from "./sections/alerts-section";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
-import { ChartSection, LabsSection, type PatientChart } from "./sections/chart-section";
+import { CarePlanSection, type OverviewPathway } from "./sections/care-plan-section";
+import { ChartSection, type PatientChart } from "./sections/chart-section";
+import { DischargeSection } from "./sections/discharge-section";
 import { EpicSection, type PatientEmr } from "./sections/epic-section";
+import { LabsSection } from "./sections/labs-section";
 import { MedicationsSection, type PatientMedications } from "./sections/medications-section";
 import { NotesSection, type PatientNotes } from "./sections/notes-section";
 import { noteContextFrom } from "./sections/note-chart";
 import { OrdersSection, type PatientOrders } from "./sections/orders-section";
 import { SepsisSection, type SepsisCase } from "./sections/sepsis-section";
 import { TimelineSection, type PatientTimeline } from "./sections/timeline-section";
-import { TransitionSection, type CareTransition, type TransitionDecision } from "./sections/transition-section";
+import type { CareTransition, TransitionDecision } from "./sections/transition-section";
 import { LatestVitals, type PatientVitals } from "./sections/vitals-section";
 
 // Patient details (PRD Patient details): one patient's page, opened over the Census or Monitoring. Follows
@@ -687,22 +691,16 @@ function sectionContent(
 		case "orders":
 			return record?.orders ? <OrdersSection orders={record.orders} /> : null;
 		case "discharge":
-			// The transition of care first (Scenario 6), then the social needs and referrals (Scenario 2).
 			return record?.discharge || record?.transition ? (
-				<div className='flex max-w-2xl flex-col gap-10'>
-					{record.transition ? (
-						<TransitionSection
-							transition={record.transition}
-							patientName={[`${patient.firstName ?? ""} ${patient.lastName}`.trim(), patient.age, patient.sex]
-								.filter(Boolean)
-								.join(", ")}
-							onDecision={onTransitionDecision}
-						/>
-					) : null}
-					{record.discharge ? (
-						<DischargePlanPanel plan={record.discharge} onDecision={onDischargeDecision} headingLevel='h2' />
-					) : null}
-				</div>
+				<DischargeSection
+					transition={record.transition}
+					discharge={record.discharge}
+					patientName={[`${patient.firstName ?? ""} ${patient.lastName}`.trim(), patient.age, patient.sex]
+						.filter(Boolean)
+						.join(", ")}
+					onTransitionDecision={onTransitionDecision}
+					onDischargeDecision={onDischargeDecision}
+				/>
 			) : null;
 		case "emr":
 			return record?.emr ? <EpicSection emr={record.emr} /> : null;

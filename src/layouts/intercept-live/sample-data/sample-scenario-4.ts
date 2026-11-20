@@ -5,22 +5,22 @@ import {
 	sampleScenario4Discharge,
 	sampleScenario4Overlap,
 	sampleScenario4Protocol,
-} from "../alert-panel/sample-alert-panel";
+} from "../alert-panel/sample-data/sample-alert-panel";
 import { sampleScenario4Census, sampleScenario4CensusAt, sampleScenario4Flags } from "./sample-census";
-import { sampleScenario4Monitoring, sampleScenario4MonitoringAt } from "../monitoring/sample-monitoring";
+import { sampleScenario4Monitoring, sampleScenario4MonitoringAt } from "../monitoring/sample-data/sample-monitoring";
 import type { PatientRecord } from "../patient-details/patient-details";
-import { sampleScenario4BaseRecord, sampleScenario4RecordAt, type Scenario4RecordStage } from "../patient-details/sample-patient-records";
-import { sampleScenario4Camera } from "../patient-details/sections/sample-camera";
-import { sampleScenario4Chart } from "../patient-details/sections/sample-chart";
-import { sampleScenarioEmr } from "../patient-details/sections/sample-epic";
-import { sampleScenario4Medications } from "../patient-details/sections/sample-medications";
-import { sampleScenario4Notes } from "../patient-details/sections/sample-notes";
-import { sampleScenario4Orders } from "../patient-details/sections/sample-orders";
-import { sampleScenario4Timeline } from "../patient-details/sections/sample-timeline";
-import { sampleScenario4Vitals } from "../patient-details/sections/sample-vitals";
+import { sampleScenario4BaseRecord, sampleScenario4RecordAt, type Scenario4RecordStage } from "../patient-details/sample-data/sample-patient-records";
+import { sampleScenario4Camera } from "../patient-details/sample-data/sample-camera";
+import { sampleScenario4Chart } from "../patient-details/sample-data/sample-chart";
+import { sampleScenarioEmr } from "../patient-details/sample-data/sample-epic";
+import { sampleScenario4Medications } from "../patient-details/sample-data/sample-medications";
+import { sampleScenario4Notes } from "../patient-details/sample-data/sample-notes";
+import { sampleScenario4Orders } from "../patient-details/sample-data/sample-orders";
+import { sampleScenario4Timeline } from "../patient-details/sample-data/sample-timeline";
+import { sampleScenario4Vitals } from "../patient-details/sample-data/sample-vitals";
 import { sampleEhrByHospital } from "./sample-ehr";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
-import { withGlucose } from "../patient-details/sections/sample-glucose";
+import { withGlucose } from "../patient-details/sample-data/sample-glucose";
 
 // Story-only: Scenario 4 of the Demo Use Cases, "DKA caused by insulin rationing, managed by one night nurse", as beats
 // the Prototype menu plays. Tyler Kessler (`p24`), 60, type 1 diabetes since 11, works at a grain elevator, lost

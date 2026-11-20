@@ -24,7 +24,7 @@ The terms used in UCL, Storybook and the design system Figma files. Product, cli
 | **Primitive (component)** | A low-level shadcn/Radix component (Input, Select, Checkbox) that composed components build on. | CLAUDE.md |
 | **Primitive (token)** | A raw color or value from Figma's `primitives` collection, declared on `:root` (e.g. `gray-800`). Semantic tokens alias primitives. ⚠️ Same word as a component primitive, so say "token primitive" or "component primitive" when it's ambiguous. | CLAUDE.md "Theme & Tokens" |
 | **Reduced motion** | The user's OS preference to minimize animation. Respected through `useMotionPreference()`. | MOTION.md |
-| **Sample data** | Typed mock data in `sample-*.ts` files beside a layout. Screens take data only through props, so everything in a sample file gets replaced with API data in production. Always synthetic for this project. | CLAUDE.md "Sample Data" |
+| **Sample data** | Typed mock data in `sample-*.ts` files, in a `sample-data/` folder inside the layout that uses them. Screens take data only through props, so everything in a sample file gets replaced with API data in production. Always synthetic for this project. | CLAUDE.md "Sample Data" |
 | **Semantic token** | A role-named design token (`background`, `primary`, `destructive`, `brand-subtle`, `chart-1`) that maps to a primitive per mode. Used through Tailwind utilities, never raw hex. | CLAUDE.md "Theme & Tokens" |
 | **shadcn/ui** | The open-source component collection (on Radix) that UCL primitives start from. | CLAUDE.md |
 | **Solid icon** | A custom filled SVG icon (e.g. `HomeSolidIcon`) used as a nav item's active state, since lucide-react has none. | CLAUDE.md |

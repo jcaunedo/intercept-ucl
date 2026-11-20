@@ -1,7 +1,7 @@
-import type { MonitorVitals } from "@/components/data-display/patient-monitor";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor/index";
 
-import type { PatientRecord } from "../patient-details/patient-details";
-import type { ConsultTranscript, ConsultTranscriptSegment } from "./consult-transcript";
+import type { PatientRecord } from "../../patient-details/patient-details";
+import type { ConsultTranscript, ConsultTranscriptSegment } from "../consult-transcript";
 
 // Story-only: what the AI Notetaker hears on a video consult, as speech recognition writes it (prototype only; an app
 // gets real segments from its transcription service). Each conversation is the intensivist and the bedside nurse going

@@ -295,7 +295,7 @@ All proposed until the editor is built.
 | What | Where |
 |---|---|
 | The Notes tab (list, reader, statuses, AI Scribe badge) | `src/layouts/intercept-live/patient-details/sections/notes-section.tsx` (`PatientNote`, `PatientNoteStatus`, `NotesSection`; `onNewNote`, `onEditNote`, `onRetryWriteBack`) |
-| Sample notes | `src/layouts/intercept-live/patient-details/sections/sample-notes.ts` |
+| Sample notes | `src/layouts/intercept-live/patient-details/sample-data/sample-notes.ts` |
 | The AI Notetaker's draft and Approve notes | `src/layouts/intercept-live/alert-panel/alert-panel.tsx` (the notetaker), `consult-transcript.tsx` (the transcript) |
 | The note editor | `src/layouts/intercept-live/patient-details/sections/note-editor.tsx` (`NoteEditor`, `NoteDraft`, `newNoteDraft`, `draftFromNote`, `noteFromDraft`, `signBlockers`) |
 | Note types and templates | `sections/note-templates.ts` (`noteTemplates`, `noteTemplateFor`, `bestPracticeItems`, `attestationVersions`): product content |

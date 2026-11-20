@@ -1,6 +1,6 @@
 import type { CareTeamMember } from "../patient-details";
-import { samplePatientBaseRecords, sampleScenarioCareTeams } from "../sample-patient-records";
-import type { CameraPerson, CameraPreset, CameraSession, PatientCamera } from "./camera-section";
+import { samplePatientBaseRecords, sampleScenarioCareTeams } from "./sample-patient-records";
+import type { CameraPerson, CameraPreset, CameraSession, PatientCamera } from "../sections/camera-section";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's bedside camera. Who's here comes from each
 // record's care team (`sample-patient-records.ts`), with what each person is doing now; anyone else in the room (a

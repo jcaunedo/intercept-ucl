@@ -1,17 +1,17 @@
 import type { AlertDetailData } from "../alert-panel/alert-panel";
-import { sampleScenario1ResolvedDetail } from "../alert-panel/sample-alert-panel";
+import { sampleScenario1ResolvedDetail } from "../alert-panel/sample-data/sample-alert-panel";
 import type { CensusPatient } from "../patients/patients-panel";
 import type { InboxItem } from "../inbox/inbox-panel";
 import { sampleScenario1Census, sampleScenario1ResolvedCensus } from "./sample-census";
 import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
-import { sampleScenario1Monitoring, sampleScenario1ResolvedMonitoring } from "../monitoring/sample-monitoring";
+import { sampleScenario1Monitoring, sampleScenario1ResolvedMonitoring } from "../monitoring/sample-data/sample-monitoring";
 import type { PatientActivity } from "../patient-details/activity";
 import type { PatientRecord } from "../patient-details/patient-details";
-import { sampleScenario1Record, sampleScenario1ResolvedRecord } from "../patient-details/sample-patient-records";
-import { sampleScenario1ResolvedTimeline, sampleScenario1Timeline } from "../patient-details/sections/sample-timeline";
-import { sampleScenario1ResolvedVitals, sampleScenario1Vitals } from "../patient-details/sections/sample-vitals";
+import { sampleScenario1Record, sampleScenario1ResolvedRecord } from "../patient-details/sample-data/sample-patient-records";
+import { sampleScenario1ResolvedTimeline, sampleScenario1Timeline } from "../patient-details/sample-data/sample-timeline";
+import { sampleScenario1ResolvedVitals, sampleScenario1Vitals } from "../patient-details/sample-data/sample-vitals";
 import type { AlertNotice } from "../shared/alert-toasts";
-import { withGlucose } from "../patient-details/sections/sample-glucose";
+import { withGlucose } from "../patient-details/sample-data/sample-glucose";
 
 // Story-only: Scenario 1 of the Demo Use Cases, "Heart failure at 2 a.m. in a 25-bed hospital", as beats the Prototype
 // menu plays. Margaret Hayes (`p15`, Chadron, Med-Surg) starts just before it, holding at NEWS2 5;

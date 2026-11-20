@@ -1,5 +1,5 @@
-import type { CensusPatient } from "../patients/patients-panel";
-import type { MonitoringPatient, TriageAlert } from "../monitoring/monitoring";
+import type { CensusPatient } from "../../patients/patients-panel";
+import type { MonitoringPatient, TriageAlert } from "../../monitoring/monitoring";
 import {
 	sampleMonitoringPatients,
 	sampleScenario1Monitoring,
@@ -9,18 +9,18 @@ import {
 	sampleScenario5LindaMonitoring,
 	sampleScenario5WalterMonitoringAt,
 	sampleBackupTargetId,
-} from "../monitoring/sample-monitoring";
-import { samplePatients, sampleScenario5LindaCensus } from "../sample-data/sample-census";
-import type { PatientRecord } from "../patient-details/patient-details";
-import { sampleCameraVideo } from "../sample-data/sample-camera-video";
-import { avatarTones, patientInitials } from "../shared/patient-avatar";
-import type { AlertDetailData, PatientConsultData } from "./alert-panel";
-import type { BedsideTasks } from "./bedside-tasks";
-import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "./care-pathway";
-import type { DischargePlan } from "./discharge-plan";
-import type { DkaProtocol, DkaRules } from "./dka-protocol";
-import type { KeepOrTransfer, TransferPacket } from "./keep-or-transfer";
-import type { SepsisBundle } from "./sepsis-bundle";
+} from "../../monitoring/sample-data/sample-monitoring";
+import { samplePatients, sampleScenario5LindaCensus } from "../../sample-data/sample-census";
+import type { PatientRecord } from "../../patient-details/patient-details";
+import { sampleCameraVideo } from "../../sample-data/sample-camera-video";
+import { avatarTones, patientInitials } from "../../shared/patient-avatar";
+import type { AlertDetailData, PatientConsultData } from "../alert-panel";
+import type { BedsideTasks } from "../bedside-tasks";
+import type { CarePathway, CarePathwayCosigner, CarePathwayOrder } from "../care-pathway";
+import type { DischargePlan } from "../discharge-plan";
+import type { DkaProtocol, DkaRules } from "../dka-protocol";
+import type { KeepOrTransfer, TransferPacket } from "../keep-or-transfer";
+import type { SepsisBundle } from "../sepsis-bundle";
 import { sampleBedsideThread } from "./sample-bedside-messages";
 import { sampleBedsideReplier } from "./sample-bedside-replies";
 import { sampleConsultTranscript } from "./sample-consult-transcript";

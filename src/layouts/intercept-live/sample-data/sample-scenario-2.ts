@@ -4,7 +4,7 @@ import bloodGas2hPhoto from "./images/sample-photo-blood-gas-2h.jpg";
 import {
   sampleScenario2AlertDetail,
   sampleScenario2ResolvedDetail,
-} from "../alert-panel/sample-alert-panel";
+} from "../alert-panel/sample-data/sample-alert-panel";
 import {
   sampleScenario2Census,
   sampleScenario2ResolvedCensus,
@@ -12,7 +12,7 @@ import {
 import {
   sampleScenario2Monitoring,
   sampleScenario2ResolvedMonitoring,
-} from "../monitoring/sample-monitoring";
+} from "../monitoring/sample-data/sample-monitoring";
 import type { AlertDetailData } from "../alert-panel/alert-panel";
 import type { DischargePlan } from "../alert-panel/discharge-plan";
 import type { ConsultMessage } from "../alert-panel/consult-messages";
@@ -21,24 +21,24 @@ import type { PatientRecord } from "../patient-details/patient-details";
 import {
   sampleScenario2BaseRecord,
   sampleScenario2ResolvedRecord,
-} from "../patient-details/sample-patient-records";
-import { sampleScenario2Camera } from "../patient-details/sections/sample-camera";
-import { sampleScenario2Chart } from "../patient-details/sections/sample-chart";
-import { sampleScenarioEmr } from "../patient-details/sections/sample-epic";
-import { sampleScenario2Medications } from "../patient-details/sections/sample-medications";
-import { sampleScenario2Notes } from "../patient-details/sections/sample-notes";
-import { sampleScenario2Orders } from "../patient-details/sections/sample-orders";
+} from "../patient-details/sample-data/sample-patient-records";
+import { sampleScenario2Camera } from "../patient-details/sample-data/sample-camera";
+import { sampleScenario2Chart } from "../patient-details/sample-data/sample-chart";
+import { sampleScenarioEmr } from "../patient-details/sample-data/sample-epic";
+import { sampleScenario2Medications } from "../patient-details/sample-data/sample-medications";
+import { sampleScenario2Notes } from "../patient-details/sample-data/sample-notes";
+import { sampleScenario2Orders } from "../patient-details/sample-data/sample-orders";
 import {
   sampleScenario2ResolvedTimeline,
   sampleScenario2Timeline,
-} from "../patient-details/sections/sample-timeline";
+} from "../patient-details/sample-data/sample-timeline";
 import {
   sampleScenario2ResolvedVitals,
   sampleScenario2Vitals,
-} from "../patient-details/sections/sample-vitals";
+} from "../patient-details/sample-data/sample-vitals";
 import { sampleEhrByHospital } from "./sample-ehr";
 import type { ScenarioBeat, ScenarioDefinition } from "./sample-scenario-1";
-import { withGlucose } from "../patient-details/sections/sample-glucose";
+import { withGlucose } from "../patient-details/sample-data/sample-glucose";
 
 // Story-only: Scenario 2 of the Demo Use Cases, "COPD respiratory failure during a blizzard", as beats the Prototype
 // menu plays. Dale Reynolds (`p21`), 64, a rancher with severe COPD, uninsured, out of the home oxygen he can't afford.

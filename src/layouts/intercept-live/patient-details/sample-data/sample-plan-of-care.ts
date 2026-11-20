@@ -1,4 +1,4 @@
-import type { PatientPlanOfCare, PatientPlanOfCareItem, PatientPlanOfCareStatus } from "./activity";
+import type { PatientPlanOfCare, PatientPlanOfCareItem, PatientPlanOfCareStatus } from "../activity";
 
 // Synthetic data (PRD Patient details PD-150): every patient's plan of care, as the hospital's record system holds it
 // (Nov 11, 2026, user's call: every admitted patient has one, ICU or not). A row per problem: its goal, what the bedside

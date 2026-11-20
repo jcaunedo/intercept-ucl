@@ -11,9 +11,9 @@ import {
 	type Scenario4Stage,
 	type Scenario5LindaStage,
 	type Scenario5WalterStage,
-} from "../sample-data/sample-census";
-import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
-import type { EscalationTarget, MonitoringPatient, TriageAlert } from "./monitoring";
+} from "../../sample-data/sample-census";
+import { samplePatientPhotos } from "../../sample-data/sample-patient-photos";
+import type { EscalationTarget, MonitoringPatient, TriageAlert } from "../monitoring";
 
 // Synthetic data (PRD MON-080): the Census's 27 patients on the monitoring panel, with live bedside values, and the
 // panel's alerts for the triage queue. The alerts give each card its pill, the same as the Census's; acuity and tags

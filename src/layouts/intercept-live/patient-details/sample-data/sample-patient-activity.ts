@@ -1,4 +1,4 @@
-import type { PatientActivity, PatientCarePlan } from "./activity";
+import type { PatientActivity, PatientCarePlan } from "../activity";
 
 // Story-only: Scenario 1 after 06:00, what was done and decided about Margaret Hayes (`p15`) as the app records it. In
 // the prototype the live feed builds the same from the clinician's own actions (`useSampleLiveFeed`'s

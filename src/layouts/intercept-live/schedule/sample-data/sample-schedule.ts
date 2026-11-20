@@ -1,4 +1,4 @@
-import type { ScheduleShift } from "./schedule-panel";
+import type { ScheduleShift } from "../schedule-panel";
 
 // Synthetic schedule for the signed-in clinician (Joanna Smith, Intensivist), built around today so the calendar always
 // opens on a live month. Today is the middle of a three-day block of day shifts, ending at 8:00 PM as in the account

@@ -11,10 +11,10 @@ import type {
 } from "../ask-intercept-panel";
 import type { CensusPatient } from "../patients/patients-panel";
 import { samplePatients } from "./sample-census";
-import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { compareTriageAlerts, isOpenAlert, type TriageAlert, type TriageAlertAction } from "../monitoring/triage-queue";
 import type { PatientRecord } from "../patient-details/patient-details";
-import { samplePatientRecords } from "../patient-details/sample-patient-details";
+import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
 import { alertChanges } from "../shared/alert-changes";
 import { useAddressedAlerts } from "../shared/live-feed";
 import { bedsideChanges, flagSummary } from "../shared/flag-details";

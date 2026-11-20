@@ -1,5 +1,5 @@
-import type { PatientTimeline, TimelineLane } from "./timeline-section";
-import type { PatientVitals, VitalSeries } from "./vitals-section";
+import type { PatientTimeline, TimelineLane } from "../sections/timeline-section";
+import type { PatientVitals, VitalSeries } from "../sections/vitals-section";
 
 // Synthetic data (PRD Patient details PD-150): each patient's blood glucose, on the Timeline tab's latest values and as
 // a lane on its chart (Nov 11, 2026, the clinical advisor's request). Fingerstick (point-of-care) checks charted by the

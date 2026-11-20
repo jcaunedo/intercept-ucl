@@ -1,4 +1,4 @@
-import type { TriageAlert } from "../monitoring/triage-queue";
+import type { TriageAlert } from "../../monitoring/triage-queue";
 
 // Synthetic data: each patient's earlier alerts, before the ones the live feed shows (PRD Patient details, Alerts panel:
 // every alert stays, Nov 10, 2026, user's call). All resolved, between 14 h and 4 days ago, matched to each patient's

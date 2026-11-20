@@ -3,11 +3,11 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { samplePatients } from "../sample-data/sample-census";
-import { samplePatientRecords } from "../patient-details/sample-patient-details";
-import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
+import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { clearPrototypeLocation } from "../sample-data/prototype-links";
 import { Analytics } from "./analytics";
-import { sampleOutcomes } from "./sample-analytics";
+import { sampleOutcomes } from "./sample-data/sample-analytics";
 
 // The Analytics layout (`analytics.tsx`): Intercept Live's shell opened on Analytics, the outcomes dashboard Scenario 6
 // closes on. Its content is `AnalyticsPanel`; the month is synthetic, and its export says so.

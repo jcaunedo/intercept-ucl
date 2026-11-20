@@ -207,7 +207,7 @@ The specs have conference-style video too, for other people. They're separate ex
 | Call sound | `src/layouts/intercept-live/alert-panel/call-audio.ts` (`useCallAudio`) |
 | Incoming request | `src/components/feedback/alert-toast/alert-toast.tsx` (`severity="consult-request"`, `urgency`, `ringtone`); `src/lib/hooks/use-ringtone.ts` (`useRingtone`, `ringCadence`); `src/layouts/intercept-live/shared/alert-toasts.tsx` |
 | Opening with the call ringing | `src/layouts/intercept-live/patient-navigation.tsx` (`openAlert(id, alertId, { consult: true })`) |
-| Sample data | `src/layouts/intercept-live/patient-details/sections/sample-camera.ts` (each hospital's presets, two-way audio and consent profile); `src/layouts/intercept-live/sample-data/sample-camera-video.ts` (the clip) |
+| Sample data | `src/layouts/intercept-live/patient-details/sample-data/sample-camera.ts` (each hospital's presets, two-way audio and consent profile); `src/layouts/intercept-live/sample-data/sample-camera-video.ts` (the clip) |
 | Figma | intercept.ds › Alert Modal page: `alert-modal-video` (State = Idle, Calling, Live). ⚠️ **Pending (Figma):** the Camera view isn't drawn |
 | Decisions | DESIGN.md › "Alert panel" (Video consult); PRD Patient details §12; PRD Monitoring MON-031 |
 | Stories | Layouts/Intercept Live/Alert panel (Default, In consult); Patient details; Monitoring › Scenario 1: Heart failure |

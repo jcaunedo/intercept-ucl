@@ -1,6 +1,6 @@
 import type { PatientInfusion, PatientRecord } from "../patient-details";
-import { samplePatientBaseRecords, sampleScenarioCareTeams } from "../sample-patient-records";
-import type { ContinuousMedication, PatientMedications, PrnMedication, ScheduledMedication } from "./medications-section";
+import { samplePatientBaseRecords, sampleScenarioCareTeams } from "./sample-patient-records";
+import type { ContinuousMedication, PatientMedications, PrnMedication, ScheduledMedication } from "../sections/medications-section";
 
 // Synthetic data (PRD Patient details PD-150): the active medications of every patient on the Census, from their
 // hospital's record. Continuous infusions are the record's own (`sample-patient-records.ts`): same drugs, rates and last

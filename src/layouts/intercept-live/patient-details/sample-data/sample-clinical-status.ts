@@ -1,4 +1,4 @@
-import type { PatientHeaderClinicalStatus, PatientHeaderClinicalStatusValue } from "@/components/data-display/patient-header";
+import type { PatientHeaderClinicalStatus, PatientHeaderClinicalStatusValue } from "@/components/data-display/patient-header/index";
 
 // Synthetic data (PRD Patient details PD-150): each patient's clinical status, the Patient Header's Clinical status
 // column (Nov 11, 2026, user's call: sample data per patient, set by hand, no calculation). It's the bedside team's

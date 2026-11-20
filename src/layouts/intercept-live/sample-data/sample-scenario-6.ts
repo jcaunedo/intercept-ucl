@@ -1,4 +1,4 @@
-import { sampleScenario6ReturnAlertDetail } from "../alert-panel/sample-alert-panel";
+import { sampleScenario6ReturnAlertDetail } from "../alert-panel/sample-data/sample-alert-panel";
 import type { InboxItem } from "../inbox/inbox-panel";
 import type { MonitoringPatient } from "../monitoring/monitoring";
 import type { CensusPatient } from "../patients/patients-panel";

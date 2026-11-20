@@ -1,24 +1,24 @@
 import { sampleScenario5LindaCensus } from "./sample-census";
 import type { PatientRecord } from "../patient-details/patient-details";
-import { samplePatientRecords, withEtco2Lane } from "../patient-details/sample-patient-details";
+import { samplePatientRecords, withEtco2Lane } from "../patient-details/sample-data/sample-patient-details";
 import {
 	sampleScenario5LindaBaseRecord,
 	sampleScenario5LindaRecordAt,
 	sampleScenario5WalterRecordAt,
-} from "../patient-details/sample-patient-records";
-import { sampleScenario5LindaCamera, sampleScenario5WalterCamera } from "../patient-details/sections/sample-camera";
-import { sampleScenario5LindaChart, sampleScenario5WalterChart } from "../patient-details/sections/sample-chart";
-import { sampleScenarioEmr } from "../patient-details/sections/sample-epic";
-import { withGlucose } from "../patient-details/sections/sample-glucose";
-import { sampleScenario5LindaMedications, sampleScenario5WalterMedications } from "../patient-details/sections/sample-medications";
+} from "../patient-details/sample-data/sample-patient-records";
+import { sampleScenario5LindaCamera, sampleScenario5WalterCamera } from "../patient-details/sample-data/sample-camera";
+import { sampleScenario5LindaChart, sampleScenario5WalterChart } from "../patient-details/sample-data/sample-chart";
+import { sampleScenarioEmr } from "../patient-details/sample-data/sample-epic";
+import { withGlucose } from "../patient-details/sample-data/sample-glucose";
+import { sampleScenario5LindaMedications, sampleScenario5WalterMedications } from "../patient-details/sample-data/sample-medications";
 import {
 	sampleScenario5DocumentationMinutes,
 	sampleScenario5LindaNotes,
 	sampleScenario5WalterNotes,
-} from "../patient-details/sections/sample-notes";
-import { sampleScenario5LindaOrders, sampleScenario5WalterOrders } from "../patient-details/sections/sample-orders";
-import { sampleScenario5LindaTimeline, sampleScenario5WalterTimeline } from "../patient-details/sections/sample-timeline";
-import { sampleScenario5LindaVitals, sampleScenario5WalterVitals } from "../patient-details/sections/sample-vitals";
+} from "../patient-details/sample-data/sample-notes";
+import { sampleScenario5LindaOrders, sampleScenario5WalterOrders } from "../patient-details/sample-data/sample-orders";
+import { sampleScenario5LindaTimeline, sampleScenario5WalterTimeline } from "../patient-details/sample-data/sample-timeline";
+import { sampleScenario5LindaVitals, sampleScenario5WalterVitals } from "../patient-details/sample-data/sample-vitals";
 import { sampleEhrByHospital } from "./sample-ehr";
 
 // Story-only: Scenario 5's two patients' full records, at each stage, for the scenario's beats (`sample-scenario-5.ts`)

@@ -1,4 +1,4 @@
-import type { PatientVitals, VitalReading, VitalSeries } from "./vitals-section";
+import type { PatientVitals, VitalReading, VitalSeries } from "../sections/vitals-section";
 
 // Synthetic data (PRD Patient details PD-150): the last 24 hours of charted vitals for every patient on the Census, in
 // step with their records and alerts. Each series ends at the patient's live value in `sample-monitoring.ts` and follows

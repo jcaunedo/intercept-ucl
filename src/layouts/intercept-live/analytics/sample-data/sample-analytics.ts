@@ -1,4 +1,4 @@
-import type { OutcomeMetric, OutcomesData, OutcomeValue } from "./analytics-panel";
+import type { OutcomeMetric, OutcomesData, OutcomeValue } from "../analytics-panel";
 
 // Synthetic data: one pilot month across the five hospitals, against the same month before the pilot (Demo Use Cases,
 // Scenario 6: "the pilot dashboard, populated with one synthetic month that includes the scenarios above"). Every number

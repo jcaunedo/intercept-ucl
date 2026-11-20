@@ -1,8 +1,8 @@
-import type { ConsultMessage, ConsultReplies } from "../alert-panel/consult-messages";
-import { sampleBedsideReplier } from "../alert-panel/sample-bedside-replies";
-import { samplePatients } from "../sample-data/sample-census";
-import { sampleHospitals } from "../sample-data/sample-workspace";
-import type { MessageContact, MessageConversation } from "./messages-panel";
+import type { ConsultMessage, ConsultReplies } from "../../alert-panel/consult-messages";
+import { sampleBedsideReplier } from "../../alert-panel/sample-data/sample-bedside-replies";
+import { samplePatients } from "../../sample-data/sample-census";
+import { sampleHospitals } from "../../sample-data/sample-workspace";
+import type { MessageContact, MessageConversation } from "../messages-panel";
 
 // Synthetic inbox for the signed-in clinician (Joanna Smith): one conversation per person and patient at the four
 // hospitals, newest first. A conversation is never about two patients (PRD Messages MSG-001): Kelly Ortiz has three of

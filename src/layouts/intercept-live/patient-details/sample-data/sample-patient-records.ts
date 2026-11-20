@@ -2,15 +2,15 @@ import samplePhoto1 from "@/components/data-display/avatar/images/sample-photo-1
 import samplePhoto2 from "@/components/data-display/avatar/images/sample-photo-2.png";
 import samplePhoto3 from "@/components/data-display/avatar/images/sample-photo-3.png";
 
-import { samplePatientPhotos } from "../sample-data/sample-patient-photos";
-import type { CareTeamMember, PatientEarlyWarning, PatientLab, PatientRecord, PatientVentilator } from "./patient-details";
+import { samplePatientPhotos } from "../../sample-data/sample-patient-photos";
+import type { CareTeamMember, PatientEarlyWarning, PatientLab, PatientRecord, PatientVentilator } from "../patient-details";
 import { clinicalStatusAt, sampleClinicalStatus } from "./sample-clinical-status";
 import { planOfCareWith, samplePlanOfCare } from "./sample-plan-of-care";
 // Synthetic data (PRD Patient details PD-150). The reference patient is Sarah Miller (`p1`: Sidney, MICU
 // Bed 11, SOFA 13, ventilated, on pressors), in step with her alerts in `sample-monitoring.ts`: lactate 4.1 up from 2.2,
 // MAP 58 on norepinephrine 0.22, temperature 38.9 °C, WBC 17.2. Every other patient on the Census has a record as full
 // as hers, in step with their card's tags, their live values in `sample-monitoring.ts` and their alerts. These are the
-// records without their sections' data: `sample-patient-details.ts` adds it from `sections/sample-*.ts`, which build on
+// records without their sections' data: `sample-patient-details.ts` adds it from each tab's `sample-<name>.ts`, which build on
 // these records (so they import this file, never `sample-patient-details.ts`).
 
 const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();

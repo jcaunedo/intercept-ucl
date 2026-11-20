@@ -1,7 +1,7 @@
 import { samplePatients } from "../../sample-data/sample-census";
 import type { PatientRecord } from "../patient-details";
-import { samplePatientBaseRecords } from "../sample-patient-records";
-import type { ChartCulture, ChartHomeMedication, ChartImagingReport, ChartProblem, ChartResult, ChartResultPanel, PatientChart } from "./chart-section";
+import { samplePatientBaseRecords } from "./sample-patient-records";
+import type { ChartCulture, ChartHomeMedication, ChartImagingReport, ChartProblem, ChartResult, ChartResultPanel, PatientChart } from "../sections/chart-section";
 import { sampleEhrByHospital, sampleEhrFor } from "../../sample-data/sample-ehr";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's record at their hospital. Each chart is built

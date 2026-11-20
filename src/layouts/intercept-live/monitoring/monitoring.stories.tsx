@@ -5,20 +5,20 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
 import { expect, fn, screen, waitFor, within } from "storybook/test";
 
-import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-alert-panel";
+import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-data/sample-alert-panel";
 import { samplePastPatients, samplePatients, sampleUncertainStatusPatients } from "../sample-data/sample-census";
-import { samplePatientRecords } from "../patient-details/sample-patient-details";
+import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
-import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-schedule";
-import { sampleMessageConversations } from "../messages/sample-messages";
-import { sampleInboxItems } from "../inbox/sample-inbox";
-import { sampleOutcomes } from "../analytics/sample-analytics";
+import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-data/sample-schedule";
+import { sampleMessageConversations } from "../messages/sample-data/sample-messages";
+import { sampleInboxItems } from "../inbox/sample-data/sample-inbox";
+import { sampleOutcomes } from "../analytics/sample-data/sample-analytics";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Monitoring, type MonitoringProps } from "./monitoring";
-import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "./sample-monitoring";
+import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "./sample-data/sample-monitoring";
 
 const meta = {
 	title: "Layouts/Intercept Live/Monitoring",

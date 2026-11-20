@@ -3,11 +3,11 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { samplePatients } from "../sample-data/sample-census";
-import { samplePatientRecords } from "../patient-details/sample-patient-details";
-import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
+import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { Inbox } from "./inbox";
 import { clearPrototypeLocation } from "../sample-data/prototype-links";
-import { sampleInboxItems } from "./sample-inbox";
+import { sampleInboxItems } from "./sample-data/sample-inbox";
 
 // The Inbox layout (`inbox.tsx`): Intercept Live's shell opened on Inbox. Its alerts are Monitoring's, so an alert
 // acknowledged here is acknowledged on Monitoring too. Its content is `InboxPanel`.

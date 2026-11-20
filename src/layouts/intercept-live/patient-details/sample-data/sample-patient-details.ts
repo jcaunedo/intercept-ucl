@@ -1,22 +1,22 @@
-import type { PatientRecord } from "./patient-details";
-import type { PatientTimeline, TimelinePoint } from "./sections/timeline-section";
-import type { PatientVitals } from "./sections/vitals-section";
+import type { PatientRecord } from "../patient-details";
+import type { PatientTimeline, TimelinePoint } from "../sections/timeline-section";
+import type { PatientVitals } from "../sections/vitals-section";
 import { sampleAlertHistoryByPatient } from "./sample-alert-history";
 import { sampleAllergiesByPatient } from "./sample-allergies";
 import { samplePatientBaseRecords } from "./sample-patient-records";
-import { sampleCameraByPatient } from "./sections/sample-camera";
-import { sampleChartByPatient } from "./sections/sample-chart";
-import { sampleEmrByPatient } from "./sections/sample-epic";
-import { withGlucose } from "./sections/sample-glucose";
-import { sampleMedicationsByPatient } from "./sections/sample-medications";
-import { sampleNotesByPatient } from "./sections/sample-notes";
-import { sampleOrdersByPatient } from "./sections/sample-orders";
-import { sampleSepsisByPatient } from "./sections/sample-sepsis";
-import { sampleTimelineByPatient } from "./sections/sample-timeline";
-import { sampleVitalsByPatient } from "./sections/sample-vitals";
+import { sampleCameraByPatient } from "./sample-camera";
+import { sampleChartByPatient } from "./sample-chart";
+import { sampleEmrByPatient } from "./sample-epic";
+import { withGlucose } from "./sample-glucose";
+import { sampleMedicationsByPatient } from "./sample-medications";
+import { sampleNotesByPatient } from "./sample-notes";
+import { sampleOrdersByPatient } from "./sample-orders";
+import { sampleSepsisByPatient } from "./sample-sepsis";
+import { sampleTimelineByPatient } from "./sample-timeline";
+import { sampleVitalsByPatient } from "./sample-vitals";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's record (`sample-patient-records.ts`) with each
-// section's data, which lives beside its section (`sections/sample-*.ts`), keyed by patient.
+// section's data, which has its own file here (`sample-<name>.ts`), keyed by patient.
 // A patient with EtCO₂ (the intubated ones) gets its lane on the Timeline, from the same charted readings as the latest
 // value's tile (Nov 11, 2026: Vitals merged into the Timeline). A stretch longer than two charting intervals is a gap.
 function withEtco2Lane(timeline?: PatientTimeline, vitals?: PatientVitals): PatientTimeline | undefined {
@@ -51,7 +51,7 @@ function withEtco2Lane(timeline?: PatientTimeline, vitals?: PatientVitals): Pati
 
 const samplePatientRecords: PatientRecord[] = samplePatientBaseRecords.map((record) => ({
 	...record,
-	// Blood glucose on the Timeline's latest values and chart (`sections/sample-glucose.ts`), after EtCO₂'s lane.
+	// Blood glucose on the Timeline's latest values and chart (`sample-glucose.ts`), after EtCO₂'s lane.
 	...withGlucose(record.id, {
 		vitals: sampleVitalsByPatient[record.id],
 		timeline: withEtco2Lane(sampleTimelineByPatient[record.id], sampleVitalsByPatient[record.id]),

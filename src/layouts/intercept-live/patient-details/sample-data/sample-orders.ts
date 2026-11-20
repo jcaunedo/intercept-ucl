@@ -1,4 +1,4 @@
-import type { ActiveOrder, OrderAgentCheck, OrderRecommendation, PatientOrders } from "./orders-section";
+import type { ActiveOrder, OrderAgentCheck, OrderRecommendation, PatientOrders } from "../sections/orders-section";
 
 // Synthetic data (PRD Patient details PD-150): every Census patient's orders, in step with their record in
 // `sample-patient-records.ts` (infusions, ventilator or oxygen, therapy), their alerts and their sepsis case.

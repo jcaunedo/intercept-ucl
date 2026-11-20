@@ -9,9 +9,9 @@ import {
 	sampleEscalationTargets,
 	sampleMonitoringAlerts,
 	sampleMonitoringPatients,
-} from "../monitoring/sample-monitoring";
-import { sampleLiveScenario } from "../monitoring/sample-live-scenario";
-import { samplePatientRecords } from "../patient-details/sample-patient-details";
+} from "../monitoring/sample-data/sample-monitoring";
+import { sampleLiveScenario } from "../monitoring/sample-data/sample-live-scenario";
+import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
 import { withFlagDetails } from "../shared/flag-details";
 import { sampleScenario2Discharge } from "../sample-data/sample-scenario-2";
 import {
@@ -26,7 +26,7 @@ import {
 	sampleScenario4Protocol,
 	sampleScenario5LindaAlertDetail,
 	sampleScenario5LindaTransfer,
-} from "./sample-alert-panel";
+} from "./sample-data/sample-alert-panel";
 
 /**
  * The alert panel (UCL AlertModal with the alert's interactions), opened from a Monitoring card's alert bar or an

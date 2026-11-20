@@ -1,6 +1,6 @@
-import type { MonitorVitals } from "@/components/data-display/patient-monitor";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor/index";
 
-import type { ConsultMessage } from "./consult-messages";
+import type { ConsultMessage } from "../consult-messages";
 
 // Story-only: what the bedside nurse wrote in a patient's thread before the page opened, one message per unread
 // message the patient's record counts (`PatientRecord.unreadMessages`), so the header's Messages count and the thread

@@ -250,7 +250,7 @@ The app's API fills one record per alert (`AlertDetailData`); the prototype buil
 | Pathway | `src/layouts/intercept-live/alert-panel/care-pathway.tsx` |
 | Keep or transfer | `src/layouts/intercept-live/alert-panel/keep-or-transfer.tsx` (`KeepOrTransferPanel`) |
 | Social needs at discharge | `src/layouts/intercept-live/alert-panel/discharge-plan.tsx` (`DischargePlanPanel`); Reynolds's in `sample-data/sample-scenario-2.ts` |
-| Sample data | `src/layouts/intercept-live/alert-panel/sample-alert-panel.ts` (Hayes's Scenario 1 detail; a detail and a pathway for every feed alert) |
+| Sample data | `src/layouts/intercept-live/alert-panel/sample-data/sample-alert-panel.ts` (Hayes's Scenario 1 detail; a detail and a pathway for every feed alert) |
 | Forms | `src/layouts/intercept-live/monitoring/triage-queue.tsx` (`EscalateForm`, `ResolveForm`, `stateLine`) |
 | Decisions | DESIGN.md › "Alert panel" |
 | Stories | Storybook › Layouts/Intercept Live/Alert panel (Social Needs At Discharge too); Monitoring › Scenario 1: Heart failure |

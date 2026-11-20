@@ -3,10 +3,10 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { samplePatients } from "../sample-data/sample-census";
-import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-monitoring";
+import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { Schedule } from "./schedule";
 import { clearPrototypeLocation } from "../sample-data/prototype-links";
-import { sampleOpenShifts, sampleScheduleShifts } from "./sample-schedule";
+import { sampleOpenShifts, sampleScheduleShifts } from "./sample-data/sample-schedule";
 
 // The Schedule layout (`schedule.tsx`): Intercept Live's shell opened on Schedule, so the Sidebar, the header and the
 // account menu are the app's. Its content is `SchedulePanel`.
