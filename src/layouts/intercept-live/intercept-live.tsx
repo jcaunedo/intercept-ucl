@@ -10,7 +10,6 @@ import {
 	ContactIcon,
 	ExternalLinkIcon,
 	FileTextIcon,
-	HeartCrackIcon,
 	InboxIcon,
 	LifeBuoyIcon,
 	ListCheckIcon,
@@ -31,7 +30,6 @@ import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/
 import { CalendarSolidIcon } from "@/components/icons/calendar-solid-icon";
 import { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
 import { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
-import { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
 import { InboxSolidIcon } from "@/components/icons/inbox-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
 import { SparklesSolidIcon } from "@/components/icons/sparkles-solid-icon";
@@ -113,7 +111,8 @@ const patientOverviewQuestion = "Quick overview";
 
 // The Clinical workspace's items (intercept.ds `sidebar` Role=Clinical, Nov 16, 2026; PRD Sidebar NAV-020). No Search
 // item (Oct 31, 2026, user's call): search happens in Ask Intercept Live. The Census page is **Patients**, the full list
-// of everyone treated, in hospital or not (Nov 16, 2026, user's call); Alert Queue became Inbox.
+// of everyone treated, in hospital or not (Nov 16, 2026, user's call); Alert Queue became Inbox. Virtual Sepsis is no
+// longer a row (Nov 20, 2026 resync, user's call): Protocols lists it and opens it (`subPages`, PRD Sidebar NAV-044).
 const askGroup: SidebarNavItem[] = [{ icon: SparklesIcon, activeIcon: SparklesSolidIcon, label: askInterceptLabel }];
 
 const clinicalGroups: SidebarNavItem[][] = [
@@ -123,7 +122,6 @@ const clinicalGroups: SidebarNavItem[][] = [
 		{ icon: InboxIcon, activeIcon: InboxSolidIcon, label: "Inbox", navigateTo: "Inbox" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages", navigateTo: "Messages" },
 		{ icon: ListCheckIcon, label: "Protocols", navigateTo: "Protocols" },
-		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis", navigateTo: "Virtual Sepsis" },
 	],
 	[
 		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Patients", navigateTo: "Patients" },
@@ -174,10 +172,19 @@ const workspaceNav: Record<InterceptLiveWorkspace, { description: string; tag?: 
 
 const allWorkspaces = Object.keys(workspaceNav) as InterceptLiveWorkspace[];
 
+/**
+ * Pages opened from another page rather than from the Sidebar, by the page that opens them: Protocols lists the protocols
+ * and opens each one (PRD Sidebar NAV-044). The Sidebar shows the parent as current while one is open.
+ */
+const subPages: Partial<Record<string, string>> = { "Virtual Sepsis": "Protocols" };
+
+/** The Sidebar item a page belongs to: its own, or its parent's. */
+const navItemOf = (page: string) => subPages[page] ?? page;
+
 /** The workspace a page belongs to; none for a page outside the sidebars (Profile). */
 function workspaceOf(page: string) {
 	return allWorkspaces.find((workspace) =>
-		workspaceNav[workspace].groups.some((group) => group.some((item) => item.navigateTo === page)),
+		workspaceNav[workspace].groups.some((group) => group.some((item) => item.navigateTo === navItemOf(page))),
 	);
 }
 
@@ -822,9 +829,10 @@ function InterceptLive({
 				if (!renderPatientDetails) return;
 				setOpenPatient({ id: patientId, list, consult: options?.consult, pathway: options?.pathway, section: options?.section });
 			},
-			// A page of the Sidebar, over whatever is open (a notice's Open Inbox or Open outcomes, Scenario 6).
+			// A page of the Sidebar, over whatever is open (a notice's Open Inbox or Open outcomes, Scenario 6), or one a page
+			// opens (Protocols' Virtual Sepsis). A page the layout doesn't build shows its empty state, as from the Sidebar.
 			openPage: (target) => {
-				if (!pages[target as InterceptLivePage]) return;
+				if (!(target in emptyPages)) return;
 				setOpenAlert((current) => (current ? { ...current, open: false } : current));
 				setOpenPatient(null);
 				setPage(target as InterceptLivePage);
@@ -1039,7 +1047,8 @@ function InterceptLive({
 									footerItems={footerItems}
 									// On a patient's page no item is active: the page underneath isn't what's on screen (Nov 11, 2026, user's
 									// call). An empty string, not undefined, which would fall back to the Sidebar's own last item.
-									activeItem={patientView ? "" : page}
+									// A page opened from another (Virtual Sepsis from Protocols) keeps its parent current.
+									activeItem={patientView ? "" : navItemOf(page)}
 									onNavigate={(navigateTo) => {
 										setOpenPatient(null);
 										setPage(navigateTo as InterceptLivePage);

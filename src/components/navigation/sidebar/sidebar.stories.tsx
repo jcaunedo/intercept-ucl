@@ -11,7 +11,6 @@ import {
 	CircleUserIcon,
 	ContactIcon,
 	FileTextIcon,
-	HeartCrackIcon,
 	HomeIcon,
 	InboxIcon,
 	LifeBuoyIcon,
@@ -31,7 +30,6 @@ import {
 import { CalendarSolidIcon } from "@/components/icons/calendar-solid-icon";
 import { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
 import { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
-import { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
 import { HomeSolidIcon } from "@/components/icons/home-solid-icon";
 import { InboxSolidIcon } from "@/components/icons/inbox-solid-icon";
 import { MessageCircleMoreSolidIcon } from "@/components/icons/message-circle-more-solid-icon";
@@ -57,7 +55,6 @@ const clinicalGroups: SidebarNavItem[][] = [
 		{ icon: InboxIcon, activeIcon: InboxSolidIcon, label: "Inbox" },
 		{ icon: MessageCircleMoreIcon, activeIcon: MessageCircleMoreSolidIcon, label: "Messages" },
 		{ icon: ListCheckIcon, label: "Protocols" },
-		{ icon: HeartCrackIcon, activeIcon: HeartCrackSolidIcon, label: "Virtual Sepsis" },
 	],
 	[
 		{ icon: CircleUserIcon, activeIcon: CircleUserSolidIcon, label: "Patients" },
@@ -263,7 +260,7 @@ export const ItemAlerts: Story = {
 			group.map((item) => {
 				if (item.label === "Monitoring") return { ...item, alert: "critical" as const };
 				if (item.label === "Inbox") return { ...item, alert: "medium" as const };
-				if (item.label === "Virtual Sepsis") return { ...item, alert: "resolved" as const };
+				if (item.label === "Protocols") return { ...item, alert: "resolved" as const };
 				if (item.label === "Messages") return { ...item, alert: "unread" as const };
 				return item;
 			}),
@@ -272,7 +269,7 @@ export const ItemAlerts: Story = {
 	play: async ({ canvas, canvasElement }) => {
 		await expect(canvas.getByRole("button", { name: "Monitoring, Critical alert" })).toBeInTheDocument();
 		await expect(canvas.getByRole("button", { name: "Inbox, Medium alert" })).toBeInTheDocument();
-		await expect(canvas.getByRole("button", { name: "Virtual Sepsis" })).toBeInTheDocument();
+		await expect(canvas.getByRole("button", { name: "Protocols" })).toBeInTheDocument();
 		await expect(canvas.getByRole("button", { name: "Messages, Unread" })).toBeInTheDocument();
 		const dots = canvasElement.querySelectorAll("[data-slot=sidebar-menu-button-alert][data-severity]");
 		await expect(dots).toHaveLength(3);

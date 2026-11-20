@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 19, 2026
+Last updated: Nov 20, 2026
 Scope: The left navigation (UCL Sidebar): its three workspaces (Clinical, Administration, Marketplace), the items each one shows, the workspace switcher, Ask Intercept Live's place in it, and the rail's states. Source: documents/Intercept Live — Left Nav Spec.md and intercept.ds `sidebar` (1001:544).
 Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, records where the design follows it and where it doesn't yet, and lists what's still open.
 -->
@@ -19,7 +19,7 @@ Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, reco
 **Audience:** Every signed-in user, in each workspace they have (§2): intensivists, APPs and Critical Care RNs in Clinical; administrators and operations roles in Administration; Independent Clinicians in Marketplace  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 19, 2026
+**Last updated:** November 20, 2026
 
 ---
 
@@ -243,7 +243,9 @@ A small outlined label after the item for scope or status: **Intercept only** (S
 
 Virtual Sepsis is nested under Protocols: indented under its parent, smaller type, with its own current-page state.
 
-⚠️ **Decision needed:** intercept.ds draws Protocols and Virtual Sepsis as two rows at the same level, and UCL follows it. Decide whether Protocols is a page of its own (all protocols, one row per protocol) with Virtual Sepsis as its child, or a group heading.
+~~⚠️ **Decision needed:** intercept.ds draws Protocols and Virtual Sepsis as two rows at the same level, and UCL follows it. Decide whether Protocols is a page of its own (all protocols, one row per protocol) with Virtual Sepsis as its child, or a group heading.~~
+
+✅ **Resolved:** Protocols is a page of its own and Virtual Sepsis is its child, not a Sidebar row (intercept.ds's Clinical sidebar drops the Virtual Sepsis row). Protocols lists every protocol tracking the clinician's patients, a row each with what it watches for, its patients and their active alerts, and **Open** to its page; Virtual Sepsis is the only one in v1, listed even with no one on it. On a protocol's page the Sidebar keeps **Protocols** current, and a **Protocols › Virtual Sepsis** breadcrumb over the page leads back. No nested row, so the spec's indented, smaller child row isn't built.
 
 ### NAV-050 — Expand and collapse
 
@@ -307,7 +309,8 @@ The width animates between 280 and 64px and the rail's fill follows it; hovering
 
 | ID | Criterion |
 |---|---|
-| NAV-AC-01 | A clinician with only the Clinical workspace sees no switcher, lands on Monitoring, and sees Ask Intercept Live, Monitoring, Inbox, Messages, Protocols, Virtual Sepsis · Patients, Schedule, Analytics, then Documentation and Support (NAV-011, NAV-020). |
+| NAV-AC-01 | A clinician with only the Clinical workspace sees no switcher, lands on Monitoring, and sees Ask Intercept Live, Monitoring, Inbox, Messages, Protocols · Patients, Schedule, Analytics, then Documentation and Support (NAV-011, NAV-020). |
+| NAV-AC-08 | Protocols lists Virtual Sepsis; its **Open** shows the Virtual Sepsis page under a Protocols › Virtual Sepsis breadcrumb, with Protocols still current in the Sidebar; the breadcrumb's Protocols goes back (NAV-044). |
 | NAV-AC-02 | Switching workspace changes the items and the landing page; the hospital filter on the page stays as it was (NAV-010). |
 | NAV-AC-03 | Opening Ask Intercept Live never changes the current page (NAV-030). |
 | NAV-AC-04 | Exactly one item is current, in both rail modes, and none while a patient's page is open (NAV-040). |

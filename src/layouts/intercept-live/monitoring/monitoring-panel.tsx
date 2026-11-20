@@ -20,6 +20,14 @@ import {
 	type MonitorAlarmParameter,
 } from "@/components/data-display/patient-monitor";
 import { EmptyState } from "@/components/feedback/empty-state";
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbLink,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from "@/components/navigation/breadcrumb";
 import { FilterBar, FilterBarControls, FilterBarFilters } from "@/components/forms/filter-bar";
 import { SearchInput } from "@/components/forms/search-input";
 import { Switch } from "@/components/forms/switch";
@@ -150,6 +158,11 @@ type MonitoringPanelProps = {
 	 * resolutions up to then and shows no alert; a later one shows again.
 	 */
 	closedResolutions?: Record<string, string>;
+	/**
+	 * The page's place, for a page opened from another one: a breadcrumb over the summary, its first link back to the
+	 * parent page (Virtual Sepsis under Protocols, PRD Sidebar NAV-044). None on Monitoring itself.
+	 */
+	parent?: { label: string; page: string; current: string };
 };
 
 /* -------------------------------------------------------------------------- */
@@ -373,6 +386,7 @@ function MonitoringPanel({
 	onOpenLiveFeed,
 	groupedView = "board",
 	closedResolutions = {},
+	parent,
 }: MonitoringPanelProps) {
 	const navigation = usePatientNavigation();
 	// A hospital tab's alert count, clicked on another page, opens Monitoring on that tab with Active alerts on.
@@ -733,6 +747,23 @@ function MonitoringPanel({
 				</div>
 
 				<main className='flex flex-1 flex-col gap-6 p-6'>
+					{parent ? (
+						<Breadcrumb className='-mb-4'>
+							<BreadcrumbList>
+								<BreadcrumbItem>
+									<BreadcrumbLink asChild>
+										<button type='button' onClick={() => navigation?.openPage?.(parent.page)}>
+											{parent.label}
+										</button>
+									</BreadcrumbLink>
+								</BreadcrumbItem>
+								<BreadcrumbSeparator />
+								<BreadcrumbItem>
+									<BreadcrumbPage>{parent.current}</BreadcrumbPage>
+								</BreadcrumbItem>
+							</BreadcrumbList>
+						</Breadcrumb>
+					) : null}
 					{/* As on the Census (Intercept-Live Census `167:5543`): the summary with the live feed's latest change at its
 					    right, which opens the live feed panel; then the filter chips, with the page's actions at the right, 8px
 					    apart; 24px between the rows. */}

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
-import { expect, fn, screen, waitFor, within } from "storybook/test";
+import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-data/sample-alert-panel";
 import { samplePastPatients, samplePatients, sampleUncertainStatusPatients } from "../sample-data/sample-census";
@@ -555,6 +555,32 @@ export const MonitorViews: Story = {
 		await userEvent.click(canvas.getByRole("button", { name: "Full view" }));
 		await waitFor(() => expect(expandedCards()).toHaveLength(sampleMonitoringPatients.length));
 		await waitFor(() => expect(scores().length).toBeGreaterThan(0));
+	},
+};
+
+/**
+ * Protocols lists the protocols tracking the patients, Virtual Sepsis the only one; Open shows its page, Monitoring
+ * narrowed to the patients on sepsis watch, under a "Protocols › Virtual Sepsis" breadcrumb, while the Sidebar keeps
+ * Protocols current (Virtual Sepsis isn't a Sidebar row since Nov 20, 2026; PRD Sidebar NAV-044). The breadcrumb leads
+ * back.
+ */
+export const ProtocolsOpensVirtualSepsis: Story = {
+	args: { defaultPage: "Protocols" },
+	render: (args) => <LiveMonitoring {...args} />,
+	play: async ({ canvas }) => {
+		const nav = within(await canvas.findByRole("navigation", { name: /main/i }));
+		await expect(nav.queryByRole("button", { name: /^Virtual Sepsis/ })).toBeNull();
+		await expect(nav.getByRole("button", { name: /^Protocols/ })).toHaveAttribute("aria-current", "page");
+		const table = within(await canvas.findByRole("table", { name: "Protocols" }));
+		await expect(table.getByText("Virtual Sepsis")).toBeVisible();
+		await userEvent.click(table.getByRole("button", { name: "Open Virtual Sepsis" }));
+
+		const crumbs = within(await canvas.findByRole("navigation", { name: "Breadcrumb" }));
+		await expect(crumbs.getByText("Virtual Sepsis")).toHaveAttribute("aria-current", "page");
+		await expect(nav.getByRole("button", { name: /^Protocols/ })).toHaveAttribute("aria-current", "page");
+
+		await userEvent.click(crumbs.getByRole("button", { name: "Protocols" }));
+		await canvas.findByRole("table", { name: "Protocols" });
 	},
 };
 

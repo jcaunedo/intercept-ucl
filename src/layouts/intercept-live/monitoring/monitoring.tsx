@@ -32,7 +32,8 @@ import {
 	type TriageAlert,
 	type TriageAlertAction,
 } from "./monitoring-panel";
-import { worstOpenSeverity } from "./triage-queue";
+import { isOpenAlert, worstOpenSeverity } from "./triage-queue";
+import { ProtocolsPanel } from "../protocols/protocols-panel";
 
 type MonitoringProps = Omit<InterceptLiveProps, "pages" | "defaultPage"> &
 	MonitoringPanelProps & {
@@ -241,11 +242,28 @@ function Monitoring({
 							closedResolutions={closedResolutions}
 						/>
 					),
+					// The protocols tracking the patients, each opening its page (PRD Sidebar NAV-044). Virtual Sepsis is the
+					// only one in v1, listed even with no one on it.
+					Protocols: (
+						<ProtocolsPanel
+							protocols={[
+								{
+									id: "virtual-sepsis",
+									name: "Virtual Sepsis",
+									description: "Patients watched for sepsis: candidates to confirm or exclude, and confirmed cases through the bundle",
+									patients: sepsis.cards.length,
+									alerts: sepsis.alerts.filter(isOpenAlert).length,
+									page: "Virtual Sepsis",
+								},
+							]}
+						/>
+					),
 					"Virtual Sepsis": sepsis.cards.length ? (
 						<MonitoringPanel
 							records={patientRecords}
 							hospitals={sepsis.hospitals}
 							patients={sepsis.cards}
+							parent={{ label: "Protocols", page: "Protocols", current: "Virtual Sepsis" }}
 							alerts={sepsis.alerts}
 							escalationTargets={escalationTargets}
 							onOpenPatient={onOpenPatient}

@@ -6,8 +6,8 @@ status: proposed — confirm with Carlos
 <!--
 Created: Nov 13, 2026
 Created by: Julio Caunedo
-Last updated: Nov 19, 2026
-Scope: The Virtual Sepsis page in Intercept Live (Sidebar › Virtual Sepsis): which patients it lists, how it shows them, and what it doesn't do yet. Governs the "Virtual Sepsis" page in `monitoring/monitoring.tsx`. The patient's own Sepsis tab is PRD Patient details'.
+Last updated: Nov 20, 2026
+Scope: The Virtual Sepsis page in Intercept Live (Sidebar › Protocols › Virtual Sepsis): which patients it lists, how it shows them, and what it doesn't do yet. Governs the "Virtual Sepsis" page in `monitoring/monitoring.tsx`. The patient's own Sepsis tab is PRD Patient details'.
 Purpose: the page was built on Nov 13, 2026 from the Monitoring page; this PRD records what it does and lists what the spec asks of it that's still open.
 -->
 
@@ -16,11 +16,11 @@ Purpose: the page was built on Nov 13, 2026 from the Monitoring page; this PRD r
 **Product:** Intercept Live — Virtual Care OS  
 **Module:** Virtual Sepsis ★ (Spec §5.9), with the Sepsis Sniffer (§8.1) and the Sepsis Tracker (§8.2)  
 **Name:** **Virtual Sepsis**, the page. A patient on it is **on sepsis watch**  
-**Surface:** Sidebar › Virtual Sepsis  
+**Surface:** Sidebar › Protocols › Virtual Sepsis (~~Sidebar › Virtual Sepsis~~)  
 **Audience:** Intensivists, APPs and Critical Care RNs; intensivists and APPs confirm or exclude sepsis  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 19, 2026
+**Last updated:** November 20, 2026
 
 ---
 
@@ -29,6 +29,8 @@ Purpose: the page was built on Nov 13, 2026 from the Monitoring page; this PRD r
 Virtual Sepsis is where the clinician sees every patient the platform is watching for sepsis, across their hospitals, in one place.
 
 The spec makes Virtual Sepsis the first Intelligence-layer module: it "continuously screens patients for sepsis … using CMS SEP-1 bundle criteria as the regulatory baseline; tracks identified patients through the three-and-six-hour bundle windows" (Spec §5.9). The Sepsis Sniffer finds candidates and the clinician confirms or excludes them (VS-01, VS-03); the Sepsis Tracker follows confirmed cases through the bundle (VS-04 to VS-06).
+
+✅ **Resolved:** the page is reached from **Protocols**, which lists it, not from its own Sidebar row; a **Protocols › Virtual Sepsis** breadcrumb sits over its summary, and the Sidebar keeps Protocols current (PRD Sidebar NAV-044).
 
 **The page is Monitoring, narrowed to sepsis.** It shows the same live monitoring cards, hospital tabs, filters and views as Monitoring, for the sepsis patients only. Each patient's sepsis detail (criteria, Time Zero, bundle elements, prompts) is in Patient details › Sepsis, which the page opens.
 
@@ -134,4 +136,4 @@ What the spec asks of Virtual Sepsis that the page doesn't do yet. Each is a can
 | Page | `src/layouts/intercept-live/monitoring/monitoring.tsx` (the `"Virtual Sepsis"` page: `MonitoringPanel` given the sepsis patients) |
 | Cards and panel | `monitoring/monitoring-panel.tsx`, UCL `PatientMonitoringCard` |
 | Sepsis cases | `patient-details/sections/sepsis-section.tsx` (`SepsisCase`), `sample-data/sample-sepsis.ts` |
-| Storybook | Layouts › Intercept Live › Monitoring, Sidebar › Virtual Sepsis |
+| Storybook | Layouts › Intercept Live › Monitoring, Sidebar › Protocols › Virtual Sepsis (story Protocols Opens Virtual Sepsis) |
