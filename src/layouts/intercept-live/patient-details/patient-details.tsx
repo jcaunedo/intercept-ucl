@@ -51,7 +51,7 @@ import { avatarTone, avatarTones, patientInitials, type AvatarTone } from "../sh
 import { patientStatuses, type PatientCensusStatus } from "../patients/patient-status";
 import type { AlertConsultState, AlertDetailData, PatientConsultData } from "../alert-panel/alert-panel";
 import { pathwaySessionKey, type CarePathwayDecision, type CarePathwayStatus } from "../alert-panel/care-pathway";
-import { ConsultSessionScope, useSessionState } from "../alert-panel/consult-session";
+import { ConsultSessionScope, useSessionState, useSessionValues } from "../alert-panel/consult-session";
 import type { DischargeDecision, DischargePlan } from "../alert-panel/discharge-plan";
 import type { KeepOrTransferDecision } from "../alert-panel/keep-or-transfer";
 import type { BundleDecision } from "../alert-panel/sepsis-bundle";
@@ -655,11 +655,11 @@ function sectionContent(
 		onDischargeDecision,
 		onTransitionDecision,
 		onShowSection,
-		pathway,
+		carePlanPathways,
 	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction" | "onDischargeDecision" | "onTransitionDecision"> & {
 		onShowSection: (id: SectionId) => void;
-		/** The pathway an open alert brought, for the Care Plan tab as on the Overview. */
-		pathway?: OverviewPathway;
+		/** Every pathway the patient's alerts brought, for the Care Plan tab: each under the problem it treats. */
+		carePlanPathways: OverviewPathway[];
 	},
 ): React.ReactNode {
 	switch (id) {
@@ -668,7 +668,9 @@ function sectionContent(
 		case "chart":
 			return record?.chart ? <ChartSection chart={record.chart} /> : null;
 		case "care-plan":
-			return record?.planOfCare || record?.carePlan || pathway ? <CarePlanSection record={record} pathway={pathway} /> : null;
+			return record?.planOfCare || record?.carePlan || carePlanPathways.length ? (
+				<CarePlanSection record={record} pathways={carePlanPathways} />
+			) : null;
 		case "timeline":
 			// The latest vitals over the chart (Vitals merged in, Nov 11, 2026), then the activity log on the events lane,
 			// so each decision lines up with the vitals.
@@ -857,6 +859,27 @@ function PatientDetailsContent({
 						: undefined,
 			}
 		: undefined;
+	// The Care Plan tab shows every alert's pathway (Nov 20, 2026), each where the session has it, and opens each in the
+	// page's Pathway panel on that alert (or the alert, without the panel).
+	const pathwayDetails = pathways?.details ?? [];
+	const pathwayStatuses = useSessionValues<CarePathwayStatus>(
+		pathwayDetails.map((detail) => pathwaySessionKey(detail.alert.id, "status")),
+		pathwayDetails.map((detail) => detail.pathwayStatus ?? "suggested"),
+	);
+	const pathwayCompletedAt = useSessionValues<string>(
+		pathwayDetails.map((detail) => pathwaySessionKey(detail.alert.id, "completedAt")),
+		pathwayDetails.map((detail) => detail.pathwayRecord?.completedAt ?? ""),
+	);
+	const carePlanPathways: OverviewPathway[] = pathwayDetails.map((detail, index) => ({
+		detail,
+		status: pathwayStatuses[index],
+		completedAt: pathwayCompletedAt[index] || undefined,
+		onOpen: consult
+			? () => alertPathway.show(detail.alert.id)
+			: navigation
+				? () => navigation.openAlert(patient.id, detail.alert.id)
+				: undefined,
+	}));
 	// Sepsis is a section only while the patient is under screening or tracking (PRD PD-080), Discharge only once the
 	// discharge workflow has something for it: a transition of care (Scenario 6) or social needs (Scenario 2, step 6).
 	// The hospital's record tab is always "EMR", whatever its system (Meditech, Epic, Cerner…; Nov 11, 2026, user's call);
@@ -998,7 +1021,7 @@ function PatientDetailsContent({
 						onDischargeDecision,
 						onTransitionDecision,
 						onShowSection: setSection,
-						pathway: overviewPathway,
+						carePlanPathways,
 					});
 					// Keyed by patient, so a section's local state (an open form, an accepted recommendation) never
 					// carries over to the next patient. Block, not flex: the sections are size containers, which a flex

@@ -68,6 +68,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { KeyboardShortcutsDialog, SignedOutScreen, SignOutDialog, shortcutsKey, useShortcutsKey } from "./account-dialogs";
+import { canCompletePathways, PathwayCompletionProvider } from "./alert-panel/care-pathway";
 import { ConsultSessionProvider } from "./alert-panel/consult-session";
 import type { MonitorView } from "./monitoring/view-controls";
 import type { TriageAlert } from "./monitoring/triage-queue";
@@ -1026,6 +1027,8 @@ function InterceptLive({
 			<TagsPopoverActionsProvider resolve={tagActions}>
 			{/* A patient's consult (the call, its notetaker, the thread) goes with them between the alert and their page. */}
 			<ConsultSessionProvider>
+			{/* Who may mark a pathway completed or reopen it: the intensivist and the APP (PRD Care plan CPL-022). */}
+			<PathwayCompletionProvider value={canCompletePathways(user.role)}>
 			<PagePreferencesProvider value={pagePreferences}>
 				<PagePanelSlotProvider value={panelSlot}>
 					<PageHidesToastsProvider value={setPanelHidesToasts}>
@@ -1217,6 +1220,7 @@ function InterceptLive({
 					</PageHidesToastsProvider>
 				</PagePanelSlotProvider>
 			</PagePreferencesProvider>
+			</PathwayCompletionProvider>
 			</ConsultSessionProvider>
 			</TagsPopoverActionsProvider>
 		</PatientNavigationProvider>

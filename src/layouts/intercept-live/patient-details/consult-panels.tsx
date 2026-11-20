@@ -112,7 +112,16 @@ function useAlertPathwayPanel() {
 		},
 		[shownAlertId, setPathwayOpen, setPathwayAlertId, setMessagesOpen],
 	);
-	return { shownAlertId, toggle };
+	/** Opens the panel on this alert's pathway, or keeps it there (the Care Plan tab's Review / Open pathway). */
+	const show = React.useCallback(
+		(alertId: string) => {
+			setPathwayAlertId(alertId);
+			setMessagesOpen(false);
+			setPathwayOpen(true);
+		},
+		[setPathwayOpen, setPathwayAlertId, setMessagesOpen],
+	);
+	return { shownAlertId, toggle, show };
 }
 
 /** Each panel's width, Figma's. Fixed: the call keeps its 352 × 248 shape at any width, and nothing needs resizing. */

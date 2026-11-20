@@ -149,4 +149,22 @@ function useSessionPeek() {
 	);
 }
 
-export { ConsultSessionProvider, ConsultSessionScope, useSessionPeek, useSessionState };
+/**
+ * Several of the session's values at once, read only, each `fallback` while the session doesn't hold it: for a list whose
+ * length changes (a patient's pathways), where `useSessionState` can't be called once per item. Primitive values only
+ * (they're compared as one snapshot). Outside a scope, the fallbacks.
+ */
+function useSessionValues<T extends string | number | boolean>(keys: string[], fallbacks: T[]): T[] {
+	const store = React.useContext(StoreContext);
+	const scope = React.useContext(ScopeContext);
+	const snapshot = React.useSyncExternalStore(
+		store ? store.subscribe : noSubscribe,
+		() =>
+			JSON.stringify(keys.map((key) => (store && scope && store.has(scope.patientId, key) ? store.get(scope.patientId, key) : null))),
+		() => "[]",
+	);
+	const stored = JSON.parse(snapshot) as (T | null)[];
+	return keys.map((_, index) => stored[index] ?? fallbacks[index]);
+}
+
+export { ConsultSessionProvider, ConsultSessionScope, useSessionPeek, useSessionState, useSessionValues };

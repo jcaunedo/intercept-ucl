@@ -100,6 +100,7 @@ const sampleScenario1CarePlan: PatientCarePlan = {
 		by: "You",
 		cosigner: "Dr. Tom Weller",
 		cosignedAt: minutesAgo(32),
+		problemId: "heart-failure",
 	},
 	transfer: {
 		label: "Keeping at Chadron",

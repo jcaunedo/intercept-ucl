@@ -58,6 +58,14 @@ export {
 /* -------------------------------------------------------------------------- */
 
 export {
+	CarePlanPathway,
+	CarePlanProblemCard,
+	carePlanProblemStatuses,
+	type CarePlanPathwayProps,
+	type CarePlanProblemCardProps,
+	type CarePlanProblemStatus,
+} from "@/components/cards/care-plan-problem-card";
+export {
 	PatientCard,
 	PatientCensusCard,
 	PatientCardAlert,

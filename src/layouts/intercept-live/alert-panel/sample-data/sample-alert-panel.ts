@@ -11,6 +11,7 @@ import {
 	sampleBackupTargetId,
 } from "../../monitoring/sample-data/sample-monitoring";
 import { samplePatients, sampleScenario5LindaCensus } from "../../sample-data/sample-census";
+import type { PatientPlanOfCare } from "../../patient-details/activity";
 import type { PatientRecord } from "../../patient-details/patient-details";
 import { sampleCameraVideo } from "../../sample-data/sample-camera-video";
 import { avatarTones, patientInitials } from "../../shared/patient-avatar";
@@ -101,6 +102,7 @@ const sampleScenario1AlertDetail = (): AlertDetailData => ({
 	video: sampleCameraVideo,
 	// Step 4: BiPAP, escalated IV diuretic with a urine-output target, and nitrate if blood pressure allows. Doses and
 	// settings are illustrative until clinical review; the protocol is the hospital's (BR-15).
+	problemId: "heart-failure",
 	pathway: {
 		title: "CHF exacerbation pathway",
 		source: "Reference protocol, CHF exacerbation (configurable per hospital)",
@@ -275,6 +277,7 @@ const sampleScenario2AlertDetail = (): AlertDetailData => {
 		transcript: sampleConsultTranscript({ patientId: "p21", firstName: "Dale", sex: "M", nurse: "Megan Foster" }),
 		room: { airway: "niv", pumps: 0 },
 		video: sampleCameraVideo,
+		problemId: "respiratory-failure",
 		pathway: {
 			title: "COPD exacerbation pathway",
 			source: "Reference protocol, COPD exacerbation with hypercapnia (configurable per hospital)",
@@ -604,6 +607,7 @@ const sampleScenario3AlertDetail = (firedAt = new Date().toISOString()): AlertDe
 		transcript: sampleConsultTranscript({ patientId: "p23", firstName: "Rosa", sex: "F", nurse: "Ashley Brooks" }),
 		room: { airway: "none", pumps: 1 },
 		video: sampleCameraVideo,
+		problemId: "septic-shock",
 		bundle: sampleScenario3Bundle(firedAt),
 	};
 };
@@ -813,6 +817,7 @@ const sampleScenario4AlertDetail = (firedAt = new Date().toISOString()): AlertDe
 		transcript: sampleConsultTranscript({ patientId: "p24", firstName: "Tyler", sex: "M", nurse: "Brittany Cole" }),
 		room: { airway: "none", pumps: 2 },
 		video: sampleCameraVideo,
+		problemId: "dka",
 		pathway: sampleScenario4Pathway(),
 	};
 };
@@ -979,6 +984,26 @@ function samplePathway(alert: TriageAlert, vitals: SampleVitals | undefined, cos
 		},
 		{ id: "vitals", name: "Vitals", dose: "Every 15 min × 4" },
 	]);
+}
+
+/**
+ * The plan-of-care problem an alert's pathway treats, found in the patient's plan by what the alert is about: a sepsis
+ * alert treats their sepsis or septic shock, a pressure alert their shock, an oxygen or ventilator alert their
+ * respiratory failure, ARDS or pneumonia, a bed sensor alert their fall risk. None when the plan has no such problem (the
+ * Care Plan tab then shows the pathway on its own). Made up for the prototype: the app's API says which problem it is.
+ */
+function sampleProblemFor(alert: TriageAlert, planOfCare: PatientPlanOfCare | undefined): string | undefined {
+	const terms: Record<string, string[]> = {
+		"Sepsis Sniffer": ["sepsis", "septic"],
+		Hemodynamics: ["shock", "sepsis", "septic", "hypotension"],
+		Vasopressors: ["shock", "septic"],
+		Oxygenation: ["respiratory failure", "ards", "pneumonia", "hypoxemi"],
+		"Vent-Order Mismatch": ["ards", "respiratory failure", "ventilat"],
+		"Bed sensor": ["fall"],
+	};
+	const wanted = terms[alert.source.name];
+	if (!wanted) return undefined;
+	return planOfCare?.items.find((item) => wanted.some((term) => item.problem.toLowerCase().includes(term)))?.id;
 }
 
 type SamplePatients = {
@@ -1149,6 +1174,7 @@ const sampleScenario5WalterAlertDetail = (firedAt = new Date().toISOString()): A
 		transcript: sampleConsultTranscript({ patientId: "p30", firstName: "Walter", sex: "M", nurse: "Lauren Fisher" }),
 		room: { airway: "ventilator", pumps: 2 },
 		video: sampleCameraVideo,
+		problemId: "respiratory-failure",
 		pathway: sampleScenario5WalterPathway(),
 	};
 };
@@ -1304,6 +1330,7 @@ const sampleScenario5LindaAlertDetail = (firedAt = new Date().toISOString()): Al
 		transcript: sampleConsultTranscript({ patientId: "p31", firstName: "Linda", sex: "F", nurse: "Ashley Brooks" }),
 		room: { airway: "none", pumps: 1 },
 		video: sampleCameraVideo,
+		problemId: "stroke",
 		pathway: sampleScenario5LindaPathway(),
 		overflow: {
 			targetId: sampleBackupTargetId,
@@ -1561,6 +1588,7 @@ function sampleAlertDetails({
 				reasons: [],
 				history: [],
 				pathway: samplePathway(alert, monitored?.vitals, cosigner),
+				problemId: sampleProblemFor(alert, record?.planOfCare),
 			},
 		];
 	});

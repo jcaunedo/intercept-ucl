@@ -1,4 +1,4 @@
-import type { PatientPlanOfCare, PatientPlanOfCareItem, PatientPlanOfCareStatus } from "../activity";
+import type { PatientPlanOfCare, PatientPlanOfCareEvaluation, PatientPlanOfCareItem, PatientPlanOfCareStatus } from "../activity";
 
 // Synthetic data (PRD Patient details PD-150): every patient's plan of care, as the hospital's record system holds it
 // (Nov 11, 2026, user's call: every admitted patient has one, ICU or not). A row per problem: its goal, what the bedside
@@ -16,12 +16,25 @@ type PlanSpec = {
 	items: PatientPlanOfCareItem[];
 };
 
+/** "Acute kidney injury, prerenal" → `acute-kidney-injury-prerenal`: a problem's id unless it's given one. */
+const slug = (text: string) =>
+	text
+		.toLowerCase()
+		.normalize("NFKD")
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/^-|-$/g, "");
+
+/**
+ * A problem of the plan. `id` is the problem's name as a slug unless given: a problem a scenario's pathway treats gets a
+ * short one (`heart-failure`), which its alert names as `problemId`.
+ */
 const item = (
 	problem: string,
 	goal: string,
 	interventions: string,
 	status: PatientPlanOfCareStatus = "progressing",
-): PatientPlanOfCareItem => ({ problem, goal, interventions, status });
+	id = slug(problem),
+): PatientPlanOfCareItem => ({ id, problem, goal, interventions, status });
 
 const sidney = "Meditech";
 const chadron = "Meditech";
@@ -31,7 +44,8 @@ const regionalWest = "Epic";
 
 const glucose = (interventions = "Insulin before meals and at bedtime · glucose checks before meals") =>
 	item("Type 2 diabetes", "Glucose 140–180 mg/dL", interventions);
-const noFalls = (interventions: string, status?: PatientPlanOfCareStatus) => item("Fall risk", "No falls", interventions, status);
+// `fall-risk`: what a bed sensor alert's fall prevention pathway treats.
+const noFalls = (interventions: string, status?: PatientPlanOfCareStatus) => item("Fall risk", "No falls", interventions, status, "fall-risk");
 const droplet = (virus: string, antiviral = "oseltamivir 75 mg twice a day") =>
 	item(virus, "No spread on the unit", `Droplet isolation · ${antiviral}`);
 
@@ -257,6 +271,8 @@ const plans: Record<string, PlanSpec> = {
 				"Acute on chronic heart failure",
 				"Net 1–1.5 L negative a day, SpO₂ 92% or more",
 				"Furosemide 40 mg IV twice a day · daily weights · strict intake and output",
+				undefined,
+				"heart-failure",
 			),
 			item("Chronic kidney disease, stage 3", "Creatinine near her baseline", "Renal dosing · BMP daily"),
 			noFalls("Bed alarm on · non-slip socks · toileting every 2 h"),
@@ -422,6 +438,7 @@ const plans: Record<string, PlanSpec> = {
 				"SpO₂ 88–92%, pH 7.30 or more on BiPAP",
 				"BiPAP · blood gas at 1 and 2 h",
 				"not-progressing",
+				"respiratory-failure",
 			),
 			item("COPD exacerbation", "Less work of breathing", "Nebulizers · methylprednisolone · azithromycin"),
 			item("Tobacco use", "Nicotine replacement offered", "Nicotine patch"),
@@ -436,6 +453,8 @@ const plans: Record<string, PlanSpec> = {
 				"Acute on chronic hypercapnic respiratory failure, COPD exacerbation",
 				"SpO₂ 88–92% and PaCO₂ near his baseline, then a breathing trial",
 				"Ventilator, AC/VC · nebulizers in line · methylprednisolone · azithromycin",
+				undefined,
+				"respiratory-failure",
 			),
 			item("Obesity with obstructive sleep apnea", "CPAP after extubation", "Head of bed up 30° · respiratory therapy to fit his home CPAP"),
 			item("Sedation", "RASS 0 to −1, awake and comfortable", "Light propofol · daily sedation pause"),
@@ -450,6 +469,7 @@ const plans: Record<string, PlanSpec> = {
 				"MAP 65 mmHg or more, lactate clearing",
 				"Hour-1 bundle: cultures, antibiotics, 30 mL/kg fluids",
 				"not-progressing",
+				"septic-shock",
 			),
 			item("Chronic kidney disease, stage 4", "Creatinine back toward her baseline of 2.4", "Renal dosing · strict intake and output"),
 			glucose("Insulin per protocol · glucose every hour"),
@@ -465,6 +485,7 @@ const plans: Record<string, PlanSpec> = {
 				"Anion gap closed, then insulin under the skin",
 				"DKA protocol: fluids, insulin infusion, potassium · glucose every hour",
 				"not-progressing",
+				"dka",
 			),
 			item("Acute kidney injury from dehydration", "Creatinine back to his baseline of 0.9", "IV fluids · strict intake and output"),
 			item("Type 1 diabetes", "Insulin he can afford, before discharge", "Social work · diabetes educator"),
@@ -480,6 +501,7 @@ const plans: Record<string, PlanSpec> = {
 				"Reperfusion: thrombolysis inside 4.5 h, thrombectomy for a large-vessel occlusion",
 				"Stroke code: CT, NIHSS, BP under 185/110, tenecteplase · neuro checks every 15 min",
 				"not-progressing",
+				"stroke",
 			),
 			item("Atrial fibrillation", "Rate under 110; an anticoagulant she can afford, later", "Telemetry · no antithrombotics for 24 h after thrombolysis"),
 			item("Swallowing", "No aspiration", "Nothing by mouth until a swallow screen"),
@@ -487,32 +509,56 @@ const plans: Record<string, PlanSpec> = {
 	},
 };
 
-/** A patient's plan of care, reviewed relative to now (so its age reads the same in every session). */
+/** Who evaluates the plan on rounds: the charge nurse of the unit, by role (the record system names them). */
+const ROUNDS = "Charge nurse";
+/** Who re-evaluates a problem as a scenario moves on: the bedside nurse, by role. */
+const BEDSIDE = "Bedside nurse";
+
+const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+
+/**
+ * A patient's plan of care, reviewed relative to now (so its age reads the same in every session). Each problem's history
+ * holds that review's evaluation, so every problem has at least one.
+ */
 function samplePlanOfCare(patientId: string): PatientPlanOfCare | undefined {
 	const plan = plans[patientId];
 	if (!plan) return undefined;
+	const reviewedAt = minutesAgo(plan.reviewedHoursAgo * 60);
 	return {
-		items: plan.items,
+		items: plan.items.map((item) => ({ ...item, history: [{ at: reviewedAt, status: item.status, by: ROUNDS }] })),
 		source: plan.source,
-		reviewedAt: new Date(Date.now() - plan.reviewedHoursAgo * 3_600_000).toISOString(),
+		reviewedAt,
 	};
 }
 
 /**
  * The plan of care with some goals' status changed, by row (0 is the main problem), as a scenario's later stage
- * re-evaluates them, reviewed just now.
+ * re-evaluates them, reviewed `reviewedMinutesAgo`. The rows it doesn't change keep their last evaluation, the plan's
+ * earlier review. A changed row's history keeps the earlier review, adds the evaluations in between (`earlier`, e.g. Not
+ * progressing at the alert before Progressing now), then the new one.
  */
 function planOfCareWith(
 	patientId: string,
 	statuses: Record<number, PatientPlanOfCareStatus>,
 	reviewedMinutesAgo = 0,
+	earlier: Record<number, { status: PatientPlanOfCareStatus; minutesAgo: number }[]> = {},
 ): PatientPlanOfCare | undefined {
 	const plan = samplePlanOfCare(patientId);
 	if (!plan) return undefined;
+	const reviewedAt = minutesAgo(reviewedMinutesAgo);
 	return {
 		...plan,
-		items: plan.items.map((row, index) => (statuses[index] ? { ...row, status: statuses[index] } : row)),
-		reviewedAt: new Date(Date.now() - reviewedMinutesAgo * 60_000).toISOString(),
+		items: plan.items.map((row, index) => {
+			const status = statuses[index];
+			if (!status) return { ...row, evaluatedAt: row.evaluatedAt ?? plan.reviewedAt };
+			const history: PatientPlanOfCareEvaluation[] = [
+				...(row.history ?? []),
+				...(earlier[index] ?? []).map((step) => ({ at: minutesAgo(step.minutesAgo), status: step.status, by: BEDSIDE })),
+				{ at: reviewedAt, status, by: BEDSIDE },
+			];
+			return { ...row, status, history };
+		}),
+		reviewedAt,
 	};
 }
 

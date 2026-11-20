@@ -18,7 +18,7 @@ import { Textarea } from "@/components/forms/textarea";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { formatRelativeDate } from "@/lib/relative-date";
 
-import { formatDateTime, formatTime, freshness, NoData, SectionCard } from "../section-parts";
+import { formatTime, formatWhen, freshness, NoData, SectionCard } from "../section-parts";
 import { SourceLabel } from "../../shared/source-label";
 
 // The Orders section (PRD Patient details PD-060–PD-062): order recommendations first, then the active orders from the
@@ -141,10 +141,6 @@ const statusVariants: Record<string, BadgeProps["variant"]> = {
 	Scheduled: "secondary",
 	Pending: "yellow",
 };
-
-/** Today's times read "2:14 PM"; older ones carry their date. */
-const formatWhen = (iso: string, now: number | null) =>
-	now !== null && now - Date.parse(iso) < 12 * 3_600_000 ? formatTime(iso) : formatDateTime(iso);
 
 /* -------------------------------------------------------------------------- */
 /* Recommendation                                                             */

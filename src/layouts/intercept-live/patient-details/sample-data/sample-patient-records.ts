@@ -1339,7 +1339,7 @@ const sampleScenario1Record = (): Partial<PatientRecord> => ({
 // Scenario 1's resolution (06:00): RR 20 and SpO₂ 95% on 2 L, so NEWS2 3, Low; both checkpoints passed and she stays at
 // Chadron. Her plan, the decisions and who made them come from the app's record of them (the feed's activity).
 const sampleScenario1ResolvedRecord = (): Partial<PatientRecord> => ({
-	planOfCare: planOfCareWith("p15", { 0: "progressing" }, 20),
+	planOfCare: planOfCareWith("p15", { 0: "progressing" }, 20, { 0: [{ status: "not-progressing", minutesAgo: 240 }] }),
 	clinicalStatus: clinicalStatusAt("improving", 20),
 	brief: {
 		title: "Stable on 2 L by morning",
@@ -1761,7 +1761,7 @@ function sampleScenario3RecordAt(stage: Scenario3RecordStage): Partial<PatientRe
 			};
 		case "resolved":
 			return {
-				planOfCare: planOfCareWith("p23", { 0: "met" }, 30),
+				planOfCare: planOfCareWith("p23", { 0: "met" }, 30, { 0: [{ status: "progressing", minutesAgo: 150 }] }),
 				clinicalStatus: clinicalStatusAt("improving", 30),
 				brief: {
 					title: "Out of shock by morning",
@@ -1953,7 +1953,7 @@ function sampleScenario4RecordAt(stage: Scenario4RecordStage): Partial<PatientRe
 			};
 		case "closed":
 			return {
-				planOfCare: planOfCareWith("p24", { 0: "met" }, 10),
+				planOfCare: planOfCareWith("p24", { 0: "met" }, 10, { 0: [{ status: "progressing", minutesAgo: 240 }] }),
 				clinicalStatus: clinicalStatusAt("improving", 10),
 				brief: {
 					title: "Anion gap closed, back on home insulin",
@@ -2045,7 +2045,7 @@ function sampleScenario5WalterRecordAt(stage: "desat" | "stabilized"): Partial<P
 		};
 	}
 	return {
-		planOfCare: planOfCareWith("p30", { 0: "progressing" }, 2),
+		planOfCare: planOfCareWith("p30", { 0: "progressing" }, 2, { 0: [{ status: "not-progressing", minutesAgo: 90 }] }),
 		clinicalStatus: clinicalStatusAt("improving", 2),
 		brief: {
 			title: "Plug cleared, air trapping down",

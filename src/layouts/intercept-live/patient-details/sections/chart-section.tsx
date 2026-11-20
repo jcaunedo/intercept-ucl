@@ -6,7 +6,7 @@ import { Badge } from "@/components/data-display/badge";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
-import { Detail, formatDateTime, formatTime, NoData, SectionCard } from "../section-parts";
+import { Detail, formatWhen, NoData, SectionCard } from "../section-parts";
 import { SourceLabel } from "../../shared/source-label";
 
 // The Chart tab (PRD Patient details §7, PD-040–PD-042): the slice of the hospital's record Intercept shows, read only.
@@ -110,13 +110,6 @@ type PatientChart = {
 const severityLabels = { mild: "Mild", moderate: "Moderate", severe: "Severe" } as const;
 
 const inpatientLabels = { held: "Held", continued: "Continued", changed: "Changed" } as const;
-
-const TWELVE_HOURS = 12 * 60 * 60_000;
-
-/** A time today, or a date and time for anything older (or before the first client render). Labs uses it too. */
-function formatWhen(iso: string, now: number | null) {
-	return now !== null && now - Date.parse(iso) < TWELVE_HOURS ? formatTime(iso) : formatDateTime(iso);
-}
 
 /* -------------------------------------------------------------------------- */
 /* Imaging                                                                    */
@@ -318,7 +311,6 @@ function ChartSection({ chart }: ChartSectionProps) {
 export {
 	ChartSection,
 	emrLabel,
-	formatWhen,
 	type ChartAllergy,
 	type ChartCulture,
 	type ChartHistoryItem,

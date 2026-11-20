@@ -16,8 +16,8 @@ import {
 	CardSource,
 	CardToggle,
 	Detail,
+	dueChip,
 	formatElapsed,
-	formatSpan,
 	formatTime,
 	freshness,
 	latest,
@@ -45,15 +45,6 @@ const HOUR = 60 * MINUTE;
 const UP_NEXT_HOURS = 12;
 /** Up next's items before "View all". */
 const UP_NEXT_ITEMS = 5;
-
-/** When something is due, as a chip: overdue in red, within the hour in amber, later in grey. */
-function dueChip(at: string, now: number): { label: string; variant: BadgeProps["variant"] } {
-	const minutes = Math.round((Date.parse(at) - now) / MINUTE);
-	if (minutes < 0) return { label: `Overdue ${formatSpan(-minutes)}`, variant: "red" };
-	if (minutes < 1) return { label: "Due now", variant: "amber" };
-	if (minutes <= 60) return { label: `In ${formatSpan(minutes)}`, variant: "amber" };
-	return { label: `In ${formatSpan(minutes)}`, variant: "secondary" };
-}
 
 /* -------------------------------------------------------------------------- */
 /* Brief                                                                      */

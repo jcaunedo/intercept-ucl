@@ -265,13 +265,14 @@ export const Pathway: Story = {
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		const overviewPlan = within(canvas.getByRole("region", { name: "Care plan" }));
 		await expect(overviewPlan.getByText("Needs review")).toBeVisible();
-		// The Overview's card has no way into the pathway (Nov 13, 2026); the Care Plan tab has View full plan.
-		await expect(overviewPlan.queryByRole("button", { name: "View full plan" })).toBeNull();
+		// The Overview's card has no way into the pathway (Nov 13, 2026); the Care Plan tab's pathway blocks do.
+		await expect(overviewPlan.queryByRole("button", { name: /pathway/i })).toBeNull();
 		await userEvent.click(canvas.getByRole("tab", { name: "Care Plan" }));
-		const plan = within(await canvas.findByRole("region", { name: "Care plan" }));
+		const plan = within(await canvas.findByRole("tabpanel", { name: "Care Plan" }));
+		const reviewPathway = async () => (await plan.findAllByRole("button", { name: "Review pathway" }))[0];
 
-		// The Care plan's way in opens the panel. The header has no Pathway: it belongs to the alert (Nov 9, 2026).
-		await userEvent.click(await plan.findByRole("button", { name: "View full plan" }));
+		// A suggested pathway's Review pathway opens the panel. The header has no Pathway: it belongs to the alert (Nov 9, 2026).
+		await userEvent.click(await reviewPathway());
 		await canvas.findByRole("complementary", { name: "Pathway" });
 		const actions = within(canvas.getByRole("group", { name: "Patient actions" }));
 		await expect(actions.queryByRole("button", { name: /pathway/i })).toBeNull();
@@ -279,7 +280,7 @@ export const Pathway: Story = {
 		// Messages takes its place, and the Care plan brings Pathway back.
 		await userEvent.click(actions.getByRole("button", { name: "Messages, 3 unread" }));
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Pathway" })).toBeNull());
-		await userEvent.click(plan.getByRole("button", { name: "View full plan" }));
+		await userEvent.click(await reviewPathway());
 		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Messages" })).toBeNull());
 
 		// Accept, as on the alert: the orders go for co-signature.
@@ -426,5 +427,20 @@ export const CarePlanAndActivity: Story = {
 		await expect(findings.getByText("Nitro stops < 110")).toBeVisible();
 		await expect(findings.getByText("2 h old")).toBeVisible();
 		await expect(within(canvas.getByRole("region", { name: "Up next" })).getAllByRole("listitem").length).toBeGreaterThan(0);
+
+		// The Care Plan tab: a problem's History button opens its history and its pathway's orders in place, and closes them.
+		await userEvent.click(canvas.getByRole("tab", { name: "Care Plan" }));
+		const tab = within(await canvas.findByRole("tabpanel", { name: "Care Plan" }));
+		const problem = await tab.findByRole("region", { name: /^Acute on chronic heart failure/ });
+		const heartFailure = within(problem).getByRole("button", { name: "History" });
+		await expect(heartFailure).toHaveAttribute("aria-expanded", "false");
+		await userEvent.click(heartFailure);
+		await expect(heartFailure).toHaveAttribute("aria-expanded", "true");
+		// The details expand in, so they're visible once they have.
+		await waitFor(() => expect(tab.getByText("Co-signed by Dr. Tom Weller")).toBeVisible());
+		await waitFor(() => expect(tab.getByText("Furosemide IV")).toBeVisible());
+		await waitFor(() => expect(tab.getByText("Edited")).toBeVisible());
+		await userEvent.click(heartFailure);
+		await waitFor(() => expect(tab.queryByText("Co-signed by Dr. Tom Weller")).toBeNull());
 	},
 };

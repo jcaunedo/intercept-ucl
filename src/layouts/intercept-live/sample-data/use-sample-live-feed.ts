@@ -90,6 +90,8 @@ type ScenarioDecision = {
 	transfer?: TransferChoice;
 	sentAt?: string;
 	cosignedAt?: string;
+	/** When the clinician marked the pathway completed. */
+	completedAt?: string;
 	suggested?: CarePathwayOrder[];
 	edited?: string[];
 	rationale?: string;
@@ -164,7 +166,14 @@ function carePlanOf(detail: AlertDetailData, decision?: ScenarioDecision): Patie
 			pathway && decision?.sentAt && status && status !== "suggested"
 				? {
 						title: pathway.title,
-						status: status === "declined" ? "declined" : decision.cosignedAt ? "active" : "pending",
+						status:
+							status === "declined"
+								? "declined"
+								: status === "completed"
+									? "completed"
+									: decision.cosignedAt
+										? "active"
+										: "pending",
 						orders: pathway.orders.map((order) => ({
 							name: order.name,
 							dose: order.dose,
@@ -176,7 +185,9 @@ function carePlanOf(detail: AlertDetailData, decision?: ScenarioDecision): Patie
 						by: YOU,
 						cosigner: pathway.cosigner.name,
 						cosignedAt: decision.cosignedAt,
+						completedAt: decision.completedAt,
 						rationale: decision.rationale,
+						problemId: detail.problemId,
 					}
 				: undefined,
 		transfer:
@@ -282,6 +293,8 @@ const pathwayStatusAfter: Record<CarePathwayDecision["type"], CarePathwayStatus>
 	create: "pending",
 	decline: "declined",
 	undecline: "suggested",
+	complete: "completed",
+	reopen: "active",
 };
 
 /** The items, then the arrivals that aren't among them yet. */
@@ -450,6 +463,26 @@ function useSampleLiveFeed() {
 	const onPathwayDecision = React.useCallback(
 		(alertId: string, decision: CarePathwayDecision, detail?: AlertDetailData) => {
 			const at = new Date().toISOString();
+			// Completing (or reopening) keeps what was sent and co-signed; it only marks the pathway done, and logs it.
+			if (decision.type === "complete" || decision.type === "reopen") {
+				setDecisions((current) => ({
+					...current,
+					[alertId]: {
+						...current[alertId],
+						pathwayStatus: pathwayStatusAfter[decision.type],
+						completedAt: decision.type === "complete" ? at : undefined,
+					},
+				}));
+				if (detail) {
+					const title = detail.pathway?.title ?? "Care pathway";
+					addActivity(detail.alert.patientId, {
+						kind: "decision",
+						title: decision.type === "complete" ? `${title} completed` : `${title} reopened`,
+						by: YOU,
+					});
+				}
+				return;
+			}
 			setDecisions((current) => ({
 				...current,
 				[alertId]: {
@@ -904,6 +937,7 @@ function useSampleLiveFeed() {
 							pathwayRecord: {
 								sentAt: decided.sentAt,
 								cosignedAt: decided.cosignedAt,
+								completedAt: decided.completedAt,
 								note: decided.note,
 								rationale: decided.rationale,
 								edited: decided.edited,

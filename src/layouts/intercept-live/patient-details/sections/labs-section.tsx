@@ -3,11 +3,10 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
-import { formatTime, freshness, NoData, SectionGroup } from "../section-parts";
+import { formatTime, formatWhen, freshness, NoData, SectionGroup } from "../section-parts";
 import { SourceLabel } from "../../shared/source-label";
 import {
 	emrLabel,
-	formatWhen,
 	type ChartCulture,
 	type ChartResult,
 	type ChartResultFlag,

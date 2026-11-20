@@ -3,9 +3,10 @@ import { CircleCheckIcon, ClockIcon, GitForkIcon, TriangleAlertIcon } from "luci
 
 import { Button } from "@/components/buttons/button";
 import { Badge, type BadgeProps } from "@/components/data-display/badge";
+import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
-import { formatTime, SectionCard } from "./section-parts";
+import { formatWhen, SectionCard } from "./section-parts";
 import type { PatientTimeline, TimelineEventKind } from "./sections/timeline-section";
 
 // What was done and decided about the patient, so the page tracks it (Nov 3, 2026, user's call): the care plan in force,
@@ -56,8 +57,8 @@ type PatientCarePlanCheckpoint = {
 type PatientCarePlan = {
 	pathway?: {
 		title: string;
-		/** Sent and waiting for the local co-signature, active once co-signed, or declined. */
-		status: "pending" | "active" | "declined";
+		/** Sent and waiting for the local co-signature, active once co-signed, completed once it has done its job, or declined. */
+		status: "pending" | "active" | "completed" | "declined";
 		orders: PatientCarePlanOrder[];
 		/** When it was sent, or declined. */
 		at: string;
@@ -67,6 +68,12 @@ type PatientCarePlan = {
 		cosignedAt?: string;
 		/** Why it was declined. */
 		rationale?: string;
+		/** When it was completed: marked by the clinician, or its problem evaluated Met. */
+		completedAt?: string;
+		/** Why it's completed when the clinician didn't mark it, e.g. "Acute on chronic heart failure met". */
+		completedBecause?: string;
+		/** The plan-of-care problem it treats (a `PatientPlanOfCareItem`'s `id`). */
+		problemId?: string;
 	};
 	transfer?: {
 		/** "Keeping at Chadron", "Transfer to Regional West Medical Center". */
@@ -84,8 +91,19 @@ type PatientCarePlan = {
 /** How a plan-of-care goal is going, as the bedside team last evaluated it. */
 type PatientPlanOfCareStatus = "progressing" | "not-progressing" | "met";
 
+/** One evaluation of a problem by the bedside team, in the record system: how it was going, when and by whom. */
+type PatientPlanOfCareEvaluation = {
+	at: string;
+	status: PatientPlanOfCareStatus;
+	/** Who evaluated it, e.g. "Kayla Brandt, RN" or "Charge nurse". */
+	by?: string;
+	note?: string;
+};
+
 /** One problem of the plan of care, with its goal and what the team does toward it. */
 type PatientPlanOfCareItem = {
+	/** Stable within the plan, so a pathway can name the problem it treats (`problemId`), e.g. `heart-failure`. */
+	id: string;
 	/** The problem, e.g. "Hypertensive emergency with PRES". */
 	problem: string;
 	/** The goal, measurable where it can be: "SBP 140–160 mmHg". */
@@ -93,6 +111,10 @@ type PatientPlanOfCareItem = {
 	/** What the team does toward it: "Nicardipine titration · neuro checks every hour". */
 	interventions?: string;
 	status: PatientPlanOfCareStatus;
+	/** When the bedside team last evaluated this problem, when it differs from the plan's review (`reviewedAt`). */
+	evaluatedAt?: string;
+	/** The record system's evaluations of this problem, in any order: the Care Plan tab's problem history. */
+	history?: PatientPlanOfCareEvaluation[];
 };
 
 /**
@@ -137,6 +159,7 @@ type PathwayStatus = NonNullable<PatientCarePlan["pathway"]>["status"];
 const pathwayStatuses: Record<PathwayStatus, { label: string; variant: BadgeProps["variant"] }> = {
 	pending: { label: "Awaiting co-signature", variant: "amber" },
 	active: { label: "Active", variant: "green" },
+	completed: { label: "Completed", variant: "secondary" },
 	declined: { label: "Declined", variant: "secondary" },
 };
 
@@ -156,18 +179,28 @@ const byTime = (a: { at: string }, b: { at: string }) => Date.parse(a.at) - Date
 /* Parts                                                                      */
 /* -------------------------------------------------------------------------- */
 
-/** The pathway's state in words: who it waits on, who co-signed it, or why it was declined. */
-function pathwayLine(pathway: NonNullable<PatientCarePlan["pathway"]>) {
+/**
+ * The pathway's state in words: who it waits on, who co-signed it, or why it was declined, each with when (a time within
+ * the last 12 h, a date before that: `formatWhen`).
+ */
+function pathwayLine(pathway: NonNullable<PatientCarePlan["pathway"]>, now: number | null) {
 	const by = pathway.by ? ` by ${pathway.by}` : "";
 	switch (pathway.status) {
+		case "completed":
+			return [
+				pathway.completedBecause ? `Completed: ${pathway.completedBecause}` : `Completed${by}`,
+				pathway.completedAt ? formatWhen(pathway.completedAt, now) : undefined,
+			]
+				.filter(Boolean)
+				.join(" · ");
 		case "declined":
-			return `Declined${by} · ${formatTime(pathway.at)}${pathway.rationale ? `: “${pathway.rationale}”` : ""}`;
+			return `Declined${by} · ${formatWhen(pathway.at, now)}${pathway.rationale ? `: “${pathway.rationale}”` : ""}`;
 		case "active":
 			return pathway.cosigner && pathway.cosignedAt
-				? `Co-signed by ${pathway.cosigner} · ${formatTime(pathway.cosignedAt)}. Orders active.`
-				: `Active · ${formatTime(pathway.at)}`;
+				? `Co-signed by ${pathway.cosigner} · ${formatWhen(pathway.cosignedAt, now)}. Orders active.`
+				: `Active · ${formatWhen(pathway.at, now)}`;
 		default:
-			return `Sent${by} to ${pathway.cosigner ?? "the local physician"} for co-signature · ${formatTime(pathway.at)}`;
+			return `Sent${by} to ${pathway.cosigner ?? "the local physician"} for co-signature · ${formatWhen(pathway.at, now)}`;
 	}
 }
 
@@ -195,6 +228,7 @@ function CarePlanCard({
 	headingLevel?: "h2" | "h3";
 	className?: string;
 }) {
+	const now = useCurrentMinute();
 	const { pathway, transfer } = plan;
 	const Part = headingLevel === "h2" ? "h3" : "h4";
 	const suggested = !pathway && suggestion;
@@ -260,7 +294,7 @@ function CarePlanCard({
 							))}
 						</ul>
 					)}
-					<p className='text-xs text-muted-foreground'>{pathwayLine(pathway)}</p>
+					<p className='text-xs text-muted-foreground'>{pathwayLine(pathway, now)}</p>
 				</section>
 			) : null}
 
@@ -290,7 +324,7 @@ function CarePlanCard({
 						<Part className='text-sm font-semibold text-foreground'>{transfer.label}</Part>
 						<p className='text-xs text-muted-foreground'>
 							{transfer.by ? `${transfer.by} · ` : null}
-							{formatTime(transfer.at)}
+							{formatWhen(transfer.at, now)}
 						</p>
 					</div>
 					<p className='text-sm text-foreground'>
@@ -313,7 +347,7 @@ function CarePlanCard({
 										/>
 										<div className='flex min-w-0 flex-col text-sm'>
 											<span className='font-medium text-foreground'>
-												{checkpoint.label} · {formatTime(checkpoint.due)}
+												{checkpoint.label} · {formatWhen(checkpoint.due, now)}
 												{status ? (
 													<span className={status === "passed" ? "text-success" : "text-destructive"}>
 														{" "}
@@ -380,6 +414,7 @@ export {
 	type PatientPathwayRunning,
 	type PatientPathwaySuggestion,
 	type PatientPlanOfCare,
+	type PatientPlanOfCareEvaluation,
 	type PatientPlanOfCareItem,
 	type PatientPlanOfCareStatus,
 };

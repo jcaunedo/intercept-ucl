@@ -63,7 +63,11 @@ type CarePathway = {
 };
 
 /** Where the pathway is: suggested, declined, sent for co-signature, or co-signed and active. */
-type CarePathwayStatus = "suggested" | "declined" | "pending" | "active";
+/**
+ * Where the pathway is: suggested, declined, sent for co-signature, co-signed and active, or completed (the clinician
+ * marked it done; the Care Plan tab also reads an active pathway as completed once its problem is Met).
+ */
+type CarePathwayStatus = "suggested" | "declined" | "pending" | "active" | "completed";
 
 /**
  * What the intensivist did: the orders as accepted (with any edited dose and a note for the co-signer), a decline and
@@ -73,7 +77,10 @@ type CarePathwayDecision =
 	| { type: "accept"; orders: CarePathwayOrder[]; edited: string[]; note?: string }
 	| { type: "decline"; rationale: string }
 	| { type: "undecline" }
-	| { type: "create"; title: string; orders: CarePathwayOrder[] };
+	| { type: "create"; title: string; orders: CarePathwayOrder[] }
+	/** Marked completed once it has done its job; `reopen` takes that back (it's active again). */
+	| { type: "complete" }
+	| { type: "reopen" };
 
 /**
  * What was decided, as the app recorded it, so a pathway shown again (the alert reopened, or the patient's page) reads as
@@ -85,6 +92,8 @@ type CarePathwayRecord = {
 	sentAt?: string;
 	/** When the local physician co-signed it (ISO 8601). */
 	cosignedAt?: string;
+	/** When the clinician marked it completed (ISO 8601). */
+	completedAt?: string;
 	note?: string;
 	rationale?: string;
 	/** The ids of the orders whose dose was edited before sending. */
@@ -110,9 +119,21 @@ const statusBadges: Record<CarePathwayStatus, { label: string; variant: "seconda
 	declined: { label: "Declined", variant: "secondary" },
 	pending: { label: "Awaiting co-signature", variant: "amber" },
 	active: { label: "Active", variant: "green" },
+	completed: { label: "Completed", variant: "secondary" },
 };
 
 const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+/**
+ * Whether the signed-in clinician may mark a co-signed pathway completed, or reopen it: the intensivist and the APP, who
+ * can accept pathways, not the Critical Care RN, who can't sign orders (PRD Care plan CPL-022; Nov 20, 2026, user's
+ * call). The app shell provides it from the user's role; without a provider (a component on its own), allowed.
+ */
+const PathwayCompletionContext = React.createContext(true);
+const PathwayCompletionProvider = PathwayCompletionContext.Provider;
+
+/** The roles that may complete a pathway: Intensivist, and APP (Advanced Practice Provider). */
+const canCompletePathways = (role?: string) => /intensivist|advanced practice|\bapp\b/i.test(role ?? "");
 
 /** The session key of one pathway's state: by the alert it came with, so two alerts' pathways never mix. */
 const pathwaySessionKey = (scope: string, name: string) => `pathway:${scope}:${name}`;
@@ -453,6 +474,8 @@ function CarePathwayPanel({
 	const [sentNote, setSentNote] = useSessionState(key("sentNote"), record?.note ?? "");
 	const [sentAt, setSentAt] = useSessionState<string | null>(key("sentAt"), record?.sentAt ?? null);
 	const [cosignedAt, setCosignedAt] = useSessionState<string | null>(key("cosignedAt"), record?.cosignedAt ?? null);
+	const [completedAt, setCompletedAt] = useSessionState<string | null>(key("completedAt"), record?.completedAt ?? null);
+	const canComplete = React.useContext(PathwayCompletionContext);
 	// The intensivist's own pathway, after a decline: the draft keeps what was typed while the form is closed, and `custom`
 	// is the pathway once sent, which the panel then shows in the suggestion's place. Recorded as sent, the pathway the app
 	// passes back is already the own one.
@@ -617,6 +640,16 @@ function CarePathwayPanel({
 		setStatus("suggested");
 		onDecision?.({ type: "undecline" });
 	};
+	const complete = () => {
+		setCompletedAt(new Date().toISOString());
+		setStatus("completed");
+		onDecision?.({ type: "complete" });
+	};
+	const reopen = () => {
+		setCompletedAt(null);
+		setStatus("active");
+		onDecision?.({ type: "reopen" });
+	};
 
 	return (
 		<section
@@ -684,7 +717,7 @@ function CarePathwayPanel({
 										edited={edited.includes(order.id)}
 										editing={editing === order.id}
 										editable={status === "suggested" && !declining}
-										active={status === "active"}
+										active={status === "active" || status === "completed"}
 										onEdit={() => setEditing(order.id)}
 										onSave={(dose) => {
 											setDoses((current) => ({ ...current, [order.id]: dose }));
@@ -892,6 +925,42 @@ function CarePathwayPanel({
 											{sentNote}
 										</p>
 									) : null}
+									{/* Once it has done its job: the pathway then reads Completed everywhere (Nov 20, 2026, user's call). */}
+									{canComplete ? (
+										<Button variant='outline' size='sm' className='mt-2 self-start' onClick={complete}>
+											<CircleCheckIcon aria-hidden='true' />
+											Mark completed
+										</Button>
+									) : null}
+								</div>
+							</div>
+						</Expand>
+					) : null}
+					{status === "completed" ? (
+						<Expand key='completed'>
+							{/* Done: neutral tones, as there's nothing left to act on. */}
+							<div
+								role='status'
+								className='flex scroll-mt-15 gap-3 rounded-xl border border-neutral-muted bg-neutral-subtle p-3 text-sm text-foreground'
+							>
+								<CircleCheckIcon aria-hidden='true' className='mt-0.5 size-4 shrink-0 text-muted-foreground' />
+								<div className='flex min-w-0 flex-col gap-0.5'>
+									<p className='font-semibold'>
+										Completed
+										{completedAt ? (
+											<span className='font-normal text-muted-foreground'> · {formatTime(completedAt)}</span>
+										) : null}
+									</p>
+									<p>
+										Co-signed by {cosigner.name}
+										{cosignedAt ? <span className='text-muted-foreground'> · {formatTime(cosignedAt)}</span> : null}
+									</p>
+									{canComplete ? (
+										<Button variant='ghost' size='xs' className='-ml-2 mt-1 self-start text-link' onClick={reopen}>
+											<RotateCcwIcon aria-hidden='true' />
+											Reopen
+										</Button>
+									) : null}
 								</div>
 							</div>
 						</Expand>
@@ -903,6 +972,8 @@ function CarePathwayPanel({
 }
 
 export {
+	canCompletePathways,
+	PathwayCompletionProvider,
 	CarePathwayPanel,
 	COSIGN_DELAY_MS,
 	Expand,

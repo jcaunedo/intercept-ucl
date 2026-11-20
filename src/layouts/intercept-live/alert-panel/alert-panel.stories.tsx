@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { AlertPanel, PathwayContent, type AlertPanelProps } from "./alert-panel";
+import { canCompletePathways, PathwayCompletionProvider } from "./care-pathway";
 import { ConsultSessionScope } from "./consult-session";
 import { dkaCalculate, type DkaCheck, type DkaReadings } from "./dka-protocol";
 import {
@@ -505,6 +506,31 @@ export const TransferAvoided: Story = {
 		await expect(panel.getByText("Transfer avoided")).toBeInTheDocument();
 		await expect(panel.getAllByText(/Passed/)).toHaveLength(2);
 		await expect(panel.queryByRole("button", { name: "Change decision" })).not.toBeInTheDocument();
+	},
+};
+
+/**
+ * A co-signed pathway's **Mark completed** (PRD Care plan CPL-022): the intensivist marks it Completed, then reopens it.
+ * Only the intensivist and the APP may; a Critical Care RN sees the banner without either button.
+ */
+export const MarkCompleted: Story = {
+	render: pathwayRender,
+	args: { data: { ...scenario1, pathwayStatus: "active" } },
+	play: async () => {
+		await userEvent.click(await screen.findByRole("button", { name: "Mark completed" }));
+		await waitFor(() => expect(screen.getByText("Completed", { selector: "p" })).toBeVisible());
+		await userEvent.click(screen.getByRole("button", { name: "Reopen" }));
+		await expect(await screen.findByRole("button", { name: "Mark completed" })).toBeInTheDocument();
+	},
+};
+
+/** As a Critical Care RN: the co-signed banner, with no Mark completed (they can't sign orders). */
+export const MarkCompletedAsRn: Story = {
+	render: (args) => <PathwayCompletionProvider value={canCompletePathways("Critical Care RN")}>{pathwayRender(args)}</PathwayCompletionProvider>,
+	args: { data: { ...scenario1, pathwayStatus: "active" } },
+	play: async () => {
+		await screen.findByText(/^Co-signed by/);
+		await expect(screen.queryByRole("button", { name: "Mark completed" })).not.toBeInTheDocument();
 	},
 };
 

@@ -241,6 +241,12 @@ type AlertDetailData = {
 	 * Pathway panel, which opens with the alert.
 	 */
 	bundle?: SepsisBundle;
+	/**
+	 * The plan-of-care problem this alert's care treats (its pathway, bundle, protocol and tasks): a `PatientPlanOfCareItem`'s
+	 * `id`, e.g. `heart-failure`. The Care Plan tab shows them under that problem; without it, or with no such problem in the
+	 * plan, on their own.
+	 */
+	problemId?: string;
 	/** A suggested care pathway and its order set, e.g. Scenario 1's CHF exacerbation pathway (exploration). */
 	pathway?: CarePathway;
 	/** Where the pathway is when the modal opens, e.g. `active` once its orders were co-signed. Suggested by default. */
@@ -1263,7 +1269,7 @@ function PathwayContent({
 		pathwaySessionKey(data.alert.id, "status"),
 		data.pathwayStatus ?? "suggested",
 	);
-	const pathwaySent = pathwayStatus === "pending" || pathwayStatus === "active";
+	const pathwaySent = pathwayStatus === "pending" || pathwayStatus === "active" || pathwayStatus === "completed";
 	// A transfer the patient needs (`mode: "transfer"`) shows at once, without a pathway first (Scenario 5, step 4).
 	const transferNeeded = data.transfer?.mode === "transfer";
 	const showTransfer = Boolean(data.transfer && (data.transfer.decided || pathwaySent || transferNeeded));

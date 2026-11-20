@@ -2,6 +2,7 @@ import * as React from "react";
 import { ArrowUpRightIcon, ChevronDownIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
+import type { BadgeProps } from "@/components/data-display/badge";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,14 @@ const formatTime = (iso: string) => new Intl.DateTimeFormat(undefined, { hour: "
 /** "Oct 26, 9:02 AM" in the user's locale, for anything older than today. */
 const formatDateTime = (iso: string) =>
 	new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+
+/**
+ * A time when it's within the last 12 hours ("2:14 PM"), a date and time for anything older ("Nov 18, 8:10 AM") or before
+ * the first client render. Every tab writes a past time this way, so a multi-day stay never shows a bare time.
+ */
+function formatWhen(iso: string, now: number | null) {
+	return now !== null && now - Date.parse(iso) < 12 * 3_600_000 ? formatTime(iso) : formatDateTime(iso);
+}
 
 /** "Ventilator · 2 min ago": a value's source and age, or just the source before the first client render. */
 function freshness(source: string, at: string, now: number | null) {
@@ -144,7 +153,8 @@ function OverviewCard({
 	className,
 	children,
 }: {
-	title: string;
+	/** The heading's content: words, or a control inside the heading (a disclosure, the Care Plan tab's problems). */
+	title: React.ReactNode;
 	/** Before the title, e.g. Live monitoring's live dot. */
 	leading?: React.ReactNode;
 	/** Right of the title, muted, e.g. "3/3 devices connected". */
@@ -292,6 +302,15 @@ function RowTime({ children }: { children: React.ReactNode }) {
 	return <span className='text-xs text-muted-foreground'>{children}</span>;
 }
 
+/** When something is due, as a chip: overdue in red, within the hour in amber, later in grey. */
+function dueChip(at: string, now: number): { label: string; variant: BadgeProps["variant"] } {
+	const minutes = Math.round((Date.parse(at) - now) / 60_000);
+	if (minutes < 0) return { label: `Overdue ${formatSpan(-minutes)}`, variant: "red" };
+	if (minutes < 1) return { label: "Due now", variant: "amber" };
+	if (minutes <= 60) return { label: `In ${formatSpan(minutes)}`, variant: "amber" };
+	return { label: `In ${formatSpan(minutes)}`, variant: "secondary" };
+}
+
 export {
 	CardLink,
 	CardList,
@@ -299,10 +318,12 @@ export {
 	CardSource,
 	CardToggle,
 	Detail,
+	dueChip,
 	formatDateTime,
 	formatElapsed,
 	formatSpan,
 	formatTime,
+	formatWhen,
 	freshness,
 	latest,
 	NoData,

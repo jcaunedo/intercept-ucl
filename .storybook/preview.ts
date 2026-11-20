@@ -58,7 +58,7 @@ const preview: Preview = {
 						"Design Contracts",
 					],
 					"PRDs",
-					["Sidebar", "Account menu", "Patients", "Patient card", "Monitoring", "Monitoring card", "Inbox", "Patient monitor", "Patient details", "Census list", "Alert maximized modal", "Bedside camera", "Video consult", "Specialty Care Access", "Messages", "Notes", "Virtual Sepsis", "Transitions of care", "Schedule", "Outcomes dashboard", "Chat composer", "Glossary"],
+					["Sidebar", "Account menu", "Patients", "Patient card", "Monitoring", "Monitoring card", "Inbox", "Patient monitor", "Patient details", "Care plan", "Census list", "Alert maximized modal", "Bedside camera", "Video consult", "Specialty Care Access", "Messages", "Notes", "Virtual Sepsis", "Transitions of care", "Schedule", "Outcomes dashboard", "Chat composer", "Glossary"],
 					"Documents",
 					["System Specifications", "Design Phase Team Brief", "Left Nav Spec", "Slack notes from client"],
 					"Storyboard",
