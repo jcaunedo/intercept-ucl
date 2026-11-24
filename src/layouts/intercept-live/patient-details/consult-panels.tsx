@@ -29,6 +29,7 @@ import {
 	ConsultPanelContent,
 	ConsultTile,
 	PathwayContent,
+	bedsideAuthor,
 	threadWith,
 	useConsult,
 	type AlertConsultState,
@@ -495,6 +496,10 @@ function PatientConsultPanels({
 						messages={messages}
 						onSend={sendMessage}
 						nurse={nurse}
+						patientName={`${data.patient.firstName} ${data.patient.lastName}`}
+						patientId={data.patientId}
+						contact={bedsideAuthor(data.bedside)}
+						onAttach={(attachment) => sendMessage("", undefined, attachment)}
 						typing={nurseTyping}
 						autoFocus={focusMessages}
 						filter={

@@ -53,6 +53,12 @@ type PatientNavigation = {
 	 */
 	askAboutPatient: (patientId: string, patientName: string, tags?: string[], question?: string) => void;
 	/**
+	 * The patient the page is about now without their details open (Messages: the open conversation's patient), or
+	 * `null`. The Sidebar's Ask Intercept Live then opens about them, as it does on a patient's page, without asking
+	 * anything. `name` is "Last, First"; `tags` their tags' labels. The page clears it when it leaves.
+	 */
+	setScreenPatient?: (patient: { id: string; name: string; tags?: string[] } | null) => void;
+	/**
 	 * Starts the shift handoff (the account menu's Start handoff): Ask Intercept Live asked "/handoff". A notice's Open
 	 * handoff uses it (Scenario 5, step 6: the 07:00 handoff report).
 	 */

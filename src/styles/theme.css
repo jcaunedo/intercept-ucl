@@ -123,6 +123,8 @@
 	--color-badge-purple-foreground: var(--badge-purple-foreground);
 	--color-badge-red: var(--badge-red);
 	--color-badge-red-foreground: var(--badge-red-foreground);
+	--color-badge-pink: var(--badge-pink);
+	--color-badge-pink-foreground: var(--badge-pink-foreground);
 	--color-badge-yellow: var(--badge-yellow);
 	--color-badge-yellow-foreground: var(--badge-yellow-foreground);
 	--color-badge-amber: var(--badge-amber);
@@ -420,6 +422,12 @@
 	--red-700: oklch(0.505 0.190 27.52); /* #b91c1c */
 	--red-950: oklch(0.258 0.089 26.04); /* #450a0a */
 
+	/* Tailwind's pink, added in intercept.ds Nov 23, 2026 for the Pink badge tone (not in archielabs.ds). */
+	--pink-50: oklch(0.971 0.014 343.20); /* #fdf2f8 */
+	--pink-300: oklch(0.823 0.110 346.02); /* #f9a8d4 */
+	--pink-700: oklch(0.525 0.199 3.96); /* #be185d */
+	--pink-950: oklch(0.284 0.105 3.91); /* #500724 */
+
 	--denim-50: oklch(0.972 0.012 259.82); /* #f1f6fe */
 	--denim-100: oklch(0.941 0.025 263.33); /* #e3ecfd */
 	--denim-200: oklch(0.872 0.055 261.22); /* #c1d6fa */
@@ -602,6 +610,8 @@
 	--badge-purple-foreground: var(--purple-700);
 	--badge-red: var(--red-50);
 	--badge-red-foreground: var(--red-700);
+	--badge-pink: var(--pink-50);
+	--badge-pink-foreground: var(--pink-700);
 	/* Yellow and Amber use a 100 fill, as Figma binds them. */
 	--badge-yellow: var(--corn-100);
 	--badge-yellow-foreground: var(--corn-800);
@@ -822,6 +832,8 @@
 	--badge-purple-foreground: var(--purple-300);
 	--badge-red: var(--red-950);
 	--badge-red-foreground: var(--red-300);
+	--badge-pink: var(--pink-950);
+	--badge-pink-foreground: var(--pink-300);
 	--badge-yellow: var(--corn-950);
 	--badge-yellow-foreground: var(--corn-300);
 	--badge-amber: var(--flamingo-950);

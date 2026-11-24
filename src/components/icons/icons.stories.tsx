@@ -20,6 +20,7 @@ import {
 import { BoxSolidIcon } from "./box-solid-icon";
 import { CalendarSolidIcon } from "./calendar-solid-icon";
 import { ChartColumnSolidIcon } from "./chart-column-solid-icon";
+import { CircleAlertFilledIcon } from "./circle-alert-filled-icon";
 import { CircleUserSolidIcon } from "./circle-user-solid-icon";
 import { AiSparkleIcon } from "./ai-sparkle-icon";
 import { EyeSolidIcon } from "./eye-solid-icon";
@@ -35,6 +36,8 @@ import { MonitorViewMinimizedIcon } from "./monitor-view-minimized-icon";
 import { ShieldSolidIcon } from "./shield-solid-icon";
 import { SparklesSolidIcon } from "./sparkles-solid-icon";
 import { SquareActivitySolidIcon } from "./square-activity-solid-icon";
+import { SlashCommandIcon } from "./slash-command-icon";
+import { SquareFilledIcon } from "./square-filled-icon";
 import { TriangleAlertSolidIcon } from "./triangle-alert-solid-icon";
 
 // Each solid icon beside its lucide outline. Most replace the outline while a SidebarMenuButton is active;
@@ -101,6 +104,37 @@ export const AiSparkle: Story = {
 			<span>ai-sparkle</span>
 			<AiSparkleIcon className='size-4' />
 			<AiSparkleIcon className='size-6' />
+		</div>
+	),
+};
+
+/** ChatComposer's icons (intercept.ds, custom): slash (commands) and square-filled (Stop), at 16px (in buttons) and 24px. */
+export const ChatComposerIcons: Story = {
+	render: () => (
+		<div className='grid grid-cols-[auto_repeat(2,2rem)] items-center gap-x-4 gap-y-3 text-sm text-foreground'>
+			{(
+				[
+					["slash", SlashCommandIcon],
+					["square-filled", SquareFilledIcon],
+				] as const
+			).map(([name, Icon]) => (
+				<div key={name} className='contents'>
+					<span>{name}</span>
+					<Icon className='size-4 text-icon' />
+					<Icon className='size-6 text-icon' />
+				</div>
+			))}
+		</div>
+	),
+};
+
+/** circle-alert-filled (intercept.ds, custom): an urgent conversation in the Messages list, at 16px and 24px. */
+export const CircleAlertFilled: Story = {
+	render: () => (
+		<div className='flex items-center gap-4 text-sm text-foreground'>
+			<span>circle-alert-filled</span>
+			<CircleAlertFilledIcon className='size-4 text-severity-critical' />
+			<CircleAlertFilledIcon className='size-6 text-severity-critical' />
 		</div>
 	),
 };

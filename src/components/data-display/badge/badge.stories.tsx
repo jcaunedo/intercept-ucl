@@ -4,7 +4,7 @@ import { BadgeCheckIcon, ChevronDownIcon } from "lucide-react";
 import { Badge } from "./badge";
 
 const variants = ["default", "secondary", "neutral", "destructive", "outline", "ghost", "link"] as const;
-const tones = ["blue", "green", "sky", "purple", "red", "yellow", "amber"] as const;
+const tones = ["blue", "green", "sky", "purple", "red", "pink", "yellow", "amber"] as const;
 const sizes = ["xs", "sm", "md", "lg"] as const;
 
 const meta = {

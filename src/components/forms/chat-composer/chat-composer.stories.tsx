@@ -26,7 +26,6 @@ const meta = {
 		onSubmit: fn(),
 		onAttach: fn(),
 		onDictate: fn(),
-		onVoice: fn(),
 		commands,
 		className: "w-90",
 	},
@@ -35,14 +34,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Empty: +, the microphone and the voice button. Enter sends; Shift+Enter starts a new line. */
+/**
+ * Empty: +, commands and the microphone; no voice button (a chat takes speech as dictated text). Enter sends;
+ * Shift+Enter starts a new line.
+ */
 export const Default: Story = {
 	play: async ({ canvasElement, args }) => {
 		const canvas = within(canvasElement);
 		const field = canvas.getByRole("combobox", { name: "Ask Intercept Live" });
-		await expect(canvas.getByRole("button", { name: "Start voice conversation" })).toBeVisible();
+		await expect(canvas.queryByRole("button", { name: "Send" })).toBeNull();
 
-		// Typing swaps voice for Send; Enter sends the trimmed text and clears the field.
+		// Typing brings Send in; Enter sends the trimmed text and clears the field.
 		await userEvent.type(field, "  What changed in the last hour?  ");
 		await expect(canvas.getByRole("button", { name: "Send" })).toBeEnabled();
 		await userEvent.keyboard("{Enter}");
@@ -244,6 +246,36 @@ export const CommandNamesOnly: Story = {
 	},
 };
 
+/**
+ * `onAddCommand`: "Add command" ends the menu, after a rule, so the user can make their own. It stays when nothing
+ * matches, naming what's typed ("Add command: /sitrep"); ↑ ↓ reach it, and picking it clears the field and hands the
+ * name to the app, which opens its form.
+ */
+export const AddCommand: Story = {
+	args: { commands: namesOnly, onAddCommand: fn() },
+	parameters: { layout: "padded" },
+	render: (args) => (
+		<div className='flex h-80 items-end justify-center'>
+			<ChatComposer {...args} />
+		</div>
+	),
+	play: async ({ args, canvasElement }) => {
+		const canvas = within(canvasElement);
+		const field = canvas.getByRole("combobox", { name: "Ask Intercept Live" });
+		await userEvent.type(field, "/");
+		const options = canvas.getAllByRole("option");
+		await expect(options).toHaveLength(5);
+		await expect(options.at(-1)).toHaveTextContent("Add command");
+		await userEvent.keyboard("{ArrowUp}");
+		await expect(options.at(-1)).toHaveAttribute("aria-selected", "true");
+		await userEvent.type(field, "sitrep");
+		await expect(canvas.getAllByRole("option").map((option) => option.textContent)).toEqual(["Add command: /sitrep"]);
+		await userEvent.keyboard("{Enter}");
+		await expect(args.onAddCommand).toHaveBeenCalledWith("sitrep");
+		await expect(field).toHaveValue("");
+	},
+};
+
 /** A command that acts on its own (`onSelect`, e.g. /clear): picking it runs it at once and leaves the field empty. */
 export const CommandThatActs: Story = {
 	args: { commands: [...namesOnly, { name: "clear", onSelect: fn() }] },
@@ -289,7 +321,7 @@ export const CommandHint: Story = {
 	},
 };
 
-/** With text: Send takes the voice button's place. */
+/** With text: Send at the right end. */
 export const WithText: Story = {
 	args: { defaultValue: "Summarize the last 24 hours for Miller, Sarah" },
 };
@@ -311,7 +343,6 @@ export const LongText: Story = {
 export const WakePhrase: Story = {
 	args: {
 		dictation: true,
-		onVoice: undefined,
 		onDictate: undefined,
 		wakePhrase: ["Hey Intercept", "Hey"],
 		wakePlaceholder: 'Ask, search, or say "Hey Intercept"',
@@ -360,12 +391,11 @@ export const WakePhrase: Story = {
 };
 
 /**
- * Without voice (Ask Intercept Live, Nov 6, 2026): nothing at the right end while the field is empty; Send slides in with
- * the first character, opening its own room (the microphone, when there is one, moves left), and leaves when the field
- * empties.
+ * Send only: nothing at the right end while the field is empty; Send slides in with the first character, opening its own
+ * room (the microphone, when there is one, moves left), and leaves when the field empties.
  */
 export const SendOnly: Story = {
-	args: { onAttach: undefined, onDictate: undefined, onVoice: undefined, commands: undefined },
+	args: { onAttach: undefined, onDictate: undefined, commands: undefined },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const field = canvas.getByRole("textbox", { name: "Ask Intercept Live" });
@@ -377,9 +407,9 @@ export const SendOnly: Story = {
 	},
 };
 
-/** As Ask Intercept Live has it: dictation, no voice. Send arrives with text, pushing the microphone left. */
+/** As Ask Intercept Live has it: built-in dictation. Send arrives with text, pushing the microphone left. */
 export const DictationWithoutVoice: Story = {
-	args: { onVoice: undefined, onDictate: undefined, dictation: true },
+	args: { onDictate: undefined, dictation: true },
 };
 
 /** While an answer is being written: Stop replaces Send, and Enter doesn't send. */

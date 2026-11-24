@@ -9,6 +9,7 @@ import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
+import { sampleDraftQuickRequest } from "../sample-data/sample-quick-request-drafter";
 import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-data/sample-schedule";
 import { sampleMessageConversations } from "../messages/sample-data/sample-messages";
 import { sampleInboxItems } from "../inbox/sample-data/sample-inbox";
@@ -65,6 +66,7 @@ const meta = {
 		escalationTargets: sampleEscalationTargets,
 		user: sampleUser,
 		askIntercept: sampleAskIntercept,
+		draftQuickRequest: sampleDraftQuickRequest,
 		shiftEndsAt: sampleShiftEndsAt,
 		shift: sampleShift,
 		team: sampleTeam,
@@ -588,12 +590,38 @@ export const MessagesPage: Story = {
 	args: { defaultPage: "Messages" },
 	play: async ({ canvas, canvasElement, userEvent }) => {
 		const conversations = within(await canvas.findByRole("region", { name: "Conversations" }));
-		const first = conversations.getAllByRole("button")[0];
+		const first = within(conversations.getByRole("list")).getAllByRole("button")[0];
 		await expect(first).toHaveAttribute("aria-current", "true");
 		await expect(first).toHaveAccessibleName(/^Kelly Ortiz, RN, Urgent/);
 		await expect(await canvas.findByRole("log", { name: "Messages with Kelly Ortiz, RN" })).toBeVisible();
 		await userEvent.click(canvas.getByRole("button", { name: "Patients" }));
 		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${directory.length} patients`));
+	},
+};
+
+/**
+ * Messages has no Ask Intercept Live of its own: the Sidebar's opens about the open conversation's patient (here Kelly
+ * Ortiz's, about Sarah Miller), as it does on a patient's page, without asking anything. Another conversation, opened
+ * with the chat closed, gives the next opening its patient.
+ */
+export const AskFromMessages: Story = {
+	args: { defaultPage: "Messages" },
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		const conversations = within(await canvas.findByRole("region", { name: "Conversations" }));
+		await expect(canvas.queryByRole("button", { name: /^Ask Intercept Live about/ })).not.toBeInTheDocument();
+		const first = within(conversations.getByRole("list")).getAllByRole("button")[0];
+		const about = /About (.+?), /.exec(first.getAttribute("aria-label") ?? "")?.[1] ?? "";
+		await expect(about).not.toBe("");
+		// The details column has no Ask button of its own; below xl the header's patient bar opens the patient.
+		const details = canvasElement.querySelector<HTMLElement>("[aria-label='Patient details']");
+		if (details) await expect(within(details).queryAllByRole("button", { name: /Ask Intercept Live/i, hidden: true })).toHaveLength(0);
+		await expect(canvas.getByRole("button", { name: `${about}, open patient` })).toBeVisible();
+		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
+		const panel = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
+		const [firstName, ...rest] = about.split(" ");
+		await expect(
+			await panel.findByRole("button", { name: `Remove ${rest.join(" ")}, ${firstName} from the chat` }),
+		).toBeVisible();
 	},
 };
 

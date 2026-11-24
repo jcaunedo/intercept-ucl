@@ -312,7 +312,10 @@ function LatestVitals({ vitals, monitor }: VitalsSectionProps) {
 }
 
 export {
+	formatValue as formatVitalValue,
 	LatestVitals,
+	limitState,
+	parameters as vitalParameters,
 	type PatientVitals,
 	type VitalParameter,
 	type VitalReading,

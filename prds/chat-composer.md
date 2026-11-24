@@ -1,7 +1,7 @@
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 19, 2026
+Last updated: Nov 23, 2026
 Scope: The chat composer (UCL ChatComposer) and the Ask Intercept Live conversation it drives in the Provider Desktop: the message field, its buttons, slash commands, suggested questions, and how answers arrive.
 Purpose: Defines the composer's behavior, states, rules for answers and acceptance criteria, pending clinical and product validation, so design, engineering and the Conversational Clinical Data Agent team build the same thing.
 -->
@@ -14,7 +14,7 @@ Purpose: Defines the composer's behavior, states, rules for answers and acceptan
 **Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 19, 2026
+**Last updated:** November 23, 2026
 
 ---
 
@@ -47,7 +47,7 @@ The agent retrieves and summarizes. It never diagnoses, recommends therapy or ac
 | System Specification (Draft v0.1, May 2026) | §5.1 Provider Desktop ("chat with the chart"), §6.14 Conversational AI (guardrails, citations, conversation audit), §8.7 Conversational Clinical Data Agent (scope, limits, example questions), §9.1 Principles 7, 9 and 12 (AI marked, explainable, honest about thin data), §9.5 (microphone and voice policies are downstream) |
 | PRD — Patient details | PD-100 Ask about this patient (scope, citations, limits, drafts), PD-110 Prepare handoff (I-PASS), PD-OD-04 (where Ask lives) |
 | Design Phase Team Brief | Synthetic data only; show the sanctioned integration story |
-| intercept.ds `Chat` (`1200:1431`) | The panel and the composer's empty state: field, +, microphone, voice |
+| intercept.ds `Chat` (`1200:1431`) | The panel and the composer's empty state: field, +, microphone; ~~voice~~ (removed Nov 23, 2026). The composer itself is `ChatComposer` (`1683:261`), every state |
 | DESIGN.md "ChatComposer", "Ask Intercept conversation"; MOTION.md "AI answers" | How the prototype builds it |
 
 ### 1.3 Relationship to other surfaces
@@ -82,7 +82,7 @@ The agent retrieves and summarizes. It never diagnoses, recommends therapy or ac
 | CC-UC-04 | Across the census | "Lactate for everyone in the MICU", "Which of my patients are on pressors?" answer across patients, filtered by hospital, unit or assignment. |
 | CC-UC-05 | Handoff | "/handoff Miller" drafts an I-PASS handoff from the chart for the clinician to review and edit. |
 | CC-UC-06 | A long answer that's not needed | Stop ends it and keeps what's already there. |
-| CC-UC-07 | Hands busy | The microphone dictates the question (CC-031, built Nov 6, 2026). No voice conversation in Ask Intercept Live; its voice button is removed (CC-032). |
+| CC-UC-07 | Hands busy | The microphone dictates the question (CC-031, built Nov 6, 2026). No voice conversation or voice recording: speech becomes text (CC-032). |
 
 ---
 
@@ -96,7 +96,7 @@ The composer is one box: a field on top, a toolbar under it. The commands menu o
 | **+ (Add attachment)** | Left of the toolbar. | `onAttach`; shown only with it |
 | **/ (Commands)** | Next to +. Opens the commands menu. | `commands`; shown only with them |
 | **Microphone (Dictate)** | Right of the toolbar. | `dictation` (built in: listens, writes into the field; pressed while listening, "Stop dictating"), or `onDictate`; shown only with one of them |
-| **Voice / Send / Stop** | The last button. Voice while the field is empty; Send once there's text; Stop while an answer is being written. | `onVoice`, `onSubmit`, `generating` + `onStop` |
+| **Send / Stop** | The last button. ~~Voice while the field is empty;~~ ✅ **Resolved:** nothing while the field is empty (no voice button, CC-032); Send once there's text; Stop while an answer is being written. | `onSubmit`, `generating` + `onStop` (`onVoice` is deprecated and ignored) |
 | **Commands menu** | A list above the box: each command and what it does. | Built into `ChatComposer` |
 
 ℹ️ The panel around the composer (heading, close, conversation) is the shell's (`AskInterceptPanel`), not part of UCL.
@@ -112,13 +112,13 @@ The composer is one box: a field on top, a toolbar under it. The commands menu o
 - What's sent is trimmed; an empty or blank message is never sent.
 - The field stays editable while an answer is being written, so the next question can be typed.
 
-### CC-011 — The last button: voice, Send or Stop
+### CC-011 — The last button: Send or Stop
 
 | State | Button | Does |
 |---|---|---|
-| Empty field | Voice (sound waves) | Starts a voice conversation (CC-032) |
+| Empty field | ~~Voice (sound waves)~~ ✅ **Resolved:** none; Send arrives with the first character | ~~Starts a voice conversation~~ (CC-032) |
 | Text in the field | Send (arrow up) | Sends the message |
-| No voice available, empty field | Send, disabled | — |
+| ~~No voice available, empty field~~ | ~~Send, disabled~~ | ~~—~~ |
 | An answer is being written | Stop (square) | Stops the answer (CC-012) |
 
 ### CC-012 — Stop
@@ -134,6 +134,7 @@ The commands button, or "/" typed at the start of the field, opens the commands 
 - Picking writes "/name " into the field, replacing a command being typed, or before text already there. The clinician can add a patient's name, then sends.
 - Once a command is in the field with nothing after it, a guidance line shows right after it, muted, saying what to write next. With a patient in the chat: "Enter for Hayes, or add another patient"; without one: "Add a patient's name" (for /changes: "Enter for all your patients, or add a patient's name"). It disappears as soon as the clinician types after the command, and screen readers hear it as the field's description.
 - With text already in the field, the commands button opens the menu without clearing it.
+- ✅ **Resolved:** where the app lets people make their own commands, **Add command** ends the menu, after a rule, pinned under the list so it stays in view however long the list is; it stays when nothing matches, naming what's typed ("Add command: /sitrep"), and opens the app's form with that name. ↑ ↓ reach it like a command. Ask Intercept Live doesn't offer it; a Messages thread does (PRD Messages MSG-005). With a list longer than the menu, the highlighted command scrolls into view.
 - The menu lists the commands by name alone ("/summarize"), without a description beside each; what each does is in the table below.
 
 | Command | Does | Patient |
@@ -202,7 +203,7 @@ Built (`dictation`). Dictation fills the field with the spoken question, as it's
 
 ### CC-032 — Voice conversation
 
-Not in Ask Intercept Live; its voice button is removed, and dictation (CC-031) is the spoken way in. The component keeps `onVoice` for other apps. Had it been built: a spoken conversation with the agent, answers read aloud, with CC-031's policy questions plus how a spoken answer cites its sources.
+~~Not in Ask Intercept Live; its voice button is removed, and dictation (CC-031) is the spoken way in. The component keeps `onVoice` for other apps.~~ ✅ **Resolved:** a chat takes speech only as text: voice-to-text dictation (CC-031), never a voice recording or a voice conversation, in Ask Intercept Live and anywhere else the composer is used. Voice memos (recorded audio) are reserved for person-to-person messaging (PRD Messages). The composer has no voice button; `onVoice` is deprecated and ignored. Had it been built: a spoken conversation with the agent, answers read aloud, with CC-031's policy questions plus how a spoken answer cites its sources.
 
 ### CC-040 — Suggested questions
 
@@ -253,7 +254,7 @@ Each message goes to the agent with the page the clinician is on and the patient
 
 | State | What the clinician sees |
 |---|---|
-| **Empty** | Placeholder, +, commands, microphone. No voice button in Ask Intercept Live, and no Send until there's text |
+| **Empty** | Placeholder, +, commands, microphone. No voice button (CC-032), and no Send until there's text |
 | **Typing** | Text; Send grows in from its center as the first character arrives, pushing the microphone left, never covering it |
 | **Dictating** | "Listening…" while empty; the microphone Flat · Destructive with `mic-off`; the voice meter; the words appearing as they're said (CC-031) |
 | **Commands menu open** | The menu above the box; the commands button pressed |
@@ -267,7 +268,7 @@ Each message goes to the agent with the page the clinician is on and the patient
 ## 6. Accessibility
 
 - The field is labeled "Ask Intercept Live"; with commands it's a combobox controlling the commands listbox, and the highlighted command is announced (`aria-activedescendant`).
-- Every button has a name: "Add attachment", "Commands", "Dictate" ("Stop dictating" while listening, pressed), "Start voice conversation", "Send", "Stop generating". The commands button says whether the menu is open.
+- Every button has a name: "Add attachment", "Commands", "Dictate" ("Stop dictating" while listening, pressed), "Send", "Stop generating" (~~"Start voice conversation"~~, CC-032). The commands button says whether the menu is open.
 - The conversation is a log: new messages are announced; an answer being written is busy, so it's read once, when done. Questions are prefixed "You:", answers "Intercept Live:" for screen readers.
 - The whole box shows the focus ring while the field is focused.
 - Everything works from the keyboard: Enter, Shift+Enter, ↑ ↓, Tab, Escape.
@@ -284,7 +285,7 @@ Per MOTION.md "AI answers": thinking is a soft opacity pulse; streaming arrives 
 
 | Part | In the prototype |
 |---|---|
-| **Composer** | Built in UCL (`ChatComposer`): field, commands, Stop; +, microphone and voice report clicks only |
+| **Composer** | Built in UCL (`ChatComposer`): field, commands, dictation, Stop; + reports clicks only; ~~voice~~ removed (CC-032) |
 | **Answers** | A built-in engine over every sample file (census, monitoring values and alerts, each patient's record and sections, hospitals, user and team), matching questions by topic and patient. No AI model, no API key. It doesn't truly understand a question; the real agent replaces it. |
 | **Data** | Synthetic only (Brief, PRD PD-150) |
 
@@ -342,7 +343,7 @@ Per MOTION.md "AI answers": thinking is a soft opacity pulse; streaming arrives 
 | CC-OD-02 | 🙋 The v1 command set, and whether it varies by role | Product / Clinical | /trend with an overlay is a candidate (Spec §8.7) |
 | CC-OD-03 | 🙋 Where a /handoff draft goes: copied only, or into the handoff surface | Product | Depends on PD-OD-10 (handoff format) |
 | CC-OD-04 | 🙋 What can be attached, where it's stored, and whether the agent reads it | Product / Security | + is shown but does nothing |
-| CC-OD-05 | 🙋 Microphone and voice: which hospitals allow them, push-to-talk or not | Clinical / Security | Spec §9.5 |
-| CC-OD-06 | 🙋 Does the care team thread's composer reuse ChatComposer? | Design | Messages go to people, not the agent |
+| CC-OD-05 | 🙋 Microphone ~~and voice~~ (dictation only since Nov 23, 2026, CC-032): which hospitals allow it, push-to-talk or not | Clinical / Security | Spec §9.5 |
+| CC-OD-06 | 🙋 Does the care team thread's composer reuse ChatComposer? | Design | Messages go to people, not the agent; voice memos belong to messaging, and ChatComposer has none (CC-032) |
 | CC-OD-07 | 🙋 Conversation persistence across sessions and devices, and retention | Product / Compliance | Spec §6.14 |
 | CC-OD-08 | 🙋 Citations: names only, or links that open the source and its moment on the Timeline | Product / Engineering | PD-100 asks for links |

@@ -80,6 +80,8 @@ import {
 import { avatarTone, patientInitials } from "./shared/patient-avatar";
 import { usePatientTone } from "./shared/patient-tones";
 import { CensusListPanel, type CensusListEntry } from "./census-list-panel";
+import { CurrentUserProvider } from "./current-user";
+import { QuickRequestsProvider, type QuickRequestDrafter } from "./shared/quick-requests";
 import { LocationStateProvider, useLocationStateStore, type LocationState } from "./location-state";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
 import { PatientNavigationProvider, type ActiveAlertsRequest, type PatientNavigation } from "./patient-navigation";
@@ -477,6 +479,11 @@ type InterceptLiveProps = {
 	 */
 	askIntercept?: AskInterceptResponder;
 	/**
+	 * Drafts a thread's quick request from its instructions, reading the conversation and the patient's chart (PRD
+	 * Messages MSG-005). Without it, a command writes its message with the placeholders filled.
+	 */
+	draftQuickRequest?: QuickRequestDrafter;
+	/**
 	 * What Ask Intercept Live tells the user unasked, e.g. that patients' alerts changed. Each new `id` is posted once in
 	 * the conversation, whether the chat is open or not.
 	 */
@@ -556,6 +563,7 @@ function InterceptLive({
 	defaultLocationState,
 	onLocationChange,
 	askIntercept,
+	draftQuickRequest,
 	askInterceptNotice,
 	prototype = [],
 	onResetPrototype,
@@ -764,8 +772,15 @@ function InterceptLive({
 	// closing the chat or opening another patient's details ends it. From the Sidebar, it's the patient on screen too, when
 	// there is one (Nov 6, 2026, user's call; it was always general), without asking anything; elsewhere it's general.
 	const [chatPatient, setChatPatient] = React.useState<{ id: string; name?: string; tags?: string[] } | null>(null);
+	// The patient a page is about without their details open (Messages' open conversation; `setScreenPatient`). Read only
+	// when the Sidebar opens the chat, so a ref: reporting it doesn't re-render the shell.
+	const screenPatientRef = React.useRef<{ id: string; name: string; tags?: string[] } | null>(null);
 	sidebarChatRef.current = () => {
-		if (leftPanel !== "chat" && openPatientId !== null) setChatPatient({ id: openPatientId });
+		if (leftPanel !== "chat") {
+			// The patient's page first; else the page's patient (Nov 23, 2026, user's call: Messages' conversation).
+			if (openPatientId !== null) setChatPatient({ id: openPatientId });
+			else if (screenPatientRef.current) setChatPatient(screenPatientRef.current);
+		}
 		toggleLeftPanel("chat");
 	};
 	// The question asked for the user when Ask in a toast opens the chat (AskInterceptPanel's `opener`).
@@ -860,6 +875,9 @@ function InterceptLive({
 				setChatPatient({ id: patientId, name: patientName, tags });
 				setChatOpener({ id: String(openerCount.current++), question });
 				setChatOpen(true);
+			},
+			setScreenPatient: (patient) => {
+				screenPatientRef.current = patient;
 			},
 			setPageList: reportPageList,
 			// Declared below; called only on a click, by then defined. Its setters are stable.
@@ -1030,6 +1048,10 @@ function InterceptLive({
 
 	return (
 		<LocationStateProvider value={locationStore}>
+		{/* The signed-in clinician, for their avatar on the messages they send in every thread. */}
+		<CurrentUserProvider value={user}>
+		{/* The clinician's own quick requests (a thread's Add command), offered in every thread for the session. */}
+		<QuickRequestsProvider draft={draftQuickRequest}>
 		<PatientNavigationProvider value={navigation}>
 			{/* Flags' popover buttons, for every TagsPopover in the app: Fall risk's fall prevention pathway. */}
 			<TagsPopoverActionsProvider resolve={tagActions}>
@@ -1233,6 +1255,8 @@ function InterceptLive({
 			</ConsultSessionProvider>
 			</TagsPopoverActionsProvider>
 		</PatientNavigationProvider>
+		</QuickRequestsProvider>
+		</CurrentUserProvider>
 		</LocationStateProvider>
 	);
 }

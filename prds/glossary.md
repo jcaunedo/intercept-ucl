@@ -1,7 +1,7 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 20, 2026
+Last updated: Nov 23, 2026
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -265,6 +265,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Patient location** | Where the patient is, read from broad to specific: hospital (PC-013), unit, room and bed (PC-014), e.g. Sidney · MICU · Bed 9. Room and bed show only when the hospital supplies them. | PRD PC-013, PC-014 |
 | **Progressive disclosure** | Showing detail (provenance, extra alerts, measurement source) on demand instead of growing the card. | PRD PC-112 |
 | **Provenance** | Where a data item came from: originating tenant, source system or device, observation and ingestion timestamps, quality metadata and supporting evidence. | PRD PC-092 |
+| **Quick request** | A ready-made request to the bedside, picked from a thread's commands menu (/vitals, /labs, /callback…): it writes itself into the message box to finish and send. Clinicians add their own with **Add command**: a name, the message (with `{patient}`, `{first name}`, `{nurse}` filled in) and optional instructions, from which Intercept drafts the message from the conversation and the patient's chart, for review before sending. | PRD Messages MSG-005 |
 | **Quick view** | The button on a Patient card's alert line, shown with two or more active alerts. Opens a popover listing them without leaving the census. | PRD PC-101 |
 | **Respiratory support** | The type of breathing assistance. *Proposed*: Room air, Supplemental oxygen, Noninvasive ventilation, Invasive mechanical ventilation, Unknown/unavailable. | PRD PC-050 |
 | **Scenario layers** | The Patient card scenarios, grouped into layers that combine on one card: alert slot (A), status modifier (S), multiple alerts (M), content edge cases (C), vitals (V), patient context (P), card-level state (K). | PRD §15.1 |
@@ -505,6 +506,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Structured recommendation** | The specialist's answer to a specialist consult: impression, recommendations, disposition and follow-up. Its orders reach the patient's Orders as proposed, for the requesting clinician to accept, edit or decline. | Spec §5.18; SC-04; PRD Specialty Care Access SCA-050 |
 | **Up next** | *Proposed* on the Patient details Overview: what's due for the patient in the next 12 h, soonest first (scheduled medications, checkpoints, order recommendations), each with how soon. | PRD Patient details, Care plan and activity |
 | **Video consult** | *Proposed* a camera session with the bedside nurse called in: the clinician reaches her through the hospital's messaging, and they talk through the room's camera, with the patient in view. Not a video conference: the bedside nurse has no Intercept screen (roadmap). Distinct from the specialist consult (SC-*). | Scenario 1 step 3, PRD Bedside camera CAM-007, PRD Alert maximized modal AMM-013 |
+| **Voice memo** | A recorded audio message, played back as audio. Reserved for person-to-person messaging (Messages); everywhere else, Ask Intercept Live included, speech is dictated and becomes text. ⚠️ **Not built.** | PRD CC-032, MSG-005 |
 | **Consult session** | *Proposed* a patient's video consult kept as one state wherever the patient is shown (the alert panel, the consult without an alert, the patient page): the call, the AI Notetaker and its transcript, the thread with the bedside nurse, and the Pathway column. It ends when the last place showing the patient closes. | PRD Video consult VID-040; PRD Messages MSG-013; `consult-session.tsx` |
 | **Live transcript** | *Proposed* the AI Notetaker's running transcript of a video consult: speaker turns with their time into the consult; the clinician shows as "You", from their microphone, each time they speak as an entry of its own; stretches not captured are marked. | PRD Video consult VID-020–VID-026 |
 | **Low-bandwidth mode** | *Proposed* a video consult whose connection dropped: audio only, the monitor's numbers held and refreshed every 30 s, and the bedside sending still photos. | PRD Bedside camera CAM-014; PRD Video consult VID-007; Scenario 2 |

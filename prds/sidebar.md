@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 20, 2026
+Last updated: Nov 23, 2026
 Scope: The left navigation (UCL Sidebar): its three workspaces (Clinical, Administration, Marketplace), the items each one shows, the workspace switcher, Ask Intercept Live's place in it, and the rail's states. Source: documents/Intercept Live — Left Nav Spec.md and intercept.ds `sidebar` (1001:544).
 Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, records where the design follows it and where it doesn't yet, and lists what's still open.
 -->
@@ -19,7 +19,7 @@ Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, reco
 **Audience:** Every signed-in user, in each workspace they have (§2): intensivists, APPs and Critical Care RNs in Clinical; administrators and operations roles in Administration; Independent Clinicians in Marketplace  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 20, 2026
+**Last updated:** November 23, 2026
 
 ---
 
@@ -188,6 +188,7 @@ Ask Intercept Live opens a column next to the Sidebar rather than a page, so it'
 - **Placement:** the first row, ~~under the switcher~~ under the logo row (the switcher is in the account menu, NAV-011), separated from the page items by a divider, so it reads as a panel to open rather than a place to go.
 - **Never the current page:** it opens over the page in view, which stays the current page.
 - **Knows what you're looking at:** the column shows a "Looking at" line (e.g. "Monitoring · All hospitals · 26 patients", or one patient on a chart), and its suggested questions change with the workspace and page.
+- **About the patient on screen:** opened on a patient's page, the chat is about that patient (their chip over the message box), without asking anything. ✅ **Resolved:** on Messages, it's about the open conversation's patient, so the conversation's details have no Ask Intercept Live button of their own (PRD Messages MSG-018); a conversation about no one opens it general, as every other page does.
 - **Shows its sources:** answers cite where their data came from and how fresh it is (§9.1 #6, #9).
 - **One column only:** the Ask icon in the patient header opens this same column, not a second chat.
 - **Search:** there's no Search item; search happens in Ask Intercept Live (PD-08) and in ⌘K.

@@ -7,6 +7,7 @@ import { useLivePatients } from "@/components/data-display/patient-monitor/use-l
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-data/sample-alert-panel";
 import { Patients } from "../patients/patients";
 import { samplePatients, sampleScenario1ResolvedCensus } from "../sample-data/sample-census";
+import { sampleDraftQuickRequest } from "../sample-data/sample-quick-request-drafter";
 import { Monitoring } from "../monitoring/monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
@@ -48,6 +49,7 @@ const meta = {
 		escalationTargets: sampleEscalationTargets,
 		user: sampleUser,
 		askIntercept: sampleAskIntercept,
+		draftQuickRequest: sampleDraftQuickRequest,
 		shiftEndsAt: sampleShiftEndsAt,
 		shift: sampleShift,
 		team: sampleTeam,

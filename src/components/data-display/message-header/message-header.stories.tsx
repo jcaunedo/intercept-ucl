@@ -1,0 +1,152 @@
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, waitFor, within } from "storybook/test";
+
+import { MessageHeader } from "./message-header";
+
+const kelly = { name: "Kelly Ortiz, RN", initials: "KO", tone: 4, presence: "online" } as const;
+const sarah = { name: "Sarah Miller", place: "MICU · Bed 11", initials: "SM", tone: 1 } as const;
+
+const meta = {
+	title: "Data Display/MessageHeader",
+	component: MessageHeader,
+	tags: ["autodocs"],
+	args: {
+		person: kelly,
+		role: "Bedside nurse · Sidney Regional · Hospital messaging",
+		patient: sarah,
+		onOpenPatient: fn(),
+		onToggleDetails: fn(),
+	},
+	decorators: [
+		(Story) => (
+			<div className='w-[63rem] max-w-full border border-border'>
+				<Story />
+			</div>
+		),
+	],
+} satisfies Meta<typeof MessageHeader>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+/**
+ * The person and their role · hospital · channel, then the patient bar, which opens and closes the patient's details (a
+ * `panel-right` icon at its end). Test: the bar is a collapsed toggle named for the patient, and a click calls
+ * `onToggleDetails`, not `onOpenPatient` (the toggle wins when both are set).
+ */
+export const Default: Story = {
+	play: async ({ canvasElement, args, userEvent }) => {
+		const canvas = within(canvasElement);
+		await expect(canvas.getByRole("heading", { level: 2, name: "Kelly Ortiz, RN" })).toBeVisible();
+		const bar = canvas.getByRole("button", { name: "Sarah Miller, patient details" });
+		await expect(bar).toHaveAttribute("aria-expanded", "false");
+		await userEvent.click(bar);
+		await expect(args.onToggleDetails).toHaveBeenCalledOnce();
+		await expect(args.onOpenPatient).not.toHaveBeenCalled();
+	},
+};
+
+/**
+ * When the last message came, before Urgent: ConversationRow's time, "12 min ago" with the exact time in its tooltip.
+ * Test: a `time` element reads "12 min ago" and carries the exact time.
+ */
+export const SentAt: Story = {
+	args: { sentAt: new Date(Date.now() - 12 * 60_000).toISOString(), urgent: true },
+	play: async ({ canvasElement }) => {
+		// The time shows once the client knows the minute (after the first render), as on ConversationRow.
+		await waitFor(() => expect(canvasElement.querySelector("time")).not.toBeNull());
+		const time = canvasElement.querySelector("time");
+		// The minute clock rounds down, so 12 minutes back reads 11 or 12.
+		await expect(time).toHaveTextContent(/^1[12] min ago$/);
+		await expect(time).toHaveAttribute("title");
+		await expect(time).toHaveAttribute("dateTime");
+	},
+};
+
+/** An urgent conversation: the solid red Urgent badge on the right. */
+export const Urgent: Story = {
+	args: { urgent: true },
+	play: async ({ canvasElement }) => {
+		await expect(within(canvasElement).getByText("Urgent")).toBeVisible();
+	},
+};
+
+/** Details open: the bar is expanded, its icon `icon` instead of `icon-subtle`. Test: `aria-expanded` and `aria-controls`. */
+export const DetailsOpen: Story = {
+	args: { detailsOpen: true, detailsId: "patient-details" },
+	play: async ({ canvasElement }) => {
+		const bar = within(canvasElement).getByRole("button", { name: "Sarah Miller, patient details" });
+		await expect(bar).toHaveAttribute("aria-expanded", "true");
+		await expect(bar).toHaveAttribute("aria-controls", "patient-details");
+	},
+};
+
+/**
+ * No `onToggleDetails` (Intercept Live below xl, where the details can't show): the bar opens the patient, an arrow at
+ * its end. Test: a click calls `onOpenPatient`, and the bar isn't a toggle.
+ */
+export const OpensPatient: Story = {
+	args: { onToggleDetails: undefined },
+	play: async ({ canvasElement, args, userEvent }) => {
+		const bar = within(canvasElement).getByRole("button", { name: "Sarah Miller, open patient" });
+		await expect(bar).not.toHaveAttribute("aria-expanded");
+		await userEvent.click(bar);
+		await expect(args.onOpenPatient).toHaveBeenCalledOnce();
+	},
+};
+
+/** A conversation about no patient: no bar. */
+export const NoPatient: Story = {
+	args: { patient: undefined },
+	play: async ({ canvasElement }) => {
+		await expect(canvasElement.querySelector("[data-slot=message-header-patient]")).toBeNull();
+	},
+};
+
+/** Neither `onToggleDetails` nor `onOpenPatient`: the bar is text, without an icon. */
+export const StaticPatient: Story = {
+	args: { onOpenPatient: undefined, onToggleDetails: undefined },
+	play: async ({ canvasElement }) => {
+		await expect(within(canvasElement).queryByRole("button", { name: /Sarah Miller/ })).toBeNull();
+	},
+};
+
+const sarahSummary =
+	"MAP has fallen from 70 to 58 mmHg as norepinephrine went up to 0.22, lactate has nearly doubled to 4.1, and Sepsis Sniffer flagged her as a sepsis candidate 2 min ago.";
+
+/**
+ * A summary of the patient after their place on the bar (intercept.ds `about-patient`), 14/20 `foreground`, cut off on
+ * one line. Test: the summary shows on the bar, and it's the bar's description, since the bar's label replaces its text
+ * for screen readers.
+ */
+export const PatientSummary: Story = {
+	args: { patientSummary: sarahSummary },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const bar = canvas.getByRole("button", { name: "Sarah Miller, patient details" });
+		await expect(bar).toHaveTextContent(/MICU · Bed 11 +- +MAP has fallen/);
+		await expect(bar).toHaveAccessibleDescription(sarahSummary);
+	},
+};
+
+/** A narrow screen showing the conversation alone: Back before the avatar. */
+export const WithBack: Story = {
+	args: { onBack: fn() },
+	play: async ({ canvasElement, args, userEvent }) => {
+		await userEvent.click(within(canvasElement).getByRole("button", { name: "Back to conversations" }));
+		await expect(args.onBack).toHaveBeenCalledOnce();
+	},
+};
+
+/** Every state together. */
+export const AllVariants: Story = {
+	render: (args) => (
+		<div className='flex flex-col gap-6'>
+			<MessageHeader {...args} />
+			<MessageHeader {...args} urgent sentAt={new Date(Date.now() - 12 * 60_000).toISOString()} detailsOpen patientSummary={sarahSummary} />
+			<MessageHeader {...args} patient={undefined} />
+			<MessageHeader {...args} onToggleDetails={undefined} patientSummary={sarahSummary} />
+			<MessageHeader {...args} onBack={fn()} onOpenPatient={undefined} onToggleDetails={undefined} />
+		</div>
+	),
+};

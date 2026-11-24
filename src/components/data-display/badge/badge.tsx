@@ -33,12 +33,13 @@ const badgeVariants = cva(
 				ghost: "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
 				// Link, Brand. Always underlined (shadcn underlines on hover only).
 				link: "text-primary underline",
-				// Flat, Blue / Green / Sky / Purple / Red / Yellow / Amber. Category colors, not status: use `destructive` for errors.
+				// Flat, Blue / Green / Sky / Purple / Red / Pink / Yellow / Amber. Category colors, not status: use `destructive` for errors.
 				blue: "bg-badge-blue text-badge-blue-foreground [a&]:hover:bg-badge-blue/80",
 				green: "bg-badge-green text-badge-green-foreground [a&]:hover:bg-badge-green/80",
 				sky: "bg-badge-sky text-badge-sky-foreground [a&]:hover:bg-badge-sky/80",
 				purple: "bg-badge-purple text-badge-purple-foreground [a&]:hover:bg-badge-purple/80",
 				red: "bg-badge-red text-badge-red-foreground [a&]:hover:bg-badge-red/80",
+				pink: "bg-badge-pink text-badge-pink-foreground [a&]:hover:bg-badge-pink/80",
 				yellow: "bg-badge-yellow text-badge-yellow-foreground [a&]:hover:bg-badge-yellow/80",
 				amber: "bg-badge-amber text-badge-amber-foreground [a&]:hover:bg-badge-amber/80",
 			},

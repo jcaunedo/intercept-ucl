@@ -1,8 +1,10 @@
 import * as React from "react";
-import { ArrowUpIcon, AudioLinesIcon, MicIcon, MicOffIcon, PlusIcon, SlashIcon, SquareIcon } from "lucide-react";
+import { ArrowUpIcon, MicIcon, MicOffIcon, PlusIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
+import { SlashCommandIcon } from "@/components/icons/slash-command-icon";
+import { SquareFilledIcon } from "@/components/icons/square-filled-icon";
 import {
 	useDictation,
 	useMicLevel,
@@ -66,11 +68,12 @@ type ChatComposerProps = Omit<React.ComponentProps<"form">, "onSubmit" | "childr
 	/** Dictates the message, the app's own way. Without it (and without `dictation`), there's no microphone button. */
 	onDictate?: () => void;
 	/**
-	 * Starts a voice conversation. Shown while the message is empty; Send takes its place once there's text. Without it,
-	 * nothing shows there while the message is empty, and Send slides in with the first character.
+	 * @deprecated Ignored since Nov 23, 2026: a chat takes speech as dictated text (`dictation`), never a voice recording
+	 * or conversation; voice memos belong to person-to-person messaging. Nothing shows at the right end while the message
+	 * is empty, and Send slides in with the first character.
 	 */
 	onVoice?: () => void;
-	/** An answer is being written: Stop replaces Send and voice, and Enter doesn't send. The field stays editable. */
+	/** An answer is being written: Stop replaces Send, and Enter doesn't send. The field stays editable. */
 	generating?: boolean;
 	/** Stops the answer being written. */
 	onStop?: () => void;
@@ -79,16 +82,24 @@ type ChatComposerProps = Omit<React.ComponentProps<"form">, "onSubmit" | "childr
 	 * one writes "/name " into the message, for the app to act on when it's sent.
 	 */
 	commands?: ChatCommand[];
+	/**
+	 * Adds "Add command" at the end of the commands menu, so the user can make their own. Picking it closes the menu,
+	 * clears the field and calls this with the command being typed ("/sitrep" → "sitrep"; "" from the slash button), for
+	 * the app to open its form.
+	 */
+	onAddCommand?: (name: string) => void;
+	/** The last row's label ("Add command"). */
+	addCommandLabel?: string;
 	disabled?: boolean;
 };
 
 /**
  * A message box for a chat: a text field that grows with its text, + and slash commands on the left, and the microphone
- * and voice (or Send, once there's text) on the right. Enter sends; Shift+Enter starts a new line. While an answer is
+ * (dictation) and Send, once there's text, on the right. Enter sends; Shift+Enter starts a new line. While an answer is
  * being written, Stop takes Send's place. The commands menu filters as the command is typed; ↑ ↓ move, Enter or Tab
  * picks, Escape closes it.
  *
- * Figma: [intercept.ds › Chat](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1200-1403)
+ * Figma: [intercept.ds › ChatComposer](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1683-261)
  */
 function ChatComposer({
 	value: valueProp,
@@ -103,10 +114,12 @@ function ChatComposer({
 	wakePhrase,
 	wakePlaceholder,
 	onDictate,
-	onVoice,
+	onVoice: _onVoice,
 	generating = false,
 	onStop,
 	commands = [],
+	onAddCommand,
+	addCommandLabel = "Add command",
 	disabled = false,
 	className,
 	...props
@@ -130,8 +143,16 @@ function ChatComposer({
 	const written = /^\/(\S+) $/.exec(value)?.[1];
 	const hint = written ? commands.find((command) => command.name === written.toLowerCase())?.hint : undefined;
 	const hintId = React.useId();
-	const menuOpen = matches.length > 0 && !menuDismissed && !disabled;
-	const active = matches[Math.min(activeIndex, matches.length - 1)];
+	// The menu's options: the matching commands, then Add command (`null`), which shows even when nothing matches.
+	const options: (ChatCommand | null)[] = query === undefined ? [] : onAddCommand ? [...matches, null] : matches;
+	const menuOpen = options.length > 0 && !menuDismissed && !disabled;
+	const active = options[Math.min(activeIndex, options.length - 1)];
+	const optionId = (option: ChatCommand | null) => (option ? `${menuId}-${option.name}` : `${menuId}--add`);
+	// The highlighted command stays in view as ↑ ↓ move through a list longer than the menu.
+	const activeId = menuOpen && active !== undefined ? optionId(active) : undefined;
+	React.useEffect(() => {
+		if (activeId) document.getElementById(activeId)?.scrollIntoView({ block: "nearest" });
+	}, [activeId]);
 
 	const setValue = (next: string) => {
 		setUncontrolledValue(next);
@@ -142,8 +163,15 @@ function ChatComposer({
 
 	// A picked command replaces the one being typed, or goes before the text already there. One that acts on its own
 	// (`onSelect`) runs at once and leaves the field empty.
-	const pick = (command: ChatCommand) => {
+	const pick = (command: ChatCommand | null | undefined) => {
+		if (command === undefined) return;
 		setMenuForced(false);
+		if (command === null) {
+			// Add command: the app's form takes over, with the name being typed.
+			setValue("");
+			onAddCommand?.(query ?? "");
+			return;
+		}
 		fieldRef.current?.focus();
 		if (command.onSelect) {
 			setValue("");
@@ -239,9 +267,9 @@ function ChatComposer({
 		haloRef.current.style.transform = `scale(${1 + level * 0.45})`;
 		haloRef.current.style.opacity = String(Math.min(1, level * 2));
 	});
-	// The button at the right end: Stop while generating, Send with text, voice without; nothing while empty and there's no
-	// voice, so Send arrives with the first character (opening its own width, which pushes the microphone left).
-	const trailing = generating ? "stop" : message ? "send" : onVoice ? "voice" : null;
+	// The button at the right end: Stop while generating, Send with text; nothing while empty, so Send arrives with the
+	// first character (opening its own width, which pushes the microphone left). No voice button (Nov 23, 2026).
+	const trailing = generating ? "stop" : message ? "send" : null;
 
 	React.useEffect(() => {
 		if (disabled) dictate.stop();
@@ -269,8 +297,9 @@ function ChatComposer({
 				// The border sits outside the padding, so the content lands 17 × 14px in, as Figma draws it. `relative` places
 				// the commands menu above it.
 				"relative flex w-full flex-col gap-3 rounded-3xl border border-border bg-background px-4 py-[13px] shadow-sm transition-[border-color,box-shadow]",
-				// The field has no frame of its own: the whole composer takes Input's focus ring.
-				"has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring-outside",
+				// The field has no frame of its own: the whole composer takes Input's focus ring, and like Input drops its shadow
+				// while focused.
+				"has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:shadow-none has-[textarea:focus-visible]:ring-[3px] has-[textarea:focus-visible]:ring-ring-outside",
 				disabled && "opacity-50",
 				className,
 			)}
@@ -288,30 +317,54 @@ function ChatComposer({
 						exit={{ opacity: 0, transition: { duration: 0 } }}
 						className='absolute inset-x-0 bottom-full z-50 mb-2 flex origin-bottom flex-col rounded-3xl border border-border bg-popover px-2.5 py-4 text-popover-foreground shadow-xl'
 					>
-						<ul
-							id={menuId}
-							role='listbox'
-							aria-label='Commands'
-							className='flex max-h-64 flex-col gap-0.5 overflow-y-auto scrollbar-soft'
-						>
-							{matches.map((command) => (
-								<li
-									key={command.name}
-									id={`${menuId}-${command.name}`}
-									role='option'
-									aria-selected={command === active}
-									// Keeps focus in the field, so picking doesn't close the menu first.
-									onMouseDown={(event) => event.preventDefault()}
-									onClick={() => pick(command)}
-									onMouseMove={() => setActiveIndex(matches.indexOf(command))}
-									className='flex cursor-pointer items-baseline gap-2 rounded-xl px-2 py-1.5 text-sm aria-selected:bg-accent aria-selected:text-accent-foreground'
+						<ul id={menuId} role='listbox' aria-label='Commands' className='flex flex-col'>
+							{/* The commands scroll; Add command stays pinned under them, so it's always in view. */}
+							<li role='presentation' className={cn(matches.length === 0 && "hidden")}>
+								<ul
+									role='group'
+									aria-label='Commands'
+									className='flex max-h-64 flex-col gap-0.5 overflow-y-auto scrollbar-soft'
 								>
-									<span className='font-medium'>/{command.name}</span>
-									{command.description ? (
-										<span className='truncate text-xs text-muted-foreground'>{command.description}</span>
-									) : null}
+									{matches.map((command) => (
+										<li
+											key={command.name}
+											id={optionId(command)}
+											role='option'
+											aria-selected={command === active}
+											// Keeps focus in the field, so picking doesn't close the menu first.
+											onMouseDown={(event) => event.preventDefault()}
+											onClick={() => pick(command)}
+											onMouseMove={() => setActiveIndex(options.indexOf(command))}
+											className='flex cursor-pointer items-baseline gap-2 rounded-xl px-2 py-1.5 text-sm aria-selected:bg-accent aria-selected:text-accent-foreground'
+										>
+											<span className='font-medium'>/{command.name}</span>
+											{command.description ? (
+												<span className='truncate text-xs text-muted-foreground'>{command.description}</span>
+											) : null}
+										</li>
+									))}
+								</ul>
+							</li>
+							{onAddCommand ? (
+								// Last, after a rule (none when nothing matches): the user's own command.
+								<li
+									key='add-command'
+									id={optionId(null)}
+									role='option'
+									aria-selected={active === null}
+									onMouseDown={(event) => event.preventDefault()}
+									onClick={() => pick(null)}
+									onMouseMove={() => setActiveIndex(options.length - 1)}
+									className={cn(
+										"relative flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-medium aria-selected:bg-accent aria-selected:text-accent-foreground",
+										matches.length > 0 &&
+											"mt-2.5 before:absolute before:inset-x-2 before:-top-1.5 before:h-px before:bg-border",
+									)}
+								>
+									<PlusIcon aria-hidden='true' className='size-4 text-icon-muted' />
+									{query ? `${addCommandLabel}: /${query}` : addCommandLabel}
 								</li>
-							))}
+							) : null}
 						</ul>
 					</motion.div>
 				) : null}
@@ -355,7 +408,7 @@ function ChatComposer({
 							if (event.key === "ArrowDown" || event.key === "ArrowUp") {
 								event.preventDefault();
 								const step = event.key === "ArrowDown" ? 1 : -1;
-								setActiveIndex((matches.indexOf(active) + step + matches.length) % matches.length);
+								setActiveIndex((options.indexOf(active) + step + options.length) % options.length);
 								return;
 							}
 							if ((event.key === "Enter" || event.key === "Tab") && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -385,7 +438,7 @@ function ChatComposer({
 					aria-autocomplete={commands.length ? "list" : undefined}
 					aria-expanded={commands.length ? menuOpen : undefined}
 					aria-controls={menuOpen ? menuId : undefined}
-					aria-activedescendant={menuOpen && active ? `${menuId}-${active.name}` : undefined}
+					aria-activedescendant={activeId}
 					aria-describedby={hint ? hintId : undefined}
 					disabled={disabled}
 					className={cn(
@@ -444,7 +497,7 @@ function ChatComposer({
 							disabled={disabled}
 							className='rounded-button-md aria-expanded:bg-accent'
 						>
-							<SlashIcon aria-hidden='true' />
+							<SlashCommandIcon />
 						</Button>
 					) : null}
 				</div>
@@ -525,9 +578,9 @@ function ChatComposer({
 										disabled={disabled}
 										className='rounded-button-md'
 									>
-										<SquareIcon aria-hidden='true' className='size-3 fill-current' />
+										<SquareFilledIcon />
 									</Button>
-								) : trailing === "send" ? (
+								) : (
 									<Button
 										type='submit'
 										variant='neutral'
@@ -537,18 +590,6 @@ function ChatComposer({
 										className='rounded-button-md'
 									>
 										<ArrowUpIcon aria-hidden='true' />
-									</Button>
-								) : (
-									<Button
-										type='button'
-										variant='neutral'
-										size='icon-sm'
-										aria-label='Start voice conversation'
-										onClick={onVoice}
-										disabled={disabled}
-										className='rounded-button-md'
-									>
-										<AudioLinesIcon aria-hidden='true' />
 									</Button>
 								)}
 							</motion.div>

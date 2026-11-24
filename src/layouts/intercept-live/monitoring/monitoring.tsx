@@ -276,7 +276,7 @@ function Monitoring({
 					) : undefined,
 					Schedule: schedule ? <SchedulePanel hospitals={hospitals} {...schedule} /> : undefined,
 					Messages: messages ? (
-						<MessagesPanel hospitals={hospitals} {...messages} readIds={readConversations} onRead={readConversation} />
+						<MessagesPanel hospitals={hospitals} patientRecords={patientRecords} {...messages} readIds={readConversations} onRead={readConversation} />
 					) : undefined,
 					// The same alerts as Monitoring's, so acknowledging one in the Inbox acknowledges it everywhere.
 					Analytics: analytics ? <AnalyticsPanel {...analytics} /> : undefined,

@@ -1,1 +1,1 @@
-export { LabTile, labTileVariants, type LabTileFlag, type LabTileProps } from "./lab-tile";
+export { LabTile, labTileFlags, labTileVariants, type LabTileFlag, type LabTileProps } from "./lab-tile";

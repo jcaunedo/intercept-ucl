@@ -1,9 +1,12 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { MessageCircleIcon, type LucideIcon } from "lucide-react";
+import { FileTextIcon, MessageCircleIcon, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/buttons/button";
+import { ChatDayDivider, ChatMessage, type ChatMessageAuthor } from "@/components/data-display/chat-message";
 import { Counter } from "@/components/data-display/counter";
+import { ChatComposer } from "@/components/forms/chat-composer";
+import { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import {
 	fadeVariants,
@@ -13,9 +16,17 @@ import {
 	unreadFlashVariants,
 	useMotionPreference,
 } from "@/lib/motion";
-import { formatDayLabel, formatRelativeDate } from "@/lib/relative-date";
+import { formatDayLabel } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
+import { useCurrentUser } from "../current-user";
+import {
+	AddQuickRequestDialog,
+	fillQuickRequest,
+	quickRequestCommands,
+	useQuickRequests,
+	type QuickRequest,
+} from "../shared/quick-requests";
 import { useSessionState } from "./consult-session";
 import { BedsidePhotoImage, type BedsidePhoto } from "./low-bandwidth";
 
@@ -33,6 +44,8 @@ type ConsultMessage = {
 	text?: string;
 	/** A photo sent with it (store-and-forward: a device's screen, a blood gas), shown with its readings. */
 	photo?: BedsidePhoto;
+	/** A file sent with it (a PDF, a document), shown as a card with its name and size. */
+	file?: ConsultFile;
 	/**
 	 * The patient it's about, in a conversation with a person that spans patients (the Messages page, PRD Messages
 	 * MSG-001); none for a message about no patient. A patient's own thread (the alert panel, the patient page) leaves it out.
@@ -41,6 +54,45 @@ type ConsultMessage = {
 	/** When it was sent, ISO 8601. */
 	sentAt: string;
 };
+
+/** A file attached to a message: what it's called, how big, and where to get it. */
+type ConsultFile = {
+	name: string;
+	/** Bytes. */
+	size: number;
+	/** Its media type, e.g. "application/pdf". */
+	type: string;
+	url: string;
+};
+
+/** What the composer's + sends: an image as a photo, anything else as a file. */
+type ConsultAttachment = { photo: BedsidePhoto; file?: undefined } | { file: ConsultFile; photo?: undefined };
+
+/**
+ * A picked file as an attachment, sent by the clinician now. The prototype keeps it as an object URL; the app uploads it
+ * and sends its link through the hospital's messaging.
+ */
+const attachmentFromFile = (file: File): ConsultAttachment => {
+	const url = URL.createObjectURL(file);
+	if (file.type.startsWith("image/")) {
+		return {
+			photo: {
+				id: url,
+				title: file.name,
+				kind: "device-screen",
+				values: [],
+				takenAt: new Date().toISOString(),
+				takenBy: "You",
+				src: url,
+			},
+		};
+	}
+	return { file: { name: file.name, size: file.size, type: file.type, url } };
+};
+
+/** "240 KB", "1.2 MB". */
+const formatFileSize = (bytes: number) =>
+	bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 /**
  * The prototype's simulated bedside replies: a list, one per message sent in order, or a function that answers each
@@ -94,8 +146,10 @@ function useConsultMessages(
 	}, []);
 	const send = React.useCallback(
 		// `patientId`: the patient the message is about (the Messages page); the reply is about the same one.
-		(text: string, patientId?: string) => {
-			add({ from: "you", text, patientId });
+		(text: string, patientId?: string, attachment?: ConsultAttachment) => {
+			add({ from: "you", text: text || undefined, photo: attachment?.photo, file: attachment?.file, patientId });
+			// The app's handler takes text; an attachment alone gets no simulated reply.
+			if (!text) return;
 			onSend?.(text, patientId);
 			const current = repliesRef.current;
 			const reply = typeof current === "function" ? current(text) : current[nextReply.current];
@@ -270,6 +324,19 @@ function ConsultField({
  * questions), each with who and when; then the message field, pinned to the column's bottom. A new message rises in and
  * the thread scrolls to it. `typing` shows the nurse typing under the last message.
  */
+/** How close two messages from the same author are to read as one run: the second drops its name and time. */
+const groupWindowMs = 30_000;
+
+/** "Rachel Lindgren, RRT" → "RL": a sender's initials from their name, credential left out. */
+const initialsOf = (name: string) =>
+	name
+		.split(",")[0]
+		.trim()
+		.split(/\s+/)
+		.map((word) => word[0]?.toUpperCase() ?? "")
+		.slice(0, 2)
+		.join("");
+
 function ConsultMessages({
 	messages,
 	onSend,
@@ -278,6 +345,10 @@ function ConsultMessages({
 	autoFocus = false,
 	filter,
 	placeholder = "Send a message…",
+	contact,
+	onAttach,
+	patientName,
+	patientId,
 }: {
 	messages: readonly ConsultMessage[];
 	onSend: (text: string) => void;
@@ -294,12 +365,68 @@ function ConsultMessages({
 	filter?: (message: ConsultMessage) => boolean;
 	/** The field's placeholder, e.g. "Message about Sarah Miller…". */
 	placeholder?: string;
+	/** Who the thread is with, for the avatar on their messages: initials, photo, color, presence. */
+	contact?: Omit<ChatMessageAuthor, "name">;
+	/** Sends a picked file (the composer's +): an image as a photo, anything else as a file. Without it, no +. */
+	onAttach?: (attachment: ConsultAttachment) => void;
+	/** The patient the thread is about, "Sarah Miller": a quick request's `{patient}` and `{first name}`. */
+	patientName?: string;
+	/** Their id, so Intercept can read their chart when it drafts a command. */
+	patientId?: string;
 }) {
 	const { prefersReducedMotion } = useMotionPreference();
 	const now = useCurrentMinute();
 	// An unsent message goes with the consult session too.
 	const [draft, setDraft] = useSessionState("messagesDraft", "");
-	const field = React.useRef<HTMLInputElement>(null);
+	const field = React.useRef<HTMLDivElement>(null);
+	const me = useCurrentUser();
+	const filePicker = React.useRef<HTMLInputElement>(null);
+	// The commands menu's quick requests (Nov 23, 2026, user's calls): picking one writes the request into the field, to
+	// finish and send; Add command, last, opens the form for the clinician's own, which every thread then offers.
+	const { requests, add: addRequest, draft: drafter } = useQuickRequests();
+	const [adding, setAdding] = React.useState<string | null>(null);
+	// A command with instructions is drafted by Intercept from the thread and the patient's chart (Nov 23, 2026, user's
+	// call): Stop takes Send's place meanwhile, and the draft lands in the field to review, marked as Intercept's until
+	// it's sent or cleared. Typing meanwhile, or Stop, keeps what the clinician wrote.
+	const [drafting, setDrafting] = React.useState<string | null>(null);
+	const [drafted, setDrafted] = React.useState(false);
+	const draftRun = React.useRef(0);
+	const draftNow = React.useRef(draft);
+	draftNow.current = draft;
+	React.useEffect(() => {
+		if (!draft) setDrafted(false);
+	}, [draft]);
+	const pickRequest = (request: QuickRequest) => {
+		const filled = fillQuickRequest(request.message, { patient: patientName, nurse });
+		if (!request.instructions || !drafter) {
+			setDraft(filled);
+			return;
+		}
+		const run = ++draftRun.current;
+		setDrafting(request.name);
+		setDrafted(false);
+		drafter(request, {
+			patient: patientName,
+			patientId,
+			nurse,
+			messages: messages.flatMap((message) =>
+				message.text ? [{ from: message.from, text: message.text, sentAt: message.sentAt }] : [],
+			),
+		})
+			.catch(() => filled)
+			.then((text) => {
+				if (run !== draftRun.current) return;
+				setDrafting(null);
+				if (draftNow.current.trim()) return;
+				setDraft(text);
+				setDrafted(true);
+			});
+	};
+	const stopDrafting = () => {
+		draftRun.current++;
+		setDrafting(null);
+	};
+	const quickRequests = quickRequestCommands(requests, pickRequest);
 	const thread = React.useRef<HTMLDivElement>(null);
 	const shown = filter ? messages.filter(filter) : messages;
 
@@ -316,12 +443,13 @@ function ConsultMessages({
 		opened.current = true;
 	}, [shown.length, typing, prefersReducedMotion]);
 	React.useEffect(() => {
-		if (autoFocus) field.current?.focus({ preventScroll: true });
+		if (autoFocus) field.current?.querySelector("textarea")?.focus({ preventScroll: true });
 	}, [autoFocus]);
 
 	const submit = (text: string) => {
 		onSend(text);
 		setDraft("");
+		setDrafted(false);
 	};
 
 	return (
@@ -338,15 +466,29 @@ function ConsultMessages({
 				className='-mx-6 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6'
 			>
 				{shown.length ? (
-					<ol className='flex flex-col gap-4'>
+					// No gap of its own: each item sets its space above, 16px, or 8px under the same author's message.
+					<ol className='flex flex-col'>
 						<AnimatePresence initial={false}>
 							{shown.flatMap((message, index) => {
 								const you = message.from === "you";
-								const sent = now !== null ? formatRelativeDate(message.sentAt, now) : undefined;
-								// A day heading before the first message of each day, oldest first ("Yesterday", then "Today"), in
-								// Live feed's style (14/20 semibold `foreground`).
+								const previous = index > 0 ? shown[index - 1] : undefined;
+								// A day divider before the first message of each day, oldest first ("Yesterday", then "Today"): the
+								// day between two zigzag rules (Nov 23, 2026, Intercept-Live `289:10402`), in every thread.
 								const day = now !== null ? formatDayLabel(message.sentAt, now) : undefined;
-								const newDay = day && (index === 0 || formatDayLabel(shown[index - 1].sentAt, now ?? undefined) !== day);
+								const newDay = day && (!previous || formatDayLabel(previous.sentAt, now ?? undefined) !== day);
+								// Within 30 s of the same author's message, it joins it: no name or time, 8px under it (Nov 23,
+								// 2026, intercept.ds "several messages example" `1635:9837`).
+								const grouped =
+									!newDay &&
+									previous !== undefined &&
+									previous.from === message.from &&
+									previous.by === message.by &&
+									Math.abs(Date.parse(message.sentAt) - Date.parse(previous.sentAt)) <= groupWindowMs;
+								const author: ChatMessageAuthor = you
+									? { name: "You", initials: me?.initials, photo: me?.src, tone: me?.tone }
+									: message.by
+										? { name: message.by, initials: initialsOf(message.by) }
+										: { name: nurse, ...contact };
 								return [
 									...(newDay
 										? [
@@ -357,9 +499,9 @@ function ConsultMessages({
 													variants={prefersReducedMotion ? fadeVariants : revealVariants}
 													initial='initial'
 													animate='animate'
-													className={cn(index > 0 && "pt-1")}
+													className={cn(index > 0 && "mt-4")}
 												>
-													<h3 className='text-sm font-semibold text-foreground'>{day}</h3>
+													<ChatDayDivider>{day}</ChatDayDivider>
 												</motion.li>,
 											]
 										: []),
@@ -368,41 +510,55 @@ function ConsultMessages({
 										variants={prefersReducedMotion ? fadeVariants : revealVariants}
 										initial='initial'
 										animate='animate'
-										className={cn("flex flex-col gap-1", you ? "items-end" : "items-start")}
+										className={cn(index > 0 || newDay ? (grouped ? "mt-2" : "mt-4") : undefined)}
 									>
-										<p className='text-xs text-muted-foreground'>
-											{you ? "You" : (message.by ?? nurse)}
-											{sent ? (
-												<>
-													{" · "}
-													<time dateTime={message.sentAt} title={sent.title}>
-														{sent.label}
-													</time>
-												</>
-											) : null}
-										</p>
-										{message.photo ? (
-											// A photo: the picture, then what it is and its readings, as one message.
-											<figure className='flex w-[85%] flex-col gap-2 rounded-2xl rounded-bl-md border border-border bg-background p-2'>
-												<BedsidePhotoImage photo={message.photo} />
-												<figcaption className='flex flex-col gap-0.5 px-1.5 pb-1 text-sm'>
-													<span className='font-semibold text-foreground'>{message.photo.title}</span>
-													<span className='text-foreground'>
-														{message.photo.values.map((row) => `${row.label} ${row.value}`).join(" · ")}
-													</span>
-												</figcaption>
-											</figure>
-										) : null}
-										{message.text ? (
-											<p
-												className={cn(
-													"max-w-[85%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap text-foreground",
-													you ? "rounded-br-md bg-neutral-muted" : "rounded-bl-md border border-border bg-background",
-												)}
-											>
-												{message.text}
-											</p>
-										) : null}
+										<ChatMessage
+											variant={you ? "sent" : "received"}
+											author={author}
+											sentAt={message.sentAt}
+											showMeta={!grouped}
+											attachment={
+												message.photo ? (
+													// A photo: the picture, then what it is and its readings, as one message.
+													<figure
+														className={cn(
+															"flex w-[85%] max-w-[38.25rem] flex-col gap-2 rounded-2xl border border-border bg-background p-2",
+															you ? "rounded-br-md" : "rounded-bl-md",
+														)}
+													>
+														<BedsidePhotoImage photo={message.photo} />
+														<figcaption className='flex flex-col gap-0.5 px-1.5 pb-1 text-sm'>
+															<span className='font-semibold text-foreground'>{message.photo.title}</span>
+															{message.photo.values.length ? (
+																<span className='text-foreground'>
+																	{message.photo.values.map((row) => `${row.label} ${row.value}`).join(" · ")}
+																</span>
+															) : null}
+														</figcaption>
+													</figure>
+												) : message.file ? (
+													// A file: its icon, name and size, opening it in a new tab.
+													<a
+														href={message.file.url}
+														target='_blank'
+														rel='noreferrer'
+														download={message.file.name}
+														className={cn(
+															"flex max-w-[min(85%,38.25rem)] items-center gap-3 rounded-2xl border border-border bg-background px-3.5 py-2.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+															you ? "rounded-br-md" : "rounded-bl-md",
+														)}
+													>
+														<FileTextIcon aria-hidden className='size-5 shrink-0 text-icon-muted' />
+														<span className='flex min-w-0 flex-col'>
+															<span className='truncate text-sm font-medium text-foreground'>{message.file.name}</span>
+															<span className='text-xs text-muted-foreground'>{formatFileSize(message.file.size)}</span>
+														</span>
+													</a>
+												) : undefined
+											}
+										>
+											{message.text}
+										</ChatMessage>
 									</motion.li>,
 								];
 							})}
@@ -434,15 +590,58 @@ function ConsultMessages({
 				</AnimatePresence>
 			</div>
 
-			<ConsultField
-				ref={field}
-				value={draft}
-				onValueChange={setDraft}
-				onSubmit={submit}
-				placeholder={placeholder}
-				label={`Message ${nurse}`}
-				submitLabel='Send'
-			/>
+			{/* UCL's ChatComposer, as Figma's thread (Intercept-Live `289:10408`; it was the pill ConsultField until Nov 23,
+			    2026): Enter or Send sends, the microphone dictates into the field. */}
+			<div ref={field} className='shrink-0'>
+				{drafting || (drafted && draft) ? (
+					<p role='status' className='mb-2 flex items-center gap-1.5 px-1 text-xs text-muted-foreground'>
+						<AiSparkleIcon className={cn("size-3.5 shrink-0", drafting && "animate-pulse motion-reduce:animate-none")} />
+						{drafting
+							? `Drafting /${drafting} from the conversation and the chart…`
+							: "Drafted by Intercept from the conversation and the chart. Review before sending."}
+					</p>
+				) : null}
+				<ChatComposer
+					value={draft}
+					onValueChange={setDraft}
+					onSubmit={submit}
+					generating={drafting !== null}
+					onStop={stopDrafting}
+					placeholder={drafting ? "Intercept is drafting…" : placeholder}
+					label={`Message ${nurse}`}
+					dictation
+					onAttach={onAttach ? () => filePicker.current?.click() : undefined}
+					commands={quickRequests}
+					onAddCommand={(name) => setAdding(name)}
+				/>
+				<AddQuickRequestDialog
+					open={adding !== null}
+					onOpenChange={(open) => {
+						if (!open) {
+							setAdding(null);
+							field.current?.querySelector("textarea")?.focus();
+						}
+					}}
+					defaultName={adding ?? ""}
+					taken={requests.map((request) => request.name)}
+					onAdd={addRequest}
+				/>
+				{/* The + opens this: any file, an image sent as a photo. */}
+				{onAttach ? (
+					<input
+						ref={filePicker}
+						type='file'
+						className='sr-only'
+						tabIndex={-1}
+						aria-hidden='true'
+						onChange={(event) => {
+							const picked = event.target.files?.[0];
+							if (picked) onAttach(attachmentFromFile(picked));
+							event.target.value = "";
+						}}
+					/>
+				) : null}
+			</div>
 		</div>
 	);
 }
@@ -454,6 +653,8 @@ export {
 	useConsultMessages,
 	useNewIncoming,
 	useUnreadMessages,
+	type ConsultAttachment,
+	type ConsultFile,
 	type ConsultMessage,
 	type ConsultReplies,
 };

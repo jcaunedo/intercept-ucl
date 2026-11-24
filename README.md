@@ -9,7 +9,7 @@ npm install
 npm run storybook
 ```
 
-Storybook opens at http://localhost:6006. Installing packages from GitHub Packages needs `NPM_TOKEN` in your environment (see "Using UCL in an App" → step 1).
+Storybook opens at http://localhost:6130. Installing packages from GitHub Packages needs `NPM_TOKEN` in your environment (see "Using UCL in an App" → step 1).
 
 ## Tech stack
 
@@ -156,7 +156,7 @@ The tokens are Intercept's light mode. Add the `dark` class to a parent element,
 
 | Command                   | Description                                            |
 | ------------------------- | ------------------------------------------------------ |
-| `npm run storybook`       | Launch Storybook at http://localhost:6006              |
+| `npm run storybook`       | Launch Storybook at http://localhost:6130              |
 | `npm run build`           | Build the library to `dist/`                           |
 | `npm run dev`             | Build in watch mode                                    |
 | `npm run lint`            | Type-check with TypeScript                             |

@@ -29,7 +29,7 @@
 	"scripts": {
 		"build": "tsup && cp src/styles/theme.css dist/styles.css && node scripts/add-use-client.mjs",
 		"dev": "tsup --watch",
-		"storybook": "storybook dev -p 6006",
+		"storybook": "storybook dev -p 6130",
 		"build-storybook": "storybook build",
 		"test": "vitest run",
 		"lint": "tsc --noEmit",

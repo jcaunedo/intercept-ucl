@@ -7,6 +7,7 @@ import { expect, fn, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-data/sample-alert-panel";
 import { samplePastPatients, samplePatients, sampleUncertainStatusPatients } from "../sample-data/sample-census";
+import { sampleDraftQuickRequest } from "../sample-data/sample-quick-request-drafter";
 import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-data/sample-schedule";
@@ -58,6 +59,7 @@ const meta = {
 		onPatientDetailsAction: fn(),
 		user: sampleUser,
 		askIntercept: sampleAskIntercept,
+		draftQuickRequest: sampleDraftQuickRequest,
 		shiftEndsAt: sampleShiftEndsAt,
 		shift: sampleShift,
 		team: sampleTeam,

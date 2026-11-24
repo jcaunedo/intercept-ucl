@@ -20,7 +20,8 @@ const sidePanelWidth = { default: 400, min: 320, max: 720 } as const;
 const RESIZE_STEP = 16;
 const RESIZE_STEP_LARGE = 64;
 
-const clampWidth = (width: number) => Math.round(Math.min(sidePanelWidth.max, Math.max(sidePanelWidth.min, width)));
+const clampWidth = (width: number, min: number = sidePanelWidth.min, max: number = sidePanelWidth.max) =>
+	Math.round(Math.min(max, Math.max(min, width)));
 
 type SidePanelSide = "left" | "right";
 
@@ -28,18 +29,26 @@ type SidePanelSide = "left" | "right";
  * The edge between a panel and the canvas: drag it to resize the panel, double-click to reset it. A focusable
  * vertical separator, so the arrow keys (Shift for bigger steps), Home and End resize it from the keyboard: → widens a
  * left panel and ← a right one, toward the canvas either way. A 2px `primary` line shows while it's hovered, dragged
- * or focused.
+ * or focused. The limits are the side panels' (320–720px) unless `min` and `max` say otherwise; double-click goes back
+ * to the default width, or calls `onReset` (e.g. a width that follows the breakpoints). Messages' details column uses it
+ * too, so every resizable column resizes the same way.
  */
 function ResizeHandle({
 	side,
 	label,
 	width,
 	onWidthChange,
+	min = sidePanelWidth.min,
+	max = sidePanelWidth.max,
+	onReset,
 }: {
 	side: SidePanelSide;
 	label: string;
 	width: number;
 	onWidthChange: (width: number) => void;
+	min?: number;
+	max?: number;
+	onReset?: () => void;
 }) {
 	const drag = React.useRef<{ startX: number; startWidth: number } | null>(null);
 	const [dragging, setDragging] = React.useState(false);
@@ -59,8 +68,8 @@ function ResizeHandle({
 			aria-orientation='vertical'
 			aria-label={label}
 			aria-valuenow={width}
-			aria-valuemin={sidePanelWidth.min}
-			aria-valuemax={sidePanelWidth.max}
+			aria-valuemin={min}
+			aria-valuemax={max}
 			tabIndex={0}
 			data-dragging={dragging ? "" : undefined}
 			onPointerDown={(event) => {
@@ -72,7 +81,7 @@ function ResizeHandle({
 			}}
 			onPointerMove={(event) => {
 				if (!drag.current) return;
-				onWidthChange(clampWidth(drag.current.startWidth + (event.clientX - drag.current.startX) * direction));
+				onWidthChange(clampWidth(drag.current.startWidth + (event.clientX - drag.current.startX) * direction, min, max));
 			}}
 			onPointerUp={(event) => {
 				if (!drag.current) return;
@@ -84,7 +93,7 @@ function ResizeHandle({
 				drag.current = null;
 				setDrag(false);
 			}}
-			onDoubleClick={() => onWidthChange(sidePanelWidth.default)}
+			onDoubleClick={() => (onReset ? onReset() : onWidthChange(sidePanelWidth.default))}
 			onKeyDown={(event) => {
 				const step = (event.shiftKey ? RESIZE_STEP_LARGE : RESIZE_STEP) * direction;
 				const next =
@@ -93,13 +102,13 @@ function ResizeHandle({
 						: event.key === "ArrowLeft"
 							? width - step
 							: event.key === "Home"
-								? sidePanelWidth.min
+								? min
 								: event.key === "End"
-									? sidePanelWidth.max
+									? max
 									: null;
 				if (next === null) return;
 				event.preventDefault();
-				onWidthChange(clampWidth(next));
+				onWidthChange(clampWidth(next, min, max));
 			}}
 			// 8px to grab, flush with the panel's edge on the canvas side (the panel clips anything past it); the line is its
 			// outer 2px.
@@ -341,6 +350,7 @@ function usePatientHeaderActions(actions: PatientHeaderActions) {
 }
 
 export {
+	ResizeHandle,
 	PatientHeaderActionsProvider,
 	usePatientHeaderActions,
 	type PatientHeaderActions,

@@ -22,6 +22,7 @@ const labTileVariants = cva("flex min-w-0 flex-col gap-1 rounded-lg px-3 py-2.5"
 
 type LabTileFlag = NonNullable<VariantProps<typeof labTileVariants>["flag"]>;
 
+/** Each flag's letter, its words for screen readers and its color: LabTile's, for any place that shows a lab result's flag. */
 const flags: Record<Exclude<LabTileFlag, "none">, { letter: string; label: string; className: string }> = {
 	high: { letter: "H", label: "High", className: "text-severity-high-prominent" },
 	low: { letter: "L", label: "Low", className: "text-severity-low-prominent" },
@@ -156,4 +157,4 @@ function LabTile({
 	);
 }
 
-export { LabTile, labTileVariants, type LabTileFlag, type LabTileProps };
+export { LabTile, flags as labTileFlags, labTileVariants, type LabTileFlag, type LabTileProps };

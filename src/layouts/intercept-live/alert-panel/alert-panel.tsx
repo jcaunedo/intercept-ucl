@@ -1726,6 +1726,10 @@ type AlertPanelProps = Omit<AlertPanelDialogProps, "open" | "defaultOpen" | "onO
 };
 
 /** Who the consult's thread is with, "Kelly Ortiz, RN". */
+/** The bedside nurse's avatar on their messages. */
+const bedsideAuthor = (bedside?: AlertDetailBedside) =>
+	bedside ? { initials: bedside.initials, photo: bedside.src, tone: bedside.tone, presence: bedside.presence } : undefined;
+
 const threadWith = (bedside?: AlertDetailBedside) => (bedside ? `${bedside.name}, ${bedside.role}` : "the bedside nurse");
 
 /**
@@ -1980,6 +1984,10 @@ function AlertPanelContent({
 										messages={messages}
 										onSend={sendMessage}
 										nurse={threadWith(data.bedside)}
+										patientName={`${data.patient.firstName} ${data.patient.lastName}`}
+										patientId={data.alert.patientId}
+										contact={bedsideAuthor(data.bedside)}
+										onAttach={(attachment) => sendMessage("", undefined, attachment)}
 										typing={nurseTyping}
 										autoFocus={focusMessages}
 									/>
@@ -2245,6 +2253,10 @@ function PatientConsultDialogContent({
 												messages={messages}
 												onSend={sendMessage}
 												nurse={threadWith(data.bedside)}
+												patientName={`${data.patient.firstName} ${data.patient.lastName}`}
+												patientId={data.patientId}
+												contact={bedsideAuthor(data.bedside)}
+												onAttach={(attachment) => sendMessage("", undefined, attachment)}
 												typing={nurseTyping}
 												autoFocus={focusMessages}
 											/>
@@ -2407,6 +2419,7 @@ export {
 	ConsultPanelContent,
 	ConsultTile,
 	CONNECT_DELAY_MS,
+	bedsideAuthor,
 	threadWith,
 	useAlertLifecycle,
 	useConsult,

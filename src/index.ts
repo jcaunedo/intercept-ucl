@@ -120,8 +120,33 @@ export {
 	type CensusListPatient,
 	type CensusListProps,
 } from "@/components/data-display/census-list";
+export {
+	ChatDayDivider,
+	ChatMessage,
+	chatBubbleVariants,
+	chatMessagePresenceDots,
+	chatMessageVariants,
+	type ChatDayDividerProps,
+	type ChatMessageAuthor,
+	type ChatMessagePresence,
+	type ChatMessageProps,
+} from "@/components/data-display/chat-message";
+export {
+	ConversationRow,
+	conversationRowPresenceDots,
+	type ConversationRowPatient,
+	type ConversationRowPerson,
+	type ConversationRowPresence,
+	type ConversationRowProps,
+} from "@/components/data-display/conversation-row";
+export {
+	MessageHeader,
+	type MessageHeaderPatient,
+	type MessageHeaderPerson,
+	type MessageHeaderProps,
+} from "@/components/data-display/message-header";
 export { Counter, counterVariants, type CounterProps } from "@/components/data-display/counter";
-export { LabTile, labTileVariants, type LabTileFlag, type LabTileProps } from "@/components/data-display/lab-tile";
+export { LabTile, labTileFlags, labTileVariants, type LabTileFlag, type LabTileProps } from "@/components/data-display/lab-tile";
 export {
 	Table,
 	TableBody,
@@ -276,6 +301,8 @@ export { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
 export { BoxSolidIcon } from "@/components/icons/box-solid-icon";
 export { CalendarSolidIcon } from "@/components/icons/calendar-solid-icon";
 export { ChartColumnSolidIcon } from "@/components/icons/chart-column-solid-icon";
+// An urgent conversation in the Messages list (intercept.ds, custom).
+export { CircleAlertFilledIcon } from "@/components/icons/circle-alert-filled-icon";
 export { CircleUserSolidIcon } from "@/components/icons/circle-user-solid-icon";
 export { EyeSolidIcon } from "@/components/icons/eye-solid-icon";
 export { HeartCrackSolidIcon } from "@/components/icons/heart-crack-solid-icon";
@@ -289,8 +316,12 @@ export { MonitorViewExpandedIcon } from "@/components/icons/monitor-view-expande
 export { MonitorViewMinimalIcon } from "@/components/icons/monitor-view-minimal-icon";
 export { MonitorViewMinimizedIcon } from "@/components/icons/monitor-view-minimized-icon";
 export { ShieldSolidIcon } from "@/components/icons/shield-solid-icon";
+// ChatComposer's commands button: a short slash (intercept.ds, custom).
+export { SlashCommandIcon } from "@/components/icons/slash-command-icon";
 export { SparklesSolidIcon } from "@/components/icons/sparkles-solid-icon";
 export { SquareActivitySolidIcon } from "@/components/icons/square-activity-solid-icon";
+// ChatComposer's Stop: a filled rounded square (intercept.ds, custom).
+export { SquareFilledIcon } from "@/components/icons/square-filled-icon";
 export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
 
 /* -------------------------------------------------------------------------- */
