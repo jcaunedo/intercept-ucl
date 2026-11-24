@@ -1112,8 +1112,10 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 												{group.heading}
 											</div>
 											{groupLanes.map((lane) => (
-												<div key={lane.id} className={cn(layout.columns, "h-14 border-b border-border last:border-b-0")}>
-													<div className='col-start-1 row-start-1 flex min-w-0 items-center justify-between gap-2 border-r border-border px-3'>
+												<div key={lane.id} className={cn(layout.columns, "group/lane h-14 border-b border-border last:border-b-0")}>
+													{/* Hovering a lane marks its name, as a Table row's hover (`bg-muted/50`), so the eye finds which lane
+													    the pointer is on (Nov 24, 2026, user's call). */}
+													<div className='col-start-1 row-start-1 flex min-w-0 items-center justify-between gap-2 border-r border-border px-3 transition-colors group-hover/lane:bg-muted/50'>
 														<span className='truncate text-sm font-semibold text-foreground'>{lane.label}</span>
 														<span className='shrink-0 text-xs text-muted-foreground'>{lane.unit}</span>
 													</div>
