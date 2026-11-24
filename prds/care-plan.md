@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 20, 2026
 Created by: Julio Caunedo
-Last updated: Nov 20, 2026 (problem card from intercept.ds: View history, statuses beside titles, CarePlanProblemCard)
+Last updated: Nov 24, 2026 (editing a problem's progress: Update progress, CPL-014)
 Scope: The care plan in Intercept Live: the Patient details Care Plan tab (`CarePlanSection`) and the Overview's Care plan card (`CarePlanCard`), in src/layouts/intercept-live/patient-details/sections/care-plan-section.tsx. What a care plan is, how pathways attach to its problems, a problem's details and history, the Completed state, keep or transfer. Moved out of PRD Patient details ("Care plan and activity", "Care Plan tab").
 Purpose: One place for what the care plan is and does, so the tab, the Overview's card and the alert's pathway agree, and the decisions behind them aren't reopened.
 -->
@@ -19,9 +19,9 @@ Purpose: One place for what the care plan is and does, so the tab, the Overview'
 **Audience:** Intensivists, APPs and Critical Care RNs  
 **Source:** `src/layouts/intercept-live/patient-details/sections/care-plan-section.tsx` (`CarePlanSection`, `CarePlanCard`); a problem's card and its pathway blocks are UCL's `CarePlanProblemCard` and `CarePlanPathway` (`src/components/cards/care-plan-problem-card/`); rendered by `patient-details.tsx` (`sectionContent`) and `patient-overview.tsx`; data types in `patient-details/activity.tsx`; the Pathway panel's status and **Mark completed** in `alert-panel/care-pathway.tsx`  
 **Figma:** a problem's card is intercept.ds `careplan-card` (`1590:4164`); the rest of the tab has none; the Overview's card follows Intercept-Live "Care plan" (`242:12310`)  
-**Version:** 0.1  
+**Version:** 0.2  
 **Status:** Draft — built in the prototype, pending clinical and product validation  
-**Last updated:** November 20, 2026
+**Last updated:** November 24, 2026
 
 ---
 
@@ -30,7 +30,7 @@ Purpose: One place for what the care plan is and does, so the tab, the Overview'
 The care plan answers four questions about one patient: what's wrong (the **problems**), what the team wants for each (a measurable **goal**), what it does toward it (the **interventions**), and whether it's working (the **status**: Not progressing, Progressing, Met).
 
 - **The hospital keeps it.** Every admitted patient has one, the **plan of care** in the hospital's record system (CMS Conditions of Participation, Joint Commission), kept by the bedside team and evaluated on rounds. The **attending** owns it.
-- **Intercept adds to it; it doesn't rewrite it.** From the hub, the intensivist proposes changes (**pathways**) and decisions (**keep or transfer**) that the hospital's physician agrees to or co-signs.
+- **Intercept adds to it; it doesn't rewrite it.** From the hub, the intensivist proposes changes (**pathways**) and decisions (**keep or transfer**) that the hospital's physician agrees to or co-signs. ✅ **Resolved:** the hub also records **progress** on each problem (its status, with a note) and proposes changes to its goal and interventions (CPL-014); a proposal still needs the attending, as a pathway does.
 - So in Intercept Live the care plan is the hospital's plan of care, plus the pathways sent from alerts, what they run (an hour-1 sepsis bundle, a DKA protocol's checks, bedside tasks) and keep or transfer with its checkpoints.
 
 The tab shows the plan **as it stands now, by priority**, not as a timeline. A clinician taking over asks "which problems aren't working, and what's being done", not "what happened first". Time order lives inside each problem (CPL-013), and the whole patient's sequence is the Timeline's events lane (PRD Patient details, "Care plan and activity").
@@ -96,7 +96,7 @@ The problem, its status beside it (Not progressing in red, Progressing in blue, 
 
 ✅ **Resolved:** the card follows intercept.ds `careplan-card`: the problem as the card's title with its status as a badge beside it (under it only when a long problem leaves no room), then the goal and interventions; **View history** on the right, lined up with the pathways' buttons.
 
-The problem is read-only: the plan of care is the hospital's, and Intercept changes it only through pathways.
+~~The problem is read-only: the plan of care is the hospital's, and Intercept changes it only through pathways.~~ ✅ **Resolved:** the problem is editable through **Update progress** (CPL-014): a status the clinician records shows at once; a goal or intervention change is a proposal until the attending accepts it, because the plan of care is the hospital's.
 
 ### CPL-013 — A problem's details
 
@@ -113,6 +113,23 @@ The details hold:
 2. **Orders**, when a pathway treats the problem: each of its orders with its dose, an edited dose marked **Edited** with the suggested dose struck through, and its status: **Awaiting co-signature** or **Active** (still Active once the pathway is Completed). A suggestion's orders show without a status; a declined pathway's don't show.
 
 ✅ **Resolved:** the history and orders, not the plan's whole sequence: time order belongs inside one problem, where it explains how this problem got here.
+
+### CPL-014 — Update progress
+
+Each problem's card has **Update progress** (Button `outline` `md`, left of **View history**). It opens a form in place, under the card's content:
+
+1. **Status**, required: Not progressing, Progressing or Met (radio buttons, the current one picked).
+2. **Note**, required when the status changes ("Lactate down to 2.1, MAP above 65 off norepinephrine"), optional otherwise; dictation as in the note editor.
+3. **Goal** and **Interventions**, editable text, under **Propose a change to the plan**, closed by default.
+
+**Save** records it; **Cancel** leaves everything as it was.
+
+- **A status takes effect at once.** The badge changes, the problem moves to its place in the order (CPL-011), and the history gets an evaluation line ("Evaluated · Progressing · Dr. Ana Brooks, Intercept", with the note). It's written back to the record system as a plan-of-care evaluation where the hospital allows write-back, its status shown as a note's is (PRD Patient details PD-072); elsewhere it's kept in Intercept and marked "Intercept only". Met closes the problem as an evaluation from the record does: its pathways complete (CPL-022).
+- **A goal or intervention change is a proposal.** The card shows the proposed text under the current one, marked **Proposed · Awaiting the attending**, until the hospital's attending accepts it (it replaces the current text) or declines it (with a reason); both go in the history. The attending answers in the hospital's record or in Intercept's co-signature flow, as for a pathway (§3).
+- **Who:** the intensivist and the APP record status and propose changes; the Critical Care RN records status and a note, but proposes no changes (CPL-OD-07). A user who can't sees no button.
+- **Also:** on the Overview's Care plan card, a row's status opens the tab on that problem with the form open.
+
+⚠️ **Not built.** CarePlanProblemCard needs an action slot beside **View history**, and a place for the form and for proposed text (new optional props: a minor version). 🙋 CPL-OD-06, CPL-OD-07, CPL-OD-08.
 
 ### CPL-020 — A pathway inside the problem it treats
 
@@ -187,6 +204,9 @@ Every time follows Patient details' rule ([patient-details.md](patient-details.m
 - **CPL-AC-08:** A time older than 12 hours shows its date.
 - **CPL-AC-10:** Pressing **Not progressing** shows only the Not progressing problems and hides keep or transfer; pressing it again shows everything. Each chip's count matches what it shows.
 - **CPL-AC-09:** The Overview's card shows at most four rows and **View all · n** opens the tab.
+- **CPL-AC-12:** Recording Progressing with a note on a Not progressing problem changes its badge at once, moves it after the Not progressing problems, and adds the evaluation, note included, to its history.
+- **CPL-AC-13:** A proposed goal shows under the current one as **Proposed · Awaiting the attending**, and replaces it only once accepted; declined, the current goal stays and the history says why.
+- **CPL-AC-14:** Signed in as a Critical Care RN, Update progress has Status and Note but no Propose a change.
 
 ## 8. Open decisions
 
@@ -197,3 +217,7 @@ Every time follows Patient details' rule ([patient-details.md](patient-details.m
 | CPL-OD-03 | ⚠️ **Gap:** a pathway reopened after being marked Completed shows in the Timeline, not in its problem's history; the history only knows the latest completion. |
 | CPL-OD-04 | ⚠️ **Assumption:** evaluations name a role ("Bedside nurse", "Charge nurse"), not a person, until the record system's evaluator is known per hospital. |
 | CPL-OD-05 | 🙋 Whether a problem's details should also list the medications and notes about it. Needs those records tagged with the problem. |
+| CPL-OD-06 | 🙋 Whether a status recorded in Intercept is written back to the hospital's plan of care (and in which integration modes), or stays Intercept's own; and what the card shows when the record later says otherwise. |
+| CPL-OD-07 | 🙋 Who may record progress (the Critical Care RN too, as bedside nurses evaluate the plan today) and who may propose goal and intervention changes. |
+| CPL-OD-08 | 🙋 Whether the hub may record **Met** without the attending, since Met closes the problem and completes its pathways. |
+| CPL-OD-09 | 🙋 Whether the hub may **add a problem** to the plan (from the Chart's problems, PRD Patient details PD-166), as a proposal like a goal change. |

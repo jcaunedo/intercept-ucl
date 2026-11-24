@@ -39,7 +39,7 @@ import { useLocationFlag } from "../location-state";
 import type { PatientRecord } from "../patient-details/patient-details";
 import { SegmentedToggle, type ToggleOption } from "../monitoring/view-controls";
 import { FiltersButton, FiltersPanel, passesFilters, type FilterGroup, type PatientFilters } from "../shared/patient-filters";
-import { patientStatus, patientStatuses, type PatientCensusStatus } from "./patient-status";
+import { patientStatus, patientStatuses, type LevelOfCare, type PatientCensusStatus } from "./patient-status";
 import { patientsFilterGroups } from "./patients-filters";
 import { Attending, LastEncounter, PatientStatus, copyPatientLink, directoryName } from "./patients-parts";
 import { PatientsTable, PatientsTableSkeleton } from "./patients-table";
@@ -62,9 +62,14 @@ type CensusPatient = Omit<PatientCensusCardProps, "onOpen" | "href" | "alertRing
 	mine?: boolean;
 	/**
 	 * Where the patient is in their stay (ADT; Requirements Specification, Patient / Encounter: "Census status"). Missing
-	 * reads "Status unknown", never Current (PRD Patients CEN-040).
+	 * reads "Status unknown", never Admitted (PRD Patients CEN-040).
 	 */
 	status?: PatientCensusStatus;
+	/**
+	 * The level of care of the patient's unit, from ADT as the hospital maps its units: ICU, step-down or med-surg (PRD
+	 * Patients CEN-040). Shown with Admitted ("Admitted · ICU"); a unit outside the three has none.
+	 */
+	levelOfCare?: LevelOfCare;
 	/** When the status last changed, ISO 8601: when a transferred or discharged patient left. */
 	statusAt?: string;
 	/** Where a transferred patient went, e.g. "Denver Health". */
@@ -213,7 +218,7 @@ function FilterGroupMenu({
 /* -------------------------------------------------------------------------- */
 
 /**
- * The Patients page's content: the patient directory. Search first, then My patients and Current, the
+ * The Patients page's content: the patient directory. Search first, then My patients and Admitted, the
  * Hospital and Unit menus and Filters; the count, Sort and the Table / Cards switch; then the patients. A row or card
  * opens the patient's page.
  */
@@ -255,7 +260,7 @@ function PatientsPanel({
 
 	const navigation = usePatientNavigation();
 	const [scope, setScope] = usePatientScope("patients");
-	const [currentOnly, setCurrentOnly] = React.useState(false);
+	const [admittedOnly, setAdmittedOnly] = React.useState(false);
 	const [filters, setFilters] = React.useState<PatientFilters>({});
 	const [query, setQuery] = React.useState("");
 	const [sortBy, setSortBy] = useSortBy("patients", "viewed");
@@ -283,7 +288,7 @@ function PatientsPanel({
 	// The chips, each a test; a chip's count is with the others as they are.
 	const chips = {
 		mine: (patient: DirectoryPatient) => scope !== "mine" || Boolean(patient.mine),
-		current: (patient: DirectoryPatient) => !currentOnly || patientStatus(patient) === "admitted",
+		admitted: (patient: DirectoryPatient) => !admittedOnly || patientStatus(patient) === "admitted",
 	};
 	const searched = patients.filter((patient) => matchesDirectorySearch(patient, query));
 	const inPanel = searched.filter((patient) => passesFilters(patient, filterGroups, filters));
@@ -297,7 +302,7 @@ function PatientsPanel({
 	const shown = visible.slice(0, limit);
 
 	// A new search, filter or sort starts from the first page again.
-	const resultsKey = `${query}|${JSON.stringify(filters)}|${scope}|${currentOnly}|${sortBy}`;
+	const resultsKey = `${query}|${JSON.stringify(filters)}|${scope}|${admittedOnly}|${sortBy}`;
 	React.useEffect(() => setLimit(pageSize), [resultsKey]);
 
 	// Tells the shell what the page shows, so a patient opened here steps through this list (PRD PD-015).
@@ -318,13 +323,13 @@ function PatientsPanel({
 		onOpenPatient?.(patientId);
 	};
 
-	const filtered = Boolean(scope === "mine" || currentOnly || Object.values(filters).some((picked) => picked?.length));
+	const filtered = Boolean(scope === "mine" || admittedOnly || Object.values(filters).some((picked) => picked?.length));
 	const clearFilters = () => {
 		setScope("all");
-		setCurrentOnly(false);
+		setAdmittedOnly(false);
 		setFilters({});
 	};
-	// Matches the status filters hide (Current, Patient status): a search for someone discharged must not read as "no
+	// Matches the status filters hide (Admitted, Patient status): a search for someone discharged must not read as "no
 	// such patient" (PRD Patients CEN-050).
 	const hiddenByStatus =
 		visible.length === 0 && query
@@ -335,7 +340,7 @@ function PatientsPanel({
 				).length
 			: 0;
 	const showAllStatuses = () => {
-		setCurrentOnly(false);
+		setAdmittedOnly(false);
 		setFilters((current) => ({ ...current, status: [] }));
 	};
 
@@ -430,12 +435,12 @@ function PatientsPanel({
 								count={chipCount("mine", (patient) => Boolean(patient.mine))}
 							/>
 							<FilterBarChip
-								pressed={currentOnly}
-								onPressedChange={setCurrentOnly}
-								count={chipCount("current", (patient) => patientStatus(patient) === "admitted")}
+								pressed={admittedOnly}
+								onPressedChange={setAdmittedOnly}
+								count={chipCount("admitted", (patient) => patientStatus(patient) === "admitted")}
 							>
 								<CircleDotIcon aria-hidden='true' />
-								Current
+								Admitted
 							</FilterBarChip>
 						</FilterBarFilters>
 						<FilterBarControls>
@@ -493,7 +498,7 @@ function PatientsPanel({
 							/>
 						) : hiddenByStatus ? (
 							<EmptyState
-								title='No current patients found'
+								title='No admitted patients found'
 								description={`${hiddenByStatus} ${hiddenByStatus === 1 ? "patient who is" : "patients who are"} no longer in hospital ${hiddenByStatus === 1 ? "matches" : "match"} your search.`}
 								buttonLabel='Show all statuses'
 								buttonProps={{ onClick: showAllStatuses }}

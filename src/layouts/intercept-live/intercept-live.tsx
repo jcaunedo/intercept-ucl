@@ -970,9 +970,10 @@ function InterceptLive({
 			onSelectPatient: (patientId) => setOpenPatient({ id: patientId, list }),
 		});
 	})();
-	// The browser tab says where it is (Nov 24, 2026, user's call): the patient's name on their page ("Carlson, Linda ·
-	// Intercept Live"), else the page's, so tabs opened with Cmd+click tell apart. The title before comes back on unmount.
-	const documentTitle = `${patientView ? patientView.name : page} · Intercept Live`;
+	// The browser tab says where it is (Nov 24, 2026, user's call): the patient's name on their page ("Carlson, Linda"),
+	// else the page's ("Monitoring"), with no product name after it, so tabs opened with Cmd+click tell apart at their
+	// narrowest. The title before comes back on unmount.
+	const documentTitle = patientView ? patientView.name : page;
 	// First, so it keeps the title from before the prototype set its own.
 	React.useEffect(() => {
 		const previous = document.title;

@@ -1,7 +1,7 @@
 import { isPressorFlag } from "../shared/pressors";
 import { unitFilterGroup, type FilterGroup, type PatientFilters } from "../shared/patient-filters";
 import type { PanelHospital } from "../shared/patient-panel";
-import { patientStatus, patientStatusOrder, patientStatuses } from "./patient-status";
+import { levelOfCareOrder, levelsOfCare, patientLevelOfCare, patientStatus, patientStatusOrder, patientStatuses } from "./patient-status";
 import type { DirectoryPatient } from "./patients-panel";
 
 // Patients' groups for the shared Filters panel (`shared/patient-filters.tsx`; PRD Patients CEN-003): a directory's
@@ -83,12 +83,33 @@ function patientsFilterGroups(
 		{
 			id: "status",
 			title: "Patient status",
-			options: statuses.map((status) => ({
-				id: status,
-				label: patientStatuses[status].label,
-				icon: patientStatuses[status].icon,
-				matches: (patient: DirectoryPatient) => patientStatus(patient) === status,
-			})),
+			// Admitted splits by level of care, most intensive first, then admitted on another unit (PRD Patients CEN-040).
+			options: statuses.flatMap((status) => {
+				const { label, icon } = patientStatuses[status];
+				if (status !== "admitted") {
+					return [{ id: status, label, icon, matches: (patient: DirectoryPatient) => patientStatus(patient) === status }];
+				}
+				const admitted = patients.filter((patient) => patientStatus(patient) === "admitted");
+				const levels = levelOfCareOrder.filter((level) => admitted.some((patient) => patientLevelOfCare(patient) === level));
+				return [
+					...levels.map((level) => ({
+						id: `admitted:${level}`,
+						label: `${label} · ${levelsOfCare[level].label}`,
+						icon,
+						matches: (patient: DirectoryPatient) => patientStatus(patient) === "admitted" && patientLevelOfCare(patient) === level,
+					})),
+					...(admitted.some((patient) => !patientLevelOfCare(patient))
+						? [
+								{
+									id: "admitted:other",
+									label: `${label} · Other unit`,
+									icon,
+									matches: (patient: DirectoryPatient) => patientStatus(patient) === "admitted" && !patientLevelOfCare(patient),
+								},
+							]
+						: []),
+				];
+			}),
 		},
 		{
 			id: "recency",

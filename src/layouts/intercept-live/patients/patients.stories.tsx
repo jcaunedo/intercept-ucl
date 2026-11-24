@@ -93,8 +93,8 @@ async function openedChat(canvas: ReturnType<typeof within>) {
 type Story = StoryObj<typeof meta>;
 
 /**
- * Patients, the directory: search first, then My patients and Current, the Hospital and Unit menus and
- * Filters; the count, Sort (Recently viewed) and Table / Cards. Current and past patients together, each with their
+ * Patients, the directory: search first, then My patients and Admitted, the Hospital and Unit menus and
+ * Filters; the count, Sort (Recently viewed) and Table / Cards. Admitted and past patients together, each with their
  * status. The live feed plays in the shell (toasts, Monitoring), but nothing on this page moves or ranks by alerts or
  * NEWS2: that's Monitoring's (PRD Patients).
  */
@@ -285,10 +285,22 @@ export const TableView: Story = {
 		]);
 		await expect(table.queryByRole("columnheader", { name: "NEWS2" })).toBeNull();
 		await expect(table.getAllByRole("row")).toHaveLength(directory.length + 1);
-		// Every status the data can have shows: Current, Pending reconciliation, Transferred, Discharged, Status unknown.
-		for (const status of ["Current", "Pending reconciliation", "Transferred", "Discharged", "Status unknown"]) {
+		// Every status the data can have shows: Admitted with each level of care (or none, on another unit), Pending
+		// reconciliation, Transferred, Discharged, Status unknown.
+		for (const status of [
+			"Admitted · ICU",
+			"Admitted · Step-down",
+			"Admitted · Med-surg",
+			"Admitted",
+			"Pending reconciliation",
+			"Transferred",
+			"Discharged",
+			"Status unknown",
+		]) {
 			await expect(table.getAllByText(status).length).toBeGreaterThan(0);
 		}
+		// A level shows only while admitted: a discharged ICU patient reads Discharged alone.
+		await expect(table.getByRole("row", { name: /Brooks, Karen/ })).not.toHaveTextContent("· ICU");
 		// A transfer says where it went; status is a word and an icon, never color alone.
 		const foster = table.getByRole("row", { name: /Foster, Gary/ });
 		await expect(foster).toHaveTextContent("Transferred");
@@ -364,11 +376,27 @@ export const MyPatients: Story = {
 	},
 };
 
-/** Current: the patients in hospital now. The rest stay on the page until it's pressed: they're still patients. */
-export const CurrentPatients: Story = {
+/** Admitted: the patients in hospital now. The rest stay on the page until it's pressed: they're still patients. */
+export const AdmittedPatients: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: /^Current/ }));
+		await userEvent.click(canvas.getByRole("button", { name: /^Admitted/ }));
 		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${samplePatients.length} of ${directory.length} patients`));
+	},
+};
+
+/**
+ * Admitted splits by level of care in the Filters panel's Patient status, most intensive first, then admitted on another
+ * unit (the ED, Observation, a swing bed): ICU finds the ICU patients only (PRD Patients CEN-040).
+ */
+export const LevelOfCare: Story = {
+	play: async ({ canvas, canvasElement, userEvent }) => {
+		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
+		const options = ["Admitted · ICU", "Admitted · Step-down", "Admitted · Med-surg", "Admitted · Other unit"];
+		for (const name of options) await expect(await screen.findByRole("checkbox", { name: new RegExp(`^${name}`) })).toBeInTheDocument();
+		await userEvent.click(screen.getByRole("checkbox", { name: /^Admitted · ICU/ }));
+		await userEvent.click(screen.getByRole("button", { name: "Done" }));
+		const icu = directory.filter((patient) => (patient.status ?? "unknown") === "admitted" && patient.levelOfCare === "icu").length;
+		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`${icu} of ${directory.length} patients`));
 	},
 };
 
@@ -393,18 +421,18 @@ export const Search: Story = {
 };
 
 /**
- * A search that only matches patients no longer in hospital, with Current on: the page says they exist rather than "no
+ * A search that only matches patients no longer in hospital, with Admitted on: the page says they exist rather than "no
  * patients found", and Show all statuses brings them in.
  */
 export const SearchFindsPastPatients: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: /^Current/ }));
+		await userEvent.click(canvas.getByRole("button", { name: /^Admitted/ }));
 		await userEvent.click(canvas.getByRole("searchbox", { name: "Search patients" }));
 		await userEvent.type(canvas.getByRole("searchbox", { name: "Search patients" }), "Brooks");
-		await waitFor(() => expect(canvas.getByText("No current patients found")).toBeVisible());
+		await waitFor(() => expect(canvas.getByText("No admitted patients found")).toBeVisible());
 		await userEvent.click(canvas.getByRole("button", { name: "Show all statuses" }));
 		await waitFor(() => expect(resultsCount(canvasElement)).toBe(`1 of ${directory.length} patients`));
-		await expect(canvas.getByRole("button", { name: /^Current/ })).toHaveAttribute("aria-pressed", "false");
+		await expect(canvas.getByRole("button", { name: /^Admitted/ })).toHaveAttribute("aria-pressed", "false");
 	},
 };
 
@@ -496,7 +524,7 @@ export const Cards: Story = {
 		await expect(cards.some((card) => card.textContent?.includes("NEWS2"))).toBe(false);
 		await expect(cards.some((card) => card.textContent?.includes("No tags"))).toBe(false);
 		const miller = cards.find((card) => card.textContent?.includes("Miller, Sarah")) as HTMLElement;
-		await expect(miller).toHaveTextContent("Current");
+		await expect(miller).toHaveTextContent("Admitted");
 		await expect(miller).toHaveTextContent(/Last encounter/);
 	},
 };
@@ -511,10 +539,10 @@ export const NoResults: Story = {
 	},
 };
 
-/** Filters that match no one (Current and Discharged): Clear filters brings every patient back. */
+/** Filters that match no one (Admitted and Discharged): Clear filters brings every patient back. */
 export const NoMatches: Story = {
 	play: async ({ canvas, canvasElement, userEvent }) => {
-		await userEvent.click(canvas.getByRole("button", { name: /^Current/ }));
+		await userEvent.click(canvas.getByRole("button", { name: /^Admitted/ }));
 		await userEvent.click(canvas.getByRole("button", { name: "Filters" }));
 		await userEvent.click(await screen.findByRole("checkbox", { name: /^Discharged/ }));
 		await userEvent.click(screen.getByRole("button", { name: "Done" }));

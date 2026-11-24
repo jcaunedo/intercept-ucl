@@ -61,6 +61,8 @@ const hayesAt = (stage: "discharge-ready" | "returned" | "home-again") => {
 			status: "admitted",
 			statusAt: now(),
 			unit: "ED",
+			// The ED has no level of care: her Med-surg level from the stay before doesn't carry over.
+			levelOfCare: undefined,
 			bed: "Bay 1",
 			arrivedAt: now(),
 			acuity: { label: news2, score: 5, level: "medium" },
@@ -267,7 +269,7 @@ const scenario6Beats: ScenarioBeat[] = [
 			today = new Date().setHours(10, 30, 0, 0);
 			const { census, monitoring } = hayesAt("discharge-ready");
 			return {
-				census: { p15: { ...census, status: "admitted", unit: "Med-Surg", bed: "Bed 4" } },
+				census: { p15: { ...census, status: "admitted", unit: "Med-Surg", levelOfCare: "med-surg", bed: "Bed 4" } },
 				monitoring: { p15: { ...monitoring, unit: "Med-Surg", bed: "Bed 4" } },
 				leave: { p15: false },
 				records: { p15: { transition: hayesTransition("draft") } },

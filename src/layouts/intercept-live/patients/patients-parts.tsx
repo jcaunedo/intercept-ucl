@@ -15,7 +15,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { formatRelativeDate } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
-import { patientStatus, patientStatuses } from "./patient-status";
+import { patientStatus, patientStatusLabel, patientStatuses } from "./patient-status";
 import type { DirectoryPatient } from "./patients-panel";
 
 // The pieces the Patients table and cards share (PRD Patients CEN-010, CEN-040–CEN-042), so the two views always say the
@@ -82,7 +82,8 @@ function statusDetails(patient: DirectoryPatient, now: number) {
  */
 function PatientStatus({ patient, detail = true }: { patient: DirectoryPatient; detail?: boolean }) {
 	const status = patientStatus(patient);
-	const { label, icon: Icon, variant } = patientStatuses[status];
+	const { icon: Icon, variant } = patientStatuses[status];
+	const label = patientStatusLabel(patient);
 	const now = useCurrentMinute() ?? Date.now();
 	const details = detail ? statusDetails(patient, now) : [];
 	const badge = (

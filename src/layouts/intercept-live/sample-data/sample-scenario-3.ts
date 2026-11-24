@@ -377,7 +377,7 @@ const scenario3Beats: ScenarioBeat[] = [
 			const at = new Date().toISOString();
 			const location = { unit: "Med-Surg", bed: "Bed 6" };
 			return {
-				census: { p23: { ...sampleScenario3CensusAt("resolved"), ...location } },
+				census: { p23: { ...sampleScenario3CensusAt("resolved"), ...location, levelOfCare: "med-surg" } },
 				monitoring: { p23: { ...sampleScenario3MonitoringAt("resolved"), ...location } },
 				records: { p23: { ...medinaRecord("resolved"), sepsis: medinaSepsis() } },
 				resolve: {
