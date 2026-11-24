@@ -3,6 +3,7 @@ import { PlayIcon } from "lucide-react";
 
 import type { InterceptLivePage, OpenPatient, PrototypeShortcut } from "../intercept-live";
 import { locationStateKeys, parseLocationList, type LocationState } from "../location-state";
+import { setTimelineOption2 } from "../prototype-views";
 import type { ScenarioId } from "./use-sample-live-feed";
 
 // Story-only: the Sidebar's Prototype menu for the Intercept Live stories (as bethere-ucl's prototype links). Not part
@@ -28,7 +29,14 @@ import type { ScenarioId } from "./use-sample-live-feed";
  * call); the address's `alert` and `consult` do the same. (Sections by hospital, the grid's hospital sections in place of
  * the Kanban board, left the menu on Nov 5, 2026, user's call; the panels' `groupedView` still takes it.)
  */
-const prototypeShortcuts = ({ startScenario }: { startScenario: (scenario: ScenarioId) => void }): PrototypeShortcut[] => [
+const prototypeShortcuts = ({
+	startScenario,
+	timelineOption2 = false,
+}: {
+	startScenario: (scenario: ScenarioId) => void;
+	/** Whether "Timeline option 2" is on (`useTimelineOption2`), for its check. */
+	timelineOption2?: boolean;
+}): PrototypeShortcut[] => [
 	{ group: "Scenarios", label: "Scenario 1: Heart failure", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-1") },
 	{ group: "Scenarios", label: "Scenario 2: COPD", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-2") },
 	{ group: "Scenarios", label: "Scenario 3: Sepsis", page: "Monitoring", icon: PlayIcon, onSelect: () => startScenario("scenario-3") },
@@ -48,6 +56,13 @@ const prototypeShortcuts = ({ startScenario }: { startScenario: (scenario: Scena
 		label: "Alert with video consult",
 		page: "Monitoring",
 		alert: { patientId: alertViewPatient, consult: true },
+	},
+	// Every patient's Timeline with Previous and Now left of the plot (Intercept-Live `316:16920`), until chosen again.
+	{
+		group: "Views",
+		label: "Timeline option 2",
+		checked: timelineOption2,
+		onSelect: () => setTimelineOption2(!timelineOption2),
 	},
 ];
 

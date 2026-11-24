@@ -18,6 +18,7 @@ import { sampleOutcomes } from "../analytics/sample-data/sample-analytics";
 import { sampleAskIntercept, useLiveAskIntercept } from "../sample-data/sample-ask-intercept";
 import { interceptLivePages } from "../intercept-live";
 import { clearPrototypeLocation, prototypeShortcuts, resetPrototype, usePrototypeLocation } from "../sample-data/prototype-links";
+import { useTimelineOption2 } from "../prototype-views";
 import { useSampleLiveFeed, withFeedAlerts } from "../sample-data/use-sample-live-feed";
 import { Monitoring, type MonitoringProps } from "./monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "./sample-data/sample-monitoring";
@@ -788,6 +789,8 @@ function LiveMonitoring(props: MonitoringProps) {
 		onConsultNote,
 		logAlertAction,
 	} = useSampleLiveFeed();
+	// The Prototype menu's "Timeline option 2" check.
+	const timelineOption2 = useTimelineOption2();
 	// The page and patient in the address (`?page=…&patient=…`), so a copied link opens the same place.
 	const location = usePrototypeLocation(interceptLivePages, {
 		page: props.defaultPage ?? "Monitoring",
@@ -836,7 +839,7 @@ function LiveMonitoring(props: MonitoringProps) {
 			onConsultChange={onConsultChange}
 			onConsultNote={onConsultNote}
 			notices={notices}
-			prototype={prototypeShortcuts({ startScenario })}
+			prototype={prototypeShortcuts({ startScenario, timelineOption2 })}
 			onResetPrototype={resetPrototype}
 			defaultPage={location.defaultPage}
 			defaultPatient={location.defaultPatient}

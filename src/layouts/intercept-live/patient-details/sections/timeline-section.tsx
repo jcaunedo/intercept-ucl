@@ -97,6 +97,11 @@ type TimelineSectionProps = {
 	liveVitals?: MonitorVitals;
 	/** Opens an open alert (its bell on the events lane) in the alert modal. */
 	onOpenAlert?: (alertId: string) => void;
+	/**
+	 * Where Previous and Now sit: `right` (default) after the plot, or `left` between each lane's name and its plot
+	 * ("Timeline option 2", Intercept-Live `316:16920`, a prototype View).
+	 */
+	valuesSide?: "right" | "left";
 };
 
 /* -------------------------------------------------------------------------- */
@@ -641,9 +646,23 @@ function EventsLane({
 /* -------------------------------------------------------------------------- */
 
 // Every row shares the columns, so the plots line up on one axis: the lane's name and unit, its plot, its earlier value
-// (Previous: at the crosshair, else at the window's start), and its value now, to compare the two.
-const rowColumns =
-	"grid grid-cols-[7.5rem_minmax(0,1fr)_6.5rem_6.5rem] @min-[72rem]:grid-cols-[233px_minmax(0,1fr)_120px_120px]";
+// (Previous: at the crosshair, else at the window's start), and its value now, to compare the two. The values sit after
+// the plot (`right`) or before it (`left`, "Timeline option 2"). Cells name their column and row, so the DOM order (name,
+// plot, Previous, Now) holds either way; a rule on the left of whatever follows another cell.
+const valueLayouts = {
+	right: {
+		columns: "grid grid-cols-[7.5rem_minmax(0,1fr)_6.5rem_6.5rem] @min-[72rem]:grid-cols-[233px_minmax(0,1fr)_120px_120px]",
+		plot: "col-start-2",
+		previous: "col-start-3 border-l border-border",
+		now: "col-start-4 border-l border-border",
+	},
+	left: {
+		columns: "grid grid-cols-[7.5rem_6.5rem_6.5rem_minmax(0,1fr)] @min-[72rem]:grid-cols-[233px_120px_120px_minmax(0,1fr)]",
+		plot: "col-start-4 border-l border-border",
+		previous: "col-start-2",
+		now: "col-start-3 border-l border-border",
+	},
+} as const;
 
 /** The time axis as a table head: one column per tick interval, named by its start, the date over a new day's first. */
 function TimeHeader({ frame, tickMinutes, lastViewedX }: { frame: Frame; tickMinutes: number; lastViewedX?: number }) {
@@ -701,7 +720,7 @@ function TimeHeader({ frame, tickMinutes, lastViewedX }: { frame: Frame; tickMin
 /** A value cell: the reading large, its unit, range or time under it; a stale one dimmed, with its time in amber. */
 function ValueCell({ lane, reading, className }: { lane: TimelineLane; reading?: Reading; className?: string }) {
 	return (
-		<div className={cn("flex flex-col items-end justify-center border-l border-border px-3 text-right whitespace-nowrap", className)}>
+		<div className={cn("flex flex-col items-end justify-center px-3 text-right whitespace-nowrap", className)}>
 			{reading ? (
 				<>
 					<span
@@ -871,7 +890,8 @@ function TimelineTable({
  *
  * Figma: [Intercept-Live › Timeline](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=311-8791)
  */
-function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert }: TimelineSectionProps) {
+function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valuesSide = "right" }: TimelineSectionProps) {
+	const layout = valueLayouts[valuesSide];
 	const now = useCurrentMinute();
 	// 12 h by default (Nov 11, 2026, user's call): its table is hourly, the old flowsheet's step.
 	const [windowId, setWindowId] = React.useState<TimelineWindowId>("12h");
@@ -1032,28 +1052,52 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert }: Ti
 							className='overflow-hidden rounded-lg border border-border outline-none focus-visible:ring-2 focus-visible:ring-ring'
 						>
 							{/* The head: the window and its time columns over the events lane; Previous and Now span both rows. */}
-							<div className={cn(rowColumns, "grid-rows-[56px_32px]")}>
-								<div className='flex items-center border-r border-b border-border px-3 text-sm text-foreground'>
+							<div className={cn(layout.columns, "grid-rows-[56px_32px]")}>
+								<div className='col-start-1 row-start-1 flex items-center border-r border-b border-border px-3 text-sm text-foreground'>
 									Last {timeWindow.name}
 								</div>
-								<div ref={plotRef} className='relative overflow-hidden border-b border-border'>
+								<div ref={plotRef} className={cn("row-start-1 relative overflow-hidden border-b border-border", layout.plot)}>
 									{width ? <TimeHeader frame={frame} tickMinutes={timeWindow.tickMinutes} lastViewedX={lastViewedX} /> : null}
 								</div>
-								<div className='row-span-2 flex items-center justify-center border-b border-l border-border bg-background-subtle px-3 text-sm font-medium text-foreground tabular-nums'>
+								<div
+									className={cn(
+										"row-span-2 row-start-1 flex flex-col items-center justify-center border-b border-border bg-background-subtle px-3 text-sm font-medium text-foreground tabular-nums",
+										layout.previous,
+									)}
+								>
+									{/* Previous says the moment it reads (Nov 24, 2026, user's call): a lab or charted value shows the
+									    result current then, which can be the same one as Now, taken earlier. */}
 									{cursor === null ? (
 										<>
 											Previous
-											<span className='sr-only'>, {timeWindow.name} ago</span>
+											<span className='text-xs font-normal text-muted-foreground'>
+												<span className='sr-only'>, </span>
+												{formatTime(new Date(start).toISOString())}
+											</span>
 										</>
 									) : (
 										formatTime(new Date(cursor).toISOString())
 									)}
 								</div>
-								<div className='row-span-2 flex items-center justify-center border-b border-l border-border px-3 text-sm font-medium text-foreground'>
+								<div
+									className={cn(
+										"row-span-2 row-start-1 flex flex-col items-center justify-center border-b border-border px-3 text-sm font-medium text-foreground tabular-nums",
+										layout.now,
+									)}
+								>
 									Now
+									{/* The clock's time, updated each minute (user's call), as Previous shows its moment. */}
+									{now !== null ? (
+										<span className='text-xs font-normal text-muted-foreground'>
+											<span className='sr-only'>, </span>
+											{formatTime(new Date(now).toISOString())}
+										</span>
+									) : null}
 								</div>
-								<div className='flex items-center border-r border-b border-border px-3 text-sm text-foreground'>Events</div>
-								<div className='overflow-hidden border-b border-border'>
+								<div className='col-start-1 row-start-2 flex items-center border-r border-b border-border px-3 text-sm text-foreground'>
+									Events
+								</div>
+								<div className={cn("row-start-2 overflow-hidden border-b border-border", layout.plot)}>
 									{width ? <EventsLane events={windowEvents} frame={frame} onOpenAlert={onOpenAlert} /> : null}
 								</div>
 							</div>
@@ -1068,14 +1112,24 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert }: Ti
 												{group.heading}
 											</div>
 											{groupLanes.map((lane) => (
-												<div key={lane.id} className={cn(rowColumns, "h-14 border-b border-border last:border-b-0")}>
-													<div className='flex min-w-0 items-center justify-between gap-2 border-r border-border px-3'>
+												<div key={lane.id} className={cn(layout.columns, "h-14 border-b border-border last:border-b-0")}>
+													<div className='col-start-1 row-start-1 flex min-w-0 items-center justify-between gap-2 border-r border-border px-3'>
 														<span className='truncate text-sm font-semibold text-foreground'>{lane.label}</span>
 														<span className='shrink-0 text-xs text-muted-foreground'>{lane.unit}</span>
 													</div>
-													<div className='overflow-hidden'>{width ? <LanePlot lane={lane} frame={frame} /> : null}</div>
-													<ValueCell lane={lane} reading={readingAt(lane, previousAt, end, false)} className='bg-background-subtle' />
-													<ValueCell lane={lane} reading={liveReading(lane, liveVitals) ?? readingAt(lane, end, end, true)} />
+													<div className={cn("row-start-1 overflow-hidden", layout.plot)}>
+														{width ? <LanePlot lane={lane} frame={frame} /> : null}
+													</div>
+													<ValueCell
+														lane={lane}
+														reading={readingAt(lane, previousAt, end, false)}
+														className={cn("row-start-1 bg-background-subtle", layout.previous)}
+													/>
+													<ValueCell
+														lane={lane}
+														reading={liveReading(lane, liveVitals) ?? readingAt(lane, end, end, true)}
+														className={cn("row-start-1", layout.now)}
+													/>
 												</div>
 											))}
 										</React.Fragment>

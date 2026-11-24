@@ -74,6 +74,7 @@ import {
 } from "./consult-panels";
 import { PatientOverview } from "./patient-overview";
 import { LiveFeedButton } from "../shared/live-feed";
+import { useTimelineOption2 } from "../prototype-views";
 import { patientFeedEntries, withAlertEvents } from "../shared/live-feed-entries";
 import { AlertsSection } from "./sections/alerts-section";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
@@ -658,12 +659,15 @@ function sectionContent(
 		carePlanPathways,
 		timelineAlerts,
 		onOpenAlert,
+		timelineValuesSide,
 	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction" | "onDischargeDecision" | "onTransitionDecision"> & {
 		onShowSection: (id: SectionId) => void;
 		/** Every alert the patient had (live, left and history), for the Timeline's events lane. */
 		timelineAlerts: TriageAlert[];
 		/** Opens an open alert in the alert modal, from its bell on the Timeline. */
 		onOpenAlert?: (alertId: string) => void;
+		/** Where the Timeline's Previous and Now sit: the prototype's "Timeline option 2" puts them on the left. */
+		timelineValuesSide: "right" | "left";
 		/** Every pathway the patient's alerts brought, for the Care Plan tab: each under the problem it treats. */
 		carePlanPathways: OverviewPathway[];
 	},
@@ -687,6 +691,7 @@ function sectionContent(
 					lastViewedAt={record.brief?.lastViewedAt}
 					liveVitals={monitor?.vitals}
 					onOpenAlert={onOpenAlert}
+					valuesSide={timelineValuesSide}
 				/>
 			) : record?.vitals ? (
 				<LatestVitals vitals={record.vitals} monitor={monitor} />
@@ -821,6 +826,8 @@ function PatientDetailsContent({
 	// The pathway the Overview shows: the first alert's, where it is now (the session's, as the panels have it, or the
 	// app's), and the way to it: the page's Pathway panel, or the alert without one.
 	const navigation = usePatientNavigation();
+	// The prototype's "Timeline option 2" (Prototype menu › Views): Previous and Now left of the plot.
+	const timelineOption2 = useTimelineOption2();
 	// The patient's Live feed (UCL LiveFeed), history included: an open alert's lines open it.
 	const feedEntries = React.useMemo(
 		() =>
@@ -1030,6 +1037,7 @@ function PatientDetailsContent({
 						carePlanPathways,
 						timelineAlerts: [...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])],
 						onOpenAlert: navigation ? (alertId) => navigation.openAlert(patient.id, alertId) : undefined,
+						timelineValuesSide: timelineOption2 ? "left" : "right",
 					});
 					// Keyed by patient, so a section's local state (an open form, an accepted recommendation) never
 					// carries over to the next patient. Block, not flex: the sections are size containers, which a flex

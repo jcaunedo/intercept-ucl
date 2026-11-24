@@ -704,7 +704,8 @@ function InterceptLive({
 	const prototypeGroups = [...new Set(prototype.map((shortcut) => shortcut.group))];
 	const openShortcut = (shortcut: PrototypeShortcut) => {
 		if (shortcut.page) setPage(shortcut.page);
-		setOpenPatient(shortcut.patientId ? { id: shortcut.patientId } : null);
+		// A view switch that opens nothing (e.g. "Timeline option 2") leaves the patient's page open, to see it change.
+		if (shortcut.page || shortcut.patientId) setOpenPatient(shortcut.patientId ? { id: shortcut.patientId } : null);
 		const { alert } = shortcut;
 		if (alert) setOpenAlert((current) => ({ ...alert, open: true, key: (current?.key ?? 0) + 1 }));
 		shortcut.onSelect?.();
