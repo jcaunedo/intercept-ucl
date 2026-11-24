@@ -307,6 +307,9 @@ function PatientsPanel({
 		setPageList?.(visibleKey ? visibleKey.split(",") : []);
 	}, [setPageList, visibleKey]);
 
+	// Each patient's page as an address, for the cards' and rows' links: the app's, else the shell's.
+	const rowHref = patientHref ?? navigation?.patientHref;
+
 	const openPatient = (patientId: string) => {
 		navigation?.openPatient(
 			patientId,
@@ -358,6 +361,8 @@ function PatientsPanel({
 				{ label: "Copy patient link", onSelect: () => void copyPatientLink(patient.id, directoryName(patient), patientHref) },
 			]}
 			onOpen={() => openPatient(patient.id)}
+			// A link too, so Cmd/Ctrl+click opens the patient in a new tab.
+			href={rowHref?.(patient.id)}
 		>
 			<div className='flex'>
 				<PatientStatus patient={patient} detail={false} />
@@ -380,7 +385,7 @@ function PatientsPanel({
 			</div>
 		)
 	) : loadError ? null : view === "table" ? (
-		<PatientsTable patients={shown} onOpenPatient={openPatient} patientHref={patientHref} />
+		<PatientsTable patients={shown} onOpenPatient={openPatient} patientHref={patientHref} rowHref={rowHref} />
 	) : (
 		<PanelGrid patients={shown} hospitals={hospitals} grouped={false} className={gridClassName} renderCard={renderCard} />
 	);

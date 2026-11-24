@@ -17,6 +17,7 @@ import {
 	standardTransition,
 	useMotionPreference,
 } from "@/lib/motion";
+import { handleLinkClick } from "@/lib/new-tab-click";
 import { cn } from "@/lib/utils";
 
 import {
@@ -390,7 +391,10 @@ type PatientCensusCardProps = Omit<
 	tone?: AvatarFallbackProps["tone"];
 	/** Opens the patient. Makes the whole card one click target. */
 	onOpen?: () => void;
-	/** Opens the patient as a link. Use instead of `onOpen` when the app routes with URLs. */
+	/**
+	 * Opens the patient as a link. Alone, when the app routes with URLs; with `onOpen`, the card is a link the app opens
+	 * in place (a plain click calls `onOpen`), so Cmd/Ctrl+click, a middle-click or "Open in new tab" open its address.
+	 */
 	href?: string;
 	/**
 	 * Opens the alert (Intercept Live's alert modal). Makes the alert badge a button, raised above the card's open target,
@@ -746,7 +750,13 @@ function PatientCensusCard({
 	const openTargetClassName = patientCardOpenTargetClassName;
 	const openRef = React.useRef<HTMLAnchorElement & HTMLButtonElement>(null);
 	const nameContent = href ? (
-		<a ref={openRef} href={href} className={openTargetClassName}>
+		<a
+			ref={openRef}
+			href={href}
+			// With `onOpen` too, a plain click opens the patient in place, Cmd/Ctrl+click in a new tab.
+			onClick={onOpen ? (event) => handleLinkClick(event, href, onOpen) : undefined}
+			className={openTargetClassName}
+		>
 			{name}
 		</a>
 	) : onOpen ? (

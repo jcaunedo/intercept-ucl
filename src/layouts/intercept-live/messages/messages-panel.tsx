@@ -6,6 +6,7 @@ import {
 	MessageCircleIcon,
 	PaperclipIcon,
 	SquarePenIcon,
+	XIcon,
 } from "lucide-react";
 import { AnimatePresence, motion, type MotionStyle } from "motion/react";
 
@@ -141,7 +142,11 @@ type MessagesPanelProps = {
 const unreadMessageCount = (conversations: readonly MessageConversation[], readIds: ReadonlySet<string>) =>
 	conversations.reduce((total, conversation) => total + (readIds.has(conversation.id) ? 0 : (conversation.unread ?? 0)), 0);
 
+/** "Sarah Miller", for sentences ("Message about Sarah Miller…"). */
 const patientName = (patient: CensusPatient) => [patient.firstName, patient.lastName].filter(Boolean).join(" ");
+
+/** "Miller, Sarah", where the name stands alone (a row's patient line, the header's patient bar), as the cards show it. */
+const patientListName = (patient: CensusPatient) => [patient.lastName, patient.firstName].filter(Boolean).join(", ");
 
 /** "MICU · Bed 7". */
 const patientPlace = (patient: CensusPatient) => [patient.unit, patient.room, patient.bed].filter(Boolean).join(" · ");
@@ -251,7 +256,8 @@ function MessagesPanel({
 			conversation.with.name,
 			conversation.with.role,
 			conversation.hospital,
-			conversation.patient ? patientName(conversation.patient) : "",
+			// Both orders, so "Sarah Miller" and "Miller, Sarah" both find her.
+			conversation.patient ? `${patientName(conversation.patient)} ${patientListName(conversation.patient)}` : "",
 			...conversation.messages.map((message) => message.text ?? message.photo?.title ?? ""),
 		]
 			.join(" ")
@@ -475,7 +481,7 @@ function MessagesPanel({
 								patient={
 									selected.patient
 										? {
-												name: patientName(selected.patient),
+												name: patientListName(selected.patient),
 												place: patientPlace(selected.patient),
 												initials: patientInitials(selected.patient),
 												photo: selected.patient.photo,
@@ -515,6 +521,7 @@ function MessagesPanel({
 								tones={tones}
 								record={selectedRecord}
 								onOpenPatient={navigation ? () => openPatient(selected.patient!.id) : undefined}
+								onClose={() => setDetailsOpen(false)}
 							/>
 						) : null}
 					</AnimatePresence>
@@ -583,8 +590,8 @@ const sessionKey = (conversationId: string) => `conversation:${conversationId}`;
 
 /**
  * One row of the list (UCL ConversationRow, in a list item): the person and where they work, the last message, the
- * patient the conversation is about (none for a conversation about no patient). Unread is the bold name and the brand
- * time; the count is read to screen readers only (no Counter on the row since Nov 18, 2026, user's call).
+ * patient the conversation is about (none for a conversation about no patient). Unread is the bold name and the unread icon
+ * after the time; the count is read to screen readers only (no Counter on the row since Nov 18, 2026, user's call).
  */
 function ConversationListRow({
 	conversation,
@@ -632,7 +639,7 @@ function ConversationListRow({
 				patient={
 					about
 						? {
-								name: patientName(about),
+								name: patientListName(about),
 								place: patientPlace(about),
 								initials: patientInitials(about),
 								photo: about.photo,
@@ -736,6 +743,7 @@ function ConversationDetails({
 	tones,
 	record,
 	onOpenPatient,
+	onClose,
 	width,
 	onWidthChange,
 }: {
@@ -748,6 +756,8 @@ function ConversationDetails({
 	record?: PatientRecord;
 	/** Makes the patient's name a button that opens their page. */
 	onOpenPatient?: () => void;
+	/** The × at the top right, as the side panels': closes the column (the header's patient bar opens it again). */
+	onClose?: () => void;
 }) {
 	const { resolve } = useMotionPreference();
 	const now = useCurrentMinute();
@@ -795,9 +805,24 @@ function ConversationDetails({
 			<div className='absolute inset-y-0 right-0 flex w-[calc(var(--details-width)-1px)] flex-col gap-4 overflow-y-auto px-5 py-4'>
 				<section aria-labelledby='conversation-patient' className='flex flex-col gap-3'>
 					<div className='flex flex-col gap-1.5'>
-						<Typography as='h3' id='conversation-patient' size='xs'>
-							Patient
-						</Typography>
+						<div className='flex items-center justify-between gap-2'>
+							<Typography as='h3' id='conversation-patient' size='xs'>
+								Patient
+							</Typography>
+							{/* The side panels' ×, kept from pushing the column down: the 36px button overhangs the 20px label line. */}
+							{onClose ? (
+								<Button
+									variant='ghost'
+									size='icon-md'
+									aria-label='Close patient details'
+									aria-controls={patientDetailsId}
+									onClick={onClose}
+									className='-my-2 -mr-2'
+								>
+									<XIcon aria-hidden='true' />
+								</Button>
+							) : null}
+						</div>
 						<div className='flex items-center gap-3'>
 							<PatientAvatar patient={patient} tone={tones.get(patient.id)} size='md' />
 							<div className='flex min-w-0 flex-col'>

@@ -25,6 +25,7 @@ function CensusListPanel({
 	patients,
 	currentId,
 	onSelectPatient,
+	patientHref,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -36,6 +37,8 @@ function CensusListPanel({
 	patients: CensusListEntry[];
 	currentId: string;
 	onSelectPatient: (patientId: string) => void;
+	/** Each patient's page as an address: the rows become links (Cmd/Ctrl+click opens a new tab). */
+	patientHref?: (patientId: string) => string | undefined;
 }) {
 	return (
 		<SidePanel
@@ -55,7 +58,13 @@ function CensusListPanel({
 		>
 			{/* No line under the title (Nov 16, 2026, user's call; PRD Census list CNL-011), so the list starts 12px under the
 			    rule. It scrolls the open patient into view itself; it mounts each time the panel opens. */}
-			<CensusList patients={patients} currentId={currentId} onSelectPatient={onSelectPatient} className='pt-3' />
+			<CensusList
+				patients={patients}
+				currentId={currentId}
+				onSelectPatient={onSelectPatient}
+				patientHref={patientHref}
+				className='pt-3'
+			/>
 		</SidePanel>
 	);
 }

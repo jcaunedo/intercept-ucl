@@ -406,7 +406,7 @@ export const Scenario6AfterTheIcu: Story = {
 		await expect(todo.getByText(/For Ava Brooks, RN/)).toBeInTheDocument();
 		await expect(toneIn(todo.getByText("72-hour nurse phone check").closest("tr"))).toBe(tone);
 		// 3. Day 11: back at Chadron's ED, matched, with a High alert.
-		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
+		await userEvent.click(canvas.getByRole("link", { name: /^Monitoring/ }));
 		await waitFor(() => expect(within(hayes() as HTMLElement).getByRole("button", { name: /Open alert/ })).toBeInTheDocument(), {
 			timeout: 35000,
 		});
@@ -574,14 +574,14 @@ export const ProtocolsOpensVirtualSepsis: Story = {
 	play: async ({ canvas }) => {
 		const nav = within(await canvas.findByRole("navigation", { name: /main/i }));
 		await expect(nav.queryByRole("button", { name: /^Virtual Sepsis/ })).toBeNull();
-		await expect(nav.getByRole("button", { name: /^Protocols/ })).toHaveAttribute("aria-current", "page");
+		await expect(nav.getByRole("link", { name: /^Protocols/ })).toHaveAttribute("aria-current", "page");
 		const table = within(await canvas.findByRole("table", { name: "Protocols" }));
 		await expect(table.getByText("Virtual Sepsis")).toBeVisible();
 		await userEvent.click(table.getByRole("button", { name: "Open Virtual Sepsis" }));
 
 		const crumbs = within(await canvas.findByRole("navigation", { name: "Breadcrumb" }));
 		await expect(crumbs.getByText("Virtual Sepsis")).toHaveAttribute("aria-current", "page");
-		await expect(nav.getByRole("button", { name: /^Protocols/ })).toHaveAttribute("aria-current", "page");
+		await expect(nav.getByRole("link", { name: /^Protocols/ })).toHaveAttribute("aria-current", "page");
 
 		await userEvent.click(crumbs.getByRole("button", { name: "Protocols" }));
 		await canvas.findByRole("table", { name: "Protocols" });
@@ -842,6 +842,7 @@ function LiveMonitoring(props: MonitoringProps) {
 			defaultAlert={location.defaultAlert}
 			defaultLocationState={location.defaultLocationState}
 			onLocationChange={location.onLocationChange}
+			locationHref={location.locationHref}
 		/>
 	);
 }

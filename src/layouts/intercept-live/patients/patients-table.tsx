@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/a
 import { Badge } from "@/components/data-display/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/data-display/table";
 import { TagsPopover, TagsPopoverGroup } from "@/components/overlays/tags-popover";
+import { handleLinkClick, openInNewTab } from "@/lib/new-tab-click";
 import { cn } from "@/lib/utils";
 
 import { patientInitials } from "../shared/patient-avatar";
@@ -24,6 +25,10 @@ import type { DirectoryPatient } from "./patients-panel";
 // the attending, last encounter and clinical context. No score column: NEWS2 isn't how a directory is read (it's
 // Monitoring's); no alert column either. No Last viewed column (Nov 17, 2026, user's call): it drives Recently viewed.
 
+// The row's name, its keyboard target: a link with an address, else a button.
+const nameClassName =
+	"block max-w-full truncate rounded-sm font-semibold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring";
+
 // Up to this many flags show in a row; the rest count as "+n" (all of them are in its accessible name).
 const maxFlags = 2;
 
@@ -32,10 +37,13 @@ function PatientsTableRow({
 	patient,
 	onOpenPatient,
 	patientHref,
+	href,
 }: {
 	patient: DirectoryPatient;
 	onOpenPatient: (patientId: string) => void;
 	patientHref?: (patientId: string) => string;
+	/** The patient's page as an address: the name is a link to it. */
+	href?: string;
 }) {
 	const name = directoryName(patient);
 	const identity = directoryIdentity(patient);
@@ -46,7 +54,14 @@ function PatientsTableRow({
 
 	// The last row has no bottom rule: it would double the frame's bottom border.
 	return (
-		<TableRow onClick={open} className='cursor-pointer last:border-b-0'>
+		<TableRow
+			onClick={(event) => {
+				// Cmd/Ctrl+click anywhere on the row opens the patient in a new tab and moves there, as on the name's link.
+				if (href && (event.metaKey || event.ctrlKey)) openInNewTab(href);
+				else open();
+			}}
+			className='cursor-pointer last:border-b-0'
+		>
 			<TableCell className='max-w-80'>
 				<div className='flex items-center gap-3'>
 					{/* Decorative: the name beside it says who it is. */}
@@ -55,18 +70,33 @@ function PatientsTableRow({
 						<AvatarFallback tone={patient.tone}>{patient.initials ?? patientInitials(patient)}</AvatarFallback>
 					</Avatar>
 					<div className='flex min-w-0 flex-col'>
-						<button
-							type='button'
-							title={name}
-							onClick={(event) => {
-								// The row's own click opens; this one is the keyboard's way in.
-								event.stopPropagation();
-								open();
-							}}
-							className='max-w-full truncate rounded-sm text-left font-semibold text-foreground outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring'
-						>
-							{name}
-						</button>
+						{href ? (
+							// A link the app follows in place; Cmd/Ctrl+click opens the patient in a new tab.
+							<a
+								href={href}
+								title={name}
+								onClick={(event) => {
+									event.stopPropagation();
+									handleLinkClick(event, href, open);
+								}}
+								className={nameClassName}
+							>
+								{name}
+							</a>
+						) : (
+							<button
+								type='button'
+								title={name}
+								onClick={(event) => {
+									// The row's own click opens; this one is the keyboard's way in.
+									event.stopPropagation();
+									open();
+								}}
+								className={cn("text-left", nameClassName)}
+							>
+								{name}
+							</button>
+						)}
 						{identity ? <span className='truncate text-xs font-normal text-muted-foreground'>{identity}</span> : null}
 					</div>
 				</div>
@@ -138,11 +168,14 @@ function PatientsTable({
 	patients,
 	onOpenPatient,
 	patientHref,
+	rowHref,
 	className,
 }: {
 	patients: DirectoryPatient[];
 	onOpenPatient: (patientId: string) => void;
 	patientHref?: (patientId: string) => string;
+	/** Each row's patient page as an address: the name becomes a link, and Cmd/Ctrl+click on the row opens a new tab. */
+	rowHref?: (patientId: string) => string | undefined;
 	className?: string;
 }) {
 	if (!patients.length) return null;
@@ -164,7 +197,13 @@ function PatientsTable({
 				</TableHeader>
 				<TableBody>
 					{patients.map((patient) => (
-						<PatientsTableRow key={patient.id} patient={patient} onOpenPatient={onOpenPatient} patientHref={patientHref} />
+						<PatientsTableRow
+							key={patient.id}
+							patient={patient}
+							onOpenPatient={onOpenPatient}
+							patientHref={patientHref}
+							href={rowHref?.(patient.id)}
+						/>
 					))}
 				</TableBody>
 			</Table>

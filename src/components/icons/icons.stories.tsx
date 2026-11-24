@@ -39,6 +39,7 @@ import { SquareActivitySolidIcon } from "./square-activity-solid-icon";
 import { SlashCommandIcon } from "./slash-command-icon";
 import { SquareFilledIcon } from "./square-filled-icon";
 import { TriangleAlertSolidIcon } from "./triangle-alert-solid-icon";
+import { UnreadIcon } from "./unread-icon";
 
 // Each solid icon beside its lucide outline. Most replace the outline while a SidebarMenuButton is active;
 // message-circle is the "message" PatientCardAlert's icon.
@@ -135,6 +136,17 @@ export const CircleAlertFilled: Story = {
 			<span>circle-alert-filled</span>
 			<CircleAlertFilledIcon className='size-4 text-severity-critical' />
 			<CircleAlertFilledIcon className='size-6 text-severity-critical' />
+		</div>
+	),
+};
+
+/** unread (intercept.ds, custom): a message that came in, in the brand blue (`text-brand`), at 16px and 24px. */
+export const Unread: Story = {
+	render: () => (
+		<div className='flex items-center gap-4 text-sm text-foreground'>
+			<span>unread</span>
+			<UnreadIcon className='size-4 text-brand' />
+			<UnreadIcon className='size-6 text-brand' />
 		</div>
 	),
 };

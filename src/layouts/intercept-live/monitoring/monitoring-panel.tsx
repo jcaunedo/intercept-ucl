@@ -656,6 +656,8 @@ function MonitoringPanel({
 			alertCount: cardAlert(id)?.count,
 		});
 		const onOpen = canOpenPatient ? () => openPatient(id) : undefined;
+		// The patient's page as a link too, so Cmd/Ctrl+click opens it in a new tab.
+		const href = onOpen ? navigation?.patientHref?.(id) : undefined;
 		// The alert opens the alert; only inside the shell, which holds where it opens.
 		const onOpenAlert = navigation ? () => navigation.openAlert(id) : undefined;
 		// Minimal view is the Patients page's card (Nov 16, 2026, user's call; was the condensed monitor alone): identity,
@@ -684,6 +686,7 @@ function MonitoringPanel({
 					size={density === "compact" ? "sm" : "md"}
 					moreActions={moreActions}
 					onOpen={onOpen}
+					href={href}
 					onOpenAlert={onOpenAlert}
 				/>
 			);
@@ -706,6 +709,7 @@ function MonitoringPanel({
 				expanded={monitorView === "full"}
 				moreActions={moreActions}
 				onOpen={onOpen}
+				href={href}
 				onOpenAlert={onOpenAlert}
 			/>
 		);

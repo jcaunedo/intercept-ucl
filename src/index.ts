@@ -1,5 +1,8 @@
 export { cn } from "@/lib/utils";
 
+// Links the app also follows in place: a plain click navigates, Cmd/Ctrl+click opens a new tab and moves to it.
+export { handleLinkClick, isNewTabClick, openInNewTab, type LinkClickEvent } from "@/lib/new-tab-click";
+
 export {
 	formatRelativeDate,
 	RELATIVE_CUTOVER,
@@ -323,6 +326,8 @@ export { SquareActivitySolidIcon } from "@/components/icons/square-activity-soli
 // ChatComposer's Stop: a filled rounded square (intercept.ds, custom).
 export { SquareFilledIcon } from "@/components/icons/square-filled-icon";
 export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
+// Unread: a filled circle with an incoming arrow (intercept.ds, custom).
+export { UnreadIcon } from "@/components/icons/unread-icon";
 
 /* -------------------------------------------------------------------------- */
 /* Navigation                                                                 */

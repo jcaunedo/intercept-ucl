@@ -465,6 +465,13 @@ type InterceptLiveProps = {
 	 * Where the user is, each time it changes (and once at the start): the Sidebar's page, and the patient whose details
 	 * are open over it, if any. E.g. to keep the address in step, so a shared link opens the same place.
 	 */
+	/**
+	 * The address of a place in the app: a Sidebar page, or a patient's page over it. With it, the Sidebar's pages and the
+	 * pages' patient cards and rows (and the census list, and the live feed's patient lines) are links, so Cmd/Ctrl+click,
+	 * a middle-click or "Open in new tab" open them in a new tab while a plain click still moves in place. The prototype
+	 * builds it from the story's address (`usePrototypeLocation`).
+	 */
+	locationHref?: (location: { page: InterceptLivePage; patientId?: string }) => string | undefined;
 	onLocationChange?: (location: {
 		page: InterceptLivePage;
 		patientId?: string;
@@ -567,6 +574,7 @@ function InterceptLive({
 	defaultAlert,
 	defaultLocationState,
 	onLocationChange,
+	locationHref,
 	askIntercept,
 	draftQuickRequest,
 	savedQuickRequests,
@@ -679,12 +687,17 @@ function InterceptLive({
 					item.label === askInterceptLabel
 						? // Pressed while its column is open: the solid sparkles, never the current page's look (PRD Sidebar NAV-030).
 							{ ...item, pressed: chatOpen, onClick: () => sidebarChatRef.current() }
-						: item.navigateTo && shownNavAlerts[item.navigateTo as InterceptLivePage]
-							? { ...item, alert: shownNavAlerts[item.navigateTo as InterceptLivePage] }
+						: item.navigateTo
+							? {
+									...item,
+									alert: shownNavAlerts[item.navigateTo as InterceptLivePage] ?? item.alert,
+									// A link to the page, so Cmd/Ctrl+click opens it in a new tab.
+									href: locationHref?.({ page: item.navigateTo as InterceptLivePage }),
+								}
 							: item,
 				),
 			),
-		[toggleLeftPanel, shownNavAlerts, workspace, chatOpen],
+		[toggleLeftPanel, shownNavAlerts, workspace, chatOpen, locationHref],
 	);
 	// The Prototype menu: its shortcuts by group, a divider between groups, then "Reset prototype" after a divider (as in
 	// bethere-ucl).
@@ -892,8 +905,11 @@ function InterceptLive({
 			compact: headerCompact,
 			patientOpen: openPatientId !== null,
 			viewedAt,
+			patientHref: locationHref ? (patientId) => locationHref({ page, patientId }) : undefined,
 		}),
 		[
+			locationHref,
+			page,
 			renderPatientDetails,
 			renderAlert,
 			reportPageList,
@@ -954,6 +970,19 @@ function InterceptLive({
 			onSelectPatient: (patientId) => setOpenPatient({ id: patientId, list }),
 		});
 	})();
+	// The browser tab says where it is (Nov 24, 2026, user's call): the patient's name on their page ("Carlson, Linda ·
+	// Intercept Live"), else the page's, so tabs opened with Cmd+click tell apart. The title before comes back on unmount.
+	const documentTitle = `${patientView ? patientView.name : page} · Intercept Live`;
+	// First, so it keeps the title from before the prototype set its own.
+	React.useEffect(() => {
+		const previous = document.title;
+		return () => {
+			document.title = previous;
+		};
+	}, []);
+	React.useEffect(() => {
+		document.title = documentTitle;
+	}, [documentTitle]);
 	// Opening a patient reveals the details (MOTION.md Reveal: a fade and an 8px rise, over 1 s; Oct 31, 2026, user's
 	// call, it was a Glide from the right). Back slides right (Glide): the details leave to the right and the page comes
 	// in from the left. Once per navigation, not on stepping between patients; opacity only under reduced motion.
@@ -1120,6 +1149,7 @@ function InterceptLive({
 										patients={patientView.patientList}
 										currentId={openPatient.id}
 										onSelectPatient={(patientId) => setOpenPatient({ id: patientId, list: openPatient.list })}
+										patientHref={locationHref ? (patientId) => locationHref({ page, patientId }) : undefined}
 									/>
 								) : null}
 	

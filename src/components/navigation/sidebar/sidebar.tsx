@@ -16,6 +16,7 @@ import {
 	useMotionPreference,
 	useUrgencyPhase,
 } from "@/lib/motion";
+import { handleLinkClick } from "@/lib/new-tab-click";
 import { cn } from "@/lib/utils";
 
 type SidebarIcon = React.ComponentType<{ className?: string }>;
@@ -85,6 +86,11 @@ type SidebarMenuButtonProps = React.ComponentProps<"button"> & {
 	 * `unread` is a brand-colored dot that flashes on the Unread pattern. `resolved` or none shows no dot.
 	 */
 	alert?: SidebarAlert;
+	/**
+	 * The page's address: the row renders as a link, so Cmd/Ctrl+click, a middle-click or "Open in new tab" open the page
+	 * in a new tab. Ignored with `menu`.
+	 */
+	href?: string;
 };
 
 /**
@@ -154,6 +160,7 @@ function SidebarMenuButton({
 	collapsed = false,
 	menu,
 	alert,
+	href,
 	className,
 	...props
 }: SidebarMenuButtonProps) {
@@ -162,38 +169,30 @@ function SidebarMenuButton({
 	const alertLabel = alert && alert !== "resolved" ? sidebarAlertDot[alert].label : undefined;
 	const accessibleName = alertLabel ? `${label}, ${alertLabel}` : collapsed ? label : undefined;
 
-	const button = (
-		<button
-			type='button'
-			data-slot='sidebar-menu-button'
-			data-active={active || undefined}
-			aria-current={active ? "page" : undefined}
-			aria-pressed={pressed}
-			aria-label={accessibleName}
-			className={cn(
-				// The row hugs its content: 32px tall (6px vertical padding around the 20px label line). The label is 15px, a
-				// literal Figma size with no token (DESIGN.md "Sidebar", Nov 16, 2026).
-				"flex items-center gap-3 rounded-lg px-2 py-1.5 text-[15px]/5 font-medium outline-none",
-				"[&_svg]:size-4.5 [&_svg]:shrink-0",
-				// Fill, label and icon color fade over motionDuration.fast (160ms).
-				"transition-[background-color,color] duration-160 ease-in-out [&_svg]:transition-colors [&_svg]:duration-160 [&_svg]:ease-in-out",
-				"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
-				active
-					? // Active has no fill; the weight and the solid icon mark it.
-						"font-semibold text-foreground [&_svg]:text-icon"
-					: // Hover darkens the label to the Active color, so the two states match.
-						"text-muted-foreground hover:bg-active hover:text-foreground [&_svg]:text-icon-muted hover:[&_svg]:text-icon",
-				// The collapsed rail is `background-subtle`, the same as `bg-active`, so its hover fill is `sidebar-hover`.
-				collapsed ? "size-8 shrink-0 justify-center p-0 hover:bg-sidebar-hover" : "w-full",
-				// While its menu is open, the row keeps its hover look. `aria-expanded`, not `data-state`: the tooltip sets its
-				// own `data-state` on the same button.
-				pressed && !active && "[&_svg]:text-icon",
-				menu && "aria-expanded:text-foreground aria-expanded:[&_svg]:text-icon",
-				menu && (collapsed ? "aria-expanded:bg-sidebar-hover" : "aria-expanded:bg-active"),
-				className,
-			)}
-			{...props}
-		>
+	const rowClassName = cn(
+		// The row hugs its content: 32px tall (6px vertical padding around the 20px label line). The label is 15px, a
+		// literal Figma size with no token (DESIGN.md "Sidebar", Nov 16, 2026).
+		"flex items-center gap-3 rounded-lg px-2 py-1.5 text-[15px]/5 font-medium outline-none",
+		"[&_svg]:size-4.5 [&_svg]:shrink-0",
+		// Fill, label and icon color fade over motionDuration.fast (160ms).
+		"transition-[background-color,color] duration-160 ease-in-out [&_svg]:transition-colors [&_svg]:duration-160 [&_svg]:ease-in-out",
+		"focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar",
+		active
+			? // Active has no fill; the weight and the solid icon mark it.
+				"font-semibold text-foreground [&_svg]:text-icon"
+			: // Hover darkens the label to the Active color, so the two states match.
+				"text-muted-foreground hover:bg-active hover:text-foreground [&_svg]:text-icon-muted hover:[&_svg]:text-icon",
+		// The collapsed rail is `background-subtle`, the same as `bg-active`, so its hover fill is `sidebar-hover`.
+		collapsed ? "size-8 shrink-0 justify-center p-0 hover:bg-sidebar-hover" : "w-full",
+		// While its menu is open, the row keeps its hover look. `aria-expanded`, not `data-state`: the tooltip sets its
+		// own `data-state` on the same button.
+		pressed && !active && "[&_svg]:text-icon",
+		menu && "aria-expanded:text-foreground aria-expanded:[&_svg]:text-icon",
+		menu && (collapsed ? "aria-expanded:bg-sidebar-hover" : "aria-expanded:bg-active"),
+		className,
+	);
+	const content = (
+		<>
 			<span className='relative flex shrink-0'>
 				{(active || pressed) && ActiveIcon ? <ActiveIcon /> : <Icon />}
 				<SidebarAlertDot alert={alert} />
@@ -208,8 +207,37 @@ function SidebarMenuButton({
 					) : null}
 				</>
 			)}
-		</button>
+		</>
 	);
+	// A page's row is a link (`href`), so the browser's own ways to open it elsewhere work; the app handles a plain click
+	// (Sidebar's `onNavigate`). A row that acts or opens a menu stays a button.
+	const button =
+		href && !menu ? (
+			<a
+				href={href}
+				data-slot='sidebar-menu-button'
+				data-active={active || undefined}
+				aria-current={active ? "page" : undefined}
+				aria-label={accessibleName}
+				className={rowClassName}
+				{...(props as React.ComponentProps<"a">)}
+			>
+				{content}
+			</a>
+		) : (
+			<button
+				type='button'
+				data-slot='sidebar-menu-button'
+				data-active={active || undefined}
+				aria-current={active ? "page" : undefined}
+				aria-pressed={pressed}
+				aria-label={accessibleName}
+				className={rowClassName}
+				{...props}
+			>
+				{content}
+			</button>
+		);
 
 	if (!menu) {
 		return (
@@ -257,6 +285,12 @@ type SidebarNavItem = {
 	onClick?: () => void;
 	/** Route this item points at. Clicking passes it to `onNavigate`, so the app can run its router. */
 	navigateTo?: string;
+	/**
+	 * The page's address, with `navigateTo`: the row becomes a link. A plain click still calls `onNavigate` (the link
+	 * isn't followed); Cmd/Ctrl+click, a middle-click or "Open in new tab" open the address in a new tab, and this page
+	 * stays where it is.
+	 */
+	href?: string;
 	/**
 	 * A menu the item opens above itself (DropdownMenu items), e.g. the prototype's scenarios. Wins over `onClick` and
 	 * `navigateTo`, and the item never becomes active.
@@ -328,7 +362,14 @@ function Sidebar({
 	const iconSwapMotion = prefersReducedMotion ? iconSwapReducedVariants : iconSwapVariants;
 	const urgent = [...groups.flat(), ...footerItems].some((item) => isUrgentAlert(item.alert));
 
-	const handleItemClick = (item: SidebarNavItem) => {
+	const handleItemClick = (item: SidebarNavItem, event: React.MouseEvent<HTMLElement>) => {
+		// A page's link: Cmd/Ctrl+click opens it in a new tab (and moves there), leaving this page as it is.
+		const link = linkOf(item);
+		if (link) handleLinkClick(event, link, () => activateItem(item));
+		else activateItem(item);
+	};
+
+	const activateItem = (item: SidebarNavItem) => {
 		setActiveItem(item.label);
 		if (item.onClick) {
 			item.onClick();
@@ -336,6 +377,11 @@ function Sidebar({
 			onNavigate?.(item.navigateTo);
 		}
 	};
+
+	// Only a row that goes to a page is a link: `onClick` wins over `navigateTo`, and a menu over both.
+	function linkOf(item: SidebarNavItem) {
+		return item.href && item.navigateTo && !item.onClick && !item.menu ? item.href : undefined;
+	}
 
 	const handleToggleCollapsed = () => {
 		const next = !collapsed;
@@ -355,7 +401,8 @@ function Sidebar({
 			collapsed={collapsed}
 			menu={item.menu}
 			alert={item.alert}
-			onClick={item.menu ? undefined : () => handleItemClick(item)}
+			href={linkOf(item)}
+			onClick={item.menu ? undefined : (event) => handleItemClick(item, event)}
 		/>
 	);
 

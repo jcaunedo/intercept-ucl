@@ -36,7 +36,7 @@ type MessageHeaderProps = Omit<React.ComponentProps<"header">, "children"> & {
 	/** The patient it's about: a 40px bar under the header. None leaves it out. */
 	patient?: MessageHeaderPatient;
 	/**
-	 * A short summary of the patient, after their place on the bar ("Sarah Miller · MICU · Bed 11 - MAP has fallen…"):
+	 * A short summary of the patient, after their place on the bar ("Miller, Sarah · MICU · Bed 11 - MAP has fallen…"):
 	 * 14/20 `foreground`, on the bar's one line, cut off with an ellipsis. On a button bar it's also its description.
 	 */
 	patientSummary?: string;
@@ -45,7 +45,7 @@ type MessageHeaderProps = Omit<React.ComponentProps<"header">, "children"> & {
 	 * set (Intercept Live passes this one where the details can't show, below xl).
 	 */
 	onOpenPatient?: () => void;
-	/** Read after the patient's name on the bar ("Sarah Miller, open patient"). */
+	/** Read after the patient's name on the bar ("Miller, Sarah, open patient"). */
 	openPatientLabel?: string;
 	/** A Back button before the avatar (a narrow screen showing the conversation alone). */
 	onBack?: () => void;
@@ -59,7 +59,7 @@ type MessageHeaderProps = Omit<React.ComponentProps<"header">, "children"> & {
 	onToggleDetails?: () => void;
 	/** Whether the details are open: the bar is `aria-expanded`. */
 	detailsOpen?: boolean;
-	/** Read after the patient's name on the toggle bar ("Sarah Miller, patient details"). */
+	/** Read after the patient's name on the toggle bar ("Miller, Sarah, patient details"). */
 	detailsLabel?: string;
 	/** The details' element id, for the toggle bar's `aria-controls`. */
 	detailsId?: string;

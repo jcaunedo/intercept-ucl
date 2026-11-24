@@ -6,7 +6,7 @@ status: proposed — confirm with Intercept
 <!--
 Created: Nov 16, 2026
 Created by: Julio Caunedo
-Last updated: Nov 23, 2026
+Last updated: Nov 24, 2026
 Scope: The left navigation (UCL Sidebar): its three workspaces (Clinical, Administration, Marketplace), the items each one shows, the workspace switcher, Ask Intercept Live's place in it, and the rail's states. Source: documents/Intercept Live — Left Nav Spec.md and intercept.ds `sidebar` (1001:544).
 Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, records where the design follows it and where it doesn't yet, and lists what's still open.
 -->
@@ -19,7 +19,7 @@ Purpose: Turns the Left Nav Spec into requirements and acceptance criteria, reco
 **Audience:** Every signed-in user, in each workspace they have (§2): intensivists, APPs and Critical Care RNs in Clinical; administrators and operations roles in Administration; Independent Clinicians in Marketplace  
 **Version:** 0.1  
 **Status:** Draft — pending product validation with Intercept  
-**Last updated:** November 23, 2026
+**Last updated:** November 24, 2026
 
 ---
 
@@ -204,6 +204,7 @@ Ask Intercept Live opens a column next to the Sidebar rather than a page, so it'
 One item at a time is the current page: a semibold `foreground` label and the item's solid icon, no fill (intercept.ds `sidebar-menu-button` Active), with `aria-current="page"`. It shows in both the expanded and the collapsed rail.
 
 - While a patient's page is open, no item is current; the page underneath comes back current on Back (DESIGN.md "Sidebar").
+- ✅ **Resolved:** each page's item is a link to that page's address: a click opens the page here, and Cmd/Ctrl+click opens it in a new tab and moves to that tab (a middle-click or the browser's "Open in new tab" open it too, behind). The page here doesn't change. Ask Intercept Live and the Prototype menu stay buttons.
 - Items with no solid icon keep their outline icon when current: ~~Ask Intercept Live, Inbox,~~ Protocols, ~~Schedule,~~ every Marketplace and Administration item, and the footer. ✅ **Resolved:** Inbox and Schedule show their solid icons when current (archielabs.ds `inbox-solid`, `calendar-solid`), and Ask Intercept Live has one too (`sparkles-solid`), shown while its column is open, as Ask is never the current page (NAV-030).
 
 ⚠️ **Decision needed:** the spec's current page is a white fill, a grey ring, a blue icon and a semibold label. intercept.ds keeps no fill and a solid icon; UCL follows intercept.ds until design takes the spec's look.

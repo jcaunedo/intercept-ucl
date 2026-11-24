@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { PatientCardAlert, PatientCardScore, type PatientCensusCardProps } from "@/components/cards/patient-census-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/data-display/avatar";
+import { handleLinkClick } from "@/lib/new-tab-click";
 import { cn } from "@/lib/utils";
 
 /** One patient in the census list. */
@@ -35,6 +36,11 @@ type CensusListProps = Omit<React.ComponentProps<"ul">, "children"> & {
 	currentId?: string;
 	/** Picking a patient. Without it, the rows aren't buttons. */
 	onSelectPatient?: (patientId: string) => void;
+	/**
+	 * Each patient's address, with `onSelectPatient`: the rows become links. A plain click still calls `onSelectPatient`;
+	 * Cmd/Ctrl+click, a middle-click or "Open in new tab" open the patient in a new tab.
+	 */
+	patientHref?: (patientId: string) => string | undefined;
 	/** Shown when no patient is in hospital. */
 	emptyText?: string;
 };
@@ -65,6 +71,7 @@ function CensusList({
 	patients,
 	currentId,
 	onSelectPatient,
+	patientHref,
 	emptyText = "No patients in hospital",
 	className,
 	...props
@@ -132,18 +139,29 @@ function CensusList({
 					</>
 				);
 				const rowClassName = cn("flex w-full flex-col gap-1 rounded-lg px-3 py-2 text-left", current && "bg-accent");
+				const interactiveClassName =
+					"transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring";
+				const href = onSelectPatient ? patientHref?.(patient.id) : undefined;
 				return (
 					<li key={patient.id}>
-						{onSelectPatient ? (
+						{href && onSelectPatient ? (
+							// A link the app follows in place; Cmd/Ctrl+click opens the patient in a new tab.
+							<a
+								ref={current ? (currentRef as React.Ref<HTMLAnchorElement>) : undefined}
+								href={href}
+								aria-current={current ? "page" : undefined}
+								onClick={(event) => handleLinkClick(event, href, () => onSelectPatient(patient.id))}
+								className={cn(rowClassName, interactiveClassName)}
+							>
+								{content}
+							</a>
+						) : onSelectPatient ? (
 							<button
 								ref={current ? (currentRef as React.Ref<HTMLButtonElement>) : undefined}
 								type='button'
 								aria-current={current ? "page" : undefined}
 								onClick={() => onSelectPatient(patient.id)}
-								className={cn(
-									rowClassName,
-									"transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
-								)}
+								className={cn(rowClassName, interactiveClassName)}
 							>
 								{content}
 							</button>

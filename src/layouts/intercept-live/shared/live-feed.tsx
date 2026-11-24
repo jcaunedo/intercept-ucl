@@ -209,6 +209,7 @@ function LiveFeedPanel({ open, onOpenChange, alerts, patients, records = [], onO
 				},
 				onOpenAlert: navigation ? (alertId) => navigation.openAlert(patient.id, alertId) : undefined,
 				onOpenPatient: onOpenPatient ? () => onOpenPatient(patient.id) : undefined,
+				patientHref: navigation?.patientHref?.(patient.id),
 			});
 		});
 	}, [alerts, patients, records, navigation, onOpenPatient, tones]);

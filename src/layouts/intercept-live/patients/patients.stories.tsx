@@ -571,6 +571,7 @@ export const LoadError: Story = {
 /** The Sidebar's Monitoring opens the Monitoring page: the census as live monitors, where alerts and NEWS2 lead. */
 export const GoToMonitoring: Story = {
 	play: async ({ canvas, userEvent }) => {
+		// A button here: this story's shell has no addresses (`locationHref`), so the Sidebar's pages aren't links.
 		await userEvent.click(canvas.getByRole("button", { name: /^Monitoring/ }));
 		await waitFor(() => expect(canvas.getByRole("group", { name: "Density" })).toBeVisible());
 	},
@@ -612,7 +613,7 @@ export const AskFromMessages: Story = {
 		const conversations = within(await canvas.findByRole("region", { name: "Conversations" }));
 		await expect(canvas.queryByRole("button", { name: /^Ask Intercept Live about/ })).not.toBeInTheDocument();
 		const first = within(conversations.getByRole("list")).getAllByRole("button")[0];
-		const about = /About (.+?), /.exec(first.getAttribute("aria-label") ?? "")?.[1] ?? "";
+		const about = /About (.+?, .+?), /.exec(first.getAttribute("aria-label") ?? "")?.[1] ?? "";
 		await expect(about).not.toBe("");
 		// The details column has no Ask button of its own; below xl the header's patient bar opens the patient.
 		const details = canvasElement.querySelector<HTMLElement>("[aria-label='Patient details']");
@@ -620,10 +621,8 @@ export const AskFromMessages: Story = {
 		await expect(canvas.getByRole("button", { name: `${about}, open patient` })).toBeVisible();
 		await userEvent.click(canvas.getByRole("button", { name: "Ask Intercept Live" }));
 		const panel = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
-		const [firstName, ...rest] = about.split(" ");
-		await expect(
-			await panel.findByRole("button", { name: `Remove ${rest.join(" ")}, ${firstName} from the chat` }),
-		).toBeVisible();
+		// The row shows the patient last name first, as the chat's chip does.
+		await expect(await panel.findByRole("button", { name: `Remove ${about} from the chat` })).toBeVisible();
 	},
 };
 
@@ -712,6 +711,7 @@ function LiveDirectory(props: React.ComponentProps<typeof Patients>) {
 			defaultAlert={location.defaultAlert}
 			defaultLocationState={location.defaultLocationState}
 			onLocationChange={location.onLocationChange}
+			locationHref={location.locationHref}
 		/>
 	);
 }

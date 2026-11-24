@@ -203,12 +203,23 @@ function usePrototypeLocation(pages: readonly InterceptLivePage[], fallback: { p
 		},
 		[],
 	);
+	// A place's address for InterceptLive's links (Cmd/Ctrl+click opens it in a new tab): the address people see (Storybook
+	// UI's, else the story frame's), with only the page and the patient, so the new tab opens there with nothing else open.
+	const locationHref = React.useCallback(({ page, patientId }: { page: InterceptLivePage; patientId?: string }) => {
+		const windows = storyWindows();
+		const url = new URL(windows[windows.length - 1].location.href);
+		for (const name of locationParams) url.searchParams.delete(name);
+		url.searchParams.set("page", page.toLowerCase());
+		if (patientId) url.searchParams.set("patient", patientId);
+		return url.href;
+	}, []);
 	return {
 		defaultPage: initial.page,
 		defaultPatient: initial.patient,
 		defaultAlert: initial.alert,
 		defaultLocationState: initial.state,
 		onLocationChange,
+		locationHref,
 	};
 }
 

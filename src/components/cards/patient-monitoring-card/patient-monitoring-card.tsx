@@ -45,6 +45,7 @@ import {
 	useExpandClip,
 	useMotionPreference,
 } from "@/lib/motion";
+import { handleLinkClick } from "@/lib/new-tab-click";
 import { cn } from "@/lib/utils";
 
 // `md` for the Comfortable panel; `sm` for Compact (PRD Monitoring MON-012): tighter padding, smaller type and a shorter
@@ -392,7 +393,13 @@ function PatientMonitoringCard({
 
 	const openRef = React.useRef<HTMLAnchorElement & HTMLButtonElement>(null);
 	const nameContent = href ? (
-		<a ref={openRef} href={href} className={patientCardOpenTargetClassName}>
+		<a
+			ref={openRef}
+			href={href}
+			// With `onOpen` too, a plain click opens the patient in place, Cmd/Ctrl+click in a new tab.
+			onClick={onOpen ? (event) => handleLinkClick(event, href, onOpen) : undefined}
+			className={patientCardOpenTargetClassName}
+		>
 			{name}
 		</a>
 	) : onOpen ? (

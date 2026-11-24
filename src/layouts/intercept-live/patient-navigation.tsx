@@ -79,6 +79,12 @@ type PatientNavigation = {
 	patientOpen: boolean;
 	/** When the clinician opened each patient's details in this session, ISO 8601 by patient id (Recently viewed). */
 	viewedAt: Record<string, string>;
+	/**
+	 * A patient's page over the current one, as an address (the shell's `locationHref`), so a card or a row can be a link:
+	 * a plain click still opens the patient in place, and Cmd/Ctrl+click, a middle-click or "Open in new tab" open them in
+	 * a new tab. Undefined without addresses.
+	 */
+	patientHref?: (patientId: string) => string | undefined;
 };
 
 /** A hospital tab's alert count, clicked: the hospital to open Monitoring on. `key` tells one click from the next. */

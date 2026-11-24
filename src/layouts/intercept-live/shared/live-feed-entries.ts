@@ -29,9 +29,19 @@ type PatientFeedSource = {
 	onOpenAlert?: (alertId: string) => void;
 	/** What the other lines open, e.g. the patient's page from everyone's feed. */
 	onOpenPatient?: () => void;
+	/** The patient's page as an address, with `onOpenPatient`: those lines become links (Cmd/Ctrl+click opens a new tab). */
+	patientHref?: string;
 };
 
-function patientFeedEntries({ timeline, activity, alerts, patient, onOpenAlert, onOpenPatient }: PatientFeedSource): LiveFeedEntry[] {
+function patientFeedEntries({
+	timeline,
+	activity,
+	alerts,
+	patient,
+	onOpenAlert,
+	onOpenPatient,
+	patientHref,
+}: PatientFeedSource): LiveFeedEntry[] {
 	const unique = [...new Map(alerts.map((alert) => [alert.id, alert])).values()];
 	const titles = unique.map((alert) => alert.title.toLowerCase());
 	const events = timeline ? withActivityEvents(timeline, activity).events : [];
@@ -48,6 +58,7 @@ function patientFeedEntries({ timeline, activity, alerts, patient, onOpenAlert, 
 					title: event.label,
 					patient,
 					onSelect: onOpenPatient,
+					href: onOpenPatient ? patientHref : undefined,
 				}),
 			),
 		...unique.flatMap((alert): LiveFeedEntry[] => {

@@ -4,7 +4,7 @@ import { expect, fn, waitFor, within } from "storybook/test";
 import { MessageHeader } from "./message-header";
 
 const kelly = { name: "Kelly Ortiz, RN", initials: "KO", tone: 4, presence: "online" } as const;
-const sarah = { name: "Sarah Miller", place: "MICU · Bed 11", initials: "SM", tone: 1 } as const;
+const sarah = { name: "Miller, Sarah", place: "MICU · Bed 11", initials: "SM", tone: 1 } as const;
 
 const meta = {
 	title: "Data Display/MessageHeader",
@@ -38,7 +38,7 @@ export const Default: Story = {
 	play: async ({ canvasElement, args, userEvent }) => {
 		const canvas = within(canvasElement);
 		await expect(canvas.getByRole("heading", { level: 2, name: "Kelly Ortiz, RN" })).toBeVisible();
-		const bar = canvas.getByRole("button", { name: "Sarah Miller, patient details" });
+		const bar = canvas.getByRole("button", { name: "Miller, Sarah, patient details" });
 		await expect(bar).toHaveAttribute("aria-expanded", "false");
 		await userEvent.click(bar);
 		await expect(args.onToggleDetails).toHaveBeenCalledOnce();
@@ -75,7 +75,7 @@ export const Urgent: Story = {
 export const DetailsOpen: Story = {
 	args: { detailsOpen: true, detailsId: "patient-details" },
 	play: async ({ canvasElement }) => {
-		const bar = within(canvasElement).getByRole("button", { name: "Sarah Miller, patient details" });
+		const bar = within(canvasElement).getByRole("button", { name: "Miller, Sarah, patient details" });
 		await expect(bar).toHaveAttribute("aria-expanded", "true");
 		await expect(bar).toHaveAttribute("aria-controls", "patient-details");
 	},
@@ -88,7 +88,7 @@ export const DetailsOpen: Story = {
 export const OpensPatient: Story = {
 	args: { onToggleDetails: undefined },
 	play: async ({ canvasElement, args, userEvent }) => {
-		const bar = within(canvasElement).getByRole("button", { name: "Sarah Miller, open patient" });
+		const bar = within(canvasElement).getByRole("button", { name: "Miller, Sarah, open patient" });
 		await expect(bar).not.toHaveAttribute("aria-expanded");
 		await userEvent.click(bar);
 		await expect(args.onOpenPatient).toHaveBeenCalledOnce();
@@ -107,7 +107,7 @@ export const NoPatient: Story = {
 export const StaticPatient: Story = {
 	args: { onOpenPatient: undefined, onToggleDetails: undefined },
 	play: async ({ canvasElement }) => {
-		await expect(within(canvasElement).queryByRole("button", { name: /Sarah Miller/ })).toBeNull();
+		await expect(within(canvasElement).queryByRole("button", { name: /Miller, Sarah/ })).toBeNull();
 	},
 };
 
@@ -123,7 +123,7 @@ export const PatientSummary: Story = {
 	args: { patientSummary: sarahSummary },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const bar = canvas.getByRole("button", { name: "Sarah Miller, patient details" });
+		const bar = canvas.getByRole("button", { name: "Miller, Sarah, patient details" });
 		await expect(bar).toHaveTextContent(/MICU · Bed 11 +- +MAP has fallen/);
 		await expect(bar).toHaveAccessibleDescription(sarahSummary);
 	},

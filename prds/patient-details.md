@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Oct 28, 2026
 Created by: Julio Caunedo
-Last updated: Nov 20, 2026
+Last updated: Nov 24, 2026
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -20,7 +20,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 20, 2026
+**Last updated:** November 24, 2026
 
 ---
 
@@ -144,6 +144,8 @@ Ideas from Intercept's clinical team (Slack, Israel Villanueva). None is in the 
 | PD-003 | Virtual Sepsis, a Messages thread | The page on the matching section (Sepsis, Care team & messages) |
 
 - The page has its own URL per patient and tenant, so it can be bookmarked, shared with a colleague who has access, and restored after a reload.
+- ✅ **Resolved:** the places that open a patient are links to that URL: the Monitoring and Patients cards, the Patients table's rows, the census list and the live feed's patient lines. A click opens the page here; Cmd/Ctrl+click opens it in a new tab and moves to that tab, leaving this page as it is. Alerts, Inbox rows and Messages conversations still open in place only.
+- ✅ **Resolved:** the browser tab's title is the patient's name while their page is open ("Carlson, Linda · Intercept Live"), else the page's ("Monitoring · Intercept Live"), so tabs opened this way tell apart.
 - Back returns to where the clinician came from with its filters, sort and scroll intact. The breadcrumb names it ("Census / Miller, Sarah").
 - ℹ️ Patient details is not a Sidebar item: it opens over the page it came from~~, and that page stays active in the Sidebar~~.
 - ✅ **Resolved:** while a patient's page is open, no Sidebar item shows as active (Monitoring's icon is in its default state, not its active, filled one); the page it came from is still where Back and the breadcrumb lead, and comes back active on return.

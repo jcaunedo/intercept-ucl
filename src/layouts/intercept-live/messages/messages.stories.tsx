@@ -50,7 +50,7 @@ export const Default: Story = {
 		const conversations = within(await canvas.findByRole("region", { name: "Conversations" }));
 		const first = within(conversations.getByRole("list")).getAllByRole("button")[0];
 		await expect(first).toHaveAttribute("aria-current", "true");
-		await expect(first).toHaveAccessibleName(/^Kelly Ortiz, RN, Urgent, About Sarah Miller/);
+		await expect(first).toHaveAccessibleName(/^Kelly Ortiz, RN, Urgent, About Miller, Sarah/);
 		await expect(await canvas.findByRole("log", { name: "Messages with Kelly Ortiz, RN" })).toBeVisible();
 	},
 };
@@ -73,7 +73,7 @@ export const OnePatientPerConversation: Story = {
 			"placeholder",
 			"Message about Sarah Miller…",
 		);
-		await userEvent.click(conversations.getByRole("button", { name: /^Kelly Ortiz, RN, About Emily Carter/ }));
+		await userEvent.click(conversations.getByRole("button", { name: /^Kelly Ortiz, RN, About Carter, Emily/ }));
 		await expect(await canvas.findByRole("region", { name: "Conversation with Kelly Ortiz, RN about Emily Carter" })).toBeVisible();
 		const emily = within(canvas.getByRole("log", { name: "Messages with Kelly Ortiz, RN" }));
 		await expect(emily.getByText(/NIV mask/)).toBeVisible();
@@ -98,7 +98,7 @@ export const ReadAConversation: Story = {
 		const conversations = within(await canvas.findByRole("region", { name: "Conversations" }));
 		const row = conversations.getByRole("button", { name: /^Brittany Cole, RN, 3 unread/ });
 		await userEvent.click(row);
-		await waitFor(() => expect(row).toHaveAccessibleName(/^Brittany Cole, RN, About Gary Peterson/));
+		await waitFor(() => expect(row).toHaveAccessibleName(/^Brittany Cole, RN, About Peterson, Gary/));
 		await expect(canvas.getByRole("log", { name: "Messages with Brittany Cole, RN" })).toBeVisible();
 	},
 };

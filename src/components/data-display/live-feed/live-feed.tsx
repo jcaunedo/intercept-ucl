@@ -26,6 +26,7 @@ import {
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { revealVariants, useMotionPreference } from "@/lib/motion";
 import { formatDayLabel } from "@/lib/relative-date";
+import { handleLinkClick } from "@/lib/new-tab-click";
 import { cn } from "@/lib/utils";
 
 /** What a line is: an alert as it fired, a change of an alert's status, or something done or measured. */
@@ -61,7 +62,16 @@ type LiveFeedEntry = {
 	patient?: LiveFeedPatient;
 	/** Makes the line a button, e.g. to open the alert or the patient. */
 	onSelect?: () => void;
+	/**
+	 * What the line opens, as an address, with `onSelect`: the line becomes a link. A plain click still calls `onSelect`;
+	 * Cmd/Ctrl+click, a middle-click or "Open in new tab" open it in a new tab.
+	 */
+	href?: string;
 };
+
+// A line that opens something, as a button or a link.
+const entryButtonClassName =
+	"flex w-full cursor-pointer rounded-md px-1 py-2 text-left outline-none transition-colors duration-160 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none";
 
 type LiveFeedProps = Omit<React.ComponentProps<"div">, "children"> & {
 	entries: LiveFeedEntry[];
@@ -239,11 +249,20 @@ function LiveFeed({
 											animate='animate'
 											className='border-b border-border last:border-b-0'
 										>
-											{entry.onSelect ? (
+											{entry.onSelect && entry.href ? (
+												// A link the app follows in place; Cmd/Ctrl+click opens it in a new tab.
+												<a
+													href={entry.href}
+													onClick={(event) => handleLinkClick(event, entry.href, () => entry.onSelect?.())}
+													className={entryButtonClassName}
+												>
+													<EntryBody entry={entry} />
+												</a>
+											) : entry.onSelect ? (
 												<button
 													type='button'
 													onClick={entry.onSelect}
-													className='flex w-full cursor-pointer rounded-md px-1 py-2 text-left outline-none transition-colors duration-160 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none'
+													className={entryButtonClassName}
 												>
 													<EntryBody entry={entry} />
 												</button>

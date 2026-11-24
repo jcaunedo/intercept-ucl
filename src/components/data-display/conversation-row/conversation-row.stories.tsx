@@ -16,7 +16,7 @@ const meta = {
 		role: "Bedside nurse · Sidney Regional",
 		preview: "Her family is here too and asking for you.",
 		sentAt: minutesAgo(2),
-		patient: { name: "Sarah Miller", place: "MICU · Bed 11", initials: "SM", tone: 3 },
+		patient: { name: "Miller, Sarah", place: "MICU · Bed 11", initials: "SM", tone: 3 },
 		onClick: fn(),
 	},
 	decorators: [
@@ -43,15 +43,33 @@ export const Default: Story = {
 	},
 };
 
-/** Unread: the bold name and the brand-colored time; the count is read to screen readers. */
+/** Unread: the bold name and the unread icon after the time; the count is read to screen readers. */
 export const Unread: Story = {
 	args: { unread: 3 },
 	play: async ({ canvasElement }) => {
 		await expect(within(canvasElement).getByRole("button")).toHaveAccessibleName(/3 unread/);
+		await expect(within(canvasElement).getByTitle("Unread")).toBeVisible();
 	},
 };
 
-/** The open conversation: the `background` fill on the list's surface. */
+/** Unread and urgent: the unread icon, then Urgent 4px after it. Without a count, the row reads "Unread". */
+export const UnreadUrgent: Story = {
+	args: { unread: true, urgent: true },
+	play: async ({ canvasElement }) => {
+		await expect(within(canvasElement).getByRole("button")).toHaveAccessibleName(/^Kelly Ortiz, RN, Urgent, Unread,/);
+	},
+};
+
+/** Reading a conversation: the unread icon's slot closes and the time slides over (no jump). Click to toggle. */
+export const MarkAsRead: Story = {
+	args: { urgent: true },
+	render: function Render(args) {
+		const [unread, setUnread] = React.useState(true);
+		return <ConversationRow {...args} unread={unread} onClick={() => setUnread((value) => !value)} />;
+	},
+};
+
+/** The open conversation: the `background` fill on the list's surface and a dark bar on its left edge. */
 export const Selected: Story = {
 	args: { selected: true },
 	play: async ({ canvasElement }) => {
@@ -111,6 +129,16 @@ export const AllVariants: Story = {
 			<li>
 				<ConversationRow
 					{...args}
+					urgent
+					unread={1}
+					person={{ name: "Laura Price, RN", initials: "LP", tone: 2, presence: "online" }}
+					preview='MAP 58 again after the bolus. Can you look now?'
+					sentAt={minutesAgo(1)}
+				/>
+			</li>
+			<li>
+				<ConversationRow
+					{...args}
 					selected
 					person={{ name: "Nicole Bennett, RN", initials: "NB", tone: 6, presence: "online" }}
 					role='Charge nurse · Chadron Memorial'
@@ -127,7 +155,7 @@ export const AllVariants: Story = {
 					role='Bedside nurse · Chadron Memorial'
 					preview='She needed 2 pillows to lie flat tonight. Lungs sound wetter than this morning.'
 					sentAt={minutesAgo(21)}
-					patient={{ name: "Margaret Hayes", place: "Med-Surg · Bed 4", initials: "MH", tone: 9 }}
+					patient={{ name: "Hayes, Margaret", place: "Med-Surg · Bed 4", initials: "MH", tone: 9 }}
 				/>
 			</li>
 			<li>
