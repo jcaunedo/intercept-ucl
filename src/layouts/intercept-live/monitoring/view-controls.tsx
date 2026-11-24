@@ -23,7 +23,8 @@ type MonitorPlot = "waveform" | "trends";
 type ToggleOption<Value extends string> = {
 	id: Value;
 	label: string;
-	icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+	/** Required with `iconOnly`; a text option (a time window) can do without. */
+	icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
 const densities: ToggleOption<PanelDensity>[] = [
@@ -52,7 +53,7 @@ function SegmentedButton({
 	onPress,
 }: {
 	label: string;
-	icon: ToggleOption<string>["icon"];
+	icon?: ToggleOption<string>["icon"];
 	pressed: boolean;
 	disabled: boolean;
 	iconOnly: boolean;
@@ -79,7 +80,7 @@ function SegmentedButton({
 				/>
 			) : null}
 			<span className='relative inline-flex items-center gap-1.5'>
-				<Icon aria-hidden='true' />
+				{Icon ? <Icon aria-hidden='true' /> : null}
 				{iconOnly ? null : label}
 			</span>
 		</button>

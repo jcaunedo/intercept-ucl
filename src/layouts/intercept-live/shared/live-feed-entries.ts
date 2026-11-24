@@ -2,7 +2,7 @@ import type { LiveFeedEntry, LiveFeedKind, LiveFeedPatient } from "@/components/
 
 import { isOpenAlert, type TriageAlert, type TriageAlertSeverity } from "../monitoring/triage-queue";
 import { withActivityEvents, type PatientActivity } from "../patient-details/activity";
-import type { PatientTimeline } from "../patient-details/sections/timeline-section";
+import type { PatientTimeline, TimelineEvent } from "../patient-details/sections/timeline-section";
 
 // The Live feed's lines for one patient (Nov 11, 2026, user's calls: "like a log, not just alerts", "keep historical
 // data"; the same lines on the patient's page and in everyone's feed, "applied globally"): the record's timeline events
@@ -94,4 +94,37 @@ function patientFeedEntries({
 	];
 }
 
-export { patientFeedEntries, type PatientFeedSource };
+/**
+ * The timeline with the patient's alerts on its events lane (Nov 24, 2026): each alert as it fired, in its severity, and
+ * a resolved one again as it was resolved. They replace the timeline's own alert marks for the same alert, as in the
+ * feed. An open alert keeps its id, so its bell opens it; a resolved alert's doesn't (as its feed lines).
+ */
+function withAlertEvents(timeline: PatientTimeline, alerts: TriageAlert[]): PatientTimeline {
+	const unique = [...new Map(alerts.map((alert) => [alert.id, alert])).values()];
+	if (!unique.length) return timeline;
+	const titles = unique.map((alert) => alert.title.toLowerCase());
+	const alertEvents = unique.flatMap((alert): TimelineEvent[] => {
+		const fired: TimelineEvent = {
+			id: `alert-${alert.id}`,
+			at: alert.firedAt,
+			kind: "alert",
+			label: alert.title,
+			severity: alert.severity,
+			alertId: isOpenAlert(alert) ? alert.id : undefined,
+		};
+		if (alert.status !== "resolved" || !alert.addressed) return [fired];
+		return [
+			fired,
+			{ id: `alert-${alert.id}-resolved`, at: alert.addressed.at, kind: "alert", label: alert.title, severity: "resolved" },
+		];
+	});
+	return {
+		...timeline,
+		events: [
+			...timeline.events.filter((event) => event.kind !== "alert" || !titles.some((title) => event.label.toLowerCase().includes(title))),
+			...alertEvents,
+		].sort((a, b) => Date.parse(a.at) - Date.parse(b.at)),
+	};
+}
+
+export { patientFeedEntries, withAlertEvents, type PatientFeedSource };

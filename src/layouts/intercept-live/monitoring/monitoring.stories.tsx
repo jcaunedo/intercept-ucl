@@ -221,7 +221,8 @@ export const Scenario1HeartFailure: Story = {
 		await expect(await canvas.findByRole("complementary", { name: "Messages" })).toBeInTheDocument();
 		// Her Timeline has the call, and not as ended: the alert closing behind her page didn't end it.
 		await userEvent.click(canvas.getByRole("tab", { name: "Timeline" }));
-		await userEvent.click(await canvas.findByRole("switch", { name: "Show as table" }));
+		// The table view (the View toggle's Table, Nov 24, 2026; a "Show as table" switch before).
+		await userEvent.click(await canvas.findByRole("button", { name: "Table" }));
 		const events = () => within(canvas.getByRole("table", { name: "Events, newest first." }));
 		await expect(await events().findByText(/^Video consult with Kayla Brandt, RN/)).toBeInTheDocument();
 		await expect(events().queryByText(/^Video consult ended/)).toBeNull();

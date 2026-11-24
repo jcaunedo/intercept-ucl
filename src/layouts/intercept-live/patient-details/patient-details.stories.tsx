@@ -76,7 +76,7 @@ type Story = StoryObj<typeof meta>;
  * and isolation, all outline). Line tabs: Overview (the AI clinical summary across the top, then her clinical findings:
  * key labs, temperature, MAP and the ventilator; then cards: live monitoring, care plan, Up next, medications, oxygen and
  * infusions, recent orders, encounter and referrals; her alerts are in the Alerts panel, from View alerts), then
- * Timeline (the latest vitals over the chart), Labs, Chart, Care Plan, Sepsis, Medications, Orders, Notes, EMR and Live
+ * Timeline (every value on one time axis, each lane ending in its Previous and Now values), Labs, Chart, Care Plan, Sepsis, Medications, Orders, Notes, EMR and Live
  * Camera. Every Census patient has the same
  * depth of data: go back and open another. Back returns to the Census as it was.
  */
@@ -99,6 +99,74 @@ export const Default: Story = {
 		await expect(actions.getByRole("button", { name: "Video consult" })).toBeVisible();
 		await expect(actions.getByRole("button", { name: "Messages, 3 unread" })).toBeVisible();
 		await expect(canvas.getByRole("button", { name: /^Care team: / })).toBeVisible();
+	},
+};
+
+/**
+ * The Timeline (Nov 24, 2026, Intercept-Live `311:8791`): a filter bar (search, a chip per lane group, the events shown,
+ * 15 m to 24 h, chart or table), then the chart as a table: time columns over an events lane, each lane ending in an
+ * earlier value (Previous: at the window's start, or wherever the pointer is on the chart, its header then that time)
+ * beside its value now. Events are a letter on their kind's color; an alert is Monitoring's bell
+ * in its severity's color, and an open one opens the alert.
+ */
+export const Timeline: Story = {
+	// The alerts' details, so a bell has an alert modal to open.
+	args: {
+		alertDetails: sampleAlertDetails({
+			alerts: sampleMonitoringAlerts,
+			censusPatients: samplePatients,
+			monitoringPatients: sampleMonitoringPatients,
+			records: samplePatientRecords,
+		}),
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
+		await userEvent.click(canvas.getByRole("tab", { name: "Timeline" }));
+		// The tab is heavy (every lane drawn); under a full test run it can take more than a second.
+		const chart = within(await canvas.findByRole("group", { name: /^Timeline chart/ }, { timeout: 5000 }));
+		// The latest values are the chart's last two columns, no longer tiles over it.
+		await expect(chart.getByText("Previous")).toBeInTheDocument();
+		await expect(chart.getByText("Now")).toBeInTheDocument();
+		await expect(canvas.queryByRole("heading", { name: "Latest values" })).toBeNull();
+		await expect(chart.getByText("Last 12 h")).toBeInTheDocument();
+		// The arrow keys move the crosshair: Previous reads it (its header the time), Now stays now.
+		const chartGroup = canvas.getByRole("group", { name: /^Timeline chart/ });
+		chartGroup.focus();
+		await userEvent.keyboard("{ArrowLeft}");
+		await expect(chart.queryByText("Previous")).toBeNull();
+		await expect(chart.getByText("Now")).toBeInTheDocument();
+		await userEvent.keyboard("{Escape}");
+		await expect(chart.getByText("Previous")).toBeInTheDocument();
+
+		// A chip shows its group's lanes alone; pressed again, every lane is back.
+		const filters = within(canvas.getByRole("group", { name: "Timeline filters" }));
+		const labs = filters.getByRole("button", { name: "Labs" });
+		await userEvent.click(labs);
+		await expect(labs).toHaveAttribute("aria-pressed", "true");
+		await expect(chart.queryByText("HR")).toBeNull();
+		await expect(chart.getByText("Lactate")).toBeInTheDocument();
+		await userEvent.click(labs);
+		await expect(chart.getByText("HR")).toBeInTheDocument();
+
+		// The ICU's short windows.
+		await userEvent.click(within(filters.getByRole("group", { name: "Time window" })).getByRole("button", { name: "15 m" }));
+		await expect(chart.getByText("Last 15 min")).toBeInTheDocument();
+		await userEvent.click(within(filters.getByRole("group", { name: "Time window" })).getByRole("button", { name: "12 h" }));
+
+		// Her open alert's bell opens the alert.
+		await userEvent.click(chart.getByRole("button", { name: /Critical alert: Sepsis candidate\. Open alert$/ }));
+		const alert = within(await within(document.body).findByRole("dialog"));
+		// The modal fades in, so its heading turns visible a moment after it's there.
+		const heading = await alert.findByRole("heading", { name: "Sepsis candidate" });
+		await waitFor(() => expect(heading).toBeVisible());
+		await userEvent.keyboard("{Escape}");
+		await waitFor(() => expect(within(document.body).queryByRole("dialog")).toBeNull());
+
+		// The table view lists the events with their kind.
+		await userEvent.click(within(filters.getByRole("group", { name: "View" })).getByRole("button", { name: "Table" }));
+		const events = within(await canvas.findByRole("table", { name: "Events, newest first." }));
+		await expect(events.getAllByText("Critical alert").length).toBeGreaterThan(0);
 	},
 };
 

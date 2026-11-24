@@ -1,15 +1,20 @@
 import * as React from "react";
+import { BellRingIcon, ChartLineIcon, TableIcon } from "lucide-react";
 
-import { Switch } from "@/components/forms/switch";
-import { Tabs, TabsList, TabsTrigger } from "@/components/navigation/tabs";
+import { PatientCardAlert } from "@/components/cards/patient-census-card";
+import type { MonitorVitals } from "@/components/data-display/patient-monitor";
+import { FilterBar, FilterBarChip, FilterBarControls, FilterBarFilters } from "@/components/forms/filter-bar";
+import { SearchInput } from "@/components/forms/search-input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { cn } from "@/lib/utils";
 
-import { formatDateTime, formatTime, NoData, SectionCard } from "../section-parts";
+import { SegmentedToggle, type ToggleOption } from "../../monitoring/view-controls";
+import { formatDateTime, formatTime, NoData } from "../section-parts";
 
 // Patient details › Timeline (PRD PD-030–PD-032): the patient's monitor, pump, ventilator and lab values and the
 // events between them on one time axis, so cause and effect line up. A crosshair (pointer, or the arrow keys once the
-// chart has focus) reads every lane at one moment; "Show as table" is the chart's table alternative (PD-AC-17).
+// chart has focus) reads every lane at one moment; the table view is the chart's table alternative (PD-AC-17).
 
 /* -------------------------------------------------------------------------- */
 /* Data shapes (the app's API fills these)                                    */
@@ -44,6 +49,7 @@ type TimelineLaneColor =
 	| "lab-2";
 
 type TimelineLane = {
+	/** A monitor lane named after a monitor reading (`hr`, `spo2`, `map`, `rr`) shows the live value in Now. */
 	id: string;
 	group: TimelineLaneGroup;
 	label: string;
@@ -57,7 +63,7 @@ type TimelineLane = {
 	limits?: { low?: number; high?: number };
 	/** A latest reading older than this reads stale: kept, dimmed, with its time (PD-120). */
 	staleAfterMinutes?: number;
-	/** Print each dot's value above it (labs). */
+	/** Print each dot's value beside it (labs). */
 	showValues?: boolean;
 	/** Decimal places to show, so 3.0 doesn't read as 3. Values print as given when unset. */
 	decimals?: number;
@@ -67,7 +73,19 @@ type TimelineLane = {
 
 type TimelineEventKind = "care" | "drip" | "ventilator" | "lab" | "note" | "alert";
 
-type TimelineEvent = { id: string; at: string; kind: TimelineEventKind; label: string };
+/** An alert's severity, as Monitoring's alert badge shows it; `resolved` marks when it was resolved. */
+type TimelineAlertSeverity = "critical" | "high" | "medium" | "low" | "resolved";
+
+type TimelineEvent = {
+	id: string;
+	at: string;
+	kind: TimelineEventKind;
+	label: string;
+	/** An alert's severity: its bell takes the severity's color. An alert without one (a status change) shows a grey bell. */
+	severity?: TimelineAlertSeverity;
+	/** An open alert's id: its bell opens the alert (`onOpenAlert`). A resolved alert's doesn't, as in the Live feed. */
+	alertId?: string;
+};
 
 type PatientTimeline = { lanes: TimelineLane[]; events: TimelineEvent[] };
 
@@ -75,6 +93,10 @@ type TimelineSectionProps = {
 	timeline: PatientTimeline;
 	/** When the signed-in clinician last viewed the patient: everything after it is shaded. */
 	lastViewedAt?: string;
+	/** The bedside monitor's live readings: Now shows them on the lanes they name. */
+	liveVitals?: MonitorVitals;
+	/** Opens an open alert (its bell on the events lane) in the alert modal. */
+	onOpenAlert?: (alertId: string) => void;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -82,23 +104,35 @@ type TimelineSectionProps = {
 /* -------------------------------------------------------------------------- */
 
 const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 
+// 15 m, 30 m and 1 h for the ICU's minute-by-minute view (PD-030, Nov 24, 2026); 12 h is the default.
 const windows = [
-	{ id: "6", label: "6 h", hours: 6, tickHours: 1, tableMinutes: 30, keyStep: 5 },
-	{ id: "12", label: "12 h", hours: 12, tickHours: 2, tableMinutes: 60, keyStep: 10 },
-	{ id: "24", label: "24 h", hours: 24, tickHours: 4, tableMinutes: 120, keyStep: 20 },
+	{ id: "15m", label: "15 m", name: "15 min", minutes: 15, tickMinutes: 5, tableMinutes: 1, keyStep: 0.5 },
+	{ id: "30m", label: "30 m", name: "30 min", minutes: 30, tickMinutes: 5, tableMinutes: 5, keyStep: 1 },
+	{ id: "1h", label: "1 h", name: "1 h", minutes: 60, tickMinutes: 10, tableMinutes: 5, keyStep: 1 },
+	{ id: "6h", label: "6 h", name: "6 h", minutes: 360, tickMinutes: 60, tableMinutes: 30, keyStep: 5 },
+	{ id: "12h", label: "12 h", name: "12 h", minutes: 720, tickMinutes: 120, tableMinutes: 60, keyStep: 10 },
+	{ id: "24h", label: "24 h", name: "24 h", minutes: 1440, tickMinutes: 240, tableMinutes: 120, keyStep: 20 },
 ] as const;
 
 type TimelineWindow = (typeof windows)[number];
+type TimelineWindowId = TimelineWindow["id"];
+type TimelineView = "chart" | "table";
 
-const groups: { id: TimelineLaneGroup; label: string }[] = [
-	{ id: "monitor", label: "Monitor" },
-	{ id: "pump", label: "Pump" },
-	{ id: "ventilator", label: "Ventilator" },
-	{ id: "oxygen", label: "Oxygen" },
-	{ id: "support", label: "Other support" },
-	{ id: "labs", label: "Labs" },
+const windowOptions: ToggleOption<TimelineWindowId>[] = windows.map(({ id, label }) => ({ id, label }));
+const viewOptions: ToggleOption<TimelineView>[] = [
+	{ id: "chart", label: "Chart", icon: ChartLineIcon },
+	{ id: "table", label: "Table", icon: TableIcon },
+];
+
+/** `label` names the group's filter chip; `heading` its rows. */
+const groups: { id: TimelineLaneGroup; label: string; heading: string }[] = [
+	{ id: "monitor", label: "Monitor", heading: "Monitoring" },
+	{ id: "pump", label: "Pump", heading: "Pump" },
+	{ id: "ventilator", label: "Ventilator", heading: "Ventilator" },
+	{ id: "oxygen", label: "Oxygen", heading: "Oxygen" },
+	{ id: "support", label: "Other support", heading: "Other support" },
+	{ id: "labs", label: "Labs", heading: "Labs" },
 ];
 
 const laneColors: Record<TimelineLaneColor, string> = {
@@ -117,16 +151,32 @@ const laneColors: Record<TimelineLaneColor, string> = {
 	"lab-2": "text-chart-1",
 };
 
-const eventKinds: Record<TimelineEventKind, { label: string; className: string }> = {
-	care: { label: "Care event", className: "fill-foreground bg-foreground" },
-	drip: { label: "Drip change", className: "fill-badge-blue-foreground bg-badge-blue-foreground" },
-	ventilator: { label: "Ventilator change", className: "fill-chart-4 bg-chart-4" },
-	lab: { label: "Lab result", className: "fill-chart-2 bg-chart-2" },
-	note: { label: "Note", className: "fill-icon-muted bg-icon-muted" },
-	alert: { label: "Alert", className: "fill-severity-critical bg-severity-critical" },
+// Each kind's marker: a letter on its color, so the kind never rests on color alone. Alerts are Monitoring's bell in
+// the severity's color instead (PatientCardAlert), so `letter` is unset. The fills are the same in both modes, under white.
+const eventKinds: Record<TimelineEventKind, { label: string; plural: string; letter?: string; className: string }> = {
+	alert: { label: "Alert", plural: "Alerts", className: "bg-neutral-prominent text-white" },
+	care: { label: "Care event", plural: "Care events", letter: "C", className: "bg-(--pink-700) text-white" },
+	drip: { label: "Drip change", plural: "Drip changes", letter: "D", className: "bg-(--blue-700) text-white" },
+	ventilator: { label: "Ventilator change", plural: "Ventilator changes", letter: "V", className: "bg-chart-4 text-white" },
+	lab: { label: "Lab result", plural: "Lab results", letter: "L", className: "bg-tone-accent text-tone-accent-foreground" },
+	note: { label: "Note", plural: "Notes", letter: "N", className: "bg-(--gray-500) text-white" },
 };
 
-const laneHeights: Record<TimelineLane["kind"], number> = { line: 52, band: 52, step: 40, dots: 44 };
+const eventKindOrder: TimelineEventKind[] = ["alert", "care", "drip", "ventilator", "lab", "note"];
+
+const severityWords: Record<TimelineAlertSeverity, string> = {
+	critical: "Critical alert",
+	high: "High alert",
+	medium: "Medium alert",
+	low: "Low alert",
+	resolved: "Alert resolved",
+};
+
+// Every lane row is 56px with its rule; the plot takes the rest.
+const LANE_HEIGHT = 55;
+const EVENTS_HEIGHT = 31;
+const MARKER = 24;
+const MARKER_GAP = 2;
 
 // A line or band reading counts at a moment if it's within this of it; further away, the moment has no reading.
 const NEAREST = 10 * MINUTE;
@@ -217,16 +267,57 @@ function laneDomain(lane: TimelineLane, start: number, end: number): [number, nu
 }
 
 const hourFormat = new Intl.DateTimeFormat(undefined, { hour: "numeric" });
+const dayFormat = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
 
-/** Hour ticks for the axis, on the window's tick interval. */
-function hourTicks(start: number, end: number, tickHours: number) {
+/** The tick at or before a moment: the clock's last multiple of `tickMinutes` (10 PM, 12 AM… or 10:25, 10:30…). */
+function floorTick(at: number, tickMinutes: number) {
+	const date = new Date(at);
+	const minutes = date.getHours() * 60 + date.getMinutes();
+	date.setHours(0, Math.floor(minutes / tickMinutes) * tickMinutes, 0, 0);
+	return date.getTime();
+}
+
+/** Ticks inside the window, on the clock's multiples of the window's tick. */
+function windowTicks(start: number, end: number, tickMinutes: number) {
 	const ticks: number[] = [];
-	const first = new Date(start);
-	first.setMinutes(0, 0, 0);
-	for (let tick = first.getTime() + HOUR; tick < end; tick += HOUR) {
-		if (new Date(tick).getHours() % tickHours === 0) ticks.push(tick);
-	}
+	for (let tick = floorTick(start, tickMinutes) + tickMinutes * MINUTE; tick < end; tick += tickMinutes * MINUTE) ticks.push(tick);
 	return ticks;
+}
+
+const tickLabel = (at: number, tickMinutes: number) =>
+	tickMinutes >= 60 ? hourFormat.format(at) : formatTime(new Date(at).toISOString());
+
+/** A reading's time, with its date when it's from another day. */
+const readingTime = (at: string, now: number) =>
+	new Date(at).toDateString() === new Date(now).toDateString() ? formatTime(at) : formatDateTime(at);
+
+type Reading = { value: number; detail?: string; stale?: boolean };
+
+/** The lane's reading at a moment, with what goes under it: the range for a band, the time for a result, else the unit. */
+function readingAt(lane: TimelineLane, at: number, now: number, latest: boolean): Reading | undefined {
+	const point = valueAt(lane, at);
+	if (!point || point.value === null) return undefined;
+	const stale = latest && lane.staleAfterMinutes !== undefined && now - time(point) > lane.staleAfterMinutes * MINUTE;
+	const detail =
+		lane.kind === "band" && point.high !== undefined && point.low !== undefined
+			? `${point.high}/${point.low}`
+			: stale
+				? `${readingTime(point.at, now)} · stale`
+				: lane.kind === "dots"
+					? readingTime(point.at, now)
+					: lane.unit;
+	return { value: point.value, detail, stale };
+}
+
+const liveReadings = ["hr", "spo2", "map", "rr"] as const;
+
+/** The monitor's live value for a lane named after one of its readings. */
+function liveReading(lane: TimelineLane, vitals?: MonitorVitals): Reading | undefined {
+	const id = liveReadings.find((item) => item === lane.id);
+	const value = id ? vitals?.[id] : undefined;
+	if (!id || value === undefined) return undefined;
+	const range = id === "map" && vitals?.systolic !== undefined && vitals.diastolic !== undefined;
+	return { value, detail: range ? `${vitals.systolic}/${vitals.diastolic}` : lane.unit };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -243,7 +334,7 @@ type Frame = {
 	x: (at: number) => number;
 };
 
-/** What every row draws behind its content: the hour grid, the "since you last looked" shading, and the crosshair. */
+/** What every row draws behind its content: the tick grid, the "since you last looked" shading, and the crosshair. */
 function Backdrop({ frame, height }: { frame: Frame; height: number }) {
 	const lastViewedX = frame.lastViewed !== undefined && frame.lastViewed > frame.start ? frame.x(frame.lastViewed) : undefined;
 	return (
@@ -269,9 +360,10 @@ function Crosshair({ frame, height }: { frame: Frame; height: number }) {
 
 /** A lane's plot: its limits, then its line, band, steps or dots. */
 function LanePlot({ lane, frame }: { lane: TimelineLane; frame: Frame }) {
-	const height = laneHeights[lane.kind];
-	const top = lane.showValues ? 16 : 6;
-	const bottom = height - 6;
+	const height = LANE_HEIGHT;
+	// A result's value sits beside its dot, so dots keep clear of the edges.
+	const top = lane.kind === "dots" ? 10 : 6;
+	const bottom = height - (lane.kind === "dots" ? 10 : 6);
 	const [low, high] = laneDomain(lane, frame.start, frame.end);
 	const y = (value: number) => bottom - ((value - low) / (high - low)) * (bottom - top);
 	const points = lane.points.filter((point) => time(point) <= frame.end);
@@ -348,15 +440,18 @@ function LanePlot({ lane, frame }: { lane: TimelineLane; frame: Frame }) {
 				? valued.map((point) => {
 						const x = frame.x(time(point));
 						if (x < -8 || x > frame.width + 8) return null;
+						const dotY = y(point.value);
+						// The value under a dot in the lane's top half, over one in its bottom half, so it stays in the lane.
+						const textY = dotY < height / 2 ? dotY + 17 : dotY - 7;
 						return (
 							<g key={point.at}>
-								<circle cx={x} cy={y(point.value)} r={3.5} className='fill-current' />
+								<circle cx={x} cy={dotY} r={3} className='fill-current' />
 								{lane.showValues ? (
 									<text
-										x={Math.min(Math.max(x, 12), frame.width - 12)}
-										y={y(point.value) - 7}
+										x={Math.min(Math.max(x, 14), frame.width - 14)}
+										y={textY}
 										textAnchor='middle'
-										className='fill-foreground font-mono text-[10px]'
+										className='fill-foreground text-sm font-medium tabular-nums'
 									>
 										{formatValue(lane, point.value)}
 									</text>
@@ -379,78 +474,266 @@ function LanePlot({ lane, frame }: { lane: TimelineLane; frame: Frame }) {
 	);
 }
 
-/** The events lane: one marker per event, an alert as a diamond. Each names itself on hover. */
-function EventsPlot({ events, frame }: { events: TimelineEvent[]; frame: Frame }) {
-	const height = 32;
+/* -------------------------------------------------------------------------- */
+/* Events                                                                     */
+/* -------------------------------------------------------------------------- */
+
+const markerClassName =
+	"inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 text-xs leading-[18px] font-semibold whitespace-nowrap";
+
+/** An event as its tooltip and the table read it: "4:02 AM · Lab result: Lactate 4.1". */
+const eventWords = (event: TimelineEvent) =>
+	`${formatTime(event.at)} · ${event.kind === "alert" && event.severity ? severityWords[event.severity] : eventKinds[event.kind].label}: ${event.label}`;
+
+/** A kind's marker: its letter on its color, or the bell (in the severity's color for an alert that has one). */
+function EventKindMarker({ kind, severity, className }: { kind: TimelineEventKind; severity?: TimelineAlertSeverity; className?: string }) {
+	if (kind === "alert" && severity) {
+		return (
+			<PatientCardAlert
+				aria-hidden='true'
+				variant={severity}
+				iconOnly
+				className={cn("h-6 w-6 justify-center p-0 [&>svg]:size-3", className)}
+			/>
+		);
+	}
+	const item = eventKinds[kind];
 	return (
-		<svg width={frame.width} height={height} aria-hidden='true' className='block overflow-hidden'>
-			<Backdrop frame={frame} height={height} />
-			{events.map((event) => {
-				const x = frame.x(time(event));
-				const kind = eventKinds[event.kind];
-				return (
-					<g key={event.id} className={kind.className}>
-						<title>{`${formatTime(event.at)} · ${event.label}`}</title>
-						{event.kind === "alert" ? (
-							<rect x={x - 4} y={height / 2 - 4} width={8} height={8} transform={`rotate(45 ${x} ${height / 2})`} />
-						) : (
-							<rect x={x - 4} y={height / 2 - 4} width={8} height={8} rx={2} />
-						)}
-					</g>
-				);
-			})}
-			<Crosshair frame={frame} height={height} />
-		</svg>
+		<span aria-hidden='true' className={cn(markerClassName, item.className, className)}>
+			{item.letter ?? <BellRingIcon className='size-3' />}
+		</span>
+	);
+}
+
+type Marker = { key: string; left: number } & ({ type: "event"; event: TimelineEvent } | { type: "more"; events: TimelineEvent[] });
+
+/**
+ * Markers sit at their time. Ones that would overlap sit side by side from the first; past two non-alert events in a
+ * run, they all become one neutral cluster showing how many ("4"), listed in its tooltip. Alerts never fold, so each stays one
+ * click from its alert.
+ */
+function layoutMarkers(events: TimelineEvent[], frame: Frame): Marker[] {
+	const runs: { x: number; lastX: number; events: TimelineEvent[] }[] = [];
+	for (const event of [...events].sort((a, b) => time(a) - time(b))) {
+		const x = frame.x(time(event));
+		const run = runs.at(-1);
+		if (run && x - run.lastX < MARKER + MARKER_GAP) {
+			run.events.push(event);
+			run.lastX = x;
+		} else runs.push({ x, lastX: x, events: [event] });
+	}
+	const markers: Marker[] = runs.flatMap((run) => {
+		const others = run.events.filter((event) => event.kind !== "alert");
+		// Past two, the run's events become one cluster, where the first of them was (Nov 24, 2026, user's call).
+		const folded = others.length > 2 ? others : [];
+		const items: ({ type: "event"; event: TimelineEvent } | { type: "more"; events: TimelineEvent[] })[] = [];
+		for (const event of run.events) {
+			if (event === folded[0]) items.push({ type: "more", events: folded });
+			if (folded.includes(event)) continue;
+			items.push({ type: "event", event });
+		}
+		return items.map((item, index) => ({
+			...item,
+			key: item.type === "event" ? item.event.id : `more-${item.events[0].id}`,
+			left: run.x - MARKER / 2 + index * (MARKER + MARKER_GAP),
+		}));
+	});
+	// Keep every marker inside the lane without covering another: push right past the one before, then back left from
+	// the lane's end (a run near now would otherwise slide over the run before it).
+	const step = MARKER + MARKER_GAP;
+	markers.forEach((marker, index) => {
+		marker.left = Math.max(marker.left, index ? markers[index - 1].left + step : 0);
+	});
+	for (let index = markers.length - 1; index >= 0; index--) {
+		const limit = index === markers.length - 1 ? frame.width - MARKER : markers[index + 1].left - step;
+		markers[index].left = Math.max(0, Math.min(markers[index].left, limit));
+	}
+	return markers;
+}
+
+/** One marker on the events lane, named in a tooltip; an open alert's bell is a button that opens the alert. */
+function EventMarker({ marker, onOpenAlert }: { marker: Marker; onOpenAlert?: (alertId: string) => void }) {
+	const style = { left: marker.left };
+	// A marker only names itself (its tooltip), so the arrow cursor, and its letter isn't selectable text. An open
+	// alert's bell, a button, takes the pointer.
+	const position = "absolute top-1/2 -translate-y-1/2 cursor-default select-none";
+
+	if (marker.type === "more") {
+		return (
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<span aria-hidden='true' style={style} className={cn(position, markerClassName, "bg-foreground text-background")}>
+						{marker.events.length}
+					</span>
+				</TooltipTrigger>
+				<TooltipContent side='top' className='flex flex-col items-start'>
+					{marker.events.map((event) => (
+						<span key={event.id}>{eventWords(event)}</span>
+					))}
+				</TooltipContent>
+			</Tooltip>
+		);
+	}
+
+	const { event } = marker;
+	const words = eventWords(event);
+	if (event.kind === "alert" && event.alertId && onOpenAlert) {
+		const alertId = event.alertId;
+		return (
+			<Tooltip>
+				<TooltipTrigger asChild>
+					<button
+						type='button'
+						aria-label={`${words}. Open alert`}
+						style={style}
+						onClick={() => onOpenAlert(alertId)}
+						className={cn(position, "group/alert flex cursor-pointer rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+					>
+						{/* Monitoring's alert badge hover: a dark layer under the bell. */}
+						<EventKindMarker
+							kind='alert'
+							severity={event.severity}
+							className='relative isolate before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-(--gray-700)/32 before:opacity-0 before:transition-opacity group-hover/alert:before:opacity-100'
+						/>
+					</button>
+				</TooltipTrigger>
+				<TooltipContent side='top'>{`${words} · Open alert`}</TooltipContent>
+			</Tooltip>
+		);
+	}
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<span aria-hidden='true' style={style} className={cn(position, "flex")}>
+					<EventKindMarker kind={event.kind} severity={event.severity} />
+				</span>
+			</TooltipTrigger>
+			<TooltipContent side='top'>{words}</TooltipContent>
+		</Tooltip>
+	);
+}
+
+/** The events lane: the grid and shading, then each event's marker at its time. */
+function EventsLane({
+	events,
+	frame,
+	onOpenAlert,
+}: {
+	events: TimelineEvent[];
+	frame: Frame;
+	onOpenAlert?: (alertId: string) => void;
+}) {
+	return (
+		<div className='relative h-full'>
+			<svg width={frame.width} height={EVENTS_HEIGHT} aria-hidden='true' className='absolute inset-0 block overflow-hidden'>
+				<Backdrop frame={frame} height={EVENTS_HEIGHT} />
+				<Crosshair frame={frame} height={EVENTS_HEIGHT} />
+			</svg>
+			{layoutMarkers(events, frame).map((marker) => (
+				<EventMarker key={marker.key} marker={marker} onOpenAlert={onOpenAlert} />
+			))}
+		</div>
 	);
 }
 
 /* -------------------------------------------------------------------------- */
-/* Rows                                                                       */
+/* Header and rows                                                            */
 /* -------------------------------------------------------------------------- */
 
-// Every row shares the columns, so the plots line up on one axis: the lane's name, its plot, its value now (or at the
-// crosshair).
-const rowColumns = "grid grid-cols-[6.5rem_minmax(0,1fr)_7rem] @min-[48rem]:grid-cols-[8.5rem_minmax(0,1fr)_7.5rem]";
+// Every row shares the columns, so the plots line up on one axis: the lane's name and unit, its plot, its earlier value
+// (Previous: at the crosshair, else at the window's start), and its value now, to compare the two.
+const rowColumns =
+	"grid grid-cols-[7.5rem_minmax(0,1fr)_6.5rem_6.5rem] @min-[72rem]:grid-cols-[233px_minmax(0,1fr)_120px_120px]";
 
-/** A reading's time, with its date when it's from another day. */
-const readingTime = (at: string, now: number) =>
-	new Date(at).toDateString() === new Date(now).toDateString() ? formatTime(at) : formatDateTime(at);
-
-/** The lane's value cell: the reading at the crosshair, or the latest one, with its unit, range or time. */
-function LaneValue({ lane, at, live, now }: { lane: TimelineLane; at: number; live: boolean; now: number }) {
-	const point = valueAt(lane, at);
-	if (!point || point.value === null) {
-		return (
-			<>
-				<span className='font-mono text-sm text-muted-foreground'>--</span>
-				<span className='text-xs text-muted-foreground'>{live ? "No current reading" : "No reading"}</span>
-			</>
-		);
-	}
-	const stale = live && lane.staleAfterMinutes !== undefined && now - time(point) > lane.staleAfterMinutes * MINUTE;
-	const detail =
-		lane.kind === "band" && point.high !== undefined && point.low !== undefined
-			? `${point.high}/${point.low}`
-			: stale
-				? `${readingTime(point.at, now)} · stale`
-				: lane.kind === "dots"
-					? readingTime(point.at, now)
-					: lane.unit;
-
+/** The time axis as a table head: one column per tick interval, named by its start, the date over a new day's first. */
+function TimeHeader({ frame, tickMinutes, lastViewedX }: { frame: Frame; tickMinutes: number; lastViewedX?: number }) {
+	const bounds = [frame.start, ...frame.ticks, frame.end];
+	const columns = bounds.slice(0, -1).map((from, index) => {
+		const labelAt = index === 0 ? floorTick(frame.start, tickMinutes) : from;
+		return { from, to: bounds[index + 1], labelAt };
+	});
 	return (
 		<>
-			<span className={cn("font-mono text-sm font-semibold tabular-nums", stale ? "text-muted-foreground" : "text-foreground")}>
-				{formatValue(lane, point.value)}
-				<Flag lane={lane} value={point.value} />
-			</span>
-			<span className={cn("text-xs", stale ? "text-badge-amber-foreground" : "text-muted-foreground")}>{detail}</span>
+			{lastViewedX !== undefined ? (
+				<div aria-hidden='true' className='absolute inset-y-0 right-0 bg-info-subtle' style={{ left: lastViewedX }} />
+			) : null}
+			{columns.map((column, index) => {
+				const left = frame.x(column.from);
+				const width = frame.x(column.to) - left;
+				const previous = columns[index - 1];
+				const newDay = previous && new Date(previous.labelAt).toDateString() !== new Date(column.labelAt).toDateString();
+				return (
+					<div
+						key={column.from}
+						aria-hidden='true'
+						style={{ left, width }}
+						className={cn(
+							"absolute inset-y-0 flex flex-col items-center justify-center whitespace-nowrap text-foreground",
+							index > 0 && "border-l border-border",
+						)}
+					>
+						{/* A sliver of an interval at either end has no room for its name. */}
+						{width >= 44 ? (
+							<>
+								{newDay ? <span className='text-xs'>{dayFormat.format(column.labelAt)}</span> : null}
+								<span className='text-sm font-medium'>{tickLabel(column.labelAt, tickMinutes)}</span>
+							</>
+						) : null}
+					</div>
+				);
+			})}
+			{frame.cursor !== null ? (
+				<>
+					<div aria-hidden='true' className='absolute inset-y-0 w-px bg-foreground/50' style={{ left: frame.x(frame.cursor) }} />
+					<span
+						aria-hidden='true'
+						className='absolute top-1.5 -translate-x-1/2 rounded-sm bg-foreground px-1.5 py-0.5 text-xs text-background tabular-nums'
+						style={{ left: Math.min(Math.max(frame.x(frame.cursor), 36), frame.width - 36) }}
+					>
+						{formatTime(new Date(frame.cursor).toISOString())}
+					</span>
+				</>
+			) : null}
 		</>
+	);
+}
+
+/** A value cell: the reading large, its unit, range or time under it; a stale one dimmed, with its time in amber. */
+function ValueCell({ lane, reading, className }: { lane: TimelineLane; reading?: Reading; className?: string }) {
+	return (
+		<div className={cn("flex flex-col items-end justify-center border-l border-border px-3 text-right whitespace-nowrap", className)}>
+			{reading ? (
+				<>
+					<span
+						className={cn(
+							"-mb-[3px] text-xl font-semibold tabular-nums",
+							reading.stale ? "text-muted-foreground" : "text-foreground",
+						)}
+					>
+						{formatValue(lane, reading.value)}
+						<Flag lane={lane} value={reading.value} />
+					</span>
+					{reading.detail ? (
+						<span className={cn("text-xs", reading.stale ? "text-badge-amber-foreground" : "text-muted-foreground")}>
+							{reading.detail}
+						</span>
+					) : null}
+				</>
+			) : (
+				<>
+					<span className='-mb-[3px] text-xl text-muted-foreground'>--</span>
+					<span className='text-xs text-muted-foreground'>No reading</span>
+				</>
+			)}
+		</div>
 	);
 }
 
 /* -------------------------------------------------------------------------- */
 /* Table alternative                                                          */
 /* -------------------------------------------------------------------------- */
+
+const intervalWords = (minutes: number) => (minutes >= 60 ? `${minutes / 60} h` : `${minutes} min`);
 
 /** The chart as tables (PD-AC-17): each lane's value at regular times, newest first, then the events. */
 function TimelineTable({
@@ -499,8 +782,7 @@ function TimelineTable({
 			<div className='overflow-x-auto rounded-lg border border-border'>
 				<table className='w-full text-sm'>
 					<caption className='sr-only'>
-						Values every {timeWindow.tableMinutes >= 60 ? `${timeWindow.tableMinutes / 60} h` : `${timeWindow.tableMinutes} min`}, newest first.
-						Lab results show in the interval they resulted in.
+						Values every {intervalWords(timeWindow.tableMinutes)}, newest first. Lab results show in the interval they resulted in.
 					</caption>
 					<thead className='bg-background-subtle text-xs text-muted-foreground'>
 						<tr>
@@ -552,7 +834,12 @@ function TimelineTable({
 							events.map((event) => (
 								<tr key={event.id}>
 									<td className='px-3 py-2 whitespace-nowrap text-foreground'>{formatTime(event.at)}</td>
-									<td className='px-3 py-2 whitespace-nowrap text-muted-foreground'>{eventKinds[event.kind].label}</td>
+									<td className='px-3 py-2 whitespace-nowrap text-muted-foreground'>
+										<span className='inline-flex items-center gap-2'>
+											<EventKindMarker kind={event.kind} severity={event.severity} />
+											{event.kind === "alert" && event.severity ? severityWords[event.severity] : eventKinds[event.kind].label}
+										</span>
+									</td>
 									<td className='px-3 py-2 text-foreground'>{event.label}</td>
 								</tr>
 							))
@@ -575,27 +862,34 @@ function TimelineTable({
 /* -------------------------------------------------------------------------- */
 
 /**
- * The patient's Timeline (PRD PD-030): an events lane, then the Monitor, Pump, Ventilator and Labs lanes on one time
- * axis over 6, 12 or 24 h, with dashed limits, gaps drawn as gaps and what's new since the clinician last looked
- * shaded. Each lane's value at the right is the latest, or the crosshair's.
+ * The patient's Timeline (PRD PD-030): a filter bar (search, a chip per lane group, the events shown, the window and
+ * chart or table), then an events lane and the Monitor, Pump, Ventilator, Oxygen and Labs lanes on one time axis over
+ * 15 min to 24 h, with dashed limits, gaps drawn as gaps and what's new since the clinician last looked shaded. Each
+ * lane ends in an earlier value (Previous: at the crosshair while it's on, else at the window's start) beside its value
+ * now, live from the monitor where it has one, so the two compare (Nov 24, 2026, user's call: hovering changes Previous,
+ * never Now).
+ *
+ * Figma: [Intercept-Live › Timeline](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=311-8791)
  */
-function TimelineSection({ timeline, lastViewedAt }: TimelineSectionProps) {
+function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert }: TimelineSectionProps) {
 	const now = useCurrentMinute();
-	// 12 h by default (Nov 11, 2026, user's call, with Vitals merged in): its table is hourly, the old flowsheet's step.
-	const [windowId, setWindowId] = React.useState<TimelineWindow["id"]>("12");
-	const [showTable, setShowTable] = React.useState(false);
+	// 12 h by default (Nov 11, 2026, user's call): its table is hourly, the old flowsheet's step.
+	const [windowId, setWindowId] = React.useState<TimelineWindowId>("12h");
+	const [view, setView] = React.useState<TimelineView>("chart");
+	const [query, setQuery] = React.useState("");
+	const [pickedGroups, setPickedGroups] = React.useState<TimelineLaneGroup[]>([]);
 	const [cursor, setCursor] = React.useState<number | null>(null);
 	const [announcement, setAnnouncement] = React.useState("");
 	const [width, setWidth] = React.useState(0);
 	const plotRef = React.useRef<HTMLDivElement>(null);
 	const summaryId = React.useId();
 
-	const timeWindow = windows.find((item) => item.id === windowId) ?? windows[0];
+	const timeWindow = windows.find((item) => item.id === windowId) ?? windows[4];
 	// Before the first client render there's no clock; the latest reading stands in for it. The clock ticks each minute,
 	// so a reading or event newer than its last tick moves the end up to it, rather than falling off the right edge.
 	const latest = Math.max(...timeline.lanes.flatMap((lane) => lane.points.map(time)), ...timeline.events.map(time), 0);
 	const end = now === null ? latest : Math.max(now, latest);
-	const start = end - timeWindow.hours * HOUR;
+	const start = end - timeWindow.minutes * MINUTE;
 
 	React.useEffect(() => {
 		const element = plotRef.current;
@@ -603,34 +897,42 @@ function TimelineSection({ timeline, lastViewedAt }: TimelineSectionProps) {
 		const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
 		observer.observe(element);
 		return () => observer.disconnect();
-	}, [showTable]);
+	}, [view]);
 
 	// A new window drops the crosshair, which may be outside it.
 	React.useEffect(() => setCursor(null), [windowId]);
+
+	// What the filter bar leaves: lanes in the picked groups (all when none is picked) whose name or group matches the
+	// search, and events that match it. Every kind of event shows (no events menu since Nov 24, 2026, user's call).
+	const search = query.trim().toLowerCase();
+	const presentGroups = groups.filter((group) => timeline.lanes.some((lane) => lane.group === group.id));
+	const presentKinds = eventKindOrder.filter((kind) => timeline.events.some((event) => event.kind === kind));
+	const lanes = timeline.lanes.filter((lane) => {
+		const group = groups.find((item) => item.id === lane.group);
+		if (pickedGroups.length && !pickedGroups.includes(lane.group)) return false;
+		return !search || [lane.label, group?.label, group?.heading].some((text) => text?.toLowerCase().includes(search));
+	});
+	const events = timeline.events.filter(
+		(event) => !search || `${event.label} ${eventKinds[event.kind].label}`.toLowerCase().includes(search),
+	);
+	const shown: PatientTimeline = { lanes, events };
 
 	const frame: Frame = {
 		start,
 		end,
 		width,
-		ticks: hourTicks(start, end, timeWindow.tickHours),
+		ticks: windowTicks(start, end, timeWindow.tickMinutes),
 		lastViewed: lastViewedAt ? Date.parse(lastViewedAt) : undefined,
 		cursor,
 		x: (at) => ((at - start) / (end - start)) * width,
 	};
 	const lastViewedX = frame.lastViewed !== undefined && frame.lastViewed > start ? frame.x(frame.lastViewed) : undefined;
-	const windowEvents = timeline.events.filter((event) => time(event) >= start - 10 * MINUTE && time(event) <= end);
-	const at = cursor ?? end;
-	// The "Since you last looked" label sits on the axis; hour labels under it give way.
-	// It reads to the right of its line, or to the left when the line is near now.
-	const sinceLabelShown = cursor === null && lastViewedX !== undefined && Math.max(lastViewedX, width - lastViewedX) > 150;
-	const sinceLabelLeft = lastViewedX !== undefined && width - lastViewedX < 150;
-	const underSinceLabel = (x: number) =>
-		sinceLabelShown &&
-		lastViewedX !== undefined &&
-		(sinceLabelLeft ? x > lastViewedX - 150 && x < lastViewedX + 20 : x > lastViewedX - 20 && x < lastViewedX + 150);
+	const windowEvents = events.filter((event) => time(event) >= start && time(event) <= end);
+	// Previous reads the crosshair while it's on, else the window's start; Now always reads now.
+	const previousAt = cursor ?? start;
 
 	const readout = (moment: number) =>
-		`${formatTime(new Date(moment).toISOString())}: ${timeline.lanes
+		`${formatTime(new Date(moment).toISOString())}: ${lanes
 			.map((lane) => {
 				const point = valueAt(lane, moment);
 				return point?.value != null ? `${lane.label} ${formatValue(lane, point.value)} ${lane.unit}` : `${lane.label} no reading`;
@@ -664,44 +966,53 @@ function TimelineSection({ timeline, lastViewedAt }: TimelineSectionProps) {
 	};
 
 	// The chart in words for screen readers: each lane's range in the window and its latest value.
-	const summary = `Last ${timeWindow.hours} hours. ${timeline.lanes
+	const summary = `Last ${timeWindow.name}. ${lanes
 		.map((lane) => {
 			const values = lane.points
 				.filter((point) => time(point) >= start && time(point) <= end)
 				.flatMap((point) => (point.value === null ? [] : [point.value]));
-			const latest = valueAt(lane, end)?.value;
+			const latestValue = valueAt(lane, end)?.value;
 			if (!values.length) return `${lane.label}: no readings in this window.`;
 			const [min, max] = [Math.min(...values), Math.max(...values)];
 			if (values.length === 1) return `${lane.label} ${min} ${lane.unit}, one reading.`;
 			return min === max
 				? `${lane.label} ${min} ${lane.unit} throughout.`
-				: `${lane.label} ${min} to ${max} ${lane.unit}, latest ${latest ?? "none"}.`;
+				: `${lane.label} ${min} to ${max} ${lane.unit}, latest ${latestValue ?? "none"}.`;
 		})
 		.join(" ")} ${windowEvents.length} events.`;
 
+	if (!timeline.lanes.length) return <NoData>No values recorded for this patient yet.</NoData>;
+
 	return (
-		<div className='@container'>
-			<SectionCard
-				title='Timeline'
-				action={
-					<div className='flex items-center gap-4'>
-						<Switch size='sm' label='Show as table' checked={showTable} onCheckedChange={setShowTable} />
-						<Tabs value={windowId} onValueChange={(value) => setWindowId(value as TimelineWindow["id"])}>
-							<TabsList aria-label='Time window'>
-								{windows.map((item) => (
-									<TabsTrigger key={item.id} value={item.id}>
-										{item.label}
-									</TabsTrigger>
-								))}
-							</TabsList>
-						</Tabs>
-					</div>
-				}
-			>
-				{!timeline.lanes.length ? (
-					<NoData>No values recorded for this patient yet.</NoData>
-				) : showTable ? (
-					<TimelineTable timeline={timeline} timeWindow={timeWindow} start={start} end={end} />
+		<TooltipProvider>
+			<div className='@container flex flex-col gap-6'>
+				<FilterBar aria-label='Timeline filters'>
+					<FilterBarFilters>
+						<SearchInput label='Search the timeline' value={query} onValueChange={setQuery} />
+						{presentGroups.length > 1
+							? presentGroups.map((group) => (
+									<FilterBarChip
+										key={group.id}
+										pressed={pickedGroups.includes(group.id)}
+										onPressedChange={(pressed) =>
+											setPickedGroups((current) =>
+												pressed ? [...current, group.id] : current.filter((item) => item !== group.id),
+											)
+										}
+									>
+										{group.label}
+									</FilterBarChip>
+								))
+							: null}
+					</FilterBarFilters>
+					<FilterBarControls className='gap-3'>
+						<SegmentedToggle label='Time window' options={windowOptions} value={windowId} onValueChange={setWindowId} />
+						<SegmentedToggle label='View' options={viewOptions} value={view} onValueChange={setView} iconOnly />
+					</FilterBarControls>
+				</FilterBar>
+
+				{view === "table" ? (
+					<TimelineTable timeline={shown} timeWindow={timeWindow} start={start} end={end} />
 				) : (
 					<>
 						<p id={summaryId} className='sr-only'>
@@ -720,100 +1031,71 @@ function TimelineSection({ timeline, lastViewedAt }: TimelineSectionProps) {
 							onPointerLeave={() => setCursor(null)}
 							className='overflow-hidden rounded-lg border border-border outline-none focus-visible:ring-2 focus-visible:ring-ring'
 						>
-							{/* Axis: hour ticks, where "since you last looked" starts, and the crosshair's time. */}
-							<div className={cn(rowColumns, "border-b border-border")}>
-								<div />
-								<div ref={plotRef} className='relative h-8'>
-									{width ? (
-										<svg width={width} height={32} aria-hidden='true' className='block overflow-hidden'>
-											{lastViewedX !== undefined ? (
-												<>
-													<rect x={lastViewedX} y={0} width={width - lastViewedX} height={32} className='fill-info-subtle' />
-													<line x1={lastViewedX} x2={lastViewedX} y1={0} y2={32} strokeDasharray='3 3' className='stroke-info' />
-												</>
-											) : null}
-											{frame.ticks.map((tick) =>
-												frame.x(tick) > 16 && frame.x(tick) < width - 16 && !underSinceLabel(frame.x(tick)) ? (
-													<text
-														key={tick}
-														x={frame.x(tick)}
-														y={20}
-														textAnchor='middle'
-														className='fill-muted-foreground font-mono text-[11px]'
-													>
-														{hourFormat.format(tick)}
-													</text>
-												) : null,
-											)}
-										</svg>
-									) : null}
-									{sinceLabelShown ? (
-										<span
-											className='absolute top-1.5 rounded-sm bg-card px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap text-info'
-											style={sinceLabelLeft ? { right: width - (lastViewedX ?? 0) + 4 } : { left: (lastViewedX ?? 0) + 4 }}
-										>
-											Since you last looked
-										</span>
-									) : null}
-									{cursor !== null ? (
-										<span
-											className='absolute top-1 -translate-x-1/2 rounded-sm bg-foreground px-1.5 py-0.5 font-mono text-[11px] text-background tabular-nums'
-											style={{ left: Math.min(Math.max(frame.x(cursor), 32), width - 32) }}
-										>
-											{formatTime(new Date(cursor).toISOString())}
-										</span>
-									) : null}
+							{/* The head: the window and its time columns over the events lane; Previous and Now span both rows. */}
+							<div className={cn(rowColumns, "grid-rows-[56px_32px]")}>
+								<div className='flex items-center border-r border-b border-border px-3 text-sm text-foreground'>
+									Last {timeWindow.name}
 								</div>
-								<div className='flex items-center justify-end px-3 text-xs text-muted-foreground'>
-									{cursor === null ? "Now" : "At crosshair"}
+								<div ref={plotRef} className='relative overflow-hidden border-b border-border'>
+									{width ? <TimeHeader frame={frame} tickMinutes={timeWindow.tickMinutes} lastViewedX={lastViewedX} /> : null}
+								</div>
+								<div className='row-span-2 flex items-center justify-center border-b border-l border-border bg-background-subtle px-3 text-sm font-medium text-foreground tabular-nums'>
+									{cursor === null ? (
+										<>
+											Previous
+											<span className='sr-only'>, {timeWindow.name} ago</span>
+										</>
+									) : (
+										formatTime(new Date(cursor).toISOString())
+									)}
+								</div>
+								<div className='row-span-2 flex items-center justify-center border-b border-l border-border px-3 text-sm font-medium text-foreground'>
+									Now
+								</div>
+								<div className='flex items-center border-r border-b border-border px-3 text-sm text-foreground'>Events</div>
+								<div className='overflow-hidden border-b border-border'>
+									{width ? <EventsLane events={windowEvents} frame={frame} onOpenAlert={onOpenAlert} /> : null}
 								</div>
 							</div>
 
-							<div className={cn(rowColumns, "border-b border-border")}>
-								<div className='flex items-center px-3 text-sm font-semibold text-foreground'>Events</div>
-								<div>{width ? <EventsPlot events={windowEvents} frame={frame} /> : null}</div>
-								<div className='flex items-center justify-end px-3 text-xs text-muted-foreground'>
-									{windowEvents.length} {windowEvents.length === 1 ? "event" : "events"}
-								</div>
-							</div>
-
-							{groups.map((group) => {
-								const lanes = timeline.lanes.filter((lane) => lane.group === group.id);
-								if (!lanes.length) return null;
-								return (
-									<React.Fragment key={group.id}>
-										<div className='border-b border-border bg-background-subtle px-3 py-1 text-xs font-medium text-muted-foreground'>
-											{group.label}
-										</div>
-										{lanes.map((lane) => (
-											<div key={lane.id} className={cn(rowColumns, "border-b border-border-muted last:border-b-0")}>
-												<div className='flex min-w-0 flex-col justify-center px-3'>
-													{/* The name in text color for contrast; the swatch ties it to the lane's color. */}
-													<span className='flex items-center gap-1.5 text-sm font-semibold text-foreground'>
-														<span aria-hidden='true' className={cn("h-0.5 w-2.5 shrink-0 rounded-full bg-current", laneColors[lane.color])} />
-														{lane.label}
-													</span>
-													<span className='truncate pl-4 text-xs text-muted-foreground'>{lane.unit}</span>
-												</div>
-												<div>{width ? <LanePlot lane={lane} frame={frame} /> : null}</div>
-												<div className='flex flex-col items-end justify-center px-3 text-right whitespace-nowrap'>
-													<LaneValue lane={lane} at={at} live={cursor === null} now={end} />
-												</div>
+							{lanes.length ? (
+								groups.map((group) => {
+									const groupLanes = lanes.filter((lane) => lane.group === group.id);
+									if (!groupLanes.length) return null;
+									return (
+										<React.Fragment key={group.id}>
+											<div className='flex h-6 items-center border-b border-border px-3 text-xs text-muted-foreground'>
+												{group.heading}
 											</div>
-										))}
-									</React.Fragment>
-								);
-							})}
+											{groupLanes.map((lane) => (
+												<div key={lane.id} className={cn(rowColumns, "h-14 border-b border-border last:border-b-0")}>
+													<div className='flex min-w-0 items-center justify-between gap-2 border-r border-border px-3'>
+														<span className='truncate text-sm font-semibold text-foreground'>{lane.label}</span>
+														<span className='shrink-0 text-xs text-muted-foreground'>{lane.unit}</span>
+													</div>
+													<div className='overflow-hidden'>{width ? <LanePlot lane={lane} frame={frame} /> : null}</div>
+													<ValueCell lane={lane} reading={readingAt(lane, previousAt, end, false)} className='bg-background-subtle' />
+													<ValueCell lane={lane} reading={liveReading(lane, liveVitals) ?? readingAt(lane, end, end, true)} />
+												</div>
+											))}
+										</React.Fragment>
+									);
+								})
+							) : (
+								<p className='px-3 py-4 text-sm text-muted-foreground'>No values match these filters.</p>
+							)}
 						</div>
 
 						<ul aria-label='Legend' className='flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground'>
-							{Object.entries(eventKinds).map(([kind, item]) => (
+							{/* The markers' key: each kind the patient's timeline has, its letter or the bell. */}
+							{presentKinds.map((kind) => (
 								<li key={kind} className='flex items-center gap-1.5'>
-									<span
-										aria-hidden='true'
-										className={cn("size-2", kind === "alert" ? "rotate-45" : "rounded-[2px]", item.className)}
+									<EventKindMarker
+										kind={kind}
+										severity={kind === "alert" ? "critical" : undefined}
+										className='h-4 w-auto min-w-4 px-1 text-[10px] leading-none [&>svg]:size-2.5'
 									/>
-									{item.label}
+									{kind === "alert" ? "Alert, in its severity's color" : eventKinds[kind].label}
 								</li>
 							))}
 							<li className='flex items-center gap-1.5'>
@@ -830,8 +1112,8 @@ function TimelineSection({ timeline, lastViewedAt }: TimelineSectionProps) {
 						</ul>
 					</>
 				)}
-			</SectionCard>
-		</div>
+			</div>
+		</TooltipProvider>
 	);
 }
 
@@ -839,6 +1121,7 @@ export {
 	TimelineSection,
 	eventKinds as timelineEventKinds,
 	type PatientTimeline,
+	type TimelineAlertSeverity,
 	type TimelineEvent,
 	type TimelineEventKind,
 	type TimelineLane,

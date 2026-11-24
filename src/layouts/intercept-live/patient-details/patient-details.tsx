@@ -74,7 +74,7 @@ import {
 } from "./consult-panels";
 import { PatientOverview } from "./patient-overview";
 import { LiveFeedButton } from "../shared/live-feed";
-import { patientFeedEntries } from "../shared/live-feed-entries";
+import { patientFeedEntries, withAlertEvents } from "../shared/live-feed-entries";
 import { AlertsSection } from "./sections/alerts-section";
 import { CameraSection, type PatientCamera } from "./sections/camera-section";
 import { CarePlanSection, type OverviewPathway } from "./sections/care-plan-section";
@@ -656,8 +656,14 @@ function sectionContent(
 		onTransitionDecision,
 		onShowSection,
 		carePlanPathways,
+		timelineAlerts,
+		onOpenAlert,
 	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction" | "onDischargeDecision" | "onTransitionDecision"> & {
 		onShowSection: (id: SectionId) => void;
+		/** Every alert the patient had (live, left and history), for the Timeline's events lane. */
+		timelineAlerts: TriageAlert[];
+		/** Opens an open alert in the alert modal, from its bell on the Timeline. */
+		onOpenAlert?: (alertId: string) => void;
 		/** Every pathway the patient's alerts brought, for the Care Plan tab: each under the problem it treats. */
 		carePlanPathways: OverviewPathway[];
 	},
@@ -672,18 +678,18 @@ function sectionContent(
 				<CarePlanSection record={record} pathways={carePlanPathways} />
 			) : null;
 		case "timeline":
-			// The latest vitals over the chart (Vitals merged in, Nov 11, 2026), then the activity log on the events lane,
-			// so each decision lines up with the vitals.
-			return record?.vitals || record?.timeline ? (
-				<div className='flex flex-col gap-6'>
-					{record.vitals ? <LatestVitals vitals={record.vitals} monitor={monitor} /> : null}
-					{record.timeline ? (
-						<TimelineSection
-							timeline={withActivityEvents(record.timeline, record.activity)}
-							lastViewedAt={record.brief?.lastViewedAt}
-						/>
-					) : null}
-				</div>
+			// The activity log and the patient's alerts on the events lane, so each decision lines up with the vitals. The
+			// latest values are the Timeline's Previous and Now columns (Nov 24, 2026, Figma `311:8791`), live from the
+			// monitor; the tiles stay only for a record with vitals and no timeline.
+			return record?.timeline ? (
+				<TimelineSection
+					timeline={withAlertEvents(withActivityEvents(record.timeline, record.activity), timelineAlerts)}
+					lastViewedAt={record.brief?.lastViewedAt}
+					liveVitals={monitor?.vitals}
+					onOpenAlert={onOpenAlert}
+				/>
+			) : record?.vitals ? (
+				<LatestVitals vitals={record.vitals} monitor={monitor} />
 			) : null;
 		case "medications":
 			// An infusion's pump values are on the Timeline.
@@ -1022,6 +1028,8 @@ function PatientDetailsContent({
 						onTransitionDecision,
 						onShowSection: setSection,
 						carePlanPathways,
+						timelineAlerts: [...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])],
+						onOpenAlert: navigation ? (alertId) => navigation.openAlert(patient.id, alertId) : undefined,
 					});
 					// Keyed by patient, so a section's local state (an open form, an accepted recommendation) never
 					// carries over to the next patient. Block, not flex: the sections are size containers, which a flex
