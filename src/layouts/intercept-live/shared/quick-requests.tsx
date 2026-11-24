@@ -1,8 +1,7 @@
 import * as React from "react";
-import { SparklesIcon } from "lucide-react";
-
 import { Button } from "@/components/buttons/button";
 import type { ChatCommand } from "@/components/forms/chat-composer";
+import { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/forms/field";
 import { Input } from "@/components/forms/input";
 import { Textarea } from "@/components/forms/textarea";
@@ -17,8 +16,8 @@ import {
 } from "@/components/overlays/dialog";
 
 // Quick requests (PRD Messages MSG-005): the commands a thread's message box offers on "/", each writing a request to the
-// bedside into the field, to finish and send. The built-in ones are product content; the clinician adds their own from
-// the menu's Add command, kept for the session by the shell (QuickRequestsProvider).
+// bedside into the field, to finish and send. The built-in ones are product content; the clinician's own come saved from
+// their account (`saved`) and from the menu's Add command, kept for the session by the shell (QuickRequestsProvider).
 
 /** One quick request: "/name", what the menu says it does, and the message it writes. */
 type QuickRequest = {
@@ -96,14 +95,23 @@ const QuickRequestsContext = React.createContext<QuickRequestsValue | null>(null
  * Keeps the clinician's own commands for the session, so every thread offers them, and the app's drafter, which writes
  * a command's message from its instructions. The shell provides it.
  */
-function QuickRequestsProvider({ draft, children }: { draft?: QuickRequestDrafter; children: React.ReactNode }) {
-	const own = useOwnQuickRequests();
+function QuickRequestsProvider({
+	saved,
+	draft,
+	children,
+}: {
+	/** The clinician's own commands, saved from earlier; offered after the built-in ones. */
+	saved?: QuickRequest[];
+	draft?: QuickRequestDrafter;
+	children: React.ReactNode;
+}) {
+	const own = useOwnQuickRequests(saved);
 	const value = React.useMemo(() => ({ ...own, draft }), [own, draft]);
 	return <QuickRequestsContext.Provider value={value}>{children}</QuickRequestsContext.Provider>;
 }
 
-function useOwnQuickRequests(): QuickRequestsValue {
-	const [custom, setCustom] = React.useState<QuickRequest[]>([]);
+function useOwnQuickRequests(saved: QuickRequest[] = []): QuickRequestsValue {
+	const [custom, setCustom] = React.useState<QuickRequest[]>(() => saved.map((request) => ({ ...request, custom: true })));
 	const add = React.useCallback((request: QuickRequest) => setCustom((current) => [...current, { ...request, custom: true }]), []);
 	return React.useMemo(() => ({ requests: [...builtInQuickRequests, ...custom], add }), [custom, add]);
 }
@@ -115,12 +123,23 @@ function useQuickRequests() {
 	return shared ?? own;
 }
 
-/** The requests as the composer's commands: picking one hands it to `pick`, which writes or drafts its message. */
-function quickRequestCommands(requests: QuickRequest[], pick: (request: QuickRequest) => void): ChatCommand[] {
+/**
+ * The requests as the composer's commands: picking one hands it to `pick`, which writes or drafts its message. A command
+ * with instructions, which Intercept drafts, carries Intercept's AI mark (the same as the "Drafting…" line), but only
+ * when there's a drafter to follow them (`drafts`).
+ */
+function quickRequestCommands(
+	requests: QuickRequest[],
+	pick: (request: QuickRequest) => void,
+	{ drafts = false }: { drafts?: boolean } = {},
+): ChatCommand[] {
 	return requests.map((request) => ({
 		name: request.name,
 		description: request.description,
 		onSelect: () => pick(request),
+		...(drafts && request.instructions
+			? { icon: <AiSparkleIcon />, iconLabel: "Drafted by Intercept" }
+			: {}),
 	}));
 }
 
@@ -241,7 +260,7 @@ function AddQuickRequestDialog({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor={`${ids}-instructions`} className='gap-1.5'>
-								<SparklesIcon aria-hidden className='size-4 text-icon-muted' />
+								<AiSparkleIcon aria-hidden className='size-4 shrink-0' />
 								Instructions for Intercept (optional)
 							</FieldLabel>
 							<Textarea

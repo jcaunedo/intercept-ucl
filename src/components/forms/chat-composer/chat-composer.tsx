@@ -31,9 +31,19 @@ import { cn } from "@/lib/utils";
  * A slash command: typed as "/name". `description`, when given, shows beside it in the commands menu. `hint` guides
  * what to write next: it shows in the field, muted, right after "/name " until something follows it (e.g. "Add a
  * patient's name"). With `onSelect`, picking it runs it at once and clears the field (e.g. /clear), instead of writing
- * "/name " to be sent.
+ * "/name " to be sent. `icon` marks it in the menu, right after "/name" (e.g. Intercept's AI mark on a command Intercept
+ * drafts), with `iconLabel` read in its place.
  */
-type ChatCommand = { name: string; description?: string; hint?: string; onSelect?: () => void };
+type ChatCommand = {
+	name: string;
+	description?: string;
+	hint?: string;
+	onSelect?: () => void;
+	/** A 14px mark after "/name" in the menu, decorative; say what it means with `iconLabel`. */
+	icon?: React.ReactNode;
+	/** What `icon` means, read after the name ("Drafted by Intercept"). */
+	iconLabel?: string;
+};
 
 type ChatComposerProps = Omit<React.ComponentProps<"form">, "onSubmit" | "children"> & {
 	/** The message, controlled. Without it, the composer keeps its own and clears it once sent. */
@@ -306,8 +316,9 @@ function ChatComposer({
 			{...props}
 		>
 			{/* The commands menu, above the box: the library's menu surface and motion (fade, a small rise), with the box's own
-			    radius, 10px sides and 16px top and bottom; items 12px. The padding is the surface's and only the list
-			    scrolls, so it shows on every side, the bottom included, even when the list is longer than fits. */}
+			    radius, 10px sides and 16px top and bottom (10px under Add command, whose row has its own padding); items
+			    12px. The padding is the surface's and only the list scrolls, so it shows on every side, the bottom included,
+			    even when the list is longer than fits. */}
 			<AnimatePresence>
 				{menuOpen ? (
 					<motion.div
@@ -315,7 +326,10 @@ function ChatComposer({
 						initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: motionScale.popIn, y: motionDistance.subtle }}
 						animate={{ opacity: 1, scale: 1, y: 0, transition: resolve(enterTransition) }}
 						exit={{ opacity: 0, transition: { duration: 0 } }}
-						className='absolute inset-x-0 bottom-full z-50 mb-2 flex origin-bottom flex-col rounded-3xl border border-border bg-popover px-2.5 py-4 text-popover-foreground shadow-xl'
+						className={cn(
+							"absolute inset-x-0 bottom-full z-50 mb-2 flex origin-bottom flex-col rounded-3xl border border-border bg-popover px-2.5 pt-4 text-popover-foreground shadow-xl",
+							onAddCommand ? "pb-2.5" : "pb-4",
+						)}
 					>
 						<ul id={menuId} role='listbox' aria-label='Commands' className='flex flex-col'>
 							{/* The commands scroll; Add command stays pinned under them, so it's always in view. */}
@@ -338,6 +352,14 @@ function ChatComposer({
 											className='flex cursor-pointer items-baseline gap-2 rounded-xl px-2 py-1.5 text-sm aria-selected:bg-accent aria-selected:text-accent-foreground'
 										>
 											<span className='font-medium'>/{command.name}</span>
+											{command.icon ? (
+												<span className='flex shrink-0 self-center [&_svg]:size-3.5'>
+													<span aria-hidden='true' className='contents'>
+														{command.icon}
+													</span>
+													{command.iconLabel ? <span className='sr-only'>{command.iconLabel}</span> : null}
+												</span>
+											) : null}
 											{command.description ? (
 												<span className='truncate text-xs text-muted-foreground'>{command.description}</span>
 											) : null}
@@ -358,7 +380,7 @@ function ChatComposer({
 									className={cn(
 										"relative flex cursor-pointer items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-medium aria-selected:bg-accent aria-selected:text-accent-foreground",
 										matches.length > 0 &&
-											"mt-2.5 before:absolute before:inset-x-2 before:-top-1.5 before:h-px before:bg-border",
+											"mt-1.5 before:absolute before:inset-x-2 before:-top-1.5 before:h-px before:bg-border",
 									)}
 								>
 									<PlusIcon aria-hidden='true' className='size-4 text-icon-muted' />

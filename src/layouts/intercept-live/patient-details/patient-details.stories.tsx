@@ -8,6 +8,7 @@ import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample
 import { Patients } from "../patients/patients";
 import { samplePatients, sampleScenario1ResolvedCensus } from "../sample-data/sample-census";
 import { sampleDraftQuickRequest } from "../sample-data/sample-quick-request-drafter";
+import { sampleSavedQuickRequests } from "../sample-data/sample-quick-requests";
 import { Monitoring } from "../monitoring/monitoring";
 import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
@@ -50,6 +51,7 @@ const meta = {
 		user: sampleUser,
 		askIntercept: sampleAskIntercept,
 		draftQuickRequest: sampleDraftQuickRequest,
+		savedQuickRequests: sampleSavedQuickRequests,
 		shiftEndsAt: sampleShiftEndsAt,
 		shift: sampleShift,
 		team: sampleTeam,

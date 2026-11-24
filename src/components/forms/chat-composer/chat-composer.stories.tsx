@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
+import { AiSparkleIcon } from "@/components/icons/ai-sparkle-icon";
+
 import { ChatComposer, type ChatCommand } from "./chat-composer";
 
 const commands: ChatCommand[] = [
@@ -243,6 +245,36 @@ export const CommandNamesOnly: Story = {
 		await userEvent.type(canvas.getByRole("combobox", { name: "Ask Intercept Live" }), "/");
 		const options = canvas.getAllByRole("option");
 		await expect(options.map((option) => option.textContent)).toEqual(["/summarize", "/changes", "/labs", "/handoff"]);
+	},
+};
+
+/**
+ * A command's `icon` marks it in the menu, after "/name", with `iconLabel` read in its place: Messages marks the quick
+ * requests Intercept drafts with its AI mark, read "Drafted by Intercept".
+ */
+export const CommandIcon: Story = {
+	args: {
+		commands: [
+			{ name: "vitals", description: "Ask for a new set of vitals" },
+			{
+				name: "trend",
+				description: "Ask how the patient is trending",
+				icon: <AiSparkleIcon />,
+				iconLabel: "Drafted by Intercept",
+			},
+		],
+	},
+	parameters: { layout: "padded" },
+	render: (args) => (
+		<div className='flex h-80 items-end justify-center'>
+			<ChatComposer {...args} />
+		</div>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.type(canvas.getByRole("combobox", { name: "Ask Intercept Live" }), "/");
+		await expect(canvas.getByRole("option", { name: /^\/trend Drafted by Intercept/ })).toBeInTheDocument();
+		await expect(canvas.getByRole("option", { name: /^\/vitals/ })).not.toHaveAccessibleName(/Drafted by Intercept/);
 	},
 };
 

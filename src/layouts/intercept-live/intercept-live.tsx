@@ -81,7 +81,7 @@ import { avatarTone, patientInitials } from "./shared/patient-avatar";
 import { usePatientTone } from "./shared/patient-tones";
 import { CensusListPanel, type CensusListEntry } from "./census-list-panel";
 import { CurrentUserProvider } from "./current-user";
-import { QuickRequestsProvider, type QuickRequestDrafter } from "./shared/quick-requests";
+import { QuickRequestsProvider, type QuickRequest, type QuickRequestDrafter } from "./shared/quick-requests";
 import { LocationStateProvider, useLocationStateStore, type LocationState } from "./location-state";
 import { PagePreferencesProvider, type PagePreferences } from "./page-preferences";
 import { PatientNavigationProvider, type ActiveAlertsRequest, type PatientNavigation } from "./patient-navigation";
@@ -484,6 +484,11 @@ type InterceptLiveProps = {
 	 */
 	draftQuickRequest?: QuickRequestDrafter;
 	/**
+	 * The clinician's own quick requests, saved from earlier, offered in every thread after the built-in ones (PRD
+	 * Messages MSG-005). Read when the shell mounts.
+	 */
+	savedQuickRequests?: QuickRequest[];
+	/**
 	 * What Ask Intercept Live tells the user unasked, e.g. that patients' alerts changed. Each new `id` is posted once in
 	 * the conversation, whether the chat is open or not.
 	 */
@@ -564,6 +569,7 @@ function InterceptLive({
 	onLocationChange,
 	askIntercept,
 	draftQuickRequest,
+	savedQuickRequests,
 	askInterceptNotice,
 	prototype = [],
 	onResetPrototype,
@@ -1050,8 +1056,8 @@ function InterceptLive({
 		<LocationStateProvider value={locationStore}>
 		{/* The signed-in clinician, for their avatar on the messages they send in every thread. */}
 		<CurrentUserProvider value={user}>
-		{/* The clinician's own quick requests (a thread's Add command), offered in every thread for the session. */}
-		<QuickRequestsProvider draft={draftQuickRequest}>
+		{/* The clinician's own quick requests (saved, and a thread's Add command), offered in every thread for the session. */}
+		<QuickRequestsProvider saved={savedQuickRequests} draft={draftQuickRequest}>
 		<PatientNavigationProvider value={navigation}>
 			{/* Flags' popover buttons, for every TagsPopover in the app: Fall risk's fall prevention pathway. */}
 			<TagsPopoverActionsProvider resolve={tagActions}>

@@ -10,6 +10,7 @@ import { sampleEscalationTargets, sampleMonitoringAlerts, sampleMonitoringPatien
 import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleDraftQuickRequest } from "../sample-data/sample-quick-request-drafter";
+import { sampleSavedQuickRequests } from "../sample-data/sample-quick-requests";
 import { sampleOpenShifts, sampleScheduleShifts } from "../schedule/sample-data/sample-schedule";
 import { sampleMessageConversations } from "../messages/sample-data/sample-messages";
 import { sampleInboxItems } from "../inbox/sample-data/sample-inbox";
@@ -67,6 +68,7 @@ const meta = {
 		user: sampleUser,
 		askIntercept: sampleAskIntercept,
 		draftQuickRequest: sampleDraftQuickRequest,
+		savedQuickRequests: sampleSavedQuickRequests,
 		shiftEndsAt: sampleShiftEndsAt,
 		shift: sampleShift,
 		team: sampleTeam,

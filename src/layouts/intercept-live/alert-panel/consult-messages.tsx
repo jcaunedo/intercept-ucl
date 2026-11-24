@@ -426,7 +426,7 @@ function ConsultMessages({
 		draftRun.current++;
 		setDrafting(null);
 	};
-	const quickRequests = quickRequestCommands(requests, pickRequest);
+	const quickRequests = quickRequestCommands(requests, pickRequest, { drafts: Boolean(drafter) });
 	const thread = React.useRef<HTMLDivElement>(null);
 	const shown = filter ? messages.filter(filter) : messages;
 

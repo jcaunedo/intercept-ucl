@@ -82,7 +82,7 @@ const sampleDraftQuickRequest: QuickRequestDrafter = async (request: QuickReques
 	const instructions = request.instructions?.toLowerCase() ?? "";
 	const record = samplePatientRecords.find((item) => item.id === context.patientId);
 	const lastFromBedside = [...context.messages].reverse().find((item) => item.from === "bedside");
-	const sinceMessage = /since|last message/.test(instructions) && lastFromBedside;
+	const sinceMessage = /since/.test(instructions) && lastFromBedside;
 	const since = sinceMessage ? Date.parse(lastFromBedside.sentAt) : Date.now() - 2 * 60 * 60_000;
 
 	const lead: string[] = [];

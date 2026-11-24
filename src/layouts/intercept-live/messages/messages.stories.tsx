@@ -3,6 +3,7 @@ import { expect, fn, screen, waitFor, within } from "storybook/test";
 
 import { sampleHospitals, sampleShift, sampleShiftEndsAt, sampleTeam, sampleUser } from "../sample-data/sample-workspace";
 import { sampleDraftQuickRequest } from "../sample-data/sample-quick-request-drafter";
+import { sampleSavedQuickRequests } from "../sample-data/sample-quick-requests";
 import { samplePatients } from "../sample-data/sample-census";
 import { samplePatientRecords } from "../patient-details/sample-data/sample-patient-details";
 import { sampleMonitoringAlerts, sampleMonitoringPatients } from "../monitoring/sample-data/sample-monitoring";
@@ -26,6 +27,7 @@ const meta = {
 		censusPatients: samplePatients,
 		patientRecords: samplePatientRecords,
 		draftQuickRequest: sampleDraftQuickRequest,
+		savedQuickRequests: sampleSavedQuickRequests,
 		user: sampleUser,
 		shiftEndsAt: sampleShiftEndsAt,
 		shift: sampleShift,
@@ -243,6 +245,28 @@ export const CommandDraftsFromContext: Story = {
 		await expect(value()).toContain("Latest labs: Lactate 4.1 (was 2.2)");
 		await expect(canvas.getByText(/Drafted by Intercept/)).toBeVisible();
 		await expect(args.messages?.onSendMessage).not.toHaveBeenCalled();
+	},
+};
+
+/**
+ * The clinician's saved commands (`savedQuickRequests`) follow the built-in ones, each with instructions and marked with
+ * Intercept's AI mark (read "Drafted by Intercept"): /titrate drafts
+ * Sarah Miller's current drips and their rate changes into the message, to review before sending.
+ */
+export const SavedCommands: Story = {
+	play: async ({ canvas, userEvent }) => {
+		const field = await canvas.findByRole("combobox", { name: "Message Kelly Ortiz, RN" });
+		await userEvent.click(canvas.getByRole("button", { name: "Commands" }));
+		for (const name of ["trend", "redraw", "titrate", "catchup", "safety"]) {
+			await expect(await canvas.findByRole("option", { name: new RegExp(`^/${name} `) })).toBeInTheDocument();
+		}
+		// Saved commands draft, so each carries Intercept's AI mark, read "Drafted by Intercept"; built-in ones don't.
+		await expect(canvas.getByRole("option", { name: /^\/titrate Drafted by Intercept / })).toBeInTheDocument();
+		await expect(canvas.getByRole("option", { name: /^\/vitals / })).not.toHaveAccessibleName(/Drafted by Intercept/);
+		await userEvent.click(canvas.getByRole("option", { name: /^\/titrate / }));
+		const value = () => (field as HTMLTextAreaElement).value;
+		await waitFor(() => expect(value()).toMatch(/^Before I change anything for Sarah, .* Currently on /), { timeout: 3000 });
+		await expect(canvas.getByText(/Drafted by Intercept/)).toBeVisible();
 	},
 };
 

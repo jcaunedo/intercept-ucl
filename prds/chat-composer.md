@@ -135,6 +135,7 @@ The commands button, or "/" typed at the start of the field, opens the commands 
 - Once a command is in the field with nothing after it, a guidance line shows right after it, muted, saying what to write next. With a patient in the chat: "Enter for Hayes, or add another patient"; without one: "Add a patient's name" (for /changes: "Enter for all your patients, or add a patient's name"). It disappears as soon as the clinician types after the command, and screen readers hear it as the field's description.
 - With text already in the field, the commands button opens the menu without clearing it.
 - ✅ **Resolved:** where the app lets people make their own commands, **Add command** ends the menu, after a rule, pinned under the list so it stays in view however long the list is; it stays when nothing matches, naming what's typed ("Add command: /sitrep"), and opens the app's form with that name. ↑ ↓ reach it like a command. Ask Intercept Live doesn't offer it; a Messages thread does (PRD Messages MSG-005). With a list longer than the menu, the highlighted command scrolls into view.
+- ✅ **Resolved:** a command can carry a small mark after its name in the menu, with words for screen readers in its place; Messages marks the quick requests Intercept drafts with Intercept's AI mark ("Drafted by Intercept").
 - The menu lists the commands by name alone ("/summarize"), without a description beside each; what each does is in the table below.
 
 | Command | Does | Patient |
