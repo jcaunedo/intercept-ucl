@@ -145,6 +145,22 @@ const patientArgs = {
 		{ name: "Ryan Cole", initials: "RC", tone: 8 },
 	],
 	onOpenTeam: fn(),
+	// Shown in place of the breadcrumb with `showPatient`.
+	patient: {
+		lastName: "Carter",
+		firstName: "Ellen",
+		sex: "F",
+		age: 59,
+		mrn: "01033876",
+		account: "6325DF2",
+		hospital: "Sidney Regional",
+		unit: "ICU",
+		room: "412",
+		bed: "A",
+		photo: samplePhoto3,
+		initials: "EC",
+		tone: 4,
+	},
 } as const;
 
 /**
@@ -240,6 +256,28 @@ export const PatientPathwayOpen: Story = {
 	},
 };
 
+/**
+ * Scrolled (intercept.ds OnScroll `1729:902`): once the page's Patient Header is out of view, the patient takes the
+ * breadcrumb's place: a 32px avatar, the name and " - F, 59", then MRN · ACCT and the location. Back stays the way
+ * back. The two swap with Reveal: see it in Intercept Live by scrolling a patient's page. The page is scrolled, so
+ * `compact` is on, but the header keeps its 60px for the patient's two lines.
+ */
+export const PatientScrolled: Story = {
+	render: (args) => (
+		<AppHeader {...patientArgs} showPatient compact onToggleTheme={args.onToggleTheme} theme={args.theme} />
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(await canvas.findByText("Carter, Ellen")).toBeVisible();
+		await expect(canvas.getByText("6325DF2", { exact: false })).toBeVisible();
+		await expect(canvas.queryByRole("navigation", { name: "Breadcrumb" })).toBeNull();
+		await expect(canvas.getByRole("button", { name: "Back to Census" })).toBeVisible();
+		const header = canvasElement.querySelector("[data-slot='app-header']");
+		await expect(header).not.toHaveAttribute("data-compact");
+		await expect(header?.getBoundingClientRect().height).toBe(60);
+	},
+};
+
 /** Every state the header has: photo and initials avatars, short and long content, and the patient variant. */
 export const AllVariants: Story = {
 	render: (args) => (
@@ -248,6 +286,7 @@ export const AllVariants: Story = {
 			<AppHeader {...args} {...InitialsOnly.args} />
 			<AppHeader {...args} {...LongContent.args} />
 			<AppHeader {...patientArgs} />
+			<AppHeader {...patientArgs} showPatient />
 			<AppHeader {...patientArgs} videoConsultOpen messagesOpen unreadMessages={0} />
 			<AppHeader {...patientArgs} videoConsultOpen pathwayOpen unreadMessages={0} />
 		</div>

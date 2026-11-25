@@ -2,6 +2,7 @@ export {
 	AppHeader,
 	type AppHeaderDefaultProps,
 	type AppHeaderMenuAction,
+	type AppHeaderPatient,
 	type AppHeaderPatientProps,
 	type AppHeaderPerson,
 	type AppHeaderProps,

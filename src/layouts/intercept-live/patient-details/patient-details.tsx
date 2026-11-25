@@ -1220,6 +1220,23 @@ function patientDetailsView(
 				.find((item) => item.id === patientId)
 				?.careTeam?.map(({ name, initials, src, tone }) => ({ name, initials, src, tone })),
 			onOpenTeam: act("care-team"),
+			// Shown in place of the breadcrumb once the Patient Header scrolls away (intercept.ds OnScroll `1729:902`), from
+			// the same values the Patient Header gets.
+			patient: {
+				lastName: patient.lastName,
+				firstName: patient.firstName,
+				sex: patient.sex,
+				age: patient.age,
+				mrn: patient.mrn,
+				account: records.find((item) => item.id === patientId)?.account,
+				hospital: patient.hospital,
+				unit: patient.unit,
+				room: patient.room,
+				bed: patient.bed,
+				photo: records.find((item) => item.id === patientId)?.photo,
+				initials: patientInitials(patient),
+				tone,
+			},
 		},
 		content: (
 			<PatientDetails

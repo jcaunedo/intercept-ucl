@@ -156,7 +156,7 @@ The page uses the Provider Desktop shell (Sidebar, sticky AppHeader, canvas, sid
 
 | Region | Content | Notes |
 |---|---|---|
-| **Patient header** | Identity, safety badges, location, acuity, organ support, actions, patient switcher (§4) | Sticky; compacts on scroll |
+| **Patient header** | Identity, safety badges, location, acuity, organ support, actions, patient switcher (§4) | ~~Sticky; compacts on scroll~~ Scrolls with the page; once it's out of view, the app header shows the patient (PD-016) |
 | **Alerts strip** | This patient's active alerts and concerns (PD-020) | Mandatory; under the header |
 | **Sections** | Overview, Timeline, Labs, Medications, Orders, Notes, Sepsis (§5–§11) | ⚠️ **Decision needed:** tabs or one scrolling page with a section index (PD-OD-02) |
 | **Page panel** | Camera, care team & messages, or Ask (§12, §13) | The shell's right-hand panel (`PagePanel`); resizable, closable |
@@ -314,7 +314,11 @@ Previous / next buttons step through the list the clinician came from (the Censu
 
 ### PD-016 — Sticky header
 
-On scroll, the header compacts to one row: name, MRN, location, code status, allergies, the top alert pill and the actions. It never collapses further.
+~~On scroll, the header compacts to one row: name, MRN, location, code status, allergies, the top alert pill and the actions. It never collapses further.~~
+
+The Patient header scrolls with the page. Once it has gone under the sticky app header, the app header shows the patient in place of its breadcrumb: their avatar, the name with sex and age ("Miller, Sarah - F, 59"), then MRN · ACCT and the location, as the Patient header writes them. Scrolled back until the Patient header shows again, the breadcrumb returns. The two swap in place with a short fade and rise; a fade only under reduced motion.
+
+- ✅ **Resolved:** the app header shows the patient only once the Patient header is out of view, and the breadcrumb at the top of the page (intercept.ds app-header, OnScroll). So the name and MRN stay on screen while the clinician scrolls (PD-010), and Back stays the way back.
 
 ---
 

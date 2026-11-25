@@ -352,6 +352,7 @@ type PatientDetailsView = {
 		| "createActions"
 		| "team"
 		| "onOpenTeam"
+		| "patient"
 	>;
 	/** The patients of the list the patient was opened from, in its order, for the census list (only those in hospital show; PRD PD-015). */
 	patientList?: CensusListEntry[];
@@ -775,8 +776,17 @@ function InterceptLive({
 	const pageScroll = React.useRef(0);
 	const openPatientId = openPatient?.id ?? null;
 	const patientWasOpen = React.useRef(openPatientId !== null);
+	// Once the patient's Patient Header has scrolled under the app header, the header shows the patient in place of its
+	// breadcrumb (intercept.ds OnScroll `1729:902`); back in view, the breadcrumb returns.
+	const appHeaderRef = React.useRef<HTMLElement>(null);
+	const [patientHeaderHidden, setPatientHeaderHidden] = React.useState(false);
 	useMotionValueEvent(scrollY, "change", (y) => {
 		setHeaderCompact(y > 0);
+		const patientHeader = canvasRef.current?.querySelector("[data-slot='patient-header']");
+		const appHeader = appHeaderRef.current;
+		setPatientHeaderHidden(
+			Boolean(patientHeader && appHeader && patientHeader.getBoundingClientRect().bottom <= appHeader.getBoundingClientRect().bottom),
+		);
 		if (!patientWasOpen.current) pageScroll.current = y;
 	});
 	React.useLayoutEffect(() => {
@@ -1201,6 +1211,8 @@ function InterceptLive({
 											patientListOpen={patientListOpen}
 											{...patientView.headerActions}
 											{...patientHeaderActions}
+											showPatient={patientHeaderHidden}
+											ref={appHeaderRef}
 											compact={headerCompact}
 											theme={theme}
 											onToggleTheme={toggleTheme}
