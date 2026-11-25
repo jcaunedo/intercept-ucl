@@ -1364,7 +1364,7 @@ function LabTrends({ chart, trends, encounterStart, source, request, onFocusChan
 	);
 
 	return (
-		<section aria-labelledby={titleId} className='flex min-w-0 scroll-mt-[calc(var(--patient-header-height,0px)+5rem)] flex-col gap-6 @container'>
+		<section aria-labelledby={titleId} className='flex min-w-0 scroll-mt-[calc(var(--patient-sticky-height,0px)+5rem)] flex-col gap-6 @container'>
 			{tests.length ? (
 				<>
 					{/* The controls above the card, 24px from it, as the Timeline's time window sits above its chart: the mode on

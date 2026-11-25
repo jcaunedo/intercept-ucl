@@ -936,6 +936,7 @@ function InterceptLive({
 			alertPatientId,
 			compact: headerCompact,
 			appHeaderHidden,
+			revealAppHeader: () => setHeaderScrollHidden(false),
 			patientOpen: openPatientId !== null,
 			viewedAt,
 			patientHref: locationHref ? (patientId) => locationHref({ page, patientId }) : undefined,

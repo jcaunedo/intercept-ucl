@@ -471,13 +471,13 @@ function NotesSection({
 		<div className='@container flex flex-1'>
 			<div className='grid flex-1 @min-[56rem]:grid-cols-[22rem_minmax(0,1fr)]'>
 				{/* The list scrolls in its pane, its header (search, filters, New note) staying put. Beside the note, the pane
-				    sticks under the Patient Header (moving with it as the app header slides away and back), and is as tall as the canvas shows
+				    sticks under the Patient Header and the tabs (moving with them as the app header slides away and back), and is as tall as the canvas shows
 				    under its top (`useFitPaneToView`), so its last row can always be scrolled to; stacked, it stops at 60% of
 				    the screen. */}
 				<section
 					ref={listPaneRef}
 					aria-labelledby={listHeadingId}
-					className='flex max-h-[60dvh] min-w-0 flex-col border-b border-border bg-card @min-[56rem]:sticky @min-[56rem]:top-[calc(var(--patient-header-top,52px)+var(--patient-header-height,0px))] @min-[56rem]:h-[calc(100dvh-52px)] @min-[56rem]:transition-[top] @min-[56rem]:duration-300 @min-[56rem]:ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none @min-[56rem]:max-h-none @min-[56rem]:self-start @min-[56rem]:border-r @min-[56rem]:border-b-0'
+					className='flex max-h-[60dvh] min-w-0 flex-col border-b border-border bg-card @min-[56rem]:sticky @min-[56rem]:top-[var(--patient-sticky-bottom,52px)] @min-[56rem]:h-[calc(100dvh-52px)] @min-[56rem]:transition-[top] @min-[56rem]:duration-300 @min-[56rem]:ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none @min-[56rem]:max-h-none @min-[56rem]:self-start @min-[56rem]:border-r @min-[56rem]:border-b-0'
 				>
 					<h2 id={listHeadingId} className='sr-only'>
 						Notes

@@ -85,9 +85,11 @@ type PatientNavigation = {
 	/**
 	 * Whether the app header has slid up out of view on a patient's page: scrolling down hides it, scrolling up brings it
 	 * back (PRD Patient details PD-016). The Patient Header sticks at the canvas's top while it's hidden, under it while
-	 * it shows. Always false off a patient's page.
+	 * it shows, and the tabs slide away and back with the app header. Always false off a patient's page.
 	 */
 	appHeaderHidden: boolean;
+	/** Brings the app header (and a patient page's tabs) back, e.g. when focus moves into the hidden tabs. */
+	revealAppHeader: () => void;
 	/** Whether a patient's details are open, so the page under them is hidden. */
 	patientOpen: boolean;
 	/** When the clinician opened each patient's details in this session, ISO 8601 by patient id (Recently viewed). */

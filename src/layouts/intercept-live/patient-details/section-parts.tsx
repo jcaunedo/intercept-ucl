@@ -69,7 +69,7 @@ function SectionCard({
 			tabIndex={id ? -1 : undefined}
 			className={cn(
 				"flex min-w-0 flex-col gap-3 rounded-card border border-border bg-card p-4",
-				id && "scroll-mt-[calc(var(--patient-header-height,0px)+5rem)] outline-none",
+				id && "scroll-mt-[calc(var(--patient-sticky-height,0px)+5rem)] outline-none",
 				className,
 			)}
 		>

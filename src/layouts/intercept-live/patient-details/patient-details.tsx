@@ -863,29 +863,37 @@ const patientName = (patient: Pick<PatientDetailsPatient, "lastName" | "firstNam
 const appHeaderHeight = { default: 60, compact: 52 } as const;
 
 /**
- * The Patient Header sticks to the top of the canvas (PRD Patient details PD-016, Nov 25, 2026, user's call): right under
- * the app header while it shows, at the very top once the app header has slid away (scrolling down), moving between
- * the two with it. Gives the page's CSS variables, so what sticks under the Patient Header (the Notes list, a note's
- * header) and the sections' scroll margins follow it: `--patient-header-top` (where it sticks) and
- * `--patient-header-height` (its height, measured: it wraps on narrow screens). `stuck` is true once the page has
- * scrolled it to its sticky place, for its shadow.
+ * The Patient Header and the tabs on scroll (PRD Patient details PD-016, Nov 25, 2026, user's calls). The Patient Header
+ * sticks to the top of the canvas: right under the app header while it shows, at the very top once the app header has
+ * slid away (scrolling down), moving between the two with it. The tabs stick under the Patient Header and behave as the
+ * app header does: they slide up behind it while the page scrolls down and come back on any scroll up (`hidden`, the
+ * shell's `appHeaderHidden`). Gives the page's CSS variables, so the tabs, what sticks under them (the Notes list, a
+ * note's header) and the sections' scroll margins follow: `--patient-header-top` (where the Patient Header sticks),
+ * `--patient-header-height` (its height, measured: it wraps on narrow screens), `--patient-sticky-bottom` (where what
+ * sticks under them goes: the tabs' bottom, or the Patient Header's while they're hidden) and `--patient-sticky-height`
+ * (both heights, for scroll margins). `stuck` is true once the page has scrolled the Patient Header to its sticky
+ * place, for the shadow.
  */
 function useStickyPatientHeader() {
 	const navigation = usePatientNavigation();
 	const hidden = navigation?.appHeaderHidden ?? false;
 	const top = hidden ? 0 : navigation?.compact ? appHeaderHeight.compact : appHeaderHeight.default;
 	const headerRef = React.useRef<HTMLDivElement>(null);
+	const tabsRef = React.useRef<HTMLDivElement>(null);
 	// A 0px marker where the Patient Header sits in the flow: once it's above the sticky line, the header is stuck.
 	const markerRef = React.useRef<HTMLDivElement>(null);
-	const [height, setHeight] = React.useState(0);
+	const [heights, setHeights] = React.useState({ header: 0, tabs: 0 });
 	const [stuck, setStuck] = React.useState(false);
 
 	React.useLayoutEffect(() => {
 		const header = headerRef.current;
-		if (!header) return;
-		const observer = new ResizeObserver(() => setHeight(header.offsetHeight));
+		const tabs = tabsRef.current;
+		if (!header || !tabs) return;
+		const measure = () => setHeights({ header: header.offsetHeight, tabs: tabs.offsetHeight });
+		const observer = new ResizeObserver(measure);
 		observer.observe(header);
-		setHeight(header.offsetHeight);
+		observer.observe(tabs);
+		measure();
 		return () => observer.disconnect();
 	}, []);
 
@@ -907,9 +915,11 @@ function useStickyPatientHeader() {
 
 	const style = {
 		"--patient-header-top": `${top}px`,
-		"--patient-header-height": `${height}px`,
+		"--patient-header-height": `${heights.header}px`,
+		"--patient-sticky-bottom": `${top + heights.header + (hidden ? 0 : heights.tabs)}px`,
+		"--patient-sticky-height": `${heights.header + heights.tabs}px`,
 	} as React.CSSProperties;
-	return { headerRef, markerRef, stuck, style };
+	return { headerRef, tabsRef, markerRef, stuck, hidden, style, reveal: navigation?.revealAppHeader };
 }
 
 function PatientDetails(props: PatientDetailsProps) {
@@ -1133,70 +1143,83 @@ function PatientDetailsContent({
 			</PatientAlertsPanel>
 			{/* The header's Live feed: this patient's log, history included (Nov 11, 2026, user's calls). */}
 			<PatientLiveFeedPanel entries={feedEntries} />
-			{/* 16px below the app header and above the tabs: the header's own padding (intercept.ds `1191:3147`). It sticks
-			    to the top of the canvas (`useStickyPatientHeader`): under the app header, or at the very top while the app
-			    header has slid away, moving with it on the app header's curve (300ms, standardTransition's; instant under
-			    reduced motion). Once stuck it takes the shadow the app header has elsewhere and a 1px `border` rule along
-			    its bottom (Nov 25, 2026, user's calls); the rule is drawn over its edge (`after:`), so it takes no room,
-			    and only while stuck: in place, the tabs' own top rule is right under it. Above the page's own raised
-			    layers (z-15), under the app header (z-20). */}
-			<div ref={stickyHeader.markerRef} aria-hidden='true' />
-			<div
-				ref={stickyHeader.headerRef}
-				className={cn(
-					"sticky top-(--patient-header-top) z-15 bg-background transition-[top,box-shadow] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
-					"after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border after:transition-opacity after:duration-300 motion-reduce:after:transition-none",
-					stickyHeader.stuck ? "shadow-sm after:opacity-100" : "shadow-none after:opacity-0",
-				)}
-			>
-				<PatientHeader
-					lastName={patient.lastName}
-					firstName={patient.firstName}
-					photo={record?.photo}
-					initials={patientInitials(patient)}
-					tone={tone ?? avatarTone(patient.id)}
-					mrn={patient.mrn}
-					sex={patient.sex}
-					age={patient.age}
-					hospital={patient.hospital}
-					unit={patient.unit}
-					room={patient.room}
-					bed={patient.bed}
-					account={record?.account}
-					tags={patientBadges(patient, record)}
-					acuity={patient.acuity}
-					trajectory={patient.trajectory}
-					alert={alertPill(alerts)}
-					alertCounts={alertCountsBySeverity(alerts)}
-					clinicalStatus={record?.clinicalStatus}
-					recentAlerts={recentAlertCount([...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])])}
-					onViewAlerts={() => setAlertsOpen((open) => !open)}
-					alertsOpen={alertsOpen}
-				/>
-			</div>
 
 			<Tabs
 				value={shownSection}
 				onValueChange={(value) => setSection(value as SectionId)}
 				className='flex flex-1 flex-col gap-0'
 			>
-				{/* The tabs, then the patient's Live feed at the right end, as on Monitoring: the newest line, a chevron, the
-				    panel it opens (Nov 11, 2026, user's call: it left the Patient Header). */}
-				<div className='flex items-center justify-between gap-4 border-y border-border px-4'>
-					<TabsList variant='line' size='lg' aria-label='Patient sections'>
-						<TabsTrigger value='overview'>Overview</TabsTrigger>
-						{sections.map((item) => (
-							<TabsTrigger key={item.id} value={item.id}>
-								{item.label}
-							</TabsTrigger>
-						))}
-					</TabsList>
-					<LiveFeedButton
-						change={latestFeedLine(feedEntries)}
-						open={feedOpen}
-						onOpen={() => setFeedOpen((open) => !open)}
-						controls='patient-live-feed'
+				{/* The Patient Header (16px below the app header and above the tabs: its own padding, intercept.ds `1191:3147`)
+				    sticks to the top of the canvas (`useStickyPatientHeader`; PRD PD-016, Nov 25, 2026, user's calls): under the
+				    app header, or at the very top while the app header has slid away, moving with it on the app header's curve
+				    (300ms, standardTransition's; instant under reduced motion). Inside Tabs, so it can stick for the whole page
+				    beside the tabs. Stuck with the tabs hidden, it takes the shadow the app header has elsewhere and a 1px
+				    `border` rule along its bottom, drawn over its edge (`after:`, no room taken); with the tabs showing, those
+				    are theirs. Above the page's own raised layers and the tabs (z-15), under the app header (z-20). */}
+				<div ref={stickyHeader.markerRef} aria-hidden='true' />
+				<div
+					ref={stickyHeader.headerRef}
+					className={cn(
+						"sticky top-(--patient-header-top) z-15 bg-background transition-[top,box-shadow] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
+						"after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border after:transition-opacity after:duration-300 motion-reduce:after:transition-none",
+						stickyHeader.stuck && stickyHeader.hidden ? "shadow-sm after:opacity-100" : "shadow-none after:opacity-0",
+					)}
+				>
+					<PatientHeader
+						lastName={patient.lastName}
+						firstName={patient.firstName}
+						photo={record?.photo}
+						initials={patientInitials(patient)}
+						tone={tone ?? avatarTone(patient.id)}
+						mrn={patient.mrn}
+						sex={patient.sex}
+						age={patient.age}
+						hospital={patient.hospital}
+						unit={patient.unit}
+						room={patient.room}
+						bed={patient.bed}
+						account={record?.account}
+						tags={patientBadges(patient, record)}
+						acuity={patient.acuity}
+						trajectory={patient.trajectory}
+						alert={alertPill(alerts)}
+						alertCounts={alertCountsBySeverity(alerts)}
+						clinicalStatus={record?.clinicalStatus}
+						recentAlerts={recentAlertCount([...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])])}
+						onViewAlerts={() => setAlertsOpen((open) => !open)}
+						alertsOpen={alertsOpen}
 					/>
+				</div>
+				{/* The tabs stick under the Patient Header and behave as the app header does (Nov 25, 2026, user's call): they
+				    slide up behind it while the page scrolls down and come back on any scroll up, on the same curve. Tabbing
+				    into them while hidden brings them (and the app header) back. Stuck and showing, they take the shadow. */}
+				<div
+					ref={stickyHeader.tabsRef}
+					onFocusCapture={stickyHeader.reveal}
+					className={cn(
+						"sticky top-[calc(var(--patient-header-top)+var(--patient-header-height))] z-14 bg-background transition-[top,translate,box-shadow] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
+						stickyHeader.hidden && "-translate-y-full",
+						stickyHeader.stuck && !stickyHeader.hidden ? "shadow-sm" : "shadow-none",
+					)}
+				>
+					{/* The tabs, then the patient's Live feed at the right end, as on Monitoring: the newest line, a chevron, the
+					    panel it opens (Nov 11, 2026, user's call: it left the Patient Header). */}
+					<div className='flex items-center justify-between gap-4 border-y border-border px-4'>
+						<TabsList variant='line' size='lg' aria-label='Patient sections'>
+							<TabsTrigger value='overview'>Overview</TabsTrigger>
+							{sections.map((item) => (
+								<TabsTrigger key={item.id} value={item.id}>
+									{item.label}
+								</TabsTrigger>
+							))}
+						</TabsList>
+						<LiveFeedButton
+							change={latestFeedLine(feedEntries)}
+							open={feedOpen}
+							onOpen={() => setFeedOpen((open) => !open)}
+							controls='patient-live-feed'
+						/>
+					</div>
 				</div>
 				<TabsContent value='overview' className='p-6'>
 					<PatientOverview

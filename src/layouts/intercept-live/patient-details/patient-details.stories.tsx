@@ -465,9 +465,10 @@ export const BackToCensus: Story = {
 };
 
 /**
- * Scrolling (PRD Patient details PD-016): scrolling down slides the app header up out of view and the Patient Header
- * sticks to the top of the canvas, with the shadow the app header has on other pages. Scrolling up, from anywhere,
- * brings the app header back and the Patient Header sticks right under it; scrolling down again hides it again.
+ * Scrolling (PRD Patient details PD-016): scrolling down slides the app header and the tabs up out of view, and the
+ * Patient Header sticks to the top of the canvas with the shadow the app header has on other pages and a bottom rule.
+ * Scrolling up, from anywhere, brings the app header back with the Patient Header right under it and the tabs under
+ * that, the tabs then taking the shadow; scrolling down again hides them again.
  */
 export const ScrollHidesAppHeader: Story = {
 	play: async ({ canvasElement }) => {
@@ -475,6 +476,7 @@ export const ScrollHidesAppHeader: Story = {
 		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
 		const appHeader = canvasElement.querySelector<HTMLElement>("[data-slot='app-header']")!;
 		const patientHeader = canvasElement.querySelector<HTMLElement>("[data-slot='patient-header']")!.parentElement!;
+		const tabs = canvas.getByRole("tablist", { name: "Patient sections" }).parentElement!.parentElement!;
 		const scroller = scrollContainerOf(patientHeader);
 		const offset = (element: HTMLElement) =>
 			element.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
@@ -483,27 +485,36 @@ export const ScrollHidesAppHeader: Story = {
 			scroller.dispatchEvent(new Event("scroll"));
 		};
 
-		// Down: the app header leaves, the Patient Header sticks at the top with the shadow.
+		// Down: the app header and the tabs leave; the Patient Header sticks at the top with the shadow and the rule.
 		await scrollTo(200);
 		await scrollTo(400);
 		await waitFor(() => expect(appHeader.getBoundingClientRect().bottom).toBeLessThanOrEqual(scroller.getBoundingClientRect().top + 1));
 		await waitFor(() => expect(Math.abs(offset(patientHeader))).toBeLessThan(1));
+		await waitFor(() =>
+			expect(tabs.getBoundingClientRect().bottom).toBeLessThanOrEqual(patientHeader.getBoundingClientRect().bottom + 1),
+		);
 		await expect(patientHeader).toHaveClass("shadow-sm", "after:opacity-100");
 		await expect(appHeader).toHaveClass("shadow-none");
 
-		// Up: both come back, the Patient Header under the app header.
+		// Up: all three come back, stacked; the tabs take the shadow.
 		await scrollTo(350);
 		await waitFor(() => expect(Math.abs(offset(appHeader))).toBeLessThan(1));
 		await waitFor(() => expect(Math.abs(offset(patientHeader) - appHeader.offsetHeight)).toBeLessThan(1));
-		await expect(patientHeader).toHaveClass("shadow-sm");
+		await waitFor(() =>
+			expect(Math.abs(offset(tabs) - appHeader.offsetHeight - patientHeader.offsetHeight)).toBeLessThan(1),
+		);
+		await expect(tabs).toHaveClass("shadow-sm");
+		await expect(patientHeader).toHaveClass("shadow-none", "after:opacity-0");
 
 		// Down again: hidden again.
 		await scrollTo(500);
 		await waitFor(() => expect(Math.abs(offset(patientHeader))).toBeLessThan(1));
+		await expect(tabs).toHaveClass("-translate-y-full");
 
-		// Back at the top: the app header shows and the Patient Header is in its place, without the shadow.
+		// Back at the top: everything in its place, no shadow.
 		await scrollTo(0);
 		await waitFor(() => expect(patientHeader).toHaveClass("shadow-none", "after:opacity-0"));
+		await expect(tabs).toHaveClass("shadow-none");
 		await waitFor(() => expect(Math.abs(offset(appHeader))).toBeLessThan(1));
 	},
 };
