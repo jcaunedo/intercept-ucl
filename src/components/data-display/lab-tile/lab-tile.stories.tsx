@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { LabTile } from "./lab-tile";
 
@@ -51,6 +52,23 @@ export const Pending: Story = {
 
 /** No earlier result to compare with. */
 export const FirstResult: Story = { args: { previous: undefined } };
+
+/** Opens something, e.g. the lab's trend: the whole tile is one button, ringed on hover. */
+export const Openable: Story = {
+	args: { flag: "high", onOpen: fn() },
+	play: async ({ args, canvasElement }) => {
+		await userEvent.click(within(canvasElement).getByRole("button", { name: "Lactate, view trend" }));
+		await expect(args.onOpen).toHaveBeenCalledOnce();
+	},
+};
+
+/** A toggle (`pressed`): the ring stays while it's on, e.g. Patient details' key labs while Lab trends charts the lab. */
+export const Pressed: Story = {
+	args: { flag: "high", onOpen: fn(), pressed: true },
+	play: async ({ canvasElement }) => {
+		await expect(within(canvasElement).getByRole("button", { name: "Lactate, view trend" })).toHaveAttribute("aria-pressed", "true");
+	},
+};
 
 /** Every Figma variant: State=Resulted × Flag=None | High | Low | Critical, and State=Pending. */
 export const AllVariants: Story = {

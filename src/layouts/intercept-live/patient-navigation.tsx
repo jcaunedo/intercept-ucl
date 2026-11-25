@@ -53,6 +53,13 @@ type PatientNavigation = {
 	 */
 	askAboutPatient: (patientId: string, patientName: string, tags?: string[], question?: string) => void;
 	/**
+	 * The patient Ask Intercept Live is open about now, or `null` while it's closed (or about no one), so a control that
+	 * opened it can close it on a second click (an AI summary banner, Nov 25, 2026, user's call).
+	 */
+	askPatientId?: string | null;
+	/** Closes Ask Intercept Live. */
+	closeAsk?: () => void;
+	/**
 	 * The patient the page is about now without their details open (Messages: the open conversation's patient), or
 	 * `null`. The Sidebar's Ask Intercept Live then opens about them, as it does on a patient's page, without asking
 	 * anything. `name` is "Last, First"; `tags` their tags' labels. The page clears it when it leaves.
@@ -75,6 +82,12 @@ type PatientNavigation = {
 	clearActiveAlertsRequest: () => void;
 	/** Whether the canvas is scrolled, so the header and the patient header compact together. */
 	compact: boolean;
+	/**
+	 * Whether the app header has slid up out of view on a patient's page: scrolling down hides it, scrolling up brings it
+	 * back (PRD Patient details PD-016). The Patient Header sticks at the canvas's top while it's hidden, under it while
+	 * it shows. Always false off a patient's page.
+	 */
+	appHeaderHidden: boolean;
 	/** Whether a patient's details are open, so the page under them is hidden. */
 	patientOpen: boolean;
 	/** When the clinician opened each patient's details in this session, ISO 8601 by patient id (Recently viewed). */

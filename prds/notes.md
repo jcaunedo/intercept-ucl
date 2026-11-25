@@ -6,7 +6,8 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 <!--
 Created: Nov 13, 2026
 Created by: Julio Caunedo
-Last updated: Nov 19, 2026
+Last updated: Nov 25, 2026
+Latest update: the Notes tab's rules (PD-070 to PD-073: the list and the reader, New note, write-back status, ambient capture) moved here from Patient details §10, as §5.1. Why: each Patient details tab has its own PRD (user's call), and the Notes tab's is this one.
 Scope: Clinical notes in Intercept Live (Clinical Documentation, Spec §5.4): what a note is, the note types and their templates, writing, signing, co-signing and attesting a note, AI drafts, and write-back to the hospital's record. Governs the note itself and its editor (`sections/note-editor.tsx`, `note-templates.ts`, `note-chart.ts`); the Notes tab's list and reader stay in PRD Patient details (PD-070).
 Purpose: The client sent Intercept's current Epic note templates (`documents/notes/`). This PRD records what they show, how a tele-ICU clinician works with notes, and what Intercept's note editor has to do, with what's still open.
 -->
@@ -20,7 +21,7 @@ Purpose: The client sent Intercept's current Epic note templates (`documents/not
 **Audience:** Intensivists and APPs; whether Critical Care RNs write notes is open (PD-OD-12). The bedside team reads the signed note in their hospital's EMR  
 **Version:** 0.2  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 19, 2026
+**Last updated:** November 25, 2026
 
 ---
 
@@ -214,6 +215,36 @@ CD-07 and DU-24 list different note types from the client's templates. Cowork ow
 | NTE-016 | **The editor** | The note type and its template at the top; an index of the note's sections beside it, each marked when required and empty; each section with its way to write it (NTE-006), and a chart section's **as of** and **Refresh**; **Save draft**, **Assign** (an APP's note) and **Sign**. ✅ **Resolved:** in the Notes tab's right pane, in the reader's place, beside the list. A header that stays under the page's while the note scrolls: the type, **Unverified** while an AI section waits and **Draft**, the author and "Started {time}", then **Save draft** and **Sign**. ~~Beside the sections, while the pane is wide enough, the index: each section's heading, a check when done, an empty circle while required and blank (red after a failed sign), a sparkle for an AI draft to review; a click scrolls to it.~~ ✅ **Resolved:** the index is a menu: an outline icon button (lucide `menu`, "Note sections") before Save draft opens **Sections**, each section's heading with a check when done, an empty circle while required and blank (red after a failed sign), a sparkle for an AI draft to review; picking one scrolls to it and puts focus in its first field. The sections take the pane's full width. ⚠️ **Not built:** Assign; the app header's Create › New note only reports the click (it doesn't open the Notes tab). |
 | NTE-017 | **Accessibility** | Required blanks are announced as required, and the list of blanks on a failed sign is read out. AI-written sections say so in text, not only by color. The section index is a navigation landmark. Dictation is a peer to typing, not a hidden shortcut (Spec §5.4). |
 | NTE-018 | **Synthetic data** | Every note in the prototype is made up (Brief; PD-150). Nothing from the client's screenshots is reused as sample data. |
+
+### 5.1 The Notes tab
+
+ℹ️ Moved here from [patient-details.md](patient-details.md), so the Notes tab's rules live with the note's: the tab is Patient details › Notes; the page around it (header, tabs, panels) stays in [patient-details.md](patient-details.md).
+
+#### PD-070 — Note list
+
+Notes imported from the hospital EMR (by the tenant's note-type rules, Spec §5.8) and Intercept notes, newest first: type, author, time, status (Draft, Signed, Written back, Write-back failed). Filter by type and author, and search.
+
+- ✅ **Resolved:** the Notes tab is two panes side by side: the list, and the selected note beside it (under it on a narrow screen). The newest note is selected first; the selected row is filled grey.
+- ✅ **Resolved:** a search at the start of the list's header opens across it and narrows the list by note type, author and the note's text; Escape clears it, then closes it. With no match: "No notes match “{search}”." The type and author filters stay beside it.
+- ✅ **Resolved:** **New note** (PD-071) is a "+" button at the end of the list's header. The list has no title or "{shown} of {all}" count on screen.
+- ✅ **Resolved:** "+" opens a menu of the note types, and the chosen one opens in the note editor in the selected note's place, beside the list; a draft's **Continue writing** (an AI Scribe draft's **Review and sign**) opens it there too (PRD Notes NTE-002, NTE-016).
+- ✅ **Resolved:** beside the note, the list's pane is as tall as the page shows under its top, so its last note can always be scrolled to, before the page scrolls too.
+- ✅ **Resolved:** an AI Scribe draft is marked by its **AI Scribe** badge, in the list and next to the note's title (PD-073); ~~a dashed purple edge~~ no longer.
+- ✅ **Resolved:** the selected note shows its type as the title with its status beside it, then who wrote it and when, then its sections (Assessment, Plan…).
+
+#### PD-071 — New note
+
+Opens the Clinical Documentation surface in context, in the Intercept standard format, with the patient's data available to insert (Spec §5.4). The page shows the draft's status until it is signed.
+
+- ~~The note's own PRD (Clinical Documentation, AI Scribe) defines the editor.~~ ✅ **Resolved:** PRD Notes (`prds/notes.md`) defines the note itself: the note types and their templates, the editor, signing, the attending attestation, AI drafts and write-back. The "Intercept standard format" is what the clinician writes in; Intercept's templates in a hospital's Epic are what it converts to (NTE-OD-01 lists the note types still open). This page only starts a note and shows its status.
+
+#### PD-072 — Write-back status
+
+A signed note shows where it went: "Written to Epic · 14:32" (Integrated), or "Ready to import" with its format (Overlay; Spec §5.4). A failure says what failed and what to do.
+
+#### PD-073 — Ambient capture
+
+When the AI Scribe is listening during a camera session, the page shows it at all times, with Pause and Stop (Spec §5.4: visible capture state, one-interaction opt-out). Consent follows the hospital's state profile; where all-party consent applies, capture starts only after consent is recorded.
 
 ---
 

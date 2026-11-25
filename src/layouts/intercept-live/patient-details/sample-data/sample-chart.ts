@@ -84,6 +84,10 @@ function flagFor(value: string, range: string): ChartResult["flag"] {
 	return number(value) < low ? "low" : number(value) > high ? "high" : undefined;
 }
 
+/** A previous result with the flag the lab gave it (the sample's own flag rule stands in for the lab). */
+const withFlag = (previous: { value: string; at: string } | undefined, range: string | undefined): ChartResult["previous"] =>
+	previous && range ? { ...previous, flag: flagFor(previous.value, range) } : previous;
+
 /* -------------------------------------------------------------------------- */
 /* Builders                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -195,7 +199,7 @@ function buildChart(record: PatientRecord, spec: ChartSpec): PatientChart {
 			status: lab.value === undefined ? ("pending" as const) : undefined,
 			resultedAt: lab.resultedAt,
 			collectedAt: lab.collectedAt,
-			previous: lab.previous,
+			previous: withFlag(lab.previous, rangeOf(lab.name)),
 			panel: references[lab.name]?.panel ?? "Other",
 		})),
 		...spec.extras.map(([name, value, options = {}]) => {
@@ -209,7 +213,7 @@ function buildChart(record: PatientRecord, spec: ChartSpec): PatientChart {
 				status: options.status,
 				original: options.original,
 				resultedAt: value === null ? undefined : options.minutes === undefined ? morning : minutesAgo(options.minutes),
-				previous: options.previous ? { value: options.previous[0], at: minutesAgo(options.previous[1]) } : undefined,
+				previous: options.previous ? withFlag({ value: options.previous[0], at: minutesAgo(options.previous[1]) }, range) : undefined,
 				panel: references[name]?.panel ?? "Other",
 			};
 		}),
@@ -228,7 +232,7 @@ function buildChart(record: PatientRecord, spec: ChartSpec): PatientChart {
 				range,
 				flag: range ? flagFor(value, range) : undefined,
 				resultedAt: abg.collectedAt,
-				previous: previous && spec.abgBefore ? { value: previous.value, at: hoursAgo(spec.abgBefore[1]) } : undefined,
+				previous: previous && spec.abgBefore ? withFlag({ value: previous.value, at: hoursAgo(spec.abgBefore[1]) }, range) : undefined,
 				panel: "Blood gases",
 			});
 		}

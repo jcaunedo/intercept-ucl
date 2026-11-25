@@ -7,6 +7,8 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 Created: Oct 28, 2026
 Created by: Julio Caunedo
 Last updated: Nov 25, 2026
+Latest update: the app header no longer shows the patient once the Patient header scrolls away; it keeps its breadcrumb at all times (PD-016), and PD-010 no longer asks for the MRN on screen while scrolled: the name in the breadcrumb is enough. Why: intercept.ds app-header dropped its OnScroll variant (user's call).
+Recent updates: each tab's PRD numbers its own criteria and open decisions (PDO-, PDT-, PDL-, PDC-, PDS-, PDM-, PDR-, PDE-), and the links here use the new IDs. Before that, each tab got its own PRD and its sections, criteria and open decisions moved there, and the Labs tab opened on a Labs summary, the key labs and Lab trends.
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
 -->
@@ -156,14 +158,29 @@ The page uses the Provider Desktop shell (Sidebar, sticky AppHeader, canvas, sid
 
 | Region | Content | Notes |
 |---|---|---|
-| **Patient header** | Identity, safety badges, location, acuity, organ support, actions, patient switcher (§4) | ~~Sticky; compacts on scroll~~ Scrolls with the page; once it's out of view, the app header shows the patient (PD-016) |
+| **Patient header** | Identity, safety badges, location, acuity, organ support, actions, patient switcher (§4) | ~~Sticky; compacts on scroll~~ Scrolls with the page; the app header keeps its breadcrumb (PD-016) |
 | **Alerts strip** | This patient's active alerts and concerns (PD-020) | Mandatory; under the header |
 | **Sections** | Overview, Timeline, Labs, Medications, Orders, Notes, Sepsis (§5–§11) | ⚠️ **Decision needed:** tabs or one scrolling page with a section index (PD-OD-02) |
 | **Page panel** | Camera, care team & messages, or Ask (§12, §13) | The shell's right-hand panel (`PagePanel`); resizable, closable |
 
-✅ **Resolved:** the hospital record's tab is labeled **EMR** for every hospital, whatever its system (Meditech, Epic, Cerner, TruBridge…), so the tab row reads the same across sites. Inside the tab, the system is named ("Meditech at Sidney Regional"), and so is its empty state ("Nothing from Meditech yet").
+ℹ️ The EMR tab's name and contents are in [patient-details-emr.md](patient-details-emr.md).
 
 ✅ **Resolved:** the tabs, in this order: **Overview · Timeline · Labs · Chart · Care Plan · Medications · Orders · Notes · EMR · Live Camera** (~~Overview · Vitals · Labs · Chart · Timeline · …~~: Vitals merged into the Timeline the same day, see §6). Labs and Chart are separate tabs: Labs holds results and microbiology; Chart holds the rest of the hospital's record (problems, history, allergies, home medications, imaging reports). **Care Plan** is its own tab: ~~the Overview's Care plan at full length (the pathway from an alert, keep or transfer, and every problem of the hospital's plan of care);~~ ✅ **Resolved:** the plan problem by problem, each pathway inside the problem it treats ([care-plan.md](care-plan.md)); the Overview's card shows four problems and its **View all** opens the tab. **Live Camera** is the bedside camera (it was "Camera view"). Sepsis and Discharge, shown only for some patients, follow Care Plan, since they're plans too. 🙋 **Open question:** how the sections connect and which can merge (e.g. Chart into EMR, Discharge and Sepsis into Care Plan, Labs and Vitals into the Timeline); this order is the starting point.
+
+Each tab has its own PRD; this one keeps the page around them (header, tabs, panels, entry points, freshness, accessibility):
+
+- **Overview:** [patient-details-overview.md](patient-details-overview.md)
+- **Timeline:** [patient-details-timeline.md](patient-details-timeline.md)
+- **Labs:** [patient-details-labs.md](patient-details-labs.md)
+- **Chart:** [patient-details-chart.md](patient-details-chart.md)
+- **Care Plan:** [care-plan.md](care-plan.md)
+- **Sepsis:** [patient-details-sepsis.md](patient-details-sepsis.md)
+- **Discharge:** [transitions-of-care.md](transitions-of-care.md), with the social needs and referrals in [alert-maximized-modal.md](alert-maximized-modal.md) (AMM-026, AMM-027)
+- **Medications:** [patient-details-medications.md](patient-details-medications.md)
+- **Orders:** [patient-details-orders.md](patient-details-orders.md)
+- **Notes:** [notes.md](notes.md), §5.1 "The Notes tab"
+- **EMR:** [patient-details-emr.md](patient-details-emr.md)
+- **Live Camera:** [bedside-camera.md](bedside-camera.md)
 
 ~~Proposed section list (each section's content is in §5–§11):~~ The list below predates the order above.
 
@@ -188,17 +205,17 @@ The page uses the Provider Desktop shell (Sidebar, sticky AppHeader, canvas, sid
 
 | ID | Tab | Today | Made actionable (proposed) | Status |
 |---|---|---|---|---|
-| PD-163 | **Overview** | The brief opens Ask Intercept Live; View all links open Medications, Care Plan and Orders; the rest is read-only | **Up next**: Mark done, and each item opens what it is (a dose in Medications, a checkpoint in Care Plan, a task in its pathway). A clinical finding opens its row in Labs; a Critical one has **Acknowledge**. Oxygen and infusions' View all opens the Timeline's Pump lanes, where the rates are (it opens Medications today). A referral opens Discharge | ⚠️ Not built |
-| PD-164 | **Timeline** | Table view, the window, the crosshair, filters; an open alert's bell opens the alert | An event marker opens what it is (~~the alert,~~ the note, order or pathway; ✅ **Resolved:** an open alert's bell opens the alert, built). A lane's value opens its provenance (PD-032). An out-of-limit stretch can be **annotated** ("Artifact", "Repositioned", free text), marked on the lane and in the table. ~~Finer ICU windows (PD-030). Where the latest values sit (PD-OD-15)~~ ✅ **Resolved:** finer windows and the Previous / Now columns, built | ⚠️ Partly built |
-| PD-165 | **Labs** | Read-only tables | A Critical result has **Acknowledge** (who and when). A test opens its trend (its Timeline lane). A resistant organism offers **Review antibiotics** (Medications filtered to antibiotics, or an order recommendation) | ⚠️ Not built |
-| PD-166 | **Chart** | Show or hide an imaging report | Home medications get **Reconcile** (continue, hold or change, with a reason) where the record allows; the Held / Continued / Changed badge is its result. A problem links to its Care Plan problem, or **Add to care plan** as a proposal ([care-plan.md](care-plan.md) CPL-014) | ⚠️ Not built |
+| PD-163 | **Overview** | ℹ️ Moved to [patient-details-overview.md](patient-details-overview.md) | | |
+| PD-164 | **Timeline** | ℹ️ Moved to [patient-details-timeline.md](patient-details-timeline.md) | | |
+| PD-165 | **Labs** | ℹ️ Moved to [patient-details-labs.md](patient-details-labs.md) | | |
+| PD-166 | **Chart** | ℹ️ Moved to [patient-details-chart.md](patient-details-chart.md) | | |
 | PD-167 | **Care Plan** | Chips, Show met, View history, Review / Open pathway; problems read-only | **Update progress** on each problem: record its status with a note, propose a goal or intervention change ([care-plan.md](care-plan.md) CPL-014). Keep or transfer's checkpoints can be recorded (Passed or Missed, with the value). A bundle or task line can be marked done here | ⚠️ Not built |
-| PD-168 | **Sepsis** | Validate; Reject (reason, exclusion, note); Decline an element; RN view-only | A bundle element can be marked **Done** (with its time). Time zero can be changed, with a reason. **Open in Virtual Sepsis** opens it (it does nothing today). Decisions reach the app (PD-161) | ⚠️ Not built |
+| PD-168 | **Sepsis** | ℹ️ Moved to [patient-details-sepsis.md](patient-details-sepsis.md) | | |
 | PD-169 | **Discharge** | Send to clinic; referrals Send, Skip, Undo skip | **Edit** the primary-care handoff before sending. A follow-up can be **Marked done** or **Rescheduled**. A High readmission risk shows its follow-ups | ⚠️ Not built |
-| PD-170 | **Medications** | Group tabs, search, Pump values (opens the Timeline) | Pump values opens that drug's lane. An overdue dose offers **Message the bedside nurse** (pre-filled, PRD Messages). A drip offers **Recommend a change** (an order recommendation in Orders); no direct titration: the pump is the hospital's | ⚠️ Not built |
-| PD-171 | **Orders** | Recommendations: Accept, Modify, Decline (kept in the tab) | An active order gets **Discontinue** and **Modify**, as recommendations for the hospital's sign-off in Overlay mode or as orders where Integrated. Decisions reach the app with the user's role (PD-062) | ⚠️ Not built |
+| PD-170 | **Medications** | ℹ️ Moved to [patient-details-medications.md](patient-details-medications.md) | | |
+| PD-171 | **Orders** | ℹ️ Moved to [patient-details-orders.md](patient-details-orders.md) | | |
 | PD-172 | **Notes** | New note, Continue writing, Review and sign, Try again, the editor | Save, Sign and Try again reach the app and the EMR write-back (PD-072); Try again retries for real. A signed note gets **Addendum** | ⚠️ Not built |
-| PD-173 | **EMR** | None | **Open chart in {EMR}** where allowed (PD-014). A failed write-back has **Try again**; a delayed feed **Refresh**. ⚠️ **Copy:** it still names a Vitals tab (merged into the Timeline) | ⚠️ Not built |
+| PD-173 | **EMR** | ℹ️ Moved to [patient-details-emr.md](patient-details-emr.md) | | |
 | PD-174 | **Live Camera** | Look in, End, Talk, presets, overlay, huddle and its scribe | Every action reaches the app (session log, audit). A huddle's "Note drafted" opens the draft in Notes. The people under Who's here can be messaged or called | ⚠️ Not built |
 
 ### 3.3 Information hierarchy
@@ -239,7 +256,9 @@ Spec §9.1, Principle 4: some things every clinician must see; others they choos
 | Location | Hospital · Unit · Room - Bed, broad to specific, after a location pin | PC-013, PC-014 |
 | Admission | ICU day ("ICU day 3") and admitting diagnosis, on the Overview's Encounter card with the weight | PC-015 |
 
-- Name and MRN are always visible, including in the compact sticky header, so two identifiers are on screen whatever the clinician is looking at (General: Joint Commission NPSG.01.01.01 patient identification).
+- ~~Name and MRN are always visible, including in the compact sticky header, so two identifiers are on screen whatever the clinician is looking at (General: Joint Commission NPSG.01.01.01 patient identification).~~
+- The Patient header shows the name and MRN together, so two identifiers are on screen at the top of the page (General: Joint Commission NPSG.01.01.01 patient identification). Once it has scrolled away, the name alone stays on screen, in the app header's breadcrumb (PD-016).
+- ✅ **Resolved:** the name in the breadcrumb is enough while the page is scrolled; the MRN doesn't need to stay on screen. The two identifiers are in the Patient header, a scroll away.
 - ⚠️ **Gap:** admitting diagnosis and problem list aren't in the Patient card data model (PC-015 has encounter fields only). Add them to OD-01.
 - ✅ **Resolved:** the header (intercept.ds Patient Header) shows sex and age after the name, then one line with MRN and the account number (ACCT, the hospital's number for this stay), the location after a pin, and the early-warning score as the patient cards write it. ICU day and weight left the header for the Overview's Encounter card.
 
@@ -316,100 +335,18 @@ Previous / next buttons step through the list the clinician came from (the Censu
 
 ~~On scroll, the header compacts to one row: name, MRN, location, code status, allergies, the top alert pill and the actions. It never collapses further.~~
 
-The Patient header scrolls with the page. Once it has gone under the sticky app header, the app header shows the patient in place of its breadcrumb: their avatar, the name with sex and age ("Miller, Sarah - F, 59"), then MRN · ACCT and the location, as the Patient header writes them. Scrolled back until the Patient header shows again, the breadcrumb returns. The two swap in place with a short fade and rise; a fade only under reduced motion.
+~~The Patient header scrolls with the page. Once it has gone under the sticky app header, the app header shows the patient in place of its breadcrumb: their avatar, the name with sex and age ("Miller, Sarah - F, 59"), then MRN · ACCT and the location, as the Patient header writes them. Scrolled back until the Patient header shows again, the breadcrumb returns. The two swap in place with a short fade and rise; a fade only under reduced motion.~~
 
-- ✅ **Resolved:** the app header shows the patient only once the Patient header is out of view, and the breadcrumb at the top of the page (intercept.ds app-header, OnScroll). So the name and MRN stay on screen while the clinician scrolls (PD-010), and Back stays the way back.
+The Patient header scrolls with the page. The sticky app header keeps its breadcrumb ("Census › Miller, Sarah") the whole time, at the top of the page and scrolled; it only tightens its padding while the page is scrolled. The patient's name stays on screen through the breadcrumb.
+
+- ~~✅ **Resolved:** the app header shows the patient only once the Patient header is out of view, and the breadcrumb at the top of the page (intercept.ds app-header, OnScroll). So the name and MRN stay on screen while the clinician scrolls (PD-010), and Back stays the way back.~~
+- ✅ **Resolved:** the app header doesn't swap in the patient on scroll; it shows the breadcrumb at all times. intercept.ds app-header dropped its OnScroll variant and keeps only Default and Patient Context, which draws the breadcrumb again. The name stays on screen through the breadcrumb, which is enough while scrolled (PD-010).
 
 ---
 
 ## 5. Overview
 
-The default view: what the clinician needs to know about this patient now, and nothing more (Spec §9.1, Principle 2).
-
-### PD-020 — Alerts and concerns
-
-✅ **Resolved:** (Nov 9, 2026, user's call, following Intercept-Live `149:4464`) the alerts are no longer on the Overview. The patient header shows how many are open, in the worst one's color, on every tab, and **View alerts** opens them all in the Alerts panel (PD-012), with the rows and actions below. That keeps them a mandatory surface (§3.4) without a second copy on the page.
-
-Every active alert and Clinician Intuition Alert for the patient, highest severity first (MON-021), with the same rows and actions as the triage queue: Acknowledge, Escalate, Resolve with a reason, Decline with rationale for AI rows (MON-022, MON-023).
-
-- Each row shows source, age, state with who and when, and Overdue (PRD OD-15).
-- A concern carried over from the last shift says so, with who raised it (PC-132).
-- Selecting an alert highlights its evidence on the Timeline (§6).
-- With no active alerts: "No active alerts · Last alert 14:22" (MON-051).
-
-### PD-021 — Live monitor
-
-The patient's full bedside monitor: the four-lane `PatientMonitoringCard` view (ECG II, Pleth, ABP, Resp) with HR, SpO₂, BP and MAP, RR as primary numerics and temperature, EtCO₂ and the rest secondary.
-
-- Follows the Monitoring display conventions MON-070 to MON-074: fixed lane order, numeric hierarchy, one color per parameter, alarms shown apart from parameter colors, values grouped by device.
-- A value outside its limits gets the ↑ / ↓ tag (MON-014); limits come from configuration (PC-044).
-- ⚠️ **Decision needed:** the waveform set per bed type (MON-OD-11) and the parameter palette (MON-OD-10) are shared with Monitoring.
-
-### PD-022 — Organ support
-
-| Group | Label | Content |
-|---|---|---|
-| **Respiratory** | "Ventilator" (MON-074) | Support type (invasive, NIV, high-flow, oxygen, room air), mode, FiO₂, PEEP, set and measured tidal volume and rate, plateau pressure, last ABG. Vent-order mismatch evidence when present: current vs ordered, time delta, source of each (PC-052, Spec §8.3) |
-| **Infusions** | "Pump" (MON-074) | Each continuous infusion: drug, rate with units, dose by weight where relevant, last change and its direction. A missing pump feed reads "Rate unavailable", never "stopped" (PC-060) |
-| **Other support** | By device | CRRT, ECMO and others, when sourced |
-
-- ⚠️ **Decision needed:** the exact respiratory parameters (PRD OD-08).
-
-### PD-023 — What changed
-
-Changes since this clinician last viewed the patient: new and resolved alerts, acuity change, drip and ventilator changes, new results, new notes, ADT events. Each item has its time and opens its place on the Timeline.
-
-- "Since you last viewed · 06:40" heads the list; first view of the shift shows the last 12 hours.
-- ✅ **Resolved:** (Nov 9, 2026, user's call, following Intercept-Live `149:4464`) the Overview no longer has the Now line and its log; what changed is on the Timeline (§6), shaded since the last look.
-- ⚠️ **Decision needed:** how "last viewed" is recorded per clinician, and whether it's derived from the access audit (PD-OD-06, PC-153).
-
-### PD-024 — AI summary
-
-A short summary of the last 24 hours written by the Conversational Clinical Data Agent (Spec §8.7), on request or kept current.
-
-- Marked as AI, with the agent's name and when it was written (Spec §9.1, Principles 7 and 9).
-- Every sentence cites its source (vitals, labs, notes, orders); a citation opens the source and its place on the Timeline.
-- Retrieves and summarizes only: no diagnosis, no therapeutic recommendation (Spec §8.7). Where data is thin it says so ("No labs resulted at this hospital in the last 24 hours") instead of filling the gap (Spec §9.1, Principle 12).
-- It doesn't rewrite while someone is reading it: a newer version waits behind "Summary updated · Show" (as the Monitoring panel order prompt, MON-013).
-- ✅ **Resolved:** (Nov 9, 2026, user's call, following intercept.ds AI Clinical Summary Banner `1467:13678`) the Overview's brief is the AI clinical summary banner: ~~"AI clinical summary: {headline}" over the summary~~, with how many sources it read and how old it is. Clicking it still opens Ask Intercept Live about what's behind it. Its **×** hides it until a newer summary or another patient, so the clinician can put it away (an optional surface, §3.4).
-- ✅ **Resolved:** the brief is one line, the headline in bold then the summary ("**Worsening hemodynamic and respiratory status:** MAP decreased from 70 to 58 mmHg…"), cut off where it runs out of room; the words "AI clinical summary" are no longer on it, its sparkle marks it as AI, and hovering it shows "AI clinical summary" in a tooltip (screen readers hear it as the banner's name).
-- ⚠️ **Decision needed:** on by default or on request, and whether it ranks "what matters now" (PD-OD-05). The exploration's Brief direction ranks with AI; a fixed rule (severity, then rate of change) that the AI only explains is safer to validate.
-
-### PD-025 — Key labs snapshot
-
-The latest value of the labs that matter for this patient (by default lactate, creatinine, potassium, hemoglobin, WBC, the last ABG), each with its result time, previous value and direction. Pending labs show "Pending · collected 13:10". The full list is in Labs (§7).
-
-✅ **Resolved:** (Nov 9, 2026, user's call, following Intercept-Live `149:4464`, annotated "section primarily reserved for contextual clinical findings") the row is the Overview's **clinical findings**: the key labs, then what matters for this patient's situation as tiles of the same kind: a vital watched against a rule ("SBP 128 · Nitro stops < 110"), the breathing support and since when ("BiPAP 10/5 · 40% · Since 8:03 AM"), a charted temperature. A charted value older than its limit says how old it is in red ("2 h old"), so a stale number never reads as current (PD-120). ⚠️ **Decision needed:** who picks each patient's findings (the care plan, a rule per condition, or the clinician) and each one's staleness limit; the prototype's samples set them by hand.
-
-### PD-026 — Context
-
-| Item | Content |
-|---|---|
-| **Diagnosis and problems** | Admitting diagnosis, active problem list (⚠️ **Gap:** PD-010) |
-| **Care team** | Bedside nurse, attending of record, Intercept intensivist, APP and RN on this shift, with presence (Spec §6.12) and a message action each |
-| **Encounter** | Admitted, ICU day, encounter status (PC-015), transfer pending (PRD OD-16) |
-| **Referrals** | ✅ **Resolved:** (Nov 9, 2026, user's call; Intercept-Live draws the card empty) the patient's referrals, today the discharge workflow's, each with who receives it and Sent, Skipped or To send. None reads "No referrals for this patient." |
-| **Family contact** | ⚠️ **Decision needed:** not in v1 scope; see §1.4 (PD-OD-14) |
-
-### Care plan and activity
-
-✅ **Resolved:** built (Nov 3, 2026, user's call): the page displays and tracks what was done and decided about the patient, so whoever opens it later, or the next shift, sees the plan in force and how it came about. It answers the scenario's "tracked on her record" (Demo Use Cases, Scenario 1, steps 3 to 6), and is the synthetic audit trail the requirements allow "as a design element, not a compliance system" (CC-09). ⚠️ **Decision needed:** requirement IDs; Cowork owns the PD- range, so these parts are unnumbered until it adds them. Related: DU-22 (keep or transfer), DU-23 (order sets and the co-sign route), DU-24 (AI-drafted notes), PD-133 (audit).
-
-| Part | Where | What it shows |
-|---|---|---|
-| **Care plan** | Overview card | ℹ️ Moved to [care-plan.md](care-plan.md) ("CPL-040 — The Overview's Care plan card"): its rows, its four-row cap, **View all · n** and its sources. |
-| **Activity** | The Timeline (✅ **Resolved:** Nov 9, 2026, user's call: the Overview's log is gone) | Every action and decision with who and when, newest first: the alert fired, acknowledged, escalated or resolved; the video consult started and ended, with how long it lasted; the consult note approved; the pathway sent, co-signed or declined; keep or transfer decided or taken back; the checkpoints; Transfer avoided. ✅ **Resolved:** since Nov 6, 2026 (Intercept-Live `149:4464`): the log shows the last 24 h, what's new since the clinician last looked shaded (PD-023), with **Open Timeline** |
-| **Pathway panel** | ~~The Care Plan tab's **View full plan** (the Overview's Care plan too, until Nov 13, 2026),~~ ✅ **Resolved:** a pathway's **Review pathway** / **Open pathway** in the Care Plan tab, on that alert's pathway, a resolved alert's whole card in the Alerts panel (opens beside it), the Fall risk flag's **View fall prevention pathway**, and a notice's **Review referrals** (opens the page with the panel at the referrals). ~~**Decision (Nov 10, 2026, user's call):** the only place a pathway is reviewed and decided: the alert panel has no pathway.~~ ✅ **Resolved:** (Nov 11, 2026, user's call: the demo's four scenarios need it) the alert panel has its pathway again (**Pathway** on its score line, PRD Alert maximized modal); this panel shows the same pathway in the same state, open or closed, both ways. Without the consult panels, the Care plan's way to the pathway opens the alert. The Alerts panel's **View pathway** link stays gone (Nov 10, 2026). ✅ **Resolved:** (Nov 10, 2026, user's call) the Fall risk flag's popover (here, on the Monitoring and Census cards) has **View fall prevention pathway**, a button at its bottom, when the patient has one (a bed sensor alert suggests it); on a card it opens the patient's page with the panel on that pathway, here the panel itself. | ✅ **Resolved:** (Nov 9, 2026, user's call) the app header no longer has **Pathway**: a pathway is suggested by an alert, reviewed and decided by the clinician, then becomes part of the care plan, so it belongs to the alert, not to the patient. The page reaches it through the alert's suggestion in the Care plan; the alert modal keeps its Pathway button. ✅ **Resolved:** built (Nov 6, 2026, user's call: a side panel, not a tab): the alert panel's Pathway column, right of the page in Messages' place (one at a time, as on the alert): review, edit a dose, add a note, accept or decline, write your own; then the bundle, the DKA protocol, the bedside tasks, keep or transfer and discharge, as on the alert. Work in progress (a dose being edited, a note, a decline's reason) and whether it's open carry over between the alert and the page, both ways. With more than one alert's pathway, a select picks the alert. A reopened alert shows the decline's reason, the edited doses, the note and the sent and co-signed times. ⚠️ **Gap (Figma):** neither the panel nor the header's Pathway button is drawn; Figma's Pathways tab is superseded |
-| **Up next** | Overview card, beside the Care plan | What's due in the next 12 h, soonest first: scheduled medications, checkpoints not yet recorded, order recommendations with a due time, and the pathway's open bundle elements, DKA checks (those due or overdue, then the next) and open bedside tasks, each with how soon (Overdue, within the hour, later) |
-| **Timeline** | Events lane | The activity as events beside the vitals: alerts as alerts, notes as notes, the rest as care events. The axis ends at the newest data when it's newer than the clock's last minute |
-| **Orders** | Recommendations › Addressed, and Active orders | The pathway as a **Care pathway** recommendation: accepted by the intensivist (with the edited dose), sent for signature, then signed by the local physician (OE-03, OE-04); once co-signed, its orders are Active, ordered by the intensivist and co-signed by the local physician |
-| **Notes** | First in the list | The consult note the clinician approved from the AI Notetaker: a draft for signature (CD-05) |
-| **At the resolution** | Brief, early warning score, oxygen, vitals, Timeline | Scenario 1 at 06:00: stable on 2 L, RR 20, SpO₂ 95%, HR 88, NEWS2 3 (Low) |
-
-- ⚠️ **Naming conflict:** the alert panel calls the AI that drafts the consult note the **AI Notetaker**; Notes marks AI drafts **AI Scribe** (PD-073, PRD Bedside camera). Pick one name.
-- ⚠️ **Gap:** the prototype's night passes in seconds, so the night's activity bunches at the right edge of a 6 h Timeline; the table view lists it.
-- ⚠️ **Gap:** an order the pathway replaces isn't discontinued: Furosemide IV 120 mg is Active beside the earlier furosemide order.
-- ℹ️ In the prototype the activity, the plan, the orders and the note come from the decisions taken in the alert (the live feed); the app gets them from Clinical Alerting, Order Entry and Clinical Documentation, with the audit trail (PD-133).
+ℹ️ The Overview tab has its own PRD: [patient-details-overview.md](patient-details-overview.md). It holds PD-020 to PD-026 (alerts, live monitor, organ support, what changed, the AI summary, key labs, context) and the care plan and activity.
 
 ### Care Plan tab
 
@@ -419,162 +356,37 @@ The latest value of the labs that matter for this patient (by default lactate, c
 
 ## 6. Timeline
 
-✅ **Resolved:** **Vitals and Timeline are one tab, Timeline**, right after Overview. ~~At the top, the latest value of each vital sign (live from the monitor when there is one, its source, its age, dimmed when stale, a mark when outside its limits, its last 6 h); under it the time axis below.~~ ✅ **Resolved:** the latest values are the timeline's last two columns, **Previous** and **Now** (option B below, built): each lane ends in an earlier value beside its value now, to compare them: **Previous** is the value at the start of the chosen window, its header saying that moment under the word ("Previous · 4:45 PM" with 1 h at 5:45 PM; ✅ **Resolved:** a lab or charted value shows the result current then, with the time it was taken, so it can be the same result as Now when nothing newer came in), or, while the pointer is on the chart (or the arrow keys move the crosshair), the value there, its header then that time; **Now** is always now, its header showing the current time under the word, updated each minute (live from the monitor for HR, SpO₂, MAP and RR; dimmed with its time when stale; H or L when outside its limits). The chart opens on **12 h**, and its ~~**Show as table**~~ table view (the filter bar's Chart / Table toggle) is the hourly flowsheet, for every lane, not only vitals. EtCO₂ has its own lane when the patient has it. ✅ **Resolved:** **blood glucose** is there too (the clinical advisor's request): ~~a tile with the latest value, where it came from~~ its Previous and Now values (the result's time under each), where it came from (a fingerstick by the bedside nurse, or the lab) and how old it is, outside 70–180 mg/dL marked, and a Glucose lane among the labs with each value printed. Checks follow the patient's care: hourly on an insulin infusion, every 6 h in the ICU or for a diabetic, every 12 h on the floor. 🙋 **Open question:** the target range per patient (the prototype uses 70–180 mg/dL for everyone; insulin protocols often target 140–180). Why the merge: the Vitals tab's trends and flowsheet repeated the Timeline's monitor lanes and table; what only Vitals had was the latest-value row. One tab serves both "what is it now" and "what changed, and why". An older link to the Vitals tab opens the Timeline.
-
-🙋 **Open question:** Previous and Now right of the plot (built, the default) or left of it, between each lane's name and its plot ([Timeline option 2](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=316-16920), built as a prototype View: Prototype menu › Views › Timeline option 2) (PD-OD-19). Left puts a lane's values next to its name, read before its history; right keeps them beside the latest data. ~~🙋 **Open question:** where the latest values sit (PD-OD-15).~~ ✅ **Resolved:** B, the right column, as two columns: **Previous** (on a subtle fill: the value at the window's start, ~~or nothing at the crosshair~~ ✅ **Resolved:** or at the crosshair while it's on, its header then the crosshair's time) and **Now** (always the value now; ~~the crosshair's value while it's on~~ ✅ **Resolved:** hovering never changes it, so the hovered value compares with now) ([Intercept-Live › Timeline](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=311-8791)). The Latest values tiles are gone from the tab; they stay only for a record with vitals and no timeline. The two mockups that were compared, on Intercept-Live › Timeline, beside the screen as built then ([as built](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=307-7009)):
-
-| Option | Layout | For | Against |
-|---|---|---|---|
-| **A · On top** ([Figma](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=310-7329)) | The Latest values card above the timeline, as built: a tile per vital with its sparkline, source and age | The six vitals together, readable at a glance before the chart | Repeats each vital's value in the timeline's right column; pushes the chart down by about 220px |
-| **B · Right column** ([Figma](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=310-7992)) | No card: the timeline's right column widens to 200px and becomes the latest values, each lane's value larger, with its unit, a Live dot or its source and age, on its trend's row | A value and its history on one line; nothing shown twice; every lane's latest (pumps, oxygen, labs), not only the vitals; the chart starts higher | The plot loses 80px of width; no sparklines (the lane is the trend); the vitals aren't grouped apart from the rest |
-
-### PD-030 — One time axis
-
-Lanes share one time axis so cause and effect line up:
-
-| Lane group | Lanes (default) |
-|---|---|
-| **Monitor** | HR, SpO₂, BP (systolic–diastolic band with MAP), RR, temperature |
-| **Pump** | Each continuous infusion's rate |
-| **Ventilator** | FiO₂, PEEP, mode changes |
-| **Labs** | Lactate, creatinine and others, as dots with their values |
-| **Events** | Alerts, interventions, notes signed, ADT events, camera sessions |
-
-- ~~Windows: 1 h, 6 h, 24 h, 72 h, whole stay. ⚠️ **Decision needed:** windows and default (PRD OD-07); the exploration defaults to 24 h.~~ ~~✅ **Resolved:** windows **6 h · 12 h · 24 h**, opening on 12 h (built).~~ ✅ **Resolved:** windows **15 m · 30 m · 1 h · 6 h · 12 h · 24 h**, opening on 12 h (built).
-- ✅ **Resolved:** finer windows for the ICU, **15 min · 30 min · 1 h**, before the others: **15 min · 30 min · 1 h · 6 h · 12 h · 24 h**, to follow a fast change minute by minute (a pressor titration, a desaturation, a rhythm change). They show when the lanes have minute-level monitor data, as an ICU patient's do; without it the row starts at 6 h. Hour ticks become 5 min ticks (15 and 30 min) and 10 min ticks (1 h); the table alternative lists every minute, 2 min and 5 min; the crosshair's arrow keys step a minute. 12 h stays the default. ✅ **Resolved:** built, with 5 min columns for 15 and 30 min and 10 min columns for 1 h; the table lists every minute (15 min) or every 5 min (30 min, 1 h). ⚠️ **Not built:** the windows show for every patient; hiding them without minute-level data waits on PD-OD-16. ⚠️ **Gap:** the prototype's monitor lanes have a reading about every 10 minutes, too coarse for 15 min; the fine windows need the monitor's minute (or finer) data. 🙋 PD-OD-16.
-- A crosshair reads every lane at one moment; ~~values at the crosshair show at each lane's end~~ ✅ **Resolved:** its values show in each lane's Previous column, beside Now.
-- ✅ **Resolved:** each lane's plot agrees with the values beside it. A monitor reading the bedside monitor streams (HR, SpO₂, MAP, RR) runs on to now and ends at the live value Now shows; a pump rate or ventilator setting holds until it changes, so it runs to now as Now reads it, and ends where a record says it stopped; a charted or lab value ends at its last reading (Now marks it stale when it's old).
-- ✅ **Resolved:** the timeline scrolls through time, chart and table alike: a sideways swipe on a trackpad (or Shift and the mouse wheel) over the chart's plot or over the table moves the window back and forth, from the patient's first reading up to now; scrolling up and down still scrolls the page, and on a table wider than the screen its own sideways scroll comes first. Scrolled back, the chart's corner says the window's span ("10:05 – 11:05 AM") and a solid **Now** button appears before the time window choice, which brings the view back to now; Now (the column) always reads now, and Previous, the events and the table follow the window. Moving the crosshair past the window's edge with the arrow keys scrolls it too.
-- ✅ **Resolved:** the chart reads as a table ([Intercept-Live › Timeline](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=311-8791)): a head row with "Last 12 h" and one column per tick interval, named by its start ("10 PM", the date over a new day's first), then the **Events** lane, then each group's lanes under its heading (Monitoring, Pump, Ventilator, Oxygen, Other support, Labs), each lane's name and unit on its left and its Previous and Now values on its right.
-- ✅ **Resolved:** a **filter bar** over the chart: search (lanes by name or group, events by what happened), a chip per lane group the patient has (Monitor, Pump, Ventilator, Oxygen, Other support, Labs; picking one or more shows only theirs), ~~**All events** (one kind of event at a time),~~ the window, and Chart / Table. ✅ **Resolved:** no events menu; every kind of event shows, and the search narrows them.
-- ✅ **Resolved:** **events are markers you can tell apart without color**: a letter on its kind's color, **C** care event, **D** drip change, **V** ventilator change, **L** lab result, **N** note; an **alert** is Monitoring's alert badge, the bell in its severity's color (Critical, High, Medium, Low; green at its resolution, when it was resolved). ~~The All events menu is their key.~~ ✅ **Resolved:** the legend under the chart is their key, listing the kinds the patient's timeline has. Each marker names itself in a tooltip; markers that would overlap sit side by side, and ~~past two events in a run the rest fold into a count ("3") listing them~~ ✅ **Resolved:** when more than two would overlap, they become one **cluster**, a neutral marker showing how many events it holds ("4"), its tooltip listing them. Alerts never fold. **An open alert's bell opens the alert** in the alert modal; a resolved alert's doesn't, as in the Live feed. The patient's alerts come from their alert list (live, resolved and history), so each shows once, with its severity.
-- Limits show as a band from configuration; out-of-limit stretches get a neutral wash, not a severity color (MON-073).
-- A medication can be overlaid on any trend (Spec §8.7: "the lactate trend with the antibiotic timeline overlaid").
-- The clinician can add, hide and reorder lanes; the defaults are restored with one action.
-
-### PD-031 — Gaps and quality
-
-A period with no data is drawn as a gap, never interpolated. A value marked Invalid (PC-090) is drawn hollow with its reason. A device change is marked on its lane.
-
-### PD-032 — Provenance per point
-
-Any point opens its value, unit, observation time, ingestion time and source ("Monitor · Philips via Ceiba", "Lab · Epic") (PC-092, Spec §9.1, Principle 6).
+ℹ️ The Timeline tab has its own PRD: [patient-details-timeline.md](patient-details-timeline.md). It holds PD-030 to PD-032 (one time axis, gaps and quality, provenance per point) and the latest values' layout (PDT-OD-01, PDT-OD-03).
 
 ---
 
-## 7. Labs
+## 7. Labs and Chart
 
-~~✅ **Resolved:** the tab is labelled **Labs** (it said Chart for a while). It holds results, microbiology and imaging reports, with the problems, allergies, history and home medications beside them; "Chart" stays reserved for the hospital's record (PD-OD-01).~~ ✅ **Resolved:** Labs holds results and microbiology only; problems, history, allergies, home medications and imaging reports moved to their own **Chart** tab, after Labs (see §3.2).
-
-✅ **Resolved:** each card on the Labs tab names its source **EMR** ("EMR · 12 min ago"), as the tab does, whatever the hospital's system, so every site's page reads the same. The system is named in the EMR tab.
-
-### PD-040 — Results
-
-Grouped by panel (chemistry, hematology, blood gases, coagulation, cardiac, others), newest first: value, unit, reference range, flag, result time and the previous value with its direction.
-
-- ✅ **Resolved:** over the table, how many results are abnormal, critical and pending ("15 abnormal · 1 critical · 1 pending"; "All results in range" when none is flagged), and an **Abnormal only** toggle that leaves out the results within range. Pending results and those with no result in the window stay, since they aren't known to be normal; a panel left with nothing drops out. Off when the tab opens.
-- ✅ **Resolved:** the result time is the panel's: its heading says when most of its results came back ("Chemistry · Resulted 10:06 AM"), and a result names its own time under its value only when it differs (a repeat lactate, a corrected value). No per-row Resulted column.
-- ✅ **Resolved:** the previous value is shown as the **change**: its direction, the difference and what it was, "▲ +1.9 from 2.2 · Yesterday 10:21 AM" (a time today, "Yesterday" and a time, else the date). The arrow and difference take the flag's color only when the value moved further out of its range (worse); back toward the range, or within it, they stay muted. Screen readers hear "Up 1.9, further out of range". A range in words ("Negative") never marks a change as worse.
-- ✅ **Resolved:** the value, its flag and its range sit side by side at any screen width; the change takes the remaining room.
-- Flags use words and glyphs ("H", "L", "Critical"), not color alone (PC-160), ✅ **Resolved:** in the same colors as the Overview's lab tiles (High and Low apart). Ranges come from the hospital's lab (Spec §7.11), never hard-coded.
-- States: Ordered, Collected, Pending, Resulted, Corrected (with the original kept), Cancelled.
-- A critical result is visually distinct and shows whether it was acknowledged in the hospital's system, when that is known.
-
-### PD-041 — Microbiology
-
-Cultures with source, collection time and status (No growth to date, Preliminary, Final), organism and susceptibilities when final. Positive cultures in the last 72 hours are also listed in the Overview's key labs.
-
-### PD-042 — Imaging and other reports
-
-Report text with study, time and status. ℹ️ Viewing images is out of scope here (Specialty Care Access owns imaging review, Brief).
+ℹ️ The Labs tab has its own PRD: [patient-details-labs.md](patient-details-labs.md). It holds the tab's order (Labs summary, key labs, Lab trends), PD-040 Results and PD-041 Microbiology. The Chart tab's is [patient-details-chart.md](patient-details-chart.md), with PD-042 Imaging and other reports.
 
 ---
 
 ## 8. Medications
 
-### PD-050 — Active medications
-
-Scheduled, PRN and continuous medications from the hospital EMR: drug, dose, route, frequency, last given and next due, with source and time. Read-only (Spec §5.5).
-
-- Continuous infusions link to their Pump values (PD-022) and show both the ordered and the pump rate when both are known.
-- ⚠️ **Decision needed:** whether a pump rate that differs from the ordered rate is flagged. The Specification only defines this for ventilators (Spec §8.3); an infusion mismatch rule needs clinical approval (PD-OD-08).
+ℹ️ The Medications tab has its own PRD: [patient-details-medications.md](patient-details-medications.md) (PD-050, PDM-OD-01).
 
 ---
 
 ## 9. Orders
 
-### PD-060 — Active orders
-
-Active orders aggregated from the hospital EMR: type, details, ordering clinician, time, status and source (Spec §5.5 "read-only visibility into active orders").
-
-### PD-061 — Order recommendations
-
-Suggestions from the Order-Entry Suggestion Agent and the Vent-Order Mismatch Agent (Spec §8.3, §8.5), in their v1 classes only: vent-order alignment, sepsis-bundle alignment, electrolyte replacement, glucose-management enrollment.
-
-| Element | Requirement |
-|---|---|
-| **Look** | A recommendation, never an order: agent chip, "Recommendation", dashed edge (as AI rows in the triage queue, MON-023) |
-| **Evidence** | The values that triggered it, with sources and times |
-| **Protocol** | Which protocol it comes from: the hospital's, Intercept's curated one, SEP-1, or the glycemic system's criteria (Spec §8.5) |
-| **Actions** | Accept, Modify, Decline with rationale. Each outcome is recorded as taken, declined with rationale, or elapsed (Spec §8.2 three-state telemetry) |
-| **After Accept** | Integrated, where the hospital permits write-back: the order goes through write-back with the clinician's approval and is audited. Otherwise the clinician completes it in the hospital EMR (Spec §5.5) |
-
-- Never places an order by itself (Spec §8.5).
-- Insulin dosing is never proposed outside an integrated glycemic management system (Spec §8.5).
-- ⚠️ **Constraint:** in material Intercept shows externally, "complete it in the hospital EMR" may not be depicted as a deep-link or screen-operated fallback (Brief, "Show the sanctioned integration story"). The prototype shows the Integrated write-back path (PD-134).
-
-### PD-062 — Scope of practice
-
-For an APP, orders that need the supervising intensivist's sign-off say so before Accept, name the supervisor, and route for co-signature (Spec §3.2). An RN sees recommendations read-only, or not at all. ⚠️ **Decision needed:** which (PD-OD-09).
+ℹ️ The Orders tab has its own PRD: [patient-details-orders.md](patient-details-orders.md) (PD-060 to PD-062, PDR-OD-01).
 
 ---
 
 ## 10. Notes
 
-### PD-070 — Note list
-
-Notes imported from the hospital EMR (by the tenant's note-type rules, Spec §5.8) and Intercept notes, newest first: type, author, time, status (Draft, Signed, Written back, Write-back failed). Filter by type and author, and search.
-
-- ✅ **Resolved:** the Notes tab is two panes side by side: the list, and the selected note beside it (under it on a narrow screen). The newest note is selected first; the selected row is filled grey.
-- ✅ **Resolved:** a search at the start of the list's header opens across it and narrows the list by note type, author and the note's text; Escape clears it, then closes it. With no match: "No notes match “{search}”." The type and author filters stay beside it.
-- ✅ **Resolved:** **New note** (PD-071) is a "+" button at the end of the list's header. The list has no title or "{shown} of {all}" count on screen.
-- ✅ **Resolved:** "+" opens a menu of the note types, and the chosen one opens in the note editor in the selected note's place, beside the list; a draft's **Continue writing** (an AI Scribe draft's **Review and sign**) opens it there too (PRD Notes NTE-002, NTE-016).
-- ✅ **Resolved:** beside the note, the list's pane is as tall as the page shows under its top, so its last note can always be scrolled to, before the page scrolls too.
-- ✅ **Resolved:** an AI Scribe draft is marked by its **AI Scribe** badge, in the list and next to the note's title (PD-073); ~~a dashed purple edge~~ no longer.
-- ✅ **Resolved:** the selected note shows its type as the title with its status beside it, then who wrote it and when, then its sections (Assessment, Plan…).
-
-### PD-071 — New note
-
-Opens the Clinical Documentation surface in context, in the Intercept standard format, with the patient's data available to insert (Spec §5.4). The page shows the draft's status until it is signed.
-
-- ~~The note's own PRD (Clinical Documentation, AI Scribe) defines the editor.~~ ✅ **Resolved:** PRD Notes (`prds/notes.md`) defines the note itself: the note types and their templates, the editor, signing, the attending attestation, AI drafts and write-back. The "Intercept standard format" is what the clinician writes in; Intercept's templates in a hospital's Epic are what it converts to (NTE-OD-01 lists the note types still open). This page only starts a note and shows its status.
-
-### PD-072 — Write-back status
-
-A signed note shows where it went: "Written to Epic · 14:32" (Integrated), or "Ready to import" with its format (Overlay; Spec §5.4). A failure says what failed and what to do.
-
-### PD-073 — Ambient capture
-
-When the AI Scribe is listening during a camera session, the page shows it at all times, with Pause and Stop (Spec §5.4: visible capture state, one-interaction opt-out). Consent follows the hospital's state profile; where all-party consent applies, capture starts only after consent is recorded.
+ℹ️ The Notes tab is specified in [notes.md](notes.md), §5.1 "The Notes tab" (PD-070 to PD-073), with the note itself.
 
 ---
 
 ## 11. Sepsis
 
-### PD-080 — Screening and tracking
-
-Shown when the patient has a Sepsis Sniffer candidate or a confirmed case under tracking (PC-080–PC-083); the Sepsis tag in the header links here.
-
-| Part | Content |
-|---|---|
-| **State** | Candidate, Validated, Rejected (with reason), Excluded (with exclusion), Tracking |
-| **Criteria** | Each SIRS and organ-dysfunction criterion: met, not met or missing, with its value, time and source (Spec §8.1) |
-| **Validation** | Validate or reject, with exclusion adjudication; intensivist or APP (Spec §8.1) |
-| **Bundle** | 3-hour and 6-hour elements: done (time), due (time left), overdue, declined with rationale, elapsed (Spec §8.2) |
-| **Protocols** | The hospital's own elements shown apart from SEP-1, never merged (Spec §5.9) |
-
-- "Open in Virtual Sepsis" opens the module on this patient (PC-103).
-- ⚠️ **Decision needed:** which sepsis states surface here vs. only in Virtual Sepsis (PRD OD-09).
+ℹ️ The Sepsis tab has its own PRD: [patient-details-sepsis.md](patient-details-sepsis.md) (PD-080).
 
 ---
 
@@ -742,6 +554,8 @@ WCAG 2.1 AA (Spec §9.1, Principle 13; ⚠️ **Decision needed:** 2.1 vs 2.2 is
 
 ## 20. Acceptance criteria
 
+ℹ️ Each tab's own criteria are in its PRD (the list in §3.2); these are the page's.
+
 | ID | Criterion |
 |---|---|
 | PD-AC-01 | The patient's name and MRN are visible in every scroll position and section. |
@@ -750,19 +564,14 @@ WCAG 2.1 AA (Spec §9.1, Principle 13; ⚠️ **Decision needed:** 2.1 vs 2.2 is
 | PD-AC-04 | Back returns to the Census or Monitoring with filters, sort and scroll as they were. |
 | PD-AC-05 | Previous / next switch patients in the source list's order in under a second, keep the section, and announce the new patient. |
 | PD-AC-06 | Every alert on the page can be acknowledged, escalated and resolved (or declined, for AI) with who and when shown. |
-| PD-AC-07 | Vitals, infusions, ventilator settings, labs and events share one time axis; the crosshair reads all lanes at one moment. |
 | PD-AC-08 | A gap in data is drawn as a gap; a stale value keeps its reading, dimmed, with its age; a missing value shows "--". |
 | PD-AC-09 | Every value, result and note shows its source and time on demand. |
 | PD-AC-10 | Every AI output is labeled with its agent, cites its sources, and never sends, saves or orders anything on its own. |
-| PD-AC-11 | An order recommendation records its outcome as taken, declined with rationale or elapsed. |
-| PD-AC-12 | An APP sees which recommendations need co-signature before accepting; an RN can't accept one. |
 | PD-AC-13 | Ventilator and pump values are labeled by source and separate from monitored vitals. |
-| PD-AC-14 | The Sepsis section appears only with a screening or tracking event, and shows hospital protocol elements apart from SEP-1. |
 | PD-AC-15 | A user without privileges at the patient's hospital sees no patient data, including the name. |
 | PD-AC-16 | Nothing on the page shows another tenant's data, or depicts screen-operated or overlay fallback paths in the prototype. |
 | PD-AC-17 | Every interaction works by keyboard and with reduced motion on; every chart has a table alternative. |
 | PD-AC-18 | Each page state in PD-122 shows its message, and each empty section says what's empty. |
-| PD-AC-19 | With an ICU patient's minute-level data, the Timeline offers 15 min, 30 min and 1 h before 6 h; without it, it starts at 6 h; 12 h stays the default. |
 | PD-AC-20 | On every tab, the clinician can act on what they read there (PD-163–PD-174) without leaving the tab, and the action shows on the Timeline's events lane. |
 | PD-AC-21 | Every tab action reaches the app and survives a reload; none is kept only in the tab. |
 | PD-AC-22 | A Critical Care RN sees only the actions their role allows; the others aren't shown. |
@@ -790,27 +599,23 @@ WCAG 2.1 AA (Spec §9.1, Principle 13; ⚠️ **Decision needed:** 2.1 vs 2.2 is
 
 ## 22. Open decisions
 
+ℹ️ Each tab's own open decisions are in its PRD (the list in §3.2); these are the page's.
+
 | ID | Decision | Owner | Exploration proposal |
 |---|---|---|---|
 | PD-OD-01 | ✅ **Resolved:** (Oct 28, 2026) "Patient details" is the page; the UI shows the patient's name and says "Open patient". "Chart" is reserved for the hospital's record (shown in the sections, or "Open chart in Epic"), since it can imply the EMR of record, which this page isn't in Overlay mode. "View" stays for display modes. | Product / Clinical | "Patient details" in the breadcrumb and title |
 | PD-OD-02 | 🙋 Sections as tabs, or one scrolling page with a section index. | Design / Clinical | One page per direction, no tabs |
 | PD-OD-03 | 🙋 Which surfaces a tenant can make mandatory, and whether that ships in v1. | Product | Not explored |
 | PD-OD-04 | ✅ **Resolved:** (Oct 28, 2026, prototype) the global Ask Intercept Live panel, opened from the app header's sparkle. | Product / Design | A: a box on the page; C: @Intercept in the thread |
-| PD-OD-05 | 🙋 The AI summary: on by default or on request; AI ranking or a fixed rule it explains; frozen while read. | Clinical / Product | B: AI-ranked, live |
 | PD-OD-06 | 🙋 How "last viewed" is recorded per clinician, and whether it comes from the access audit. | Product / Compliance | B: shading since last looked |
 | PD-OD-07 | 🙋 Which sections ship in v1 (Overview, Timeline, Labs, Medications, Orders, Notes, Sepsis). | Product / Clinical | Overview, timeline, labs, drips, vent, sepsis criteria |
-| PD-OD-08 | 🙋 Whether a pump rate that differs from the ordered rate is flagged, and by what rule. | Clinical | Not explored |
-| PD-OD-09 | 🙋 Whether an RN sees order recommendations (read-only) or not at all. | Clinical / Product | Not explored |
 | PD-OD-10 | 🙋 The handoff format (I-PASS or Intercept's current sign-out), and where the incoming clinician reads it. | Clinical | A: I-PASS draft |
 | PD-OD-11 | 🙋 One source of truth for patient threads between Messages and this page. | Product | C: one thread per patient, people and agents |
 | PD-OD-12 | 🙋 Whether RNs author notes on this page. | Clinical | Not explored |
 | PD-OD-13 | 🙋 Which demo scenarios use this page. | Product / Project | Not explored |
 | PD-OD-14 | 🙋 The client's family-engagement idea: change request, roadmap or out (§1.4). | Product / Carlos | Not explored |
-| PD-OD-15 | ~~🙋 Where the Timeline's latest values sit: A, a card on top (built), or B, the timeline's right column (§6).~~ ✅ **Resolved:** B, as Previous and Now columns (§6, built). | Design / Clinical | Mockups on Intercept-Live › Timeline ([A](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=310-7329), [B](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=310-7992)) |
-| PD-OD-16 | 🙋 The finer windows (15 min, 30 min, 1 h): for ICU patients only, or any patient with minute-level monitor data; and the data resolution the monitor feed gives. | Clinical / Integration | Not explored |
 | PD-OD-17 | 🙋 Which tab actions write back to the hospital's record, which go as proposals to the bedside team, and which stay Intercept's own, per tenant and integration mode (Integrated or Overlay) (PD-160). | Product / Integration | Not explored |
 | PD-OD-18 | 🙋 Who may annotate a value, acknowledge a critical result and reconcile home medications; whether the Critical Care RN can (PD-162). | Clinical | Not explored |
-| PD-OD-19 | 🙋 The Timeline's Previous and Now: right of the plot (built, the default) or left of it, beside each lane's name (Timeline option 2, a prototype View) (§6). | Design / Clinical | [Option 2](https://www.figma.com/design/EKg9ovtsHlQoK3DAS0F5IM/Intercept-Live?node-id=316-16920), built behind Prototype › Views |
 | PRD OD-01, OD-02, OD-07, OD-08, OD-09, OD-14, OD-16, OD-17 | Mandatory fields, acuity score, trend windows, respiratory parameters, sepsis states, error copy, code status and safety tags, overall condition. Shared with the Patient card PRD. | See `prds/patient-card.md` §23 | Code status, allergy and isolation as header badges; trends 1 h / 6 h / 24 h |
 | MON-OD-07, MON-OD-08, MON-OD-10, MON-OD-11, MON-OD-13 | 🙋 Camera overlay placement, escalation targets, parameter palette, waveform set, concern severity. Shared with Monitoring. | See `prds/monitoring.md` §15 | As in the Monitoring exploration |
 
@@ -846,3 +651,4 @@ WCAG 2.1 AA (Spec §9.1, Principle 13; ⚠️ **Decision needed:** 2.1 vs 2.2 is
 
 - References to the Monitoring PRD were renamespaced to match it: `SV-0xx → MON-0xx`, `SV-OD-xx → MON-OD-xx`.
 - ⚠️ **Decision needed:** this PRD mints `PD-xxx` (plus `PD-AC-`, `PD-OD-`, `PD-UC-`), which **collides with the Cowork `PD-` (Provider Desktop) requirement prefix**. It needs a repo-local namespace of its own — the name is Julio's choice (G0-3). It was **left unchanged** here; pick a namespace and renamespace it in a follow-up (see `CONVENTIONS.md` → "IDs").
+- Each tab's PRD numbers its own acceptance criteria and open decisions (Nov 25, 2026, user's call): `PDO-` Overview, `PDT-` Timeline, `PDL-` Labs, `PDC-` Chart, `PDS-` Sepsis, `PDM-` Medications, `PDR-` Orders, `PDE-` EMR, each from 01 (`PDL-AC-01`, `PDR-OD-01`). A criterion or decision moved from this PRD says its old ID ("was PD-AC-07"); the numbers it left here stay unused. This PRD keeps `PD-AC-` and `PD-OD-` for the page.

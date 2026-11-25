@@ -1,7 +1,9 @@
 <!--
 Created: Oct 22, 2026
 Created by: Julio Caunedo
-Last updated: Nov 24, 2026
+Last updated: Nov 25, 2026
+Latest update: Lab trends' definition says the tests are a legend under the chart; each Patient details tab's PRD lists its ID prefix in the legend (PDO, PDT, PDL, PDC, PDS, PDM, PDR, PDE). Why: user's calls.
+Recent updates: the legend lists each Patient details tab's PRD and the Intercept-Live Figma file; Lab trends, Labs summary and Sepsis watch cite them, and Time zero was added. Before that, the legend gained every tag the terms cite.
 Scope: Every term used across the Intercept Live design phase: the System Specification, the Design Phase Team Brief, PRDs in prds/, and the UCL docs (CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md).
 Purpose: One shared vocabulary for design, product, engineering and clinical reviewers, so a term means the same thing in every spec, screen and component.
 -->
@@ -16,23 +18,54 @@ Each table has three columns: the term, its definition, and the document it come
 
 | Source tag | Document |
 | --- | --- |
-| Spec §x | `documents/Intercept Live - Virtual Care OS - System Specifications.md` (Draft v0.1, May 2026) |
+| Spec §x, Spec Introduction, Spec Appendix A | `documents/Intercept Live - Virtual Care OS - System Specifications.md` (Draft v0.1, May 2026) |
 | Brief | `documents/Intercept Live Design Phase Team Brief.md` (Oct 20, 2026) |
 | Left Nav Spec | `documents/Intercept Live — Left Nav Spec.md` (Nov 14, 2026) |
-| PRD PC-xxx | `prds/patient-card.md` |
-| PRD PD-xxx | `prds/patient-details.md` |
-| PRD CC-xxx | `prds/chat-composer.md` |
-| PRD PMN-xxx | `prds/patient-monitor.md` |
-| PRD NAV-xxx | `prds/sidebar.md` |
-| PRD ACM-xxx | `prds/account-menu.md` |
-| PRD CNL-xxx | `prds/census-list.md` |
+| Requirements §x, Requirements <ID>, or the ID alone (PD-, SV-, AL-, VS-, OE-, CD-, CC-, SC-, CH-, HO-, BR-, Q-) | `documents/specs/requirements-specification.md` (v0.7, Cowork snapshot Oct 29, 2026) |
+| DU-xx | `documents/specs/design-update-spec.md` (v1.0, Cowork snapshot Oct 29, 2026) |
+| Simulator SD-xx, SIM-xx | `documents/specs/simulator-specification.md` and `documents/specs/simulator-requirements.md` (v0.6, Cowork snapshot Oct 29, 2026) |
+| Demo Use Cases (Scenario n or Sn, step n, site table, demo rules) | `documents/scenarios/InterceptLIVE_Demo_Use_Cases.pdf`, the demonstration scenarios |
+| Client feedback (date) | Intercept's feedback in a review on that date, recorded in the PRD cited beside it |
+| PRD Account menu, PRD ACM-xxx | `prds/account-menu.md` |
+| PRD Alert maximized modal, PRD AMM-xxx | `prds/alert-maximized-modal.md` |
+| PRD Bedside camera, PRD CAM-xxx | `prds/bedside-camera.md` |
+| PRD Care plan, PRD CPL-xxx | `prds/care-plan.md` |
+| PRD Census list, PRD CNL-xxx | `prds/census-list.md` |
+| PRD Chat composer, PRD CC-xxx | `prds/chat-composer.md` (not the Requirements' CC- IDs) |
+| PRD Inbox, PRD INB-xxx | `prds/inbox.md` |
+| PRD Messages, PRD MSG-xxx | `prds/messages.md` |
+| PRD Monitoring, PRD MON-xxx | `prds/monitoring.md` |
+| PRD Monitoring card, PRD PMC-xxx | `prds/monitoring-card.md` |
+| PRD Notes, PRD NTE-xxx | `prds/notes.md` |
+| PRD Outcomes dashboard, PRD OUT-xxx | `prds/outcomes-dashboard.md` |
+| PRD Patient card, PRD PC-xxx, and "PRD §x" in sections 9 and 14 | `prds/patient-card.md` |
+| PRD Patient details, PRD PD-xxx | `prds/patient-details.md`, the page, and each tab's PRD below (a PD- ID is in the PRD of the tab it belongs to) |
+| PRD Patient details — Overview, PRD PDO-xxx | `prds/patient-details-overview.md` |
+| PRD Patient details — Timeline, PRD PDT-xxx | `prds/patient-details-timeline.md` |
+| PRD Patient details — Labs, PRD PDL-xxx | `prds/patient-details-labs.md` |
+| PRD Patient details — Chart, PRD PDC-xxx | `prds/patient-details-chart.md` |
+| PRD Patient details — Sepsis, PRD PDS-xxx | `prds/patient-details-sepsis.md` |
+| PRD Patient details — Medications, PRD PDM-xxx | `prds/patient-details-medications.md` |
+| PRD Patient details — Orders, PRD PDR-xxx | `prds/patient-details-orders.md` |
+| PRD Patient details — EMR, PRD PDE-xxx | `prds/patient-details-emr.md` |
+| PRD Patient monitor, PRD PMN-xxx | `prds/patient-monitor.md` |
+| PRD Patients, PRD CEN-xxx | `prds/patients.md` |
+| PRD Schedule, PRD SCH-xxx | `prds/schedule.md` |
+| PRD Sidebar, PRD NAV-xxx | `prds/sidebar.md` |
+| PRD Specialty Care Access, PRD SCA-xxx | `prds/specialty-care-access.md` |
+| PRD Transitions of care, PRD TOC-xxx | `prds/transitions-of-care.md` |
+| PRD Virtual Sepsis, PRD VSP-xxx | `prds/virtual-sepsis.md` |
+| intercept.ds <component> | The intercept.ds Figma file, the design system's components |
+| Intercept-Live <frame> | The Intercept-Live Figma file, the app's screens |
 | CLAUDE.md, DESIGN.md, MOTION.md, SIZE-SCALE.md | UCL project docs |
+| Vendor documentation (e.g. GE CARESCAPE Central Station manual) | The vendor's own manual, named in full |
 | General | Standard industry or clinical meaning. Not defined in a project document |
 
 **Rules for this file:**
 
 - One meaning per term. If two documents use a term differently, the entry says so with ⚠️ and the conflict is listed in "Open naming conflicts" at the end.
 - PRD vocabulary marked *proposed* is not approved by Intercept's clinical or product leadership. Don't present it as final in screens or external material.
+- Every source tag a term cites has its row in the table above. A new tag gets its row in the same change.
 - When a new spec or PRD introduces a term, add it here in the same change and update `Last updated:`. A new design system or UCL term goes in `src/docs/glossary.mdx` instead.
 
 ---
@@ -346,7 +379,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Rothman Index** | Proprietary score of overall condition, up to 100, calculated continuously from EMR data. Runs in reverse: lower is sicker. A candidate acuity score (OD-02). | General, PRD PC-030 |
 | **SAT / SBT** | Spontaneous Awakening Trial / Spontaneous Breathing Trial. Daily ventilator-liberation steps in the ABCDEF bundle. | Spec Appendix A |
 | **SEP-1** | CMS's Severe Sepsis and Septic Shock Early Management Bundle, with 3-hour and 6-hour requirements. The regulatory baseline for Virtual Sepsis. Must stay logically separate from hospital-specific protocol compliance. | Spec Appendix A, PRD PC-084 |
-| **Sepsis watch** | A patient the platform is watching for sepsis: flagged on the census, or with a sepsis case in their record (a Sniffer candidate or a case being tracked). They're listed on the Virtual Sepsis page, the Census's Sepsis watch filter finds them, and their page has the Sepsis tab. | PRD Virtual Sepsis |
+| **Sepsis watch** | A patient the platform is watching for sepsis: flagged on the census, or with a sepsis case in their record (a Sniffer candidate or a case being tracked). They're listed on the Virtual Sepsis page, the Census's Sepsis watch filter finds them, and their page has the Sepsis tab. | PRD Virtual Sepsis, PRD Patient details — Sepsis |
 | **Sepsis candidate** | A patient whose screening criteria suggest possible sepsis and who is pending clinician review. Not a diagnosis. | PRD PC-123 |
 | **Sex (sex for clinical use)** | Biological attributes relevant to care. Drives lab reference ranges, drug dosing, eGFR and ventilator settings (predicted body weight). The Patient card shows sex, not gender. Not the same as FHIR's `Patient.gender`, which is administrative gender. | General, PRD PC-012 |
 | **Shift summary** | A structured digest of a clinician's shift, reviewed and signed at shift end and handed to the incoming clinician. | Spec §6.21 |
@@ -359,6 +392,7 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Telemetry** | Continuous device data from bedside monitors, ventilators, infusion pumps and wearables. | Spec §6.6 |
 | **Thrombectomy** | Removing a clot from a large brain artery with a catheter, by a neuro-interventional team at a thrombectomy-capable or comprehensive stroke center. | Demo Use Cases, Scenario 5, step 4 |
 | **Thrombolysis (tenecteplase, alteplase)** | A clot-dissolving drug for an ischemic stroke, given within 4.5 h of the last time the patient was known well, once a CT shows no bleeding and BP is under 185/110. Tenecteplase is one IV bolus (0.25 mg/kg). | Demo Use Cases, Scenario 5, step 4 |
+| **Time zero** | The moment a patient is recognized as having sepsis, from which the bundle's deadlines are counted (the hour-1 bundle, SEP-1's 3 h and 6 h). The platform proposes it from the record; a reviewer confirms it. | General, Requirements VS-04, DU-20, PRD Patient details — Sepsis |
 | **Trauma ICU** | Intensive care unit for patients with severe injuries. A unit code in the Census unit menu. | General |
 | **Two-Midnight Rule** | Medicare guidance that inpatient admission is generally appropriate when care is expected to span two midnights. | Spec Appendix A |
 | **Unit (hospital)** | A department inside a hospital with its own care team, e.g. MICU, SICU, ED. Contains rooms and beds; not a room itself. Location reads hospital → unit → room → bed. Not the same as a unit of measurement (bpm, mmHg) on an observation. | General, PRD PC-014 |
@@ -440,6 +474,8 @@ The terms in this section come from the Patient card PRD. Vocabulary marked *pro
 | **Ask Intercept Live** | *Proposed* name of the Provider Desktop's chat panel, where a clinician asks the Conversational Clinical Data Agent about their patients. Opened from the Sidebar or the patient-context app header. | PRD Chat composer §1, PRD PD-100 |
 | **Bedside tasks** | *Proposed* The bedside nurses' tasks an accepted order set generates (e.g. a peripheral norepinephrine's IV site check every hour), shared between the hub and the bedside: the nurses check them off, the hub sees the status. Open, done or cancelled; overdue 10 min past due. | Demo Use Cases Scenario 3, step 5; Requirements CC-06; DU-25 |
 | **Clinical findings** | *Proposed* on the Patient details Overview, the row of tiles under the AI summary: the key labs, then the vitals or support settings that matter for this patient's situation, each with its context ("Nitro stops < 110", "Since 8:03 AM"); a charted value past its limit says how old it is. | PRD PD-025 |
+| **Lab trends** | *Proposed* the Patient details Labs tab's card under the key labs: one chart of the picked tests over time, in Actual values (one unit and scale, with the reference range and the patient's baseline) or Relative change (any mix), with clinical events always shown, over a legend of the tests that drive it (each a toggle, Add test for the rest), the first pick suggested by the patient's problems. | PRD Patient details — Labs |
+| **Labs summary** | *Proposed* the AI summary across the top of the Patient details Labs tab: where the patient's labs stand and how they moved, written by the Conversational Clinical Data Agent like the Overview's brief. | PRD Patient details — Labs, PD-024 |
 | **Chat composer** | The message box at the bottom of Ask Intercept Live: a field, attachments, slash commands, dictation, and Send or Stop. UCL `ChatComposer`. | PRD CC-010 |
 | **Wake phrase** | Not used since Nov 10, 2026 (dictation starts only from the microphone button). Was: "Hey Intercept", or just "Hey": said while Ask Intercept Live is open, it starts dictation without a click. Only the phrase is listened for; nothing else heard is shown or kept. UCL `ChatComposer` `wakePhrase`. | PRD CC-031 |
 | **Data-completeness signal** | The Provider Desktop tells the clinician explicitly how deep the data is (Integrated versus Overlay). | Spec §8.7 |

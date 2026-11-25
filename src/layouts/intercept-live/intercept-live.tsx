@@ -324,13 +324,27 @@ function useDocumentTheme() {
 
 /**
  * The sticky header, with a subtle shadow while the page scrolls under it, fading with the padding (same 300ms and
- * curve as standardTransition).
+ * curve as standardTransition). `hidden` slides it up out of view on the same curve (a patient's page, scrolling down);
+ * instant under reduced motion. On a patient's page the shadow belongs to the stuck Patient Header instead, so pass
+ * `shadow: false` there (Nov 25, 2026, user's call).
  */
-const headerClassName = (compact: boolean) =>
+const headerClassName = (compact: boolean, { hidden = false, shadow = true }: { hidden?: boolean; shadow?: boolean } = {}) =>
 	cn(
-		"sticky top-0 z-20 bg-background transition-shadow duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
-		compact ? "shadow-sm" : "shadow-none",
+		"sticky top-0 z-20 bg-background transition-[translate,box-shadow] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
+		compact && shadow ? "shadow-sm" : "shadow-none",
+		hidden && "-translate-y-full",
 	);
+
+/**
+ * On a patient's page, past this much scroll, scrolling down hides the app header; above it the header always shows.
+ * The header's own height (60px), so it never slides away while any of it is still in its place.
+ */
+const appHeaderHideAfter = 60;
+/**
+ * How far the page has to scroll up before the app header comes back. Not 0: when the header compacts (60 → 52px), the
+ * browser's scroll anchoring moves the page up those 8px, which isn't the user scrolling up.
+ */
+const appHeaderShowAfterUp = 12;
 
 /* -------------------------------------------------------------------------- */
 /* Intercept Live shell                                                       */
@@ -352,7 +366,6 @@ type PatientDetailsView = {
 		| "createActions"
 		| "team"
 		| "onOpenTeam"
-		| "patient"
 	>;
 	/** The patients of the list the patient was opened from, in its order, for the census list (only those in hospital show; PRD PD-015). */
 	patientList?: CensusListEntry[];
@@ -776,22 +789,28 @@ function InterceptLive({
 	const pageScroll = React.useRef(0);
 	const openPatientId = openPatient?.id ?? null;
 	const patientWasOpen = React.useRef(openPatientId !== null);
-	// Once the patient's Patient Header has scrolled under the app header, the header shows the patient in place of its
-	// breadcrumb (intercept.ds OnScroll `1729:902`); back in view, the breadcrumb returns.
-	const appHeaderRef = React.useRef<HTMLElement>(null);
-	const [patientHeaderHidden, setPatientHeaderHidden] = React.useState(false);
+	// On a patient's page the app header slides away while the page scrolls down and comes back as soon as it scrolls up,
+	// whatever the position (PRD Patient details PD-016, Nov 25, 2026, user's call); near the top it always shows. The
+	// Patient Header sticks in its place meanwhile (`appHeaderHidden` in the navigation context).
+	const [headerScrollHidden, setHeaderScrollHidden] = React.useState(false);
+	const lastScrollY = React.useRef(0);
+	const scrolledUp = React.useRef(0);
+	const appHeaderHidden = openPatientId !== null && headerScrollHidden;
 	useMotionValueEvent(scrollY, "change", (y) => {
 		setHeaderCompact(y > 0);
-		const patientHeader = canvasRef.current?.querySelector("[data-slot='patient-header']");
-		const appHeader = appHeaderRef.current;
-		setPatientHeaderHidden(
-			Boolean(patientHeader && appHeader && patientHeader.getBoundingClientRect().bottom <= appHeader.getBoundingClientRect().bottom),
-		);
+		const last = lastScrollY.current;
+		lastScrollY.current = y;
+		scrolledUp.current = y < last ? scrolledUp.current + (last - y) : 0;
+		if (y <= appHeaderHideAfter) setHeaderScrollHidden(false);
+		else if (y > last) setHeaderScrollHidden(true);
+		else if (scrolledUp.current >= appHeaderShowAfterUp) setHeaderScrollHidden(false);
 		if (!patientWasOpen.current) pageScroll.current = y;
 	});
 	React.useLayoutEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
+		// Each patient's page, and the page on Back, start with the app header in view.
+		setHeaderScrollHidden(false);
 		if (openPatientId !== null) canvas.scrollTop = 0;
 		else if (patientWasOpen.current) canvas.scrollTop = pageScroll.current;
 		patientWasOpen.current = openPatientId !== null;
@@ -906,6 +925,8 @@ function InterceptLive({
 				setChatOpener({ id: String(openerCount.current++), question });
 				setChatOpen(true);
 			},
+			askPatientId: chatOpen ? (chatPatient?.id ?? null) : null,
+			closeAsk: () => setChatOpen(false),
 			setScreenPatient: (patient) => {
 				screenPatientRef.current = patient;
 			},
@@ -914,6 +935,7 @@ function InterceptLive({
 			startHandoff: () => startHandoff(),
 			alertPatientId,
 			compact: headerCompact,
+			appHeaderHidden,
 			patientOpen: openPatientId !== null,
 			viewedAt,
 			patientHref: locationHref ? (patientId) => locationHref({ page, patientId }) : undefined,
@@ -925,9 +947,12 @@ function InterceptLive({
 			renderAlert,
 			reportPageList,
 			headerCompact,
+			appHeaderHidden,
 			openPatientId,
 			viewedAt,
 			setChatOpen,
+			chatOpen,
+			chatPatient,
 			hasMonitoring,
 			pages,
 			activeAlertsRequest,
@@ -1211,12 +1236,12 @@ function InterceptLive({
 											patientListOpen={patientListOpen}
 											{...patientView.headerActions}
 											{...patientHeaderActions}
-											showPatient={patientHeaderHidden}
-											ref={appHeaderRef}
 											compact={headerCompact}
 											theme={theme}
 											onToggleTheme={toggleTheme}
-											className={headerClassName(headerCompact)}
+											// Slid away while the page scrolls down; Tab into it brings it back, so focus is never off screen.
+											onFocusCapture={() => setHeaderScrollHidden(false)}
+											className={headerClassName(headerCompact, { hidden: appHeaderHidden, shadow: false })}
 										/>
 									) : (
 										<AppHeader

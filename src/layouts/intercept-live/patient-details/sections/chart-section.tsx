@@ -60,7 +60,8 @@ type ChartResult = {
 	status?: "pending" | "resulted" | "corrected" | "none";
 	resultedAt?: string;
 	collectedAt?: string;
-	previous?: { value: string; at: string };
+	/** The result before this one, with the lab's flag for it when it had one. */
+	previous?: { value: string; at: string; flag?: ChartResultFlag };
 	original?: string;
 };
 

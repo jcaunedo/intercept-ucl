@@ -8,6 +8,8 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { formatDayLabel } from "@/lib/relative-date";
 import { cn } from "@/lib/utils";
 
+import type { PatientLab } from "../patient-details";
+import { KeyLabTile, keyLabsGrid } from "../patient-overview";
 import { formatTime, formatWhen, freshness, NoData, SectionGroup } from "../section-parts";
 import { SourceLabel } from "../../shared/source-label";
 import {
@@ -18,9 +20,12 @@ import {
 	type ChartResultPanel,
 	type ChartSectionProps,
 } from "./chart-section";
+import { LabTrends, trendableTests, type LabTrendsRequest, type PatientLabTrends } from "./lab-trends";
 
-// The Labs tab (PRD Patient details §7, PD-040–PD-042): results by panel, then microbiology, from the hospital's record,
-// read only. Its data is the record's `chart`, the same the Chart tab reads (`chart-section.tsx` has the data shapes).
+// The Labs tab (PRD Patient details §7, PD-040–PD-042; Intercept-Live `320:9153`, Nov 25, 2026): the labs' AI summary
+// and the key labs across the top (the Overview's banner and tiles, `patient-overview.tsx`), then Lab trends
+// (`lab-trends.tsx`), then the results by panel and microbiology, from the hospital's record, read only. The results are
+// the record's `chart`, the same the Chart tab reads (`chart-section.tsx` has the data shapes).
 
 /* -------------------------------------------------------------------------- */
 /* Product content                                                            */
@@ -374,8 +379,30 @@ function CulturesTable({ cultures, now }: { cultures: ChartCulture[]; now: numbe
  * The Labs tab (Nov 11, 2026, user's call: Labs and Chart are their own tabs): results by panel, then microbiology,
  * from the hospital's record, read only.
  */
-function LabsSection({ chart }: ChartSectionProps) {
+type LabsSectionProps = ChartSectionProps & {
+	/** The labs' AI summary across the top (a PatientBriefBanner). */
+	summary?: React.ReactNode;
+	/** The key labs, as the Overview shows them, under the summary. */
+	keyLabs?: PatientLab[];
+	/** Earlier results, baselines and events for Lab trends. */
+	trends?: PatientLabTrends;
+	/** When the encounter started: Lab trends' Encounter range. */
+	encounterStart?: string;
+	/** A lab to chart when the tab opens, e.g. from an Overview tile: the test alone, in Actual values. */
+	trendRequest?: LabTrendsRequest;
+};
+
+function LabsSection({ chart, summary, keyLabs, trends, encounterStart, trendRequest }: LabsSectionProps) {
 	const now = useCurrentMinute();
+	// The key lab tiles are toggles (Nov 25, 2026, user's calls): pressed tiles are what Lab trends charts, several at
+	// once; turning the last one off puts back what the chart showed before the first. An Overview tile charts its lab
+	// alone, through `trendRequest`. Changing the tests or the mode by hand lets go of the tiles.
+	const [request, setRequest] = React.useState(trendRequest);
+	const [focused, setFocused] = React.useState<string[]>([]);
+	React.useEffect(() => {
+		if (trendRequest) setRequest(trendRequest);
+	}, [trendRequest?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+	const trendable = React.useMemo(() => trendableTests(chart, trends), [chart, trends]);
 	// Each card names the record as the tab does, "EMR", whatever its system (`chart.source`, e.g. Meditech; Nov 11, 2026,
 	// user's call), so every hospital's page reads the same.
 	const source = freshness(emrLabel, chart.updatedAt, now);
@@ -389,6 +416,36 @@ function LabsSection({ chart }: ChartSectionProps) {
 
 	return (
 		<div className='flex min-w-0 flex-col gap-6 @container'>
+			{/* The summary and the key labs 16px apart; Lab trends' controls 24px under them and 24px over its card, as
+			    every filter bar sits on Intercept Live's pages. */}
+			<div className='flex flex-col gap-4'>
+				{summary}
+				{keyLabs?.length ? (
+					<section aria-label='Key labs'>
+						<ul className={keyLabsGrid}>
+							{keyLabs.map((lab) => (
+								<li key={lab.name} className='flex'>
+									<KeyLabTile
+										lab={lab}
+										pressed={focused.includes(lab.name)}
+										onOpenTrend={
+											trendable.has(lab.name) ? () => setRequest({ test: lab.name, action: "toggle", id: Date.now() }) : undefined
+										}
+									/>
+								</li>
+							))}
+						</ul>
+					</section>
+				) : null}
+			</div>
+			<LabTrends
+				chart={chart}
+				trends={trends}
+				encounterStart={encounterStart}
+				source={<SourceLabel>{source}</SourceLabel>}
+				request={request}
+				onFocusChange={setFocused}
+			/>
 			<SectionGroup title='Results' meta={<SourceLabel>{source}</SourceLabel>}>
 				{chart.panels.length ? (
 					<>
@@ -406,4 +463,4 @@ function LabsSection({ chart }: ChartSectionProps) {
 	);
 }
 
-export { LabsSection };
+export { LabsSection, type LabsSectionProps };

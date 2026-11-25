@@ -8,6 +8,8 @@ import { sampleCameraByPatient } from "./sample-camera";
 import { sampleChartByPatient } from "./sample-chart";
 import { sampleEmrByPatient } from "./sample-epic";
 import { withGlucose } from "./sample-glucose";
+import { sampleLabTrendsByPatient } from "./sample-lab-trends";
+import { sampleLabsBriefByPatient } from "./sample-labs-brief";
 import { sampleMedicationsByPatient } from "./sample-medications";
 import { sampleNotesByPatient } from "./sample-notes";
 import { sampleOrdersByPatient } from "./sample-orders";
@@ -60,6 +62,8 @@ const samplePatientRecords: PatientRecord[] = samplePatientBaseRecords.map((reco
 	allergyDetails: sampleAllergiesByPatient[record.id],
 	alertHistory: sampleAlertHistoryByPatient[record.id],
 	chart: sampleChartByPatient[record.id],
+	labsBrief: sampleLabsBriefByPatient[record.id],
+	labTrends: sampleLabTrendsByPatient[record.id],
 	medications: sampleMedicationsByPatient[record.id],
 	orders: sampleOrdersByPatient[record.id],
 	emr: sampleEmrByPatient[record.id],

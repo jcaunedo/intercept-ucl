@@ -83,8 +83,7 @@ function withCompletion(
 	sessionCompletedAt?: string,
 ): RecordedPathway {
 	if (pathway.status !== "active") return pathway;
-	if (sessionStatus === "completed")
-		return { ...pathway, status: "completed", completedAt: sessionCompletedAt ?? pathway.completedAt };
+	if (sessionStatus === "completed") return { ...pathway, status: "completed", completedAt: sessionCompletedAt ?? pathway.completedAt };
 	const problem = planOfCare?.items.find((item) => item.id === pathway.problemId);
 	if (problem?.status !== "met") return pathway;
 	return {
@@ -145,16 +144,11 @@ function pathwaySummary(
 	const sent = status === "pending" || status === "active";
 	if (tasks && sent) {
 		const open = tasks.tasks.filter((task) => task.status === "open");
-		const overdue =
-			now === null ? [] : open.filter((task) => task.dueAt && now - Date.parse(task.dueAt) > TASK_OVERDUE_AFTER);
+		const overdue = now === null ? [] : open.filter((task) => task.dueAt && now - Date.parse(task.dueAt) > TASK_OVERDUE_AFTER);
 		if (open.length)
 			running.push({
 				label: "Bedside tasks",
-				detail: [
-					`${open.length} open`,
-					overdue.length ? `${overdue.length} overdue` : undefined,
-					`shared with ${tasks.sharedWith}`,
-				]
+				detail: [`${open.length} open`, overdue.length ? `${overdue.length} overdue` : undefined, `shared with ${tasks.sharedWith}`]
 					.filter(Boolean)
 					.join(" · "),
 				overdue: overdue.length > 0,
@@ -162,9 +156,7 @@ function pathwaySummary(
 	}
 	return {
 		suggestion:
-			pathway && status === "suggested"
-				? { title: pathway.title, source: pathway.source, orders: pathway.orders.length }
-				: undefined,
+			pathway && status === "suggested" ? { title: pathway.title, source: pathway.source, orders: pathway.orders.length } : undefined,
 		running,
 	};
 }
@@ -173,12 +165,7 @@ function pathwaySummary(
 function RunningLine({ item }: { item: PatientPathwayRunning }) {
 	const Icon = item.overdue ? CircleAlertIcon : InfoIcon;
 	return (
-		<p
-			className={cn(
-				"flex items-start gap-1.5 text-sm font-medium",
-				item.overdue ? "text-severity-critical-prominent" : "text-info",
-			)}
-		>
+		<p className={cn("flex items-start gap-1.5 text-sm font-medium", item.overdue ? "text-severity-critical-prominent" : "text-info")}>
 			<span className='flex h-[1lh] shrink-0 items-center'>
 				<Icon aria-hidden='true' className='size-4' />
 			</span>
@@ -196,8 +183,7 @@ function RunningLine({ item }: { item: PatientPathwayRunning }) {
 /* -------------------------------------------------------------------------- */
 
 // A plan-of-care goal's status, in the words of the nursing care plan's evaluation: the problem card's own words.
-const planOfCareStatuses: Record<PatientPlanOfCareStatus, { label: string; variant: BadgeProps["variant"] }> =
-	carePlanProblemStatuses;
+const planOfCareStatuses: Record<PatientPlanOfCareStatus, { label: string; variant: BadgeProps["variant"] }> = carePlanProblemStatuses;
 
 /**
  * The Care plan's rows on the Overview, Intercept's included, before View all: its three-line rows fill about the height
@@ -319,11 +305,7 @@ function CarePlanCard({
 					{transfer ? (
 						<CardRow
 							title={transfer.label}
-							detail={
-								transfer.checkpoints.length
-									? `${passed} of ${transfer.checkpoints.length} checkpoints passed`
-									: transfer.rationale
-							}
+							detail={transfer.checkpoints.length ? `${passed} of ${transfer.checkpoints.length} checkpoints passed` : transfer.rationale}
 							extra={[transfer.by, formatWhen(transfer.at, now)].filter(Boolean).join(" · ")}
 							aside={
 								transfer.outcome ? (
@@ -420,7 +402,14 @@ function decidedEvents(key: string, state: RecordedPathway): ProblemEvent[] {
 			by: state.by,
 		},
 		...(state.cosignedAt
-			? [{ key: `${key}-cosigned`, at: state.cosignedAt, title: `Co-signed by ${state.cosigner ?? "the local physician"}`, detail: "Orders active" }]
+			? [
+					{
+						key: `${key}-cosigned`,
+						at: state.cosignedAt,
+						title: `Co-signed by ${state.cosigner ?? "the local physician"}`,
+						detail: "Orders active",
+					},
+				]
 			: []),
 		...(state.status === "completed" && state.completedAt
 			? [
@@ -521,28 +510,17 @@ function pathwayBlocks(
 					: undefined);
 			const state =
 				recordedState &&
-				withCompletion(
-					{ ...recordedState, problemId: recordedState.problemId ?? problemId },
-					planOfCare,
-					status,
-					item.completedAt,
-				);
+				withCompletion({ ...recordedState, problemId: recordedState.problemId ?? problemId }, planOfCare, status, item.completedAt);
 			const done = (state?.status ?? status) === "completed";
 			const badgeStatus = status === "suggested" ? "pending" : status;
-			const edited = same
-				? same.orders.filter((order) => order.suggested).length
-				: (record?.edited?.length ?? 0);
+			const edited = same ? same.orders.filter((order) => order.suggested).length : (record?.edited?.length ?? 0);
 			const count = same ? same.orders.length : detail.pathway.orders.length;
 			blocks.push({
 				key,
 				title: detail.pathway.title,
 				badge: pathwayStatuses[state?.status ?? badgeStatus],
 				suggested: false,
-				line: state
-					? pathwayLine(state, now)
-					: done && item.completedAt
-						? `Completed · ${formatWhen(item.completedAt, now)}`
-						: undefined,
+				line: state ? pathwayLine(state, now) : done && item.completedAt ? `Completed · ${formatWhen(item.completedAt, now)}` : undefined,
 				extra: [ordersLabel(count), edited ? `${edited} edited` : undefined].filter(Boolean).join(" · "),
 				// Nothing runs once it's done.
 				running: done ? [] : running,
@@ -556,9 +534,7 @@ function pathwayBlocks(
 						: detail.pathway.orders.map((order) => ({
 								name: order.name,
 								dose: order.dose,
-								suggested: record?.edited?.includes(order.id)
-									? record.suggested?.find((item) => item.id === order.id)?.dose
-									: undefined,
+								suggested: record?.edited?.includes(order.id) ? record.suggested?.find((item) => item.id === order.id)?.dose : undefined,
 							})),
 				),
 			});
@@ -611,9 +587,7 @@ function PathwayBlock({ block }: { block: PathwayBlockData }) {
 			extra={block.extra}
 			action={block.onOpen ? { label: block.suggested ? "Review pathway" : "Open pathway", onSelect: block.onOpen } : undefined}
 		>
-			{block.running.length
-				? block.running.map((item) => <RunningLine key={item.label} item={item} />)
-				: null}
+			{block.running.length ? block.running.map((item) => <RunningLine key={item.label} item={item} />) : null}
 		</CarePlanPathway>
 	);
 }
@@ -663,10 +637,7 @@ function ProblemCard({
 						<h4 className='text-sm font-semibold text-foreground'>History</h4>
 						<ul className='flex flex-col'>
 							{history.map((event) => (
-								<li
-									key={event.key}
-									className='flex items-start gap-4 border-b border-border py-2.5 first:border-t'
-								>
+								<li key={event.key} className='flex items-start gap-4 border-b border-border py-2.5 first:border-t'>
 									<time dateTime={event.at} className='w-28 shrink-0 text-sm text-muted-foreground tabular-nums'>
 										{formatWhen(event.at, now)}
 									</time>
@@ -680,9 +651,7 @@ function ProblemCard({
 											) : null}
 										</span>
 										{event.detail || event.by ? (
-											<span className='text-sm text-muted-foreground'>
-												{[event.detail, event.by].filter(Boolean).join(" · ")}
-											</span>
+											<span className='text-sm text-muted-foreground'>{[event.detail, event.by].filter(Boolean).join(" · ")}</span>
 										) : null}
 									</div>
 								</li>
@@ -694,10 +663,7 @@ function ProblemCard({
 							<h4 className='text-sm font-semibold text-foreground'>Orders</h4>
 							<ul className='flex flex-col'>
 								{orders.map((order) => (
-									<li
-										key={order.key}
-										className='flex items-start justify-between gap-3 border-b border-border py-2.5 first:border-t'
-									>
+									<li key={order.key} className='flex items-start justify-between gap-3 border-b border-border py-2.5 first:border-t'>
 										<div className='flex min-w-0 flex-col'>
 											<span className='flex flex-wrap items-center gap-x-2 text-sm font-medium text-foreground'>
 												{order.name}
@@ -708,9 +674,7 @@ function ProblemCard({
 												) : null}
 											</span>
 											<span className='text-sm text-foreground'>{order.dose}</span>
-											{order.suggested ? (
-												<span className='text-sm text-muted-foreground line-through'>{order.suggested}</span>
-											) : null}
+											{order.suggested ? <span className='text-sm text-muted-foreground line-through'>{order.suggested}</span> : null}
 										</div>
 										{order.status ? (
 											<Badge variant={order.status.variant} size='xs' className='shrink-0'>
@@ -769,18 +733,13 @@ function DispositionCard({ transfer, now }: { transfer: NonNullable<PatientCareP
 										? undefined
 										: dueChip(checkpoint.due, now);
 								return (
-									<li
-										key={checkpoint.id}
-										className='flex items-start justify-between gap-3 border-b border-border py-2.5 first:border-t'
-									>
+									<li key={checkpoint.id} className='flex items-start justify-between gap-3 border-b border-border py-2.5 first:border-t'>
 										<div className='flex min-w-0 flex-col'>
 											<span className='text-sm font-medium text-foreground'>
 												{checkpoint.label} · {formatWhen(checkpoint.due, now)}
 											</span>
 											<span className='text-sm text-muted-foreground'>{checkpoint.criteria}</span>
-											{checkpoint.result?.detail ? (
-												<span className='text-sm text-foreground'>{checkpoint.result.detail}</span>
-											) : null}
+											{checkpoint.result?.detail ? <span className='text-sm text-foreground'>{checkpoint.result.detail}</span> : null}
 										</div>
 										{chip ? (
 											<Badge variant={chip.variant} size='xs' className='shrink-0'>
@@ -844,8 +803,7 @@ function CarePlanSection({ record, pathways = [] }: { record?: PatientRecord; pa
 	// The chips (Nov 20, 2026, user's call: Monitoring's quick views): one at a time, each narrowing the plan to what it
 	// names, pressed again to show everything. Every chip shows its count, 0 included.
 	const [filter, setFilter] = React.useState<CarePlanFilterId | null>(null);
-	const matches = (id: CarePlanFilterId, item: PatientPlanOfCareItem) =>
-		id === "review" ? needsReview(item.id) : item.status === id;
+	const matches = (id: CarePlanFilterId, item: PatientPlanOfCareItem) => (id === "review" ? needsReview(item.id) : item.status === id);
 	const counts: Record<CarePlanFilterId, number> = {
 		review: blocks.filter((block) => block.suggested).length,
 		"not-progressing": items.filter((item) => item.status === "not-progressing").length,
@@ -857,7 +815,8 @@ function CarePlanSection({ record, pathways = [] }: { record?: PatientRecord; pa
 	const shownUnlinked = filter === null ? unlinked : filter === "review" ? unlinked.filter((block) => block.suggested) : [];
 
 	return (
-		<div className='@container flex flex-col gap-4'>
+		// The filter bar 24px over the plan, as on every Intercept Live page; the plan's cards 16px apart.
+		<div className='@container flex flex-col gap-6'>
 			<FilterBar aria-label='Care plan filters'>
 				<FilterBarFilters>
 					{carePlanFilters.map(({ id, icon: Icon, label }) => (
@@ -873,64 +832,58 @@ function CarePlanSection({ record, pathways = [] }: { record?: PatientRecord; pa
 					))}
 				</FilterBarFilters>
 			</FilterBar>
-			{planOfCare ? null : <NoData>Care plan not received from the record system yet.</NoData>}
-			{filter ? (
-				filtered.length || shownUnlinked.length ? (
-					filtered.map(problemCard)
+			<div className='flex flex-col gap-4'>
+				{planOfCare ? null : <NoData>Care plan not received from the record system yet.</NoData>}
+				{filter ? (
+					filtered.length || shownUnlinked.length ? (
+						filtered.map(problemCard)
+					) : (
+						<NoData>{carePlanFilters.find((item) => item.id === filter)?.empty}</NoData>
+					)
 				) : (
-					<NoData>{carePlanFilters.find((item) => item.id === filter)?.empty}</NoData>
-				)
-			) : (
-				shownProblems.map(problemCard)
-			)}
-			{!filter && foldMet ? (
-				<>
-					<Button
-						variant='ghost'
-						size='xs'
-						aria-expanded={showMet}
-						onClick={() => setShowMet(!showMet)}
-						className='self-start text-link'
-					>
-						<ChevronDownIcon
-							aria-hidden='true'
-							className={cn("transition-transform duration-160 motion-reduce:transition-none", showMet && "rotate-180")}
-						/>
-						{showMet ? "Hide met" : `Show met (${folded.length})`}
-					</Button>
-					<AnimatePresence initial={false}>
-						{showMet ? (
-							<Expand key='met' className='flex flex-col gap-4'>
-								{folded.map(problemCard)}
-							</Expand>
+					shownProblems.map(problemCard)
+				)}
+				{!filter && foldMet ? (
+					<>
+						<Button variant='ghost' size='xs' aria-expanded={showMet} onClick={() => setShowMet(!showMet)} className='self-start text-link'>
+							<ChevronDownIcon
+								aria-hidden='true'
+								className={cn("transition-transform duration-160 motion-reduce:transition-none", showMet && "rotate-180")}
+							/>
+							{showMet ? "Hide met" : `Show met (${folded.length})`}
+						</Button>
+						<AnimatePresence initial={false}>
+							{showMet ? (
+								<Expand key='met' className='flex flex-col gap-4'>
+									{folded.map(problemCard)}
+								</Expand>
+							) : null}
+						</AnimatePresence>
+					</>
+				) : null}
+				{shownUnlinked.length ? (
+					<OverviewCard title={items.length ? "Other pathways" : "Pathways"}>
+						<div className='flex flex-col gap-3'>
+							{items.length ? <p className='text-sm text-muted-foreground'>Not tied to a problem on the plan of care.</p> : null}
+							{shownUnlinked.map((block) => (
+								<PathwayBlock key={block.key} block={block} />
+							))}
+						</div>
+					</OverviewCard>
+				) : null}
+				{transfer && !filter ? <DispositionCard transfer={transfer} now={now} /> : null}
+				{/* Where the plan comes from, at the bottom of the tab (Nov 20, 2026, user's call), as the cards' source lines. */}
+				{planOfCare || updated ? (
+					<div className='flex flex-col gap-1'>
+						{planOfCare ? (
+							<CardSource>
+								{now === null ? planOfCare.source : `${planOfCare.source} · reviewed ${ago(planOfCare.reviewedAt, now)}`}
+							</CardSource>
 						) : null}
-					</AnimatePresence>
-				</>
-			) : null}
-			{shownUnlinked.length ? (
-				<OverviewCard title={items.length ? "Other pathways" : "Pathways"}>
-					<div className='flex flex-col gap-3'>
-						{items.length ? (
-							<p className='text-sm text-muted-foreground'>Not tied to a problem on the plan of care.</p>
-						) : null}
-						{shownUnlinked.map((block) => (
-							<PathwayBlock key={block.key} block={block} />
-						))}
+						{updated ? <CardSource>{freshness("Intercept", updated, now)}</CardSource> : null}
 					</div>
-				</OverviewCard>
-			) : null}
-			{transfer && !filter ? <DispositionCard transfer={transfer} now={now} /> : null}
-			{/* Where the plan comes from, at the bottom of the tab (Nov 20, 2026, user's call), as the cards' source lines. */}
-			{planOfCare || updated ? (
-				<div className='flex flex-col gap-1'>
-					{planOfCare ? (
-						<CardSource>
-							{now === null ? planOfCare.source : `${planOfCare.source} · reviewed ${ago(planOfCare.reviewedAt, now)}`}
-						</CardSource>
-					) : null}
-					{updated ? <CardSource>{freshness("Intercept", updated, now)}</CardSource> : null}
-				</div>
-			) : null}
+				) : null}
+			</div>
 		</div>
 	);
 }

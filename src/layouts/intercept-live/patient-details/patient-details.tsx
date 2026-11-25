@@ -36,7 +36,8 @@ import { EmptyState } from "@/components/feedback/empty-state";
 import { TagsPopoverActionsProvider, useTagsPopoverActions } from "@/components/overlays/tags-popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/navigation/tabs";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
-import { useMotionPreference } from "@/lib/motion";
+import { scrollContainerOf, useMotionPreference } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 import type { PatientDetailsView, PatientStepper } from "../intercept-live";
 import {
@@ -72,7 +73,7 @@ import {
 	useOpenPathwayPanel,
 	type PatientPathways,
 } from "./consult-panels";
-import { PatientOverview } from "./patient-overview";
+import { PatientBriefBanner, PatientOverview } from "./patient-overview";
 import { LiveFeedButton } from "../shared/live-feed";
 import { useTimelineOption2 } from "../prototype-views";
 import { patientFeedEntries, withAlertEvents } from "../shared/live-feed-entries";
@@ -83,6 +84,7 @@ import { ChartSection, type PatientChart } from "./sections/chart-section";
 import { DischargeSection } from "./sections/discharge-section";
 import { EpicSection, type PatientEmr } from "./sections/epic-section";
 import { LabsSection } from "./sections/labs-section";
+import type { LabTrendsRequest, PatientLabTrends } from "./sections/lab-trends";
 import { MedicationsSection, type PatientMedications } from "./sections/medications-section";
 import { NotesSection, type PatientNotes } from "./sections/notes-section";
 import { noteContextFrom } from "./sections/note-chart";
@@ -336,7 +338,12 @@ type PatientRecord = {
 	icuAdmittedAt?: string;
 	ventilator?: PatientVentilator;
 	infusions?: PatientInfusion[];
+	/** The key labs: the Overview's clinical findings, and the top of the Labs tab. */
 	labs?: PatientLab[];
+	/** The Labs tab's AI summary (PD-024's brief about the labs alone), "Labs summary" across its top. */
+	labsBrief?: PatientBrief;
+	/** Each test's earlier results, baselines and clinical events, for the Labs tab's Lab trends. */
+	labTrends?: PatientLabTrends;
 	/** What matters for this patient's situation beyond the labs, after them on the Overview. */
 	findings?: PatientFinding[];
 	careTeam?: CareTeamMember[];
@@ -660,6 +667,7 @@ function sectionContent(
 		timelineAlerts,
 		onOpenAlert,
 		timelineValuesSide,
+		labTrendRequest,
 	}: Pick<PatientDetailsProps, "patient" | "record" | "monitor" | "onAction" | "onDischargeDecision" | "onTransitionDecision"> & {
 		onShowSection: (id: SectionId) => void;
 		/** Every alert the patient had (live, left and history), for the Timeline's events lane. */
@@ -670,11 +678,34 @@ function sectionContent(
 		timelineValuesSide: "right" | "left";
 		/** Every pathway the patient's alerts brought, for the Care Plan tab: each under the problem it treats. */
 		carePlanPathways: OverviewPathway[];
+		/** The lab an Overview tile asked Lab trends to chart. */
+		labTrendRequest?: LabTrendsRequest;
 	},
 ): React.ReactNode {
 	switch (id) {
 		case "labs":
-			return record?.chart ? <LabsSection chart={record.chart} /> : null;
+			// The labs' AI summary and the key labs across the top, then Lab trends, then the results and microbiology
+			// (Intercept-Live `320:9153`, Nov 25, 2026).
+			return record?.chart ? (
+				<LabsSection
+					chart={record.chart}
+					summary={
+						record.labsBrief ? (
+							<PatientBriefBanner
+								patient={patient}
+								brief={record.labsBrief}
+								title='Labs summary'
+								label='AI labs summary'
+								question="Summarize what's behind the labs summary"
+							/>
+						) : undefined
+					}
+					keyLabs={record.labs}
+					trends={record.labTrends}
+					encounterStart={record.admittedAt}
+					trendRequest={labTrendRequest}
+				/>
+			) : null;
 		case "chart":
 			return record?.chart ? <ChartSection chart={record.chart} /> : null;
 		case "care-plan":
@@ -741,6 +772,79 @@ function sectionContent(
 	}
 }
 
+/** Every tab, in the page's order: Overview, then the sections. */
+const patientDetailsTabs: { id: SectionId; label: string }[] = [
+	{ id: "overview", label: "Overview" },
+	...pendingSections.map(({ id, label }) => ({ id, label })),
+];
+
+type PatientDetailsTabProps = Pick<
+	PatientDetailsProps,
+	"patient" | "record" | "monitor" | "alerts" | "onAction" | "onDischargeDecision" | "onTransitionDecision"
+> & {
+	/** The tab to show. */
+	section: SectionId;
+	/** Opens another tab, e.g. the Overview's links to Medications and Orders. */
+	onShowSection?: (section: SectionId) => void;
+};
+
+/**
+ * One tab's content alone, as the page shows it under its tab (the same content, padding and empty state), without the
+ * page around it: Storybook's per-tab layouts (Patient details › Tabs), so each tab can be reviewed and handed off on
+ * its own. No pathways: those come with an alert's consult on the page.
+ */
+function PatientDetailsTab({
+	section,
+	patient,
+	record,
+	monitor,
+	alerts = [],
+	onAction,
+	onDischargeDecision,
+	onTransitionDecision,
+	onShowSection = () => {},
+}: PatientDetailsTabProps) {
+	if (section === "overview") {
+		return (
+			<ConsultSessionScope patientId={patient.id}>
+				<div className='p-6'>
+					<PatientOverview patient={patient} record={record} monitor={monitor} onShowSection={onShowSection} />
+				</div>
+			</ConsultSessionScope>
+		);
+	}
+	const item = pendingSections.find((entry) => entry.id === section)!;
+	const content = sectionContent(section, {
+		patient,
+		record,
+		monitor,
+		onAction,
+		onDischargeDecision,
+		onTransitionDecision,
+		onShowSection,
+		carePlanPathways: [],
+		timelineAlerts: [...alerts, ...(record?.alertHistory ?? [])],
+		timelineValuesSide: "right",
+	});
+	return (
+		<ConsultSessionScope patientId={patient.id}>
+			{content ? (
+				<div className={section === "notes" ? "flex h-[48rem]" : "p-6"}>{content}</div>
+			) : (
+				<div className='flex p-6'>
+					<EmptyState
+						className='m-auto py-16'
+						headingLevel='h2'
+						icon={<item.icon aria-hidden='true' />}
+						title={item.title}
+						description={item.description}
+					/>
+				</div>
+			)}
+		</ConsultSessionScope>
+	);
+}
+
 const patientName = (patient: Pick<PatientDetailsPatient, "lastName" | "firstName">) =>
 	`${patient.lastName}, ${patient.firstName}`;
 
@@ -754,6 +858,60 @@ const patientName = (patient: Pick<PatientDetailsPatient, "lastName" | "firstNam
  * in the patient's consult session (`consult-session.tsx`), so its panels, its Care plan and the alert panel share the
  * call, the thread and the pathway.
  */
+// The app header's height on a patient's page, at the top of the page and once it has scrolled (AppHeader's 12px / 8px
+// padding): where the Patient Header sticks while the app header shows.
+const appHeaderHeight = { default: 60, compact: 52 } as const;
+
+/**
+ * The Patient Header sticks to the top of the canvas (PRD Patient details PD-016, Nov 25, 2026, user's call): right under
+ * the app header while it shows, at the very top once the app header has slid away (scrolling down), moving between
+ * the two with it. Gives the page's CSS variables, so what sticks under the Patient Header (the Notes list, a note's
+ * header) and the sections' scroll margins follow it: `--patient-header-top` (where it sticks) and
+ * `--patient-header-height` (its height, measured: it wraps on narrow screens). `stuck` is true once the page has
+ * scrolled it to its sticky place, for its shadow.
+ */
+function useStickyPatientHeader() {
+	const navigation = usePatientNavigation();
+	const hidden = navigation?.appHeaderHidden ?? false;
+	const top = hidden ? 0 : navigation?.compact ? appHeaderHeight.compact : appHeaderHeight.default;
+	const headerRef = React.useRef<HTMLDivElement>(null);
+	// A 0px marker where the Patient Header sits in the flow: once it's above the sticky line, the header is stuck.
+	const markerRef = React.useRef<HTMLDivElement>(null);
+	const [height, setHeight] = React.useState(0);
+	const [stuck, setStuck] = React.useState(false);
+
+	React.useLayoutEffect(() => {
+		const header = headerRef.current;
+		if (!header) return;
+		const observer = new ResizeObserver(() => setHeight(header.offsetHeight));
+		observer.observe(header);
+		setHeight(header.offsetHeight);
+		return () => observer.disconnect();
+	}, []);
+
+	React.useLayoutEffect(() => {
+		const marker = markerRef.current;
+		if (!marker) return;
+		const scroller = scrollContainerOf(marker);
+		const page = scroller === document.documentElement;
+		const measure = () => {
+			const viewTop = page ? 0 : scroller.getBoundingClientRect().top;
+			const scrolled = page ? window.scrollY : scroller.scrollTop;
+			setStuck(scrolled > 0 && marker.getBoundingClientRect().top - viewTop < top);
+		};
+		measure();
+		const target = page ? window : scroller;
+		target.addEventListener("scroll", measure, { passive: true });
+		return () => target.removeEventListener("scroll", measure);
+	}, [top]);
+
+	const style = {
+		"--patient-header-top": `${top}px`,
+		"--patient-header-height": `${height}px`,
+	} as React.CSSProperties;
+	return { headerRef, markerRef, stuck, style };
+}
+
 function PatientDetails(props: PatientDetailsProps) {
 	return (
 		<ConsultSessionScope patientId={props.patient.id}>
@@ -790,6 +948,12 @@ function PatientDetailsContent({
 				? (value as SectionId)
 				: undefined,
 	);
+	// An Overview key lab tile opens the Labs tab on its trend (Nov 25, 2026, user's call): the lab, for this patient only.
+	const [labTrendRequest, setLabTrendRequest] = React.useState<{ patientId: string; request: LabTrendsRequest }>();
+	const openLabTrend = (test: string) => {
+		setLabTrendRequest({ patientId: patient.id, request: { test, action: "show", id: Date.now() } });
+		setSection("labs");
+	};
 	// The panels open on the right, in the address too (`panels`: video, alerts, messages, pathway). Alerts, Messages and
 	// Pathway are the patient's consult session's; the call's panel is PatientConsultPanels' own, which reports it.
 	const [alertsOpen, setAlertsOpen] = useSessionState("alertsOpen", false);
@@ -923,11 +1087,13 @@ function PatientDetailsContent({
 		setAnnouncement(`${patientName(patient)}${patient.mrn ? `, MRN ${patient.mrn}` : ""}`);
 	}, [patient]);
 
+	const stickyHeader = useStickyPatientHeader();
+
 	return (
 		// Fall risk's button (the app's, TagsPopoverActionsProvider) opens this patient's fall prevention pathway in the
 		// page's Pathway panel, in place, rather than opening the page again (Nov 10, 2026, user's call).
 		<TagsPopoverActionsProvider resolve={fallPathwayInPlace}>
-		<main data-patient-id={patient.id} className='flex flex-1 flex-col'>
+		<main data-patient-id={patient.id} className='flex flex-1 flex-col' style={stickyHeader.style}>
 			<p aria-live='polite' className='sr-only'>
 				{announcement}
 			</p>
@@ -967,31 +1133,47 @@ function PatientDetailsContent({
 			</PatientAlertsPanel>
 			{/* The header's Live feed: this patient's log, history included (Nov 11, 2026, user's calls). */}
 			<PatientLiveFeedPanel entries={feedEntries} />
-			{/* 16px below the app header and above the tabs: the header's own padding (intercept.ds `1191:3147`). */}
-			<PatientHeader
-				lastName={patient.lastName}
-				firstName={patient.firstName}
-				photo={record?.photo}
-				initials={patientInitials(patient)}
-				tone={tone ?? avatarTone(patient.id)}
-				mrn={patient.mrn}
-				sex={patient.sex}
-				age={patient.age}
-				hospital={patient.hospital}
-				unit={patient.unit}
-				room={patient.room}
-				bed={patient.bed}
-				account={record?.account}
-				tags={patientBadges(patient, record)}
-				acuity={patient.acuity}
-				trajectory={patient.trajectory}
-				alert={alertPill(alerts)}
-				alertCounts={alertCountsBySeverity(alerts)}
-				clinicalStatus={record?.clinicalStatus}
-				recentAlerts={recentAlertCount([...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])])}
-				onViewAlerts={() => setAlertsOpen((open) => !open)}
-				alertsOpen={alertsOpen}
-			/>
+			{/* 16px below the app header and above the tabs: the header's own padding (intercept.ds `1191:3147`). It sticks
+			    to the top of the canvas (`useStickyPatientHeader`): under the app header, or at the very top while the app
+			    header has slid away, moving with it on the app header's curve (300ms, standardTransition's; instant under
+			    reduced motion). Once stuck it takes the shadow the app header has elsewhere and a 1px `border` rule along
+			    its bottom (Nov 25, 2026, user's calls); the rule is drawn over its edge (`after:`), so it takes no room,
+			    and only while stuck: in place, the tabs' own top rule is right under it. Above the page's own raised
+			    layers (z-15), under the app header (z-20). */}
+			<div ref={stickyHeader.markerRef} aria-hidden='true' />
+			<div
+				ref={stickyHeader.headerRef}
+				className={cn(
+					"sticky top-(--patient-header-top) z-15 bg-background transition-[top,box-shadow] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none",
+					"after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border after:transition-opacity after:duration-300 motion-reduce:after:transition-none",
+					stickyHeader.stuck ? "shadow-sm after:opacity-100" : "shadow-none after:opacity-0",
+				)}
+			>
+				<PatientHeader
+					lastName={patient.lastName}
+					firstName={patient.firstName}
+					photo={record?.photo}
+					initials={patientInitials(patient)}
+					tone={tone ?? avatarTone(patient.id)}
+					mrn={patient.mrn}
+					sex={patient.sex}
+					age={patient.age}
+					hospital={patient.hospital}
+					unit={patient.unit}
+					room={patient.room}
+					bed={patient.bed}
+					account={record?.account}
+					tags={patientBadges(patient, record)}
+					acuity={patient.acuity}
+					trajectory={patient.trajectory}
+					alert={alertPill(alerts)}
+					alertCounts={alertCountsBySeverity(alerts)}
+					clinicalStatus={record?.clinicalStatus}
+					recentAlerts={recentAlertCount([...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])])}
+					onViewAlerts={() => setAlertsOpen((open) => !open)}
+					alertsOpen={alertsOpen}
+				/>
+			</div>
 
 			<Tabs
 				value={shownSection}
@@ -1023,6 +1205,7 @@ function PatientDetailsContent({
 						monitor={monitor}
 						onShowSection={setSection}
 						pathway={overviewPathway}
+						onOpenLabTrend={openLabTrend}
 					/>
 				</TabsContent>
 				{sections.map((item) => {
@@ -1038,6 +1221,7 @@ function PatientDetailsContent({
 						timelineAlerts: [...alerts, ...leftAlerts, ...(record?.alertHistory ?? [])],
 						onOpenAlert: navigation ? (alertId) => navigation.openAlert(patient.id, alertId) : undefined,
 						timelineValuesSide: timelineOption2 ? "left" : "right",
+						labTrendRequest: labTrendRequest?.patientId === patient.id ? labTrendRequest.request : undefined,
 					});
 					// Keyed by patient, so a section's local state (an open form, an accepted recommendation) never
 					// carries over to the next patient. Block, not flex: the sections are size containers, which a flex
@@ -1220,23 +1404,6 @@ function patientDetailsView(
 				.find((item) => item.id === patientId)
 				?.careTeam?.map(({ name, initials, src, tone }) => ({ name, initials, src, tone })),
 			onOpenTeam: act("care-team"),
-			// Shown in place of the breadcrumb once the Patient Header scrolls away (intercept.ds OnScroll `1729:902`), from
-			// the same values the Patient Header gets.
-			patient: {
-				lastName: patient.lastName,
-				firstName: patient.firstName,
-				sex: patient.sex,
-				age: patient.age,
-				mrn: patient.mrn,
-				account: records.find((item) => item.id === patientId)?.account,
-				hospital: patient.hospital,
-				unit: patient.unit,
-				room: patient.room,
-				bed: patient.bed,
-				photo: records.find((item) => item.id === patientId)?.photo,
-				initials: patientInitials(patient),
-				tone,
-			},
 		},
 		content: (
 			<PatientDetails
@@ -1289,7 +1456,10 @@ function patientDetailsView(
 
 export {
 	PatientDetails,
+	PatientDetailsTab,
+	patientDetailsTabs,
 	patientDetailsView,
+	type PatientDetailsTabProps,
 	type CareTeamMember,
 	type PatientDetailsPatient,
 	type PatientDetailsProps,

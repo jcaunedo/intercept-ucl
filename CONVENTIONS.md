@@ -56,10 +56,18 @@ Each PRD has its own prefix. The same prefix with a suffix numbers the PRD's oth
 | `ACM-` | Account menu (`prds/account-menu.md`) | Nov 16, 2026 |
 | `CNL-` | Census list (`prds/census-list.md`; `CL-` is Cowork's) | Nov 16, 2026 |
 | `SCA-` | Specialty Care Access (`prds/specialty-care-access.md`; `SC-` is Cowork's) | Nov 19, 2026 |
+| `PDO-` | Patient details — Overview (`prds/patient-details-overview.md`): its `-AC-` and `-OD-` lists only | Nov 25, 2026 |
+| `PDT-` | Patient details — Timeline (`prds/patient-details-timeline.md`): its `-AC-` and `-OD-` lists only | Nov 25, 2026 |
+| `PDL-` | Patient details — Labs (`prds/patient-details-labs.md`): its `-AC-` and `-OD-` lists only | Nov 25, 2026 |
+| `PDC-` | Patient details — Chart (`prds/patient-details-chart.md`): its `-AC-` and `-OD-` lists only | Nov 25, 2026 |
+| `PDS-` | Patient details — Sepsis (`prds/patient-details-sepsis.md`): its `-AC-` and `-OD-` lists only | Nov 25, 2026 |
+| `PDM-` | Patient details — Medications (`prds/patient-details-medications.md`): its `-AC-` and `-OD-` lists only | Nov 25, 2026 |
+| `PDR-` | Patient details — Orders (`prds/patient-details-orders.md`): its `-AC-` and `-OD-` lists only | Nov 25, 2026 |
+| `PDE-` | Patient details — EMR (`prds/patient-details-emr.md`): its `-AC-` and `-OD-` lists only | Nov 25, 2026 |
 
 All are pending the team's OK, and are reconciled into Cowork as below. A new PRD takes a prefix that isn't in either list above, and gets its row here and in CLAUDE.md → "Traceability" in the same change.
 
-> ⚠️ **Open:** `prds/patient-details.md` currently mints `PD-xxx` (plus `PD-AC-`, `PD-OD-`, `PD-UC-`), which **collides with the Cowork `PD-` (Provider Desktop) prefix** above. It needs a repo-local namespace of its own — the name is Julio's choice (G0-3) — and was **left unchanged** in the governance PR that added this file. Pick a namespace and renamespace it in a follow-up.
+> ⚠️ **Open:** `prds/patient-details.md` currently mints `PD-xxx` (plus `PD-AC-`, `PD-OD-`, `PD-UC-`), which **collides with the Cowork `PD-` (Provider Desktop) prefix** above. It needs a repo-local namespace of its own — the name is Julio's choice (G0-3) — and was **left unchanged** in the governance PR that added this file. Pick a namespace and renamespace it in a follow-up. Each Patient details tab's PRD numbers its own acceptance criteria and open decisions with a `PD` + letter prefix (table above; Nov 25, 2026), each from 01, a criterion moved from `patient-details.md` noting its old ID ("was PD-AC-07"); the tabs' feature IDs (PD-030, PD-040…) stay as they were.
 
 > ⚠️ **Open:** `prds/chat-composer.md` mints `CC-xxx` (plus `CC-AC-`, `CC-OD-`, `CC-UC-`), which **collides with the Cowork `CC-` (Care Coordination) prefix** the same way (e.g. Cowork CC-05 is presence; the PRD's CC-022 is the /handoff draft). It needs its own namespace too.
 

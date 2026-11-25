@@ -28,7 +28,7 @@ import { SourceLabel } from "../../shared/source-label";
 
 // The Sepsis section (PRD Patient details PD-080): one screening or tracked case. Its state and who decided it, the
 // criteria with their values, the SEP-1 bundle's 3-hour and 6-hour elements counted from time zero, and the hospital's
-// own protocol in a card of its own, never merged with SEP-1 (PD-AC-14). Sepsis Sniffer only flags: validating or
+// own protocol in a card of its own, never merged with SEP-1 (PDS-AC-01). Sepsis Sniffer only flags: validating or
 // rejecting is a clinician's call, intensivist or APP.
 
 /* -------------------------------------------------------------------------- */

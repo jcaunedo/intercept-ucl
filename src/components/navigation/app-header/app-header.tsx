@@ -7,7 +7,6 @@ import {
 	FlagIcon,
 	GitForkIcon,
 	ListIcon,
-	MapPinIcon,
 	MessageCircleMoreIcon,
 	MoonIcon,
 	PlusIcon,
@@ -17,7 +16,7 @@ import {
 	WebcamIcon,
 	type LucideIcon,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 
 import { Button } from "@/components/buttons/button";
 import {
@@ -36,7 +35,6 @@ import {
 	type AvatarFallbackProps,
 } from "@/components/data-display/avatar";
 import { Counter } from "@/components/data-display/counter";
-import type { PatientHeaderProps } from "@/components/data-display/patient-header";
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -54,13 +52,11 @@ import {
 } from "@/components/overlays/dropdown-menu";
 import { Typography } from "@/components/typography/typography";
 import {
-	fadeVariants,
 	iconSwapReducedVariants,
 	iconSwapVariants,
 	liveDotVariants,
 	liveGlowVariants,
 	liveHaloVariants,
-	revealVariants,
 	standardTransition,
 	unreadFlashVariants,
 	useMotionPreference,
@@ -84,27 +80,6 @@ type AppHeaderUser = AppHeaderPerson & {
 	role?: string;
 };
 
-/**
- * The patient as the patient variant shows them once their Patient Header has scrolled away (`showPatient`): the same
- * names as PatientHeader's props, so a page passes the same values to both.
- */
-type AppHeaderPatient = Pick<
-	PatientHeaderProps,
-	| "lastName"
-	| "firstName"
-	| "sex"
-	| "age"
-	| "mrn"
-	| "account"
-	| "hospital"
-	| "unit"
-	| "room"
-	| "bed"
-	| "photo"
-	| "initials"
-	| "tone"
->;
-
 /** An item in the patient variant's "…" menu. */
 type AppHeaderMenuAction = { label: string; icon?: LucideIcon; onSelect?: () => void };
 
@@ -116,8 +91,7 @@ type AppHeaderCommonProps = React.ComponentProps<"header"> & {
 	theme?: "light" | "dark";
 	/**
 	 * Tighter vertical padding (8px instead of 12px), e.g. while the page is scrolled under a sticky header. The change
-	 * animates, and is instant under reduced motion. Ignored while the patient variant shows the patient (`showPatient`):
-	 * the header keeps its 60px.
+	 * animates, and is instant under reduced motion.
 	 */
 	compact?: boolean;
 };
@@ -164,16 +138,6 @@ type AppHeaderPatientProps = AppHeaderCommonProps & {
 	sourcePage: string;
 	/** The patient's name as the page shows it, e.g. "Carter, Ellen". The breadcrumb's current page. */
 	patientName: string;
-	/**
-	 * The patient: their avatar, name, sex and age, MRN · ACCT and location, shown in place of the breadcrumb while
-	 * `showPatient` is on.
-	 */
-	patient?: AppHeaderPatient;
-	/**
-	 * Shows `patient` in place of the breadcrumb, e.g. once the page's Patient Header has scrolled out of view, so the
-	 * user still sees whose page it is. The page decides when; the two swap with Reveal.
-	 */
-	showPatient?: boolean;
 	/**
 	 * Makes Back and the breadcrumb's back link links to this URL. Without it, they're buttons that call `onBack`. Back
 	 * shows only with one of the two.
@@ -376,8 +340,7 @@ function HeaderDivider() {
 
 /**
  * Patient, left side: Back, the patient list and Ask Intercept (each only when the app handles it, each followed by a
- * rule), then the source page and the patient's name. Back and the source page both lead back. With `showPatient`,
- * the patient takes the breadcrumb's place; Back stays the way back.
+ * rule), then the source page and the patient's name. Back and the source page both lead back.
  */
 function PatientNavigation({
 	sourcePage,
@@ -388,13 +351,8 @@ function PatientNavigation({
 	askInterceptOpen = false,
 	onTogglePatientList,
 	patientListOpen = false,
-	patient,
-	showPatient = false,
 }: AppHeaderPatientProps) {
 	const hasBack = Boolean(backHref || onBack);
-	const { prefersReducedMotion } = useMotionPreference();
-	// Reveal (a fade and an 8px rise); a fade only under reduced motion.
-	const swapVariants = prefersReducedMotion ? fadeVariants : revealVariants;
 	const backIcon = <ArrowLeftIcon aria-hidden='true' className='size-[18px]' />;
 
 	// Ask Intercept is filled while the chat is about this patient; the list button looks the same open or closed. The
@@ -449,98 +407,27 @@ function PatientNavigation({
 					) : null}
 				</div>
 			) : null}
-			{/* The breadcrumb at the top of the page; the patient once their Patient Header has scrolled away (intercept.ds
-			    OnScroll `1729:902`; the breadcrumb kept at rest, Nov 25, 2026, user's call). Stacked in one cell, so the
-			    two cross-fade in place (Reveal) and nothing beside them moves. */}
-			<div className='grid min-w-0 items-center *:col-start-1 *:row-start-1'>
-				<AnimatePresence initial={false}>
-					{showPatient && patient ? (
-						<motion.div key='patient' variants={swapVariants} initial='initial' animate='animate' exit='exit' className='min-w-0'>
-							<PatientIdentity patient={patient} />
-						</motion.div>
-					) : (
-						<motion.div key='breadcrumb' variants={swapVariants} initial='initial' animate='animate' exit='exit' className='min-w-0'>
-							<Breadcrumb className='min-w-0 px-2'>
-								<BreadcrumbList size='sm'>
-									<BreadcrumbItem>
-										{backHref ? (
-											<BreadcrumbLink href={backHref} onClick={onBack} className='font-medium'>
-												{sourcePage}
-											</BreadcrumbLink>
-										) : (
-											<BreadcrumbLink asChild className='font-medium'>
-												<button type='button' onClick={onBack}>
-													{sourcePage}
-												</button>
-											</BreadcrumbLink>
-										)}
-									</BreadcrumbItem>
-									<BreadcrumbSeparator />
-									<BreadcrumbItem>
-										<BreadcrumbPage>{patientName}</BreadcrumbPage>
-									</BreadcrumbItem>
-								</BreadcrumbList>
-							</Breadcrumb>
-						</motion.div>
-					)}
-				</AnimatePresence>
-			</div>
-		</div>
-	);
-}
-
-/**
- * The patient, as PatientHeader shows them, on two lines (34px) beside a 32px avatar: the avatar, the name (bold) and " - F,
- * 59", then MRN · ACCT and the location after a map pin. Not a heading: the page's Patient Header has it.
- */
-function PatientIdentity({ patient }: { patient: AppHeaderPatient }) {
-	const { lastName, firstName, sex, age, mrn, account, hospital, unit, room, bed, photo, initials, tone } = patient;
-	// The same formats as PatientHeader's: "F, 59" and "{hospital} · {unit} · {room} - {bed}".
-	const demographics = [sex, age].filter((part) => part !== undefined && part !== "").join(", ");
-	const place = [room, bed].filter(Boolean).join(" - ");
-	const location = [hospital, unit, place].filter(Boolean).join(" · ");
-
-	return (
-		// 20px from the rule before it: the left side's 16px gap plus 4px.
-		<div data-slot='app-header-patient' className='flex min-w-0 items-center gap-2.5 pl-1'>
-			<Avatar size='sm' aria-hidden='true'>
-				{photo ? <AvatarImage src={photo} alt='' /> : null}
-				<AvatarFallback tone={tone}>{initials}</AvatarFallback>
-			</Avatar>
-			<div className='flex min-w-0 flex-col text-foreground'>
-				<p className='truncate text-base/[18px]'>
-					<span className='font-bold'>
-						{lastName}, {firstName}
-					</span>
-					{demographics ? ` - ${demographics}` : null}
-				</p>
-				{mrn || account || location ? (
-					<div className='flex min-w-0 items-center gap-3 text-xs/4 whitespace-nowrap'>
-						{mrn || account ? (
-							<p className='shrink-0'>
-								{mrn ? (
-									<>
-										<span className='text-muted-foreground'>MRN</span> {mrn}
-									</>
-								) : null}
-								{mrn && account ? " · " : null}
-								{account ? (
-									<>
-										<span className='text-muted-foreground'>ACCT</span> {account}
-									</>
-								) : null}
-							</p>
-						) : null}
-						{location ? (
-							<p className='flex min-w-0 items-center gap-1'>
-								<MapPinIcon aria-hidden='true' className='size-3 shrink-0 text-icon-muted' />
-								<span className='sr-only'>Location: </span>
-								<span className='truncate'>{location}</span>
-							</p>
-						) : null}
-					</div>
-				) : null}
-			</div>
+			<Breadcrumb className='min-w-0 px-2'>
+				<BreadcrumbList size='sm'>
+					<BreadcrumbItem>
+						{backHref ? (
+							<BreadcrumbLink href={backHref} onClick={onBack} className='font-medium'>
+								{sourcePage}
+							</BreadcrumbLink>
+						) : (
+							<BreadcrumbLink asChild className='font-medium'>
+								<button type='button' onClick={onBack}>
+									{sourcePage}
+								</button>
+							</BreadcrumbLink>
+						)}
+					</BreadcrumbItem>
+					<BreadcrumbSeparator />
+					<BreadcrumbItem>
+						<BreadcrumbPage>{patientName}</BreadcrumbPage>
+					</BreadcrumbItem>
+				</BreadcrumbList>
+			</Breadcrumb>
 		</div>
 	);
 }
@@ -782,7 +669,7 @@ function PatientActions({
 /**
  * Intercept Live's top bar. `default`: connection status and clock on the left; the team on shift, theme and the
  * user's menu on the right. `patient`: Back, the patient list, Ask Intercept and a breadcrumb back from a patient's
- * page on the left (the patient in its place once their Patient Header has scrolled away, `showPatient`); the care team, Video consult, Messages, Pathway, a Create menu ("+") and a "…" menu with the
+ * page on the left; the care team, Video consult, Messages, Pathway, a Create menu ("+") and a "…" menu with the
  * patient's actions on the right. Each button calls its own handler; the header holds no state.
  *
  * Figma: [intercept.ds › app-header](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1169-318)
@@ -798,8 +685,6 @@ function AppHeader(props: AppHeaderProps) {
 		onOpenTeam: _onOpenTeam,
 		sourcePage: _sourcePage,
 		patientName: _patientName,
-		patient,
-		showPatient = false,
 		backHref: _backHref,
 		onBack: _onBack,
 		onToggleAskIntercept: _onToggleAskIntercept,
@@ -825,14 +710,11 @@ function AppHeader(props: AppHeaderProps) {
 		createLabel: _createLabel,
 		onToggleTheme,
 		theme = "light",
-		compact: compactProp = false,
+		compact = false,
 		className,
 		...headerProps
 	} = props as AppHeaderAllProps;
 	const { resolve } = useMotionPreference();
-	// The patient's two lines need the full 60px: while they show, the header keeps its default padding even when the
-	// page asks for compact (Nov 25, 2026, user's call), and animates back to it as they come in.
-	const compact = compactProp && !(props.variant === "patient" && showPatient && patient);
 	const paddingY = compact ? headerPaddingY.compact : headerPaddingY.default;
 	const themeButton = (
 		<Button
@@ -875,7 +757,6 @@ function AppHeader(props: AppHeaderProps) {
 export {
 	AppHeader,
 	type AppHeaderMenuAction,
-	type AppHeaderPatient,
 	type AppHeaderDefaultProps,
 	type AppHeaderPatientProps,
 	type AppHeaderPerson,

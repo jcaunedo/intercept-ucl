@@ -12,7 +12,7 @@ import { formatDateTime, formatElapsed, formatTime, freshness, NoData, SectionGr
 
 // Patient details › Medications (PRD PD-050): the active medications from the hospital's record, read-only. Continuous
 // infusions show the ordered rate beside the pump's when both are known; a difference isn't flagged until an infusion
-// mismatch rule is approved (PD-OD-08). Scheduled medications say when they're due; as-needed ones, when they were last
+// mismatch rule is approved (PDM-OD-01). Scheduled medications say when they're due; as-needed ones, when they were last
 // given and how often today.
 
 /* -------------------------------------------------------------------------- */

@@ -8,7 +8,7 @@ import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
 import { formatRelativeDate } from "@/lib/relative-date";
 
 import { usePatientNavigation } from "../patient-navigation";
-import type { PatientBrief, PatientDetailsProps, PatientRecord } from "./patient-details";
+import type { PatientBrief, PatientDetailsProps, PatientLab, PatientRecord } from "./patient-details";
 import {
 	CardLink,
 	CardList,
@@ -26,6 +26,7 @@ import {
 	RowTime,
 } from "./section-parts";
 import { CarePlanCard, pathwaySummary, type OverviewPathway } from "./sections/care-plan-section";
+import { trendableTests } from "./sections/lab-trends";
 
 // The Overview (PRD Patient details §5; Intercept-Live `149:4464`, rebuilt Nov 9, 2026): what matters about the patient
 // now, and what's being done about it. The AI clinical summary across the top, the clinical findings (key labs and what
@@ -54,28 +55,49 @@ const UP_NEXT_ITEMS = 5;
 const briefQuestion = "Summarize what's behind the brief";
 
 /**
- * The AI brief (PRD PD-024): UCL's AiClinicalSummaryBanner (intercept.ds `1467:13678`, Nov 9, 2026), what matters now
- * under a headline, across the top, with how many sources it read and how fresh it is. With `onAsk` the whole banner
- * is a button (Nov 6, 2026, user's call): it opens Ask Intercept Live about the patient and asks what's behind the brief,
- * which answers with the details and what changed since the clinician last looked. × hides it until a newer brief.
+ * An AI brief across the top of a tab (PRD PD-024): UCL's AiClinicalSummaryBanner (intercept.ds `1467:13678`, Nov 9,
+ * 2026), what matters now under a headline, with how many sources it read and how fresh it is. The Overview's covers
+ * the patient; the Labs tab's, their labs (`title` "Labs summary", Intercept-Live `320:9153`, Nov 25, 2026). The whole
+ * banner is a button (Nov 6, 2026, user's call): it opens Ask Intercept Live about the patient and asks `question`,
+ * which answers with the details and what changed since the clinician last looked; clicked again while the chat is open
+ * about them, it closes the chat. × hides it until a newer brief or another patient.
  */
-function BriefBanner({
+function PatientBriefBanner({
+	patient,
 	brief,
-	now,
-	onAsk,
-	onClose,
-}: {
+	title = brief.title,
+	label,
+	question = briefQuestion,
+}: Pick<PatientDetailsProps, "patient"> & {
 	brief: PatientBrief;
-	now: number | null;
-	onAsk?: () => void;
-	onClose?: () => void;
+	/** The headline before the text; the brief's own by default. */
+	title?: string;
+	/** Its accessible name and tooltip, "AI clinical summary" by default. */
+	label?: string;
+	question?: string;
 }) {
+	const now = useCurrentMinute();
+	const navigation = usePatientNavigation();
+	const key = `${patient.id}:${brief.updatedAt}`;
+	const [dismissed, setDismissed] = React.useState<string>();
+	if (dismissed === key) return null;
+	const name = `${patient.lastName}, ${patient.firstName}`;
+	const askOpen = navigation?.askPatientId === patient.id;
 	return (
 		<AiClinicalSummaryBanner
-			title={brief.title}
+			label={label}
+			title={title}
 			source={`${brief.sourceCount} sources${now === null ? "" : ` · ${formatElapsed(brief.updatedAt, now)}`}`}
-			onOpen={onAsk}
-			onClose={onClose}
+			// A second click, while the chat is open about this patient, closes it (Nov 25, 2026, user's call).
+			onOpen={
+				navigation
+					? askOpen && navigation.closeAsk
+						? navigation.closeAsk
+						: () => navigation.askAboutPatient(patient.id, name, patient.tags?.map((tag) => tag.label), question)
+					: undefined
+			}
+			openLabel={askOpen ? "Close Ask Intercept Live" : undefined}
+			onClose={() => setDismissed(key)}
 		>
 			{brief.text}
 		</AiClinicalSummaryBanner>
@@ -174,30 +196,62 @@ function formatAge(at: string, now: number) {
 }
 
 /**
+ * One key lab as a UCL LabTile (PRD PD-025): the Overview's clinical findings and the top of the Labs tab. With
+ * `onOpenTrend` the tile is a button that opens the lab's trend in Lab trends (Nov 25, 2026, user's call), the same on
+ * both tabs.
+ */
+function KeyLabTile({ lab, onOpenTrend, pressed }: { lab: PatientLab; onOpenTrend?: () => void; pressed?: boolean }) {
+	return (
+		<LabTile
+			className='flex-1'
+			onOpen={onOpenTrend}
+			pressed={onOpenTrend ? pressed : undefined}
+			name={lab.name}
+			value={lab.value}
+			unit={lab.unit}
+			flag={lab.flag}
+			resultedAt={lab.resultedAt}
+			previous={lab.previous}
+			collectedAt={lab.collectedAt}
+		/>
+	);
+}
+
+/** The key-lab grid's columns, as the room allows: two, three, four, then six to a row. */
+const keyLabsGrid = "grid grid-cols-2 gap-2 @min-[36rem]:grid-cols-3 @min-[60rem]:grid-cols-4 @min-[80rem]:grid-cols-6";
+
+/**
  * The clinical findings across the top (PRD PD-025; Intercept-Live `242:11805`, Nov 9, 2026: "primarily reserved for
  * contextual clinical findings"): the key labs as UCL LabTiles, then what matters for this patient's situation (a vital
  * with the rule it's watched against, the breathing support since it started), so the clinician reads the numbers the
  * plan turns on first. A finding charted too long ago says how old it is, in red, instead of its context.
  */
-function ClinicalFindings({ record, now }: { record?: PatientRecord; now: number | null }) {
+function ClinicalFindings({
+	record,
+	now,
+	onOpenLabTrend,
+}: {
+	record?: PatientRecord;
+	now: number | null;
+	/** Opens a key lab's trend on the Labs tab; only labs Lab trends can chart get it. */
+	onOpenLabTrend?: (test: string) => void;
+}) {
 	const labs = record?.labs ?? [];
+	const trendable = React.useMemo(
+		() => (record?.chart ? trendableTests(record.chart, record.labTrends) : new Set<string>()),
+		[record?.chart, record?.labTrends],
+	);
 	const findings = record?.findings ?? [];
 	if (!labs.length && !findings.length)
 		return <NoData>{record?.labs ? "No labs resulted in the last 72 hours." : "No lab data for this patient."}</NoData>;
 	return (
 		<section aria-label='Clinical findings'>
-			<ul className='grid grid-cols-2 gap-2 @min-[36rem]:grid-cols-3 @min-[60rem]:grid-cols-4 @min-[80rem]:grid-cols-6'>
+			<ul className={keyLabsGrid}>
 				{labs.map((lab) => (
 					<li key={`lab-${lab.name}`} className='flex'>
-						<LabTile
-							className='flex-1'
-							name={lab.name}
-							value={lab.value}
-							unit={lab.unit}
-							flag={lab.flag}
-							resultedAt={lab.resultedAt}
-							previous={lab.previous}
-							collectedAt={lab.collectedAt}
+						<KeyLabTile
+							lab={lab}
+							onOpenTrend={onOpenLabTrend && trendable.has(lab.name) ? () => onOpenLabTrend(lab.name) : undefined}
 						/>
 					</li>
 				))}
@@ -647,42 +701,30 @@ function PatientOverview({
 	monitor,
 	onShowSection,
 	pathway,
+	onOpenLabTrend,
 }: Pick<PatientDetailsProps, "patient" | "record" | "monitor"> & {
 	/** Opens another tab: Medications or Orders. */
 	onShowSection?: (section: OverviewLinkedSection) => void;
 	/** The pathway an open alert brought: the Care plan shows it (suggested, or what it runs) and Up next what it has due. */
 	pathway?: OverviewPathway;
+	/** Opens the Labs tab on a key lab's trend. */
+	onOpenLabTrend?: (test: string) => void;
 }) {
 	const now = useCurrentMinute();
-	const navigation = usePatientNavigation();
-	const name = `${patient.lastName}, ${patient.firstName}`;
 	const { suggestion, running } = pathway ? pathwaySummary(pathway, now) : { suggestion: undefined, running: [] };
-	// × hides the brief until a newer one (its own time) or another patient; the brief is optional (PRD §3.4).
-	const briefKey = record?.brief ? `${patient.id}:${record.brief.updatedAt}` : undefined;
-	const [dismissedBrief, setDismissedBrief] = React.useState<string>();
 	const showMedications = onShowSection && (() => onShowSection("medications"));
 
 	return (
 		// A size container, so the layout follows the room the side panels leave.
 		<div className='@container'>
 			<div className='flex flex-col gap-4'>
-				{record?.brief && briefKey !== dismissedBrief ? (
-					<BriefBanner
-						brief={record.brief}
-						now={now}
-						onClose={() => setDismissedBrief(briefKey)}
-						onAsk={
-							navigation
-								? () => navigation.askAboutPatient(patient.id, name, patient.tags?.map((tag) => tag.label), briefQuestion)
-								: undefined
-						}
-					/>
-				) : null}
+				{/* The brief is optional (PRD §3.4). */}
+				{record?.brief ? <PatientBriefBanner patient={patient} brief={record.brief} /> : null}
 
-				<ClinicalFindings record={record} now={now} />
+				<ClinicalFindings record={record} now={now} onOpenLabTrend={onOpenLabTrend} />
 
 				<div className='grid gap-4 @min-[50rem]:grid-cols-2 @min-[80rem]:grid-cols-3'>
-					<LiveMonitoringCard record={record} monitor={monitor} name={name} />
+					<LiveMonitoringCard record={record} monitor={monitor} name={`${patient.lastName}, ${patient.firstName}`} />
 					<CarePlanCard
 						plan={record?.carePlan}
 						planOfCare={record?.planOfCare}
@@ -703,4 +745,4 @@ function PatientOverview({
 	);
 }
 
-export { PatientOverview, type OverviewLinkedSection };
+export { KeyLabTile, keyLabsGrid, PatientBriefBanner, PatientOverview, type OverviewLinkedSection };

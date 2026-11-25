@@ -3,6 +3,7 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 // Story-only helper, not part of the card's public API.
 import { useLivePatients } from "@/components/data-display/patient-monitor/use-live-vitals";
+import { scrollContainerOf } from "@/lib/motion";
 
 import { sampleAlertDetails, samplePatientConsults } from "../alert-panel/sample-data/sample-alert-panel";
 import { Patients } from "../patients/patients";
@@ -267,7 +268,7 @@ export const ViewAlertsOpensPanel: Story = {
 /**
  * The brief opens Ask Intercept Live (Nov 6, 2026): clicking it opens the chat about Sarah ("About Miller, Sarah") and
  * asks what's behind the brief. The answer leads with the brief, then her diagnosis, score, alerts, vitals, organ
- * support and flagged labs, then what changed since she was last looked at.
+ * support and flagged labs, then what changed since she was last looked at. Clicked again, it closes the chat.
  */
 export const BriefOpensAsk: Story = {
 	play: async ({ canvasElement }) => {
@@ -277,6 +278,25 @@ export const BriefOpensAsk: Story = {
 		const chat = within(await canvas.findByRole("complementary", { name: "Ask Intercept Live" }));
 		await expect(await chat.findByText("Summarize what's behind the brief")).toBeInTheDocument();
 		await expect(await chat.findByText(/since you last looked/, {}, { timeout: 10000 })).toBeInTheDocument();
+		// Clicked again while the chat is open about her, the brief closes it (Nov 25, 2026, user's call).
+		await userEvent.click(within(canvas.getByRole("region", { name: "AI clinical summary" })).getByRole("button", { name: /Close Ask Intercept Live/ }));
+		await waitFor(() => expect(canvas.queryByRole("complementary", { name: "Ask Intercept Live" })).toBeNull());
+	},
+};
+
+/**
+ * An Overview key lab opens its trend (Nov 25, 2026, user's call): clicking Sarah's Creatinine tile opens the Labs tab
+ * with Creatinine alone on Lab trends, in Actual values.
+ */
+export const LabTileOpensTrend: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(await canvas.findByRole("button", { name: "Creatinine, view trend" }));
+		await expect(await canvas.findByRole("tab", { name: "Labs", selected: true })).toBeVisible();
+		const legend = within(await canvas.findByRole("list", { name: "Tests on the chart" }));
+		await expect(await legend.findByRole("button", { name: "Creatinine", pressed: true })).toBeVisible();
+		await expect(legend.getByRole("button", { name: "Lactate", pressed: false })).toBeVisible();
+		await expect(canvas.getByRole("button", { name: "Actual values" })).toHaveAttribute("aria-pressed", "true");
 	},
 };
 
@@ -441,6 +461,50 @@ export const BackToCensus: Story = {
 		// Patients glides back in.
 		const title = await canvas.findByRole("heading", { level: 1, name: /patients$/ });
 		await waitFor(() => expect(title).toBeVisible());
+	},
+};
+
+/**
+ * Scrolling (PRD Patient details PD-016): scrolling down slides the app header up out of view and the Patient Header
+ * sticks to the top of the canvas, with the shadow the app header has on other pages. Scrolling up, from anywhere,
+ * brings the app header back and the Patient Header sticks right under it; scrolling down again hides it again.
+ */
+export const ScrollHidesAppHeader: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("heading", { level: 1, name: "Miller, Sarah" });
+		const appHeader = canvasElement.querySelector<HTMLElement>("[data-slot='app-header']")!;
+		const patientHeader = canvasElement.querySelector<HTMLElement>("[data-slot='patient-header']")!.parentElement!;
+		const scroller = scrollContainerOf(patientHeader);
+		const offset = (element: HTMLElement) =>
+			element.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+		const scrollTo = async (top: number) => {
+			scroller.scrollTop = top;
+			scroller.dispatchEvent(new Event("scroll"));
+		};
+
+		// Down: the app header leaves, the Patient Header sticks at the top with the shadow.
+		await scrollTo(200);
+		await scrollTo(400);
+		await waitFor(() => expect(appHeader.getBoundingClientRect().bottom).toBeLessThanOrEqual(scroller.getBoundingClientRect().top + 1));
+		await waitFor(() => expect(Math.abs(offset(patientHeader))).toBeLessThan(1));
+		await expect(patientHeader).toHaveClass("shadow-sm", "after:opacity-100");
+		await expect(appHeader).toHaveClass("shadow-none");
+
+		// Up: both come back, the Patient Header under the app header.
+		await scrollTo(350);
+		await waitFor(() => expect(Math.abs(offset(appHeader))).toBeLessThan(1));
+		await waitFor(() => expect(Math.abs(offset(patientHeader) - appHeader.offsetHeight)).toBeLessThan(1));
+		await expect(patientHeader).toHaveClass("shadow-sm");
+
+		// Down again: hidden again.
+		await scrollTo(500);
+		await waitFor(() => expect(Math.abs(offset(patientHeader))).toBeLessThan(1));
+
+		// Back at the top: the app header shows and the Patient Header is in its place, without the shadow.
+		await scrollTo(0);
+		await waitFor(() => expect(patientHeader).toHaveClass("shadow-none", "after:opacity-0"));
+		await waitFor(() => expect(Math.abs(offset(appHeader))).toBeLessThan(1));
 	},
 };
 

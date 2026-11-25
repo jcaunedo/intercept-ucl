@@ -306,6 +306,19 @@ function windowTicks(start: number, end: number, tickMinutes: number) {
 const tickLabel = (at: number, tickMinutes: number) =>
 	tickMinutes >= 60 ? hourFormat.format(at) : formatTime(new Date(at).toISOString());
 
+/**
+ * How long ago the crosshair's moment is, roughly, under its time in Previous's head (Nov 25, 2026, user's call):
+ * "~25 min ago" under an hour, then hours to the nearest half hour ("~1.5 h ago"), then days ("~2 d ago").
+ */
+function approximateAgo(at: number, now: number) {
+	const minutes = Math.round((now - at) / MINUTE);
+	if (minutes < 1) return "Just now";
+	const hours = Math.round(minutes / 30) / 2;
+	if (minutes < 60 || hours < 1) return `~${minutes} min ago`;
+	if (hours < 24) return `~${hours} h ago`;
+	return `~${Math.round(hours / 24)} d ago`;
+}
+
 /** A reading's time, with its date when it's from another day. */
 const readingTime = (at: string, now: number) =>
 	new Date(at).toDateString() === new Date(now).toDateString() ? formatTime(at) : formatDateTime(at);
@@ -1230,7 +1243,7 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 								</div>
 								<div
 									className={cn(
-										"row-span-2 row-start-1 flex flex-col items-center justify-center border-b border-border px-3 text-sm font-medium text-foreground tabular-nums",
+										"row-span-2 row-start-1 flex flex-col items-center justify-center border-b border-border px-3 text-sm font-semibold text-foreground tabular-nums",
 										layout.previous,
 									)}
 								>
@@ -1245,12 +1258,21 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 											</span>
 										</>
 									) : (
-										formatTime(new Date(cursor).toISOString())
+										// The crosshair's moment: its time in the head's place, how long ago under it ("~1.5 h ago").
+										<>
+											{formatTime(new Date(cursor).toISOString())}
+											{now !== null ? (
+												<span className='text-xs font-normal text-muted-foreground'>
+													<span className='sr-only'>, </span>
+													{approximateAgo(cursor, now)}
+												</span>
+											) : null}
+										</>
 									)}
 								</div>
 								<div
 									className={cn(
-										"row-span-2 row-start-1 flex flex-col items-center justify-center border-b border-border px-3 text-sm font-medium text-foreground tabular-nums",
+										"row-span-2 row-start-1 flex flex-col items-center justify-center border-b border-border px-3 text-sm font-semibold text-foreground tabular-nums",
 										layout.now,
 									)}
 								>

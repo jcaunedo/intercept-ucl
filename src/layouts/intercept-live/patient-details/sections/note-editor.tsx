@@ -478,9 +478,10 @@ function NoteEditor({ draft, context, onChange, onSaveDraft, onSign }: NoteEdito
 
 	return (
 		<section aria-labelledby={headingId} className='flex min-w-0 flex-col bg-card'>
-			{/* The note's header stays under the page's header while the sections scroll (52px compact, as the list). Its side
+			{/* The note's header stays under the Patient Header while the sections scroll, moving with it as the app header
+			    slides away and back (`--patient-header-top` + `--patient-header-height`, PatientDetails). Its side
 			    padding lines it up with the centered sections below (at most 1000px, 24px in at least). */}
-			<div className='sticky top-[52px] z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-card px-[max(1.5rem,calc((100%-1000px)/2))] py-3'>
+			<div className='sticky top-[calc(var(--patient-header-top,52px)+var(--patient-header-height,0px))] z-10 transition-[top] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-card px-[max(1.5rem,calc((100%-1000px)/2))] py-3'>
 				<div className='flex min-w-0 flex-col gap-1'>
 					<div className='flex flex-wrap items-center gap-[10px]'>
 						<h2 id={headingId} className='font-display text-2xl font-semibold text-foreground'>
@@ -601,7 +602,7 @@ function NoteEditor({ draft, context, onChange, onSaveDraft, onSign }: NoteEdito
 
 						if (section.kind === "chart")
 							return (
-								<div key={section.id} id={sectionId} className='flex scroll-mt-36 flex-col gap-2'>
+								<div key={section.id} id={sectionId} className='flex scroll-mt-[calc(var(--patient-header-height,0px)+9rem)] flex-col gap-2'>
 									{headingRow()}
 									<ChartBlock block={draft.chart[section.block]} heading={section.heading} onRefresh={() => refresh(section)} />
 								</div>
@@ -609,7 +610,7 @@ function NoteEditor({ draft, context, onChange, onSaveDraft, onSign }: NoteEdito
 
 						if (section.kind === "best-practices")
 							return (
-								<div key={section.id} id={sectionId} className='flex scroll-mt-36 flex-col gap-2'>
+								<div key={section.id} id={sectionId} className='flex scroll-mt-[calc(var(--patient-header-height,0px)+9rem)] flex-col gap-2'>
 									{headingRow(
 										undefined,
 										true,
@@ -649,7 +650,7 @@ function NoteEditor({ draft, context, onChange, onSaveDraft, onSign }: NoteEdito
 							const setAttestation = (change: Partial<NoteAttestation>) =>
 								update({ attestation: { ...draft.attestation, ...change } });
 							return (
-								<div key={section.id} id={sectionId} className='flex scroll-mt-36 flex-col gap-3'>
+								<div key={section.id} id={sectionId} className='flex scroll-mt-[calc(var(--patient-header-height,0px)+9rem)] flex-col gap-3'>
 									{headingRow(undefined, true, missing("minutes") || missing("site") || missing("persons"))}
 									<RadioGroup
 										value={version}
@@ -756,7 +757,7 @@ function NoteEditor({ draft, context, onChange, onSaveDraft, onSign }: NoteEdito
 						const ai = section.ai ? context.ai?.[section.ai] : undefined;
 						const listening = dictatingId === section.id && dictation.listening;
 						return (
-							<div key={section.id} id={sectionId} className='flex scroll-mt-36 flex-col gap-2'>
+							<div key={section.id} id={sectionId} className='flex scroll-mt-[calc(var(--patient-header-height,0px)+9rem)] flex-col gap-2'>
 								{headingRow(
 									<>
 										{ai && !text.trim() ? (

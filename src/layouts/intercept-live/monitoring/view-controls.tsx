@@ -25,6 +25,8 @@ type ToggleOption<Value extends string> = {
 	label: string;
 	/** Required with `iconOnly`; a text option (a time window) can do without. */
 	icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+	/** This option alone can't be picked now, e.g. Lab trends' Actual values for tests with different units. */
+	disabled?: boolean;
 };
 
 const densities: ToggleOption<PanelDensity>[] = [
@@ -121,13 +123,13 @@ function SegmentedToggle<Value extends string>({
 		<TooltipProvider>
 			{/* Tabs' 36px list height comes from a Tabs root (group-data), which this isn't inside, so it's set here. */}
 			<div role='group' aria-label={label} className={cn(tabsListVariants({ variant: "default", size: "md" }), "h-9")}>
-				{options.map(({ id, label: optionLabel, icon }) => (
+				{options.map(({ id, label: optionLabel, icon, disabled: optionDisabled }) => (
 					<SegmentedButton
 						key={id}
 						label={optionLabel}
 						icon={icon}
 						pressed={value === id}
-						disabled={disabled}
+						disabled={disabled || !!optionDisabled}
 						iconOnly={iconOnly}
 						indicatorId={indicatorId}
 						onPress={() => onValueChange(id)}

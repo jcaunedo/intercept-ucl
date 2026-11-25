@@ -32,11 +32,18 @@ const flags: Record<Exclude<LabTileFlag, "none">, { letter: string; label: strin
 /** "8:10 AM" in the user's locale. */
 const formatTime = (iso: string) => new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
-/** The change since the previous result as an arrow and a word, or nothing when either value isn't a number. */
+/** Digits after the decimal point, so "+0.5" keeps the results' own precision. */
+const decimals = (value: string) => value.match(/\.(\d+)/)?.[1].length ?? 0;
+
+/**
+ * The change since the previous result: an arrow, a word and the amount with its sign ("+0.5", "−12"), at the
+ * results' precision. Nothing when either value isn't a number or they're equal.
+ */
 function direction(value: string, previous: string) {
 	const delta = Number.parseFloat(value) - Number.parseFloat(previous);
 	if (Number.isNaN(delta) || delta === 0) return undefined;
-	return delta > 0 ? { arrow: "▲", label: "Up" } : { arrow: "▼", label: "Down" };
+	const amount = Math.abs(delta).toFixed(Math.max(decimals(value), decimals(previous)));
+	return delta > 0 ? { arrow: "▲", label: "Up", amount: `+${amount}` } : { arrow: "▼", label: "Down", amount: `−${amount}` };
 }
 
 type LabTileProps = Omit<React.ComponentProps<"div">, "children"> &
@@ -49,7 +56,7 @@ type LabTileProps = Omit<React.ComponentProps<"div">, "children"> &
 		unit?: string;
 		/** When it resulted, ISO 8601: "43 min ago" at the top right, updated each minute. */
 		resultedAt?: string;
-		/** The result before this one: "▲ Was 2.2 at 2:43 AM". */
+		/** The result before this one: "▲ +0.5 · Was 2.2 at 2:43 AM". */
 		previous?: { value: string; at: string };
 		/** When a pending lab was collected, ISO 8601: "Collected 7:23 AM". */
 		collectedAt?: string;
@@ -60,11 +67,23 @@ type LabTileProps = Omit<React.ComponentProps<"div">, "children"> &
 		meta?: React.ReactNode;
 		/** The bottom line when there's no previous result, e.g. "Charted · Normal", "IPAP/EPAP · FiO₂". */
 		note?: React.ReactNode;
+		/**
+		 * Makes the whole tile one button, e.g. to open the lab's trend (Nov 25, 2026): a 2px `foreground` ring on hover, the
+		 * focus ring on keyboard focus. Named "{name}, {openLabel}".
+		 */
+		onOpen?: () => void;
+		/** What `onOpen` does, read after the lab's name: "view trend" by default. */
+		openLabel?: string;
+		/**
+		 * With `onOpen`, makes the tile a toggle (Nov 25, 2026): `aria-pressed`, and the 2px `foreground` ring stays while
+		 * pressed. Patient details' Labs tab: pressed while Lab trends shows that lab alone.
+		 */
+		pressed?: boolean;
 	};
 
 /**
- * One lab result: its name and age, the value with its unit and flag, and the previous result with the change's
- * direction. A pending lab shows "--" and when it was collected. Put it in a list item; a grid of them makes a key
+ * One lab result: its name and age, the value with its unit and flag, and the change since the previous result
+ * ("▲ +0.5 · Was 2.2 at 2:43 AM"). A pending lab shows "--" and when it was collected. Put it in a list item; a grid of them makes a key
  * labs panel.
  *
  * Figma: [intercept.ds › lab-tile](https://www.figma.com/design/dl8m89yfeRZ5uMXnEvdgpY/intercept.ds?node-id=1405-43)
@@ -80,6 +99,9 @@ function LabTile({
 	collectedAt,
 	meta,
 	note,
+	onOpen,
+	openLabel = "view trend",
+	pressed,
 	...props
 }: LabTileProps) {
 	const now = useCurrentMinute();
@@ -93,12 +115,25 @@ function LabTile({
 			data-slot='lab-tile'
 			data-flag={pending ? "none" : flag}
 			data-state={pending ? "pending" : "resulted"}
-			className={cn(labTileVariants({ flag: pending ? "none" : flag, className }))}
+			className={cn(labTileVariants({ flag: pending ? "none" : flag }), onOpen && "relative", className)}
 			{...props}
 		>
+			{onOpen ? (
+				// Over the whole tile, so every part of it is the click target; the tile's text stays readable as text.
+				<button
+					type='button'
+					aria-label={`${name}, ${openLabel}`}
+					aria-pressed={pressed}
+					onClick={onOpen}
+					className={cn(
+						"absolute inset-0 cursor-pointer rounded-[inherit] transition-shadow duration-160 ease-out outline-none hover:ring-2 hover:ring-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
+						pressed && "ring-2 ring-foreground",
+					)}
+				/>
+			) : null}
 			<div className='flex flex-col'>
 				<div className='flex items-baseline gap-2'>
-					<span className='min-w-0 flex-1 truncate text-sm font-semibold text-foreground'>{name}</span>
+					<span className='min-w-0 flex-1 truncate text-base font-semibold text-foreground'>{name}</span>
 					{meta ? (
 						<span className='shrink-0 text-xs text-muted-foreground'>{meta}</span>
 					) : resulted ? (
@@ -133,22 +168,24 @@ function LabTile({
 				)}
 			</div>
 			{pending ? (
-				<span className='text-xs text-muted-foreground'>
+				<span className='text-xs text-foreground'>
 					{collectedAt ? `Collected ${formatTime(collectedAt)}` : "Not resulted yet"}
 				</span>
 			) : previous ? (
-				<span className={cn("text-xs", flag === "critical" ? tone?.className : "text-muted-foreground")}>
-					{/* The arrow and the previous value take the flag's color; an in-range lab's change stays muted. */}
-					<span className={tone?.className}>
-						{change ? (
-							<>
+				<span className='text-xs text-muted-foreground'>
+					{/* The arrow and the amount take the flag's color; an in-range lab's change stays muted, so color always
+					    means out of range. */}
+					{change ? (
+						<>
+							<span className={tone?.className}>
 								<span aria-hidden='true'>{change.arrow} </span>
-								<span className='sr-only'>{change.label}, </span>
-							</>
-						) : null}
-						Was {previous.value}
-					</span>{" "}
-					at {formatTime(previous.at)}
+								<span className='sr-only'>{change.label} </span>
+								<span className='font-bold'>{change.amount}</span>
+							</span>
+							<span className='text-foreground'> · </span>
+						</>
+					) : null}
+					<span className='text-foreground'>Was {previous.value}</span> at {formatTime(previous.at)}
 				</span>
 			) : note ? (
 				<span className='text-xs text-foreground'>{note}</span>
