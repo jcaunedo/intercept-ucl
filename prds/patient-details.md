@@ -7,7 +7,7 @@ status: proposed — confirm with Carlos (not yet in Trace Matrix v0.1)
 Created: Oct 28, 2026
 Created by: Julio Caunedo
 Last updated: Nov 25, 2026
-Latest update: the app header no longer shows the patient once the Patient header scrolls away; it keeps its breadcrumb at all times (PD-016), and PD-010 no longer asks for the MRN on screen while scrolled: the name in the breadcrumb is enough. Why: intercept.ds app-header dropped its OnScroll variant (user's call).
+Latest update: on scroll, the app header slides away while scrolling down and comes back on any scroll up, and the Patient header sticks at the top (under the app header while it shows), with a shadow and a bottom rule while stuck (PD-016). Earlier the same day, the app header stopped showing the patient in place of its breadcrumb, and PD-010 settled that the name in the breadcrumb is enough while scrolled. Why: more of the screen for the page while reading down, the patient always in view (user's calls); intercept.ds app-header dropped its OnScroll variant.
 Recent updates: each tab's PRD numbers its own criteria and open decisions (PDO-, PDT-, PDL-, PDC-, PDS-, PDM-, PDR-, PDE-), and the links here use the new IDs. Before that, each tab got its own PRD and its sections, criteria and open decisions moved there, and the Labs tab opened on a Labs summary, the key labs and Lab trends.
 Scope: The Patient details page of Intercept Live (the patient chart, Spec §5.1 "patient detail view") inside the Provider Desktop: header, alerts, physiology, timeline, labs, medications, orders, notes, sepsis, camera, communication, Ask, handoff.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Patient details page, pending clinical and product validation and the Spec §5-DD.1 deep dive.
@@ -158,7 +158,7 @@ The page uses the Provider Desktop shell (Sidebar, sticky AppHeader, canvas, sid
 
 | Region | Content | Notes |
 |---|---|---|
-| **Patient header** | Identity, safety badges, location, acuity, organ support, actions, patient switcher (§4) | ~~Sticky; compacts on scroll~~ Scrolls with the page; the app header keeps its breadcrumb (PD-016) |
+| **Patient header** | Identity, safety badges, location, acuity, organ support, actions, patient switcher (§4) | ~~Sticky; compacts on scroll~~ Sticks at the top while scrolled: under the app header while scrolling up, alone while scrolling down, as the app header slides away (PD-016) |
 | **Alerts strip** | This patient's active alerts and concerns (PD-020) | Mandatory; under the header |
 | **Sections** | Overview, Timeline, Labs, Medications, Orders, Notes, Sepsis (§5–§11) | ⚠️ **Decision needed:** tabs or one scrolling page with a section index (PD-OD-02) |
 | **Page panel** | Camera, care team & messages, or Ask (§12, §13) | The shell's right-hand panel (`PagePanel`); resizable, closable |
@@ -258,7 +258,7 @@ Spec §9.1, Principle 4: some things every clinician must see; others they choos
 
 - ~~Name and MRN are always visible, including in the compact sticky header, so two identifiers are on screen whatever the clinician is looking at (General: Joint Commission NPSG.01.01.01 patient identification).~~
 - The Patient header shows the name and MRN together, so two identifiers are on screen at the top of the page (General: Joint Commission NPSG.01.01.01 patient identification). Once it has scrolled away, the name alone stays on screen, in the app header's breadcrumb (PD-016).
-- ✅ **Resolved:** the name in the breadcrumb is enough while the page is scrolled; the MRN doesn't need to stay on screen. The two identifiers are in the Patient header, a scroll away.
+- ✅ **Resolved:** the name in the breadcrumb is enough while the page is scrolled; the MRN doesn't need to stay on screen. The two identifiers are in the Patient header, a scroll away. (Since then the Patient header sticks at the top while scrolled, PD-016, so both identifiers stay on screen anyway.)
 - ⚠️ **Gap:** admitting diagnosis and problem list aren't in the Patient card data model (PC-015 has encounter fields only). Add them to OD-01.
 - ✅ **Resolved:** the header (intercept.ds Patient Header) shows sex and age after the name, then one line with MRN and the account number (ACCT, the hospital's number for this stay), the location after a pin, and the early-warning score as the patient cards write it. ICU day and weight left the header for the Overview's Encounter card.
 
@@ -337,7 +337,20 @@ Previous / next buttons step through the list the clinician came from (the Censu
 
 ~~The Patient header scrolls with the page. Once it has gone under the sticky app header, the app header shows the patient in place of its breadcrumb: their avatar, the name with sex and age ("Miller, Sarah - F, 59"), then MRN · ACCT and the location, as the Patient header writes them. Scrolled back until the Patient header shows again, the breadcrumb returns. The two swap in place with a short fade and rise; a fade only under reduced motion.~~
 
-The Patient header scrolls with the page. The sticky app header keeps its breadcrumb ("Census › Miller, Sarah") the whole time, at the top of the page and scrolled; it only tightens its padding while the page is scrolled. The patient's name stays on screen through the breadcrumb.
+~~The Patient header scrolls with the page. The sticky app header keeps its breadcrumb ("Census › Miller, Sarah") the whole time, at the top of the page and scrolled; it only tightens its padding while the page is scrolled. The patient's name stays on screen through the breadcrumb.~~
+
+The app header keeps its breadcrumb ("Census › Miller, Sarah"); it never shows the patient in its place. On scroll:
+
+1. **Scrolling down** (the content moving up), the app header slides up out of view, and the Patient header scrolls up to the top of the screen and sticks there.
+2. **Scrolling up**, from anywhere on the page, the app header slides back in at the top and the Patient header sticks right under it, the two together as they are at the top of the page.
+3. **Scrolling down again**, step 1 happens again. Each change of direction switches between the two.
+
+- Near the top of the page (within the app header's height) the app header always shows.
+- The two move together, on the same short slide; under reduced motion they switch at once.
+- While stuck, the Patient header has a soft shadow and a 1px rule along its bottom, so the page reads as scrolling under it. At its place at the top, it has neither (the tabs' rule is under it).
+- Tabbing into the hidden app header brings it back, so focus is never off screen.
+- What sticks under the Patient header (the Notes list beside a note, a note's header) moves with it, and a section scrolled to lands below it.
+- ✅ **Resolved:** the app header hides while the page scrolls down and comes back as soon as it scrolls up; the Patient header sticks at the top, under the app header while it shows, with the shadow the app header has on other pages and a bottom rule. So the patient's name, identifiers, flags, score and alerts stay on screen while the clinician scrolls (PD-010), and the app header is one scroll up away.
 
 - ~~✅ **Resolved:** the app header shows the patient only once the Patient header is out of view, and the breadcrumb at the top of the page (intercept.ds app-header, OnScroll). So the name and MRN stay on screen while the clinician scrolls (PD-010), and Back stays the way back.~~
 - ✅ **Resolved:** the app header doesn't swap in the patient on scroll; it shows the breadcrumb at all times. intercept.ds app-header dropped its OnScroll variant and keeps only Default and Patient Context, which draws the breadcrumb again. The name stays on screen through the breadcrumb, which is enough while scrolled (PD-010).
