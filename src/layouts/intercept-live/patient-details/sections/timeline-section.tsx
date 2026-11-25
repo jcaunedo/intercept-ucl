@@ -705,13 +705,13 @@ function EventsLane({
 // plot, Previous, Now) holds either way; a rule on the left of whatever follows another cell.
 const valueLayouts = {
 	right: {
-		columns: "grid grid-cols-[7.5rem_minmax(0,1fr)_6.5rem_6.5rem] @min-[72rem]:grid-cols-[233px_minmax(0,1fr)_120px_120px]",
+		columns: "grid grid-cols-[7.5rem_minmax(0,1fr)_6.5rem_6.5rem] @min-[72rem]:grid-cols-[272px_minmax(0,1fr)_120px_120px]",
 		plot: "col-start-2",
 		previous: "col-start-3 border-l border-border",
 		now: "col-start-4 border-l border-border",
 	},
 	left: {
-		columns: "grid grid-cols-[7.5rem_6.5rem_6.5rem_minmax(0,1fr)] @min-[72rem]:grid-cols-[233px_120px_120px_minmax(0,1fr)]",
+		columns: "grid grid-cols-[7.5rem_6.5rem_6.5rem_minmax(0,1fr)] @min-[72rem]:grid-cols-[272px_120px_120px_minmax(0,1fr)]",
 		plot: "col-start-4 border-l border-border",
 		previous: "col-start-2",
 		now: "col-start-3 border-l border-border",

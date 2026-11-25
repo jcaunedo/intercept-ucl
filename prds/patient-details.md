@@ -468,7 +468,11 @@ Any point opens its value, unit, observation time, ingestion time and source ("M
 
 Grouped by panel (chemistry, hematology, blood gases, coagulation, cardiac, others), newest first: value, unit, reference range, flag, result time and the previous value with its direction.
 
-- Flags use words and glyphs ("H", "L", "Critical"), not color alone (PC-160). Ranges come from the hospital's lab (Spec §7.11), never hard-coded.
+- ✅ **Resolved:** over the table, how many results are abnormal, critical and pending ("15 abnormal · 1 critical · 1 pending"; "All results in range" when none is flagged), and an **Abnormal only** toggle that leaves out the results within range. Pending results and those with no result in the window stay, since they aren't known to be normal; a panel left with nothing drops out. Off when the tab opens.
+- ✅ **Resolved:** the result time is the panel's: its heading says when most of its results came back ("Chemistry · Resulted 10:06 AM"), and a result names its own time under its value only when it differs (a repeat lactate, a corrected value). No per-row Resulted column.
+- ✅ **Resolved:** the previous value is shown as the **change**: its direction, the difference and what it was, "▲ +1.9 from 2.2 · Yesterday 10:21 AM" (a time today, "Yesterday" and a time, else the date). The arrow and difference take the flag's color only when the value moved further out of its range (worse); back toward the range, or within it, they stay muted. Screen readers hear "Up 1.9, further out of range". A range in words ("Negative") never marks a change as worse.
+- ✅ **Resolved:** the value, its flag and its range sit side by side at any screen width; the change takes the remaining room.
+- Flags use words and glyphs ("H", "L", "Critical"), not color alone (PC-160), ✅ **Resolved:** in the same colors as the Overview's lab tiles (High and Low apart). Ranges come from the hospital's lab (Spec §7.11), never hard-coded.
 - States: Ordered, Collected, Pending, Resulted, Corrected (with the original kept), Cancelled.
 - A critical result is visually distinct and shows whether it was acknowledged in the hospital's system, when that is known.
 
