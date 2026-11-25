@@ -1284,7 +1284,11 @@ function InterceptLive({
 								onStartHandoff={startHandoff}
 								onSignOut={() => setSignedOut(true)}
 							/>
-							<Toaster hidden={Boolean((openAlert?.open && alertView) || patientView || panelsHidingToasts > 0)} />
+							<Toaster
+								hidden={Boolean((openAlert?.open && alertView) || patientView || panelsHidingToasts > 0)}
+								// A dragged paused notice goes back to its place on another page or patient (Nov 25, 2026, user's call).
+								noticeResetKey={`${page}:${openPatient?.id ?? ""}`}
+							/>
 						</PatientHeaderActionsProvider>
 					</PageHidesToastsProvider>
 				</PagePanelSlotProvider>

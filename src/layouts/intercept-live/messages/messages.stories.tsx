@@ -392,7 +392,7 @@ export const PatientSummary: Story = {
 	play: async ({ canvasElement }) => {
 		await waitFor(() => expect(canvasElement.querySelector("aside[aria-label='Patient details']")).not.toBeNull());
 		const details = within(canvasElement.querySelector<HTMLElement>("aside[aria-label='Patient details']")!);
-		const summary = details.getByRole("region", { name: "Patient summary", hidden: true });
+		const summary = details.getByRole("region", { name: "Summary", hidden: true });
 		await expect(summary).toHaveTextContent(/MAP has fallen/);
 		await expect(summary).toHaveTextContent(/AI summary · 23 sources/);
 		await expect(summary).toHaveTextContent(/Full code · Allergies: Penicillin · Droplet isolation/);

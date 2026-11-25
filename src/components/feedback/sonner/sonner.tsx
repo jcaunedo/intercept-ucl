@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, animate, motion, useMotionValue } from "motion/react";
 import {
 	BellOffIcon,
 	ChevronDownIcon,
@@ -389,6 +389,120 @@ function useStackTop(active: boolean, limit: number) {
 	return bottom;
 }
 
+/**
+ * The paused / muted notice can be dragged anywhere on the screen (Nov 25, 2026, user's call), so it never sits over
+ * what the clinician is reading. Dragged from the pill itself, never from its buttons, so a drag can't end in Resume or
+ * Hide. The whole row moves with it (`x` / `y`, on top of its usual `right` / `bottom`), kept `margin` inside the
+ * screen. It goes back to its usual place when the notice closes (Resume, Hide, the mute ending) and whenever
+ * `resetKey` changes (Intercept Live passes the page). Not kept anywhere: a reload starts it in its place too.
+ */
+function useDraggableNotice(shown: boolean, resetKey: React.Key | undefined, margin: number) {
+	const { resolve } = useMotionPreference();
+	const x = useMotionValue(0);
+	const y = useMotionValue(0);
+	const [dragging, setDragging] = React.useState(false);
+	const drag = React.useRef<{ pointerId: number; startX: number; startY: number; fromX: number; fromY: number } | null>(
+		null,
+	);
+	// The row (the pill's parent), measured to keep an offset inside the screen.
+	const rowRef = React.useRef<HTMLElement | null>(null);
+
+	const clamp = React.useCallback(
+		(nextX: number, nextY: number) => {
+			const row = rowRef.current;
+			if (!row) return { x: nextX, y: nextY };
+			// The row's box without the drag.
+			const box = row.getBoundingClientRect();
+			const left = box.left - x.get();
+			const top = box.top - y.get();
+			const minX = margin - left;
+			const maxX = window.innerWidth - margin - (left + box.width);
+			const minY = margin - top;
+			const maxY = window.innerHeight - margin - (top + box.height);
+			return {
+				x: Math.min(Math.max(nextX, minX), Math.max(minX, maxX)),
+				y: Math.min(Math.max(nextY, minY), Math.max(minY, maxY)),
+			};
+		},
+		[margin, x, y],
+	);
+
+	const reset = React.useCallback(() => {
+		drag.current = null;
+		setDragging(false);
+		if (x.get() === 0 && y.get() === 0) return;
+		const transition = resolve(standardTransition);
+		animate(x, 0, transition);
+		animate(y, 0, transition);
+	}, [resolve, x, y]);
+
+	// Closed (Resume, Hide, the mute ending): back to its place, so it opens there next time.
+	React.useEffect(() => {
+		if (!shown) reset();
+	}, [shown, reset]);
+
+	// Another page: back to its place. Skips the first render, when it's already there.
+	const firstKey = React.useRef(true);
+	React.useEffect(() => {
+		if (firstKey.current) {
+			firstKey.current = false;
+			return;
+		}
+		reset();
+	}, [resetKey, reset]);
+
+	// A smaller window keeps it on screen.
+	React.useEffect(() => {
+		if (!shown) return;
+		const onResize = () => {
+			const next = clamp(x.get(), y.get());
+			x.set(next.x);
+			y.set(next.y);
+		};
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, [shown, clamp, x, y]);
+
+	const endDrag = () => {
+		drag.current = null;
+		setDragging(false);
+	};
+
+	const noticeDragProps: React.HTMLAttributes<HTMLElement> = {
+		onPointerDown: (event) => {
+			if (event.button !== 0 || (event.target as Element).closest("button")) return;
+			rowRef.current = event.currentTarget.parentElement;
+			// Keeps the drag going when the pointer outruns the pill. A synthetic pointer (tests) has nothing to capture.
+			try {
+				event.currentTarget.setPointerCapture(event.pointerId);
+			} catch {}
+			drag.current = {
+				pointerId: event.pointerId,
+				startX: event.clientX,
+				startY: event.clientY,
+				fromX: x.get(),
+				fromY: y.get(),
+			};
+			x.stop();
+			y.stop();
+			setDragging(true);
+		},
+		onPointerMove: (event) => {
+			const current = drag.current;
+			if (!current || current.pointerId !== event.pointerId) return;
+			const next = clamp(current.fromX + event.clientX - current.startX, current.fromY + event.clientY - current.startY);
+			x.set(next.x);
+			y.set(next.y);
+		},
+		onPointerUp: (event) => {
+			if (drag.current?.pointerId === event.pointerId) endDrag();
+		},
+		onPointerCancel: endDrag,
+	};
+
+	return { x, y, dragging, noticeDragProps };
+}
+
 // The row floats over the page, so its buttons keep their opaque background on hover (Nov 3, 2026, user's call): the
 // outline's hover fill (`accent`) is translucent in light mode, so it goes over the background as a layer instead of
 // replacing it, and the page never shows through.
@@ -411,10 +525,12 @@ function ToasterActions({
 	right,
 	closeAllLabel,
 	muteLabel,
+	noticeResetKey,
 }: {
 	right: number;
 	closeAllLabel: string;
 	muteLabel: string;
+	noticeResetKey?: React.Key;
 }) {
 	const { toasts } = useSonner();
 	const { until: mutedUntilTime, paused, untilReload } = useMuteState();
@@ -452,6 +568,9 @@ function ToasterActions({
 		};
 	}, []);
 
+	const noticeShown = mutedUntilTime !== null || paused;
+	const { x, y, dragging, noticeDragProps } = useDraggableNotice(noticeShown, noticeResetKey, right);
+
 	const mute = (until: Date) => {
 		muteToasts(until);
 		// Every toast on screen goes, an alert that interrupts included, and new ones wait for the mute to end, Critical too
@@ -473,15 +592,23 @@ function ToasterActions({
 					exit='exit'
 					// With the toasts, under what the user opens (theme.css "Stacking order").
 					className='fixed z-(--z-toast) flex items-center gap-2'
-					style={{ right, bottom }}
+					style={{ right, bottom, x, y }}
 					// Keyboard focus only: focus left by a click would hold the toasts after the pointer has gone.
 					onFocus={(event) => setFocusIn(event.target.matches(":focus-visible"))}
 					onBlur={(event) => {
 						if (!event.currentTarget.contains(event.relatedTarget)) setFocusIn(false);
 					}}
 				>
-					{mutedUntilTime !== null || paused ? (
-						<span className='inline-flex h-8 items-center gap-1 rounded-button-md bg-neutral/80 pr-1 pl-3 text-sm text-neutral-foreground shadow-xs'>
+					{noticeShown ? (
+						<span
+							data-slot='toaster-notice'
+							data-dragging={dragging || undefined}
+							className={cn(
+								"inline-flex h-8 touch-none items-center gap-1 rounded-button-md bg-neutral/80 pr-1 pl-3 text-sm text-neutral-foreground shadow-xs select-none",
+								dragging ? "cursor-grabbing" : "cursor-grab",
+							)}
+							{...noticeDragProps}
+						>
 							<BellOffIcon aria-hidden='true' className='size-4' />
 							<span className='px-1'>
 								{mutedUntilTime !== null ? `Muted until ${muteTimeFormat.format(mutedUntilTime)}` : "Alert notifications paused"}
@@ -597,10 +724,16 @@ function Toaster({
 	closeAllLabel = "Close all",
 	muteLabel = "Don't show",
 	hidden = false,
+	noticeResetKey,
 	...props
 }: ToasterProps & {
 	/** Fades the toasts and their buttons out, keeping them: their timers pause until it's false again. */
 	hidden?: boolean;
+	/**
+	 * The paused / muted notice can be dragged anywhere on the screen; when this changes (e.g. the app's page), it goes
+	 * back to its usual place. Closing it does too.
+	 */
+	noticeResetKey?: React.Key;
 	/** How far each toast behind peeks out of a collapsed stack, in px. `gap` spaces the expanded stack. */
 	peek?: number;
 	/** The label of the button that closes every toast, shown with two or more. */
@@ -681,6 +814,7 @@ function Toaster({
 				right={typeof offset === "number" ? offset : 16}
 				closeAllLabel={closeAllLabel}
 				muteLabel={muteLabel}
+				noticeResetKey={noticeResetKey}
 			/>
 		</motion.div>
 	);

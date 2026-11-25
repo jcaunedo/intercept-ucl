@@ -328,6 +328,7 @@ export { SquareFilledIcon } from "@/components/icons/square-filled-icon";
 export { TriangleAlertSolidIcon } from "@/components/icons/triangle-alert-solid-icon";
 // Unread: a filled circle with an incoming arrow (intercept.ds, custom).
 export { UnreadIcon } from "@/components/icons/unread-icon";
+export { PanelRightAltIcon } from "@/components/icons/panel-right-alt-icon";
 
 /* -------------------------------------------------------------------------- */
 /* Navigation                                                                 */

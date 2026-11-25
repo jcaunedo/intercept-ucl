@@ -6,7 +6,7 @@ status: proposed — confirm with Carlos
 <!--
 Created: Oct 26, 2026
 Created by: Julio Caunedo
-Last updated: Nov 19, 2026
+Last updated: Nov 25, 2026
 Scope: The Monitoring page of Intercept Live (Tele-Critical Care Clinical Surveillance, Spec §5.2) inside the Provider Desktop: the patient panel, triage queue, patient focus view, camera and escalation.
 Purpose: Defines proposed page structure, behavior, states and acceptance criteria for the Monitoring page, pending clinical and product validation and the Spec §5-DD.2 deep dive.
 -->
@@ -20,7 +20,7 @@ Purpose: Defines proposed page structure, behavior, states and acceptance criter
 **Audience:** Intensivists, APPs and Critical Care RNs  
 **Version:** 0.1  
 **Status:** Draft — pending clinical and product validation  
-**Last updated:** November 19, 2026
+**Last updated:** November 25, 2026
 
 ---
 
@@ -281,6 +281,8 @@ Every active alert for the panel, one row each: severity, patient (name, bed, ho
 ✅ **Resolved:** (Nov 3, 2026, user's call) a closed toast stays closed. Once the clinician closes an alert's toast (its × or Close all), that alert doesn't toast again until the app reloads, whatever its severity, Critical and High included, and across pages. Its later changes (acknowledged or escalated by someone else, eased, active again, resolved) stay quiet; going above the severity it had when closed toasts again. Other alerts, the same patient's new ones included, toast as usual. A toast that leaves on its own timer, or after Open, Acknowledge, Ask or Open alert, isn't closed. The clinician decides what keeps interrupting them, without muting everything. ✅ **Resolved:** Close all pauses toasts (Nov 6, 2026, user's call: "alerts should stop"): Close all also stops new alert toasts and their sounds, Critical included, until the clinician resumes them ("Alert notifications paused", Resume; ✅ **Resolved:** copy fix (Nov 10, 2026, user's call): was "Toasts paused"), the app reloads or the prototype resets; Don't show stops them until the time picked, then they resume on their own. Incoming consult calls still ring.
 
 ✅ **Resolved:** (Nov 3, 2026, user's call) while toasts are muted (Don't show), the "Muted until …" notice has **Play** (tooltip "Resume"), which shows toasts again now, and **×** (tooltip "Hide"), which closes the notice and keeps toasts muted until the app reloads. Picking a Don't show option closes every toast on screen and holds every new one back, Critical included (Nov 3, 2026, user's call; a new Critical showed before); the alerts stay in the live feed, on the cards and in the Sidebar's dot. ⚠️ **Decision needed (clinical):** this departs from AL-02 (Critical alerts interrupt); confirm a clinician may mute Critical toasts.
+
+✅ **Resolved:** the "Muted until …" and "Alert notifications paused" notice can be dragged anywhere on the screen, by the notice itself (not its buttons), so it never covers what the clinician is reading; it stays inside the screen. It goes back to its usual place (bottom right, over the toasts) when it closes (Resume, Hide, the mute ending), on another page or patient, and on a reload.
 
 ✅ **Resolved:** a click spreads the toast stack, not hovering, so the stack doesn't move while the pointer passes over it. On a collapsed stack (two toasts or more), a click on a toast only spreads it, so the clinician sees every toast before opening one; the front toast's own buttons (×, Open patient, Ask Intercept Live) still act at once. Spread, a click on a toast opens its alert. A click outside the stack and its buttons (Don't show, Close all), or Escape, collapses it. Hovering the stack holds the toasts' timers, as before. A single toast opens its alert on a click.
 

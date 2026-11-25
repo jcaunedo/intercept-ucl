@@ -107,7 +107,8 @@ export const Default: Story = {
  * 15 m to 24 h, chart or table), then the chart as a table: time columns over an events lane, each lane ending in an
  * earlier value (Previous: at the window's start, or wherever the pointer is on the chart, its header then that time)
  * beside its value now. Events are a letter on their kind's color; an alert is Monitoring's bell
- * in its severity's color, and an open one opens the alert.
+ * in its severity's color, and an open one opens the alert. A sideways swipe over the plot or the table scrolls through
+ * time (Now, by the window toggle, brings it back), and so do the arrow keys past the window's edge.
  */
 export const Timeline: Story = {
 	// The alerts' details, so a bell has an alert modal to open.
@@ -152,6 +153,25 @@ export const Timeline: Story = {
 		// The ICU's short windows.
 		await userEvent.click(within(filters.getByRole("group", { name: "Time window" })).getByRole("button", { name: "15 m" }));
 		await expect(chart.getByText("Last 15 min")).toBeInTheDocument();
+
+		// A sideways swipe over the plot scrolls back in time: the corner shows the window's span and Now; an up-and-down
+		// one leaves the window alone. Now brings it back. Past the window's left edge, the arrow keys scroll too.
+		const plot = canvasElement.querySelector<HTMLElement>("[data-timeline-plot]")!;
+		const swipe = (deltaX: number, deltaY = 0) =>
+			plot.dispatchEvent(new WheelEvent("wheel", { deltaX, deltaY, bubbles: true, cancelable: true }));
+		swipe(0, -400);
+		await expect(chart.getByText("Last 15 min")).toBeInTheDocument();
+		await expect(swipe(-400)).toBe(false);
+		// Now sits by the window toggle, so it's there in the table view too.
+		const backToNow = await filters.findByRole("button", { name: "Back to now" });
+		await expect(chart.queryByText("Last 15 min")).toBeNull();
+		await userEvent.click(backToNow);
+		await expect(chart.getByText("Last 15 min")).toBeInTheDocument();
+		await waitFor(() => expect(filters.queryByRole("button", { name: "Back to now" })).toBeNull());
+		chartGroup.focus();
+		await userEvent.keyboard("{Home}{ArrowLeft}");
+		await userEvent.click(await filters.findByRole("button", { name: "Back to now" }));
+		await waitFor(() => expect(filters.queryByRole("button", { name: "Back to now" })).toBeNull());
 		await userEvent.click(within(filters.getByRole("group", { name: "Time window" })).getByRole("button", { name: "12 h" }));
 
 		// Her open alert's bell opens the alert.
@@ -167,6 +187,13 @@ export const Timeline: Story = {
 		await userEvent.click(within(filters.getByRole("group", { name: "View" })).getByRole("button", { name: "Table" }));
 		const events = within(await canvas.findByRole("table", { name: "Events, newest first." }));
 		await expect(events.getAllByText("Critical alert").length).toBeGreaterThan(0);
+		// A sideways swipe over the table scrolls back in time too, once the table can't scroll sideways itself.
+		const values = canvasElement.querySelector<HTMLElement>("[data-timeline-table]")!;
+		values.scrollLeft = 0;
+		const firstTime = values.querySelector("tbody th")!.textContent;
+		values.dispatchEvent(new WheelEvent("wheel", { deltaX: -2000, bubbles: true, cancelable: true }));
+		await userEvent.click(await filters.findByRole("button", { name: "Back to now" }));
+		await waitFor(() => expect(values.querySelector("tbody th")!.textContent).toBe(firstTime));
 	},
 };
 

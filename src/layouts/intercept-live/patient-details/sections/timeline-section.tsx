@@ -1,12 +1,15 @@
 import * as React from "react";
-import { BellRingIcon, ChartLineIcon, TableIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowRightToLineIcon, BellRingIcon, ChartLineIcon, TableIcon } from "lucide-react";
 
+import { Button } from "@/components/buttons/button";
 import { PatientCardAlert } from "@/components/cards/patient-census-card";
 import type { MonitorVitals } from "@/components/data-display/patient-monitor";
 import { FilterBar, FilterBarChip, FilterBarControls, FilterBarFilters } from "@/components/forms/filter-bar";
 import { SearchInput } from "@/components/forms/search-input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/overlays/tooltip";
 import { useCurrentMinute } from "@/lib/hooks/use-current-minute";
+import { exitTransition, standardTransition, useMotionPreference } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { SegmentedToggle, type ToggleOption } from "../../monitoring/view-controls";
@@ -194,11 +197,20 @@ const time = (point: { at: string }) => Date.parse(point.at);
 
 /** The lane's reading at a moment: the nearest line reading (a gap reads as none), or the step or result in force. */
 function valueAt(lane: TimelineLane, at: number): TimelinePoint | undefined {
-	if (lane.kind === "step" || lane.kind === "dots") {
+	if (lane.kind === "dots") {
 		let found: TimelinePoint | undefined;
 		for (const point of lane.points) {
 			if (time(point) > at) break;
 			if (point.value !== null) found = point;
+		}
+		return found;
+	}
+	// A step holds until the next record; a record with no value (a drip stopped, a setting off) ends it, as the plot draws.
+	if (lane.kind === "step") {
+		let found: TimelinePoint | undefined;
+		for (const point of lane.points) {
+			if (time(point) > at) break;
+			found = point.value === null ? undefined : point;
 		}
 		return found;
 	}
@@ -253,8 +265,10 @@ function visibleValues(lane: TimelineLane, start: number, end: number) {
  * near the values joins the range so its line shows; a far one (HR's low limit beside a tachycardia) would flatten the
  * line, so it stays out.
  */
-function laneDomain(lane: TimelineLane, start: number, end: number): [number, number] {
+function laneDomain(lane: TimelineLane, start: number, end: number, extra: TimelinePoint[] = []): [number, number] {
 	const values = visibleValues(lane, start, end);
+	// The live reading the line ends on (a monitor lane) is in the scale too, so it's never cut off.
+	for (const point of extra) values.push(...[point.value, point.low, point.high].filter((value): value is number => value != null));
 	if (!values.length) return [0, 1];
 	let min = Math.min(...values);
 	let max = Math.max(...values);
@@ -325,6 +339,21 @@ function liveReading(lane: TimelineLane, vitals?: MonitorVitals): Reading | unde
 	return { value, detail: range ? `${vitals.systolic}/${vitals.diastolic}` : lane.unit };
 }
 
+/**
+ * The monitor's live reading as the lane's point at `at` (now), so a monitor lane's line ends at the value Now shows
+ * (Nov 25, 2026, user's call). MAP's band takes the live systolic and diastolic. None without a live value.
+ */
+function livePoint(lane: TimelineLane, vitals: MonitorVitals | undefined, at: number): TimelinePoint | undefined {
+	const id = liveReadings.find((item) => item === lane.id);
+	const value = id ? vitals?.[id] : undefined;
+	if (!id || value === undefined || value === null) return undefined;
+	const point: TimelinePoint = { at: new Date(at).toISOString(), value };
+	if (lane.kind !== "band") return point;
+	// A band needs both edges, or its fill would drop to zero.
+	if (vitals?.systolic == null || vitals.diastolic == null) return undefined;
+	return { ...point, high: vitals.systolic, low: vitals.diastolic };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Drawing                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -350,6 +379,14 @@ function Backdrop({ frame, height }: { frame: Frame; height: number }) {
 					<line x1={lastViewedX} x2={lastViewedX} y1={0} y2={height} strokeDasharray='3 3' className='stroke-info' />
 				</>
 			) : null}
+			{/* A lane row's hover (Table's `bg-muted/50`), over the "since you last looked" shading (opaque, it would hide a
+			    background) but under the grid, the lines and the dots, so the readings keep their full color (Nov 25, 2026,
+			    user's call). Only a lane row (`group/lane`) shows it; the events lane never does. */}
+			<rect
+				width={frame.width}
+				height={height}
+				className='fill-muted/50 opacity-0 transition-opacity group-hover/lane:opacity-100'
+			/>
 			{frame.ticks.map((tick) => (
 				<line key={tick} x1={frame.x(tick)} x2={frame.x(tick)} y1={0} y2={height} strokeDasharray='2 3' className='stroke-border' />
 			))}
@@ -364,12 +401,12 @@ function Crosshair({ frame, height }: { frame: Frame; height: number }) {
 }
 
 /** A lane's plot: its limits, then its line, band, steps or dots. */
-function LanePlot({ lane, frame }: { lane: TimelineLane; frame: Frame }) {
+function LanePlot({ lane, frame, live }: { lane: TimelineLane; frame: Frame; live?: TimelinePoint }) {
 	const height = LANE_HEIGHT;
 	// A result's value sits beside its dot, so dots keep clear of the edges.
 	const top = lane.kind === "dots" ? 10 : 6;
 	const bottom = height - (lane.kind === "dots" ? 10 : 6);
-	const [low, high] = laneDomain(lane, frame.start, frame.end);
+	const [low, high] = laneDomain(lane, frame.start, frame.end, live ? [live] : []);
 	const y = (value: number) => bottom - ((value - low) / (high - low)) * (bottom - top);
 	const points = lane.points.filter((point) => time(point) <= frame.end);
 
@@ -384,18 +421,35 @@ function LanePlot({ lane, frame }: { lane: TimelineLane; frame: Frame }) {
 			} else current.push(point);
 		}
 		if (current.length) segments.push(current);
+		// A monitor lane runs on to now at its live value (Now's), joining the last stored sample when it's recent enough to
+		// read as one trace (`NEAREST`, the crosshair's reach); after a longer silence the live value stands alone.
+		const last = segments.at(-1)?.at(-1);
+		if (live && last && time(live) - time(last) <= NEAREST && time(live) > time(last)) segments.at(-1)?.push(live);
 	}
 	const linePath = (segment: TimelinePoint[], key: "value" | "low" | "high" = "value") =>
 		segment.map((point, index) => `${index ? "L" : "M"}${frame.x(time(point)).toFixed(1)} ${y(point[key] ?? 0).toFixed(1)}`).join(" ");
 
-	// Steps hold each value until the next one, up to the last reading.
 	const valued = points.filter((point): point is TimelinePoint & { value: number } => point.value !== null);
-	const stepPath = valued
-		.map((point, index) => {
-			const x = frame.x(time(point)).toFixed(1);
-			return index ? `H${x} V${y(point.value).toFixed(1)}` : `M${x} ${y(point.value).toFixed(1)}`;
-		})
-		.join(" ");
+	// Steps hold each value until the next record, and the last one until now: a rate or setting stays in force until it
+	// changes, as Now and Previous read it (Nov 25, 2026, user's call: the plot agrees with the values shown). A record
+	// with no value (stopped, off) ends the step there. One closed run per stretch in force, for its fill and its line.
+	const stepRuns: { line: string; fill: string }[] = [];
+	if (lane.kind === "step") {
+		let run: { startX: number; d: string } | null = null;
+		const close = (x: number) => {
+			if (!run) return;
+			const line = `${run.d} H${x.toFixed(1)}`;
+			stepRuns.push({ line, fill: `${line} V${bottom} H${run.startX.toFixed(1)} Z` });
+			run = null;
+		};
+		for (const point of points) {
+			const x = frame.x(time(point));
+			if (point.value === null) close(x);
+			else if (!run) run = { startX: x, d: `M${x.toFixed(1)} ${y(point.value).toFixed(1)}` };
+			else run.d += ` H${x.toFixed(1)} V${y(point.value).toFixed(1)}`;
+		}
+		close(frame.x(frame.end));
+	}
 	const cursorPoint = frame.cursor !== null ? valueAt(lane, frame.cursor) : undefined;
 
 	return (
@@ -435,12 +489,12 @@ function LanePlot({ lane, frame }: { lane: TimelineLane; frame: Frame }) {
 						/>
 					))
 				: null}
-			{lane.kind === "step" && valued.length ? (
-				<>
-					<path d={`${stepPath} V${bottom} H${frame.x(time(valued[0])).toFixed(1)} Z`} className='fill-current opacity-12' />
-					<path d={stepPath} fill='none' strokeWidth={1.75} className='stroke-current' />
-				</>
-			) : null}
+			{stepRuns.map((run, index) => (
+				<React.Fragment key={`step-${index}`}>
+					<path d={run.fill} className='fill-current opacity-12' />
+					<path d={run.line} fill='none' strokeWidth={1.75} className='stroke-current' />
+				</React.Fragment>
+			))}
 			{lane.kind === "dots"
 				? valued.map((point) => {
 						const x = frame.x(time(point));
@@ -798,7 +852,8 @@ function TimelineTable({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='overflow-x-auto rounded-lg border border-border'>
+			{/* `data-timeline-table`: a sideways swipe here scrolls through time once the table can't scroll further sideways. */}
+			<div data-timeline-table='' className='overflow-x-auto overscroll-x-contain rounded-lg border border-border'>
 				<table className='w-full text-sm'>
 					<caption className='sr-only'>
 						Values every {intervalWords(timeWindow.tableMinutes)}, newest first. Lab results show in the interval they resulted in.
@@ -832,7 +887,7 @@ function TimelineTable({
 					</tbody>
 				</table>
 			</div>
-			<div className='overflow-x-auto rounded-lg border border-border'>
+			<div data-timeline-table='' className='overflow-x-auto overscroll-x-contain rounded-lg border border-border'>
 				<table className='w-full text-sm'>
 					<caption className='sr-only'>Events, newest first.</caption>
 					<thead className='bg-background-subtle text-xs text-muted-foreground'>
@@ -893,6 +948,7 @@ function TimelineTable({
 function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valuesSide = "right" }: TimelineSectionProps) {
 	const layout = valueLayouts[valuesSide];
 	const now = useCurrentMinute();
+	const { prefersReducedMotion, resolve } = useMotionPreference();
 	// 12 h by default (Nov 11, 2026, user's call): its table is hourly, the old flowsheet's step.
 	const [windowId, setWindowId] = React.useState<TimelineWindowId>("12h");
 	const [view, setView] = React.useState<TimelineView>("chart");
@@ -909,7 +965,21 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 	// so a reading or event newer than its last tick moves the end up to it, rather than falling off the right edge.
 	const latest = Math.max(...timeline.lanes.flatMap((lane) => lane.points.map(time)), ...timeline.events.map(time), 0);
 	const end = now === null ? latest : Math.max(now, latest);
-	const start = end - timeWindow.minutes * MINUTE;
+	const windowLength = timeWindow.minutes * MINUTE;
+	// Scrolling through time (Nov 25, 2026, user's call): `anchor` is the window's right edge while scrolled back, held at
+	// that moment (it doesn't drift as the clock ticks); `null` follows now. It goes from the patient's first reading (a
+	// full window after it) up to now. Now always reads now; the plot, Previous and the table follow the window.
+	const [anchor, setAnchor] = React.useState<number | null>(null);
+	const earliest = Math.min(...timeline.lanes.flatMap((lane) => lane.points.map(time)), ...timeline.events.map(time), end);
+	const clampEnd = (at: number) => Math.min(end, Math.max(at, Math.min(end, earliest + windowLength)));
+	const viewEnd = anchor === null ? end : clampEnd(anchor);
+	const following = viewEnd >= end;
+	const start = viewEnd - windowLength;
+	const scrollTo = (nextEnd: number) => {
+		const clamped = clampEnd(nextEnd);
+		setAnchor(clamped >= end ? null : clamped);
+		return clamped;
+	};
 
 	React.useEffect(() => {
 		const element = plotRef.current;
@@ -939,15 +1009,15 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 
 	const frame: Frame = {
 		start,
-		end,
+		end: viewEnd,
 		width,
-		ticks: windowTicks(start, end, timeWindow.tickMinutes),
+		ticks: windowTicks(start, viewEnd, timeWindow.tickMinutes),
 		lastViewed: lastViewedAt ? Date.parse(lastViewedAt) : undefined,
 		cursor,
-		x: (at) => ((at - start) / (end - start)) * width,
+		x: (at) => ((at - start) / (viewEnd - start)) * width,
 	};
 	const lastViewedX = frame.lastViewed !== undefined && frame.lastViewed > start ? frame.x(frame.lastViewed) : undefined;
-	const windowEvents = events.filter((event) => time(event) >= start && time(event) <= end);
+	const windowEvents = events.filter((event) => time(event) >= start && time(event) <= viewEnd);
 	// Previous reads the crosshair while it's on, else the window's start; Now always reads now.
 	const previousAt = cursor ?? start;
 
@@ -960,18 +1030,24 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 			.join(", ")}`;
 
 	const moveCursor = (next: number, announce: boolean) => {
-		const clamped = Math.min(end, Math.max(start, next));
+		let [from, to] = [start, viewEnd];
+		// The keyboard's way to scroll: moving past an edge scrolls the window with it, as far as there's data or now.
+		if (announce && (next < from || next > to)) {
+			to = scrollTo(next < from ? next + windowLength : next);
+			from = to - windowLength;
+		}
+		const clamped = Math.min(to, Math.max(from, next));
 		setCursor(clamped);
 		if (announce) setAnnouncement(readout(clamped));
 	};
 
 	const onKeyDown = (event: React.KeyboardEvent) => {
 		const step = timeWindow.keyStep * MINUTE * (event.shiftKey ? 6 : 1);
-		const from = cursor ?? end;
-		if (event.key === "ArrowLeft") moveCursor(cursor === null ? end : from - step, true);
+		const from = cursor ?? viewEnd;
+		if (event.key === "ArrowLeft") moveCursor(cursor === null ? viewEnd : from - step, true);
 		else if (event.key === "ArrowRight") moveCursor(from + step, true);
 		else if (event.key === "Home") moveCursor(start, true);
-		else if (event.key === "End") moveCursor(end, true);
+		else if (event.key === "End") moveCursor(viewEnd, true);
 		else if (event.key === "Escape") setCursor(null);
 		else return;
 		event.preventDefault();
@@ -982,16 +1058,63 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 		if (!rect || !width) return;
 		const x = event.clientX - rect.left;
 		if (x < 0 || x > rect.width) setCursor(null);
-		else moveCursor(start + (x / rect.width) * (end - start), false);
+		else moveCursor(start + (x / rect.width) * (viewEnd - start), false);
 	};
 
+	// A sideways swipe (or Shift+wheel) scrolls through time, over the chart's plot or over the table view (Nov 25, 2026,
+	// user's calls); an up-and-down one is left to the page. On the table, its own sideways scroll (more lanes than fit)
+	// goes first, and time scrolls once it's at that edge. Not passive, so the browser's own sideways gesture (back /
+	// forward) doesn't fire meanwhile. The latest values are read from a ref, so the listener is added once.
+	const sectionRef = React.useRef<HTMLDivElement>(null);
+	const scrollState = React.useRef({ viewEnd, windowLength, width, scrollTo, setCursor });
+	scrollState.current = { viewEnd, windowLength, width, scrollTo, setCursor };
+	React.useEffect(() => {
+		const section = sectionRef.current;
+		if (!section) return;
+		const onWheel = (event: WheelEvent) => {
+			if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) return;
+			const target = event.target instanceof Element ? event.target : null;
+			const plot = target?.closest("[data-timeline-plot]");
+			const table = plot ? null : target?.closest<HTMLElement>("[data-timeline-table]");
+			if (!plot && !table) return;
+			const { viewEnd: from, windowLength: span, width: plotWidth, scrollTo: scroll, setCursor: setAt } = scrollState.current;
+			// A window's worth of time per plot width on the chart; per the table's width on the table.
+			const scale = plot ? plotWidth : (table?.clientWidth ?? 0);
+			if (!scale) return;
+			const pixels = event.deltaX * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? scale : 1);
+			if (table) {
+				const room = pixels > 0 ? table.scrollWidth - table.clientWidth - table.scrollLeft : table.scrollLeft;
+				if (room > 1) return;
+			}
+			event.preventDefault();
+			// Content follows the fingers: a swipe left brings later times in.
+			const to = scroll(from + (pixels / scale) * span);
+			// On the chart, the crosshair stays under the pointer, reading the moment now there.
+			const rect = plot ? plotRef.current?.getBoundingClientRect() : undefined;
+			if (rect) {
+				const x = event.clientX - rect.left;
+				if (x >= 0 && x <= rect.width) setAt(to - span + (x / rect.width) * span);
+			}
+		};
+		section.addEventListener("wheel", onWheel, { passive: false });
+		return () => section.removeEventListener("wheel", onWheel);
+	}, []);
+
 	// The chart in words for screen readers: each lane's range in the window and its latest value.
-	const summary = `Last ${timeWindow.name}. ${lanes
+	// The window's span when scrolled back. One day says its date once, before the first time ("Nov 24, 2:40 AM – 2:40
+	// PM"), none when it's today ("10:05 AM – 11:05 AM"); across midnight each time has its date (Nov 25, 2026, user's call:
+	// don't repeat the date).
+	const rangeLabel = (() => {
+		const [from, to] = [new Date(start).toISOString(), new Date(viewEnd).toISOString()];
+		if (new Date(start).toDateString() !== new Date(viewEnd).toDateString()) return `${formatDateTime(from)} – ${formatDateTime(to)}`;
+		return `${readingTime(from, end)} – ${formatTime(to)}`;
+	})();
+	const summary = `${following ? `Last ${timeWindow.name}` : rangeLabel}. ${lanes
 		.map((lane) => {
 			const values = lane.points
-				.filter((point) => time(point) >= start && time(point) <= end)
+				.filter((point) => time(point) >= start && time(point) <= viewEnd)
 				.flatMap((point) => (point.value === null ? [] : [point.value]));
-			const latestValue = valueAt(lane, end)?.value;
+			const latestValue = valueAt(lane, viewEnd)?.value;
 			if (!values.length) return `${lane.label}: no readings in this window.`;
 			const [min, max] = [Math.min(...values), Math.max(...values)];
 			if (values.length === 1) return `${lane.label} ${min} ${lane.unit}, one reading.`;
@@ -1005,7 +1128,7 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 
 	return (
 		<TooltipProvider>
-			<div className='@container flex flex-col gap-6'>
+			<div ref={sectionRef} className='@container flex flex-col gap-6'>
 				<FilterBar aria-label='Timeline filters'>
 					<FilterBarFilters>
 						<SearchInput label='Search the timeline' value={query} onValueChange={setQuery} />
@@ -1026,13 +1149,52 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 							: null}
 					</FilterBarFilters>
 					<FilterBarControls className='gap-3'>
+						{/* Scrolled back (chart or table): Now, before the window, brings it back to now. It opens its width as it
+						    comes in, so the window toggle slides over rather than jumping. */}
+						<AnimatePresence initial={false}>
+							{following ? null : (
+								<motion.div
+									key='back-to-now'
+									// Closed, its width and the row's 12px gap after it are both taken back (`marginRight`), so nothing
+									// jumps when it leaves. Clipped while it moves, then not, so its focus ring shows.
+									initial={prefersReducedMotion ? { opacity: 0 } : { width: 0, marginRight: -12, opacity: 0, overflow: "hidden" }}
+									animate={{
+										width: "auto",
+										marginRight: 0,
+										opacity: 1,
+										transition: resolve(standardTransition),
+										transitionEnd: { overflow: "visible" },
+									}}
+									exit={
+										prefersReducedMotion
+											? { opacity: 0, transition: resolve(exitTransition) }
+											: { width: 0, marginRight: -12, opacity: 0, overflow: "hidden", transition: resolve(exitTransition) }
+									}
+									className='flex shrink-0 justify-end'
+								>
+									{/* Solid (Nov 25, 2026, user's call): the way out of a scrolled-back view stands out. */}
+									<Button
+										variant='neutral'
+										size='md'
+										aria-label='Back to now'
+										onClick={() => {
+											setAnchor(null);
+											setCursor(null);
+										}}
+									>
+										<ArrowRightToLineIcon aria-hidden='true' />
+										Now
+									</Button>
+								</motion.div>
+							)}
+						</AnimatePresence>
 						<SegmentedToggle label='Time window' options={windowOptions} value={windowId} onValueChange={setWindowId} />
 						<SegmentedToggle label='View' options={viewOptions} value={view} onValueChange={setView} iconOnly />
 					</FilterBarControls>
 				</FilterBar>
 
 				{view === "table" ? (
-					<TimelineTable timeline={shown} timeWindow={timeWindow} start={start} end={end} />
+					<TimelineTable timeline={shown} timeWindow={timeWindow} start={start} end={viewEnd} />
 				) : (
 					<>
 						<p id={summaryId} className='sr-only'>
@@ -1044,24 +1206,31 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 						<div
 							role='group'
 							tabIndex={0}
-							aria-label='Timeline chart. Left and right arrow keys read every lane at one moment; Escape returns to now.'
+							aria-label='Timeline chart. Left and right arrow keys read every lane at one moment, and past either edge scroll through time; Escape returns to now.'
 							aria-describedby={summaryId}
 							onKeyDown={onKeyDown}
 							onPointerMove={onPointerMove}
 							onPointerLeave={() => setCursor(null)}
-							className='overflow-hidden rounded-lg border border-border outline-none focus-visible:ring-2 focus-visible:ring-ring'
+							className='overflow-hidden overscroll-x-contain rounded-lg border border-border outline-none focus-visible:ring-2 focus-visible:ring-ring'
 						>
 							{/* The head: the window and its time columns over the events lane; Previous and Now span both rows. */}
 							<div className={cn(layout.columns, "grid-rows-[56px_32px]")}>
-								<div className='col-start-1 row-start-1 flex items-center border-r border-b border-border px-3 text-sm text-foreground'>
-									Last {timeWindow.name}
+								{/* Following now: "Last 1 h". Scrolled back: the window's span (Now, by the window toggle, returns). */}
+								<div className='col-start-1 row-start-1 flex min-w-0 items-center border-r border-b border-border px-3 text-sm text-foreground'>
+									<span className='truncate tabular-nums' title={following ? undefined : rangeLabel}>
+										{following ? `Last ${timeWindow.name}` : rangeLabel}
+									</span>
 								</div>
-								<div ref={plotRef} className={cn("row-start-1 relative overflow-hidden border-b border-border", layout.plot)}>
+								<div
+									ref={plotRef}
+									data-timeline-plot=''
+									className={cn("row-start-1 relative overflow-hidden border-b border-border", layout.plot)}
+								>
 									{width ? <TimeHeader frame={frame} tickMinutes={timeWindow.tickMinutes} lastViewedX={lastViewedX} /> : null}
 								</div>
 								<div
 									className={cn(
-										"row-span-2 row-start-1 flex flex-col items-center justify-center border-b border-border bg-background-subtle px-3 text-sm font-medium text-foreground tabular-nums",
+										"row-span-2 row-start-1 flex flex-col items-center justify-center border-b border-border px-3 text-sm font-medium text-foreground tabular-nums",
 										layout.previous,
 									)}
 								>
@@ -1097,7 +1266,7 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 								<div className='col-start-1 row-start-2 flex items-center border-r border-b border-border px-3 text-sm text-foreground'>
 									Events
 								</div>
-								<div className={cn("row-start-2 overflow-hidden border-b border-border", layout.plot)}>
+								<div data-timeline-plot='' className={cn("row-start-2 overflow-hidden border-b border-border", layout.plot)}>
 									{width ? <EventsLane events={windowEvents} frame={frame} onOpenAlert={onOpenAlert} /> : null}
 								</div>
 							</div>
@@ -1112,25 +1281,33 @@ function TimelineSection({ timeline, lastViewedAt, liveVitals, onOpenAlert, valu
 												{group.heading}
 											</div>
 											{groupLanes.map((lane) => (
-												<div key={lane.id} className={cn(layout.columns, "group/lane h-14 border-b border-border last:border-b-0")}>
-													{/* Hovering a lane marks its name, as a Table row's hover (`bg-muted/50`), so the eye finds which lane
-													    the pointer is on (Nov 24, 2026, user's call). */}
+												<div
+														key={lane.id}
+														className={cn(
+															layout.columns,
+															"group/lane h-14 border-b border-border last:border-b-0",
+														)}
+													>
+													{/* Hovering a lane fills the whole row, name, plot, Previous and Now, with a Table row's hover
+													    (`bg-muted/50`), so the eye finds which lane the pointer is on (Nov 24, 2026, user's call: the name;
+													    the whole row since Nov 25, 2026, Intercept-Live `311:8791`). The plot draws it in its backdrop
+													    (`Backdrop`), over the "since you last looked" shading and under the lines. */}
 													<div className='col-start-1 row-start-1 flex min-w-0 items-center justify-between gap-2 border-r border-border px-3 transition-colors group-hover/lane:bg-muted/50'>
 														<span className='truncate text-sm font-semibold text-foreground'>{lane.label}</span>
 														<span className='shrink-0 text-xs text-muted-foreground'>{lane.unit}</span>
 													</div>
-													<div className={cn("row-start-1 overflow-hidden", layout.plot)}>
-														{width ? <LanePlot lane={lane} frame={frame} /> : null}
+													<div data-timeline-plot='' className={cn("row-start-1 relative overflow-hidden", layout.plot)}>
+														{width ? <LanePlot lane={lane} frame={frame} live={livePoint(lane, liveVitals, end)} /> : null}
 													</div>
 													<ValueCell
 														lane={lane}
 														reading={readingAt(lane, previousAt, end, false)}
-														className={cn("row-start-1 bg-background-subtle", layout.previous)}
+														className={cn("row-start-1 transition-colors group-hover/lane:bg-muted/50", layout.previous)}
 													/>
 													<ValueCell
 														lane={lane}
 														reading={liveReading(lane, liveVitals) ?? readingAt(lane, end, end, true)}
-														className={cn("row-start-1", layout.now)}
+														className={cn("row-start-1 transition-colors group-hover/lane:bg-muted/50", layout.now)}
 													/>
 												</div>
 											))}

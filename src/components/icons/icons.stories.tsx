@@ -39,6 +39,7 @@ import { SquareActivitySolidIcon } from "./square-activity-solid-icon";
 import { SlashCommandIcon } from "./slash-command-icon";
 import { SquareFilledIcon } from "./square-filled-icon";
 import { TriangleAlertSolidIcon } from "./triangle-alert-solid-icon";
+import { PanelRightAltIcon } from "./panel-right-alt-icon";
 import { UnreadIcon } from "./unread-icon";
 
 // Each solid icon beside its lucide outline. Most replace the outline while a SidebarMenuButton is active;
@@ -147,6 +148,20 @@ export const Unread: Story = {
 			<span>unread</span>
 			<UnreadIcon className='size-4 text-brand' />
 			<UnreadIcon className='size-6 text-brand' />
+		</div>
+	),
+};
+
+/**
+ * panel-right-alt (intercept.ds, custom): a right panel that's open, beside lucide `panel-right` (closed), at 16px and
+ * 24px. MessageHeader's patient bar while the details are open.
+ */
+export const PanelRightAlt: Story = {
+	render: () => (
+		<div className='flex items-center gap-4 text-sm text-foreground'>
+			<span>panel-right-alt</span>
+			<PanelRightAltIcon className='size-4 text-icon' />
+			<PanelRightAltIcon className='size-6 text-icon' />
 		</div>
 	),
 };

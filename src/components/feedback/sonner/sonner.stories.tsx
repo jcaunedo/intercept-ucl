@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, screen, userEvent, waitFor, within } from "storybook/test";
+import { expect, fireEvent, screen, userEvent, waitFor, within } from "storybook/test";
 
 import { Button } from "@/components/buttons/button";
 
@@ -156,6 +156,70 @@ export const Muted: Story = {
 		await waitFor(() => expect(screen.queryByText(/^Muted until/)).not.toBeInTheDocument());
 		await expect(toastsMuted()).toBe(true);
 		// Other stories share the page's mute.
+		muteToasts(null);
+	},
+};
+
+/**
+ * The paused / muted notice can be dragged anywhere on the screen, from the pill (not its buttons), and stays inside it.
+ * It goes back to its place when `noticeResetKey` changes (the app's page) and when it closes. Test: a drag moves it by
+ * the pointer's distance; a drag far past the corner stops 16px inside the screen; a new key brings it back; a drag that
+ * starts on Resume doesn't move it.
+ */
+export const DragNotice: Story = {
+	render: function Render(args) {
+		const [page, setPage] = React.useState(1);
+		return (
+			<>
+				<Toaster {...args} noticeResetKey={page} />
+				<div className='flex gap-2'>
+					<Button variant='outline' onClick={() => muteToasts("paused")}>
+						Pause
+					</Button>
+					<Button variant='outline' onClick={() => setPage((current) => current + 1)}>
+						Change page
+					</Button>
+				</div>
+			</>
+		);
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// Toasts left by other stories would move the row with the stack.
+		toast.dismiss();
+		await waitFor(() => expect(document.querySelector("[data-sonner-toast]")).toBeNull());
+		await userEvent.click(canvas.getByRole("button", { name: "Pause" }));
+		const label = await screen.findByText("Alert notifications paused");
+		const pill = label.closest<HTMLElement>("[data-slot=toaster-notice]")!;
+		const row = pill.parentElement!;
+		await waitFor(() => expect(Number(getComputedStyle(row).opacity)).toBe(1));
+		const home = row.getBoundingClientRect();
+		const drag = (target: Element, dx: number, dy: number) => {
+			const box = target.getBoundingClientRect();
+			const at = { clientX: box.left + 8, clientY: box.top + box.height / 2, pointerId: 7, button: 0 };
+			fireEvent.pointerDown(target, at);
+			fireEvent.pointerMove(target, { ...at, clientX: at.clientX + dx, clientY: at.clientY + dy });
+			fireEvent.pointerUp(target, { ...at, clientX: at.clientX + dx, clientY: at.clientY + dy });
+		};
+
+		// Motion applies a move on the next frame.
+		const box = () => row.getBoundingClientRect();
+		drag(label, -200, -150);
+		// Within a pixel: the browser snaps a transformed box to device pixels.
+		await waitFor(() => expect(Math.abs(box().left - home.left + 200)).toBeLessThanOrEqual(1));
+		await expect(Math.abs(box().top - home.top + 150)).toBeLessThanOrEqual(1);
+
+		drag(label, -5000, -5000);
+		await waitFor(() => expect(Math.abs(box().left - 16)).toBeLessThanOrEqual(1));
+		await expect(Math.abs(box().top - 16)).toBeLessThanOrEqual(1);
+
+		await userEvent.click(canvas.getByRole("button", { name: "Change page" }));
+		await waitFor(() => expect(Math.abs(box().left - home.left)).toBeLessThanOrEqual(1));
+		await waitFor(() => expect(Math.abs(box().top - home.top)).toBeLessThanOrEqual(1));
+
+		drag(screen.getByRole("button", { name: "Resume alert notifications" }), -200, -150);
+		await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+		await expect(Math.abs(box().left - home.left)).toBeLessThanOrEqual(1);
 		muteToasts(null);
 	},
 };

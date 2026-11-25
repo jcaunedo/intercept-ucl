@@ -31,8 +31,9 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * The person and their role · hospital · channel, then the patient bar, which opens and closes the patient's details (a
- * `panel-right` icon at its end). Test: the bar is a collapsed toggle named for the patient, and a click calls
- * `onToggleDetails`, not `onOpenPatient` (the toggle wins when both are set).
+ * `panel-right` icon at its end); the patient's name opens their page, underlined on hover. Test: the bar is a collapsed
+ * toggle named for the patient, and a click on it calls `onToggleDetails`, not `onOpenPatient`; a click on the name calls
+ * `onOpenPatient`, not `onToggleDetails`.
  */
 export const Default: Story = {
 	play: async ({ canvasElement, args, userEvent }) => {
@@ -43,6 +44,9 @@ export const Default: Story = {
 		await userEvent.click(bar);
 		await expect(args.onToggleDetails).toHaveBeenCalledOnce();
 		await expect(args.onOpenPatient).not.toHaveBeenCalled();
+		await userEvent.click(canvas.getByRole("button", { name: "Miller, Sarah, open patient" }));
+		await expect(args.onOpenPatient).toHaveBeenCalledOnce();
+		await expect(args.onToggleDetails).toHaveBeenCalledOnce();
 	},
 };
 
@@ -71,27 +75,52 @@ export const Urgent: Story = {
 	},
 };
 
-/** Details open: the bar is expanded, its icon `icon` instead of `icon-subtle`. Test: `aria-expanded` and `aria-controls`. */
+/**
+ * Details open: the bar is expanded, its icon intercept.ds `panel-right-alt` (the panel drawn solid) in `icon`, in place
+ * of `panel-right`. Test: `aria-expanded`, `aria-controls`, and the icon swap.
+ */
 export const DetailsOpen: Story = {
 	args: { detailsOpen: true, detailsId: "patient-details" },
 	play: async ({ canvasElement }) => {
 		const bar = within(canvasElement).getByRole("button", { name: "Miller, Sarah, patient details" });
 		await expect(bar).toHaveAttribute("aria-expanded", "true");
 		await expect(bar).toHaveAttribute("aria-controls", "patient-details");
+		const strip = canvasElement.querySelector("[data-slot=message-header-patient]")!;
+		await expect(strip.querySelector(".lucide-panel-right")).toBeNull();
+		await expect(strip.querySelector("svg.text-icon")).not.toBeNull();
 	},
 };
 
 /**
- * No `onToggleDetails` (Intercept Live below xl, where the details can't show): the bar opens the patient, an arrow at
- * its end. Test: a click calls `onOpenPatient`, and the bar isn't a toggle.
+ * No `onToggleDetails` (Intercept Live below xl, where the details can't show): the whole bar opens the patient, an
+ * arrow at its end; the keyboard reaches it through the name. Test: the name isn't a toggle, and a click on it, then on
+ * the rest of the bar, each call `onOpenPatient`.
  */
 export const OpensPatient: Story = {
 	args: { onToggleDetails: undefined },
 	play: async ({ canvasElement, args, userEvent }) => {
-		const bar = within(canvasElement).getByRole("button", { name: "Miller, Sarah, open patient" });
-		await expect(bar).not.toHaveAttribute("aria-expanded");
-		await userEvent.click(bar);
+		const name = within(canvasElement).getByRole("button", { name: "Miller, Sarah, open patient" });
+		await expect(name).not.toHaveAttribute("aria-expanded");
+		await userEvent.click(name);
 		await expect(args.onOpenPatient).toHaveBeenCalledOnce();
+		const bar = canvasElement.querySelector<HTMLElement>("[data-slot=message-header-patient-button]");
+		await userEvent.click(bar!);
+		await expect(args.onOpenPatient).toHaveBeenCalledTimes(2);
+	},
+};
+
+/**
+ * `patientHref`: the name is a real link to the patient's page, so Cmd/Ctrl+click opens it in a new tab; a plain click
+ * still calls `onOpenPatient` and stays in place. Test: a link to the address, and a click calls `onOpenPatient`.
+ */
+export const PatientLink: Story = {
+	args: { patientHref: "#patient-sarah-miller" },
+	play: async ({ canvasElement, args, userEvent }) => {
+		const link = within(canvasElement).getByRole("link", { name: "Miller, Sarah, open patient" });
+		await expect(link).toHaveAttribute("href", "#patient-sarah-miller");
+		await userEvent.click(link);
+		await expect(args.onOpenPatient).toHaveBeenCalledOnce();
+		await expect(args.onToggleDetails).not.toHaveBeenCalled();
 	},
 };
 
@@ -124,7 +153,9 @@ export const PatientSummary: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const bar = canvas.getByRole("button", { name: "Miller, Sarah, patient details" });
-		await expect(bar).toHaveTextContent(/MICU · Bed 11 +- +MAP has fallen/);
+		await expect(canvasElement.querySelector("[data-slot=message-header-patient]")).toHaveTextContent(
+			/MICU · Bed 11 +- +MAP has fallen/,
+		);
 		await expect(bar).toHaveAccessibleDescription(sarahSummary);
 	},
 };

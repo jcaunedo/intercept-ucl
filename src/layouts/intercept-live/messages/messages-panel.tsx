@@ -490,7 +490,10 @@ function MessagesPanel({
 										: undefined
 								}
 								patientSummary={patientSummaryText(selectedRecord)}
+								// The patient's name opens their page, at every width (Nov 25, 2026, user's call); from xl the rest of
+								// the bar toggles the details.
 								onOpenPatient={navigation && selected.patient ? () => openPatient(selected.patient!.id) : undefined}
+								patientHref={selected.patient ? navigation?.patientHref?.(selected.patient.id) : undefined}
 								onBack={() => setConversationShown(false)}
 								backButtonProps={{ className: "md:hidden" }}
 								onToggleDetails={detailsFit && selected.patient ? () => setDetailsOpen((open) => !open) : undefined}
@@ -807,7 +810,7 @@ function ConversationDetails({
 					<div className='flex flex-col gap-1.5'>
 						<div className='flex items-center justify-between gap-2'>
 							<Typography as='h3' id='conversation-patient' size='xs'>
-								Patient
+								Patient summary
 							</Typography>
 							{/* The side panels' ×, kept from pushing the column down: the 36px button overhangs the 20px label line. */}
 							{onClose ? (
@@ -1065,7 +1068,7 @@ function PatientSummary({ record }: { record?: PatientRecord }) {
 				: "No known allergies";
 	const safety = [record.codeStatus ?? "Code status unknown", allergies, record.isolation].filter(Boolean).join(" · ");
 	return (
-		<section aria-label='Patient summary' className='mt-3 flex flex-col gap-1.5'>
+		<section aria-label='Summary' className='mt-3 flex flex-col gap-1.5'>
 			{text ? <p className='text-sm font-medium'>{text}</p> : null}
 			{record.brief ? (
 				<p className='flex items-center gap-1 text-xs text-muted-foreground'>
